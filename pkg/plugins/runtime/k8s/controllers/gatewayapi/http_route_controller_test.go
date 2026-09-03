@@ -1343,7 +1343,7 @@ var _ = Describe("HTTPRouteReconciler.Reconcile with cross-namespace backendRefs
 		Expect(routes.Items).To(HaveLen(1))
 		backendRefs := pointer.Deref((*routes.Items[0].Spec.To)[0].Rules[0].Default.BackendRefs)
 		Expect(backendRefs).To(HaveLen(1))
-		Expect(backendRefs[0].TargetRef.SectionName).To(Equal(pointer.To("http")))
+		Expect(backendRefs[0].SectionName).To(Equal(pointer.To("http")))
 
 		var updatedRoute gatewayapi.HTTPRoute
 		Expect(client.Get(context.Background(), kube_client.ObjectKeyFromObject(route), &updatedRoute)).To(Succeed())

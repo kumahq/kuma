@@ -2814,27 +2814,22 @@ spec:
                                           requestMirror:
                                             properties:
                                               backendRef:
-                                                description: BackendRef defines where
-                                                  to forward traffic.
+                                                description: BackendRef defines the
+                                                  destination traffic is routed to.
                                                 properties:
                                                   kind:
                                                     description: Kind of the referenced
                                                       resource
                                                     enum:
-                                                    - Mesh
                                                     - MeshService
                                                     - MeshExternalService
                                                     - MeshMultiZoneService
-                                                    - MeshHTTPRoute
-                                                    - Dataplane
                                                     type: string
                                                   labels:
                                                     additionalProperties:
                                                       type: string
-                                                    description: |-
-                                                      Labels are used to select referenced real resources and to carry legacy
-                                                      service identity when a common TargetRef must still target old
-                                                      service-tag based paths.
+                                                    description: Labels are used to
+                                                      select the referenced real resource.
                                                     type: object
                                                   port:
                                                     description: Port is only supported
@@ -2844,8 +2839,8 @@ spec:
                                                     type: integer
                                                   sectionName:
                                                     description: |-
-                                                      SectionName is used to target specific section of resource.
-                                                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                                      SectionName is used to target a specific section of the resource.
+                                                      For example, you can target a port from MeshService.ports[] by its name.
                                                     type: string
                                                   weight:
                                                     default: 1
@@ -3021,30 +3016,25 @@ spec:
                                     kind:
                                       description: Kind of the referenced resource
                                       enum:
-                                      - Mesh
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshHTTPRoute
-                                      - Dataplane
                                       type: string
                                     labels:
                                       additionalProperties:
                                         type: string
-                                      description: |-
-                                        Labels are used to select referenced real resources and to carry legacy
-                                        service identity when a common TargetRef must still target old
-                                        service-tag based paths.
+                                      description: Labels are used to select the referenced
+                                        real resource.
                                       type: object
                                     port:
                                       description: Port is only supported when this
-                                        ref refers to a MeshService object
+                                        ref refers to a real MeshService object
                                       format: int32
                                       type: integer
                                     sectionName:
                                       description: |-
-                                        SectionName is used to target specific section of resource.
-                                        For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                        SectionName is used to target a specific section of the resource.
+                                        For example, you can target a port from MeshService.ports[] by its name.
                                       type: string
                                     weight:
                                       default: 1
@@ -3111,27 +3101,22 @@ spec:
                                     requestMirror:
                                       properties:
                                         backendRef:
-                                          description: BackendRef defines where to
-                                            forward traffic.
+                                          description: BackendRef defines the destination
+                                            traffic is routed to.
                                           properties:
                                             kind:
                                               description: Kind of the referenced
                                                 resource
                                               enum:
-                                              - Mesh
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
-                                              - MeshHTTPRoute
-                                              - Dataplane
                                               type: string
                                             labels:
                                               additionalProperties:
                                                 type: string
-                                              description: |-
-                                                Labels are used to select referenced real resources and to carry legacy
-                                                service identity when a common TargetRef must still target old
-                                                service-tag based paths.
+                                              description: Labels are used to select
+                                                the referenced real resource.
                                               type: object
                                             port:
                                               description: Port is only supported
@@ -3141,8 +3126,8 @@ spec:
                                               type: integer
                                             sectionName:
                                               description: |-
-                                                SectionName is used to target specific section of resource.
-                                                For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                                SectionName is used to target a specific section of the resource.
+                                                For example, you can target a port from MeshService.ports[] by its name.
                                               type: string
                                             weight:
                                               default: 1
@@ -6783,26 +6768,21 @@ spec:
                             properties:
                               backendRefs:
                                 items:
-                                  description: BackendRef defines where to forward
-                                    traffic.
+                                  description: BackendRef defines the destination
+                                    traffic is routed to.
                                   properties:
                                     kind:
                                       description: Kind of the referenced resource
                                       enum:
-                                      - Mesh
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshHTTPRoute
-                                      - Dataplane
                                       type: string
                                     labels:
                                       additionalProperties:
                                         type: string
-                                      description: |-
-                                        Labels are used to select referenced real resources and to carry legacy
-                                        service identity when a common TargetRef must still target old
-                                        service-tag based paths.
+                                      description: Labels are used to select the referenced
+                                        real resource.
                                       type: object
                                     port:
                                       description: Port is only supported when this
@@ -6811,8 +6791,8 @@ spec:
                                       type: integer
                                     sectionName:
                                       description: |-
-                                        SectionName is used to target specific section of resource.
-                                        For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                        SectionName is used to target a specific section of the resource.
+                                        For example, you can target a port from MeshService.ports[] by its name.
                                       type: string
                                     weight:
                                       default: 1

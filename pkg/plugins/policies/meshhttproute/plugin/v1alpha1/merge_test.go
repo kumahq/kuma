@@ -149,8 +149,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "backend", "version": "v1"}, ""),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "backend", "version": "v1"}, "", uint(100)),
 										}},
 									},
 								}, {
@@ -162,8 +161,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "backend", "version": "v2"}, ""),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "backend", "version": "v2"}, "", uint(100)),
 										}},
 									},
 								}},
@@ -185,8 +183,7 @@ var _ = DescribeTable(
 					Default: api.RuleConf{
 						Filters: &[]api.Filter{{}},
 						BackendRefs: &[]api.BackendRef{{
-							TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "backend", "version": "v1"}, ""),
-							Weight:    pointer.To(uint(100)),
+							BackendRef: builders.BackendRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "backend", "version": "v1"}, "", uint(100)),
 						}},
 					},
 				}, {
@@ -198,8 +195,7 @@ var _ = DescribeTable(
 					}},
 					Default: api.RuleConf{
 						BackendRefs: &[]api.BackendRef{{
-							TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "backend", "version": "v2"}, ""),
-							Weight:    pointer.To(uint(100)),
+							BackendRef: builders.BackendRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "backend", "version": "v2"}, "", uint(100)),
 						}},
 					},
 				}},
@@ -234,8 +230,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "a-backend", "version": "v1"}, ""),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "a-backend", "version": "v1"}, "", uint(100)),
 										}},
 									},
 								}},
@@ -259,8 +254,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "b-backend", "version": "v1"}, ""),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "b-backend", "version": "v1"}, "", uint(100)),
 										}},
 									},
 								}},
@@ -281,8 +275,7 @@ var _ = DescribeTable(
 					}},
 					Default: api.RuleConf{
 						BackendRefs: &[]api.BackendRef{{
-							TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "a-backend", "version": "v1"}, ""),
-							Weight:    pointer.To(uint(100)),
+							BackendRef: builders.BackendRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "a-backend", "version": "v1"}, "", uint(100)),
 						}},
 					},
 				}},
@@ -319,8 +312,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "a-backend", "version": "v1"}, ""),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "a-backend", "version": "v1"}, "", uint(100)),
 										}},
 									},
 								}},
@@ -347,8 +339,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "z-backend", "version": "v1"}, ""),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "z-backend", "version": "v1"}, "", uint(100)),
 										}},
 									},
 								}},
@@ -369,8 +360,7 @@ var _ = DescribeTable(
 					}},
 					Default: api.RuleConf{
 						BackendRefs: &[]api.BackendRef{{
-							TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "z-backend", "version": "v1"}, ""),
-							Weight:    pointer.To(uint(100)),
+							BackendRef: builders.BackendRefMeshServiceLabels(map[string]string{mesh_proto.DisplayName: "z-backend", "version": "v1"}, "", uint(100)),
 						}},
 					},
 				}},
@@ -404,8 +394,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("backend"),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefService("backend", uint(100)),
 										}},
 									},
 								}, {
@@ -417,8 +406,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("first-time-in-list-backend"),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefService("first-time-in-list-backend", uint(100)),
 										}},
 									},
 								}, {
@@ -430,8 +418,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("a-backend"),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefService("a-backend", uint(100)),
 										}},
 									},
 								}, {
@@ -443,8 +430,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("a-backend"),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefService("a-backend", uint(100)),
 										}},
 									},
 								}, {
@@ -456,8 +442,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("second-time-in-list-backend"),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefService("second-time-in-list-backend", uint(100)),
 										}},
 									},
 								}},
@@ -481,8 +466,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("backend"),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefService("backend", uint(100)),
 										}},
 									},
 								}, {
@@ -494,8 +478,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("b-backend"),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefService("b-backend", uint(100)),
 										}},
 									},
 								}, {
@@ -507,8 +490,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("b-backend"),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefService("b-backend", uint(100)),
 										}},
 									},
 								}, {
@@ -520,8 +502,7 @@ var _ = DescribeTable(
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]api.BackendRef{{
-											TargetRef: builders.TargetRefService("backend"),
-											Weight:    pointer.To(uint(100)),
+											BackendRef: builders.BackendRefService("backend", uint(100)),
 										}},
 									},
 								}},
@@ -542,8 +523,7 @@ var _ = DescribeTable(
 					}},
 					Default: api.RuleConf{
 						BackendRefs: &[]api.BackendRef{{
-							TargetRef: builders.TargetRefService("backend"),
-							Weight:    pointer.To(uint(100)),
+							BackendRef: builders.BackendRefService("backend", uint(100)),
 						}},
 					},
 				}, {
@@ -555,8 +535,7 @@ var _ = DescribeTable(
 					}},
 					Default: api.RuleConf{
 						BackendRefs: &[]api.BackendRef{{
-							TargetRef: builders.TargetRefService("first-time-in-list-backend"),
-							Weight:    pointer.To(uint(100)),
+							BackendRef: builders.BackendRefService("first-time-in-list-backend", uint(100)),
 						}},
 					},
 				}, {
@@ -568,8 +547,7 @@ var _ = DescribeTable(
 					}},
 					Default: api.RuleConf{
 						BackendRefs: &[]api.BackendRef{{
-							TargetRef: builders.TargetRefService("a-backend"),
-							Weight:    pointer.To(uint(100)),
+							BackendRef: builders.BackendRefService("a-backend", uint(100)),
 						}},
 					},
 				}, {
@@ -581,8 +559,7 @@ var _ = DescribeTable(
 					}},
 					Default: api.RuleConf{
 						BackendRefs: &[]api.BackendRef{{
-							TargetRef: builders.TargetRefService("a-backend"),
-							Weight:    pointer.To(uint(100)),
+							BackendRef: builders.BackendRefService("a-backend", uint(100)),
 						}},
 					},
 				}, {
@@ -594,8 +571,7 @@ var _ = DescribeTable(
 					}},
 					Default: api.RuleConf{
 						BackendRefs: &[]api.BackendRef{{
-							TargetRef: builders.TargetRefService("backend"),
-							Weight:    pointer.To(uint(100)),
+							BackendRef: builders.BackendRefService("backend", uint(100)),
 						}},
 					},
 				}, {
@@ -607,8 +583,7 @@ var _ = DescribeTable(
 					}},
 					Default: api.RuleConf{
 						BackendRefs: &[]api.BackendRef{{
-							TargetRef: builders.TargetRefService("backend"),
-							Weight:    pointer.To(uint(100)),
+							BackendRef: builders.BackendRefService("backend", uint(100)),
 						}},
 					},
 				}},

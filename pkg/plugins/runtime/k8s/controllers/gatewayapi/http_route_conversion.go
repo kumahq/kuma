@@ -283,8 +283,10 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 		}
 
 		backendRef := v1alpha1.BackendRef{
-			TargetRef: ref,
-			Weight:    pointer.To(uint(*gapiBackendRef.Weight)),
+			Kind:        common_api.BackendRefKind(ref.Kind),
+			Labels:      ref.Labels,
+			SectionName: ref.SectionName,
+			Weight:      pointer.To(uint(*gapiBackendRef.Weight)),
 		}
 		if len(backendFilters) > 0 {
 			backendRef.Filters = &backendFilters
@@ -489,9 +491,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 		return v1alpha1.Filter{
 			Type: v1alpha1.RequestMirrorType,
 			RequestMirror: &v1alpha1.RequestMirror{
-				BackendRef: common_api.BackendRef{
-					TargetRef: ref,
-				},
+				BackendRef: common_api.BackendRefFrom(ref),
 			},
 		}, conditions, true
 	default:

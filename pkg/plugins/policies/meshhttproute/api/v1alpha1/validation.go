@@ -249,7 +249,7 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 			backendRefPath := path.Field("requestMirror").Field("backendRef")
 			errs.AddErrorAt(
 				backendRefPath,
-				mesh.ValidateTargetRef(filter.RequestMirror.BackendRef.TargetRef, &mesh.ValidateTargetRefOpts{
+				mesh.ValidateTargetRef(filter.RequestMirror.BackendRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
 						common_api.MeshExternalService,
@@ -356,7 +356,7 @@ func validateBackendRefs(backendRefs []BackendRef) validators.ValidationError {
 	for i, backendRef := range backendRefs {
 		errs.AddErrorAt(
 			validators.Root().Index(i),
-			mesh.ValidateTargetRef(backendRef.TargetRef, &mesh.ValidateTargetRefOpts{
+			mesh.ValidateTargetRef(backendRef.CommonBackendRef().ToTargetRef(), &mesh.ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.MeshService,
 					common_api.MeshExternalService,
