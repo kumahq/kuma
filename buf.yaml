@@ -11,5 +11,5 @@ lint:
 deps:
   - buf.build/googleapis/googleapis:72c8614f3bd0466ea67931ef2c43d608 # main
   - buf.build/envoyproxy/protoc-gen-validate:daf171c6cdb54629b5f51e345a79e4dd # v1.2.1
-  - buf.build/envoyproxy/envoy:d939ad7a9f30490c81fafe49844c4007 # v1.39.0
+  - buf.build/envoyproxy/envoy:c5bbaf99f1354d62be146c1bd58c8bbb # v1.38.0
   - buf.build/cncf/xds:373284492eb241aeaff806189696d127 # main
