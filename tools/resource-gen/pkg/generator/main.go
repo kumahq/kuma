@@ -27,7 +27,9 @@ import (
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	commontemplate "github.com/kumahq/kuma/v3/tools/common/template"
 	"github.com/kumahq/kuma/v3/tools/common/types"
 	. "github.com/kumahq/kuma/v3/tools/resource-gen/genutils"
@@ -457,6 +459,7 @@ var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeFor[v1alpha1.DataplaneOverview](),
 	reflect.TypeFor[v1alpha1.MeshOverview](),
 	reflect.TypeFor[system_proto.Zone](),
+	reflect.TypeFor[system_proto.ZoneOverview](),
 }
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
@@ -471,9 +474,17 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		}
 		schemaMap := jsonschema.NewProperties()
 		schemaMap.Set("type", &jsonschema.Schema{Type: "string"})
-		schemaMap.Set("name", &jsonschema.Schema{Type: "string"})
+		schemaMap.Set("name", &jsonschema.Schema{
+			Type:      "string",
+			Pattern:   core_mesh.NamePattern,
+			MaxLength: pointer.To[uint64](core_mesh.MaxNameLength),
+		})
 		if !r.Global {
-			schemaMap.Set("mesh", &jsonschema.Schema{Type: "string"})
+			schemaMap.Set("mesh", &jsonschema.Schema{
+				Type:      "string",
+				Pattern:   core_mesh.MeshNamePattern,
+				MaxLength: pointer.To[uint64](core_mesh.MaxNameLength),
+			})
 		}
 		schemaMap.Set("labels", &jsonschema.Schema{Type: "object", AdditionalProperties: &jsonschema.Schema{Type: "string"}})
 		// kri is only emitted at runtime for resources that have a ShortName

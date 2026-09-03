@@ -61,6 +61,8 @@ components:
             type: string
           type: object
         mesh:
+          maxLength: 253
+          pattern: ^[0-9a-z-_.]*$
           type: string
         modificationTime:
           description: Time at which the resource was updated
@@ -68,6 +70,8 @@ components:
           readOnly: true
           type: string
         name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
         networking:
           description: |-

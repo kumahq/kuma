@@ -60,10 +60,16 @@ components:
           type: string
           example: default
           description: the mesh this resource is part of
+          # keep in sync with core_mesh.MeshNamePattern / MaxNameLength
+          pattern: '^[0-9a-z-_.]*$'
+          maxLength: 253
         name:
           type: string
           example: my-resource
           description: the name of the resource
+          # keep in sync with core_mesh.NamePattern / MaxNameLength
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
         kri:
           type: string
           readOnly: true

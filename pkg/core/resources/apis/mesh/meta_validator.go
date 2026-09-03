@@ -1,19 +1,32 @@
 package mesh
 
 import (
+	"fmt"
 	"regexp"
 
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
+const (
+	// NamePattern is the pattern every resource name must match. Exported so the
+	// OpenAPI specs advertise the same constraint the API enforces.
+	NamePattern = `^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`
+	// MeshNamePattern is laxer than NamePattern: a Mesh created before the
+	// stricter rule may still contain '_', and mesh-scoped resources have to keep
+	// referring to it.
+	MeshNamePattern = `^[0-9a-z-_.]*$`
+	// MaxNameLength is the maximum length of a resource name or mesh reference.
+	MaxNameLength = 253
+)
+
 var (
-	backwardCompatRegexp = regexp.MustCompile(`^[0-9a-z-_.]*$`)
+	backwardCompatRegexp = regexp.MustCompile(MeshNamePattern)
 	backwardCompatErrMsg = "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_', '.' symbols."
 )
 
 var (
-	identifierRegexp = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
+	identifierRegexp = regexp.MustCompile(NamePattern)
 	identifierErrMsg = "invalid characters. A lowercase RFC 1123 subdomain must consist of lower case alphanumeric " +
 		"characters, '-' or '.', and must start and end with an alphanumeric character"
 )
@@ -41,8 +54,8 @@ func validateIdentifier(identifier string, r *regexp.Regexp, errMsg string) vali
 	switch {
 	case identifier == "":
 		err.AddViolation("", "cannot be empty")
-	case len(identifier) > 253:
-		err.AddViolation("", "value length must less or equal 253")
+	case len(identifier) > MaxNameLength:
+		err.AddViolation("", fmt.Sprintf("value length must less or equal %d", MaxNameLength))
 	case !r.MatchString(identifier):
 		err.AddViolation("", errMsg)
 	}

@@ -3,7 +3,7 @@ info:
   title: Kuma API
   description: Kuma API
   version: v1alpha1
-  x-ref-schema-name: MeshOverview
+  x-ref-schema-name: ZoneOverview
 security:
   - BasicAuth: []
   - BearerAuth: []
@@ -2919,6 +2919,33 @@ paths:
       summary: Creates or Updates Secret entity
       tags:
         - Secret
+  /zones/{name}/_overview:
+    get:
+      operationId: getZoneOverview
+      parameters:
+        - in: path
+          name: name
+          required: true
+          description: The name of the zone to get the overview for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetZoneOverviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /zones/_overview:
+    get:
+      operationId: getZoneOverviewList
+      responses:
+        '200':
+          $ref: '#/components/responses/GetZoneOverviewListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /hostnamegenerators/{name}:
     get:
       operationId: getHostnameGenerator
@@ -4558,10 +4585,14 @@ components:
           type: string
           example: default
           description: the mesh this resource is part of
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         name:
           type: string
           example: my-resource
           description: the name of the resource
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         kri:
           type: string
           readOnly: true
@@ -5057,6 +5088,8 @@ components:
             type: string
           type: object
         mesh:
+          maxLength: 253
+          pattern: ^[0-9a-z-_.]*$
           type: string
         modificationTime:
           description: Time at which the resource was updated
@@ -5064,6 +5097,8 @@ components:
           readOnly: true
           type: string
         name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
         networking:
           description: >-
@@ -5526,6 +5561,8 @@ components:
           readOnly: true
           type: string
         name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
         skipCreatingInitialPolicies:
           description: >-
@@ -5568,6 +5605,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -5579,6 +5618,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -6223,6 +6264,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -6234,6 +6277,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -7309,6 +7354,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -7320,6 +7367,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -7720,6 +7769,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -7731,6 +7782,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -8655,6 +8708,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -8666,6 +8721,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -9057,6 +9114,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -9068,6 +9127,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -9621,6 +9682,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -9632,6 +9695,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -9987,6 +10052,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -9998,6 +10065,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -10139,6 +10208,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -10150,6 +10221,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -10826,6 +10899,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -10837,6 +10912,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -11299,6 +11376,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -11310,6 +11389,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -11883,6 +11964,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -11894,6 +11977,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -12102,6 +12187,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -12113,6 +12200,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -12260,6 +12349,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -12271,6 +12362,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -12631,6 +12724,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -12642,6 +12737,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -13017,6 +13114,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -13028,6 +13127,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -14168,6 +14269,8 @@ components:
             type: string
           type: object
         mesh:
+          maxLength: 253
+          pattern: ^[0-9a-z-_.]*$
           type: string
         modificationTime:
           description: Time at which the resource was updated
@@ -14175,6 +14278,8 @@ components:
           readOnly: true
           type: string
         name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
         type:
           type: string
@@ -14182,6 +14287,258 @@ components:
         - type
         - name
         - mesh
+      type: object
+    ZoneOverviewWithMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - $ref: '#/components/schemas/ZoneOverview'
+    ZoneOverview:
+      description: ZoneOverview defines the projected state of a Zone.
+      properties:
+        zone:
+          properties:
+            enabled:
+              description: >-
+                enable allows to turn the zone on/off and exclude the whole zone
+                from
+
+                balancing traffic on it
+              type: boolean
+          type: object
+        zoneInsight:
+          properties:
+            envoyAdminStreams:
+              description: |-
+                Statistics about Envoy Admin Streams
+                Deprecated: use kds_streams instead.
+              properties:
+                clustersGlobalInstanceId:
+                  description: Global instance ID that handles Clusters streams.
+                  type: string
+                configDumpGlobalInstanceId:
+                  description: Global instance ID that handles XDS Config Dump streams.
+                  type: string
+                statsGlobalInstanceId:
+                  description: Global instance ID that handles Stats streams.
+                  type: string
+              type: object
+            healthCheck:
+              properties:
+                time:
+                  description: Time last health check received
+                  properties:
+                    nanos:
+                      type: integer
+                    seconds:
+                      type: integer
+                  type: object
+              type: object
+            kdsStreams:
+              description: >-
+                Information about kds streams that are estabilished between
+                global and zone
+              properties:
+                clusters:
+                  description: Details of stream that handles Clusters stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                configDump:
+                  description: Details of stream that handles XDS Config Dump stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                globalToZone:
+                  description: >-
+                    Details of stream that handles global to zone resource sync
+                    stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                stats:
+                  description: Details of stream that handles Stats stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                zoneToGlobal:
+                  description: >-
+                    Details of stream that handles zone to global resource sync
+                    stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+              type: object
+            subscriptions:
+              description: List of KDS subscriptions created by a given Zone Kuma CP.
+              items:
+                description: >-
+                  KDSSubscription describes a single KDS subscription created by
+                  a Zone to the Global.
+                properties:
+                  authTokenProvided:
+                    description: Indicates if subscription provided auth token
+                    type: boolean
+                  config:
+                    description: Config of Zone Kuma CP
+                    type: string
+                  connectTime:
+                    description: Time when a given Zone connected to the Global.
+                    properties:
+                      nanos:
+                        type: integer
+                      seconds:
+                        type: integer
+                    type: object
+                  disconnectTime:
+                    description: Time when a given Zone disconnected from the Global.
+                    properties:
+                      nanos:
+                        type: integer
+                      seconds:
+                        type: integer
+                    type: object
+                  generation:
+                    description: >-
+                      Generation is an integer number which is periodically
+                      increased by the
+
+                      status sink
+                    type: integer
+                  globalInstanceId:
+                    description: Global CP instance that handled given subscription.
+                    type: string
+                  id:
+                    description: Unique id per KDS subscription.
+                    type: string
+                  status:
+                    description: Status of the KDS subscription.
+                    properties:
+                      lastUpdateTime:
+                        description: >-
+                          Time when status of a given KDS subscription was most
+                          recently updated.
+                        properties:
+                          nanos:
+                            type: integer
+                          seconds:
+                            type: integer
+                        type: object
+                      stat:
+                        additionalProperties:
+                          description: >-
+                            DiscoveryServiceStats defines all stats over a
+                            single xDS service.
+                          properties:
+                            responsesAcknowledged:
+                              description: Number of xDS responses ACKed by the Dataplane.
+                              type: integer
+                            responsesRejected:
+                              description: Number of xDS responses NACKed by the Dataplane.
+                              type: integer
+                            responsesSent:
+                              description: Number of xDS responses sent to the Dataplane.
+                              type: integer
+                          type: object
+                        type: object
+                      total:
+                        description: Total defines an aggregate over individual KDS stats.
+                        properties:
+                          responsesAcknowledged:
+                            description: Number of xDS responses ACKed by the Dataplane.
+                            type: integer
+                          responsesRejected:
+                            description: Number of xDS responses NACKed by the Dataplane.
+                            type: integer
+                          responsesSent:
+                            description: Number of xDS responses sent to the Dataplane.
+                            type: integer
+                        type: object
+                    type: object
+                  version:
+                    description: Version of Zone Kuma CP.
+                    properties:
+                      kumaCp:
+                        description: Version of Zone Kuma CP
+                        properties:
+                          buildDate:
+                            description: Build date of Kuma ControlPlane version
+                            type: string
+                          gitCommit:
+                            description: Git commit of Kuma ControlPlane version
+                            type: string
+                          gitTag:
+                            description: Git tag of Kuma ControlPlane version
+                            type: string
+                          kumaCpGlobalCompatible:
+                            description: >-
+                              True iff this Zone CP version is compatible with
+                              Global CP
+                            type: boolean
+                          version:
+                            description: Version number of Kuma ControlPlane
+                            type: string
+                        type: object
+                    type: object
+                  zoneInstanceId:
+                    description: >-
+                      Zone CP instance that handled the given subscription (This
+                      is the leader at
+
+                      time of connection).
+                    type: string
+                type: object
+              type: array
+          type: object
       type: object
     HostnameGeneratorItem:
       type: object
@@ -14212,6 +14569,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -14297,6 +14656,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -14331,6 +14692,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -14793,6 +15156,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -14804,6 +15169,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -15106,6 +15473,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -15140,6 +15509,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -15396,6 +15767,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -15407,6 +15780,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -15639,6 +16014,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -15673,6 +16050,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -15910,6 +16289,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -15921,6 +16302,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -16013,6 +16396,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -16024,6 +16409,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -16084,6 +16471,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -16095,6 +16484,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -17189,6 +17580,28 @@ components:
                 type: number
             type: object
       description: List
+    GetZoneOverviewResponse:
+      description: A response containing the overview of a zone.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneOverviewWithMeta'
+    GetZoneOverviewListResponse:
+      description: A response containing a list of zone overviews.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 200
+              next:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ZoneOverviewWithMeta'
     HostnameGeneratorItem:
       description: Successful response
       content:
