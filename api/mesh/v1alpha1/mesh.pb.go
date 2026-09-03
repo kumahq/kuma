@@ -74,11 +74,11 @@ var File_api_mesh_v1alpha1_mesh_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_mesh_proto_rawDesc = "" +
 	"\n" +
-	"\x1capi/mesh/v1alpha1/mesh.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\"\x8c\x02\n" +
+	"\x1capi/mesh/v1alpha1/mesh.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\"\x8f\x02\n" +
 	"\x04Mesh\x12@\n" +
-	"\x1bskipCreatingInitialPolicies\x18\b \x03(\tR\x1bskipCreatingInitialPolicies:O\xaa\x8c\x89\xa6\x01I\n" +
+	"\x1bskipCreatingInitialPolicies\x18\b \x03(\tR\x1bskipCreatingInitialPolicies:R\xaa\x8c\x89\xa6\x01L\n" +
 	"\fMeshResource\x12\x04Mesh\x18\x01\"\x04mesh:\x0e\n" +
-	"\x04mesh\x12\x06meshesR\x17model.GlobalToZonesFlag\x9a\x01\x01mJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\x06\x10\aJ\x04\b\a\x10\bJ\x04\b\t\x10\n" +
+	"\x04mesh\x12\x06meshesR\x17model.GlobalToZonesFlag\x90\x01\x01\x9a\x01\x01mJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\x06\x10\aJ\x04\b\a\x10\bJ\x04\b\t\x10\n" +
 	"R\x04mtlsR\atracingR\aloggingR\ametricsR\n" +
 	"networkingR\aroutingR\vconstraintsB-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
 

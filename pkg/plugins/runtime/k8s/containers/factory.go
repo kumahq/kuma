@@ -34,7 +34,6 @@ type DataplaneProxyFactory struct {
 	ContainerConfig           runtime_k8s.DataplaneContainer
 	BuiltinDNS                runtime_k8s.BuiltinDNS
 	WaitForDataplane          bool
-	envoyAdminUnixSocket      bool
 	sidecarContainersEnabled  bool
 	applicationProbeProxyPort uint32
 	otelPipeEnabled           bool
@@ -49,7 +48,6 @@ func NewDataplaneProxyFactory(
 	containerConfig runtime_k8s.DataplaneContainer,
 	builtinDNS runtime_k8s.BuiltinDNS,
 	waitForDataplane bool,
-	envoyAdminUnixSocket bool,
 	sidecarContainersEnabled bool,
 	applicationProbeProxyPort uint32,
 	otelPipeEnabled bool,
@@ -63,7 +61,6 @@ func NewDataplaneProxyFactory(
 		ContainerConfig:           containerConfig,
 		BuiltinDNS:                builtinDNS,
 		WaitForDataplane:          waitForDataplane,
-		envoyAdminUnixSocket:      envoyAdminUnixSocket,
 		sidecarContainersEnabled:  sidecarContainersEnabled,
 		applicationProbeProxyPort: applicationProbeProxyPort,
 		otelPipeEnabled:           otelPipeEnabled,
@@ -124,21 +121,11 @@ func (i *DataplaneProxyFactory) NewContainer(
 		return kube_core.Container{}, err
 	}
 
-	adminPort, err := i.envoyAdminPort(annotations)
-	if err != nil {
+	if _, err := i.envoyAdminPort(annotations); err != nil {
 		return kube_core.Container{}, err
 	}
-	if adminPort == 0 {
-		adminPort = i.DefaultAdminPort
-	}
 
-	// When admin UDS is enabled, Envoy admin listens on a Unix socket
-	// instead of TCP. Use the dedicated readiness port for probes since
-	// K8s probes only support TCP/HTTP.
-	probePort := adminPort
-	if i.envoyAdminUnixSocket {
-		probePort = i.DefaultReadinessPort
-	}
+	probePort := i.DefaultReadinessPort
 
 	waitForDataplaneReady, _, err := metadata.Annotations(annotations).GetEnabledWithDefault(i.WaitForDataplane, metadata.KumaWaitForDataplaneReady)
 	if err != nil {
@@ -285,6 +272,10 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		"KUMA_CONTROL_PLANE_CA_CERT": {
 			Name:  "KUMA_CONTROL_PLANE_CA_CERT",
 			Value: i.ControlPlaneCACert,
+		},
+		"KUMA_READINESS_PORT": {
+			Name:  "KUMA_READINESS_PORT",
+			Value: strconv.Itoa(int(i.DefaultReadinessPort)),
 		},
 	}
 	if i.BuiltinDNS.Enabled {

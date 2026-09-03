@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -26,18 +27,35 @@ const (
 	dnsConfigGateTimeout = 15 * time.Second
 )
 
+// EnvoyAdmin locates the Envoy admin interface. SocketPath is set when admin
+// runs over a Unix domain socket, otherwise Address and Port are.
+type EnvoyAdmin struct {
+	SocketPath string
+	Address    string
+	Port       uint32
+}
+
+func (e EnvoyAdmin) configured() bool {
+	return e.SocketPath != "" || e.Port != 0
+}
+
+func (e EnvoyAdmin) readyURL() string {
+	if e.SocketPath != "" {
+		return "http://localhost/ready"
+	}
+	return "http://" + net.JoinHostPort(e.Address, strconv.Itoa(int(e.Port))) + "/ready"
+}
+
 // Reporter reports the health status of this Kuma Dataplane Proxy.
-// The listener serves only /ready. When adminSocketPath is set, /ready is
-// proxied to Envoy admin over the Unix domain socket so the pod is marked
-// ready only after Envoy has its config. No other Envoy admin endpoint is
-// exposed on this listener: the readiness port is reachable over the pod
-// network (K8s probes), so proxying admin here would expose config_dump,
-// certs, logging, etc. to any co-located or pod-network peer. Admin stays
-// on the UDS, which is not reachable over the pod network.
+// The listener serves only /ready, which is proxied to Envoy admin so the pod
+// is marked ready only after Envoy has its config. No other Envoy admin
+// endpoint is exposed on this listener: the readiness port is reachable over
+// the pod network (K8s probes), so proxying admin here would expose
+// config_dump, certs, logging, etc. to any co-located or pod-network peer.
 type Reporter struct {
 	localListenAddr string
 	localListenPort uint32
-	adminSocketPath string
+	envoyAdmin      EnvoyAdmin
 	adminClient     *http.Client
 	isTerminating   atomic.Bool
 	// dnsConfigReady, when non-nil, blocks /ready until the DNS proxy has
@@ -50,24 +68,24 @@ type Reporter struct {
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(localIPAddr string, localListenPort uint32, adminSocketPath string, dnsConfigReady <-chan struct{}) *Reporter {
+func NewReporter(localIPAddr string, localListenPort uint32, envoyAdmin EnvoyAdmin, dnsConfigReady <-chan struct{}) *Reporter {
 	var deadline time.Time
 	if dnsConfigReady != nil {
 		deadline = time.Now().Add(dnsConfigGateTimeout)
 	}
-	return newReporterWithDeadline(localIPAddr, localListenPort, adminSocketPath, dnsConfigReady, deadline)
+	return newReporterWithDeadline(localIPAddr, localListenPort, envoyAdmin, dnsConfigReady, deadline)
 }
 
-func newReporterWithDeadline(localIPAddr string, localListenPort uint32, adminSocketPath string, dnsConfigReady <-chan struct{}, dnsConfigDeadline time.Time) *Reporter {
+func newReporterWithDeadline(localIPAddr string, localListenPort uint32, envoyAdmin EnvoyAdmin, dnsConfigReady <-chan struct{}, dnsConfigDeadline time.Time) *Reporter {
 	r := &Reporter{
 		localListenPort:   localListenPort,
 		localListenAddr:   localIPAddr,
-		adminSocketPath:   adminSocketPath,
+		envoyAdmin:        envoyAdmin,
 		dnsConfigReady:    dnsConfigReady,
 		dnsConfigDeadline: dnsConfigDeadline,
 	}
-	if adminSocketPath != "" {
-		c := httpclient.NewUDS(adminSocketPath, 2*time.Second, 3*time.Second)
+	if envoyAdmin.configured() {
+		c := httpclient.NewTCPOrUDS(envoyAdmin.SocketPath, 2*time.Second, 3*time.Second)
 		r.adminClient = &c
 	}
 	return r
@@ -157,9 +175,9 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 		}
 	}
 
-	// When admin is on UDS, proxy /ready to Envoy admin so that
-	// the pod is only marked ready after Envoy receives its config.
-	if r.adminSocketPath != "" {
+	// Proxy /ready to Envoy admin so that the pod is only marked ready
+	// after Envoy receives its config.
+	if r.envoyAdmin.configured() {
 		r.proxyAdminReady(writer)
 		return
 	}
@@ -182,13 +200,13 @@ func (r *Reporter) writeState(writer http.ResponseWriter, req *http.Request, sta
 }
 
 func (r *Reporter) proxyAdminReady(writer http.ResponseWriter) {
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost/ready", http.NoBody)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, r.envoyAdmin.readyURL(), http.NoBody)
 	if err != nil {
 		logger.Info("envoy admin not ready", "err", err)
 		http.Error(writer, "envoy not ready", http.StatusServiceUnavailable)
 		return
 	}
-	resp, err := r.adminClient.Do(req) // #nosec G704 -- constant localhost /ready URL over the fixed Envoy admin UDS client
+	resp, err := r.adminClient.Do(req) // #nosec G704 -- fixed /ready URL on the Envoy admin endpoint from bootstrap
 	if err != nil {
 		logger.Info("envoy admin not ready", "err", err)
 		http.Error(writer, "envoy not ready", http.StatusServiceUnavailable)
