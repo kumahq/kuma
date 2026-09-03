@@ -6,7 +6,6 @@ import (
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	admissionv1 "k8s.io/api/admission/v1"
 	v1 "k8s.io/api/authentication/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -15,19 +14,12 @@ import (
 
 	"github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
-	k8s_common "github.com/kumahq/kuma/v2/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	k8s_resources "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("Defaulter", func() {
-	var converter k8s_common.Converter
-
-	BeforeEach(func() {
-		converter = k8s_resources.NewSimpleConverter()
-	})
-
 	type testCase struct {
 		inputObject string
 		expected    string
@@ -61,22 +53,22 @@ var _ = Describe("Defaulter", func() {
 
 	DescribeTable("should apply defaults on a target object",
 		func(given testCase) {
-			// given
+			// given - in production both the converter and the checker read the system
+			// namespace from the same config, so they always agree
+			converter := k8s_resources.NewSimpleConverter(given.checker.SystemNamespace)
 			handler := DefaultingWebhookFor(scheme, converter, given.checker)
 
 			req := kube_admission.Request{
-				AdmissionRequest: admissionv1.AdmissionRequest{
-					Namespace: "kuma-system",
-					UID:       kube_types.UID("12345"),
-					Object: kube_runtime.RawExtension{
-						Raw: []byte(given.inputObject),
-					},
-					Kind: kube_meta.GroupVersionKind{
-						Kind: given.kind,
-					},
-					UserInfo: v1.UserInfo{
-						Username: given.username,
-					},
+				Namespace: "kuma-system",
+				UID:       kube_types.UID("12345"),
+				Object: kube_runtime.RawExtension{
+					Raw: []byte(given.inputObject),
+				},
+				Kind: kube_meta.GroupVersionKind{
+					Kind: given.kind,
+				},
+				UserInfo: v1.UserInfo{
+					Username: given.username,
 				},
 			}
 
@@ -126,6 +118,9 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
+				"labels": {
+				  "kuma.io/origin": "global"
+				},
 				"annotations": {
 				  "kuma.io/display-name": "empty"
 				}
@@ -180,6 +175,9 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
+				"labels": {
+				  "kuma.io/origin": "global"
+				},
 				"annotations": {
 				  "kuma.io/display-name": "empty"
 				}
@@ -230,6 +228,7 @@ var _ = Describe("Defaulter", func() {
                 "name": "empty",
                 "labels": {
                   "kuma.io/mesh": "my-mesh-1",
+                  "kuma.io/origin": "global",
                   "k8s.kuma.io/namespace": "example"
                 },
                 "annotations": {
@@ -334,7 +333,7 @@ var _ = Describe("Defaulter", func() {
             }
 `,
 		}),
-		Entry("should not set zone label when origin is set to global, federated zone", testCase{
+		Entry("should overwrite user-set origin=global on a federated zone", testCase{
 			checker: zoneChecker(true, false),
 			kind:    string(v1alpha1.MeshTrafficPermissionType),
 			inputObject: `
@@ -363,8 +362,59 @@ var _ = Describe("Defaulter", func() {
                 "namespace": "example",
                 "name": "empty",
                 "labels": {
+                  "kuma.io/origin": "zone",
+                  "kuma.io/env": "kubernetes",
                   "kuma.io/mesh": "default",
+                  "kuma.io/policy-role": "workload-owner",
+                  "kuma.io/zone": "zone-1",
+                  "k8s.kuma.io/namespace": "example"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
+                }
+              },
+              "spec": {
+                "targetRef": {
+                  "kind": "Mesh"
+                }
+              }
+            }
+`,
+		}),
+		Entry("should not recompute labels of a resource synced from Global, federated zone", testCase{
+			checker: zoneChecker(true, false),
+			kind:    string(v1alpha1.MeshTrafficPermissionType),
+			// resources with 'origin: global' can only be created by the CP itself (KDS sync)
+			username: "system:serviceaccount:kuma-system:kuma-control-plane",
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "labels": {
                   "kuma.io/origin": "global"
+                }
+              },
+              "spec": {
+                "targetRef": {
+                  "kind": "Mesh"
+                }
+              }
+            }
+`,
+			expected: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "labels": {
+                  "kuma.io/origin": "global",
+                  "k8s.kuma.io/namespace": "example",
+                  "kuma.io/policy-role": "workload-owner"
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"
@@ -485,7 +535,7 @@ var _ = Describe("Defaulter", func() {
               }
             }`,
 		}),
-		Entry("should not add origin label on Global", testCase{
+		Entry("should add origin=global label on Global", testCase{
 			checker: globalChecker(),
 			kind:    string(v1alpha1.MeshTrafficPermissionType),
 			inputObject: `
@@ -514,6 +564,7 @@ var _ = Describe("Defaulter", func() {
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
+                  "kuma.io/origin": "global",
                   "kuma.io/policy-role": "workload-owner"
                 },
                 "annotations": {

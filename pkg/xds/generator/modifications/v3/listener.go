@@ -35,7 +35,7 @@ func (l *listenerModificator) apply(resources *core_xds.ResourceSet) error {
 func (l *listenerModificator) patch(resources *core_xds.ResourceSet, listenerPatch *envoy_listener.Listener) {
 	for _, listener := range resources.Resources(envoy_resource.ListenerType) {
 		if l.listenerMatches(listener) {
-			util_proto.Merge(listener.Resource, listenerPatch)
+			util_proto.Merge(listener.Resource, listenerPatch, util_proto.ReplaceDurationOptionFn)
 		}
 	}
 }

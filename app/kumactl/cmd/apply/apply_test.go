@@ -416,7 +416,7 @@ mesh: default
 networking:
   inbound: 0 # should be a string
 `,
-			err: `resource[0]: failed to parse resource: invalid Dataplane object: "error unmarshaling JSON: while decoding JSON: json: cannot unmarshal number into Go value of type []json.RawMessage"`,
+			err: `resource[0]: failed to parse resource: invalid Dataplane object: "error unmarshaling JSON: while decoding JSON: json: cannot unmarshal number into Go value of type []jsontext.Value"`,
 		}),
 		Entry("no resource", testCase{
 			resource: ``,

@@ -156,11 +156,9 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// when
 		res := &rest_v1alpha1.Resource{
-			ResourceMeta: rest_v1alpha1.ResourceMeta{
-				Name: "mtp-1",
-				Mesh: mesh,
-				Type: string(v1alpha1.MeshTrafficPermissionType),
-			},
+			Name: "mtp-1",
+			Mesh: mesh,
+			Type: string(v1alpha1.MeshTrafficPermissionType),
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
 				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
@@ -184,14 +182,12 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// when
 		res := &rest_v1alpha1.Resource{
-			ResourceMeta: rest_v1alpha1.ResourceMeta{
-				Name: "mtp-1",
-				Mesh: mesh,
-				Type: string(v1alpha1.MeshTrafficPermissionType),
-				Labels: map[string]string{
-					mesh_proto.MeshTag:             "some-other-mesh",
-					mesh_proto.ResourceOriginLabel: "zone",
-				},
+			Name: "mtp-1",
+			Mesh: mesh,
+			Type: string(v1alpha1.MeshTrafficPermissionType),
+			Labels: map[string]string{
+				mesh_proto.MeshTag:             "some-other-mesh",
+				mesh_proto.ResourceOriginLabel: "zone",
 			},
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
@@ -216,14 +212,12 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// when
 		res := &rest_v1alpha1.Resource{
-			ResourceMeta: rest_v1alpha1.ResourceMeta{
-				Name: "mtp-1",
-				Mesh: mesh,
-				Type: string(v1alpha1.MeshTrafficPermissionType),
-				Labels: map[string]string{
-					mesh_proto.MeshTag:             mesh,
-					mesh_proto.ResourceOriginLabel: "zone",
-				},
+			Name: "mtp-1",
+			Mesh: mesh,
+			Type: string(v1alpha1.MeshTrafficPermissionType),
+			Labels: map[string]string{
+				mesh_proto.MeshTag:             mesh,
+				mesh_proto.ResourceOriginLabel: "zone",
 			},
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
@@ -250,11 +244,9 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 			// when
 			res := &rest_v1alpha1.Resource{
-				ResourceMeta: rest_v1alpha1.ResourceMeta{
-					Name: "mtp-1",
-					Mesh: mesh,
-					Type: string(v1alpha1.MeshTrafficPermissionType),
-				},
+				Name: "mtp-1",
+				Mesh: mesh,
+				Type: string(v1alpha1.MeshTrafficPermissionType),
 				Spec: builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMesh()).
 					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
@@ -273,6 +265,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 				mesh_proto.ZoneTag:             zone,
 				mesh_proto.MeshTag:             mesh,
 				mesh_proto.EnvTag:              "universal",
+				mesh_proto.DisplayName:         "mtp-1",
 			}))
 		},
 		Entry("non-federated zone", false),
@@ -313,6 +306,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
 			mesh_proto.ProxyTypeLabel:      string(mesh_proto.SidecarLabel),
+			mesh_proto.DisplayName:         "dpp-1",
 		}))
 	})
 
@@ -337,11 +331,9 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// when: PUT a MeshTrafficPermission - Get will fail with non-NotFound error
 		res := &rest_v1alpha1.Resource{
-			ResourceMeta: rest_v1alpha1.ResourceMeta{
-				Name: "mtp-err",
-				Mesh: mesh,
-				Type: string(v1alpha1.MeshTrafficPermissionType),
-			},
+			Name: "mtp-err",
+			Mesh: mesh,
+			Type: string(v1alpha1.MeshTrafficPermissionType),
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
 				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
@@ -363,13 +355,11 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// when
 		res := &rest_v1alpha1.Resource{
-			ResourceMeta: rest_v1alpha1.ResourceMeta{
-				Name: name,
-				Mesh: mesh,
-				Type: string(meshexternalservice_api.MeshExternalServiceType),
-				Labels: map[string]string{
-					"kuma.io/origin": "zone",
-				},
+			Name: name,
+			Mesh: mesh,
+			Type: string(meshexternalservice_api.MeshExternalServiceType),
+			Labels: map[string]string{
+				"kuma.io/origin": "zone",
 			},
 			Spec: &meshexternalservice_api.MeshExternalService{
 				Match: meshexternalservice_api.Match{
@@ -398,6 +388,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.ZoneTag:             "default",
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
+			mesh_proto.DisplayName:         "ext-svc",
 		}))
 
 		// after update it should have computed labels
@@ -414,6 +405,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.ZoneTag:             "default",
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
+			mesh_proto.DisplayName:         "ext-svc",
 		}))
 	})
 })

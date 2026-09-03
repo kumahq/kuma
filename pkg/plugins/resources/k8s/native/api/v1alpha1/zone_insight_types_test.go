@@ -21,7 +21,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -51,9 +50,7 @@ var _ = Describe("ZoneInsight", func() {
 				Name: "foo",
 			}
 			created = &v1alpha1.ZoneInsight{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "foo",
-				},
+				Name: "foo",
 			}
 
 			By("creating an API obj")

@@ -9,6 +9,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshzoneaddress_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/xds/topology"
 )
 
@@ -54,6 +55,52 @@ var _ = Describe("Resolve Dataplane address", func() {
 			// and original DP is not modified
 			Expect(dp.Spec.Networking.Address).To(Equal("example.com"))
 			Expect(dp.Spec.Networking.AdvertisedAddress).To(Equal("advertise.example.com"))
+		})
+	})
+
+	Context("ResolveMeshZoneAddressPublicAddress", func() {
+		It("should resolve if address is a domain name", func() {
+			// given
+			mza := &meshzoneaddress_api.MeshZoneAddressResource{
+				Spec: &meshzoneaddress_api.MeshZoneAddress{Address: "example.com", Port: 10001},
+			}
+
+			// when
+			resolvedMza, err := topology.ResolveMeshZoneAddressPublicAddress(lif, mza)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resolvedMza.Spec.Address).To(Equal("192.168.0.1"))
+			Expect(resolvedMza.Spec.Port).To(Equal(int32(10001)))
+			// and original MeshZoneAddress is not modified
+			Expect(mza.Spec.Address).To(Equal("example.com"))
+		})
+
+		It("should keep the address as is when it's already an IP", func() {
+			// given
+			mza := &meshzoneaddress_api.MeshZoneAddressResource{
+				Spec: &meshzoneaddress_api.MeshZoneAddress{Address: "192.168.0.1", Port: 10001},
+			}
+
+			// when
+			resolvedMza, err := topology.ResolveMeshZoneAddressPublicAddress(lif, mza)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resolvedMza).To(BeIdenticalTo(mza))
+		})
+
+		It("should return an error if the domain name can't be resolved", func() {
+			// given
+			mza := &meshzoneaddress_api.MeshZoneAddressResource{
+				Spec: &meshzoneaddress_api.MeshZoneAddress{Address: "unknown.com", Port: 10001},
+			}
+
+			// when
+			_, err := topology.ResolveMeshZoneAddressPublicAddress(lif, mza)
+
+			// then
+			Expect(err).To(HaveOccurred())
 		})
 	})
 })

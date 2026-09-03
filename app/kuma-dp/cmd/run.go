@@ -417,27 +417,12 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			components = append(components, observabilityComponents...)
 
-			readinessAddr := adminAddress
-			if readinessAddr == "" {
-				// The readiness reporter serves only /ready (see
-				// readiness.Reporter); no Envoy admin endpoint is exposed
-				// here. On Kubernetes the listener must accept probes from
-				// the kubelet (podIP), so we bind wildcard. Outside
-				// Kubernetes we default to loopback. POD_NAME is set by the
-				// sidecar injector.
-				_, inKubernetes := os.LookupEnv("POD_NAME")
-				ipv6 := kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address)
-				switch {
-				case inKubernetes && ipv6:
-					readinessAddr = "::"
-				case inKubernetes:
-					readinessAddr = "0.0.0.0"
-				case ipv6:
-					readinessAddr = "::1"
-				default:
-					readinessAddr = "127.0.0.1"
-				}
-			}
+			_, inKubernetes := os.LookupEnv("POD_NAME")
+			readinessAddr := readinessListenAddr(
+				inKubernetes,
+				kuma_net.IsAddressIPv6(kumaSidecarConfiguration.Networking.Address),
+				adminAddress,
+			)
 			readinessReporter := readiness.NewReporter(
 				readinessAddr,
 				cfg.Dataplane.ReadinessPort,
@@ -559,6 +544,21 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	}
 
 	return cmd
+}
+
+func readinessListenAddr(inKubernetes bool, ipv6 bool, adminAddress string) string {
+	switch {
+	case inKubernetes && ipv6:
+		return "::"
+	case inKubernetes:
+		return "0.0.0.0"
+	case adminAddress != "":
+		return adminAddress
+	case ipv6:
+		return "::1"
+	default:
+		return "127.0.0.1"
+	}
 }
 
 func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfiguration, envoyAdminPort uint32, envoyAdminSocketPath string) []metrics.ApplicationToScrape {

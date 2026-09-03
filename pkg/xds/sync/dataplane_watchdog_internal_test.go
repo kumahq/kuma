@@ -20,10 +20,8 @@ var _ = Describe("DataplaneWatchdog syncOtelStatus", func() {
 		key = core_model.ResourceKey{Mesh: "default", Name: "example-001"}
 		cache = otelstatus.NewCache()
 		watchdog = &DataplaneWatchdog{
-			DataplaneWatchdogDependencies: DataplaneWatchdogDependencies{
-				OtelStatusCache: cache,
-			},
-			key: key,
+			OtelStatusCache: cache,
+			key:             key,
 		}
 	})
 

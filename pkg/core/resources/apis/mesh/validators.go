@@ -153,26 +153,24 @@ func validateTagKeyValues(path validators.PathBuilder, keyValues map[string]stri
 
 var OnlyServiceTagAllowed = ValidateSelectorsOpts{
 	RequireAtLeastOneSelector: true,
-	ValidateTagsOpts: ValidateTagsOpts{
-		RequireService: true,
-		ExtraTagsValidators: []TagsValidatorFunc{
-			func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
-				var err validators.ValidationError
-				_, defined := selector[mesh_proto.ServiceTag]
-				if len(selector) != 1 || !defined {
-					err.AddViolationAt(path, fmt.Sprintf("must consist of exactly one tag %q", mesh_proto.ServiceTag))
-				}
-				return err
-			},
+	RequireService:            true,
+	ExtraTagsValidators: []TagsValidatorFunc{
+		func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
+			var err validators.ValidationError
+			_, defined := selector[mesh_proto.ServiceTag]
+			if len(selector) != 1 || !defined {
+				err.AddViolationAt(path, fmt.Sprintf("must consist of exactly one tag %q", mesh_proto.ServiceTag))
+			}
+			return err
 		},
-		ExtraTagKeyValidators: []TagKeyValidatorFunc{
-			func(path validators.PathBuilder, key string) validators.ValidationError {
-				var err validators.ValidationError
-				if key != mesh_proto.ServiceTag {
-					err.AddViolationAt(path.Key(key), fmt.Sprintf("tag %q is not allowed", key))
-				}
-				return err
-			},
+	},
+	ExtraTagKeyValidators: []TagKeyValidatorFunc{
+		func(path validators.PathBuilder, key string) validators.ValidationError {
+			var err validators.ValidationError
+			if key != mesh_proto.ServiceTag {
+				err.AddViolationAt(path.Key(key), fmt.Sprintf("tag %q is not allowed", key))
+			}
+			return err
 		},
 	},
 }

@@ -14,17 +14,13 @@ func (d *TrafficPermissionResource) Validate() error {
 func (d *TrafficPermissionResource) validateSources() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("sources"), d.Spec.Sources, ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
-		ValidateTagsOpts: ValidateTagsOpts{
-			RequireAtLeastOneTag: true,
-		},
+		RequireAtLeastOneTag:      true,
 	})
 }
 
 func (d *TrafficPermissionResource) validateDestinations() validators.ValidationError {
 	return ValidateSelectors(validators.RootedAt("destinations"), d.Spec.Destinations, ValidateSelectorsOpts{
 		RequireAtLeastOneSelector: true,
-		ValidateTagsOpts: ValidateTagsOpts{
-			RequireAtLeastOneTag: true,
-		},
+		RequireAtLeastOneTag:      true,
 	})
 }

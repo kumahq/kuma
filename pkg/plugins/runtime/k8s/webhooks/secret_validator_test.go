@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admission/v1"
 	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	"sigs.k8s.io/yaml"
@@ -29,10 +28,8 @@ var _ = Describe("ServiceValidator", func() {
 
 	BeforeEach(func() {
 		secret := &kube_core.Secret{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      "secret-in-use",
-				Namespace: "default",
-			},
+			Name:      "secret-in-use",
+			Namespace: "default",
 			Data: map[string][]byte{
 				"value": []byte("dGVzdAo="),
 			},
@@ -42,10 +39,8 @@ var _ = Describe("ServiceValidator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		secret = &kube_core.Secret{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      "secret-not-in-use",
-				Namespace: "default",
-			},
+			Name:      "secret-not-in-use",
+			Namespace: "default",
 			Data: map[string][]byte{
 				"value": []byte("dGVzdAo="),
 			},
@@ -55,12 +50,10 @@ var _ = Describe("ServiceValidator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		secret = &kube_core.Secret{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      "synced-secret",
-				Namespace: "default",
-				Labels: map[string]string{
-					mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
-				},
+			Name:      "synced-secret",
+			Namespace: "default",
+			Labels: map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 			},
 			Data: map[string][]byte{
 				"value": []byte("dGVzdAo="),

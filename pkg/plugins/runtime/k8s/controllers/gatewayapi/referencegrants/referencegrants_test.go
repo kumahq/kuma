@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -30,10 +29,8 @@ const (
 
 var (
 	simplePolicy = gatewayapi.ReferenceGrant{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name:      "basic",
-			Namespace: otherNs,
-		},
+		Name:      "basic",
+		Namespace: otherNs,
 		Spec: gatewayapi.ReferenceGrantSpec{
 			From: []gatewayapi.ReferenceGrantFrom{
 				{

@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -40,7 +39,7 @@ var _ = Describe("Injector", func() {
 	}
 
 	BeforeAll(func() {
-		err := k8sClient.Create(context.Background(), &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: systemNamespace}})
+		err := k8sClient.Create(context.Background(), &kube_core.Namespace{Name: systemNamespace})
 		Expect(err).ToNot(HaveOccurred())
 
 		cPatch := `
@@ -102,7 +101,7 @@ spec:
 				var cfg conf.Injector
 				Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 				cfg.CaCertFile = caCertPath
-				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, sidecarsEnabled, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil, false)
+				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, sidecarsEnabled, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, false, systemNamespace, nil, false)
 				Expect(err).ToNot(HaveOccurred())
 
 				// and create mesh
@@ -897,7 +896,7 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil, false)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, false, systemNamespace, nil, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1003,7 +1002,7 @@ spec:
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil, false)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, false, systemNamespace, nil, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1086,7 +1085,7 @@ spec:
 				"http://kuma-control-plane.kuma-system:5681",
 				k8sClient,
 				false,
-				k8s.NewSimpleConverter(),
+				k8s.NewSimpleConverter("kuma-system"),
 				9901,
 				9902,
 				false,
@@ -1111,11 +1110,9 @@ spec:
 			}
 
 			return &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "zone-proxy",
-					Namespace: "default",
-					Labels:    labels,
-				},
+				Name:      "zone-proxy",
+				Namespace: "default",
+				Labels:    labels,
 				Spec: kube_core.PodSpec{
 					Containers: []kube_core.Container{
 						{Name: "pause", Image: "registry.k8s.io/pause:3.10"},
@@ -1126,12 +1123,10 @@ spec:
 
 		createZoneProxyService := func(namespace string) {
 			svc := &kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "zone-proxy-svc",
-					Namespace: namespace,
-					Labels: map[string]string{
-						metadata.KumaZoneProxyTypeLabel: "ingress",
-					},
+				Name:      "zone-proxy-svc",
+				Namespace: namespace,
+				Labels: map[string]string{
+					metadata.KumaZoneProxyTypeLabel: "ingress",
 				},
 				Spec: kube_core.ServiceSpec{
 					Selector: map[string]string{
@@ -1232,7 +1227,7 @@ metadata:
 			var cfg conf.Injector
 			ExpectWithOffset(1, config.Load(filepath.Join("testdata", "inject.config.yaml"), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
-			inj, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil, deltaXdsEnabled)
+			inj, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, false, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, false, systemNamespace, nil, deltaXdsEnabled)
 			ExpectWithOffset(1, err).ToNot(HaveOccurred())
 			return inj
 		}

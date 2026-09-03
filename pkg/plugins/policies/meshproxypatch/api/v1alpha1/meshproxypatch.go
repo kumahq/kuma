@@ -72,6 +72,14 @@ type ClusterMod struct {
 	// +kubebuilder:validation:Enum=Add;Remove;Patch
 	Operation ModOperation `json:"operation"`
 	// Value of xDS resource in YAML format to add or patch.
+	//
+	// Patch merges the value into the matched cluster, and repeated fields are
+	// appended to what the cluster already has. Circuit breaker thresholds are
+	// the exception: Envoy resolves them by routing priority and ignores every
+	// threshold after the first one of a given priority, so appending would be
+	// dead config. They are merged into the existing threshold with the same
+	// priority instead, and a value listing one priority twice keeps only the
+	// first entry.
 	Value *string `json:"value,omitempty"`
 	// JsonPatches specifies list of jsonpatches to apply to on Envoy's Cluster
 	// resource

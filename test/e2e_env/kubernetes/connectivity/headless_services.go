@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	. "github.com/kumahq/kuma/v2/test/framework"
@@ -49,14 +48,10 @@ func HeadlessServices() {
 
 		// create headless service with port that is not the same as app port
 		headlessSvc := &corev1.Service{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Service",
-				APIVersion: "v1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-server-headless",
-				Namespace: namespace,
-			},
+			Kind:       "Service",
+			APIVersion: "v1",
+			Name:       "test-server-headless",
+			Namespace:  namespace,
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
 					{

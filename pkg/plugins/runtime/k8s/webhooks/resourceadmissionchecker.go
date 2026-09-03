@@ -5,17 +5,24 @@ import (
 	"slices"
 	"strings"
 
-	v1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/version"
 )
+
+// managedIdentityLabels are computed by the control plane from the Pod and feed the
+// SPIFFE ID. kuma.io/workload is excluded: on Universal it is user-set.
+var managedIdentityLabels = []string{
+	metadata.KumaServiceAccount,
+}
 
 type ResourceAdmissionChecker struct {
 	AllowedUsers                 []string
@@ -29,6 +36,10 @@ type ResourceAdmissionChecker struct {
 func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string) admission.Response {
 	if c.isPrivilegedUser(c.AllowedUsers, userInfo) {
 		return admission.Allowed("")
+	}
+
+	if resp := c.validateManagedIdentityLabels(r); resp != nil {
+		return *resp
 	}
 
 	if ns != "" {
@@ -69,6 +80,21 @@ func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns s
 		return nil
 	}
 	return c.validateLabels(r, ns)
+}
+
+// Privileged writers are short-circuited earlier, so any managed label here is user-supplied.
+func (c *ResourceAdmissionChecker) validateManagedIdentityLabels(r core_model.Resource) *admission.Response {
+	if r.Descriptor().Name != core_mesh.DataplaneType {
+		return nil
+	}
+	labels := r.GetMeta().GetLabels()
+	for _, key := range managedIdentityLabels {
+		if _, ok := labels[key]; ok {
+			return forbiddenResponse(fmt.Sprintf(
+				"Operation not allowed. Label %q is managed by %s and cannot be set manually.", key, version.Product))
+		}
+	}
+	return nil
 }
 
 func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userInfo authenticationv1.UserInfo) bool {
@@ -112,20 +138,18 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 
 func (c *ResourceAdmissionChecker) resourceIsNotAllowedResponse() *admission.Response {
 	return &admission.Response{
-		AdmissionResponse: v1.AdmissionResponse{
-			Allowed: false,
-			Result: &metav1.Status{
-				Status:  "Failure",
-				Message: fmt.Sprintf("Operation not allowed. Applying policies on Zone CP on a system namespace requires '%s' label to be set to '%s'.", mesh_proto.ResourceOriginLabel, mesh_proto.ZoneResourceOrigin),
-				Reason:  "Forbidden",
-				Code:    403,
-				Details: &metav1.StatusDetails{
-					Causes: []metav1.StatusCause{
-						{
-							Type:    "FieldValueInvalid",
-							Message: "cannot be empty",
-							Field:   "metadata.labels[kuma.io/origin]",
-						},
+		Allowed: false,
+		Result: &metav1.Status{
+			Status:  "Failure",
+			Message: fmt.Sprintf("Operation not allowed. Applying policies on Zone CP on a system namespace requires '%s' label to be set to '%s'.", mesh_proto.ResourceOriginLabel, mesh_proto.ZoneResourceOrigin),
+			Reason:  "Forbidden",
+			Code:    403,
+			Details: &metav1.StatusDetails{
+				Causes: []metav1.StatusCause{
+					{
+						Type:    "FieldValueInvalid",
+						Message: "cannot be empty",
+						Field:   "metadata.labels[kuma.io/origin]",
 					},
 				},
 			},
@@ -151,14 +175,12 @@ func resourceTypeNotAllowedMsg(resType core_model.ResourceType, mode core.CpMode
 
 func forbiddenResponse(msg string) *admission.Response {
 	return &admission.Response{
-		AdmissionResponse: v1.AdmissionResponse{
-			Allowed: false,
-			Result: &metav1.Status{
-				Status:  "Failure",
-				Message: msg,
-				Reason:  "Forbidden",
-				Code:    403,
-			},
+		Allowed: false,
+		Result: &metav1.Status{
+			Status:  "Failure",
+			Message: msg,
+			Reason:  "Forbidden",
+			Code:    403,
 		},
 	}
 }

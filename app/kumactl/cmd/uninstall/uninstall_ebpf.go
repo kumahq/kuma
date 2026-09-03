@@ -158,10 +158,8 @@ func newUninstallEbpf(root *kumactl_cmd.RootContext) *cobra.Command {
 
 func genJobSpec(jobName, nodeName string, args *ebpfArgs) *batchv1.Job {
 	return &batchv1.Job{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      jobName,
-			Namespace: args.Namespace,
-		},
+		Name:      jobName,
+		Namespace: args.Namespace,
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
@@ -202,10 +200,8 @@ func genJobSpec(jobName, nodeName string, args *ebpfArgs) *batchv1.Job {
 					Volumes: []corev1.Volume{
 						{
 							Name: "bpf-fs-path",
-							VolumeSource: corev1.VolumeSource{
-								HostPath: &corev1.HostPathVolumeSource{
-									Path: args.BPFFsPath,
-								},
+							HostPath: &corev1.HostPathVolumeSource{
+								Path: args.BPFFsPath,
 							},
 						},
 					},

@@ -537,6 +537,7 @@ func (r *resourceEndpoints) createResource(
 		res.GetSpec(),
 		res.GetMeta().GetLabels(),
 		meshName,
+		name,
 		resource_labels.WithNamespace(resource_labels.GetNamespace(res.GetMeta(), r.systemNamespace)),
 		resource_labels.WithMode(r.mode),
 		resource_labels.WithK8s(r.isK8s),
@@ -585,6 +586,7 @@ func (r *resourceEndpoints) updateResource(
 		currentRes.GetSpec(),
 		currentRes.GetMeta().GetLabels(),
 		meshName,
+		currentRes.GetMeta().GetName(),
 		resource_labels.WithNamespace(resource_labels.GetNamespace(currentRes.GetMeta(), r.systemNamespace)),
 		resource_labels.WithMode(r.mode),
 		resource_labels.WithK8s(r.isK8s),
@@ -603,6 +605,7 @@ func (r *resourceEndpoints) updateResource(
 		currentRes.GetSpec(),
 		newResRest.GetMeta().GetLabels(),
 		meshName,
+		currentRes.GetMeta().GetName(),
 		resource_labels.WithNamespace(resource_labels.GetNamespace(newResRest.GetMeta(), r.systemNamespace)),
 		resource_labels.WithMode(r.mode),
 		resource_labels.WithK8s(r.isK8s),
@@ -769,9 +772,7 @@ func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newCo
 	var err validators.ValidationError
 
 	immutableLabels := []string{
-		mesh_proto.ResourceOriginLabel,
 		mesh_proto.ZoneTag,
-		mesh_proto.DisplayName,
 	}
 
 	for _, label := range immutableLabels {
@@ -1393,7 +1394,6 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				return
 			}
 
-			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
 			if len(res.ToRules.Rules) == 0 && len(res.ToRules.ResourceRules) == 0 && len(res.FromRules.Rules) == 0 && len(res.SingleItemRules.Rules) == 0 {
 				continue
 			}
@@ -1425,7 +1425,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			}
 
 			fromRules := []api_common.FromRule{}
-			//nolint:staticcheck // SA1019 REST API backward compatibility: return old Rules format for existing clients
+
 			if len(res.FromRules.Rules) > 0 {
 				for inbound, rulesForInbound := range res.FromRules.Rules {
 					if len(rulesForInbound) == 0 {

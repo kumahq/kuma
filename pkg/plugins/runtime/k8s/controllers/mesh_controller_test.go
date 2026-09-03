@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
-	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -45,7 +44,7 @@ var _ = Describe("MeshReconciler", func() {
 					return []string{string(secret.Type)}
 				}).
 			Build()
-		store, err := k8s.NewStore(kubeClient, k8sClientScheme, k8s.NewSimpleConverter())
+		store, err := k8s.NewStore(kubeClient, k8sClientScheme, k8s.NewSimpleConverter("kuma-system"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// we need to bring in the actual scheme we're using so that the Mesh CRD can be hooked up as owner,
@@ -92,9 +91,7 @@ var _ = Describe("MeshReconciler", func() {
 
 	reconcile := func() {
 		_, err := reconciler.Reconcile(context.Background(), kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{
-				Name: "default",
-			},
+			Name: "default",
 		})
 		Expect(err).ToNot(HaveOccurred())
 	}

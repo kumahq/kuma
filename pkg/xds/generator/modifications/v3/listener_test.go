@@ -311,5 +311,40 @@ var _ = Describe("Listener modifications", func() {
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 		}),
+		Entry("should replace a duration rather than merge it field by field", testCase{
+			listeners: []string{
+				`
+                name: inbound:192.168.0.1:8080
+                trafficDirection: INBOUND
+                listenerFiltersTimeout: 5s
+                address:
+                  socketAddress:
+                    address: 192.168.0.1
+                    portValue: 8080`,
+			},
+			modifications: []string{
+				`
+                listener:
+                   operation: patch
+                   match:
+                     name: inbound:192.168.0.1:8080
+                   value: |
+                     listenerFiltersTimeout: 0.5s`,
+			},
+			// merging field by field would keep the 5 seconds and take only
+			// the nanos from the patch, giving 5.5s
+			expected: `
+            resources:
+            - name: inbound:192.168.0.1:8080
+              resource:
+                '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+                address:
+                  socketAddress:
+                    address: 192.168.0.1
+                    portValue: 8080
+                listenerFiltersTimeout: 0.500s
+                name: inbound:192.168.0.1:8080
+                trafficDirection: INBOUND`,
+		}),
 	)
 })

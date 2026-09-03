@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -155,9 +154,9 @@ func podToNodeMapper(log logr.Logger, cniApp string, cniNamespace string) kube_h
 			return nil
 		}
 
-		req := kube_reconcile.Request{NamespacedName: kube_types.NamespacedName{
+		req := kube_reconcile.Request{
 			Name: pod.Spec.NodeName,
-		}}
+		}
 		return []kube_reconcile.Request{req}
 	}
 }

@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
@@ -167,12 +166,10 @@ var _ = Describe("annotation deprecation", func() {
 
 func createPod(annotationName, value string) *kube_core.Pod {
 	return &kube_core.Pod{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name:   "test-pod",
-			Labels: map[string]string{},
-			Annotations: map[string]string{
-				annotationName: value,
-			},
+		Name:   "test-pod",
+		Labels: map[string]string{},
+		Annotations: map[string]string{
+			annotationName: value,
 		},
 		Spec: kube_core.PodSpec{
 			Containers: []kube_core.Container{

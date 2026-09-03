@@ -150,10 +150,8 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 			maps.Copy(svcLabels, gatewayInstance.Spec.ServiceTemplate.Metadata.Labels)
 
 			service := &kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: gatewayInstance.Namespace,
-					Name:      gatewayInstance.Name,
-				},
+				Namespace: gatewayInstance.Namespace,
+				Name:      gatewayInstance.Name,
 			}
 			if obj != nil {
 				service = obj.(*kube_core.Service)
@@ -222,10 +220,8 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 		ctx, r.Client, gatewayInstance, &kube_apps.DeploymentList{},
 		func(obj kube_client.Object) (kube_client.Object, error) {
 			deployment := &kube_apps.Deployment{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: gatewayInstance.Namespace,
-					Name:      gatewayInstance.Name,
-				},
+				Namespace: gatewayInstance.Namespace,
+				Name:      gatewayInstance.Name,
 			}
 			if obj != nil {
 				deployment = obj.(*kube_apps.Deployment)
@@ -286,10 +282,8 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 
 			podSpec.Volumes = []kube_core.Volume{
 				{
-					Name: "tmp",
-					VolumeSource: kube_core.VolumeSource{
-						EmptyDir: &kube_core.EmptyDirVolumeSource{},
-					},
+					Name:     "tmp",
+					EmptyDir: &kube_core.EmptyDirVolumeSource{},
 				},
 			}
 
@@ -320,11 +314,9 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 				MatchLabels: k8sSelector(gatewayInstance.Name),
 			}
 			deployment.Spec.Template = kube_core.PodTemplateSpec{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Labels:      podLabels,
-					Annotations: podAnnotations,
-				},
-				Spec: podSpec,
+				Labels:      podLabels,
+				Annotations: podAnnotations,
+				Spec:        podSpec,
 			}
 
 			return deployment, nil
@@ -410,7 +402,7 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_hand
 
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		gateway := obj.(*mesh_k8s.MeshGateway)
-		l = l.WithValues("gateway", obj.GetName(), "mesh", gateway.Mesh)
+		l := l.WithValues("gateway", obj.GetName(), "mesh", gateway.Mesh)
 
 		spec, err := gateway.GetSpec()
 		if err != nil {

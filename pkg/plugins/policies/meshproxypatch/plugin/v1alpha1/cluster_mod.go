@@ -13,6 +13,18 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 )
 
+// clusterMergeOptions treats circuit breaker thresholds as keyed by routing
+// priority rather than as an ordered list. Proto merge appends to repeated
+// fields, and since every generated cluster already carries a DEFAULT-priority
+// threshold, appending leaves two entries for one priority. Envoy honors the
+// first threshold matching a priority and ignores the rest, so the patched
+// entry would be dead config.
+var clusterMergeOptions = []util_proto.OptionFn{
+	util_proto.ReplaceDurationOptionFn,
+	util_proto.KeyedListOptionFn("envoy.config.cluster.v3.CircuitBreakers.thresholds", "priority"),
+	util_proto.KeyedListOptionFn("envoy.config.cluster.v3.CircuitBreakers.per_host_thresholds", "priority"),
+}
+
 type clusterModificator api.ClusterMod
 
 func (c *clusterModificator) apply(resources *core_xds.ResourceSet) error {
@@ -47,7 +59,7 @@ func (c *clusterModificator) patch(resources *core_xds.ResourceSet, clusterMod *
 				continue
 			}
 
-			util_proto.Merge(cluster.Resource, clusterMod)
+			util_proto.Merge(cluster.Resource, clusterMod, clusterMergeOptions...)
 		}
 	}
 

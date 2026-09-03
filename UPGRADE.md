@@ -8,7 +8,15 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.4`
 
-Patch releases normally do not require upgrade instructions. The entry below is included because the change alters the pod spec of workloads the chart ships.
+Patch releases normally do not require upgrade instructions. The entries below are included because they change behaviour existing deployments may rely on.
+
+### The `k8s.kuma.io/service-account` label on a `Dataplane` is managed by the control plane
+
+On Kubernetes this label is computed by the control plane from the Pod's ServiceAccount and is not meant to be set by hand. The admission webhook now rejects any `Dataplane` create or update that carries `k8s.kuma.io/service-account`, unless the request comes from the control plane itself or from another user listed in `runtime.kubernetes.allowedUsers`, on both Zone and Global control planes. A proxy is also rejected at xDS authentication when the label on its `Dataplane` does not match the ServiceAccount of its Pod. Other resource types are unaffected, as are resources synced over KDS and resources written by the control plane.
+
+**Action required**
+
+Remove `k8s.kuma.io/service-account` from any `Dataplane` you apply yourself, including GitOps-managed ones. A `Dataplane` whose label does not match its Pod stops connecting after the upgrade until the label is dropped.
 
 ### Control plane, hook, ingress and egress containers drop all Linux capabilities
 
@@ -29,6 +37,14 @@ controlPlane:
     capabilities:
       drop: []
 ```
+
+### `MeshProxyPatch` can now change circuit breaker thresholds
+
+Since 2.14.0 every generated cluster carries a `DEFAULT`-priority circuit breaker threshold, and a `MeshProxyPatch` patching `circuitBreakers` appended a second one for that same priority. Envoy honours only the first threshold matching a routing priority, so the patched entry was dead config: `/config_dump` showed the requested values while Envoy kept what `MeshCircuitBreaker`, or its own defaults, had set. The patch now merges into the existing threshold of the same priority instead of appending. A threshold whose priority is not yet on the cluster still appends, and a `value` listing the same priority twice keeps the first entry, matching how Envoy resolves them.
+
+**Action required**
+
+Review every `MeshProxyPatch` that patches `circuitBreakers`. Where the same cluster is also covered by a `MeshCircuitBreaker`, the patch now overrides that policy for each field it sets, instead of being ignored — `MeshProxyPatch` runs last, so it wins the fields it names and the policy keeps the rest. Remove patches you wrote before 2.14.0 and no longer rely on, and drop any workaround you put in place because the patch appeared to do nothing.
 
 ## Upgrade to `2.13.7`, `2.12.11`, `2.11.14`, `2.9.16`, `2.7.26`
 
