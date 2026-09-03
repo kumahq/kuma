@@ -980,6 +980,8 @@ The `provided` value is gone. It has not worked since 2.10: the injector parses 
 
 Two values that used to be inconsistent now behave as the injector always intended. `kuma.io/gateway: "true"` was injected as a gateway but then failed conversion with `invalid delegated gateway type 'true'`; it now produces a gateway `Dataplane`. `kuma.io/gateway: disabled` was injected as a regular Pod but also failed conversion, so the Pod never got a `Dataplane` at all; it now produces a regular `Dataplane` with inbounds.
 
+The consumers that keyed off the annotation being present rather than its value follow the same rule now. A Pod or `Service` annotated `kuma.io/gateway: disabled` gets a `MeshService` like any other workload instead of being skipped, a change of the annotation between enabled and disabled triggers a `MeshService` reconcile, and the injected sidecar of such a Pod gets the regular application probe proxy port instead of `0`, which previously left its probes pointing at a port nothing served.
+
 **Action required**
 
 Replace `kuma.io/gateway: provided` with `kuma.io/gateway: enabled` on any Pod, Deployment template, or Helm value that still sets it. Such a Pod is currently failing admission, so this is a fix rather than a regression, but the annotation has to change before the Pod can start.

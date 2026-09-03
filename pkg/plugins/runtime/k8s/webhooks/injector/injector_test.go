@@ -872,6 +872,22 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
+		Entry("45. Pod with probes and kuma.io/gateway annotation set to disabled", testCase{
+			num: "45",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
 	)
 
 	It("falls back to init-container sidecar injection when native sidecars are unavailable", func() {
