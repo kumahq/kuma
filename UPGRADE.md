@@ -14,7 +14,8 @@ does not have any particular instructions.
 
 **Action required**
 
-None. Changes to meshes, policies, and services now take up to 10 seconds to reach data plane proxies instead of up to 1 second. If your deployment needs faster propagation, set `xdsServer.dataplaneConfigurationRefreshInterval` back to the previous value, keeping in mind the control plane CPU cost.
+None. Changes to meshes, policies, and services now take up to 10 seconds to reach data plane proxies instead of up to 1 second. The same applies to trust bundles, so a CA rotation must leave the old CA in place for at least one refresh interval after the new one is added, otherwise proxies that have not yet been refreshed will fail mTLS. If your deployment needs faster propagation, set `xdsServer.dataplaneConfigurationRefreshInterval` back to the previous value, keeping in mind the control plane CPU cost.
+
 ### The ServiceInsight REST endpoints are removed
 
 `GET /meshes/{mesh}/service-insights` and `GET /meshes/{mesh}/service-insights/{name}` are removed and answer `404`.
