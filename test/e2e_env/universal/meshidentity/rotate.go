@@ -189,6 +189,16 @@ spec:
 			g.Expect(ready).To(BeTrue())
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 
+		// and
+		// every proxy has picked up the bundle holding both CAs. A MeshIdentity is
+		// reported ready as soon as the control plane reconciles it, but proxies only
+		// learn about it on their next xDS refresh. Removing the old CA before that
+		// takes a proxy straight from trusting the old CA to trusting the new one,
+		// and it loses mTLS against peers that sit on the other side of the switch.
+		Consistently(func(g Gomega) {
+			g.Expect(reqError.Load()).To(BeNil())
+		}, "20s", "1s").Should(Succeed())
+
 		// when
 		// old identity is removed
 		Expect(DeleteMeshPolicyOrError(universal.Cluster, meshidentity_api.MeshIdentityResourceTypeDescriptor, "identity-rotate", meshName)).To(Succeed())
