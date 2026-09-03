@@ -53,14 +53,24 @@ type DataplaneInbound struct {
 
 // DataplaneListener defines model for DataplaneListener.
 type DataplaneListener struct {
-	Kri               string                `json:"kri"`
-	Port              int32                 `json:"port"`
-	ProxyResourceName string                `json:"proxyResourceName"`
-	Type              DataplaneListenerType `json:"type"`
+	// Clusters The destinations this listener proxies traffic to, one entry per destination port.
+	Clusters          []DataplaneListenerCluster `json:"clusters"`
+	Kri               string                     `json:"kri"`
+	Port              int32                      `json:"port"`
+	ProxyResourceName string                     `json:"proxyResourceName"`
+	Type              DataplaneListenerType      `json:"type"`
 }
 
 // DataplaneListenerType defines model for DataplaneListener.Type.
 type DataplaneListenerType string
+
+// DataplaneListenerCluster defines model for DataplaneListenerCluster.
+type DataplaneListenerCluster struct {
+	Kri               string `json:"kri"`
+	Port              int32  `json:"port"`
+	Protocol          string `json:"protocol"`
+	ProxyResourceName string `json:"proxyResourceName"`
+}
 
 // DataplaneOutbound defines model for DataplaneOutbound.
 type DataplaneOutbound struct {

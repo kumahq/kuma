@@ -3,7 +3,7 @@ info:
   title: Kuma API
   description: Kuma API
   version: v1alpha1
-  x-ref-schema-name: DataplaneOverview
+  x-ref-schema-name: MeshOverview
 security:
   - BasicAuth: []
   - BearerAuth: []
@@ -516,6 +516,35 @@ paths:
                   - $ref: '#/components/schemas/MeshTimeoutItem'
                   - $ref: '#/components/schemas/MeshTraceItem'
                   - $ref: '#/components/schemas/MeshTrafficPermissionItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /_kri/{kri}/_overview:
+    get:
+      operationId: getOverviewByKri
+      summary: Returns the overview of a resource by KRI
+      description: >-
+        Returns the resource merged with its insight. Only resource types that
+        have insights are supported.
+      tags:
+        - KRI
+      parameters:
+        - in: path
+          name: kri
+          schema:
+            type: string
+          required: true
+          description: KRI of the resource
+      responses:
+        '200':
+          description: The resource overview
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/DataplaneOverviewWithMeta'
+                  - $ref: '#/components/schemas/MeshOverviewWithMeta'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -2741,6 +2770,33 @@ paths:
       summary: Creates or Updates Mesh entity
       tags:
         - Mesh
+  /meshes/{name}/_overview:
+    get:
+      operationId: getMeshOverview
+      parameters:
+        - in: path
+          name: name
+          required: true
+          description: The name of the mesh to get the overview for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshOverviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/_overview:
+    get:
+      operationId: getMeshOverviewList
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshOverviewListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/secrets:
     get:
       operationId: getSecretList
@@ -4745,6 +4801,23 @@ components:
           type: string
         proxyResourceName:
           type: string
+    DataplaneListenerCluster:
+      type: object
+      required:
+        - kri
+        - port
+        - protocol
+        - proxyResourceName
+      properties:
+        kri:
+          type: string
+        port:
+          type: integer
+          x-go-type: int32
+        protocol:
+          type: string
+        proxyResourceName:
+          type: string
     DataplaneListener:
       type: object
       required:
@@ -4752,6 +4825,7 @@ components:
         - type
         - port
         - proxyResourceName
+        - clusters
       properties:
         kri:
           type: string
@@ -4765,6 +4839,13 @@ components:
           x-go-type: int32
         proxyResourceName:
           type: string
+        clusters:
+          description: >-
+            The destinations this listener proxies traffic to, one entry per
+            destination port.
+          type: array
+          items:
+            $ref: '#/components/schemas/DataplaneListenerCluster'
     PolicyOrigin:
       type: object
       required:
@@ -13188,10 +13269,6 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '1901-01-01T00:00:00.000Z'
-    DataplaneOverviewWithMeta:
-      allOf:
-        - $ref: '#/components/schemas/Meta'
-        - $ref: '#/components/schemas/DataplaneOverview'
     DataplaneOverview:
       description: DataplaneOverview defines the projected state of a Dataplane.
       properties:
@@ -13940,6 +14017,157 @@ components:
               type: array
           type: object
       type: object
+    DataplaneOverviewWithMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - $ref: '#/components/schemas/DataplaneOverview'
+    MeshOverview:
+      description: MeshOverview defines the projected state of a Mesh.
+      properties:
+        mesh:
+          properties:
+            skipCreatingInitialPolicies:
+              description: >-
+                List of policies to skip creating by default when the mesh is
+                created.
+
+                e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to
+                skip all
+
+                policies.
+              items:
+                type: string
+              type: array
+          type: object
+        meshInsight:
+          properties:
+            dataplanes:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            dataplanesByType:
+              properties:
+                gateway:
+                  properties:
+                    offline:
+                      type: integer
+                    online:
+                      type: integer
+                    partiallyDegraded:
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+                gatewayDelegated:
+                  properties:
+                    offline:
+                      type: integer
+                    online:
+                      type: integer
+                    partiallyDegraded:
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+                standard:
+                  properties:
+                    offline:
+                      type: integer
+                    online:
+                      type: integer
+                    partiallyDegraded:
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+              type: object
+            dpVersions:
+              properties:
+                envoy:
+                  additionalProperties:
+                    description: DataplaneStat defines statistic specifically for Dataplane
+                    properties:
+                      offline:
+                        type: integer
+                      online:
+                        type: integer
+                      partiallyDegraded:
+                        type: integer
+                      total:
+                        type: integer
+                    type: object
+                  description: Dataplane stats grouped by Envoy version
+                  type: object
+                kumaDp:
+                  additionalProperties:
+                    description: DataplaneStat defines statistic specifically for Dataplane
+                    properties:
+                      offline:
+                        type: integer
+                      online:
+                        type: integer
+                      partiallyDegraded:
+                        type: integer
+                      total:
+                        type: integer
+                    type: object
+                  description: Dataplane stats grouped by KumaDP version
+                  type: object
+              type: object
+            mTLS:
+              description: mTLS statistics
+              properties:
+                issuedBackends:
+                  additionalProperties:
+                    description: DataplaneStat defines statistic specifically for Dataplane
+                    properties:
+                      offline:
+                        type: integer
+                      online:
+                        type: integer
+                      partiallyDegraded:
+                        type: integer
+                      total:
+                        type: integer
+                    type: object
+                  description: Dataplanes grouped by issued backends.
+                  type: object
+                supportedBackends:
+                  additionalProperties:
+                    description: DataplaneStat defines statistic specifically for Dataplane
+                    properties:
+                      offline:
+                        type: integer
+                      online:
+                        type: integer
+                      partiallyDegraded:
+                        type: integer
+                      total:
+                        type: integer
+                    type: object
+                  description: Dataplanes grouped by supported backends.
+                  type: object
+              type: object
+            resources:
+              additionalProperties:
+                properties:
+                  total:
+                    type: integer
+                type: object
+              type: object
+          type: object
+      type: object
+    MeshOverviewWithMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - $ref: '#/components/schemas/MeshOverview'
     SecretItem:
       properties:
         creationTime:
@@ -16908,6 +17136,28 @@ components:
                 type: number
             type: object
       description: List
+    GetMeshOverviewResponse:
+      description: A response containing the overview of a mesh.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshOverviewWithMeta'
+    GetMeshOverviewListResponse:
+      description: A response containing a list of mesh overviews.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 200
+              next:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshOverviewWithMeta'
     SecretCreateOrUpdateSuccessResponse:
       content:
         application/json:

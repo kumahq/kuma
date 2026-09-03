@@ -17,3 +17,65 @@ networking:
     - address: 127.0.0.1
       port: 10002
       type: ZoneEgress
+---
+type: MeshService
+name: local-server
+mesh: default
+labels:
+  kuma.io/display-name: local-server
+  kuma.io/origin: zone
+  kuma.io/zone: test-zone
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: local-server
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+      name: main-port
+    - port: 8080
+      targetPort: 8080
+      appProtocol: tcp
+      name: secondary-port
+---
+type: MeshService
+name: remote-server
+mesh: default
+labels:
+  kuma.io/display-name: remote-server
+  kuma.io/origin: global
+  kuma.io/zone: other-zone
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: remote-server
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+      name: main-port
+---
+type: MeshMultiZoneService
+name: multizone-server
+mesh: default
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/display-name: local-server
+  ports:
+    - port: 80
+      appProtocol: http
+---
+type: MeshExternalService
+name: mes-1
+mesh: default
+spec:
+  match:
+    type: HostnameGenerator
+    port: 9090
+    protocol: http
+  endpoints:
+    - address: 127.0.0.1
+      port: 8080

@@ -1,0 +1,18 @@
+# Overview of a single mesh, merged with its insight
+#/meshes/m1/_overview 200
+# Overview of a mesh that has no insight yet
+#/meshes/m2/_overview 200
+# List of mesh overviews
+#/meshes/_overview 200
+type: Mesh
+name: m1
+---
+type: Mesh
+name: m2
+---
+type: MeshInsight
+name: m1
+dataplanes:
+  total: 2
+  online: 1
+  offline: 1

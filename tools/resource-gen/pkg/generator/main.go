@@ -457,6 +457,7 @@ var protoEnumType = reflect.TypeFor[protoreflect.Enum]()
 
 var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeFor[v1alpha1.DataplaneOverview](),
+	reflect.TypeFor[v1alpha1.MeshOverview](),
 	reflect.TypeFor[system_proto.Zone](),
 }
 
