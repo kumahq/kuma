@@ -27,7 +27,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	commontemplate "github.com/kumahq/kuma/v3/tools/common/template"
@@ -478,14 +478,14 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		schemaMap.Set("type", &jsonschema.Schema{Type: "string"})
 		schemaMap.Set("name", &jsonschema.Schema{
 			Type:      "string",
-			Pattern:   core_mesh.NamePattern,
-			MaxLength: pointer.To[uint64](core_mesh.MaxNameLength),
+			Pattern:   core_model.NamePattern,
+			MaxLength: pointer.To[uint64](core_model.MaxNameLength),
 		})
 		if !r.Global {
 			schemaMap.Set("mesh", &jsonschema.Schema{
 				Type:      "string",
-				Pattern:   core_mesh.MeshNamePattern,
-				MaxLength: pointer.To[uint64](core_mesh.MaxNameLength),
+				Pattern:   core_model.MeshNamePattern,
+				MaxLength: pointer.To[uint64](core_model.MaxNameLength),
 			})
 		}
 		schemaMap.Set("labels", &jsonschema.Schema{Type: "object", AdditionalProperties: &jsonschema.Schema{Type: "string"}})

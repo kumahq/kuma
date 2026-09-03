@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 // The OpenAPI specs advertise the name and mesh constraints the API enforces.
@@ -20,8 +20,8 @@ var _ = Describe("name constraints in the OpenAPI specs", func() {
 		func(path string) {
 			raw, err := os.ReadFile(filepath.Join(repoRoot, path))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(raw)).To(ContainSubstring(core_mesh.NamePattern))
-			Expect(string(raw)).To(ContainSubstring(core_mesh.MeshNamePattern))
+			Expect(string(raw)).To(ContainSubstring(core_model.NamePattern))
+			Expect(string(raw)).To(ContainSubstring(core_model.MeshNamePattern))
 		},
 		Entry("policy schema template", filepath.Join("tools", "openapi", "templates", "schema.yaml")),
 		Entry("shared metadata schema", filepath.Join("api", "openapi", "specs", "common", "resource.yaml")),
