@@ -3,7 +3,6 @@ package api_server
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/emicklei/go-restful/v3"
 
@@ -13,7 +12,6 @@ import (
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/access"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -51,17 +49,6 @@ type resourceEndpoints struct {
 	*resourceCrudHandler
 
 	inspect *resourceInspectHandler
-}
-
-func typeToLegacyOverviewPath(resourceType core_model.ResourceType) string {
-	switch resourceType {
-	case core_mesh.DataplaneType:
-		return "dataplanes+insights"
-	case system.ZoneType:
-		return "zones+insights"
-	default:
-		return ""
-	}
 }
 
 // reservedRouteMetadataKeys are route metadata keys Kuma interprets itself, so a
@@ -111,15 +98,6 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
-		// Backward compatibility with previous path for overviews
-		if legacyPath := typeToLegacyOverviewPath(r.descriptor.Name); legacyPath != "" {
-			ws.Route(ws.GET(strings.Replace(pathPrefix, r.descriptor.WsPath, legacyPath, 1)+"/{name}").To(route).
-				Doc(fmt.Sprintf("Get overview of a %s", r.descriptor.Name)).
-				Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
-				Param(ws.QueryParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
-				Returns(200, "OK", nil).
-				Returns(404, "Not found", nil))
-		}
 	}
 	if r.descriptor.IsPolicy {
 		ws.Route(ws.GET(pathPrefix+"/{name}/_resources/dataplanes").To(r.inspect.matchingDataplanesForPolicy()).
@@ -219,14 +197,6 @@ func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix s
 			Param(ws.PathParameter("name", "a pattern to select only resources that contain these characters").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
-		// Backward compatibility with previous path for overviews
-		if legacyPath := typeToLegacyOverviewPath(r.descriptor.Name); legacyPath != "" {
-			ws.Route(ws.GET(strings.Replace(pathPrefix, r.descriptor.WsPath, legacyPath, 1)).To(route).
-				Doc(fmt.Sprintf("Get a %s", r.descriptor.WsPath)).
-				Param(ws.QueryParameter("name", "a pattern to select only resources that contain these characters").DataType("string")).
-				Returns(200, "OK", nil).
-				Returns(404, "Not found", nil))
-		}
 	}
 }
 

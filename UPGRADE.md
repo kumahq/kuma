@@ -8,6 +8,19 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### The legacy overview paths `dataplanes+insights` and `zones+insights` are removed
+
+`GET /meshes/{mesh}/dataplanes+insights` and `GET /zones+insights`, along with their `/{name}` forms, were kept as aliases when overviews moved to `_overview`. They are now removed and answer `404`.
+
+**Action required**
+
+Use the replacements, which have been available for several releases and return the same payload:
+
+- `/meshes/{mesh}/dataplanes+insights` becomes `/meshes/{mesh}/dataplanes/_overview`
+- `/meshes/{mesh}/dataplanes+insights/{name}` becomes `/meshes/{mesh}/dataplanes/{name}/_overview`
+- `/zones+insights` becomes `/zones/_overview`
+- `/zones+insights/{name}` becomes `/zones/{name}/_overview`
+
 ### Kubernetes probes on the sidecar always use the readiness port
 
 The injected `kuma-sidecar` container had its liveness, readiness and startup probes pointed at the Envoy admin port (`9901`) when `experimental.envoyAdminUnixSocket` was off, and at the kuma-dp readiness port (`9902`) when it was on. Those two settings are decided in different places - the probe port is written into the Pod by the injecting webhook at admission, the admin transport is chosen at bootstrap by whichever control plane instance answers - so a rolling control plane upgrade, or a change to the flag, left a window where they disagreed and pods went into `CrashLoopBackOff`.
