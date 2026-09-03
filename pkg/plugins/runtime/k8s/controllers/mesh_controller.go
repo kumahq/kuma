@@ -8,8 +8,6 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
-	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
-	core_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -20,13 +18,12 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
-// MeshReconciler creates default resources for created Mesh and ensures that CA was created
+// MeshReconciler creates default resources for created Mesh
 type MeshReconciler struct {
 	ResourceManager manager.ResourceManager
 	Log             logr.Logger
 	Extensions      context.Context
 	K8sStore        bool
-	CaManagers      core_ca.Managers
 	SystemNamespace string
 	CpMode          config_core.CpMode
 	CpZone          string
@@ -39,12 +36,6 @@ func (r *MeshReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (
 			return kube_ctrl.Result{}, nil
 		}
 		return kube_ctrl.Result{}, errors.Wrap(err, "could not get default mesh resources")
-	}
-
-	r.Log.V(1).Info("ensuring CAs for mesh exist")
-	if err := core_managers.EnsureCAs(ctx, r.CaManagers, mesh, mesh.Meta.GetName()); err != nil {
-		r.Log.Error(err, "unable to ensure that mesh CAs are created")
-		return kube_ctrl.Result{}, err
 	}
 
 	if err := r.ensureDefaultResources(ctx, mesh); err != nil {
@@ -71,7 +62,6 @@ func (r *MeshReconciler) ensureDefaultResources(ctx context.Context, mesh *core_
 		r.SystemNamespace,
 		r.CpMode,
 		r.CpZone,
-		false, // reconcileExistingOnly
 	); err != nil {
 		return errors.Wrap(err, "could not create default mesh resources")
 	}

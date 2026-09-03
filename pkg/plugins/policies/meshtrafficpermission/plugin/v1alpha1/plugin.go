@@ -8,12 +8,9 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	v3 "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/xds"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -35,19 +32,15 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshTrafficPermissionType, dataplane, resources, opts...)
-}
-
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
-	if proxy.Dataplane == nil || proxy.Dataplane.Spec.IsBuiltinGateway() {
+	if proxy.Dataplane == nil {
 		return nil
 	}
 
 	mtp := proxy.Policies.Dynamic[api.MeshTrafficPermissionType]
 
-	if !ctx.Mesh.Resource.MTLSEnabled() && proxy.WorkloadIdentity == nil {
-		log.V(1).Info("skip applying MeshTrafficPermission, MTLS is disabled",
+	if proxy.WorkloadIdentity == nil {
+		log.V(1).Info("skip applying MeshTrafficPermission, the proxy has no workload identity",
 			"proxyName", proxy.Dataplane.GetMeta().GetName(),
 			"mesh", ctx.Mesh.Resource.GetMeta().GetName())
 		return nil
@@ -69,58 +62,26 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			Port:    dpAddress.GetPortValue(),
 		}
 
-		inboundRules, ok := mtp.FromRules.InboundRules[key]
-		if (!ok || len(inboundRules) == 0) && proxy.WorkloadIdentity == nil {
-			err := p.configureLegacyRules(mtp, key, listener, res, proxy)
-			if err != nil {
+		// an inbound with no matching rule gets an RBAC filter with no matchers,
+		// which denies everything
+		inboundRules := mtp.FromRules.InboundRules[key]
+		configurer := &v3.RBACConfigurer{
+			StatsName:    res.Name,
+			InboundRules: inboundRules,
+		}
+		for _, filterChain := range listener.FilterChains {
+			if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
+				// we only want to configure RBAC on listeners protected by Kuma's TLS
+				continue
+			}
+			if err := configurer.Configure(filterChain); err != nil {
 				return err
 			}
-		} else {
-			configurer := &v3.RBACConfigurer{
-				StatsName:    res.Name,
-				InboundRules: inboundRules,
-			}
-			for _, filterChain := range listener.FilterChains {
-				if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
-					// we only want to configure RBAC on listeners protected by Kuma's TLS
-					continue
-				}
-				if err := configurer.Configure(filterChain); err != nil {
-					return err
-				}
-			}
-			if hasSNIMatch(inboundRules) {
-				if err := ensureTLSInspector(listener); err != nil {
-					return err
-				}
-			}
 		}
-	}
-	return nil
-}
-
-// configureLegacyRules now only serves dataplanes still relying on the old
-// MeshTrafficPermission `Rules` format. Legacy TrafficPermission no longer contributes to
-// xDS generation, so the absence of an old-format rule always means default-deny.
-func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key core_rules.InboundListener, listener *envoy_listener.Listener, resource *core_xds.Resource, proxy *core_xds.Proxy) error {
-	//nolint:staticcheck // SA1019 configureLegacyRules explicitly uses old Rules format for legacy RBAC
-	rules, ok := mtp.FromRules.Rules[key]
-	if !ok {
-		rules = p.denyRules()
-	}
-
-	configurer := &v3.LegacyRBACConfigurer{
-		StatsName: resource.Name,
-		Rules:     rules,
-		Mesh:      proxy.Dataplane.GetMeta().GetMesh(),
-	}
-	for _, filterChain := range listener.FilterChains {
-		if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
-			// we only want to configure RBAC on listeners protected by Kuma's TLS
-			continue
-		}
-		if err := configurer.Configure(filterChain); err != nil {
-			return err
+		if hasSNIMatch(inboundRules) {
+			if err := envoy_listeners_v3.EnsureTLSInspector(listener); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -172,24 +133,4 @@ func hasSNIMatch(rules []*inbound.Rule) bool {
 		}
 	}
 	return false
-}
-
-func ensureTLSInspector(listener *envoy_listener.Listener) error {
-	for _, lf := range listener.ListenerFilters {
-		if lf.Name == envoy_listeners_v3.TlsInspectorName {
-			return nil
-		}
-	}
-	return (&envoy_listeners_v3.TLSInspectorConfigurer{}).Configure(listener)
-}
-
-func (p plugin) denyRules() core_rules.Rules {
-	return core_rules.Rules{
-		&core_rules.Rule{ //nolint:staticcheck // SA1019 Zone egress uses old Rule format
-			Subset: subsetutils.MeshSubset(),
-			Conf: api.Conf{
-				Action: &api.Deny,
-			},
-		},
-	}
 }

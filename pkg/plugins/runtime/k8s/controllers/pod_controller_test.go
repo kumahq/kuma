@@ -38,42 +38,34 @@ var _ = Describe("PodReconciler", func() {
 	BeforeEach(func() {
 		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sClientScheme).WithObjects(
 			&kube_core.Namespace{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name: "demo",
-				},
+				Name: "demo",
 			},
 			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-without-kuma-sidecar",
-				},
+				Namespace: "demo",
+				Name:      "pod-without-kuma-sidecar",
 			},
 			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-with-kuma-sidecar-but-no-ip",
-					Annotations: map[string]string{
-						"kuma.io/sidecar-injected": "true",
-					},
-					Labels: map[string]string{
-						"app": "sample",
-					},
-					UID: "pod-with-kuma-sidecar-but-no-ip-demo",
+				Namespace: "demo",
+				Name:      "pod-with-kuma-sidecar-but-no-ip",
+				Annotations: map[string]string{
+					"kuma.io/sidecar-injected": "true",
 				},
+				Labels: map[string]string{
+					"app": "sample",
+				},
+				UID: "pod-with-kuma-sidecar-but-no-ip-demo",
 			},
 			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-with-kuma-sidecar-and-ip",
-					Annotations: map[string]string{
-						"kuma.io/sidecar-injected": "true",
-					},
-					Labels: map[string]string{
-						"app":          "sample",
-						"kuma.io/mesh": "poc",
-					},
-					UID: "pod-with-kuma-sidecar-and-ip-demo",
+				Namespace: "demo",
+				Name:      "pod-with-kuma-sidecar-and-ip",
+				Annotations: map[string]string{
+					"kuma.io/sidecar-injected": "true",
 				},
+				Labels: map[string]string{
+					"app":          "sample",
+					"kuma.io/mesh": "poc",
+				},
+				UID: "pod-with-kuma-sidecar-and-ip-demo",
 				Spec: kube_core.PodSpec{
 					Containers: []kube_core.Container{
 						{
@@ -103,18 +95,16 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-with-duplicated-inbound",
-					Annotations: map[string]string{
-						"kuma.io/sidecar-injected": "true",
-					},
-					Labels: map[string]string{
-						"app":          "sample-ms",
-						"kuma.io/mesh": "poc-ms",
-					},
-					UID: "pod-with-duplicated-inbound-demo",
+				Namespace: "demo",
+				Name:      "pod-with-duplicated-inbound",
+				Annotations: map[string]string{
+					"kuma.io/sidecar-injected": "true",
 				},
+				Labels: map[string]string{
+					"app":          "sample-ms",
+					"kuma.io/mesh": "poc-ms",
+				},
+				UID: "pod-with-duplicated-inbound-demo",
 				Spec: kube_core.PodSpec{
 					Containers: []kube_core.Container{
 						{
@@ -144,10 +134,8 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "example-ms-1",
-				},
+				Namespace: "demo",
+				Name:      "example-ms-1",
 				Spec: kube_core.ServiceSpec{
 					ClusterIP: "192.168.0.1",
 					Ports: []kube_core.ServicePort{
@@ -174,10 +162,8 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "example-ms-2",
-				},
+				Namespace: "demo",
+				Name:      "example-ms-2",
 				Spec: kube_core.ServiceSpec{
 					ClusterIP: "192.168.0.1",
 					Ports: []kube_core.ServicePort{
@@ -196,19 +182,17 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-with-custom-admin-port",
-					Annotations: map[string]string{
-						"kuma.io/sidecar-injected": "true",
-						"kuma.io/envoy-admin-port": "9999",
-					},
-					Labels: map[string]string{
-						"app":          "sample",
-						"kuma.io/mesh": "poc",
-					},
-					UID: "pod-with-custom-admin-port-demo",
+				Namespace: "demo",
+				Name:      "pod-with-custom-admin-port",
+				Annotations: map[string]string{
+					"kuma.io/sidecar-injected": "true",
+					"kuma.io/envoy-admin-port": "9999",
 				},
+				Labels: map[string]string{
+					"app":          "sample",
+					"kuma.io/mesh": "poc",
+				},
+				UID: "pod-with-custom-admin-port-demo",
 				Spec: kube_core.PodSpec{
 					Containers: []kube_core.Container{
 						{
@@ -227,181 +211,9 @@ var _ = Describe("PodReconciler", func() {
 					},
 				},
 			},
-			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-ingress",
-					Annotations: map[string]string{
-						"kuma.io/sidecar-injected": "true",
-						"kuma.io/ingress":          "enabled",
-					},
-					Labels: map[string]string{
-						"app": "ingress",
-					},
-					UID: "pod-ingress-kuma-demo",
-				},
-				Status: kube_core.PodStatus{
-					PodIP: "192.168.0.2",
-					ContainerStatuses: []kube_core.ContainerStatus{
-						{
-							State: kube_core.ContainerState{},
-						},
-					},
-				},
-			},
-			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "kuma-system",
-					Name:      "pod-ingress",
-					Annotations: map[string]string{
-						"kuma.io/sidecar-injected": "true",
-						"kuma.io/ingress":          "enabled",
-					},
-					Labels: map[string]string{
-						"app": "ingress",
-					},
-					UID: "pod-ingress-kuma-system",
-				},
-				Status: kube_core.PodStatus{
-					PodIP: "192.168.0.3",
-					ContainerStatuses: []kube_core.ContainerStatus{
-						{
-							State: kube_core.ContainerState{},
-						},
-					},
-				},
-			},
 			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace:   "kuma-system",
-					Name:        "ingress",
-					Annotations: map[string]string{},
-				},
-				Spec: kube_core.ServiceSpec{
-					ClusterIP: "192.168.0.1",
-					Ports: []kube_core.ServicePort{
-						{
-							Port: 80,
-							TargetPort: kube_intstr.IntOrString{
-								Type:   kube_intstr.Int,
-								IntVal: 8080,
-							},
-						},
-					},
-					Selector: map[string]string{
-						"app": "ingress",
-					},
-				},
-			},
-			&kube_discovery.EndpointSlice{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "kuma-system",
-					Name:      "ingress-ip4",
-					Labels: map[string]string{
-						kube_discovery.LabelServiceName: "ingress",
-					},
-				},
-				AddressType: kube_discovery.AddressTypeIPv4,
-				Endpoints: []kube_discovery.Endpoint{{
-					Addresses: []string{"192.168.0.3"},
-					TargetRef: &kube_core.ObjectReference{
-						Kind:      "Pod",
-						Name:      "pod-ingress",
-						Namespace: "kuma-system",
-						UID:       "pod-ingress-kuma-system",
-					},
-				}},
-			},
-			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-egress",
-					Annotations: map[string]string{
-						"kuma.io/sidecar-injected": "true",
-						"kuma.io/egress":           "enabled",
-					},
-					Labels: map[string]string{
-						"app": "egress",
-					},
-					UID: "pod-egress-demo",
-				},
-				Status: kube_core.PodStatus{
-					PodIP: "192.168.0.4",
-					ContainerStatuses: []kube_core.ContainerStatus{
-						{
-							State: kube_core.ContainerState{},
-						},
-					},
-				},
-			},
-			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "kuma-system",
-					Name:      "pod-egress",
-					Annotations: map[string]string{
-						"kuma.io/sidecar-injected": "true",
-						"kuma.io/egress":           "enabled",
-					},
-					Labels: map[string]string{
-						"app": "egress",
-					},
-					UID: "pod-egress-kuma-system",
-				},
-				Status: kube_core.PodStatus{
-					PodIP: "192.168.0.5",
-					ContainerStatuses: []kube_core.ContainerStatus{
-						{
-							State: kube_core.ContainerState{},
-						},
-					},
-				},
-			},
-			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace:   "kuma-system",
-					Name:        "egress",
-					Annotations: map[string]string{},
-				},
-				Spec: kube_core.ServiceSpec{
-					ClusterIP: "192.168.0.1",
-					Ports: []kube_core.ServicePort{
-						{
-							Port: 80,
-							TargetPort: kube_intstr.IntOrString{
-								Type:   kube_intstr.Int,
-								IntVal: 8080,
-							},
-						},
-					},
-					Selector: map[string]string{
-						"app": "egress",
-					},
-				},
-			},
-			&kube_discovery.EndpointSlice{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "kuma-system",
-					Name:      "egress-ip4",
-					Labels: map[string]string{
-						kube_discovery.LabelServiceName: "egress",
-					},
-				},
-				AddressType: kube_discovery.AddressTypeIPv4,
-				Endpoints: []kube_discovery.Endpoint{{
-					Addresses: []string{"192.168.0.5"},
-					TargetRef: &kube_core.ObjectReference{
-						Kind:      "Pod",
-						Name:      "pod-egress",
-						Namespace: "kuma-system",
-						UID:       "pod-egress-kuma-system",
-					},
-				}},
-			},
-			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "example",
-				},
+				Namespace: "demo",
+				Name:      "example",
 				Spec: kube_core.ServiceSpec{
 					ClusterIP: "192.168.0.1",
 					Ports: []kube_core.ServicePort{
@@ -428,12 +240,10 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 			&kube_discovery.EndpointSlice{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "example-ip4",
-					Labels: map[string]string{
-						kube_discovery.LabelServiceName: "example",
-					},
+				Namespace: "demo",
+				Name:      "example-ip4",
+				Labels: map[string]string{
+					kube_discovery.LabelServiceName: "example",
 				},
 				AddressType: kube_discovery.AddressTypeIPv4,
 				Endpoints: []kube_discovery.Endpoint{{
@@ -447,10 +257,8 @@ var _ = Describe("PodReconciler", func() {
 				}},
 			},
 			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "manual-example",
-				},
+				Namespace: "demo",
+				Name:      "manual-example",
 				Spec: kube_core.ServiceSpec{
 					ClusterIP: "192.168.0.1",
 					Ports: []kube_core.ServicePort{
@@ -466,12 +274,10 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 			&kube_discovery.EndpointSlice{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "manual-example-ip4",
-					Labels: map[string]string{
-						kube_discovery.LabelServiceName: "manual-example",
-					},
+				Namespace: "demo",
+				Name:      "manual-example-ip4",
+				Labels: map[string]string{
+					kube_discovery.LabelServiceName: "manual-example",
 				},
 				AddressType: kube_discovery.AddressTypeIPv4,
 				Endpoints: []kube_discovery.Endpoint{{
@@ -485,10 +291,8 @@ var _ = Describe("PodReconciler", func() {
 				}},
 			},
 			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "manual-example-no-target-ref",
-				},
+				Namespace: "demo",
+				Name:      "manual-example-no-target-ref",
 				Spec: kube_core.ServiceSpec{
 					ClusterIP: "192.168.0.1",
 					Ports: []kube_core.ServicePort{
@@ -504,12 +308,10 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 			&kube_discovery.EndpointSlice{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "manual-example-no-target-ref",
-					Labels: map[string]string{
-						kube_discovery.LabelServiceName: "manual-example-no-target-ref",
-					},
+				Namespace: "demo",
+				Name:      "manual-example-no-target-ref",
+				Labels: map[string]string{
+					kube_discovery.LabelServiceName: "manual-example-no-target-ref",
 				},
 				AddressType: kube_discovery.AddressTypeIPv4,
 				Endpoints: []kube_discovery.Endpoint{{
@@ -518,12 +320,10 @@ var _ = Describe("PodReconciler", func() {
 				}},
 			},
 			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "ignored-service",
-					Annotations: map[string]string{
-						metadata.KumaIgnoreAnnotation: metadata.AnnotationTrue,
-					},
+				Namespace: "demo",
+				Name:      "ignored-service",
+				Annotations: map[string]string{
+					metadata.KumaIgnoreAnnotation: metadata.AnnotationTrue,
 				},
 				Spec: kube_core.ServiceSpec{
 					ClusterIP: "192.168.0.1",
@@ -542,18 +342,16 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "zone-proxy-pod",
-					Annotations: map[string]string{
-						"kuma.io/sidecar-injected": "true",
-					},
-					Labels: map[string]string{
-						"app":          "zone-proxy",
-						"kuma.io/mesh": "poc",
-					},
-					UID: "zone-proxy-pod-demo",
+				Namespace: "demo",
+				Name:      "zone-proxy-pod",
+				Annotations: map[string]string{
+					"kuma.io/sidecar-injected": "true",
 				},
+				Labels: map[string]string{
+					"app":          "zone-proxy",
+					"kuma.io/mesh": "poc",
+				},
+				UID: "zone-proxy-pod-demo",
 				Spec: kube_core.PodSpec{
 					Containers: []kube_core.Container{
 						{
@@ -573,12 +371,10 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 			&kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "zone-proxy-svc",
-					Labels: map[string]string{
-						metadata.KumaZoneProxyTypeLabel: "ingress",
-					},
+				Namespace: "demo",
+				Name:      "zone-proxy-svc",
+				Labels: map[string]string{
+					metadata.KumaZoneProxyTypeLabel: "ingress",
 				},
 				Spec: kube_core.ServiceSpec{
 					ClusterIP: "192.168.0.10",
@@ -597,17 +393,13 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 			&mesh_k8s.Mesh{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name: "poc",
-				},
+				Name: "poc",
 				Spec: &apiextensionsv1.JSON{
 					Raw: []byte(`{"meshServices":{"mode":"Disabled"}}`),
 				},
 			},
 			&mesh_k8s.Mesh{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name: "poc-ms",
-				},
+				Name: "poc-ms",
 				Spec: &apiextensionsv1.JSON{
 					Raw: []byte(`{"meshServices":{"mode":"Exclusive"}}`),
 				},
@@ -620,20 +412,20 @@ var _ = Describe("PodReconciler", func() {
 			Scheme:        k8sClientScheme,
 			Log:           core.Log.WithName("test"),
 			PodConverter: PodConverter{
-				ResourceConverter: k8s.NewSimpleConverter(),
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 				Mode:              config_core.Zone,
 				Zone:              "zone-1",
 				SystemNamespace:   "kuma-system",
 			},
 			SystemNamespace:   "kuma-system",
-			ResourceConverter: k8s.NewSimpleConverter(),
+			ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 		}
 	})
 
 	It("should ignore deleted Pods", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "non-existing-key"},
+			Namespace: "demo", Name: "non-existing-key",
 		}
 
 		// when
@@ -655,7 +447,7 @@ var _ = Describe("PodReconciler", func() {
 	It("should ignore Pods without Kuma sidecar", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-without-kuma-sidecar"},
+			Namespace: "demo", Name: "pod-without-kuma-sidecar",
 		}
 
 		// when
@@ -675,64 +467,10 @@ var _ = Describe("PodReconciler", func() {
 		Expect(dataplanes.Items).To(BeEmpty())
 	})
 
-	It("should not reconcile Ingress with namespace other than system", func() {
-		// given
-		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-ingress"},
-		}
-
-		// when
-		_, err := reconciler.Reconcile(context.Background(), req)
-
-		// then
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal(`Ingress can only be deployed in system namespace "kuma-system"`))
-	})
-
-	It("should not reconcile Egress with namespace other than system", func() {
-		// given
-		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-egress"},
-		}
-
-		// when
-		_, err := reconciler.Reconcile(context.Background(), req)
-
-		// then
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal(`Egress can only be deployed in system namespace "kuma-system"`))
-	})
-
-	It("should reconcile Ingress with system namespace", func() {
-		// given
-		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "kuma-system", Name: "pod-ingress"},
-		}
-
-		// when
-		_, err := reconciler.Reconcile(context.Background(), req)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	It("should reconcile Egress with system namespace", func() {
-		// given
-		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "kuma-system", Name: "pod-egress"},
-		}
-
-		// when
-		_, err := reconciler.Reconcile(context.Background(), req)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-	})
-
 	It("should ignore Pods without Kuma sidecar", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-without-kuma-sidecar"},
+			Namespace: "demo", Name: "pod-without-kuma-sidecar",
 		}
 
 		// when
@@ -755,7 +493,7 @@ var _ = Describe("PodReconciler", func() {
 	It("should ignore Pods without IP address", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-but-no-ip"},
+			Namespace: "demo", Name: "pod-with-kuma-sidecar-but-no-ip",
 		}
 
 		// when
@@ -778,7 +516,7 @@ var _ = Describe("PodReconciler", func() {
 	It("should generate Dataplane resource for every Pod that has Kuma sidecar injected", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-and-ip"},
+			Namespace: "demo", Name: "pod-with-kuma-sidecar-and-ip",
 		}
 
 		// when
@@ -808,7 +546,7 @@ var _ = Describe("PodReconciler", func() {
 	It("should generate Dataplane resource for every Pod that has Kuma sidecar injected when MeshService enabled", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-duplicated-inbound"},
+			Namespace: "demo", Name: "pod-with-duplicated-inbound",
 		}
 
 		// when
@@ -838,10 +576,8 @@ var _ = Describe("PodReconciler", func() {
 	It("should update Dataplane resource, e.g. when new Services get registered", func() {
 		// setup
 		err := kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Namespace: "demo",
-				Name:      "pod-with-kuma-sidecar-and-ip",
-			},
+			Namespace: "demo",
+			Name:      "pod-with-kuma-sidecar-and-ip",
 			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{},
 			}),
@@ -850,7 +586,7 @@ var _ = Describe("PodReconciler", func() {
 
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-and-ip"},
+			Namespace: "demo", Name: "pod-with-kuma-sidecar-and-ip",
 		}
 
 		// when
@@ -880,28 +616,25 @@ var _ = Describe("PodReconciler", func() {
 	It("should not update Dataplane if nothing has changed", func() {
 		// setup
 		err := kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
-			Mesh: "poc",
-			ObjectMeta: kube_meta.ObjectMeta{
-				Namespace: "demo",
-				Name:      "pod-with-custom-admin-port",
-				Labels: map[string]string{
-					mesh_proto.KubeNamespaceTag:    "demo",
-					mesh_proto.DisplayName:         "pod-with-custom-admin-port",
-					mesh_proto.ZoneTag:             "zone-1",
-					mesh_proto.MeshTag:             "poc",
-					mesh_proto.ResourceOriginLabel: "zone",
-					mesh_proto.EnvTag:              mesh_proto.KubernetesEnvironment,
-					mesh_proto.ProxyTypeLabel:      "sidecar",
-				},
-				OwnerReferences: []kube_meta.OwnerReference{
-					{
-						APIVersion:         "v1",
-						BlockOwnerDeletion: pointer.To(true),
-						Controller:         pointer.To(true),
-						Kind:               "Pod",
-						Name:               "pod-with-custom-admin-port",
-						UID:                "pod-with-custom-admin-port-demo",
-					},
+			Mesh:      "poc",
+			Namespace: "demo",
+			Name:      "pod-with-custom-admin-port",
+			Labels: map[string]string{
+				mesh_proto.KubeNamespaceTag:    "demo",
+				mesh_proto.DisplayName:         "pod-with-custom-admin-port",
+				mesh_proto.ZoneTag:             "zone-1",
+				mesh_proto.MeshTag:             "poc",
+				mesh_proto.ResourceOriginLabel: "zone",
+				mesh_proto.EnvTag:              mesh_proto.KubernetesEnvironment,
+			},
+			OwnerReferences: []kube_meta.OwnerReference{
+				{
+					APIVersion:         "v1",
+					BlockOwnerDeletion: pointer.To(true),
+					Controller:         pointer.To(true),
+					Kind:               "Pod",
+					Name:               "pod-with-custom-admin-port",
+					UID:                "pod-with-custom-admin-port-demo",
 				},
 			},
 			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
@@ -912,27 +645,10 @@ var _ = Describe("PodReconciler", func() {
 					},
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 						{
-							Port:   8080,
-							Health: &mesh_proto.Dataplane_Networking_Inbound_Health{},
-							State:  mesh_proto.Dataplane_Networking_Inbound_NotReady,
-							Tags: map[string]string{
-								"app":                      "sample",
-								"kuma.io/protocol":         "http",
-								"kuma.io/service":          "example_demo_svc_80",
-								"k8s.kuma.io/service-name": "example",
-								"k8s.kuma.io/service-port": "80",
-								"k8s.kuma.io/namespace":    "demo",
-								"kuma.io/zone":             "zone-1",
-							},
-						},
-					},
-					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-						{
-							Address: "192.168.0.1",
-							Port:    80,
-							Tags: map[string]string{
-								"kuma.io/service": "example_demo_svc_80",
-							},
+							Port:     8080,
+							Health:   &mesh_proto.Dataplane_Networking_Inbound_Health{},
+							State:    mesh_proto.Dataplane_Networking_Inbound_NotReady,
+							Protocol: "http",
 						},
 					},
 				},
@@ -943,7 +659,7 @@ var _ = Describe("PodReconciler", func() {
 
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-custom-admin-port"},
+			Namespace: "demo", Name: "pod-with-custom-admin-port",
 		}
 
 		// when
@@ -973,19 +689,17 @@ var _ = Describe("PodReconciler", func() {
 	It("should update Dataplane if labels were added", func() {
 		// setup
 		err := kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
-			Mesh: "poc",
-			ObjectMeta: kube_meta.ObjectMeta{
-				Namespace: "demo",
-				Name:      "pod-with-custom-admin-port",
-				OwnerReferences: []kube_meta.OwnerReference{
-					{
-						APIVersion:         "v1",
-						BlockOwnerDeletion: pointer.To(true),
-						Controller:         pointer.To(true),
-						Kind:               "Pod",
-						Name:               "pod-with-custom-admin-port",
-						UID:                "pod-with-custom-admin-port-demo",
-					},
+			Mesh:      "poc",
+			Namespace: "demo",
+			Name:      "pod-with-custom-admin-port",
+			OwnerReferences: []kube_meta.OwnerReference{
+				{
+					APIVersion:         "v1",
+					BlockOwnerDeletion: pointer.To(true),
+					Controller:         pointer.To(true),
+					Kind:               "Pod",
+					Name:               "pod-with-custom-admin-port",
+					UID:                "pod-with-custom-admin-port-demo",
 				},
 			},
 			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
@@ -993,27 +707,10 @@ var _ = Describe("PodReconciler", func() {
 					Address: "192.168.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 						{
-							Port:   8080,
-							Health: &mesh_proto.Dataplane_Networking_Inbound_Health{},
-							State:  mesh_proto.Dataplane_Networking_Inbound_NotReady,
-							Tags: map[string]string{
-								"app":                      "sample",
-								"kuma.io/protocol":         "http",
-								"kuma.io/service":          "example_demo_svc_80",
-								"k8s.kuma.io/service-name": "example",
-								"k8s.kuma.io/service-port": "80",
-								"k8s.kuma.io/namespace":    "demo",
-								"kuma.io/zone":             "zone-1",
-							},
-						},
-					},
-					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-						{
-							Address: "192.168.0.1",
-							Port:    80,
-							Tags: map[string]string{
-								"kuma.io/service": "example_demo_svc_80",
-							},
+							Port:     8080,
+							Health:   &mesh_proto.Dataplane_Networking_Inbound_Health{},
+							State:    mesh_proto.Dataplane_Networking_Inbound_NotReady,
+							Protocol: "http",
 						},
 					},
 				},
@@ -1023,7 +720,7 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).NotTo(HaveOccurred())
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-custom-admin-port"},
+			Namespace: "demo", Name: "pod-with-custom-admin-port",
 		}
 
 		// when
@@ -1051,16 +748,14 @@ var _ = Describe("PodReconciler", func() {
 
 	It("should update Pods when ExternalService updated", func() {
 		err := kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
-			Mesh: "mesh-1",
-			ObjectMeta: kube_meta.ObjectMeta{
-				Namespace: "demo",
-				Name:      "dp-1",
-				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: pointer.To(true),
-					Kind:       "Pod",
-					Name:       "dp-1",
-				}},
-			},
+			Mesh:      "mesh-1",
+			Namespace: "demo",
+			Name:      "dp-1",
+			OwnerReferences: []kube_meta.OwnerReference{{
+				Controller: pointer.To(true),
+				Kind:       "Pod",
+				Name:       "dp-1",
+			}},
 			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{},
 			}),
@@ -1068,16 +763,14 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		err = kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
-			Mesh: "mesh-1",
-			ObjectMeta: kube_meta.ObjectMeta{
-				Namespace: "demo",
-				Name:      "dp-2",
-				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: pointer.To(true),
-					Kind:       "Pod",
-					Name:       "dp-2",
-				}},
-			},
+			Mesh:      "mesh-1",
+			Namespace: "demo",
+			Name:      "dp-2",
+			OwnerReferences: []kube_meta.OwnerReference{{
+				Controller: pointer.To(true),
+				Kind:       "Pod",
+				Name:       "dp-2",
+			}},
 			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{},
 			}),
@@ -1085,16 +778,14 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		err = kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
-			Mesh: "mesh-2",
-			ObjectMeta: kube_meta.ObjectMeta{
-				Namespace: "demo",
-				Name:      "dp-3",
-				OwnerReferences: []kube_meta.OwnerReference{{
-					Controller: pointer.To(true),
-					Kind:       "Pod",
-					Name:       "dp-3",
-				}},
-			},
+			Mesh:      "mesh-2",
+			Namespace: "demo",
+			Name:      "dp-3",
+			OwnerReferences: []kube_meta.OwnerReference{{
+				Controller: pointer.To(true),
+				Kind:       "Pod",
+				Name:       "dp-3",
+			}},
 			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{},
 			}),
@@ -1105,7 +796,7 @@ var _ = Describe("PodReconciler", func() {
 	It("should create Dataplane listeners for zone proxy pod even when MeshServices mode is not Exclusive", func() {
 		// given - zone-proxy-pod is in mesh "poc" which has no MeshServices mode (defaults to Disabled)
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "zone-proxy-pod"},
+			Namespace: "demo", Name: "zone-proxy-pod",
 		}
 
 		// when

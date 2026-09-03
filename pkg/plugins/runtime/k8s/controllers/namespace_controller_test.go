@@ -7,8 +7,6 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -27,27 +25,21 @@ var _ = Describe("NamespaceReconciler", func() {
 	BeforeEach(func() {
 		kubeClient = kube_client_fake.NewClientBuilder().WithScheme(k8sClientScheme).WithObjects(
 			&kube_core.Namespace{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "non-system-ns-with-sidecar-injection",
-					Namespace: "non-system-ns-with-sidecar-injection",
-					Labels: map[string]string{
-						"kuma.io/sidecar-injection": "enabled",
-					},
+				Name:      "non-system-ns-with-sidecar-injection",
+				Namespace: "non-system-ns-with-sidecar-injection",
+				Labels: map[string]string{
+					"kuma.io/sidecar-injection": "enabled",
 				},
 			},
 			&kube_core.Namespace{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "non-system-ns-without-sidecar-injection",
-					Namespace: "non-system-ns-without-sidecar-injection",
-				},
+				Name:      "non-system-ns-without-sidecar-injection",
+				Namespace: "non-system-ns-without-sidecar-injection",
 			},
 			&kube_core.Namespace{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "non-system-ns-with-sidecar-injection-disabled",
-					Namespace: "non-system-ns-with-sidecar-injection-disabled",
-					Labels: map[string]string{
-						"kuma.io/sidecar-injection": "disabled",
-					},
+				Name:      "non-system-ns-with-sidecar-injection-disabled",
+				Namespace: "non-system-ns-with-sidecar-injection-disabled",
+				Labels: map[string]string{
+					"kuma.io/sidecar-injection": "disabled",
 				},
 			},
 		).Build()
@@ -62,19 +54,15 @@ var _ = Describe("NamespaceReconciler", func() {
 	It("should create NetworkAttachmentDefinition", func() {
 		// setup CustomResourceDefinition
 		crd := &apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name: "network-attachment-definitions.k8s.cni.cncf.io",
-			},
+			Name: "network-attachment-definitions.k8s.cni.cncf.io",
 		}
 		err := kubeClient.Create(context.Background(), crd)
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{
-				Namespace: "non-system-ns-with-sidecar-injection",
-				Name:      "non-system-ns-with-sidecar-injection",
-			},
+			Namespace: "non-system-ns-with-sidecar-injection",
+			Name:      "non-system-ns-with-sidecar-injection",
 		}
 
 		// when
@@ -96,19 +84,15 @@ var _ = Describe("NamespaceReconciler", func() {
 	It("should create NetworkAttachmentDefinition when injection is disabled", func() {
 		// setup CustomResourceDefinition
 		crd := &apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name: "network-attachment-definitions.k8s.cni.cncf.io",
-			},
+			Name: "network-attachment-definitions.k8s.cni.cncf.io",
 		}
 		err := kubeClient.Create(context.Background(), crd)
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{
-				Namespace: "non-system-ns-with-sidecar-injection-disabled",
-				Name:      "non-system-ns-with-sidecar-injection-disabled",
-			},
+			Namespace: "non-system-ns-with-sidecar-injection-disabled",
+			Name:      "non-system-ns-with-sidecar-injection-disabled",
 		}
 
 		// when
@@ -127,32 +111,26 @@ var _ = Describe("NamespaceReconciler", func() {
 		Expect(nads.Items[0].Name).To(Equal("kuma-cni"))
 	})
 
-	It("should delete NetworkAttachmentDefinition when injection annotation is no longer on the namespace", func() {
+	It("should delete NetworkAttachmentDefinition when injection label is no longer on the namespace", func() {
 		// setup CustomResourceDefinition
 		crd := &apiextensionsv1.CustomResourceDefinition{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name: "network-attachment-definitions.k8s.cni.cncf.io",
-			},
+			Name: "network-attachment-definitions.k8s.cni.cncf.io",
 		}
 		err := kubeClient.Create(context.Background(), crd)
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup NetworkAttachmentDefinition in the namespace
 		nad := &v1.NetworkAttachmentDefinition{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Namespace: "non-system-ns-without-sidecar-injection",
-				Name:      metadata.KumaCNI,
-			},
+			Namespace: "non-system-ns-without-sidecar-injection",
+			Name:      metadata.KumaCNI,
 		}
 		err = kubeClient.Create(context.Background(), nad)
 		Expect(err).ToNot(HaveOccurred())
 
-		// given namespace without kuma.io/sidecar-injection annotation
+		// given namespace without the kuma.io/sidecar-injection label
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{
-				Namespace: "non-system-ns-without-sidecar-injection",
-				Name:      "non-system-ns-without-sidecar-injection",
-			},
+			Namespace: "non-system-ns-without-sidecar-injection",
+			Name:      "non-system-ns-without-sidecar-injection",
 		}
 
 		// when
@@ -172,10 +150,8 @@ var _ = Describe("NamespaceReconciler", func() {
 	It("should ignore namespace namespaces without label", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{
-				Namespace: "non-system-ns-without-sidecar-injection",
-				Name:      "non-system-ns-without-sidecar-injection",
-			},
+			Namespace: "non-system-ns-without-sidecar-injection",
+			Name:      "non-system-ns-without-sidecar-injection",
 		}
 
 		// when
@@ -195,10 +171,8 @@ var _ = Describe("NamespaceReconciler", func() {
 	It("should skip creating NetworkAttachmentDefinition when CRD is absent in the cluster", func() {
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{
-				Namespace: "non-system-ns-with-sidecar-injection",
-				Name:      "non-system-ns-with-sidecar-injection",
-			},
+			Namespace: "non-system-ns-with-sidecar-injection",
+			Name:      "non-system-ns-with-sidecar-injection",
 		}
 
 		// when

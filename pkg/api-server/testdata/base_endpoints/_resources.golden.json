@@ -414,16 +414,6 @@
   },
   {
    "includeInFederation": false,
-   "name": "ServiceInsight",
-   "path": "service-insights",
-   "pluralDisplayName": "Service Insights",
-   "readOnly": true,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Service Insight"
-  },
-  {
-   "includeInFederation": false,
    "name": "Workload",
    "path": "workloads",
    "pluralDisplayName": "Workloads",
@@ -441,46 +431,6 @@
    "scope": "Global",
    "shortName": "z",
    "singularDisplayName": "Zone"
-  },
-  {
-   "includeInFederation": false,
-   "name": "ZoneEgress",
-   "path": "zoneegresses",
-   "pluralDisplayName": "Zone Egresses",
-   "readOnly": false,
-   "scope": "Global",
-   "shortName": "ze",
-   "singularDisplayName": "Zone Egress"
-  },
-  {
-   "includeInFederation": false,
-   "name": "ZoneEgressInsight",
-   "path": "zoneegressinsights",
-   "pluralDisplayName": "Zone Egress Insights",
-   "readOnly": true,
-   "scope": "Global",
-   "shortName": "",
-   "singularDisplayName": "Zone Egress Insight"
-  },
-  {
-   "includeInFederation": false,
-   "name": "ZoneIngress",
-   "path": "zoneingresses",
-   "pluralDisplayName": "Zone Ingresses",
-   "readOnly": false,
-   "scope": "Global",
-   "shortName": "zi",
-   "singularDisplayName": "Zone Ingress"
-  },
-  {
-   "includeInFederation": false,
-   "name": "ZoneIngressInsight",
-   "path": "zone-ingress-insights",
-   "pluralDisplayName": "Zone Ingress Insights",
-   "readOnly": true,
-   "scope": "Global",
-   "shortName": "",
-   "singularDisplayName": "Zone Ingress Insight"
   },
   {
    "includeInFederation": false,

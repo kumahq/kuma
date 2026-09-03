@@ -221,20 +221,20 @@ var _ = Describe("run", func() {
 					"KUMA_DATAPLANE_NAME":                "example",
 					"KUMA_DATAPLANE_MESH":                "default",
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
-					// Notice: KUMA_DATAPLANE_RUNTIME_CONFIG_DIR is not set in order to let `kuma-dp` to create a temporary directory
+					// Notice: KUMA_DATAPLANE_RUNTIME_WORK_DIR is not set in order to let `kuma-dp` to create a temporary directory
 				},
 				args:         []string{},
 				expectedFile: "",
 			}
 		}),
-		Entry("can be launched with env vars and given config dir", func() testCase {
+		Entry("can be launched with env vars and given work dir", func() testCase {
 			return testCase{
 				envVars: map[string]string{
 					"KUMA_CONTROL_PLANE_API_SERVER_URL":  "http://localhost:1234",
 					"KUMA_DATAPLANE_NAME":                "example",
 					"KUMA_DATAPLANE_MESH":                "default",
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
-					"KUMA_DATAPLANE_RUNTIME_CONFIG_DIR":  tmpDir,
+					"KUMA_DATAPLANE_RUNTIME_WORK_DIR":    tmpDir,
 				},
 				args:         []string{},
 				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
@@ -248,22 +248,9 @@ var _ = Describe("run", func() {
 					"--name", "example",
 					"--mesh", "default",
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
-					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
+					// Notice: --work-dir is not set in order to let `kuma-dp` to create a temporary directory
 				},
 				expectedFile: "",
-			}
-		}),
-		Entry("can be launched with args and given config dir", func() testCase {
-			return testCase{
-				envVars: map[string]string{},
-				args: []string{
-					"--cp-address", "http://localhost:1234",
-					"--name", "example",
-					"--mesh", "default",
-					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
-					"--config-dir", tmpDir,
-				},
-				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
 			}
 		}),
 		Entry("can be launched with args and given work dir", func() testCase {
@@ -279,7 +266,7 @@ var _ = Describe("run", func() {
 				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
 			}
 		}),
-		Entry("can be launched with args and given config dir", func() testCase {
+		Entry("can be launched with args and given work dir that does not exist yet", func() testCase {
 			return testCase{
 				envVars: map[string]string{},
 				args: []string{
@@ -287,10 +274,9 @@ var _ = Describe("run", func() {
 					"--name", "example",
 					"--mesh", "default",
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
-					"--config-dir", filepath.Join(tmpDir, "config-dir"),
-					"--work-dir", tmpDir,
+					"--work-dir", filepath.Join(tmpDir, "nested"),
 				},
-				expectedFile: filepath.Join(tmpDir, "bootstrap.yaml"),
+				expectedFile: filepath.Join(tmpDir, "nested", "bootstrap.yaml"),
 			}
 		}),
 		Entry("can be launched with args and dataplane token", func() testCase {
@@ -302,7 +288,7 @@ var _ = Describe("run", func() {
 					"--mesh", "default",
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"--dataplane-token-file", filepath.Join("testdata", "token"),
-					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
+					// Notice: --work-dir is not set in order to let `kuma-dp` to create a temporary directory
 				},
 				expectedFile: "",
 			}
@@ -314,7 +300,7 @@ var _ = Describe("run", func() {
 					"KUMA_DATAPLANE_NAME":                "example",
 					"KUMA_DATAPLANE_MESH":                "default",
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
-					// Notice: KUMA_DATAPLANE_RUNTIME_CONFIG_DIR is not set in order to let `kuma-dp` to create a temporary directory
+					// Notice: KUMA_DATAPLANE_RUNTIME_WORK_DIR is not set in order to let `kuma-dp` to create a temporary directory
 				},
 				args:         []string{},
 				expectedFile: "",
@@ -328,7 +314,7 @@ var _ = Describe("run", func() {
 					"--name", "example",
 					"--mesh", "default",
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
-					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
+					// Notice: --work-dir is not set in order to let `kuma-dp` to create a temporary directory
 				},
 				expectedFile: "",
 			}
@@ -485,4 +471,20 @@ var _ = Describe("metricsTargetsForBackends", func() {
 			RefreshInterval: 5 * time.Second,
 		}}))
 	})
+})
+
+var _ = Describe("readinessListenAddr", func() {
+	DescribeTable("should pick the address the kubelet or the operator can reach",
+		func(inKubernetes bool, ipv6 bool, adminAddress string, expected string) {
+			Expect(readinessListenAddr(inKubernetes, ipv6, adminAddress)).To(Equal(expected))
+		},
+		Entry("kubernetes, admin on unix socket", true, false, "", "0.0.0.0"),
+		Entry("kubernetes, admin on TCP loopback", true, false, "127.0.0.1", "0.0.0.0"),
+		Entry("kubernetes, ipv6, admin on unix socket", true, true, "", "::"),
+		Entry("kubernetes, ipv6, admin on TCP loopback", true, true, "::1", "::"),
+		Entry("universal, admin on TCP loopback", false, false, "127.0.0.1", "127.0.0.1"),
+		Entry("universal, admin bound to all interfaces", false, false, "0.0.0.0", "0.0.0.0"),
+		Entry("universal, admin on unix socket", false, false, "", "127.0.0.1"),
+		Entry("universal, ipv6, admin on unix socket", false, true, "", "::1"),
+	)
 })

@@ -17,6 +17,7 @@ import (
 	meshhttproute "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshloadbalancing "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	meshmetric "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	meshproxypatch "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	meshratelimit "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	meshretry "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -30,7 +31,21 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
-const meshName = "envoyconfig"
+const (
+	meshName     = "envoyconfig"
+	identityName = "envoyconfig-identity"
+)
+
+// allowAllTrafficPermission resolves the trust domain at install time: the
+// cluster does not exist yet while the spec tree is being built.
+func allowAllTrafficPermission() InstallFunc {
+	return func(cluster Cluster) error {
+		return MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+			meshName,
+			MeshIdentityTrustDomain(meshName, cluster),
+		)(cluster)
+	}
+}
 
 func Sidecars() {
 	BeforeAll(SetupSidecarCluster)
@@ -51,6 +66,7 @@ func Sidecars() {
 		meshretry.MeshRetryResourceTypeDescriptor,
 		meshloadbalancing.MeshLoadBalancingStrategyResourceTypeDescriptor,
 		meshmetric.MeshMetricResourceTypeDescriptor,
+		meshproxypatch.MeshProxyPatchResourceTypeDescriptor,
 		meshtrafficpermission.MeshTrafficPermissionResourceTypeDescriptor,
 		meshopentelemetrybackend.MeshOpenTelemetryBackendResourceTypeDescriptor,
 	))
@@ -67,6 +83,7 @@ func Sidecars() {
 		test.EntriesForFolder(filepath.Join("sidecars", "meshloadbalancingstrategy"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshtrafficpermission"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshmetric"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshproxypatch"), "envoyconfig"),
 	)
 }
 
@@ -93,22 +110,22 @@ func SetupSidecarCluster() {
 			Yaml(
 				builders.Mesh().
 					WithName(meshName).
-					WithoutInitialPolicies().
-					WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
+					WithoutInitialPolicies(),
 			),
 		).
-		Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+		Install(MeshIdentityBundled(meshName, identityName)).
+		Install(allowAllTrafficPermission()).
 		Install(DemoClientUniversal("demo-client", meshName,
 			WithTransparentProxy(true),
 			WithDpEnvs(map[string]string{
-				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_WORK_DIR":     "/tmp",
 				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
 			})),
 		).
 		Install(TestServerUniversal("test-server", meshName,
 			WithArgs([]string{"echo", "--instance", "universal-1"}),
 			WithDpEnvs(map[string]string{
-				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_WORK_DIR":     "/tmp",
 				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
 			}),
 		),
@@ -126,7 +143,7 @@ func SetupSidecarCluster() {
 }
 
 func CleanupAfterSidecarTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(meshName, []string{"demo-client", "test-server"}, MeshTrafficPermissionAllowAllUniversal(meshName), policies...)
+	return cleanupAfterTest(meshName, []string{"demo-client", "test-server"}, allowAllTrafficPermission(), policies...)
 }
 
 func CleanupAfterSidecarSuite() {

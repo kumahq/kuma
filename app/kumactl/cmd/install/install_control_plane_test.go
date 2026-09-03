@@ -133,7 +133,6 @@ var _ = Context("kumactl install control-plane", func() {
 				"--dataplane-init-registry", "kuma-ci",
 				"--dataplane-init-version", "greatest",
 				"--tls-api-server-secret", "api-server-secret",
-				"--tls-api-server-client-certs-secret", "api-server-client-secret",
 				"--tls-kds-zone-client-secret", "kds-ca-secret",
 				"--tls-general-ca-secret", "general-tls-secret-ca",
 				"--mode", "zone",
@@ -238,10 +237,6 @@ controlPlane:
 			extraArgs: []string{"--mode", "global"},
 			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
 		}),
-		Entry("--mode global with universal environment is still unsupported", errTestCase{
-			extraArgs: []string{"--mode", "global", "--set", "controlPlane.environment=universal"},
-			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
-		}),
 		Entry("--zone is more than 253 characters", errTestCase{
 			extraArgs: []string{"--kds-global-address", "grpcs://192.168.0.1:5685", "--mode", "zone", "--zone", "takryywlpeftgnlwuwmwwfwohwzqxqlofjfsuuldtatoxlmnniytycvdnduwplvgnpnjwvzmbkqrvgnlovpynrtuyhhrqibdzwbfjrmhvwkkryzfnudghaxmegfvacjlytuyeikuawquolrykwwldjiynaxrpqgxmvwashrkigadzhxdeihcbjurhpmdrnulajpaspqcgzqxsnjrdenhruaawooojpyoprgnnoqiqdhncuztbgfsvhparjlippv"},
 			errorMsg:  "controlPlane.zone must be no more than 253 characters",
@@ -258,9 +253,9 @@ controlPlane:
 			extraArgs: []string{"--kds-global-address", "http://192.168.0.1:1234", "--mode", "zone", "--zone", "zone-1"},
 			errorMsg:  "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// or grpc:// got:'http://192.168.0.1:1234'",
 		}),
-		Entry("--kds-global-address is used with standalone", errTestCase{
+		Entry("--mode standalone is no longer supported", errTestCase{
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "standalone"},
-			errorMsg:  "Can't specify a controlPlane.kdsGlobalAddress when controlPlane.mode!='zone'",
+			errorMsg:  "controlPlane.mode invalid got:'standalone'",
 		}),
 		Entry("--tls-general-secret without --tls-general-ca-bundle", errTestCase{
 			extraArgs: []string{"--tls-general-secret", "sec"},

@@ -11,16 +11,21 @@ import (
 
 func TransparentProxy() {
 	const mesh = "transparent-proxy"
+	const identityName = "transparent-proxy-identity"
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshUniversal(mesh)).
+			Install(MeshUniversal(mesh)).
+			Install(MeshIdentityBundled(mesh, identityName)).
 			Install(TestServerUniversal("test-server", mesh,
 				WithTransparentProxy(true),
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("test-server"),
 			)).
-			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+				mesh,
+				MeshIdentityTrustDomain(mesh, universal.Cluster),
+			)).
 			Install(DemoClientUniversal("tp-client", mesh, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -54,7 +59,7 @@ func TransparentProxy() {
 		Eventually(func(g Gomega) {
 			failures, err := client.CollectFailure(universal.Cluster, "tp-client", "test-server.svc.mesh.local")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(failures.Exitcode).To((Or(Equal(6), Equal(28))))
+			g.Expect(failures.Exitcode).To(Or(Equal(6), Equal(28)))
 		}).Should(Succeed())
 
 		// and

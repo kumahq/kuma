@@ -86,91 +86,6 @@ func (p *PodConverter) PodToDataplane(
 	return nil
 }
 
-func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.ZoneIngress, pod *kube_core.Pod, services []*kube_core.Service) error {
-	logger := converterLog.WithValues("ZoneIngress.name", zoneIngress.Name, "Pod.name", pod.Name)
-	// Start with the existing ZoneIngress spec so we won't override available services in Ingress section
-	zoneIngressRes := core_mesh.NewZoneIngressResource()
-	if err := p.ResourceConverter.ToCoreResource(zoneIngress, zoneIngressRes); err != nil {
-		logger.Error(err, "unable to convert ZoneIngress k8s object into core resource")
-		return err
-	}
-
-	if err := p.IngressFor(ctx, zoneIngressRes.Spec, pod, services); err != nil {
-		return err
-	}
-
-	currentSpec, err := zoneIngress.GetSpec()
-	if err != nil {
-		return err
-	}
-	// we need to validate if the labels have changed
-	labels, err := resource_labels.Compute(
-		core_mesh.ZoneIngressResourceTypeDescriptor,
-		currentSpec,
-		mergeLabels(zoneIngress.GetLabels(), pod.Labels),
-		model.NoMesh,
-		zoneIngress.Name,
-		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
-		resource_labels.WithMode(p.Mode),
-		resource_labels.WithK8s(true),
-		resource_labels.WithZone(p.Zone),
-		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
-	)
-	if err != nil {
-		return err
-	}
-
-	if model.Equal(currentSpec, zoneIngressRes.Spec) && reflect.DeepEqual(labels, zoneIngress.GetLabels()) {
-		logger.V(1).Info("resource hasn't changed, skip")
-		return nil
-	}
-	zoneIngress.SetSpec(zoneIngressRes.Spec)
-	zoneIngress.SetLabels(labels)
-	return nil
-}
-
-func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.ZoneEgress, pod *kube_core.Pod, services []*kube_core.Service) error {
-	logger := converterLog.WithValues("ZoneEgress.name", zoneEgress.Name, "Pod.name", pod.Name)
-	// Start with the existing ZoneEgress spec
-	zoneEgressRes := core_mesh.NewZoneEgressResource()
-	if err := p.ResourceConverter.ToCoreResource(zoneEgress, zoneEgressRes); err != nil {
-		logger.Error(err, "unable to convert ZoneEgress k8s object into core resource")
-		return err
-	}
-
-	if err := p.EgressFor(ctx, zoneEgressRes.Spec, pod, services); err != nil {
-		return err
-	}
-	currentSpec, err := zoneEgress.GetSpec()
-	if err != nil {
-		return err
-	}
-	// we need to validate if the labels have changed
-	labels, err := resource_labels.Compute(
-		core_mesh.ZoneEgressResourceTypeDescriptor,
-		currentSpec,
-		mergeLabels(zoneEgress.GetLabels(), pod.Labels),
-		model.NoMesh,
-		zoneEgress.Name,
-		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
-		resource_labels.WithMode(p.Mode),
-		resource_labels.WithK8s(true),
-		resource_labels.WithZone(p.Zone),
-		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
-	)
-	if err != nil {
-		return err
-	}
-	if model.Equal(currentSpec, zoneEgressRes.Spec) && reflect.DeepEqual(labels, zoneEgress.GetLabels()) {
-		logger.V(1).Info("resource hasn't changed, skip")
-		return nil
-	}
-
-	zoneEgress.SetSpec(zoneEgressRes.Spec)
-	zoneEgress.SetLabels(labels)
-	return nil
-}
-
 func processReachableBackendRefs(refs ReachableBackendRefs) []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef {
 	var result []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef
 
@@ -232,24 +147,19 @@ func (p *PodConverter) dataplaneFor(
 
 	dataplane.Networking.Address = pod.Status.PodIP
 
-	gwType, exist := annotations.GetString(metadata.KumaGatewayAnnotation)
-	if exist {
-		switch gwType {
-		case "enabled":
-			gateway, err := p.GatewayByServiceFor(ctx, pod, services)
-			if err != nil {
-				return nil, err
-			}
-			dataplane.Networking.Gateway = gateway
-		case "provided":
-			gateway, err := p.GatewayByDeploymentFor(ctx, pod, services)
-			if err != nil {
-				return nil, err
-			}
-			dataplane.Networking.Gateway = gateway
-		default:
-			return nil, errors.Errorf("invalid delegated gateway type '%s'", gwType)
+	// The injector parses this annotation as a boolean, so accept exactly the
+	// same values here: a pod the injector treated as a gateway must convert
+	// into a gateway Dataplane, and one it did not must still get a Dataplane.
+	gwEnabled, _, err := annotations.GetEnabled(metadata.KumaGatewayAnnotation)
+	if err != nil {
+		return nil, err
+	}
+	if gwEnabled {
+		gateway, err := p.GatewayByServiceFor(ctx, pod, services)
+		if err != nil {
+			return nil, err
 		}
+		dataplane.Networking.Gateway = gateway
 	} else {
 		var regularServices, zoneProxyServices []*kube_core.Service
 		for _, svc := range services {
@@ -308,12 +218,6 @@ func (p *PodConverter) dataplaneFor(
 		}
 	}
 
-	probes, err := ProbesFor(pod)
-	if err != nil {
-		return nil, err
-	}
-	dataplane.Probes = probes
-
 	adminPort, exist, err := annotations.GetUint32(metadata.KumaEnvoyAdminPort)
 	if err != nil {
 		return nil, err
@@ -329,21 +233,6 @@ func (p *PodConverter) GatewayByServiceFor(ctx context.Context, pod *kube_core.P
 	return &mesh_proto.Dataplane_Networking_Gateway{
 		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
 		Tags: map[string]string{},
-	}, nil
-}
-
-func (p *PodConverter) GatewayByDeploymentFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
-	namespace := pod.GetObjectMeta().GetNamespace()
-	deployment, kind, err := p.InboundConverter.NameExtractor.Name(ctx, pod)
-	if err != nil {
-		return nil, err
-	}
-	if kind != "Deployment" {
-		return p.GatewayByServiceFor(ctx, pod, services)
-	}
-	return &mesh_proto.Dataplane_Networking_Gateway{
-		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-		Tags: map[string]string{"kuma.io/service-name": fmt.Sprintf("%s_%s_svc", deployment, namespace)},
 	}, nil
 }
 

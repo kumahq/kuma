@@ -29,12 +29,16 @@ endpoints:
       - 10.0.0.1
     conditions:
       ready: true
+    nodeName: node-1
 ---
 apiVersion: v1
 kind: Node
 metadata:
   name: node-1
 status:
+  conditions:
+    - type: Ready
+      status: "True"
   addresses:
     - type: InternalIP
       address: 192.168.1.1

@@ -27,20 +27,17 @@ func (a EnvVarsByName) Less(i, j int) bool {
 }
 
 type DataplaneProxyFactory struct {
-	ControlPlaneURL              string
-	ControlPlaneCACert           string
-	DefaultAdminPort             uint32
-	DefaultReadinessPort         uint32
-	ContainerConfig              runtime_k8s.DataplaneContainer
-	BuiltinDNS                   runtime_k8s.BuiltinDNS
-	WaitForDataplane             bool
-	envoyAdminUnixSocket         bool
-	sidecarContainersEnabled     bool
-	virtualProbesEnabled         bool
-	applicationProbeProxyPort    uint32
-	unifiedResourceNamingEnabled bool
-	otelPipeEnabled              bool
-	spireEnabled                 bool
+	ControlPlaneURL           string
+	ControlPlaneCACert        string
+	DefaultAdminPort          uint32
+	DefaultReadinessPort      uint32
+	ContainerConfig           runtime_k8s.DataplaneContainer
+	BuiltinDNS                runtime_k8s.BuiltinDNS
+	WaitForDataplane          bool
+	sidecarContainersEnabled  bool
+	applicationProbeProxyPort uint32
+	otelPipeEnabled           bool
+	spireEnabled              bool
 }
 
 func NewDataplaneProxyFactory(
@@ -51,29 +48,23 @@ func NewDataplaneProxyFactory(
 	containerConfig runtime_k8s.DataplaneContainer,
 	builtinDNS runtime_k8s.BuiltinDNS,
 	waitForDataplane bool,
-	envoyAdminUnixSocket bool,
 	sidecarContainersEnabled bool,
-	virtualProbesEnabled bool,
 	applicationProbeProxyPort uint32,
-	unifiedResourceNamingEnabled bool,
 	otelPipeEnabled bool,
 	spireEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
-		ControlPlaneURL:              controlPlaneURL,
-		ControlPlaneCACert:           controlPlaneCACert,
-		DefaultAdminPort:             defaultAdminPort,
-		DefaultReadinessPort:         defaultReadinessPort,
-		ContainerConfig:              containerConfig,
-		BuiltinDNS:                   builtinDNS,
-		WaitForDataplane:             waitForDataplane,
-		envoyAdminUnixSocket:         envoyAdminUnixSocket,
-		sidecarContainersEnabled:     sidecarContainersEnabled,
-		virtualProbesEnabled:         virtualProbesEnabled,
-		applicationProbeProxyPort:    applicationProbeProxyPort,
-		unifiedResourceNamingEnabled: unifiedResourceNamingEnabled,
-		otelPipeEnabled:              otelPipeEnabled,
-		spireEnabled:                 spireEnabled,
+		ControlPlaneURL:           controlPlaneURL,
+		ControlPlaneCACert:        controlPlaneCACert,
+		DefaultAdminPort:          defaultAdminPort,
+		DefaultReadinessPort:      defaultReadinessPort,
+		ContainerConfig:           containerConfig,
+		BuiltinDNS:                builtinDNS,
+		WaitForDataplane:          waitForDataplane,
+		sidecarContainersEnabled:  sidecarContainersEnabled,
+		applicationProbeProxyPort: applicationProbeProxyPort,
+		otelPipeEnabled:           otelPipeEnabled,
+		spireEnabled:              spireEnabled,
 	}
 }
 
@@ -130,21 +121,11 @@ func (i *DataplaneProxyFactory) NewContainer(
 		return kube_core.Container{}, err
 	}
 
-	adminPort, err := i.envoyAdminPort(annotations)
-	if err != nil {
+	if _, err := i.envoyAdminPort(annotations); err != nil {
 		return kube_core.Container{}, err
 	}
-	if adminPort == 0 {
-		adminPort = i.DefaultAdminPort
-	}
 
-	// When admin UDS is enabled, Envoy admin listens on a Unix socket
-	// instead of TCP. Use the dedicated readiness port for probes since
-	// K8s probes only support TCP/HTTP.
-	probePort := adminPort
-	if i.envoyAdminUnixSocket {
-		probePort = i.DefaultReadinessPort
-	}
+	probePort := i.DefaultReadinessPort
 
 	waitForDataplaneReady, _, err := metadata.Annotations(annotations).GetEnabledWithDefault(i.WaitForDataplane, metadata.KumaWaitForDataplaneReady)
 	if err != nil {
@@ -176,12 +157,10 @@ func (i *DataplaneProxyFactory) NewContainer(
 			},
 		},
 		LivenessProbe: &kube_core.Probe{
-			ProbeHandler: kube_core.ProbeHandler{
-				HTTPGet: &kube_core.HTTPGetAction{
-					Path: "/ready",
-					Port: kube_intstr.IntOrString{
-						IntVal: int32(probePort),
-					},
+			HTTPGet: &kube_core.HTTPGetAction{
+				Path: "/ready",
+				Port: kube_intstr.IntOrString{
+					IntVal: int32(probePort),
 				},
 			},
 			InitialDelaySeconds: i.ContainerConfig.LivenessProbe.InitialDelaySeconds,
@@ -191,12 +170,10 @@ func (i *DataplaneProxyFactory) NewContainer(
 			FailureThreshold:    i.ContainerConfig.LivenessProbe.FailureThreshold,
 		},
 		ReadinessProbe: &kube_core.Probe{
-			ProbeHandler: kube_core.ProbeHandler{
-				HTTPGet: &kube_core.HTTPGetAction{
-					Path: "/ready",
-					Port: kube_intstr.IntOrString{
-						IntVal: int32(probePort),
-					},
+			HTTPGet: &kube_core.HTTPGetAction{
+				Path: "/ready",
+				Port: kube_intstr.IntOrString{
+					IntVal: int32(probePort),
 				},
 			},
 			InitialDelaySeconds: i.ContainerConfig.ReadinessProbe.InitialDelaySeconds,
@@ -216,12 +193,10 @@ func (i *DataplaneProxyFactory) NewContainer(
 	}
 	if i.sidecarContainersEnabled {
 		container.StartupProbe = &kube_core.Probe{
-			ProbeHandler: kube_core.ProbeHandler{
-				HTTPGet: &kube_core.HTTPGetAction{
-					Path: "/ready",
-					Port: kube_intstr.IntOrString{
-						IntVal: int32(probePort),
-					},
+			HTTPGet: &kube_core.HTTPGetAction{
+				Path: "/ready",
+				Port: kube_intstr.IntOrString{
+					IntVal: int32(probePort),
 				},
 			},
 			InitialDelaySeconds: i.ContainerConfig.StartupProbe.InitialDelaySeconds,
@@ -298,6 +273,10 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Name:  "KUMA_CONTROL_PLANE_CA_CERT",
 			Value: i.ControlPlaneCACert,
 		},
+		"KUMA_READINESS_PORT": {
+			Name:  "KUMA_READINESS_PORT",
+			Value: strconv.Itoa(int(i.DefaultReadinessPort)),
+		},
 	}
 	if i.BuiltinDNS.Enabled {
 		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{
@@ -329,13 +308,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		}
 	}
 
-	if i.unifiedResourceNamingEnabled {
-		envVars["KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED"] = kube_core.EnvVar{
-			Name:  "KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED",
-			Value: "true",
-		}
-	}
-
 	if i.otelPipeEnabled {
 		envVars["HOST_IP"] = kube_core.EnvVar{
 			Name: "HOST_IP",
@@ -362,9 +334,6 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 	}
 
 	annotations := make(map[string]string)
-	if err := probes.SetVirtualProbesEnabledAnnotation(annotations, podAnnotations, i.virtualProbesEnabled); err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesAnnotation))
-	}
 	if err := probes.SetApplicationProbeProxyPortAnnotation(annotations, podAnnotations, i.applicationProbeProxyPort); err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaApplicationProbeProxyPortAnnotation))
 	}

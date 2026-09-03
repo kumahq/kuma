@@ -58,6 +58,18 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 				return err
 			}
 
+			// Describe discriminated unions with a oneOf, which controller-gen
+			// cannot express, so consumers do not have to infer which property a
+			// given `type` selects. Appended to the enrichment expression so the
+			// generated file keeps its key order.
+			unions, err := unionAssignments(crdPath)
+			if err != nil {
+				return err
+			}
+			if unions != "" {
+				unions = "\n  | " + unions
+			}
+
 			// Enrich schema with CRD information
 			yqEnrichSchema := exec.CommandContext(cmd.Context(), //nolint:gosec
 				localArgs.yqBin, "e", "-i",
@@ -67,7 +79,7 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
       | del(.apiVersion, .metadata, .kind)
     ) * {"type": {"enum": [$crd.spec.names.kind]}}
   | .description = $crd.spec.versions[0].schema.openAPIV3Schema.description
-  | (.properties | select(has("status")).status) |= . + {"readOnly": true}`, crdPath),
+  | (.properties | select(has("status")).status) |= . + {"readOnly": true}%s`, crdPath, unions),
 				tmpSchemaPath,
 			)
 			yqEnrichSchema.Stderr = cmd.ErrOrStderr()

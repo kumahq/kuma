@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
@@ -29,8 +28,8 @@ func GenerateOutboundListener(
 	listenerName := envoy_names.GetOutboundListenerName(address, port)
 	listenerStatPrefix := ""
 	tcpProxyStatPrefix := svc.KumaServiceTagValue
-	if id, ok := svc.Outbound.AssociatedServiceResource(); ok {
-		listenerName = id.String()
+	if svc.DestinationResource != "" {
+		listenerName = svc.DestinationResource
 		listenerStatPrefix = listenerName
 		tcpProxyStatPrefix = listenerName
 	}
@@ -38,8 +37,7 @@ func GenerateOutboundListener(
 	tags := svc.OutboundListenerTags()
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-		Configure(envoy_listeners.TCPProxy(tcpProxyStatPrefix, splits...)).
-		ConfigureIf(svc.Protocol == core_meta.ProtocolKafka, envoy_listeners.Kafka(tcpProxyStatPrefix))
+		Configure(envoy_listeners.TCPProxy(tcpProxyStatPrefix, splits...))
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).

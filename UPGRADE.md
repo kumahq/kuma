@@ -15,6 +15,393 @@ does not have any particular instructions.
 **Action required**
 
 None. Changes to meshes, policies, and services now take up to 10 seconds to reach data plane proxies instead of up to 1 second. If your deployment needs faster propagation, set `xdsServer.dataplaneConfigurationRefreshInterval` back to the previous value, keeping in mind the control plane CPU cost.
+### The ServiceInsight REST endpoints are removed
+
+`GET /meshes/{mesh}/service-insights` and `GET /meshes/{mesh}/service-insights/{name}` are removed and answer `404`.
+
+The control plane stopped writing `ServiceInsight` when services became computed from `MeshService` and `MeshExternalService`; it deletes the ones left behind by older control planes. The endpoints had therefore been reading a resource that is never present, and returned an empty result for every mesh.
+
+**Action required**
+
+None if you were reading these endpoints, since they no longer returned data. To list services in a mesh, use `MeshService` and `MeshExternalService` instead.
+
+
+### The legacy overview paths `dataplanes+insights` and `zones+insights` are removed
+
+`GET /meshes/{mesh}/dataplanes+insights` and `GET /zones+insights`, along with their `/{name}` forms, were kept as aliases when overviews moved to `_overview`. They are now removed and answer `404`.
+
+**Action required**
+
+Use the replacements, which have been available for several releases and return the same payload:
+
+- `/meshes/{mesh}/dataplanes+insights` becomes `/meshes/{mesh}/dataplanes/_overview`
+- `/meshes/{mesh}/dataplanes+insights/{name}` becomes `/meshes/{mesh}/dataplanes/{name}/_overview`
+- `/zones+insights` becomes `/zones/_overview`
+- `/zones+insights/{name}` becomes `/zones/{name}/_overview`
+
+### Kubernetes probes on the sidecar always use the readiness port
+
+The injected `kuma-sidecar` container had its liveness, readiness and startup probes pointed at the Envoy admin port (`9901`) when `experimental.envoyAdminUnixSocket` was off, and at the kuma-dp readiness port (`9902`) when it was on. Those two settings are decided in different places - the probe port is written into the Pod by the injecting webhook at admission, the admin transport is chosen at bootstrap by whichever control plane instance answers - so a rolling control plane upgrade, or a change to the flag, left a window where they disagreed and pods went into `CrashLoopBackOff`.
+
+Probes now always use the readiness port, whatever the admin transport, and the readiness port is always excluded from inbound transparent proxy interception. To keep the same meaning on both transports, `/ready` on the readiness port is now proxied to the Envoy admin `/ready` in both cases, so a Pod is marked ready only once Envoy has its configuration. Previously the readiness port answered `READY` as soon as kuma-dp was up when admin ran over TCP; the probes did not use that port in that mode, so no probe changes meaning.
+
+Pods injected before the upgrade keep their existing probes on `9901` and continue to work: the `kuma:envoy:admin` listener still serves `/ready` on that port. They move to the readiness port the next time they are recreated.
+
+The sidecar now also receives `KUMA_READINESS_PORT` from `bootstrapServer.params.readinessPort`, so kuma-dp listens on the port the probes use. Previously the injector took the probe port from the control plane setting while kuma-dp took its listen port from its own `KUMA_READINESS_PORT`, and the two agreed only because both default to `9902`. For the same reason `bootstrapServer.params.readinessPort` no longer accepts `0`; a control plane configured that way now fails to start instead of injecting probes for port `0`.
+
+**Action required**
+
+None for most users. If you have a `NetworkPolicy`, a monitoring check, or a `ContainerPatch` that pins the sidecar probe port to `9901`, update it to `9902` (or to `bootstrapServer.params.readinessPort` if you changed it). If you set `bootstrapServer.params.readinessPort` to `0`, or set `KUMA_READINESS_PORT` on the sidecar by hand to a value other than the control plane setting, remove it.
+
+### The `k8s.kuma.io/service-account` label on a `Dataplane` is managed by the control plane
+
+On Kubernetes this label is computed by the control plane from the Pod's ServiceAccount and is not meant to be set by hand. The admission webhook now rejects any `Dataplane` create or update that carries `k8s.kuma.io/service-account`, unless the request comes from the control plane itself or from another user listed in `runtime.kubernetes.allowedUsers`, on both Zone and Global control planes. A proxy is also rejected at xDS authentication when the label on its `Dataplane` does not match the ServiceAccount of its Pod. Other resource types are unaffected, as are resources synced over KDS and resources written by the control plane.
+
+**Action required**
+
+Remove `k8s.kuma.io/service-account` from any `Dataplane` you apply yourself, including GitOps-managed ones. A `Dataplane` whose label does not match its Pod stops connecting after the upgrade until the label is dropped.
+
+### A request matching no `MeshHTTPRoute` rule now gets a `404`
+
+When a `MeshHTTPRoute` applies to a destination, a request that matches none of its rules is answered with `404` instead of being sent to that destination. This is what the Gateway API requires of an `HTTPRoute`, and it is what the GAMMA conformance suite asserts. Before this change the unmatched request fell through to the destination service as if no route existed.
+
+The rules of a `MeshHTTPRoute` apply to every HTTP port of the destination when the `to[].targetRef` names a `MeshService` without a `sectionName`, so the `404` covers those ports too, including ports no rule mentions. Ports whose protocol is not HTTP based are unaffected. A destination with no `MeshHTTPRoute` at all is also unaffected and keeps reaching its service.
+
+The case worth checking is a route written only to anchor another policy. A `MeshHTTPRoute` matching `/api` that exists so a `MeshTimeout`, `MeshRetry`, or `MeshAccessLog` can target it now answers `404` on every other path of that destination. On a gRPC destination the same `404` reaches the client as `UNIMPLEMENTED`.
+
+**Action required**
+
+Add an explicit catch-all rule to any `MeshHTTPRoute` that should keep passing unmatched traffic to its destination:
+
+```yaml
+rules:
+  - matches:
+      - path:
+          type: PathPrefix
+          value: /
+    default:
+      backendRefs:
+        - kind: MeshService
+          labels:
+            kuma.io/display-name: backend
+          port: 80
+```
+
+Put it on the route itself when the other policies targeting that route should also cover the unmatched traffic, or on a second `MeshHTTPRoute` when they should not.
+
+### RBAC: control plane now reads Gateway API `GRPCRoute`s
+
+The Helm-installed control plane `ClusterRole` now grants `get`, `list`, and
+`watch` on `gateway.networking.k8s.io` `grpcroutes`, alongside the existing
+`httproutes` and `referencegrants` permissions. This is required for Kuma to
+watch and translate Gateway API `GRPCRoute` resources into mesh routing
+configuration.
+
+**Action required**
+
+If you manage the control plane RBAC outside of Helm (for example via GitOps or
+manual manifests), add the same `grpcroutes` read permissions to the control
+plane `ClusterRole`.
+
+### `MeshLoadBalancingStrategy` cross-zone settings now require a `MeshMultiZoneService` `to` target
+
+`MeshLoadBalancingStrategy.spec.to[].default.localityAwareness.crossZone` is now accepted only when that `to` entry targets a `MeshMultiZoneService`. Create and update validation now rejects the same `crossZone` block on `Mesh`, `MeshService`, and `MeshExternalService` targets.
+
+**Action required**
+
+Move any existing `crossZone` configuration under `to` entries whose `targetRef.kind` is `MeshMultiZoneService` before upgrading. Keep `localityAwareness.localZone`, `loadBalancer`, and other supported settings on the remaining target kinds as needed.
+
+### Generated Gateway API producer routes now win the same ties as hand-written ones
+
+A `MeshHTTPRoute` generated from a Gateway API `HTTPRoute` whose parent (a `Service` or `MeshService`) lives in the `HTTPRoute`'s own namespace is now created in that namespace, instead of always landing in the Kuma system namespace. This is what the policy role model calls a producer route, and putting it in the right namespace gives it `kuma.io/policy-role=producer`, the same role a hand-written `MeshHTTPRoute` targeting the same `Mesh` and `to` entry gets. Before this change, every generated route landed in the system namespace and was ranked `system`, so it always lost to an equivalent hand-written producer route even when the two expressed the same intent.
+
+A generated route whose parent is in a different namespace (a consumer route) still lands in the Kuma system namespace and keeps its `system` role and precedence unchanged.
+
+Because the route now lives in the `HTTPRoute`'s namespace, its `k8s.kuma.io/namespace` label changes to match, it now syncs across zones like any other namespaced policy, and it applies to dataplanes in remote zones the same way a hand-written route in that namespace would.
+
+**Action required**
+
+If a mesh has both a generated producer route and a hand-written `MeshHTTPRoute` targeting the same `Mesh` and `to` entry, check which one you expect to win: before this upgrade the hand-written route always won, after it the two tie and the outcome falls back to resource name. Remove or adjust one of them if you relied on the previous, implicit precedence.
+
+If any policy selects the generated route by its old `k8s.kuma.io/namespace: <kuma-system>` label (or your system namespace), update it to the `HTTPRoute`'s namespace instead. The control plane moves each existing generated route to its new namespace the next time its `HTTPRoute` is reconciled, so no manual migration of the `MeshHTTPRoute` object itself is needed.
+
+### Gateway API HTTPRoute conflicts on the same parent now resolve by creationTimestamp
+
+When two Gateway API `HTTPRoute`s attach to the same parent with equally specific matches, the generated `MeshHTTPRoute`s used to tie-break by resource name alone, so which route won depended on name rather than which `HTTPRoute` was applied first. Each generated `MeshHTTPRoute` now carries its owning `HTTPRoute`'s `creationTimestamp` as a label, and that label breaks the tie in favor of the older `HTTPRoute`; name order is used only when the timestamps also match.
+
+A hand-written `MeshHTTPRoute` has no such label, so it still takes precedence over any generated route it ties with on an exact conflict, same as before this change.
+
+**Action required**
+
+None. Existing generated `MeshHTTPRoute`s are backfilled with the timestamp label the next time their `HTTPRoute` is reconciled. If two `HTTPRoute`s previously tied and were resolved by name, check whether the new creationTimestamp-based outcome matches what you expect.
+
+### The `BUILTIN` gateway type and its statistics are removed from the API
+
+The built-in gateway implementation was removed over the previous releases, and the Dataplane validator has been rejecting `networking.gateway.type: BUILTIN` since then. The remaining API surface is now gone too:
+
+- `Dataplane.networking.gateway.type` no longer has a `BUILTIN` value. `DELEGATED` is the only gateway type. A `Dataplane` carrying `type: BUILTIN` is now rejected while it is parsed, as an unknown enum value, instead of producing the previous `BUILTIN gateways are no longer supported, use DELEGATED instead` validation error.
+- `MeshInsight.dataplanesByType.gatewayBuiltin` and the `gateway_builtin` `ServiceInsight` service type are removed. `dataplanesByType.gateway` now reports the delegated gateway totals only.
+- `GET /meshes/{mesh}/dataplanes+insights?gateway=builtin` is no longer a valid filter. Use `gateway=delegated`, or `gateway=true` for any gateway.
+- `GET /meshes/{mesh}/service-insights?type=gateway_builtin` is no longer a valid filter and returns `400`. Use `type=gateway_delegated`.
+- The `gatewayBuiltin` object disappears from the `/global-insight` response, in both `dataplanes` and `services`.
+
+All three protobuf ordinals are reserved, so they can never be reused for something else, and a Zone control plane on an older version still syncs to a Global control plane on this one.
+
+**Action required**
+
+Delete every `Dataplane` with `networking.gateway.type: BUILTIN` before upgrading. `2.14.x` still accepts them, and after the upgrade the control plane fails to parse them as an unknown enum value, which breaks listing the `Dataplane`s of that mesh. Find them with `kumactl get dataplanes -o yaml` per mesh, or `kubectl get dataplanes -A -o yaml`, and grep for `BUILTIN`.
+
+Also drop `type: BUILTIN` from any manifest you still keep under source control, and stop consuming the `gatewayBuiltin` fields and the `gateway=builtin` / `type=gateway_builtin` filters if you query the API directly.
+
+### Control plane RBAC is narrowed on Kubernetes
+
+Two `ClusterRole` rules that existed only for the built-in gateway are reduced to what the control plane actually uses:
+
+- `apps`: `deployments` is dropped entirely and `replicasets` keeps only `get`, `list` and `watch`. The control plane reads ReplicaSets to resolve the workload behind a serviceless Pod and never writes either resource.
+- `core`: `services` loses `create` and `delete`. The control plane only annotates existing Services with `ingress.kubernetes.io/service-upstream`.
+
+**Action required**
+
+If you manage the control plane RBAC yourself, apply the same narrowing.
+
+### Names of `Mesh`, `Zone`, `MeshService`, `MeshExternalService` and `MeshMultiZoneService` must be RFC 1035 labels
+
+Names of these resources are rendered into DNS hostnames by `HostnameGenerator`, so a name that is not a valid [RFC 1035](https://www.rfc-editor.org/rfc/rfc1035.html) label produces an invalid hostname. Since 2.10.x such names were accepted with a deprecation warning, now they are rejected:
+
+> A lowercase RFC 1035 label must have at most 63 characters, consist of lower case alphanumeric characters or '-', start with an alphabetic character and end with an alphanumeric character.
+
+This also covers `MeshMultiZoneService` names longer than 63 characters, which were deprecated in 2.14.x.
+
+On Kubernetes the name of the underlying object is validated, not the `<name>.<namespace>` core name, so namespaced resources are unaffected by the namespace part.
+
+The `KUMA_MULTIZONE_ZONE_NAME` control plane setting is validated with the same rule instead of the RFC 1123 label rule, so a Zone control plane with a non-conforming name fails to start instead of failing later when the `Zone` resource is created on the Global control plane.
+
+**Action required**
+
+Existing resources are not rewritten, but any create or update of a resource with a non-conforming name is rejected. This includes resources written by the control plane itself, so a `Mesh` or `MeshService` with a non-conforming name stops being synced from the Global to the Zone control planes, and a Zone control plane whose name is not a valid label fails to register. Rename them before upgrading:
+
+```sh
+kumactl get meshes
+kumactl get zones
+kumactl get meshservices
+kumactl get meshexternalservices
+kumactl get meshmultizoneservices
+```
+
+### `Mesh.mtls` is removed from the API
+
+The `mtls` field is gone from the `Mesh` resource, together with `CertificateAuthorityBackend` and everything it carried: `enabledBackend`, `backends`, `skipValidation`, `dpCert.rotation.expiration`, `dpCert.requestTimeout`, `conf`, `mode` and `rootChain.requestTimeout`. The field number is reserved, so it can never be reused for something else. The empty `Mesh.routing` message goes with it — every field it held had already been removed.
+
+`mtls` had been inert since the legacy SDS path and the CA plugin subsystem were removed: it issued nothing, was provisioned by nothing and validated by nothing. Removing the field only removes the ability to write it down.
+
+Nothing breaks on the way in: `mtls` is now an unknown field, and the control plane accepts unknown fields, so an existing `Mesh` still loads and a manifest that still carries `mtls` still applies. The field is silently dropped the next time the resource is written, so reading a `Mesh` back (`kumactl get mesh`, `kubectl get mesh -o yaml` after a rewrite) no longer shows `mtls`. The Kubernetes `Mesh` CRD is unaffected — its `spec` is `x-kubernetes-preserve-unknown-fields`, so `mtls` was never part of the CRD schema and a stored `Mesh` keeps it in etcd until it is rewritten.
+
+Two user-visible surfaces change with it. `kumactl get meshes` no longer prints the `mTLS` column, so the table is now `NAME` and `AGE`. `kumactl export --profile federation` no longer rewrites `builtin` backends into `provided` ones pointing at the CA secrets, because there is no backend left to rewrite; the orphaned `<mesh>.ca-builtin-*` Secrets are still exported like any other secret.
+
+**Action required**
+
+None to keep the control plane running. Drop `mtls` from the manifests you keep under source control so they describe what is actually stored. If you have not migrated to `MeshIdentity` yet, do that first: see the sections below for what that migration involves.
+
+### `Mesh.mtls` no longer produces mTLS
+
+The transport socket builders no longer read `Mesh.spec.mtls`. A proxy gets an mTLS transport socket — inbound and outbound — only when a `MeshIdentity` matches it; the identity certificate and the trust bundle come from `MeshIdentity` and `MeshTrust`, never from the mesh CA backend. A mesh whose only identity source is `mtls` now serves and accepts plaintext, and `MeshTLS` and `MeshTrafficPermission` no longer apply to its proxies.
+
+The `mtls` field itself is still accepted, but it no longer issues anything: the legacy SDS path is gone, so no certificate is ever generated for it.
+
+**Action required**
+
+Migrate every mesh that still relies on `mtls` to `MeshIdentity` before upgrading. A mesh already covered by a `MeshIdentity` is unaffected.
+
+Two things go away with the legacy path: `SNIFromTags`/`TagsFromSNI`-style tag-encoded SNIs (outbounds to a destination that is not a real resource are plaintext, so they carry no SNI at all), and `MeshService.status.tls` gating of *permissive* meshes — the status is still computed and still gates outbound TLS for `MeshIdentity` proxies.
+
+### The legacy mesh CA is no longer added to the `MeshTrust` bundle
+
+While both systems coexisted, a mesh that had `mtls` enabled *and* at least one `MeshTrust` got the mesh CA injected into the trust bundle under the mesh name, so a `MeshIdentity` proxy still trusted peers presenting a legacy mesh certificate. That bridge is removed together with the legacy SDS server: the trust bundle now contains only the CAs declared by `MeshTrust` resources.
+
+`DataplaneInsight.mTLS` (and the `MeshInsight.mTLS` aggregation built from it) is now populated exclusively from `MeshIdentity` issuance. A proxy with no workload identity reports no certificate at all instead of the legacy mesh CA's.
+
+**Action required**
+
+Complete the migration to `MeshIdentity` *before* upgrading — this is the point where a partially migrated mesh breaks. Once upgraded, proxies still holding a legacy mesh certificate are no longer trusted by their `MeshIdentity` peers, and there is no rolling path back.
+
+### `Mesh.mtls` backends are no longer provisioned or validated
+
+The CA plugin subsystem is gone — both the `builtin` and the `provided` CA managers, and the code that drove them on every Mesh create, update and Kubernetes reconcile. `mtls.backends` is now inert configuration: nothing generates a CA for a `builtin` backend, nothing reads the certificate and key of a `provided` one, and nothing checks either at admission time.
+
+Three validations disappear with it. An unknown `mtls.backends[].type` is accepted instead of being rejected with `could not find installed plugin for this type`. A `provided` backend missing `conf.cert` or `conf.key` is accepted. Changing `mtls.enabledBackend` while mTLS is enabled is accepted instead of being rejected with `Changing CA when mTLS is enabled is forbidden`.
+
+Deleting a Secret is no longer blocked when an `mtls` backend still references it, on both Universal and Kubernetes — the check dispatched into the CA managers, which no longer exist. `MeshIdentity` and `MeshTrust` secrets were never covered by it, and the `inter-cp-ca` and `envoy-admin-ca` global secrets are separate PKIs, untouched by this change.
+
+**Orphaned CA secrets are left in place**
+
+`builtin` CA material was persisted as `<mesh>.ca-builtin-cert-<backend>` and `<mesh>.ca-builtin-key-<backend>` Secrets owned by their Mesh. The upgrade does not delete them: they stay, unread by any code, and are still synced global→zone by KDS. Leaving them is deliberate — the CA private key is unrecoverable once removed, and a dead row costs nothing.
+
+**Action required**
+
+None. Delete the orphaned Secrets yourself once you are certain no downstream tooling needs the CA material; they are removed automatically when their Mesh is deleted.
+
+### Control plane TLS certificates are reloaded without a restart
+
+Every control plane server that reads its certificate from disk (API server HTTPS, dp-server, global KDS, MADS, diagnostics) now picks up a rotation performed by an external tool without restarting `kuma-cp`. Nothing has to be configured for this, and no action is required to keep the previous behaviour, which was to serve the certificate loaded at startup until the process was restarted.
+
+**Rotating the trust anchor is still not transparent to proxies**
+
+A rotation is transparent only when the new certificate is issued by the CA the proxies already trust. It is not transparent when the rotation replaces the trust anchor itself, which is what happens with the self-signed certificate the control plane generates on its first run: `kuma-dp` receives that certificate as Envoy's trusted CA when it bootstraps, so a proxy that reconnects after the rotation validates the new certificate against the old one and fails until it bootstraps again. Established xDS streams are unaffected, because the certificate is only verified during the handshake.
+
+**Action required**
+
+If you rotate control plane certificates, issue them from a CA and point proxies at that CA with `kuma-dp run --ca-cert-file=/path/ca.pem` (or `KUMA_CONTROL_PLANE_CA_CERT_FILE`), then rotate leaves under it. This is required for a certificate issued by cert-manager or Vault in any case: such a leaf has `CA:FALSE`, and the control plane rejects a bootstrap request for it with `NotCA` unless the proxy supplies the CA itself.
+
+### `mtls.backends[].mode: PERMISSIVE` no longer makes inbounds permissive
+
+`MeshTLS` is now the only thing that decides whether an inbound accepts plaintext. The inbound listener is built once, and the mode is resolved from the `MeshTLS` policy alone — the `mode` of the enabled `Mesh` CA backend is no longer consulted. A mesh that sets `mtls.backends[].mode: PERMISSIVE` and has no `MeshTLS` policy now gets `Strict` inbounds, and plaintext traffic to those inbounds is rejected.
+
+**Action required**
+
+Before upgrading, author a `MeshTLS` policy with `default.mode: Permissive` for every mesh that relies on `mtls.backends[].mode: PERMISSIVE`:
+
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: MeshTLS
+metadata:
+  name: permissive
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  rules:
+    - default:
+        mode: Permissive
+```
+
+Meshes on `mtls.backends[].mode: STRICT`, meshes with mTLS disabled, and meshes that already have a `MeshTLS` policy are unaffected. Note that a mesh using `MeshIdentity` already resolved to `Strict` without a `MeshTLS` policy.
+
+### Zone Token `ingress` and `egress` scopes removed
+
+`kumactl generate zone-token` no longer accepts `--scope ingress` or `--scope egress`, and the `POST /tokens/zone` endpoint no longer requires a `scope`. A zone proxy is an ordinary `Dataplane` and authenticates with a dataplane token, so these scopes identified components that no longer exist. Kuma itself defines no zone token scopes now; the token carries only the zone name unless a distribution registers its own.
+
+**Action required**
+
+Drop `--scope ingress`/`--scope egress` from any script calling `kumactl generate zone-token`. Zone proxies need a dataplane token — generate one with `kumactl generate dataplane-token`.
+
+### `MeshExternalService` clusters require a `MeshIdentity`
+
+A client proxy without a workload identity no longer gets a cluster for a `MeshExternalService`. It previously got one that addressed the zone egress by the legacy `zone-egress` service SNI, but such traffic could never be served: a zone egress only generates its egress listener when it has a workload identity, and that listener matches filter chains on the KRI SNI only, so the legacy SNI matched nothing.
+
+The same SNI change makes the upgrade one-way across zones: once a zone is upgraded, its client proxies send real-resource traffic to zone proxies by the KRI-derived SNI. A zone that is still on the previous version cannot terminate that traffic because its zone proxy listeners still match the legacy hashed SNI only. In practice, an upgraded zone cannot send `MeshService`, `MeshExternalService`, or `MeshMultiZoneService` traffic to a previous-version zone until that destination zone is upgraded too.
+
+**Action required**
+
+Create a `MeshIdentity` that matches the client proxies in any mesh that uses `MeshExternalService`. Without one, only the cluster is dropped — the outbound listener and its endpoints are still generated, so requests now fail locally in the client's Envoy with a 503 (`cluster_not_found`) instead of being reset by the zone egress. Keeping the listener is deliberate: removing it would let the request fall through to the transparent proxy passthrough and reach the external service directly, bypassing the egress.
+
+### `ZoneIngress` and `ZoneEgress` resources removed
+
+The standalone `ZoneIngress`, `ZoneEgress`, `ZoneIngressInsight` and `ZoneEgressInsight` resources are gone, together with their CRDs (`zoneingresses.kuma.io`, `zoneegresses.kuma.io`, `zoneingressinsights.kuma.io`, `zoneegressinsights.kuma.io`), their REST endpoints, their `kumactl get`/`kumactl inspect` subcommands and their KDS sync. A zone proxy is an ordinary `Dataplane` carrying zone proxy listeners, and its health is reported through `DataplaneInsight`.
+
+The control plane ClusterRole no longer grants access to these four CRDs, and the validating webhook no longer intercepts them.
+
+`globalInsight.zones.zoneIngresses` and `globalInsight.zones.zoneEgresses` are still present in the API response but report `0` until zone proxy counts are surfaced from `MeshInsight`.
+
+**Action required**
+
+Delete any remaining `ZoneIngress`/`ZoneEgress` resources before upgrading. On Kubernetes, delete the four CRDs after upgrading — Helm does not remove CRDs on upgrade, so the stale objects would otherwise stay in etcd:
+
+```sh
+kubectl delete crd zoneingresses.kuma.io zoneegresses.kuma.io zoneingressinsights.kuma.io zoneegressinsights.kuma.io
+```
+
+On Universal, `kumactl delete zone-ingress <name>` and `kumactl delete zone-egress <name>` are no longer available; remove the rows from the resource store directly if any are left.
+
+### `experimental.ingressTagFilters` removed
+
+The `experimental.ingressTagFilters` configuration field and its `KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS` environment variable are removed. They filtered tags out of `ZoneIngress.availableServices`, which no longer exists. Config loading is non-strict, so a leftover value is silently ignored rather than rejected.
+
+**Action required**
+
+Remove `experimental.ingressTagFilters` from `kuma-cp.yaml` and `KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS` from control plane deployments and Helm values.
+
+### `multizone.zone.ingressUpdateInterval` removed
+
+The `multizone.zone.ingressUpdateInterval` configuration field and its `KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL` environment variable are removed. Nothing has read them since the control plane stopped maintaining `ZoneIngress.availableServices`. Config loading is non-strict, so a leftover value is silently ignored rather than rejected.
+
+**Action required**
+
+Remove `multizone.zone.ingressUpdateInterval` from `kuma-cp.yaml` and `KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL` from control plane deployments and Helm values.
+
+### `kuma.io/ingress` and `kuma.io/egress` Pod annotations removed
+
+The Pod controller no longer turns a Pod annotated with `kuma.io/ingress` or `kuma.io/egress` into a standalone `ZoneIngress`/`ZoneEgress`. Zone proxies are ordinary `Dataplane` resources carrying zone proxy listeners, built from a `Service` labelled `k8s.kuma.io/zone-proxy-type`. The Helm chart stopped emitting these annotations in 3.0, so only hand-rolled Pod manifests are affected. The `kuma.io/ingress-public-address` and `kuma.io/ingress-public-port` annotations are removed with them — the public address now comes from `MeshZoneAddress`.
+
+**Action required**
+
+Replace any hand-rolled ingress or egress Pod with the zone proxy Deployment shipped by the chart (`mesh-zoneproxy-*`), or label its `Service` with `k8s.kuma.io/zone-proxy-type`. A Pod that keeps the old annotations is reconciled as a regular `Dataplane` if it has a sidecar, and ignored otherwise — nothing rejects the annotation, so the change is silent.
+### Zone proxy garbage collection folded into the Dataplane collector
+
+Universal zone proxies are ordinary `Dataplane` resources carrying zone proxy listeners, so they are collected by the existing Dataplane GC. The separate collector for `ZoneIngress`/`ZoneEgress` has been removed, along with the `runtime.universal.zoneResourceCleanupAge` configuration field and its `KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE` environment variable. Offline zone proxies are now cleaned up after `runtime.universal.dataplaneCleanupAge` (default 72h) instead.
+
+The `component_zone_gc` histogram is no longer exported by the control plane. `component_dp_gc` covers zone proxies as well.
+
+**Action required**
+
+Remove `runtime.universal.zoneResourceCleanupAge` from `kuma-cp.yaml` and `KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE` from control plane deployments and Helm values. Both are silently ignored after upgrading rather than rejected, so a stale value will not fail startup but will have no effect. If you relied on a zone-specific cleanup age, set `runtime.universal.dataplaneCleanupAge` to that value — it now applies to all Dataplanes, zone proxies included. Update any dashboard or alert that queries `component_zone_gc` to use `component_dp_gc`.
+
+### `kuma.io/protocol` inbound tag no longer sets the protocol
+
+The protocol of a `Dataplane` inbound is now read only from `networking.inbound[].protocol`. The `kuma.io/protocol` tag stays a regular tag — policies keep matching on it — but it is no longer used as a fallback when the field is unset. This only affects Universal: on Kubernetes the field is always derived from the `Service` port during conversion.
+
+**Action required**
+
+Set `networking.inbound[].protocol` on every Universal `Dataplane` that currently declares its protocol only through the `kuma.io/protocol` tag, before upgrading.
+
+**Warning**: an inbound without `protocol` is treated as an unknown protocol and served as plain TCP. Its listener loses the `kuma.io/protocol` tag and the L7 filters that depend on it — HTTP access log fields, `MeshTimeout` HTTP timeouts, `MeshFaultInjection`, `MeshRateLimit` HTTP limits, HTTP-aware routing — and the endpoint stops advertising a protocol, so `MeshService`-level protocol inference falls back to TCP as well. Nothing rejects the resource, so the change is silent.
+
+### `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` removed
+
+The `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` environment variable
+has been removed. MeshTrafficPermission rule generation now always uses the
+cliques-based grouping algorithm.
+
+**Action required**
+
+Remove `KUMA_MESH_TRAFFIC_PERMISSION_DISABLE_CLIQUES_ALGORITHM` from control
+plane deployments, Helm values, and any other runtime configuration before or
+after upgrading. Leaving it set no longer has any effect in Kuma 3.0.0.
+
+### Unified resource naming opt-out removed
+
+The `KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED` `kuma-dp`
+environment variable, the `KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED`
+control plane environment variable / `runtime.kubernetes.injector.unifiedResourceNamingEnabled`
+`kuma-cp.yaml` key, and the `dataPlane.features.unifiedResourceNaming` Helm value have
+all been removed. Unified Envoy resource and stat naming is now always enabled,
+and the sidecar injector no longer stamps the corresponding env var onto injected
+`kuma-sidecar` containers.
+
+**Action required**
+
+If you previously set any of these to `false` to opt out, unified naming is now
+always on and the control plane generates unified Envoy resource and stat names
+regardless of any leftover config. Update automation, dashboards, or alerting that
+depend on the legacy names before upgrading. The leftover config values themselves
+are silently ignored rather than rejected: `kuma-cp` does not use strict YAML
+parsing outside of tests, `envconfig` ignores unknown environment variables, and
+Helm accepts unknown `--set` paths.
+
+### MADS restricted to universal deployment mode
+
+The Monitoring Assignment Discovery Service (MADS) server no longer starts on
+Kubernetes control planes, regardless of `KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED`
+or `controlPlane.madsServer.enabled`. It remains fully supported in universal
+deployment mode, including universal-on-Kubernetes
+(`controlPlane.environment: universal`). The Helm chart no longer renders the
+`mads-server` Service port (5676) when `controlPlane.environment` is
+`kubernetes`.
+
+**Action required**
+
+Kubernetes users relying on MADS must migrate to `MeshMetric` with Prometheus
+Kubernetes service discovery before upgrading. `controlPlane.madsServer.enabled`
+now only applies when `controlPlane.environment` is `universal`.
 
 ### `advertisedAddress` removed from `Dataplane` networking
 
@@ -33,6 +420,68 @@ Policies that select real resources through `spec.targetRef` or `spec.to[].targe
 **Action required**
 
 Migrate any policy that still selects those resources by `name` and/or `namespace` to use `labels` instead before upgrading. `sectionName` remains supported for `Dataplane` inbound selection and `MeshService` port selection.
+
+### A `MeshHTTPRoute` rule whose backendRefs all fail to resolve answers 500
+
+A rule that declares `backendRefs` and resolves none of them no longer falls back to the destination service. The rule now serves `500` to every request it matches, which is what the Gateway API requires of an invalid backendRef. A rule that resolves at least one of its backendRefs keeps routing to those backends, and a rule with a `RequestRedirect` filter still redirects.
+
+This covers every `MeshHTTPRoute`, not only the ones the Gateway API translation generates. A route pointing at a resource that does not exist yet — a `MeshService` that KDS has not synced to the zone, for example — fails its matching requests instead of sending them to the destination service, until the reference resolves.
+
+**Action required**
+
+None, as long as every `backendRefs` entry names a resource that exists. Check the routes that reference a resource from another zone or another namespace before upgrading: those are the ones whose masked misconfiguration becomes visible traffic loss.
+
+### A `MeshHTTPRoute` `backendRef` naming a port the destination lacks now fails closed
+
+A `backendRef` whose destination exists but does not carry the referenced
+`sectionName`/port no longer counts as resolved. Previously it silently
+dropped out of the split: a missing `Service` port fell through to the
+parent service on a different port than the one requested, and a missing
+`MeshService` port fell through to another port of that same `MeshService`.
+Both now count against `AllBackendRefsUnresolved` the same way a
+nonexistent destination does, so a rule whose backendRefs all name a
+missing port answers `500` instead of routing traffic to a port nobody
+asked for.
+
+The Gateway API `HTTPRoute` translation reports `ResolvedRefs=False` with
+reason `BackendNotFound` for a `Service` backend missing the requested
+port; it already did for `MeshService`. Because a `MeshService`'s `Spec.Ports`
+can be briefly empty while it converges, a route that references one of its
+ports can fail matching requests during that window.
+
+**Action required**
+
+None, as long as every `backendRefs` entry names a port the destination
+actually has. Check routes with an explicit port or `sectionName` before
+upgrading: those are the ones that were silently reaching the wrong
+destination.
+
+### Gateway API cross-namespace `backendRefs` now require a `ReferenceGrant`
+
+The Gateway API `HTTPRoute` translation now enforces `ReferenceGrant` for any
+backend reference that points across namespaces, for both core `Service`
+backends and Kuma `MeshService` backends. A cross-namespace backend without a
+matching grant is no longer programmed into the generated `MeshHTTPRoute`; the
+route reports `ResolvedRefs=False` with reason `RefNotPermitted` instead.
+
+To evaluate those grants, the control plane ClusterRole now includes `get`,
+`list`, and `watch` on `gateway.networking.k8s.io/referencegrants`.
+
+**Action required**
+
+Create a `ReferenceGrant` in the backend namespace for every cross-namespace
+`HTTPRoute` backend that should remain valid after upgrading. If you manage
+RBAC outside Helm (for example via GitOps or manual manifests), also add
+`get`, `list`, and `watch` on `referencegrants` in the
+`gateway.networking.k8s.io` API group to the control plane ClusterRole.
+
+### `MeshService.spec.identities` now accepts SPIFFE IDs only
+
+`MeshService.spec.identities[].type` no longer accepts `ServiceTag`. `MeshService.spec.identities` now publishes SPIFFE IDs only, while service-tag-based routing keeps using the `kuma.io/service` label or the MeshService resource name as its fallback naming signal.
+
+**Action required**
+
+Update any MeshService manifest that still declares a `ServiceTag` identity to use `SpiffeID` entries only before upgrading. A persisted `ServiceTag` entry is rejected by the updated schema once the new CRD or API validation is in place.
 
 ### Transparent proxy configured only through the ConfigMap
 
@@ -106,6 +555,66 @@ Migrate any `MeshHealthCheck` resources using `to[].default.healthyPanicThreshol
 
 **Warning**: Un-migrated `healthyPanicThreshold` settings are silently dropped after upgrade — the field no longer exists in the schema, so it is pruned by CRD validation on Kubernetes and discarded during deserialization on Universal. Affected clusters fall back to Envoy's default panic threshold of 50%.
 
+### `Dataplane` outbounds must use `backendRef`
+
+The `tags` field on `networking.outbound[]` has been removed from the `Dataplane` schema. An outbound is now defined exclusively by `backendRef`, pointing at a `MeshService`, `MeshExternalService`, or `MeshMultiZoneService`. Creating or updating a `Dataplane` whose outbound has no `backendRef` is rejected with `backendRef: must be defined`.
+
+The xDS generation path that consumed `kuma.io/service`-tagged outbounds is gone with it. Policies no longer match those outbounds through the deprecated subset rules (`spec.to[].targetRef` resolved against a `kuma.io/service` value); they match the referenced resource instead. Locality awareness for cross-zone traffic through ZoneEgress is no longer applied to outbound clusters on this path.
+
+**Action required**
+
+Rewrite every `Dataplane` that declares tag-based outbounds before upgrading. On Kubernetes, outbounds are generated by the control plane and need no change.
+
+```yaml
+# Before (removed)
+networking:
+  outbound:
+    - port: 3000
+      tags:
+        kuma.io/service: postgres
+
+# After
+networking:
+  outbound:
+    - port: 3000
+      backendRef:
+        kind: MeshService
+        name: postgres
+        port: 5432
+```
+
+**Warning**: Stored `Dataplane` resources that still carry `tags` on an outbound keep being served, but the tags are discarded during deserialization and no outbound listener is generated for them, so the workload loses connectivity to that destination.
+
+### Route `backendRef` no longer accepts `MeshServiceSubset`
+
+`MeshHTTPRoute` and `MeshTCPRoute` validators now accept only `MeshService`, `MeshExternalService`, and `MeshMultiZoneService` in `backendRefs[]`; the `MeshHTTPRoute` `RequestMirror` filter's `backendRef` is limited to the same kinds. A route using `kind: MeshServiceSubset` is rejected with `value 'MeshServiceSubset' is not supported`.
+
+The xDS path that turned such a ref into a `kuma.io/service` cluster is gone with it, and a `MeshService` ref selected by `kuma.io/display-name` alone no longer falls back to one when it fails to resolve. A backendRef that resolves to no real resource now produces no split at all, rather than a split towards a cluster that is never generated.
+
+**Action required**
+
+Repoint every route that splits or mirrors to a `MeshServiceSubset` at the real resource before upgrading. Selecting a subset of endpoints by tag has no equivalent: split the destination into separate `MeshService` resources if you need it.
+
+```yaml
+# Before (rejected)
+backendRefs:
+  - kind: MeshServiceSubset
+    tags:
+      kuma.io/service: payments
+      version: v1
+
+# After
+backendRefs:
+  - kind: MeshService
+    labels:
+      kuma.io/display-name: payments
+    port: 8080
+```
+
+**Warning**: Stored routes that still carry a `MeshServiceSubset` backendRef keep being served, but the current control plane no longer resolves that kind into a real backend. During xDS generation the backendRef is therefore treated as unresolved, so traffic matching those rules loses its destination.
+
+The `tags` field is also gone from the `backendRef` schema entirely, not just disallowed for `MeshServiceSubset`. On Kubernetes, a `tags` key on a `backendRef` is pruned by the CRD structural schema before it reaches the control plane. On Universal, it is silently ignored when the resource is unmarshalled.
+
 ### Legacy `ExternalService` resource removed
 
 The legacy `ExternalService` resource has been removed. Its CRD, API
@@ -126,8 +635,7 @@ rejects `mode=global` with `environment=kubernetes`, and it also rejects
 with `environment=universal` backed by a non-Kubernetes store such as
 PostgreSQL, even if `kuma-cp` itself is deployed on Kubernetes. The Helm chart
 no longer renders the `Service`/config needed for the old Kubernetes-native
-setup. Zone and Standalone control planes on Kubernetes (`mode`
-`zone`/`standalone`) are unaffected.
+setup. Zone control planes on Kubernetes (`mode` `zone`) are unaffected.
 
 **Action required**
 
@@ -135,14 +643,24 @@ If you currently run the Global control plane on Kubernetes, migrate it to
 Universal (non-Kubernetes) infrastructure before upgrading: deploy `kuma-cp`
 in `global` mode on Universal, backed by PostgreSQL, and keep your Kubernetes
 clusters as Zone control planes connecting to that Global control plane over
-KDS. Kubernetes clusters running `zone` or `standalone` mode require no
-changes.
+KDS. Kubernetes clusters running `zone` mode require no changes.
+
+### `standalone` mode removed
+
+The deprecated `standalone` control plane mode has been removed. `KUMA_MODE`/
+`controlPlane.mode` no longer accepts `standalone`: `kuma-cp` fails config
+validation at startup, and the Helm chart fails at template time.
+
+**Action required**
+
+Rename `standalone` to `zone` in `KUMA_MODE`, `controlPlane.mode`, and any
+other runtime configuration before upgrading. `standalone` and `zone` were
+already behaviourally identical, so no other changes are required.
 
 ### `meshServices` removed from the `Mesh` schema
 
 The `meshServices` field (and its `mode` enum) has been removed from the
-`Mesh` resource spec. Unified resource naming for a Dataplane now depends
-solely on that Dataplane's `FeatureUnifiedResourceNaming` capability,
+`Mesh` resource spec. Unified resource naming is now unconditional,
 regardless of what the mesh's former `meshServices.mode` was set to.
 
 **Action required**
@@ -261,6 +779,31 @@ no equivalent there: `podAnnotations`, `annotations`, `logLevel`, `drainTime`,
 `dns.config`, `service.enabled` and `service.nodePort`. Drain time and probes
 are now control-plane-wide sidecar injector settings.
 
+### Standalone zone proxy inspect endpoints and `kumactl inspect` commands removed
+
+The Envoy admin inspect endpoints for standalone zone proxies are gone:
+`GET /zoneingresses/{name}/{xds,stats,clusters}` and
+`GET /zoneegresses/{name}/{xds,stats,clusters}` now return 404. So do the
+pre-2.6 overview aliases `GET /zoneingresses+insights[/{name}]` and
+`GET /zoneegressoverviews[/{name}]`, which have been redundant with
+`/zoneingresses[/{name}]/_overview` and `/zoneegresses[/{name}]/_overview` since
+2.6. Reading and listing the `ZoneIngress`/`ZoneEgress` resources themselves is
+gone as well — the resources no longer exist, see the section above.
+
+`kumactl inspect` loses `zoneingress`, `zoneingresses` (alias `zone-ingresses`),
+`zoneegress` and `zoneegresses`.
+
+**Action required**
+
+Mesh-scoped zone proxies are regular `Dataplane` resources, so inspect them with
+`kumactl inspect dataplane <name> --mesh <mesh>` and the
+`/meshes/{mesh}/dataplanes/{name}/{xds,stats,clusters}` endpoints. Update any
+automation or dashboard that still calls the removed paths.
+
+The GUI's zone ingress and zone egress XDS, stats and clusters tabs depend on the
+removed endpoints and stop working until the bundled GUI is updated. Overview and
+resource views are unaffected.
+
 ### ServiceInsight, MeshInsight, and inspect `_rules` no longer report kuma.io/service based data
 
 With `meshServices.mode` always `Exclusive`, `kuma.io/service`-tagged services and
@@ -268,21 +811,43 @@ legacy `ExternalService` resources are represented by `MeshService` and
 `MeshExternalService` instead, so the control plane no longer computes their
 legacy statistics:
 
-- `ServiceInsight.services` no longer contains entries for regular
-  (non-gateway) services or legacy `ExternalService` resources. Only delegated
-  gateways (which are never turned into a `MeshService`) are still reported.
-- `MeshInsight.services` (the `Total`/`Internal`/`External` service count
-  stat) is no longer populated and is always absent from the response.
-- The Dataplane/MeshGateway inspect `_rules` endpoint no longer populates the
-  legacy `toRules` field on each rule entry; it is always an empty array.
-  `toResourceRules`, `fromRules`, and `inboundRules` are unaffected.
+- `ServiceInsight` is no longer computed at all. The control plane never writes
+  the resource, and it deletes any `ServiceInsight` left over by the previous
+  version on every insight resync (every
+  `KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL`, 20s by default). During a rolling
+  upgrade, an old replica can still write the resource between resync ticks on
+  an upgraded replica, so the legacy REST endpoints may briefly serve stale
+  data until the next resync deletes it again. Once every replica is upgraded
+  and a resync interval has elapsed, `GET /meshes/{mesh}/service-insights`
+  returns an empty list and `GET /meshes/{mesh}/service-insights/{name}`
+  returns `404`. This also covers delegated gateways, which used to be the
+  last services reported there, along with their per-service `zones` list.
+  The GUI pages backed by that endpoint list nothing. `kumactl inspect
+  services` is removed; use `kumactl get meshservices` instead.
+- `MeshInsight.services` is removed from the API. Field number 6 is reserved
+  and will not be reused. Mesh-scoped service status now comes from
+  `MeshService` and `MeshExternalService`; the aggregated
+  `internal`/`external`/`gatewayDelegated` counts live under `services` in the
+  global insight endpoint, not in `MeshInsight`.
+- The Dataplane/MeshGateway inspect `_rules` endpoint no longer returns the
+  legacy `toRules` and `fromRules` fields on each rule entry; both fields are
+  removed from the response. `toResourceRules` and `inboundRules` are
+  unaffected.
+- The legacy `GET /meshes/{mesh}/meshservices/{name}/_resources/dataplanes`
+  endpoint is removed. Use `GET /meshes/{mesh}/meshservices/{name}/_dataplanes`
+  instead.
 
 **Action required**
 
-Update any automation or dashboards that read `ServiceInsight.services` for
-non-gateway services, `MeshInsight.services`, or the `_rules` `toRules` field
-to use `MeshService`/`MeshExternalService` status and `_rules`
-`toResourceRules` instead.
+Update any automation or dashboards that read the legacy `ServiceInsight`
+resource or `/meshes/{mesh}/service-insights` endpoints, `MeshInsight.services`,
+or the `_rules` `toRules`/`fromRules` fields. Use `MeshService`/
+`MeshExternalService` status for per-resource service state, `_rules`
+`toResourceRules`/`inboundRules` for inspect output, and the global insight
+endpoint's `services` object for aggregated `internal`/`external`/
+`gatewayDelegated` counts. For delegated gateways, which are never turned into
+a `MeshService`, use the `Dataplane`/`DataplaneOverview` endpoints filtered by
+gateway type when you need per-gateway detail.
 
 ### Zone proxies authenticate with a dataplane token
 
@@ -438,6 +1003,20 @@ removed" below for the separate removal of `MeshGatewayInstance` management.
   own system namespace. Remove this key from your config file and Helm
   values — leaving it in place is harmless but has no effect.
 
+### `kuma.io/gateway` is a boolean annotation
+
+The `kuma.io/gateway` Pod annotation is now read the same way on both sides of the injection: as a boolean, accepting `enabled`, `true`, `yes` to mark a delegated gateway and `disabled`, `false`, `no` to opt out. Anything else is rejected with `annotation "kuma.io/gateway" has wrong value "<value>"`.
+
+The `provided` value is gone. It has not worked since 2.10: the injector parses this annotation as a boolean, so a Pod annotated `kuma.io/gateway: provided` fails admission before any `Dataplane` is created. Its only effect on the `Dataplane` was a `kuma.io/service-name` gateway tag that nothing has read since `kuma.io/service` was removed.
+
+Two values that used to be inconsistent now behave as the injector always intended. `kuma.io/gateway: "true"` was injected as a gateway but then failed conversion with `invalid delegated gateway type 'true'`; it now produces a gateway `Dataplane`. `kuma.io/gateway: disabled` was injected as a regular Pod but also failed conversion, so the Pod never got a `Dataplane` at all; it now produces a regular `Dataplane` with inbounds.
+
+The consumers that keyed off the annotation being present rather than its value follow the same rule now. A Pod or `Service` annotated `kuma.io/gateway: disabled` gets a `MeshService` like any other workload instead of being skipped, a change of the annotation between enabled and disabled triggers a `MeshService` reconcile, and the injected sidecar of such a Pod gets the regular application probe proxy port instead of `0`, which previously left its probes pointing at a port nothing served.
+
+**Action required**
+
+Replace `kuma.io/gateway: provided` with `kuma.io/gateway: enabled` on any Pod, Deployment template, or Helm value that still sets it. Such a Pod is currently failing admission, so this is a fix rather than a regression, but the annotation has to change before the Pod can start.
+
 ### Built-in gateway Kubernetes controllers removed
 
 The control plane no longer reconciles `MeshGatewayInstance` resources on
@@ -445,9 +1024,9 @@ Kubernetes. It no longer creates or manages the `Service` and `Deployment`
 generated for a `MeshGatewayInstance`, no longer converts `Pod`s annotated
 `kuma.io/gateway: builtin` into a built-in gateway `Dataplane`, and no longer
 runs the `MeshGatewayInstance` admission validator. `kumactl inspect
-meshgateway` has been removed along with its client. Delegated gateway modes
-(`kuma.io/gateway: enabled` / `provided`) and the Gateway API `HTTPRoute`
-GAMMA path are unaffected.
+meshgateway` has been removed along with its client. Delegated gateways
+(`kuma.io/gateway: enabled`) and the Gateway API `HTTPRoute` GAMMA path are
+unaffected.
 
 The `MeshGatewayInstance` CRD, its API types, and the `MeshGateway`/
 `MeshGatewayRoute` resources themselves are not removed by this change.
@@ -459,8 +1038,7 @@ The `MeshGatewayInstance` CRD, its API types, and the `MeshGateway`/
   `Dataplane` it previously generated for them is not updated, recreated, or
   cleaned up automatically. If you still rely on a built-in gateway, migrate
   it to a delegated gateway (bring your own `Deployment`/`Service` fronting a
-  Kuma-injected pod annotated `kuma.io/gateway: enabled` or `provided`) before
-  upgrading.
+  Kuma-injected pod annotated `kuma.io/gateway: enabled`) before upgrading.
 - Before upgrading, or as part of your migration, manually delete the
   `MeshGatewayInstance` resources you no longer need, along with the
   `Service`, `Deployment`, and `Dataplane` objects they previously generated
@@ -531,6 +1109,24 @@ Before upgrading, migrate every policy that uses one of these top-level
 
 After the migration, verify the intended policy coverage in every Zone before
 upgrading Zone control planes.
+
+The `spec.to[].targetRef` field of a policy is a separate, narrower selector
+and is affected too: no policy accepts `kind: MeshSubset`,
+`kind: MeshServiceSubset`, or `kind: MeshGateway` there. The remaining
+accepted kinds are per policy, so check the policy documentation before you
+migrate:
+
+- Every policy that has a `to` array accepts `kind: Mesh`.
+- Most policies also accept `MeshService`, `MeshExternalService`, and
+  `MeshMultiZoneService`.
+- Only `MeshAccessLog`, `MeshLoadBalancingStrategy`, `MeshRetry`, and
+  `MeshTimeout` accept `kind: MeshHTTPRoute`. For example,
+  `MeshCircuitBreaker` rejects it.
+- `MeshRateLimit` and `MeshFaultInjection` accept `kind: Mesh` only, and only
+  when the top-level `targetRef` selects a gateway.
+
+`MeshServiceSubset` remains valid only as a route `backendRefs[].kind`, not as
+a top-level or `to[]` `targetRef.kind`.
 
 ### `from` removed from `MeshTimeout`
 
@@ -734,8 +1330,21 @@ The following configuration has been removed:
 **Action required**
 
 Remove the settings above from your control plane config and environment if
-set. KDS snapshot generation is event-driven, with periodic full resync
-controlled by `experimental.kdsEventBasedWatchdog.fullResyncInterval`.
+set. KDS snapshot generation remains event-driven, but the timing config moved
+to the stable multizone KDS config:
+
+- Global control plane: `multizone.global.kds.eventBasedWatchdog.flushInterval`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL`),
+  `multizone.global.kds.eventBasedWatchdog.fullResyncInterval`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL`), and
+  `multizone.global.kds.eventBasedWatchdog.delayFullResync`
+  (`KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC`).
+- Zone control plane: `multizone.zone.kds.eventBasedWatchdog.flushInterval`
+  (`KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL`),
+  `multizone.zone.kds.eventBasedWatchdog.fullResyncInterval`
+  (`KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL`), and
+  `multizone.zone.kds.eventBasedWatchdog.delayFullResync`
+  (`KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC`).
 
 ### `TrafficTrace` no longer affects generated Envoy config
 
@@ -812,12 +1421,11 @@ configuration. Applying, updating, or removing a `TrafficRoute` resource no
 longer changes outbound routing, load balancing, or reachable destinations
 for any dataplane, zone ingress, or zone egress.
 
-Traffic between services now always flows by default, the same way it
-already did in meshes that only use `MeshHTTPRoute`/`MeshTCPRoute`. A
-`TrafficRoute` resource previously already used to be required to make
-communication between services possible; it no longer has any effect,
-including its side effect of disabling default routing until a
-`MeshHTTPRoute`/`MeshTCPRoute` was applied.
+Traffic between services now always flows by default, the same way it already
+did in meshes that only use `MeshHTTPRoute`/`MeshTCPRoute`. A user-authored
+`TrafficRoute` no longer has any effect, including the legacy behavior where
+just having a `TrafficRoute` disabled the default routing fallback when no
+`MeshHTTPRoute`/`MeshTCPRoute` matched instead.
 
 The `TrafficRoute` resource, API, and KDS sync are still in place for this
 release; existing resources are still accepted and stored.
@@ -989,7 +1597,7 @@ A `Dataplane` with `networking.gateway.type: BUILTIN` is now rejected at
 admission and update. The `Dataplane.networking.gateway` message and the
 `DELEGATED` gateway type are unaffected — delegated gateways (bring your own
 `Deployment`/`Service` fronting a Kuma-injected pod annotated
-`kuma.io/gateway: enabled` or `provided`) continue to work exactly as before.
+`kuma.io/gateway: enabled`) continue to work exactly as before.
 
 **Action required**
 
@@ -1259,6 +1867,151 @@ spec:
 `kuma.io/origin: zone` is required on a zone control plane federated to a global control plane. `kuma.io/zone` is stamped by the control plane; if you set it explicitly it must match the local zone name. `spec.address` accepts an IP or a DNS name; a DNS name is resolved by the control plane.
 
 Zones without a `MeshZoneAddress` are not reachable cross-zone: their `MeshService` destinations get no endpoints in other zones. The control plane logs `no MeshZoneAddress found for zone` when this happens.
+
+### kuma-dp `configDir` / `socketDir` removed
+
+The deprecated `configDir` and `socketDir` `dataplaneRuntime` config fields (and their
+`KUMA_DATAPLANE_RUNTIME_CONFIG_DIR` / `KUMA_DATAPLANE_RUNTIME_SOCKET_DIR` environment
+variables) have been removed from `kuma-dp`. The `--config-dir` flag has also been removed.
+
+**Action required**
+
+Use `workDir` (`KUMA_DATAPLANE_RUNTIME_WORK_DIR` / `--work-dir`) instead. `--config-dir` now
+fails with `unknown flag`, so any script or deployment passing it will error immediately.
+`configDir`/`socketDir` in YAML config and `KUMA_DATAPLANE_RUNTIME_CONFIG_DIR` /
+`KUMA_DATAPLANE_RUNTIME_SOCKET_DIR` are silently ignored, since the config loader does not
+reject unknown fields — proxies still relying on them will silently fall back to a
+generated temporary directory instead of erroring.
+
+### Virtual probes removed
+
+The legacy Virtual Probes feature, deprecated since 2.9 in favor of Application Probe Proxy, has been removed. The following are gone:
+
+- Pod annotations `kuma.io/virtual-probes` and `kuma.io/virtual-probes-port`
+- Control plane configuration keys `runtime.kubernetes.injector.virtualProbesEnabled` and `runtime.kubernetes.injector.virtualProbesPort`
+- Environment variables `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED` and `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT`
+- The `probes` field on `Dataplane` resources (Kubernetes and Universal)
+
+**Action required**
+
+Re-inject every pod after upgrading — the injector no longer rewrites pod probes to a virtual probes listener, and any pod injected by a pre-3.0.0 webhook keeps stale `kuma.io/virtual-probes*` annotations and a probes-listener sidecar config until it is redeployed. Application Probe Proxy (`kuma.io/application-probe-proxy-port`) is now the only supported probe-rewriting path on Kubernetes and is enabled by default.
+
+**Warning**: `probes:` submitted on a Universal `Dataplane` is now silently dropped — the field no longer exists on the resource, so it is accepted and discarded rather than rejected. Setting `kuma.io/application-probe-proxy-port: "0"` no longer falls back to virtual probes; it now leaves the pod's original probes untouched. Pods relying on the old fallback must either remove the annotation to keep using Application Probe Proxy, or exclude their probe ports from inbound traffic redirection if they need probes served without mTLS.
+
+### Injector sidecar container `adminPort` removed
+
+The deprecated `kuma.runtime.kubernetes.injector.sidecarContainer.adminPort`
+config field and `KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ADMIN_PORT`
+environment variable have been removed. The field was already dead — the
+injector always read the Envoy admin port from `bootstrapServer.params.adminPort`
+(`KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT`).
+
+**Action required**
+
+Use `kuma.bootstrapServer.params.adminPort` /
+`KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT` instead. Any deployment still setting
+the removed field or environment variable will have it silently ignored, since
+the config loader does not reject unknown fields.
+
+### `Metrics.Mesh.MinResyncTimeout` / `MaxResyncTimeout` removed
+
+The deprecated `Metrics.Mesh.MinResyncTimeout` (`KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT`) and
+`Metrics.Mesh.MaxResyncTimeout` (`KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT`) config fields have
+been removed.
+
+**Action required**
+
+Use `Metrics.Mesh.MinResyncInterval` (`KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL`) and
+`Metrics.Mesh.FullResyncInterval` (`KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL`) instead.
+`MinResyncTimeout`/`MaxResyncTimeout` in YAML config and their environment variables are
+now silently ignored, since the config loader does not reject unknown fields.
+
+### `MeshExternalService` TLS verification uses the `SecureDataSource` shape
+
+`spec.tls.verification.caCert`, `.clientCert` and `.clientKey` on `MeshExternalService` now
+use the same `SecureDataSource` type as `MeshIdentity`, instead of the old `DataSource` type.
+The old type has been removed from the API entirely.
+
+The old type had no discriminator: it was a flat object with `secret`, `inline` or
+`inlineString`. The new type requires a `type` discriminator and nests the value under a
+field matching it. Every old field has to be rewritten:
+
+| Old field | New field |
+|---|---|
+| `inline: <base64>` | `type: InsecureInline`, `insecureInline.value: <plain text>` |
+| `inlineString: <text>` | `type: InsecureInline`, `insecureInline.value: <text>` |
+| `secret: <name>` | `type: Secret`, `secretRef: {kind: Secret, name: <name>}` |
+
+`inline` was base64-encoded, `insecureInline.value` is plain text, so decode the old value
+when rewriting it. For example `inline: dGVzdA==` becomes:
+
+```yaml
+caCert:
+  type: InsecureInline
+  insecureInline:
+    value: test
+```
+
+`File` and `EnvVar`, the two other `SecureDataSource` types, are rejected on
+`MeshExternalService` — they read the control plane's own filesystem and environment. This
+also applies when `spec.extension` is set, even though an extension owns the rest of the
+`spec.tls` validation.
+
+**Action required**
+
+Rewrite `caCert`, `clientCert` and `clientKey` on every `MeshExternalService` to the new
+shape as part of the upgrade.
+
+**Warning**: a `MeshExternalService` written in the old shape after the upgrade is rejected
+at write time, because the missing `type` discriminator is a validation violation. Resources
+already stored in the old shape are not rejected — the control plane cannot read their TLS
+material, so the destination is dropped from the xDS config of every proxy routing to it,
+with an error logged on the control plane. Plan the rewrite together with the upgrade to
+avoid an outage on those destinations.
+
+### Inbound `tags` removed from `Dataplane`
+
+The `networking.inbound[].tags` field has been removed from the `Dataplane` resource. Tags for an inbound must now be set through the `Dataplane`'s own `metadata.labels` (Kubernetes) or the `Dataplane`'s top-level `labels:` field (Universal), not per-inbound. This only affects Universal: on Kubernetes the field was already ignored in favor of pod labels.
+
+**Action required**
+
+Move any per-inbound tags declared in hand-authored Universal `Dataplane` resources to `Dataplane` labels before upgrading.
+
+**Warning**: `networking.inbound[].tags` is silently dropped on deserialization, not rejected — the field is `reserved` in the proto and protos are unmarshalled with `AllowUnknownFields`, so it is simply ignored. Dataplanes still submitting it will upgrade without error, but any policy matching on those inbound tags stops matching, with nothing in the API to signal it.
+
+### A resource's `Mesh` ownerReference must match its mesh
+
+On Kubernetes, a mesh-scoped resource can no longer end up owned by one `Mesh` while belonging to another. The validating webhook now rejects any create or update where a `kuma.io` `ownerReference` of kind `Mesh` names a mesh different from the resource's own `kuma.io/mesh` label (or `mesh` field). This closes both ways such a mismatch could previously happen: editing `kuma.io/mesh` on an existing resource to move it between meshes in place, and hand-writing or hand-editing a `Mesh` ownerReference. Writes from the control plane, `generic-garbage-collector` and the storage version migrator are unaffected, so a `Dataplane` can still be moved between meshes as its Pod is rescheduled.
+
+**Action required**
+
+If a resource in your cluster already has a `Mesh` ownerReference that disagrees with its mesh, it must be deleted and re-applied in the correct mesh — the webhook rejects any further edit to it until then.
+
+### The control plane and hook containers drop all Linux capabilities
+
+`controlPlane.containerSecurityContext` and `hooks.containerSecurityContext` now default to `allowPrivilegeEscalation: false` and `capabilities.drop: [ALL]`, alongside the `readOnlyRootFilesystem: true` they already carried.
+
+Neither the control plane nor the `kubectl` and `kumactl` hook jobs need a capability. Every port the control plane binds is above 1024, so it never needed `NET_BIND_SERVICE`, and nothing in the codebase opens a raw or packet socket. The injected sidecar and the zoneproxy have shipped with both settings for some time; this brings the control plane in line with them. The transparent proxy init container is unaffected and keeps the `NET_ADMIN` and `NET_RAW` it adds for `iptables`, as does the CNI container, which still runs as root.
+
+**Action required**
+
+Helm merges these values key by key, so overriding one key of `containerSecurityContext` no longer replaces the whole block: an override that sets only `readOnlyRootFilesystem` now also inherits the two new keys. If your control plane needs a capability, or you run a `SecurityContextConstraint` or admission policy that grants one, set it back explicitly:
+
+```yaml
+controlPlane:
+  containerSecurityContext:
+    allowPrivilegeEscalation: true
+    capabilities:
+      drop: []
+```
+
+### `MeshProxyPatch` can now change circuit breaker thresholds
+
+Since 2.14.0 every generated cluster carries a `DEFAULT`-priority circuit breaker threshold, and a `MeshProxyPatch` patching `circuitBreakers` appended a second one for that same priority. Envoy honours only the first threshold matching a routing priority, so the patched entry was dead config: `/config_dump` showed the requested values while Envoy kept what `MeshCircuitBreaker`, or its own defaults, had set. The patch now merges into the existing threshold of the same priority instead of appending. A threshold whose priority is not yet on the cluster still appends, and a `value` listing the same priority twice keeps the first entry, matching how Envoy resolves them.
+
+**Action required**
+
+Review every `MeshProxyPatch` that patches `circuitBreakers`. Where the same cluster is also covered by a `MeshCircuitBreaker`, the patch now overrides that policy for each field it sets, instead of being ignored — `MeshProxyPatch` runs last, so it wins the fields it names and the policy keeps the rest. Remove patches you wrote before 2.14.0 and no longer rely on, and drop any workaround you put in place because the patch appeared to do nothing.
 
 ## Upgrade to `2.13.7`
 
@@ -2170,10 +2923,10 @@ If you're using Kubernetes mode, and you did not specify `default.passthroughMod
 
 ### MeshLoadBalancingStrategy
 
-#### Deprecation of `hashPolicies.type: SourceIP` and `maglev.type: SourceIP`
+#### Removal of `hashPolicies.type: SourceIP`
 
-The documentation did not mention the `SourceIP` type, but it was possible to create a policy using it instead of `Connection`. Since `SourceIP` 
-is not a correct value, we have decided to deprecate it. If you are using `SourceIP` in your policy, please update it to use `Connection` instead.
+The `SourceIP` hash policy type has been removed. If you are using `type: SourceIP` in your `MeshLoadBalancingStrategy` policy, update it to use
+`type: Connection` with `connection.sourceIP: true` instead.
 
 ### Built-in MeshGateway policy targeting
 

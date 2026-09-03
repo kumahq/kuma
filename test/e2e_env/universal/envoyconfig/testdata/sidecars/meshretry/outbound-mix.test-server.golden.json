@@ -44,19 +44,16 @@
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/kri_msvc_envoyconfig_kuma-3__test-server_80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/1",
       "value": {
+        "directResponse": {
+          "body": {
+            "inlineString": ""
+          },
+          "status": 404
+        },
         "match": {
           "prefix": "/"
         },
-        "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
-        "route": {
-          "cluster": "kri_msvc_envoyconfig_kuma-3__test-server_80",
-          "idleTimeout": "1800s",
-          "retryPolicy": {
-            "numRetries": 6,
-            "retryOn": "5xx"
-          },
-          "timeout": "15s"
-        }
+        "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo="
       }
     },
     {
@@ -118,14 +115,14 @@
                   "matchTypedSubjectAltNames": [
                     {
                       "matcher": {
-                        "exact": "spiffe://envoyconfig/demo-client"
+                        "exact": "spiffe://envoyconfig.kuma-3.mesh.local/workload/demo-client"
                       },
                       "sanType": "URI"
                     }
                   ]
                 },
                 "validationContextSdsSecretConfig": {
-                  "name": "system_mtls_ca_envoyconfig",
+                  "name": "system_trust_bundle",
                   "sdsConfig": {
                     "ads": {},
                     "resourceApiVersion": "V3"
@@ -134,7 +131,7 @@
               },
               "tlsCertificateSdsSecretConfigs": [
                 {
-                  "name": "system_mtls_identity_envoyconfig",
+                  "name": "kri_mid_envoyconfig_kuma-3__envoyconfig-identity_",
                   "sdsConfig": {
                     "ads": {},
                     "resourceApiVersion": "V3"
@@ -142,7 +139,7 @@
                 }
               ]
             },
-            "sni": "a65abe81bca1750d1.demo-client.3000.envoyconfig.ms"
+            "sni": "sni.msvc.envoyconfig.kuma-3.demo-client.3000"
           }
         },
         "type": "EDS",
@@ -184,14 +181,14 @@
                   "matchTypedSubjectAltNames": [
                     {
                       "matcher": {
-                        "exact": "spiffe://envoyconfig/test-server"
+                        "exact": "spiffe://envoyconfig.kuma-3.mesh.local/workload/test-server"
                       },
                       "sanType": "URI"
                     }
                   ]
                 },
                 "validationContextSdsSecretConfig": {
-                  "name": "system_mtls_ca_envoyconfig",
+                  "name": "system_trust_bundle",
                   "sdsConfig": {
                     "ads": {},
                     "resourceApiVersion": "V3"
@@ -200,7 +197,7 @@
               },
               "tlsCertificateSdsSecretConfigs": [
                 {
-                  "name": "system_mtls_identity_envoyconfig",
+                  "name": "kri_mid_envoyconfig_kuma-3__envoyconfig-identity_",
                   "sdsConfig": {
                     "ads": {},
                     "resourceApiVersion": "V3"
@@ -208,7 +205,7 @@
                 }
               ]
             },
-            "sni": "a029781856823048e.test-server.80.envoyconfig.ms"
+            "sni": "sni.msvc.envoyconfig.kuma-3.test-server.80"
           }
         },
         "type": "EDS",
@@ -439,7 +436,6 @@
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "demo-client",
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
@@ -449,7 +445,6 @@
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "demo-client",
                       "kuma.io/zone": "kuma-3",
                       "team": "client-owners"
@@ -488,7 +483,6 @@
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
                       "kuma.io/protocol": "http",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "test-server",
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
@@ -501,7 +495,6 @@
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
                       "kuma.io/protocol": "http",
-                      "kuma.io/proxy-type": "sidecar",
                       "kuma.io/workload": "test-server",
                       "kuma.io/zone": "kuma-3",
                       "team": "server-owners",
@@ -658,19 +651,16 @@
                             }
                           },
                           {
+                            "directResponse": {
+                              "body": {
+                                "inlineString": ""
+                              },
+                              "status": 404
+                            },
                             "match": {
                               "prefix": "/"
                             },
-                            "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
-                            "route": {
-                              "cluster": "kri_msvc_envoyconfig_kuma-3__test-server_80",
-                              "idleTimeout": "1800s",
-                              "retryPolicy": {
-                                "numRetries": 6,
-                                "retryOn": "5xx"
-                              },
-                              "timeout": "15s"
-                            }
+                            "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo="
                           }
                         ]
                       }
@@ -727,7 +717,7 @@
                                     "name": "envoy.filters.rbac.action",
                                     "typedConfig": {
                                       "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
-                                      "name": "kri_mtp_envoyconfig_kuma-3__allow-all-envoyconfig_"
+                                      "name": "kri_mtp_envoyconfig_kuma-3__allow-all-envoyconfig-0_"
                                     }
                                   }
                                 },
@@ -740,7 +730,7 @@
                                       }
                                     },
                                     "valueMatch": {
-                                      "prefix": "spiffe://envoyconfig"
+                                      "prefix": "spiffe://envoyconfig.kuma-3.mesh.local"
                                     }
                                   }
                                 }
@@ -833,14 +823,14 @@
                       "matchTypedSubjectAltNames": [
                         {
                           "matcher": {
-                            "prefix": "spiffe://envoyconfig/"
+                            "prefix": "spiffe://envoyconfig.kuma-3.mesh.local/"
                           },
                           "sanType": "URI"
                         }
                       ]
                     },
                     "validationContextSdsSecretConfig": {
-                      "name": "system_mtls_ca_envoyconfig",
+                      "name": "system_trust_bundle",
                       "sdsConfig": {
                         "ads": {},
                         "resourceApiVersion": "V3"
@@ -849,7 +839,7 @@
                   },
                   "tlsCertificateSdsSecretConfigs": [
                     {
-                      "name": "system_mtls_identity_envoyconfig",
+                      "name": "kri_mid_envoyconfig_kuma-3__envoyconfig-identity_",
                       "sdsConfig": {
                         "ads": {},
                         "resourceApiVersion": "V3"
@@ -870,8 +860,7 @@
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig",
               "kuma.io/origin": "zone",
-              "kuma.io/protocol": "http",
-              "kuma.io/proxy-type": "sidecar",
+              "kuma.io/service": "test-server",
               "kuma.io/workload": "test-server",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",
@@ -1160,22 +1149,22 @@
       }
     },
     "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret": {
-      "system_mtls_ca_envoyconfig": {
-        "name": "system_mtls_ca_envoyconfig",
+      "system_trust_bundle": {
+        "name": "system_trust_bundle",
         "validationContext": {
-          "trustedCa": {
-            "inlineBytes": "Q0E="
-          }
-        }
-      },
-      "system_mtls_identity_envoyconfig": {
-        "name": "system_mtls_identity_envoyconfig",
-        "tlsCertificate": {
-          "certificateChain": {
-            "inlineBytes": "Q0VSVA=="
-          },
-          "privateKey": {
-            "inlineBytes": "S0VZ"
+          "customValidatorConfig": {
+            "name": "envoy.tls.cert_validator.spiffe",
+            "typedConfig": {
+              "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.SPIFFECertValidatorConfig",
+              "trustDomains": [
+                {
+                  "name": "envoyconfig.kuma-3.mesh.local",
+                  "trustBundle": {
+                    "inlineBytes": "CERT_REDACTED"
+                  }
+                }
+              ]
+            }
           }
         }
       }

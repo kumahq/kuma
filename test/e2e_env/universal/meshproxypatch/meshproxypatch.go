@@ -8,6 +8,7 @@ import (
 
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
@@ -74,6 +75,45 @@ spec:
 			responses, err := client.CollectResponses(universal.Cluster, "demo-client", "test-server.svc.mesh.local")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses[0].Received.Headers["X-Header"]).To(ContainElements("test"))
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should apply a circuit breaker threshold patched onto the generated one", func() {
+		// given a cluster that already carries a DEFAULT-priority threshold
+		policy := fmt.Sprintf(`
+type: MeshProxyPatch
+mesh: %s
+name: circuit-breaker-thresholds
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      kuma.io/service: demo-client
+  default:
+    appendModifications:
+      - cluster:
+          operation: Patch
+          match:
+            name: self_transparentproxy_passthrough_outbound_ipv4
+          value: |
+            circuitBreakers:
+              thresholds:
+                - maxConnections: 8192
+`, mesh)
+
+		// when
+		Expect(universal.Cluster.Install(YamlUniversal(policy))).To(Succeed())
+
+		// then the limit Envoy resolved changes, not just the one /config_dump reports
+		admin := universal.Cluster.GetApp(AppModeDemoClient).GetEnvoyAdminTunnel()
+		Eventually(func(g Gomega) {
+			// anchored: the filter is a regex, and an unanchored remaining_cx
+			// also matches remaining_cx_pools
+			s, err := admin.GetStats("cluster.self_transparentproxy_passthrough_outbound_ipv4.circuit_breakers.default.remaining_cx$")
+			g.Expect(err).ToNot(HaveOccurred())
+			// remaining_cx counts down as the cluster opens connections, so
+			// assert against Envoy's 1024 default rather than an exact 8192
+			g.Expect(s).To(stats.BeGreaterThan(float64(1024)))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

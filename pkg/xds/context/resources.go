@@ -17,7 +17,6 @@ import (
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	meshfaultinjection_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
@@ -46,13 +45,11 @@ func (rm ResourceMap) Hash() []byte {
 
 type Resources struct {
 	MeshLocalResources ResourceMap
-	CrossMeshResources map[xds.MeshName]ResourceMap
 }
 
 func NewResources() Resources {
 	return Resources{
 		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{},
-		CrossMeshResources: map[xds.MeshName]ResourceMap{},
 	}
 }
 
@@ -69,18 +66,6 @@ func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.
 	return r.MeshLocalResources.listOrEmpty(resourceType)
 }
 
-func (r Resources) ServiceInsights() *core_mesh.ServiceInsightResourceList {
-	return r.ListOrEmpty(core_mesh.ServiceInsightType).(*core_mesh.ServiceInsightResourceList)
-}
-
-func (r Resources) ZoneIngresses() *core_mesh.ZoneIngressResourceList {
-	return r.ListOrEmpty(core_mesh.ZoneIngressType).(*core_mesh.ZoneIngressResourceList)
-}
-
-func (r Resources) ZoneEgresses() *core_mesh.ZoneEgressResourceList {
-	return r.ListOrEmpty(core_mesh.ZoneEgressType).(*core_mesh.ZoneEgressResourceList)
-}
-
 func (r Resources) Dataplanes() *core_mesh.DataplaneResourceList {
 	return r.ListOrEmpty(core_mesh.DataplaneType).(*core_mesh.DataplaneResourceList)
 }
@@ -95,16 +80,6 @@ func (r Resources) MeshFaultInjections() *meshfaultinjection_api.MeshFaultInject
 
 func (r Resources) Meshes() *core_mesh.MeshResourceList {
 	return r.ListOrEmpty(core_mesh.MeshType).(*core_mesh.MeshResourceList)
-}
-
-func (r Resources) OtherMeshes(localMesh string) *core_mesh.MeshResourceList {
-	otherMeshes := core_mesh.MeshResourceList{}
-	for _, m := range r.Meshes().Items {
-		if m.GetMeta().GetName() != localMesh {
-			otherMeshes.Items = append(otherMeshes.Items, m)
-		}
-	}
-	return &otherMeshes
 }
 
 func (r Resources) MeshServices() *meshsvc.MeshServiceResourceList {

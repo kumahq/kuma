@@ -9,6 +9,36 @@ import (
 	externalRef0 "github.com/kumahq/kuma/v3/api/openapi/types/common"
 )
 
+// Defines values for GetDataplaneClustersParamsFormat.
+const (
+	GetDataplaneClustersParamsFormatJson GetDataplaneClustersParamsFormat = "json"
+)
+
+// Valid indicates whether the value is a known member of the GetDataplaneClustersParamsFormat enum.
+func (e GetDataplaneClustersParamsFormat) Valid() bool {
+	switch e {
+	case GetDataplaneClustersParamsFormatJson:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetDataplaneStatsParamsFormat.
+const (
+	GetDataplaneStatsParamsFormatJson GetDataplaneStatsParamsFormat = "json"
+)
+
+// Valid indicates whether the value is a known member of the GetDataplaneStatsParamsFormat enum.
+func (e GetDataplaneStatsParamsFormat) Valid() bool {
+	switch e {
+	case GetDataplaneStatsParamsFormatJson:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GetDataplanesXdsConfigParamsInclude.
 const (
 	Diff GetDataplanesXdsConfigParamsInclude = "diff"
@@ -90,9 +120,6 @@ type DataplaneXDSConfig struct {
 
 // DataplanesStats Dataplanes statistics
 type DataplanesStats struct {
-	// GatewayBuiltin Builtin Gateway dataplane proxy statistics
-	GatewayBuiltin FullStatus `json:"gatewayBuiltin"`
-
 	// GatewayDelegated Delegated Gateway dataplane proxy statistics
 	GatewayDelegated FullStatus `json:"gatewayDelegated"`
 
@@ -216,9 +243,6 @@ type ServicesStats struct {
 		Total int `json:"total"`
 	} `json:"external"`
 
-	// GatewayBuiltin Builtin Gateway services statistics
-	GatewayBuiltin FullStatus `json:"gatewayBuiltin"`
-
 	// GatewayDelegated Delegated Gateway services statistics
 	GatewayDelegated FullStatus `json:"gatewayDelegated"`
 
@@ -237,6 +261,9 @@ type ZonesStats struct {
 	// ZoneIngresses Zone Ingresses statistics
 	ZoneIngresses BaseStatus `json:"zoneIngresses"`
 }
+
+// ConfigResponse defines model for ConfigResponse.
+type ConfigResponse map[string]interface{}
 
 // DataplaneNetworkingLayoutResponse Dataplane networking layout. It contains the most important information about the dataplane and lists the available inbounds, outbounds, and zone proxy listeners
 type DataplaneNetworkingLayoutResponse = DataplaneNetworkingLayout
@@ -276,6 +303,33 @@ type RoutePolicyConfResponse = externalRef0.PoliciesList
 
 // RoutesListResponse defines model for RoutesListResponse.
 type RoutesListResponse = externalRef0.RoutesList
+
+// GetDataplaneClustersParams defines parameters for GetDataplaneClusters.
+type GetDataplaneClustersParams struct {
+	// Format Set to `json` to receive the Envoy admin output as JSON instead of plain text.
+	Format *GetDataplaneClustersParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+}
+
+// GetDataplaneClustersParamsFormat defines parameters for GetDataplaneClusters.
+type GetDataplaneClustersParamsFormat string
+
+// GetDataplaneStatsParams defines parameters for GetDataplaneStats.
+type GetDataplaneStatsParams struct {
+	// Format Set to `json` to receive the Envoy admin output as JSON instead of plain text.
+	Format *GetDataplaneStatsParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+
+	// Usedonly Only return stats Envoy has actually updated.
+	Usedonly *bool `form:"usedonly,omitempty" json:"usedonly,omitempty"`
+}
+
+// GetDataplaneStatsParamsFormat defines parameters for GetDataplaneStats.
+type GetDataplaneStatsParamsFormat string
+
+// GetDataplaneXdsParams defines parameters for GetDataplaneXds.
+type GetDataplaneXdsParams struct {
+	// IncludeEds Include endpoint discovery data in the config dump.
+	IncludeEds *bool `form:"include_eds,omitempty" json:"include_eds,omitempty"`
+}
 
 // GetDataplanesXdsConfigParams defines parameters for GetDataplanesXdsConfig.
 type GetDataplanesXdsConfigParams struct {

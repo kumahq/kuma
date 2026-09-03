@@ -15,7 +15,8 @@ applyTo:
 - Hash-based resource versioning (SHA-256)
 
 **Flow:** Global CP ↔ Zone CPs via KDS
-- Zone Ingress/Egress for cross-zone traffic
+
+- Zone ingress/egress proxies for cross-zone traffic
 - K8s + Universal (VM) support
 - Eventual consistency model
 
@@ -111,7 +112,7 @@ var _ = Describe("Feature", func() {
 
 **Multi-zone scenarios:**
 - Global CP + multiple Zone CPs
-- Zone Ingress/Egress traffic
+- Zone ingress/egress proxy traffic
 - Cross-zone communication
 - K8s + Universal mixed environments
 - Feature flag combinations (with/without features)

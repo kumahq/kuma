@@ -79,18 +79,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				},
 			},
 		})
-		createDpWithInsights("gateway-builtin", &v1alpha1.Dataplane{
-			Networking: &v1alpha1.Dataplane_Networking{
-				Address: "127.0.0.1",
-				Gateway: &v1alpha1.Dataplane_Networking_Gateway{
-					Type: v1alpha1.Dataplane_Networking_Gateway_BUILTIN,
-					Tags: map[string]string{
-						"service": "gateway",
-					},
-				},
-			},
-		})
-
 		dp1Labels := map[string]string{
 			"service":   "backend",
 			"version":   "v1",
@@ -102,11 +90,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 				Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
 					{
 						Port: 1234,
-						Tags: map[string]string{
-							"service":   "backend",
-							"version":   "v1",
-							"tagcolumn": "tag:v",
-						},
 					},
 				},
 			},
@@ -119,11 +102,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
 						{
 							Port: 1234,
-							Tags: map[string]string{
-								"service":   "backend",
-								"version":   "v1",
-								"tagcolumn": "tag:v",
-							},
 						},
 					},
 				},
@@ -151,12 +129,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			"address": "127.0.0.1",
 			"inbound": [
 				{
-					"port": 1234,
-					"tags": {
-						"service": "backend",
-						"version": "v1",
-						"tagcolumn": "tag:v"
-					}
+					"port": 1234
 				}
 			]
 		}
@@ -182,7 +155,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 
 	It("should return an existing resource", func() {
 		// when
-		response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights/dp-1")
+		response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes/dp-1/_overview")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -190,6 +163,15 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 		body, err := io.ReadAll(response.Body)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(body).To(MatchJSON(dp1Json))
+	})
+
+	It("should no longer serve the legacy insights path", func() {
+		// when
+		response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights")
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(response.StatusCode).To(Equal(404))
 	})
 
 	type testCase struct {
@@ -216,46 +198,40 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			Expect(body).To(matchers.MatchGoldenJSON("testdata", goldenFileName))
 		},
 		Entry("should list all when no tag is provided", testCase{
-			url: "meshes/mesh1/dataplanes+insights",
+			url: "meshes/mesh1/dataplanes/_overview",
 		}),
 		Entry("should list with only one matching tag", testCase{
-			url: "meshes/mesh1/dataplanes+insights?tag=service:backend",
+			url: "meshes/mesh1/dataplanes/_overview?tag=service:backend",
 		}),
 		Entry("should list with only subset tag", testCase{
-			url: "meshes/mesh1/dataplanes+insights?tag=service:ck",
+			url: "meshes/mesh1/dataplanes/_overview?tag=service:ck",
 		}),
 		Entry("should list all with all matching tags", testCase{
-			url: "meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v1",
+			url: "meshes/mesh1/dataplanes/_overview?tag=service:backend&tag=version:v1",
 		}),
 		Entry("should list all with all matching tags with value with a column", testCase{
-			url: "meshes/mesh1/dataplanes+insights?tag=tagcolumn:tag:v",
+			url: "meshes/mesh1/dataplanes/_overview?tag=tagcolumn:tag:v",
 		}),
 		Entry("should not list when any tag is not matching", testCase{
-			url: "meshes/mesh1/dataplanes+insights?tag=service:backend&tag=version:v2",
+			url: "meshes/mesh1/dataplanes/_overview?tag=service:backend&tag=version:v2",
 		}),
 		Entry("should list only gateway dataplanes", testCase{
-			url: "meshes/mesh1/dataplanes+insights?gateway=true",
-		}),
-		Entry("should list only gateway builtin", testCase{
-			url: "meshes/mesh1/dataplanes+insights?gateway=builtin",
+			url: "meshes/mesh1/dataplanes/_overview?gateway=true",
 		}),
 		Entry("should list only gateway delegated", testCase{
-			url: "meshes/mesh1/dataplanes+insights?gateway=delegated",
+			url: "meshes/mesh1/dataplanes/_overview?gateway=delegated",
 		}),
 		Entry("should list only dataplanes that starts with gateway", testCase{
-			url: "meshes/mesh1/dataplanes+insights?name=gateway",
+			url: "meshes/mesh1/dataplanes/_overview?name=gateway",
 		}),
 		Entry("should list only dataplanes that contains with tew", testCase{
-			url: "meshes/mesh1/dataplanes+insights?name=tew",
-		}),
-		Entry("should list only dataplanes that contains with tew using _overview", testCase{
 			url: "meshes/mesh1/dataplanes/_overview?name=tew",
 		}),
 	)
 
 	DescribeTable("should reject invalid pagination params",
 		func(query string) {
-			response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights?" + query)
+			response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes/_overview?" + query)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(response.StatusCode).To(Equal(400))
 		},
@@ -266,7 +242,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 
 	It("should paginate correctly", func() {
 		// when
-		response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes+insights?size=1")
+		response, err := http.Get("http://" + apiServer.Address() + "/meshes/mesh1/dataplanes/_overview?size=1")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -279,7 +255,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			},
 		}
 		Expect(overviewList.UnmarshalJSON(body)).To(Succeed())
-		Expect(*overviewList.Next).To(Equal(fmt.Sprintf(`http://%s/meshes/mesh1/dataplanes+insights?offset=1&size=1`, apiServer.Address())))
+		Expect(*overviewList.Next).To(Equal(fmt.Sprintf(`http://%s/meshes/mesh1/dataplanes/_overview?offset=1&size=1`, apiServer.Address())))
 	})
 
 	It("should include insights when filtering by workload label", func() {
@@ -296,9 +272,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
 						{
 							Port: 1234,
-							Tags: map[string]string{
-								"service": "test-service",
-							},
 						},
 					},
 				},

@@ -65,86 +65,10 @@ components:
           format: date-time
           readOnly: true
           type: string
-        mtls:
-          description: |-
-            mTLS settings.
-            +optional
-          properties:
-            backends:
-              description: List of available Certificate Authority backends
-              items:
-                description: CertificateAuthorityBackend defines Certificate Authority
-                  backend
-                properties:
-                  conf:
-                    oneOf:
-                    - $ref: /specs/protoresources/providedcertificateauthorityconfig/schema.yaml#/components/schemas/ProvidedCertificateAuthorityConfig
-                    - $ref: /specs/protoresources/builtincertificateauthorityconfig/schema.yaml#/components/schemas/BuiltinCertificateAuthorityConfig
-                    type: object
-                  dpCert:
-                    description: Dataplane certificate settings
-                    properties:
-                      requestTimeout:
-                        description: Timeout on request to CA for DP certificate generation
-                          and retrieval
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
-                      rotation:
-                        description: Rotation settings
-                        properties:
-                          expiration:
-                            description: Time after which generated certificate for
-                              Dataplane will expire
-                            type: string
-                        type: object
-                    type: object
-                  mode:
-                    description: |-
-                      Mode defines the behaviour of inbound listeners with regard to traffic
-                      encryption
-                    oneOf:
-                    - type: string
-                    - type: integer
-                  name:
-                    description: Name of the backend
-                    type: string
-                  rootChain:
-                    properties:
-                      requestTimeout:
-                        description: |-
-                          Timeout on request for to CA for root certificate chain.
-                          If not specified, defaults to 10s.
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
-                    type: object
-                  type:
-                    description: |-
-                      Type of the backend. Has to be one of the loaded plugins (Kuma ships with
-                      builtin and provided)
-                    type: string
-                type: object
-              type: array
-            enabledBackend:
-              description: Name of the enabled backend
-              type: string
-            skipValidation:
-              description: If enabled, skips CA validation.
-              type: boolean
-          type: object
         name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
-        routing:
-          description: Routing settings of the mesh
-          properties: {}
-          type: object
         skipCreatingInitialPolicies:
           description: |-
             List of policies to skip creating by default when the mesh is created.

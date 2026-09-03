@@ -30,9 +30,9 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/kds"
 	"github.com/kumahq/kuma/v3/pkg/kds/hash"
+	kds_reconcile "github.com/kumahq/kuma/v3/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
-	reconcile_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
 	"github.com/kumahq/kuma/v3/pkg/util/rsa"
 	"github.com/kumahq/kuma/v3/pkg/version"
 )
@@ -42,22 +42,22 @@ const VersionHeader = "version"
 var log = core.Log.WithName("kds")
 
 type Context struct {
-	ZoneClientCtx         context.Context
-	TypesSentByZone       []core_model.ResourceType
-	TypesSentByGlobal     []core_model.ResourceType
-	GlobalProvidedFilter  reconcile_v2.ResourceFilter
-	ZoneProvidedFilter    reconcile_v2.ResourceFilter
-	GlobalServerFiltersV2 []FilterV2
+	ZoneClientCtx        context.Context
+	TypesSentByZone      []core_model.ResourceType
+	TypesSentByGlobal    []core_model.ResourceType
+	GlobalProvidedFilter kds_reconcile.ResourceFilter
+	ZoneProvidedFilter   kds_reconcile.ResourceFilter
+	GlobalServerFilters  []Filter
 
-	GlobalResourceMapper reconcile_v2.ResourceMapper
-	ZoneResourceMapper   reconcile_v2.ResourceMapper
+	GlobalResourceMapper kds_reconcile.ResourceMapper
+	ZoneResourceMapper   kds_reconcile.ResourceMapper
 
 	EnvoyAdminRPCs           service.EnvoyAdminRPCs
 	ServerStreamInterceptors []grpc.StreamServerInterceptor
 	ServerUnaryInterceptor   []grpc.UnaryServerInterceptor
 }
 
-type FilterV2 interface {
+type Filter interface {
 	InterceptServerStream(stream grpc.ServerStream) error
 	InterceptClientStream(stream grpc.ClientStream) error
 }
@@ -72,31 +72,31 @@ func DefaultContext(
 	manager manager.ResourceManager,
 	cfg kuma_cp.Config,
 ) *Context {
-	globalMappers := []reconcile_v2.ResourceMapper{
+	globalMappers := []kds_reconcile.ResourceMapper{
 		UpdateResourceMeta(
 			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin)),
 			util.WithoutLabelPrefixes(cfg.Multizone.Global.KDS.Labels.SkipPrefixes...),
 		),
-		reconcile_v2.If(
-			reconcile_v2.And(
-				reconcile_v2.TypeIs(system.GlobalSecretType),
-				reconcile_v2.NameHasPrefix(system.ZoneTokenSigningKeyPrefix),
+		kds_reconcile.If(
+			kds_reconcile.And(
+				kds_reconcile.TypeIs(system.GlobalSecretType),
+				kds_reconcile.NameHasPrefix(system.ZoneTokenSigningKeyPrefix),
 			),
 			MapZoneTokenSigningKeyGlobalToPublicKey),
-		reconcile_v2.If(
-			reconcile_v2.IsKubernetes(cfg.Store.Type),
+		kds_reconcile.If(
+			kds_reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
-		reconcile_v2.If(
+		kds_reconcile.If(
 			// we don't want status field from global to be synced to the zone
-			reconcile_v2.HasStatus,
+			kds_reconcile.HasStatus,
 			RemoveStatus()),
-		reconcile_v2.If(func(resource core_model.Resource) bool {
+		kds_reconcile.If(func(resource core_model.Resource) bool {
 			// There's a handful of resource types for which we keep the name unchanged
 			return !resource.Descriptor().SkipKDSHash
 		}, HashSuffixMapper(true, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag)),
 	}
 
-	zoneMappers := []reconcile_v2.ResourceMapper{
+	zoneMappers := []kds_reconcile.ResourceMapper{
 		UpdateResourceMeta(
 			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
 			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
@@ -105,8 +105,8 @@ func DefaultContext(
 			util.WithoutLabelPrefixes(cfg.Multizone.Zone.KDS.Labels.SkipPrefixes...),
 		),
 		MapInsightResourcesZeroGeneration,
-		reconcile_v2.If(
-			reconcile_v2.IsKubernetes(cfg.Store.Type),
+		kds_reconcile.If(
+			kds_reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		HashSuffixMapper(false, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag),
 	}
@@ -128,7 +128,7 @@ func DefaultContext(
 	}
 }
 
-func CompositeResourceFilters(filters ...reconcile_v2.ResourceFilter) reconcile_v2.ResourceFilter {
+func CompositeResourceFilters(filters ...kds_reconcile.ResourceFilter) kds_reconcile.ResourceFilter {
 	return func(ctx context.Context, clusterID string, features kds.Features, r core_model.Resource) bool {
 		for _, filter := range filters {
 			if !filter(ctx, clusterID, features, r) {
@@ -142,7 +142,7 @@ func CompositeResourceFilters(filters ...reconcile_v2.ResourceFilter) reconcile_
 // CompositeResourceMapper combines the given ResourceMappers into
 // a single ResourceMapper which calls each in order. If an error
 // occurs, the first one is returned and no further mappers are executed.
-func CompositeResourceMapper(mappers ...reconcile_v2.ResourceMapper) reconcile_v2.ResourceMapper {
+func CompositeResourceMapper(mappers ...kds_reconcile.ResourceMapper) kds_reconcile.ResourceMapper {
 	return func(features kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		var err error
 		for _, mapper := range mappers {
@@ -215,7 +215,7 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resour
 
 // RemoveK8sSystemNamespaceSuffixMapper is a mapper responsible for removing control plane system namespace suffixes
 // from names of resources if resources are stored in kubernetes.
-func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) reconcile_v2.ResourceMapper {
+func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) kds_reconcile.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		dotSuffix := fmt.Sprintf(".%s", k8sSystemNamespace)
 		newName := strings.TrimSuffix(r.GetMeta().GetName(), dotSuffix)
@@ -223,14 +223,14 @@ func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) reconcile_v
 	}
 }
 
-func RemoveStatus() reconcile_v2.ResourceMapper {
+func RemoveStatus() kds_reconcile.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		return util.CloneResource(r, util.WithoutStatus()), nil
 	}
 }
 
 // HashSuffixMapper returns mapper that adds a hash suffix to the name during KDS sync
-func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile_v2.ResourceMapper {
+func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) kds_reconcile.ResourceMapper {
 	return func(features kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		if checkKDSFeature && !features.HasFeature(kds.FeatureHashSuffix) {
 			return r, nil
@@ -249,7 +249,7 @@ func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile_v2.
 	}
 }
 
-func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) reconcile_v2.ResourceMapper {
+func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) kds_reconcile.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		newRes := util.CloneResource(r)
 		newRes.SetMeta(util.CloneResourceMeta(r.GetMeta(), fs...))
@@ -257,7 +257,7 @@ func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) reconcile_v2.ResourceMa
 	}
 }
 
-func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilter {
+func GlobalProvidedFilter(rm manager.ResourceManager) kds_reconcile.ResourceFilter {
 	return func(ctx context.Context, zoneName string, features kds.Features, r core_model.Resource) bool {
 		// There's explicit flag to disable KDS for a resource
 		if r.Descriptor().HasKDSDisabled(zoneName, r.GetMeta().GetLabels()) {
@@ -284,12 +284,6 @@ func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilte
 
 		switch {
 		case isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToZonesFlag):
-			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
-				policy := r.GetSpec().(core_model.Policy)
-				if policy.GetTargetRef().UsesSyntacticSugar && !features.HasFeature(kds.FeatureOptionalTopLevelTargetRef) {
-					return false
-				}
-			}
 			return true
 		case !isGlobal && r.Descriptor().KDSFlags.Has(core_model.SyncedAcrossZonesFlag):
 			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
@@ -297,9 +291,6 @@ func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilte
 					return false
 				}
 				policy := r.GetSpec().(core_model.Policy)
-				if policy.GetTargetRef().UsesSyntacticSugar && !features.HasFeature(kds.FeatureOptionalTopLevelTargetRef) {
-					return false
-				}
 				// if declared role is not 'producer' then no syncing
 				if core_model.PolicyRole(r.GetMeta()) != mesh_proto.ProducerPolicyRole {
 					return false

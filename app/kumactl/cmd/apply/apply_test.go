@@ -35,9 +35,7 @@ import (
 const defaultNetworkingSection = `networking:
   address: 2.2.2.2
   inbound:
-    - port: 80
-      tags:
-        "kuma.io/service": "web"`
+    - port: 80`
 
 var _ = Describe("kumactl apply", func() {
 	var rootCtx *kumactl_cmd.RootContext
@@ -68,13 +66,10 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Spec.Networking.Inbound[0].Address).To(Equal("1.1.1.1"))
 		Expect(resource.Spec.Networking.Inbound[0].Port).To(Equal(uint32(80)))
 		Expect(resource.Spec.Networking.Inbound[0].ServicePort).To(Equal(uint32(8080)))
-		Expect(resource.Spec.Networking.Inbound[0].Tags).To(HaveKeyWithValue("service", "web"))
-		Expect(resource.Spec.Networking.Inbound[0].Tags).To(HaveKeyWithValue("version", "1.0"))
-		Expect(resource.Spec.Networking.Inbound[0].Tags).To(HaveKeyWithValue("env", "production"))
 		// and
 		Expect(resource.Spec.Networking.Outbound).To(HaveLen(1))
 		Expect(resource.Spec.Networking.Outbound[0].Port).To(Equal(uint32(3000)))
-		Expect(resource.Spec.Networking.Outbound[0].GetService()).To(Equal("postgres"))
+		Expect(resource.Spec.Networking.Outbound[0].BackendRef.Name).To(Equal("postgres"))
 	}
 
 	It("should require -f arg", func() {
@@ -138,11 +133,6 @@ var _ = Describe("kumactl apply", func() {
 						{
 							Port:        443,
 							ServicePort: 8443,
-							Tags: map[string]string{
-								"service": "default",
-								"version": "default",
-								"env":     "default",
-							},
 						},
 					},
 				},
@@ -324,8 +314,6 @@ networking:
   address: 2.2.2.2
   inbound:
     - port: 80
-      tags:
-        "kuma.io/service": "web"
 `))
 	})
 
@@ -416,7 +404,7 @@ mesh: default
 networking:
   inbound: 0 # should be a string
 `,
-			err: `resource[0]: failed to parse resource: invalid Dataplane object: "error unmarshaling JSON: while decoding JSON: json: cannot unmarshal number into Go value of type []json.RawMessage"`,
+			err: `resource[0]: failed to parse resource: invalid Dataplane object: "error unmarshaling JSON: while decoding JSON: json: cannot unmarshal number into Go value of type []jsontext.Value"`,
 		}),
 		Entry("no resource", testCase{
 			resource: ``,

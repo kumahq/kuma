@@ -8,7 +8,6 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -29,7 +28,7 @@ type NamespaceReconciler struct {
 	CNIEnabled bool
 }
 
-// Reconcile is in charge of creating NetworkAttachmentDefinition if CNI enabled and namespace has label 'kuma.io/sidecar-injection: enabled'
+// Reconcile creates a NetworkAttachmentDefinition when CNI is enabled and the namespace carries the sidecar injection label.
 func (r *NamespaceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	if !r.CNIEnabled {
 		return kube_ctrl.Result{}, nil
@@ -69,7 +68,7 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		err := r.createOrUpdateNetworkAttachmentDefinition(ctx, req.Name)
 		return kube_ctrl.Result{}, err
 	} else {
-		// either a namespace that just had its kuma.io/sidecar-injection annotation removed or a namespace that never had this annotation
+		// Either a namespace that just had its kuma.io/sidecar-injection label removed or a namespace that never had this label.
 		err := r.deleteNetworkAttachmentDefinition(ctx, log, req.Name)
 		return kube_ctrl.Result{}, err
 	}
@@ -90,10 +89,8 @@ func (r *NamespaceReconciler) hasNetworkAttachmentDefinition(ctx context.Context
 
 func (r *NamespaceReconciler) createOrUpdateNetworkAttachmentDefinition(ctx context.Context, namespace string) error {
 	nad := &network_v1.NetworkAttachmentDefinition{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Namespace: namespace,
-			Name:      metadata.KumaCNI,
-		},
+		Namespace: namespace,
+		Name:      metadata.KumaCNI,
 	}
 	_, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, nad, func() error {
 		return nil

@@ -107,22 +107,6 @@ func NewPolicyInspectSidecarEntry(key ResourceKeyEntry) PolicyInspectSidecarEntr
 	}
 }
 
-type GatewayDataplanesInspectEntry struct {
-	DataplaneKey ResourceKeyEntry `json:"dataplane"`
-}
-
-type GatewayDataplanesInspectEntryList struct {
-	Total uint32                          `json:"total"`
-	Items []GatewayDataplanesInspectEntry `json:"items"`
-}
-
-func NewGatewayDataplanesInspectResult() *GatewayDataplanesInspectEntryList {
-	return &GatewayDataplanesInspectEntryList{
-		Total: 0,
-		Items: []GatewayDataplanesInspectEntry{},
-	}
-}
-
 type PolicyInspectEntryList struct {
 	Total uint32               `json:"total"`
 	Items []PolicyInspectEntry `json:"items"`
@@ -138,84 +122,3 @@ func NewPolicyInspectEntryList() *PolicyInspectEntryList {
 type PolicyMap map[core_model.ResourceType]v1alpha1.ResourceMeta
 
 type MatchedPolicies map[core_model.ResourceType][]v1alpha1.ResourceMeta
-
-// DataplaneInspectResponseKind, DataplaneInspectResponse, DataplaneInspectEntry
-// and DataplaneInspectEntryList back the deprecated GET
-// /meshes/{mesh}/dataplanes/{name}/policies endpoint, kept only because the
-// vendored GUI bundle still calls it directly.
-type DataplaneInspectResponseKind interface {
-	dataplaneInspectEntry()
-}
-
-type DataplaneInspectResponse struct {
-	DataplaneInspectResponseKind
-}
-
-func NewDataplaneInspectResponse(k DataplaneInspectResponseKind) DataplaneInspectResponse {
-	return DataplaneInspectResponse{
-		DataplaneInspectResponseKind: k,
-	}
-}
-
-func (e DataplaneInspectResponse) MarshalJSON() ([]byte, error) {
-	switch concrete := e.DataplaneInspectResponseKind.(type) {
-	case *DataplaneInspectEntryList:
-		return json.Marshal(struct {
-			KindTag
-			*DataplaneInspectEntryList
-		}{
-			KindTag:                   KindTag{SidecarDataplane},
-			DataplaneInspectEntryList: concrete,
-		})
-	case *GatewayDataplaneInspectResult:
-		return json.Marshal(struct {
-			KindTag
-			*GatewayDataplaneInspectResult
-		}{
-			KindTag:                       KindTag{GatewayDataplane},
-			GatewayDataplaneInspectResult: concrete,
-		})
-	}
-	panic("internal error")
-}
-
-func (w *DataplaneInspectResponse) UnmarshalJSON(data []byte) error {
-	i := KindTag{}
-	if err := json.Unmarshal(data, &i); err != nil {
-		return errors.Wrap(err, `unable to find "kind"`)
-	}
-	var entry DataplaneInspectResponseKind
-	switch i.Kind {
-	case SidecarDataplane, "":
-		entry = &DataplaneInspectEntryList{}
-	case GatewayDataplane:
-		entry = &GatewayDataplaneInspectResult{}
-	default:
-		return errors.Errorf("invalid DataplaneInspectResponse kind %q", i.Kind)
-	}
-	if err := json.Unmarshal(data, entry); err != nil {
-		return errors.Wrapf(err, "unable to parse DataplaneInspectResponse of kind %q", i.Kind)
-	}
-	w.DataplaneInspectResponseKind = entry
-	return nil
-}
-
-type DataplaneInspectEntry struct {
-	AttachmentEntry
-	MatchedPolicies MatchedPolicies `json:"matchedPolicies"`
-}
-
-type DataplaneInspectEntryList struct {
-	Total uint32                   `json:"total"`
-	Items []*DataplaneInspectEntry `json:"items"`
-}
-
-func NewDataplaneInspectEntryList() *DataplaneInspectEntryList {
-	return &DataplaneInspectEntryList{
-		Total: 0,
-		Items: []*DataplaneInspectEntry{},
-	}
-}
-
-func (*DataplaneInspectEntryList) dataplaneInspectEntry() {
-}

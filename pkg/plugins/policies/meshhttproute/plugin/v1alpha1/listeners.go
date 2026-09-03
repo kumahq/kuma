@@ -2,24 +2,20 @@ package v1alpha1
 
 import (
 	"fmt"
-	"reflect"
 	"slices"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	meshroute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds"
-	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -43,10 +39,16 @@ func GenerateOutboundListener(
 	legacyRouteConfigName := envoy_names.GetOutboundRouteName(svc.KumaServiceTagValue)
 	legacyListenerName := envoy_names.GetOutboundListenerName(address, port)
 
-	routeConfigName := svc.ConditionallyResolveKRIWithFallback(true, legacyRouteConfigName)
-	virtualHostName := svc.ConditionallyResolveKRIWithFallback(true, svc.KumaServiceTagValue)
-	listenerStatPrefix := svc.ConditionallyResolveKRIWithFallback(true, "")
-	listenerName := svc.ConditionallyResolveKRIWithFallback(true, legacyListenerName)
+	routeConfigName := legacyRouteConfigName
+	virtualHostName := svc.KumaServiceTagValue
+	listenerStatPrefix := ""
+	listenerName := legacyListenerName
+	if svc.DestinationResource != "" {
+		routeConfigName = svc.DestinationResource
+		virtualHostName = svc.DestinationResource
+		listenerStatPrefix = svc.DestinationResource
+		listenerName = svc.DestinationResource
+	}
 
 	route := &xds.HttpOutboundRouteConfigurer{
 		RouteConfigName: routeConfigName,
@@ -100,8 +102,23 @@ func generateFromService(
 	var routes []xds.OutboundRoute
 
 	for _, route := range prepareRoutes(rules, svc, meshCtx) {
-		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
-		if len(split) == 0 {
+		var split []xds.BackendRefSplit
+		for _, backendRef := range route.BackendRefs {
+			backendSplit := meshroute_xds.MakeHTTPSplit(
+				clusterCache,
+				servicesAcc,
+				[]resolve.ResolvedBackendRef{backendRef.BackendRef},
+				meshCtx,
+			)
+			if len(backendSplit) == 0 {
+				continue
+			}
+			split = append(split, xds.BackendRefSplit{
+				Split:   backendSplit[0],
+				Filters: backendRef.Filters,
+			})
+		}
+		if len(split) == 0 && !route.AllBackendRefsUnresolved && route.DirectResponseStatus == 0 {
 			continue
 		}
 		// mirrored requests go to a cluster of their own, it has no weight so
@@ -123,11 +140,15 @@ func generateFromService(
 			mirrorSplits[i] = mirrorSplit[0]
 		}
 		routes = append(routes, xds.OutboundRoute{
-			Name:         route.Name,
-			Match:        route.Match,
-			Filters:      route.Filters,
-			MirrorSplits: mirrorSplits,
-			Split:        split,
+			Name:                         route.Name,
+			Match:                        route.Match,
+			Filters:                      route.Filters,
+			DirectResponseStatus:         route.DirectResponseStatus,
+			UnresolvedBackendRefsWeight:  route.UnresolvedBackendRefsWeight,
+			AllBackendRefsUnresolved:     route.AllBackendRefsUnresolved,
+			AllBackendRefsHaveZeroWeight: route.AllBackendRefsHaveZeroWeight,
+			MirrorSplits:                 mirrorSplits,
+			Split:                        split,
 		})
 	}
 
@@ -186,27 +207,17 @@ func ComputeHTTPRouteConf(
 	svc meshroute_xds.DestinationService,
 	meshCtx xds_context.MeshContext,
 ) (*api.PolicyDefault, map[common_api.MatchesHash]common.Origin) {
-	// check if there is configuration for real MeshService and prioritize it
 	if r, ok := svc.Outbound.AssociatedServiceResource(); ok {
 		if rule := toRules.ResourceRules.Compute(r, meshCtx.Resources); rule != nil && len(rule.Conf) > 0 {
 			return pointer.To(rule.Conf[0].(api.PolicyDefault)), rule.OriginByMatches
 		}
 	}
 
-	// compute for old MeshService
-	if rule := toRules.Rules.Compute(subsetutils.KumaServiceTagElement(svc.KumaServiceTagValue)); rule != nil {
-		return pointer.To(rule.Conf.(api.PolicyDefault)), util_maps.MapValues(
-			rule.OriginByMatches,
-			func(_ common_api.MatchesHash, o core_model.ResourceMeta) common.Origin {
-				return common.Origin{Resource: o}
-			},
-		)
-	}
-
 	return nil, make(map[common_api.MatchesHash]common.Origin)
 }
 
-// prepareRoutes handles the always present, catch all default route
+// prepareRoutes handles the always-present default backend route and the
+// policy-generated catch-all 404 fallback when rules leave unmatched traffic.
 func prepareRoutes(
 	toRules rules.ToRules,
 	svc meshroute_xds.DestinationService,
@@ -228,6 +239,8 @@ func prepareRoutes(
 	for _, rule := range apiRules {
 		filters := pointer.Deref(rule.Default.Filters)
 		backendRefs := pointer.Deref(rule.Default.BackendRefs)
+		hasExplicitBackendRefs := rule.Default.BackendRefs != nil
+		allBackendRefsHaveZeroWeight := hasExplicitBackendRefs && len(backendRefs) > 0
 		matchesHash := api.HashMatches(rule.Matches)
 		routeName := string(matchesHash)
 		origin := originByMatches[matchesHash]
@@ -249,24 +262,49 @@ func prepareRoutes(
 			}
 		}
 
+		for _, br := range backendRefs {
+			if pointer.DerefOr(br.Weight, 1) != 0 {
+				allBackendRefsHaveZeroWeight = false
+				break
+			}
+		}
+
 		for _, match := range rule.Matches {
-			var refs []resolve.ResolvedBackendRef
+			var refs []api.RouteBackendRef
+			var unresolvedWeight uint
 
 			for _, br := range backendRefs {
-				if rbr, ok := resolve.BackendRef(originID, br, meshCtx.ResolveResourceIdentifier); ok {
-					refs = append(refs, rbr)
+				rbr, ok := resolve.BackendRef(originID, br.CommonBackendRef(), meshCtx.ResolveResourceIdentifier)
+				if !ok {
+					unresolvedWeight += pointer.DerefOr(br.Weight, 1)
+					continue
 				}
+				if !backendRefProducesHTTPSplit(meshCtx, rbr) {
+					if rr := rbr.RealResourceBackendRef(); rr != nil {
+						unresolvedWeight += rr.Weight
+					} else {
+						unresolvedWeight += pointer.DerefOr(br.Weight, 1)
+					}
+					continue
+				}
+				refs = append(refs, api.RouteBackendRef{
+					BackendRef: rbr,
+					Filters:    pointer.Deref(br.Filters),
+				})
 			}
 
 			routes = append(
 				routes,
 				api.Route{
-					Name:              routeName,
-					Origin:            originID,
-					Match:             match,
-					Filters:           filters,
-					BackendRefs:       refs,
-					MirrorBackendRefs: mirrorRefs,
+					Name:                         routeName,
+					Origin:                       originID,
+					Match:                        match,
+					Filters:                      filters,
+					BackendRefs:                  refs,
+					UnresolvedBackendRefsWeight:  unresolvedWeight,
+					AllBackendRefsUnresolved:     hasExplicitBackendRefs && len(refs) == 0,
+					AllBackendRefsHaveZeroWeight: allBackendRefsHaveZeroWeight,
+					MirrorBackendRefs:            mirrorRefs,
 				},
 			)
 		}
@@ -283,15 +321,19 @@ func prepareRoutes(
 	}
 
 	noCatchAll := slices.IndexFunc(routes, func(route api.Route) bool {
-		return reflect.DeepEqual(route.Match, catchAllMatch)
+		return matchIsCatchAll(route.Match)
 	}) == -1
 
 	if noCatchAll {
-		routes = append(routes, api.Route{
+		fallbackRoute := api.Route{
 			Match:  catchAllMatch,
 			Name:   string(api.HashMatches([]api.Match{catchAllMatch})),
 			Origin: svc.Outbound.Resource,
-		})
+		}
+		if len(routes) > 0 && core_meta.IsHTTPBased(svc.Protocol) {
+			fallbackRoute.DirectResponseStatus = 404
+		}
+		routes = append(routes, fallbackRoute)
 	}
 
 	for i := range routes {
@@ -305,12 +347,37 @@ func prepareRoutes(
 			route.Match.Path = pointer.To(catchAllPathMatch)
 		}
 
-		if len(route.BackendRefs) == 0 {
-			route.BackendRefs = []resolve.ResolvedBackendRef{
-				*svc.DefaultBackendRef(),
+		if len(route.BackendRefs) == 0 && !route.AllBackendRefsUnresolved && route.DirectResponseStatus == 0 {
+			route.BackendRefs = []api.RouteBackendRef{
+				{
+					BackendRef: *svc.DefaultBackendRef(),
+				},
 			}
 		}
 	}
 
 	return routes
+}
+
+func matchIsCatchAll(match api.Match) bool {
+	if match.Method != nil || len(pointer.Deref(match.Headers)) > 0 || len(pointer.Deref(match.QueryParams)) > 0 {
+		return false
+	}
+	if match.Path == nil {
+		return true
+	}
+	return match.Path.Type == api.PathPrefix && match.Path.Value == "/"
+}
+
+func backendRefProducesHTTPSplit(
+	meshCtx xds_context.MeshContext,
+	ref resolve.ResolvedBackendRef,
+) bool {
+	rr := ref.RealResourceBackendRef()
+	if rr == nil || rr.Weight == 0 {
+		return false
+	}
+
+	_, port, ok := meshroute_xds.DestinationPortFromRef(meshCtx, rr)
+	return ok && core_meta.IsHTTPBased(port.GetProtocol())
 }

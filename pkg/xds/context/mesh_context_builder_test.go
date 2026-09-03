@@ -84,7 +84,6 @@ var _ = Describe("hash", func() {
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			nil,
 		)
 	})
 
@@ -276,7 +275,6 @@ status:
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			nil,
 			xds_context.WithPolicyMatchingHash(),
 		)
 
@@ -321,7 +319,6 @@ networking:
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			nil,
 			xds_context.WithPolicyMatchingHash(),
 		)
 
@@ -362,8 +359,9 @@ status:
 	})
 
 	It("recomputes the mesh context when a remote MeshService and its MeshZoneAddress newly appear", func() {
-		// given an mTLS-enabled mesh, matching the e2e repro
-		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
+		// given a mesh whose proxies get a workload identity, matching the e2e repro
+		Expect(samples.MeshDefaultBuilder().Create(resourceStore)).To(Succeed())
+		Expect(builders.MeshIdentity().Create(resourceStore)).To(Succeed())
 
 		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
 		Expect(err).ToNot(HaveOccurred())
@@ -398,9 +396,9 @@ status:
 				return []net.IP{net.ParseIP(resolvedIP)}, nil
 			},
 			"zone-1",
-			nil,
 		)
-		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
+		Expect(samples.MeshDefaultBuilder().Create(resourceStore)).To(Succeed())
+		Expect(builders.MeshIdentity().Create(resourceStore)).To(Succeed())
 		Expect(test_store.LoadResources(context.Background(), resourceStore, remoteMeshZoneAddressWithHostname)).To(Succeed())
 		Expect(samples.MeshServiceSyncedBackendBuilder().Create(resourceStore)).To(Succeed())
 
@@ -419,8 +417,9 @@ status:
 	})
 
 	It("recomputes the mesh context through the staged arrival matching the real KDS sequence", func() {
-		// given an mTLS-enabled mesh
-		Expect(samples.MeshMTLSBuilder().Create(resourceStore)).To(Succeed())
+		// given a mesh whose proxies get a workload identity
+		Expect(samples.MeshDefaultBuilder().Create(resourceStore)).To(Succeed())
+		Expect(builders.MeshIdentity().Create(resourceStore)).To(Succeed())
 
 		ctx0, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
 		Expect(err).ToNot(HaveOccurred())
@@ -469,7 +468,6 @@ status:
 				}
 			},
 			"zone-1",
-			nil,
 		)
 
 		Expect(test_store.LoadResources(context.Background(), resourceStore, `
@@ -483,8 +481,18 @@ networking:
   address: backend.dns.name
   inbound:
     - port: 8080
-      tags:
-        kuma.io/service: backend
+---
+type: MeshService
+name: backend
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneRef:
+      name: dp-1
+  ports:
+  - port: 8080
+    targetPort: 8080
+    appProtocol: tcp
 `)).To(Succeed())
 
 		// when
@@ -497,8 +505,10 @@ networking:
 		Expect(dataplanes[0].Spec.GetNetworking().GetAddress()).To(Equal("192.168.0.10"))
 
 		// and so is the endpoint Envoy EDS gets, since it only accepts IPs
-		Expect(meshCtx.EndpointMap["backend"]).To(HaveLen(1))
-		Expect(meshCtx.EndpointMap["backend"][0].Target).To(Equal("192.168.0.10"))
+		meshService := meshCtx.Resources.MeshServices().Items[0]
+		endpoints := meshCtx.EndpointMap[destinationname.MustResolve(meshService, meshService.Spec.Ports[0])]
+		Expect(endpoints).To(HaveLen(1))
+		Expect(endpoints[0].Target).To(Equal("192.168.0.10"))
 	})
 
 	It("returns an error instead of panicking when listing resources fails", func() {
@@ -509,7 +519,6 @@ networking:
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			nil,
 		)
 
 		// when building the base mesh context
@@ -530,7 +539,7 @@ func (f *failingListManager) List(context.Context, core_model.ResourceList, ...s
 	return errors.New("store unavailable")
 }
 
-var _ = Describe("ServicesInformation", func() {
+var _ = Describe("EndpointMap", func() {
 	lookupIPFunc := func(s string) ([]net.IP, error) {
 		return []net.IP{net.ParseIP(s)}, nil
 	}
@@ -544,30 +553,26 @@ var _ = Describe("ServicesInformation", func() {
 			xds_server.MeshResourceTypes(),
 			lookupIPFunc,
 			"zone-1",
-			nil,
 		)
 	})
 
-	It("resolves TLS readiness off MeshService status and treats external services as always ready", func() {
-		// given a mesh with a PERMISSIVE mTLS backend
-		meshBuilder := builders.Mesh().
-			WithBuiltinMTLSBackend("ca-1").
-			WithEnabledMTLSBackend("ca-1").
-			WithPermissiveMTLSBackends()
+	It("resolves protocol and marks external services, skipping gateway dataplanes", func() {
+		// given
+		meshBuilder := builders.Mesh()
 		Expect(meshBuilder.Create(resourceStore)).To(Succeed())
 		meshName := meshBuilder.Build().GetMeta().GetName()
 
-		// and a MeshService-backed service whose status is TLS ready
+		// and a MeshService-backed service with no Dataplane behind it, so it
+		// contributes no endpoints
 		msBuilder := builders.MeshService().
 			WithMesh(meshName).
 			WithName("backend").
 			WithDataplaneLabelsSelectorKV(mesh_proto.ServiceTag, "backend").
-			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
-			WithTLSStatus(meshservice_api.TLSReady)
+			AddIntPort(80, 8080, core_meta.ProtocolHTTP)
 		Expect(msBuilder.Create(resourceStore)).To(Succeed())
 		ms := msBuilder.Build()
 
-		// and a MeshExternalService, which is always considered TLS ready
+		// and a MeshExternalService
 		externalService := &meshexternalservice_api.MeshExternalServiceResource{
 			Meta: &test_model.ResourceMeta{Mesh: meshName, Name: "external-svc"},
 			Spec: &meshexternalservice_api.MeshExternalService{
@@ -606,21 +611,7 @@ var _ = Describe("ServicesInformation", func() {
 		}
 		Expect(resourceStore.Create(context.Background(), zoneEgress, store.CreateByKey("zone-egress-dp", meshName))).To(Succeed())
 
-		// and a builtin and a delegated gateway dataplane, neither of which is a regular service
-		builtinGateway := &core_mesh.DataplaneResource{
-			Meta: &test_model.ResourceMeta{Mesh: meshName, Name: "gateway-builtin-dp"},
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Address: "127.0.0.1",
-					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-						Tags: map[string]string{mesh_proto.ServiceTag: "gateway-builtin"},
-						Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
-					},
-				},
-			},
-		}
-		Expect(resourceStore.Create(context.Background(), builtinGateway, store.CreateByKey("gateway-builtin-dp", meshName))).To(Succeed())
-
+		// and a delegated gateway dataplane, which is not a regular service
 		delegatedGatewayBuilder := builders.Dataplane().
 			WithMesh(meshName).
 			WithName("gateway-delegated-dp").
@@ -632,46 +623,18 @@ var _ = Describe("ServicesInformation", func() {
 		mc, err := meshContextBuilder.Build(context.Background(), meshName)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then the MeshService-backed service is TLS ready
-		msKey := destinationname.MustResolve(false, ms, ms.Spec.Ports[0])
-		Expect(mc.ServicesInformation[msKey]).ToNot(BeNil())
-		Expect(mc.ServicesInformation[msKey].TLSReadiness).To(BeTrue())
+		// then a MeshService with no Dataplane behind it contributes no endpoints
+		msKey := destinationname.MustResolve(ms, ms.Spec.Ports[0])
+		Expect(mc.EndpointMap).ToNot(HaveKey(msKey))
 
-		// and the external service is unconditionally TLS ready
-		esKey := destinationname.MustResolve(false, externalService, externalService.Spec.Match)
-		Expect(mc.ServicesInformation[esKey]).ToNot(BeNil())
-		Expect(mc.ServicesInformation[esKey].IsExternalService).To(BeTrue())
-		Expect(mc.ServicesInformation[esKey].TLSReadiness).To(BeTrue())
+		// and the external service resolves to the egress, carrying the protocol
+		// declared on the resource
+		esKey := destinationname.MustResolve(externalService, externalService.Spec.Match)
+		Expect(mc.EndpointMap[esKey]).ToNot(BeEmpty())
+		Expect(mc.EndpointMap[esKey][0].IsExternalService()).To(BeTrue())
+		Expect(mc.EndpointMap[esKey][0].ExternalService.Protocol).To(Equal(core_meta.ProtocolHTTP))
 
-		// and gateway dataplanes (builtin and delegated) never had ServiceInsight-backed
-		// TLS readiness and still don't get a ServicesInformation entry of their own
-		Expect(mc.ServicesInformation).ToNot(HaveKey("gateway-builtin"))
-		Expect(mc.ServicesInformation).ToNot(HaveKey("gateway-delegated"))
-	})
-
-	It("does not mark services TLS ready when the mesh CA backend is not PERMISSIVE", func() {
-		meshBuilder := builders.Mesh().
-			WithBuiltinMTLSBackend("ca-1").
-			WithEnabledMTLSBackend("ca-1")
-		Expect(meshBuilder.Create(resourceStore)).To(Succeed())
-		meshName := meshBuilder.Build().GetMeta().GetName()
-
-		msBuilder := builders.MeshService().
-			WithMesh(meshName).
-			WithName("backend").
-			WithDataplaneLabelsSelectorKV(mesh_proto.ServiceTag, "backend").
-			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
-			WithTLSStatus(meshservice_api.TLSReady)
-		Expect(msBuilder.Create(resourceStore)).To(Succeed())
-		ms := msBuilder.Build()
-
-		mc, err := meshContextBuilder.Build(context.Background(), meshName)
-		Expect(err).ToNot(HaveOccurred())
-
-		msKey := destinationname.MustResolve(false, ms, ms.Spec.Ports[0])
-		info, found := mc.ServicesInformation[msKey]
-		if found {
-			Expect(info.TLSReadiness).To(BeFalse())
-		}
+		// and gateway dataplanes are not destinations
+		Expect(mc.EndpointMap).ToNot(HaveKey("gateway-delegated"))
 	})
 })

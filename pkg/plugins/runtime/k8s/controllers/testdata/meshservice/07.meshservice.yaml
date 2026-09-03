@@ -1,0 +1,38 @@
+items:
+- metadata:
+    labels:
+      app: gateway
+      k8s.kuma.io/is-headless-service: "false"
+      k8s.kuma.io/service-name: example
+      kuma.io/env: kubernetes
+      kuma.io/managed-by: k8s-controller
+      kuma.io/mesh: default
+    name: example
+    namespace: demo
+    ownerReferences:
+    - apiVersion: v1
+      kind: Service
+      name: example
+      uid: ""
+    resourceVersion: "1"
+  spec:
+    ports:
+    - appProtocol: tcp
+      name: proxy
+      port: 80
+      targetPort: 8000
+    - appProtocol: tcp
+      name: proxy-tls
+      port: 443
+      targetPort: 8443
+    selector:
+      dataplaneLabels:
+        matchLabels:
+          app: gateway
+          k8s.kuma.io/namespace: demo
+  status:
+    dataplaneProxies: {}
+    tls: {}
+    vips:
+    - ip: 192.168.0.1
+metadata: {}

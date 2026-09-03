@@ -45,20 +45,16 @@ components:
                     type:
                       description: |-
                         Type of gateway this data plane proxy manages.
-                        There are two types: `DELEGATED` and `BUILTIN`. Defaults to
-                        `DELEGATED`.
 
-                        A `DELEGATED` gateway is an independently deployed proxy (e.g., Kong,
-                        Contour, etc) that receives inbound traffic that is not proxied by
-                        Kuma, and it sends outbound traffic into the data plane proxy.
-
-                        The `BUILTIN` gateway type causes the data plane proxy itself to be
-                        configured as a gateway.
+                        The only supported type is `DELEGATED`: an independently deployed proxy
+                        (e.g., Kong, Contour, etc) that receives inbound traffic that is not
+                        proxied by Kuma, and it sends outbound traffic into the data plane
+                        proxy.
 
                         See https://kuma.io/docs/latest/explore/gateway/ for more information.
-                      oneOf:
-                      - type: string
-                      - type: integer
+                      enum:
+                      - DELEGATED
+                      type: string
                   type: object
                 inbound:
                   description: |-
@@ -170,18 +166,11 @@ components:
                         type: object
                       state:
                         description: State describes the current state of the listener.
-                        oneOf:
-                        - type: string
-                        - type: integer
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: |-
-                          Tags associated with an application this data plane proxy is deployed
-                          next to, e.g. `kuma.io/service=web`, `version=1.0`. You can then
-                          reference these tags in policies like MeshTrafficPermission.
-                          `kuma.io/service` tag is mandatory.
-                        type: object
+                        enum:
+                        - Ready
+                        - NotReady
+                        - Ignored
+                        type: string
                     type: object
                   type: array
                 listeners:
@@ -209,16 +198,19 @@ components:
                           State describes the current health state of the listener.
                           The control plane sets this based on the readiness of the underlying
                           pod and sidecar container.
-                        oneOf:
-                        - type: string
-                        - type: integer
+                        enum:
+                        - Ready
+                        - NotReady
+                        type: string
                       type:
                         description: |-
                           Type determines the role of this listener: ZoneIngress for inbound
                           cross-zone traffic or ZoneEgress for outbound external traffic.
-                        oneOf:
-                        - type: string
-                        - type: integer
+                        enum:
+                        - Unspecified
+                        - ZoneIngress
+                        - ZoneEgress
+                        type: string
                     type: object
                   type: array
                 outbound:
@@ -236,9 +228,7 @@ components:
                           Headless Service. Defaults to 127.0.0.1
                         type: string
                       backendRef:
-                        description: |-
-                          BackendRef is a way to target MeshService.
-                          Experimental. Do not use on production yet.
+                        description: BackendRef is a way to target MeshService.
                         properties:
                           kind:
                             description: 'Kind is a type of the object to target.
@@ -266,14 +256,6 @@ components:
                           proxy. When transparent proxying is not used, Envoy will bind to this
                           port.
                         type: integer
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: |-
-                          Tags of consumed data plane proxies.
-                          These tags can then be referenced in `to` section in policies like
-                          MeshAccessLog.
-                        type: object
                     type: object
                   type: array
                 transparentProxying:
@@ -293,9 +275,12 @@ components:
                     ipFamilyMode:
                       description: The IP family mode to enable for. Can be "IPv4"
                         or "DualStack".
-                      oneOf:
-                      - type: string
-                      - type: integer
+                      enum:
+                      - UnSpecified
+                      - DualStack
+                      - IPv4
+                      - IPv6
+                      type: string
                     reachableBackends:
                       description: |-
                         Reachable backend via transparent proxy when running with
@@ -337,45 +322,6 @@ components:
                         redirected.
                       type: integer
                   type: object
-              type: object
-            probes:
-              description: |-
-                Probes describe a list of endpoints that will be exposed without mTLS.
-                This is useful to expose the health endpoints of the application so the
-                orchestration system (e.g. Kubernetes) can still health check the
-                application.
-
-                See
-                https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes
-                for more information.
-                Deprecated: this feature will be removed for Universal; on Kubernetes, it's
-                not needed anymore.
-              properties:
-                endpoints:
-                  description: List of endpoints to expose without mTLS.
-                  items:
-                    properties:
-                      inboundPath:
-                        description: |-
-                          Inbound path is a path of the application from which we expose the
-                          endpoint. It is recommended to be as specific as possible.
-                        type: string
-                      inboundPort:
-                        description: |-
-                          Inbound port is a port of the application from which we expose the
-                          endpoint.
-                        type: integer
-                      path:
-                        description: Path is a path on which we expose inbound path
-                          on the probes port.
-                        type: string
-                    type: object
-                  type: array
-                port:
-                  description: |-
-                    Port on which the probe endpoints will be exposed. This cannot overlap
-                    with any other ports.
-                  type: integer
               type: object
           type: object
         dataplaneInsight:

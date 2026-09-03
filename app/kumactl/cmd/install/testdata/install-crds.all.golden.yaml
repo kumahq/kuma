@@ -183,26 +183,7 @@ spec:
     singular: dataplane
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - description: Service tag of the first inbound
-      jsonPath: .spec.networking.inbound[0].tags['kuma\.io/service']
-      name: kuma.io/service
-      type: string
-    - description: Service tag of the second inbound
-      jsonPath: .spec.networking.inbound[1].tags['kuma\.io/service']
-      name: kuma.io/service
-      type: string
-    - description: Service tag of the third inbound
-      jsonPath: .spec.networking.inbound[2].tags['kuma\.io/service']
-      name: kuma.io/service
-      priority: 1
-      type: string
-    - description: Service tag of the fourth inbound
-      jsonPath: .spec.networking.inbound[3].tags['kuma\.io/service']
-      name: kuma.io/service
-      priority: 1
-      type: string
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -234,7 +215,6 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -619,12 +599,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -640,13 +614,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -839,13 +806,10 @@ spec:
                           description: Kind of the referenced resource
                           enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -860,13 +824,6 @@ spec:
                             SectionName is used to target specific section of resource.
                             For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                           type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
-                          type: object
                       required:
                       - kind
                       type: object
@@ -1241,12 +1198,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -1262,13 +1213,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -1535,13 +1479,10 @@ spec:
                           description: Kind of the referenced resource
                           enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -1556,13 +1497,6 @@ spec:
                             SectionName is used to target specific section of resource.
                             For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                           type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
-                          type: object
                       required:
                       - kind
                       type: object
@@ -1777,47 +1711,140 @@ spec:
                       caCert:
                         description: CaCert defines a certificate of CA.
                         properties:
-                          inline:
-                            description: Data source is inline bytes.
-                            format: byte
+                          envVar:
+                            properties:
+                              name:
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          file:
+                            properties:
+                              path:
+                                type: string
+                            required:
+                            - path
+                            type: object
+                          insecureInline:
+                            properties:
+                              value:
+                                type: string
+                            required:
+                            - value
+                            type: object
+                          secretRef:
+                            properties:
+                              kind:
+                                enum:
+                                - Secret
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          type:
+                            enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                             type: string
-                          inlineString:
-                            description: Data source is inline string`
-                            type: string
-                          secret:
-                            description: Data source is a secret with given Secret
-                              key.
-                            type: string
+                        required:
+                        - type
                         type: object
                       clientCert:
                         description: ClientCert defines a certificate of a client.
                         properties:
-                          inline:
-                            description: Data source is inline bytes.
-                            format: byte
+                          envVar:
+                            properties:
+                              name:
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          file:
+                            properties:
+                              path:
+                                type: string
+                            required:
+                            - path
+                            type: object
+                          insecureInline:
+                            properties:
+                              value:
+                                type: string
+                            required:
+                            - value
+                            type: object
+                          secretRef:
+                            properties:
+                              kind:
+                                enum:
+                                - Secret
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          type:
+                            enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                             type: string
-                          inlineString:
-                            description: Data source is inline string`
-                            type: string
-                          secret:
-                            description: Data source is a secret with given Secret
-                              key.
-                            type: string
+                        required:
+                        - type
                         type: object
                       clientKey:
                         description: ClientKey defines a client private key.
                         properties:
-                          inline:
-                            description: Data source is inline bytes.
-                            format: byte
+                          envVar:
+                            properties:
+                              name:
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          file:
+                            properties:
+                              path:
+                                type: string
+                            required:
+                            - path
+                            type: object
+                          insecureInline:
+                            properties:
+                              value:
+                                type: string
+                            required:
+                            - value
+                            type: object
+                          secretRef:
+                            properties:
+                              kind:
+                                enum:
+                                - Secret
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          type:
+                            enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                             type: string
-                          inlineString:
-                            description: Data source is inline string`
-                            type: string
-                          secret:
-                            description: Data source is a secret with given Secret
-                              key.
-                            type: string
+                        required:
+                        - type
                         type: object
                       mode:
                         default: Secured
@@ -2171,12 +2198,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -2192,13 +2213,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -2296,13 +2310,10 @@ spec:
                           description: Kind of the referenced resource
                           enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -2317,13 +2328,6 @@ spec:
                             SectionName is used to target specific section of resource.
                             For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                           type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
-                          type: object
                       required:
                       - kind
                       type: object
@@ -2398,12 +2402,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -2419,13 +2417,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -2630,13 +2621,10 @@ spec:
                           description: Kind of the referenced resource
                           enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -2651,13 +2639,6 @@ spec:
                             SectionName is used to target specific section of resource.
                             For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                           type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
-                          type: object
                       required:
                       - kind
                       type: object
@@ -2734,12 +2715,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -2755,13 +2730,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -2789,18 +2757,274 @@ spec:
                             properties:
                               backendRefs:
                                 items:
-                                  description: BackendRef defines where to forward
-                                    traffic.
                                   properties:
+                                    filters:
+                                      items:
+                                        properties:
+                                          requestHeaderModifier:
+                                            description: |-
+                                              Only one action is supported per header name.
+                                              Configuration to set or add multiple values for a header must use RFC 7230
+                                              header value formatting, separating each value with a comma.
+                                            properties:
+                                              add:
+                                                items:
+                                                  properties:
+                                                    name:
+                                                      maxLength: 256
+                                                      minLength: 1
+                                                      pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                      type: string
+                                                    value:
+                                                      type: string
+                                                  required:
+                                                  - name
+                                                  - value
+                                                  type: object
+                                                maxItems: 16
+                                                type: array
+                                                x-kubernetes-list-map-keys:
+                                                - name
+                                                x-kubernetes-list-type: map
+                                              remove:
+                                                items:
+                                                  type: string
+                                                maxItems: 16
+                                                type: array
+                                              set:
+                                                items:
+                                                  properties:
+                                                    name:
+                                                      maxLength: 256
+                                                      minLength: 1
+                                                      pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                      type: string
+                                                    value:
+                                                      type: string
+                                                  required:
+                                                  - name
+                                                  - value
+                                                  type: object
+                                                maxItems: 16
+                                                type: array
+                                                x-kubernetes-list-map-keys:
+                                                - name
+                                                x-kubernetes-list-type: map
+                                            type: object
+                                          requestMirror:
+                                            properties:
+                                              backendRef:
+                                                description: BackendRef defines where
+                                                  to forward traffic.
+                                                properties:
+                                                  kind:
+                                                    description: Kind of the referenced
+                                                      resource
+                                                    enum:
+                                                    - Mesh
+                                                    - MeshService
+                                                    - MeshExternalService
+                                                    - MeshMultiZoneService
+                                                    - MeshHTTPRoute
+                                                    - Dataplane
+                                                    type: string
+                                                  labels:
+                                                    additionalProperties:
+                                                      type: string
+                                                    description: |-
+                                                      Labels are used to select referenced real resources and to carry legacy
+                                                      service identity when a common TargetRef must still target old
+                                                      service-tag based paths.
+                                                    type: object
+                                                  port:
+                                                    description: Port is only supported
+                                                      when this ref refers to a real
+                                                      MeshService object
+                                                    format: int32
+                                                    type: integer
+                                                  sectionName:
+                                                    description: |-
+                                                      SectionName is used to target specific section of resource.
+                                                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                                    type: string
+                                                  weight:
+                                                    default: 1
+                                                    maximum: 4294967295
+                                                    minimum: 0
+                                                    type: integer
+                                                required:
+                                                - kind
+                                                type: object
+                                              percentage:
+                                                anyOf:
+                                                - type: integer
+                                                - type: string
+                                                description: |-
+                                                  Percentage of requests to mirror. If not specified, all requests
+                                                  to the target cluster will be mirrored.
+                                                x-kubernetes-int-or-string: true
+                                            required:
+                                            - backendRef
+                                            type: object
+                                          requestRedirect:
+                                            properties:
+                                              hostname:
+                                                description: |-
+                                                  PreciseHostname is the fully qualified domain name of a network host. This
+                                                  matches the RFC 1123 definition of a hostname with 1 notable exception that
+                                                  numeric IP addresses are not allowed.
+
+                                                  Note that as per RFC1035 and RFC1123, a *label* must consist of lower case
+                                                  alphanumeric characters or '-', and must start and end with an alphanumeric
+                                                  character. No other punctuation is allowed.
+                                                maxLength: 253
+                                                minLength: 1
+                                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                                type: string
+                                              path:
+                                                description: |-
+                                                  Path defines parameters used to modify the path of the incoming request.
+                                                  The modified path is then used to construct the location header.
+                                                  When empty, the request path is used as-is.
+                                                properties:
+                                                  replaceFullPath:
+                                                    type: string
+                                                  replacePrefixMatch:
+                                                    type: string
+                                                  type:
+                                                    enum:
+                                                    - ReplaceFullPath
+                                                    - ReplacePrefixMatch
+                                                    type: string
+                                                required:
+                                                - type
+                                                type: object
+                                              port:
+                                                description: |-
+                                                  Port is the port to be used in the value of the `Location`
+                                                  header in the response.
+                                                  When empty, port (if specified) of the request is used.
+                                                format: int32
+                                                maximum: 65535
+                                                minimum: 1
+                                                type: integer
+                                              scheme:
+                                                enum:
+                                                - http
+                                                - https
+                                                type: string
+                                              statusCode:
+                                                default: 302
+                                                description: StatusCode is the HTTP
+                                                  status code to be used in response.
+                                                enum:
+                                                - 301
+                                                - 302
+                                                - 303
+                                                - 307
+                                                - 308
+                                                type: integer
+                                            type: object
+                                          responseHeaderModifier:
+                                            description: |-
+                                              Only one action is supported per header name.
+                                              Configuration to set or add multiple values for a header must use RFC 7230
+                                              header value formatting, separating each value with a comma.
+                                            properties:
+                                              add:
+                                                items:
+                                                  properties:
+                                                    name:
+                                                      maxLength: 256
+                                                      minLength: 1
+                                                      pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                      type: string
+                                                    value:
+                                                      type: string
+                                                  required:
+                                                  - name
+                                                  - value
+                                                  type: object
+                                                maxItems: 16
+                                                type: array
+                                                x-kubernetes-list-map-keys:
+                                                - name
+                                                x-kubernetes-list-type: map
+                                              remove:
+                                                items:
+                                                  type: string
+                                                maxItems: 16
+                                                type: array
+                                              set:
+                                                items:
+                                                  properties:
+                                                    name:
+                                                      maxLength: 256
+                                                      minLength: 1
+                                                      pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                      type: string
+                                                    value:
+                                                      type: string
+                                                  required:
+                                                  - name
+                                                  - value
+                                                  type: object
+                                                maxItems: 16
+                                                type: array
+                                                x-kubernetes-list-map-keys:
+                                                - name
+                                                x-kubernetes-list-type: map
+                                            type: object
+                                          type:
+                                            enum:
+                                            - RequestHeaderModifier
+                                            - ResponseHeaderModifier
+                                            - RequestRedirect
+                                            - URLRewrite
+                                            - RequestMirror
+                                            type: string
+                                          urlRewrite:
+                                            properties:
+                                              hostToBackendHostname:
+                                                description: HostToBackendHostname
+                                                  is not currently supported and must
+                                                  not be set.
+                                                type: boolean
+                                              hostname:
+                                                description: Hostname is the value
+                                                  to be used to replace the host header
+                                                  value during forwarding.
+                                                maxLength: 253
+                                                minLength: 1
+                                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                                type: string
+                                              path:
+                                                description: Path defines a path rewrite.
+                                                properties:
+                                                  replaceFullPath:
+                                                    type: string
+                                                  replacePrefixMatch:
+                                                    type: string
+                                                  type:
+                                                    enum:
+                                                    - ReplaceFullPath
+                                                    - ReplacePrefixMatch
+                                                    type: string
+                                                required:
+                                                - type
+                                                type: object
+                                            type: object
+                                        required:
+                                        - type
+                                        type: object
+                                      type: array
                                     kind:
                                       description: Kind of the referenced resource
                                       enum:
                                       - Mesh
-                                      - MeshSubset
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshServiceSubset
                                       - MeshHTTPRoute
                                       - Dataplane
                                       type: string
@@ -2814,7 +3038,7 @@ spec:
                                       type: object
                                     port:
                                       description: Port is only supported when this
-                                        ref refers to a real MeshService object
+                                        ref refers to a MeshService object
                                       format: int32
                                       type: integer
                                     sectionName:
@@ -2822,15 +3046,9 @@ spec:
                                         SectionName is used to target specific section of resource.
                                         For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                                       type: string
-                                    tags:
-                                      additionalProperties:
-                                        type: string
-                                      description: |-
-                                        Tags used to select a subset of proxies by tags. Can only be used with kinds
-                                        `MeshSubset` and `MeshServiceSubset`
-                                      type: object
                                     weight:
                                       default: 1
+                                      maximum: 4294967295
                                       minimum: 0
                                       type: integer
                                   required:
@@ -2901,11 +3119,9 @@ spec:
                                                 resource
                                               enum:
                                               - Mesh
-                                              - MeshSubset
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
-                                              - MeshServiceSubset
                                               - MeshHTTPRoute
                                               - Dataplane
                                               type: string
@@ -2928,15 +3144,9 @@ spec:
                                                 SectionName is used to target specific section of resource.
                                                 For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                                               type: string
-                                            tags:
-                                              additionalProperties:
-                                                type: string
-                                              description: |-
-                                                Tags used to select a subset of proxies by tags. Can only be used with kinds
-                                                `MeshSubset` and `MeshServiceSubset`
-                                              type: object
                                             weight:
                                               default: 1
+                                              maximum: 4294967295
                                               minimum: 0
                                               type: integer
                                           required:
@@ -3213,13 +3423,10 @@ spec:
                           description: Kind of the referenced resource
                           enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -3234,13 +3441,6 @@ spec:
                             SectionName is used to target specific section of resource.
                             For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                           type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
-                          type: object
                       required:
                       - kind
                       type: object
@@ -3653,12 +3853,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -3674,13 +3868,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -3771,7 +3958,6 @@ spec:
                                 - Header
                                 - Cookie
                                 - Connection
-                                - SourceIP
                                 - QueryParameter
                                 - FilterState
                                 type: string
@@ -3889,7 +4075,7 @@ spec:
                             crossZone:
                               description: |-
                                 CrossZone defines locality aware load balancing priorities when dataplane proxies inside local zone
-                                are unavailable
+                                are unavailable. Supported only for to[].targetRef.kind MeshMultiZoneService.
                               properties:
                                 failover:
                                   description: Failover defines list of load balancing
@@ -3992,13 +4178,10 @@ spec:
                           description: Kind of the referenced resource
                           enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -4013,13 +4196,6 @@ spec:
                             SectionName is used to target specific section of resource.
                             For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                           type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
-                          type: object
                       required:
                       - kind
                       type: object
@@ -4280,12 +4456,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -4301,13 +4471,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -4891,12 +5054,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -4912,13 +5069,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -5058,8 +5208,16 @@ spec:
                               - Patch
                               type: string
                             value:
-                              description: Value of xDS resource in YAML format to
-                                add or patch.
+                              description: |-
+                                Value of xDS resource in YAML format to add or patch.
+
+                                Patch merges the value into the matched cluster, and repeated fields are
+                                appended to what the cluster already has. Circuit breaker thresholds are
+                                the exception: Envoy resolves them by routing priority and ignores every
+                                threshold after the first one of a given priority, so appending would be
+                                dead config. They are merged into the existing threshold with the same
+                                priority instead, and a value listing one priority twice keeps only the
+                                first entry.
                               type: string
                           required:
                           - operation
@@ -5413,12 +5571,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -5434,13 +5586,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -5683,12 +5828,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -5704,13 +5843,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -5848,13 +5980,10 @@ spec:
                           description: Kind of the referenced resource
                           enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -5869,13 +5998,6 @@ spec:
                             SectionName is used to target specific section of resource.
                             For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                           type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
-                          type: object
                       required:
                       - kind
                       type: object
@@ -5950,12 +6072,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -5971,13 +6087,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -6314,13 +6423,10 @@ spec:
                           description: Kind of the referenced resource
                           enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -6335,13 +6441,6 @@ spec:
                             SectionName is used to target specific section of resource.
                             For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                           type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
-                          type: object
                       required:
                       - kind
                       type: object
@@ -6412,7 +6511,6 @@ spec:
                   properties:
                     type:
                       enum:
-                      - ServiceTag
                       - SpiffeID
                       type: string
                     value:
@@ -6648,12 +6746,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -6669,13 +6761,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -6705,11 +6790,9 @@ spec:
                                       description: Kind of the referenced resource
                                       enum:
                                       - Mesh
-                                      - MeshSubset
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshServiceSubset
                                       - MeshHTTPRoute
                                       - Dataplane
                                       type: string
@@ -6731,15 +6814,9 @@ spec:
                                         SectionName is used to target specific section of resource.
                                         For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                                       type: string
-                                    tags:
-                                      additionalProperties:
-                                        type: string
-                                      description: |-
-                                        Tags used to select a subset of proxies by tags. Can only be used with kinds
-                                        `MeshSubset` and `MeshServiceSubset`
-                                      type: object
                                     weight:
                                       default: 1
+                                      maximum: 4294967295
                                       minimum: 0
                                       type: integer
                                   required:
@@ -6761,13 +6838,10 @@ spec:
                           description: Kind of the referenced resource
                           enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -6782,13 +6856,6 @@ spec:
                             SectionName is used to target specific section of resource.
                             For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                           type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
-                          type: object
                       required:
                       - kind
                       type: object
@@ -6969,12 +7036,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -6990,13 +7051,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -7066,13 +7120,10 @@ spec:
                           description: Kind of the referenced resource
                           enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -7087,13 +7138,6 @@ spec:
                             SectionName is used to target specific section of resource.
                             For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                           type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
-                          type: object
                       required:
                       - kind
                       type: object
@@ -7225,12 +7269,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -7246,13 +7284,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -7503,12 +7534,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -7524,13 +7549,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -7796,12 +7814,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -7817,13 +7829,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -8125,223 +8130,6 @@ spec:
                 - total
                 type: object
             type: object
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
-  name: zoneegresses.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: ZoneEgress
-    listKind: ZoneEgressList
-    plural: zoneegresses
-    shortNames:
-    - ze
-    singular: zoneegress
-  scope: Namespaced
-  versions:
-  - additionalPrinterColumns:
-    - description: Zone name
-      jsonPath: .spec.zone
-      name: zone
-      type: string
-    name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma ZoneEgress resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
-    subresources: {}
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
-  name: zoneegressinsights.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: ZoneEgressInsight
-    listKind: ZoneEgressInsightList
-    plural: zoneegressinsights
-    singular: zoneegressinsight
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma ZoneEgressInsight resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
-  name: zoneingresses.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: ZoneIngress
-    listKind: ZoneIngressList
-    plural: zoneingresses
-    shortNames:
-    - zi
-    singular: zoneingress
-  scope: Namespaced
-  versions:
-  - additionalPrinterColumns:
-    - description: Zone name
-      jsonPath: .spec.zone
-      name: zone
-      type: string
-    name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma ZoneIngress resource.
-            x-kubernetes-preserve-unknown-fields: true
-        type: object
-    served: true
-    storage: true
-    subresources: {}
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
-  name: zoneingressinsights.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: ZoneIngressInsight
-    listKind: ZoneIngressInsightList
-    plural: zoneingressinsights
-    singular: zoneingressinsight
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma ZoneIngressInsight
-              resource.
-            x-kubernetes-preserve-unknown-fields: true
         type: object
     served: true
     storage: true

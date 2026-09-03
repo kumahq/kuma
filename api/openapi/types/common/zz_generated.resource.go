@@ -53,14 +53,24 @@ type DataplaneInbound struct {
 
 // DataplaneListener defines model for DataplaneListener.
 type DataplaneListener struct {
-	Kri               string                `json:"kri"`
-	Port              int32                 `json:"port"`
-	ProxyResourceName string                `json:"proxyResourceName"`
-	Type              DataplaneListenerType `json:"type"`
+	// Clusters The destinations this listener proxies traffic to, one entry per destination port.
+	Clusters          []DataplaneListenerCluster `json:"clusters"`
+	Kri               string                     `json:"kri"`
+	Port              int32                      `json:"port"`
+	ProxyResourceName string                     `json:"proxyResourceName"`
+	Type              DataplaneListenerType      `json:"type"`
 }
 
 // DataplaneListenerType defines model for DataplaneListener.Type.
 type DataplaneListenerType string
+
+// DataplaneListenerCluster defines model for DataplaneListenerCluster.
+type DataplaneListenerCluster struct {
+	Kri               string `json:"kri"`
+	Port              int32  `json:"port"`
+	Protocol          string `json:"protocol"`
+	ProxyResourceName string `json:"proxyResourceName"`
+}
 
 // DataplaneOutbound defines model for DataplaneOutbound.
 type DataplaneOutbound struct {
@@ -68,12 +78,6 @@ type DataplaneOutbound struct {
 	Port              int32  `json:"port"`
 	Protocol          string `json:"protocol"`
 	ProxyResourceName string `json:"proxyResourceName"`
-}
-
-// FromRule defines model for FromRule.
-type FromRule struct {
-	Inbound Inbound `json:"inbound"`
-	Rules   []Rule  `json:"rules"`
 }
 
 // HttpMatch defines model for HttpMatch.
@@ -126,10 +130,7 @@ type InboundRulesEntry struct {
 
 // InspectRule defines model for InspectRule.
 type InspectRule struct {
-	// FromRules a set of rules for each inbound of this proxy
-	FromRules *[]FromRule `json:"fromRules,omitempty"`
-
-	// InboundRules a set of rules for each inbound port of the proxy. When the policy descriptor has 'isFromAsRules' set to true, this field supersedes 'fromRules' and should be used instead.
+	// InboundRules a set of rules for each inbound port of the proxy.
 	InboundRules *[]InboundRulesEntry `json:"inboundRules,omitempty"`
 
 	// ProxyRule a rule that affects the entire proxy
@@ -137,9 +138,6 @@ type InspectRule struct {
 
 	// ToResourceRules a set of rules for the outbounds produced by real resources (i.e MeshService, MeshExternalService, MeshMultiZoneService).
 	ToResourceRules *[]ResourceRule `json:"toResourceRules,omitempty"`
-
-	// ToRules a set of rules for the outbounds of this proxy. The field is not set when 'meshService.mode' on Mesh is set to 'Exclusive'.
-	ToRules *[]Rule `json:"toRules,omitempty"`
 
 	// Type the type of the policy
 	//
@@ -159,10 +157,12 @@ type Meta struct {
 	// Example: kri_mtp_default_zone-east_kuma-demo_mypolicy1_
 	KRI *string `json:"kri,omitempty"`
 
-	// Labels Labels of the resource. Note: certain system labels are immutable after creation:
-	// - `kuma.io/origin`: Resource origin (zone/global). Immutable.
-	// - `kuma.io/zone`: Zone where resource originated. Immutable.
-	// - `kuma.io/display-name`: Display name for the resource. Immutable.
+	// Labels Labels of the resource.
+	//
+	// Labels documented as `readOnly` are always computed by the control plane; a value supplied by the
+	// user is overwritten. The remaining documented labels can be set by the user, and the control plane
+	// only fills in a default when they are absent. `kuma.io/origin` and `kuma.io/zone` are immutable
+	// after creation.
 	//
 	//
 	// Example: {"k8s.kuma.io/namespace":"kuma-system","kuma.io/display-name":"mtp","kuma.io/mesh":"default","kuma.io/origin":"zone"}
@@ -306,28 +306,4 @@ type RouteRules struct {
 type RoutesList struct {
 	// Routes Computed list of routes
 	Routes []RouteConf `json:"routes"`
-}
-
-// Rule defines model for Rule.
-type Rule struct {
-	// Conf The actual conf generated
-	Conf     interface{}   `json:"conf"`
-	Matchers []RuleMatcher `json:"matchers"`
-	Origin   []Meta        `json:"origin"`
-}
-
-// RuleMatcher A matcher to select which traffic this conf applies to
-type RuleMatcher struct {
-	// Key the key to match against
-	//
-	// Example: kuma.io/service
-	Key string `json:"key"`
-
-	// Not whether we check on the absence of this key:value pair
-	Not bool `json:"not"`
-
-	// Value the value for the key to match against
-	//
-	// Example: my-cool-service
-	Value string `json:"value"`
 }

@@ -8,10 +8,13 @@ import (
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 type GlobalInsightService interface {
@@ -56,14 +59,9 @@ func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*
 		return nil, err
 	}
 
-	if err := gis.aggregateZoneIngresses(ctx, globalInsights); err != nil {
-		return nil, err
-	}
-
-	if err := gis.aggregateZoneEgresses(ctx, globalInsights); err != nil {
-		return nil, err
-	}
-
+	// zones.zoneIngresses and zones.zoneEgresses stay at zero: they were fed by
+	// ZoneIngressInsight/ZoneEgressInsight, and zone proxies are now Dataplanes
+	// with listeners, which MeshInsight does not break out yet.
 	return globalInsights, nil
 }
 
@@ -79,12 +77,6 @@ func (gis *defaultGlobalInsightService) aggregateDataplanes(
 		globalInsight.Dataplanes.Standard.Offline += int(standard.GetOffline())
 		globalInsight.Dataplanes.Standard.PartiallyDegraded += int(standard.GetPartiallyDegraded())
 		globalInsight.Dataplanes.Standard.Total += int(standard.GetTotal())
-
-		gatewayBuiltin := dataplanesByType.GetGatewayBuiltin()
-		globalInsight.Dataplanes.GatewayBuiltin.Online += int(gatewayBuiltin.GetOnline())
-		globalInsight.Dataplanes.GatewayBuiltin.Offline += int(gatewayBuiltin.GetOffline())
-		globalInsight.Dataplanes.GatewayBuiltin.PartiallyDegraded += int(gatewayBuiltin.GetPartiallyDegraded())
-		globalInsight.Dataplanes.GatewayBuiltin.Total += int(gatewayBuiltin.GetTotal())
 
 		gatewayDelegated := dataplanesByType.GetGatewayDelegated()
 		globalInsight.Dataplanes.GatewayDelegated.Online += int(gatewayDelegated.GetOnline())
@@ -153,8 +145,6 @@ func globalResourceDescriptors() []core_model.ResourceTypeDescriptor {
 		core_model.Not(core_model.Named(
 			mesh.MeshType,
 			system.ZoneType,
-			mesh.ZoneIngressType,
-			mesh.ZoneEgressType,
 			system.ConfigType,
 		)),
 	)
@@ -166,46 +156,116 @@ func addResourceTotal(resources map[string]api_types.ResourceStats, resourceName
 	resources[resourceName] = stats
 }
 
+// aggregateServices counts internal services from MeshService, external services
+// from MeshExternalService and gateway services from gateway Dataplanes.
 func (gis *defaultGlobalInsightService) aggregateServices(
 	ctx context.Context,
 	globalInsight *api_types.GlobalInsightBase,
 ) error {
-	serviceInsights := &mesh.ServiceInsightResourceList{}
-	if err := gis.resourceStore.List(ctx, serviceInsights); err != nil {
+	meshServices := &meshservice_api.MeshServiceResourceList{}
+	if err := gis.resourceStore.List(ctx, meshServices); err != nil {
+		return err
+	}
+	for _, meshService := range meshServices.Items {
+		proxies := meshService.Status.DataplaneProxies
+		// A proxy is only serving traffic when it is both connected to the control plane
+		// and has all inbounds selected by this service ready. Connected and Healthy are
+		// independent counters, so their minimum is the tightest bound on that overlap.
+		updateServiceStatus(min(proxies.Connected, proxies.Healthy), proxies.Total, &globalInsight.Services.Internal)
+	}
+
+	externalServices := &meshexternalservice_api.MeshExternalServiceResourceList{}
+	if err := gis.resourceStore.List(ctx, externalServices); err != nil {
+		return err
+	}
+	globalInsight.Services.External.Total = len(externalServices.GetItems())
+
+	return gis.aggregateGatewayServices(ctx, globalInsight)
+}
+
+type gatewayServiceStat struct {
+	online int
+	total  int
+}
+
+// aggregateGatewayServices counts delegated gateway services from gateway
+// Dataplanes grouped by the service they belong to. Gateway Dataplanes are
+// never turned into a MeshService, so they are the only source for these stats.
+func (gis *defaultGlobalInsightService) aggregateGatewayServices(
+	ctx context.Context,
+	globalInsight *api_types.GlobalInsightBase,
+) error {
+	dataplanes := &mesh.DataplaneResourceList{}
+	if err := gis.resourceStore.List(ctx, dataplanes); err != nil {
 		return err
 	}
 
-	for _, serviceInsight := range serviceInsights.GetItems() {
-		services := serviceInsight.GetSpec().(*mesh_proto.ServiceInsight).GetServices()
-
-		for _, service := range services {
-			switch service.GetServiceType() {
-			case mesh_proto.ServiceInsight_Service_internal:
-				updateServiceStatus(service.GetStatus(), &globalInsight.Services.Internal)
-			case mesh_proto.ServiceInsight_Service_external:
-				globalInsight.Services.External.Total += 1
-			case mesh_proto.ServiceInsight_Service_gateway_builtin:
-				updateServiceStatus(service.GetStatus(), &globalInsight.Services.GatewayBuiltin)
-			case mesh_proto.ServiceInsight_Service_gateway_delegated:
-				updateServiceStatus(service.GetStatus(), &globalInsight.Services.GatewayDelegated)
-			}
+	hasGateway := false
+	for _, dp := range dataplanes.Items {
+		if dp.Spec.GetNetworking().GetGateway() != nil {
+			hasGateway = true
+			break
 		}
+	}
+	if !hasGateway {
+		return nil
+	}
+
+	dataplaneInsights := &mesh.DataplaneInsightResourceList{}
+	if err := gis.resourceStore.List(ctx, dataplaneInsights); err != nil {
+		return err
+	}
+
+	delegated := map[string]*gatewayServiceStat{}
+
+	for _, overview := range mesh.NewDataplaneOverviews(*dataplanes, *dataplaneInsights).Items {
+		if overview.Spec.GetDataplane().GetNetworking().GetGateway() == nil {
+			continue
+		}
+
+		key := gatewayServiceKey(overview)
+		stat, ok := delegated[key]
+		if !ok {
+			stat = &gatewayServiceStat{}
+			delegated[key] = stat
+		}
+		stat.total++
+		if status, _ := overview.Status(); status == mesh.Online {
+			stat.online++
+		}
+	}
+
+	for _, stat := range delegated {
+		updateServiceStatus(stat.online, stat.total, &globalInsight.Services.GatewayDelegated)
 	}
 
 	return nil
 }
 
-func updateServiceStatus(serviceStatus mesh_proto.ServiceInsight_Service_Status, status *api_types.FullStatus) {
+// gatewayServiceKey identifies the mesh-scoped service a gateway Dataplane belongs
+// to. Gateways carry no kuma.io/service tag in tag-free mode, so fall back to the
+// workload and finally to the Dataplane itself, which keeps every gateway counted.
+// Each tier is prefixed so that gateways grouped by different tiers never share a key.
+func gatewayServiceKey(overview *mesh.DataplaneOverviewResource) string {
+	key := "tag:" + overview.Spec.GetDataplane().GetNetworking().GetGateway().GetTags()[mesh_proto.ServiceTag]
+	if key == "tag:" {
+		key = "workload:" + overview.GetMeta().GetLabels()[metadata.KumaWorkload]
+	}
+	if key == "workload:" {
+		key = "dataplane:" + overview.GetMeta().GetName()
+	}
+	return overview.GetMeta().GetMesh() + "/" + key
+}
+
+func updateServiceStatus(online, total int, status *api_types.FullStatus) {
 	status.Total += 1
-	switch serviceStatus {
-	case mesh_proto.ServiceInsight_Service_online:
-		status.Online += 1
-	case mesh_proto.ServiceInsight_Service_offline:
+	switch {
+	case total == 0 || online == 0:
 		status.Offline += 1
-	case mesh_proto.ServiceInsight_Service_partially_degraded:
-		status.PartiallyDegraded += 1
+	case online == total:
+		status.Online += 1
 	default:
-		return
+		status.PartiallyDegraded += 1
 	}
 }
 
@@ -222,44 +282,6 @@ func (gis *defaultGlobalInsightService) aggregateZoneControlPlanes(
 		globalInsight.Zones.ControlPlanes.Total += 1
 		if zoneInsight.GetSpec().(*system_proto.ZoneInsight).IsOnline() {
 			globalInsight.Zones.ControlPlanes.Online += 1
-		}
-	}
-
-	return nil
-}
-
-func (gis *defaultGlobalInsightService) aggregateZoneIngresses(
-	ctx context.Context,
-	globalInsight *api_types.GlobalInsightBase,
-) error {
-	zoneIngressInsights := &mesh.ZoneIngressInsightResourceList{}
-	if err := gis.resourceStore.List(ctx, zoneIngressInsights); err != nil {
-		return err
-	}
-
-	for _, zoneIngressInsight := range zoneIngressInsights.GetItems() {
-		globalInsight.Zones.ZoneIngresses.Total += 1
-		if zoneIngressInsight.GetSpec().(*mesh_proto.ZoneIngressInsight).IsOnline() {
-			globalInsight.Zones.ZoneIngresses.Online += 1
-		}
-	}
-
-	return nil
-}
-
-func (gis *defaultGlobalInsightService) aggregateZoneEgresses(
-	ctx context.Context,
-	globalInsight *api_types.GlobalInsightBase,
-) error {
-	zoneEgressInsights := &mesh.ZoneEgressInsightResourceList{}
-	if err := gis.resourceStore.List(ctx, zoneEgressInsights); err != nil {
-		return err
-	}
-
-	for _, zoneEgressInsight := range zoneEgressInsights.GetItems() {
-		globalInsight.Zones.ZoneEgresses.Total += 1
-		if zoneEgressInsight.GetSpec().(*mesh_proto.ZoneEgressInsight).IsOnline() {
-			globalInsight.Zones.ZoneEgresses.Online += 1
 		}
 	}
 

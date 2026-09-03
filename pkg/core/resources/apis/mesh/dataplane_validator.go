@@ -3,7 +3,6 @@ package mesh
 import (
 	"fmt"
 	"net"
-	"net/url"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
@@ -56,14 +55,9 @@ func (d *DataplaneResource) Validate() error {
 
 		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
-		err.Add(validateProbes(d.Spec.GetProbes()))
-
-	case d.Spec.IsBuiltinGateway():
-		err.AddViolationAt(net.Field("gateway").Field("type"), "BUILTIN gateways are no longer supported, use DELEGATED instead")
 
 	default:
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
-		err.Add(validateProbes(d.Spec.GetProbes()))
 		err.AddErrorAt(net.Field("listeners"), validateListeners(d.Spec.GetNetworking()))
 	}
 
@@ -88,26 +82,6 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 		err.AddErrorAt(path.Field("outbound").Index(i), result)
 	}
 	err.AddErrorAt(path.Field("transparentProxing"), validateTransparentProxying(networking.GetTransparentProxying()))
-	return err
-}
-
-func validateProbes(probes *mesh_proto.Dataplane_Probes) validators.ValidationError {
-	if probes == nil {
-		return validators.ValidationError{}
-	}
-	var err validators.ValidationError
-	path := validators.RootedAt("probes")
-	err.Add(ValidatePort(path.Field("port"), probes.GetPort()))
-	for i, endpoint := range probes.Endpoints {
-		indexPath := path.Field("endpoints").Index(i)
-		err.Add(ValidatePort(indexPath.Field("inboundPort"), endpoint.GetInboundPort()))
-		if _, URIErr := url.ParseRequestURI(endpoint.InboundPath); URIErr != nil {
-			err.AddViolationAt(indexPath.Field("inboundPath"), `should be a valid URL Path`)
-		}
-		if _, URIErr := url.ParseRequestURI(endpoint.Path); URIErr != nil {
-			err.AddViolationAt(indexPath.Field("path"), `should be a valid URL Path`)
-		}
-	}
 	return err
 }
 
@@ -195,30 +169,20 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 		result.AddViolation("address", "address has to be valid IP address")
 	}
 
-	switch {
-	case outbound.BackendRef != nil:
-		if _, allowed := allowedKinds[outbound.BackendRef.Kind]; !allowed {
-			result.AddViolation("backendRef.kind", fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
-		}
-		if outbound.BackendRef.Name == "" && len(outbound.BackendRef.Labels) == 0 {
-			result.AddViolation("backendRef", "either 'name' or 'labels' should be specified")
-		}
-		// for MeshExternalService the port does not matter because it's taken from endpoints
-		if outbound.BackendRef.Kind != string(common_api.MeshExternalService) {
-			result.Add(ValidatePort(validators.RootedAt("backendRef").Field("port"), outbound.BackendRef.Port))
-		}
-	case len(outbound.Tags) == 0:
-		if outbound.GetService() == "" {
-			result.AddViolationAt(validators.RootedAt("tags"), `mandatory tag "kuma.io/service" is missing`)
-		}
-	default:
-		result.Add(ValidateTags(validators.RootedAt("tags"), outbound.Tags, ValidateTagsOpts{
-			RequireService: true,
-		}))
+	if outbound.BackendRef == nil {
+		result.AddViolation("backendRef", "must be defined")
+		return result
 	}
 
-	if outbound.BackendRef != nil && (len(outbound.Tags) != 0 || outbound.GetService() != "") {
-		result.AddViolationAt(validators.RootedAt("backendRef"), "both backendRef and tags/service cannot be defined")
+	if _, allowed := allowedKinds[outbound.BackendRef.Kind]; !allowed {
+		result.AddViolation("backendRef.kind", fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
+	}
+	if outbound.BackendRef.Name == "" && len(outbound.BackendRef.Labels) == 0 {
+		result.AddViolation("backendRef", "either 'name' or 'labels' should be specified")
+	}
+	// for MeshExternalService the port does not matter because it's taken from endpoints
+	if outbound.BackendRef.Kind != string(common_api.MeshExternalService) {
+		result.Add(ValidatePort(validators.RootedAt("backendRef").Field("port"), outbound.BackendRef.Port))
 	}
 
 	return result

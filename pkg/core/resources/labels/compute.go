@@ -3,7 +3,6 @@ package labels
 import (
 	"fmt"
 	"maps"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -23,6 +22,8 @@ type Namespace struct {
 }
 
 var UnsetNamespace = Namespace{}
+
+const legacyProxyTypeLabel = "kuma.io/proxy-type"
 
 func NewNamespace(value string, system bool) Namespace {
 	return Namespace{
@@ -170,8 +171,12 @@ func Compute(
 		}
 	}
 
+	// k8s.kuma.io/namespace and kuma.io/policy-role below are computed by the control
+	// plane, not supplied by the user: they drive namespaced policy matching and
+	// workload identity (SPIFFE ID, KRI), so they must always describe the namespace
+	// the object really lives in. Set them, overwriting whatever the object carried.
 	if labelsOpts.Namespace.value != "" && labelsOpts.IsK8s && core_model.IsLocallyOriginated(labelsOpts.Mode, labels) {
-		setIfNotExist(mesh_proto.KubeNamespaceTag, labelsOpts.Namespace.value)
+		set(mesh_proto.KubeNamespaceTag, labelsOpts.Namespace.value)
 	}
 
 	if labelsOpts.Namespace.value != "" && rd.IsPolicy && rd.IsPluginOriginated && core_model.IsLocallyOriginated(labelsOpts.Mode, labels) {
@@ -183,10 +188,7 @@ func Compute(
 	}
 
 	if rd.IsProxy {
-		proxy, ok := spec.(core_model.ProxyResource)
-		if ok {
-			set(mesh_proto.ProxyTypeLabel, strings.ToLower(string(proxy.GetProxyType())))
-		}
+		delete(labels, legacyProxyTypeLabel)
 		if dp, ok := spec.(*mesh_proto.Dataplane); ok {
 			hasIngress, hasEgress := false, false
 			for _, l := range dp.GetNetworking().GetListeners() {

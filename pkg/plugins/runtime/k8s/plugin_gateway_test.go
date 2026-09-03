@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kube_apimeta "k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -20,19 +21,15 @@ func TestRemoveGatewayClassFinalizers(t *testing.T) {
 	require.NoError(t, err)
 
 	kumaClass := &gatewayapi.GatewayClass{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name:       "kuma",
-			Finalizers: []string{gatewayapi_v1.GatewayClassFinalizerGatewaysExist},
-		},
+		Name:       "kuma",
+		Finalizers: []string{gatewayapi_v1.GatewayClassFinalizerGatewaysExist},
 		Spec: gatewayapi.GatewayClassSpec{
 			ControllerName: common.ControllerName,
 		},
 	}
 	otherClass := &gatewayapi.GatewayClass{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name:       "other",
-			Finalizers: []string{gatewayapi_v1.GatewayClassFinalizerGatewaysExist},
-		},
+		Name:       "other",
+		Finalizers: []string{gatewayapi_v1.GatewayClassFinalizerGatewaysExist},
 		Spec: gatewayapi.GatewayClassSpec{
 			ControllerName: "example.com/other",
 		},
@@ -51,4 +48,40 @@ func TestRemoveGatewayClassFinalizers(t *testing.T) {
 	var updatedOtherClass gatewayapi.GatewayClass
 	require.NoError(t, client.Get(context.Background(), kube_client.ObjectKeyFromObject(otherClass), &updatedOtherClass))
 	require.Contains(t, updatedOtherClass.Finalizers, gatewayapi_v1.GatewayClassFinalizerGatewaysExist)
+}
+
+func TestGRPCRouteCRDsPresentWithV1GRPCRoute(t *testing.T) {
+	mapper := newGatewayRESTMapper()
+	mapper.Add(gatewaySchemaGroupVersion(gatewayapi_v1.GroupVersion.Version).WithKind("GRPCRoute"), kube_apimeta.RESTScopeNamespace)
+	mapper.Add(gatewaySchemaGroupVersion(gatewayapi.GroupVersion.Version).WithKind("ReferenceGrant"), kube_apimeta.RESTScopeNamespace)
+
+	ok, missing := gatewayAPIRESTMappingsPresent(mapper, requiredGRPCRouteCRDs)
+
+	require.True(t, ok)
+	require.Empty(t, missing)
+}
+
+func TestGRPCRouteCRDsMissingWithOnlyV1Beta1GRPCRoute(t *testing.T) {
+	mapper := newGatewayRESTMapper()
+	mapper.Add(gatewaySchemaGroupVersion(gatewayapi.GroupVersion.Version).WithKind("GRPCRoute"), kube_apimeta.RESTScopeNamespace)
+	mapper.Add(gatewaySchemaGroupVersion(gatewayapi.GroupVersion.Version).WithKind("ReferenceGrant"), kube_apimeta.RESTScopeNamespace)
+
+	ok, missing := gatewayAPIRESTMappingsPresent(mapper, requiredGRPCRouteCRDs)
+
+	require.False(t, ok)
+	require.Equal(t, []string{"GRPCRoute.gateway.networking.k8s.io/v1"}, missing)
+}
+
+func newGatewayRESTMapper() *kube_apimeta.DefaultRESTMapper {
+	return kube_apimeta.NewDefaultRESTMapper([]schema.GroupVersion{
+		gatewaySchemaGroupVersion(gatewayapi_v1.GroupVersion.Version),
+		gatewaySchemaGroupVersion(gatewayapi.GroupVersion.Version),
+	})
+}
+
+func gatewaySchemaGroupVersion(version string) schema.GroupVersion {
+	return schema.GroupVersion{
+		Group:   gatewayapi.GroupVersion.Group,
+		Version: version,
+	}
 }

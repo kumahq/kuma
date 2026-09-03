@@ -226,14 +226,14 @@ spec:
 		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 	})
 
-	XIt("should retry on HTTP connection failure applied on MeshHTTPRoute", func() {
+	It("should retry on HTTP 5xx responses applied on MeshHTTPRoute", func() {
 		meshFaultInjection := fmt.Sprintf(`
 type: MeshFaultInjection
 mesh: "%s"
 name: mesh-fault-injecton
 spec:
   targetRef:
-    kind: MeshService
+    kind: Dataplane
     labels:
       kuma.io/display-name: test-server
   rules:
@@ -248,13 +248,11 @@ type: MeshRetry
 mesh: "%s"
 name: meshretry-policy
 spec:
-  targetRef:
-    kind: MeshHTTPRoute
-    labels:
-      kuma.io/display-name: http-route-1
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshHTTPRoute
+        labels:
+          kuma.io/display-name: http-route-1
       default:
         http:
           numRetries: 5
@@ -266,10 +264,6 @@ type: MeshHTTPRoute
 mesh: %s
 name: http-route-1
 spec:
-  targetRef:
-    kind: MeshService
-    labels:
-      kuma.io/display-name: demo-client
   to:
     - targetRef:
         kind: MeshService
@@ -283,7 +277,9 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: test-server
+                labels:
+                  kuma.io/display-name: test-server
+                port: 80
                 weight: 100`, meshName)
 
 		Expect(universal.Cluster.Install(YamlUniversal(meshHttpRoute))).To(Succeed())

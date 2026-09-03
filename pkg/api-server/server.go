@@ -6,13 +6,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -35,7 +33,6 @@ import (
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -43,9 +40,9 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
-	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/certs"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	secrets_k8s "github.com/kumahq/kuma/v3/pkg/plugins/secrets/k8s"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	tokens_server "github.com/kumahq/kuma/v3/pkg/tokens/builtin/server"
 	kuma_srv "github.com/kumahq/kuma/v3/pkg/util/http/server"
 	util_prometheus "github.com/kumahq/kuma/v3/pkg/util/prometheus"
@@ -58,10 +55,11 @@ import (
 var log = core.Log.WithName("api-server")
 
 type ApiServer struct {
-	mux        *http.ServeMux
-	config     api_server.ApiServerConfig
-	httpReady  atomic.Bool
-	httpsReady atomic.Bool
+	mux          *http.ServeMux
+	config       api_server.ApiServerConfig
+	certWatchers *util_tls.Watchers
+	httpReady    atomic.Bool
+	httpsReady   atomic.Bool
 }
 
 func (a *ApiServer) NeedLeaderElection() bool {
@@ -160,8 +158,8 @@ func NewApiServer(
 	)
 	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ResourceManager(), rt.Access().ResourceAccess)
-	addInspectEnvoyAdminEndpoints(ws, cfg, rt.ResourceManager(), rt.Access().EnvoyAdminAccess, rt.EnvoyAdminClient())
-	addInspectMeshServiceEndpoints(ws, rt.ResourceManager(), rt.Access().ResourceAccess, cfg.Mode == config_core.Global)
+	addInspectEnvoyAdminEndpoints(ws, rt.ResourceManager(), rt.Access().EnvoyAdminAccess, rt.EnvoyAdminClient())
+	addInspectMeshServiceEndpoints(ws, rt.ResourceManager(), cfg.Mode == config_core.Global)
 	guiUrl := ""
 	if cfg.ApiServer.GUI.Enabled && !cfg.IsFederatedZoneCP() {
 		guiUrl = cfg.ApiServer.GUI.BasePath
@@ -231,8 +229,9 @@ func NewApiServer(
 	container.Handle(guiPath, guiHandler)
 
 	newApiServer := &ApiServer{
-		mux:    container.ServeMux,
-		config: *serverConfig,
+		mux:          container.ServeMux,
+		config:       *serverConfig,
+		certWatchers: rt.CertWatchers(),
 	}
 
 	container.Filter(func(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
@@ -326,53 +325,30 @@ func addResourcesEndpoints(
 		if defType == system.SecretType || defType == system.GlobalSecretType {
 			endpoints.k8sMapper = k8sSecretMapper
 		}
-		switch defType {
-		case mesh.ServiceInsightType:
-			// ServiceInsight is a bit different
-			ep := serviceInsightEndpoints{
-				resourceEndpoints: endpoints,
-				addressPortGenerator: func(svc string) string {
-					return fmt.Sprintf("%s.%s:%d", svc, cfg.DNSServer.Domain, cfg.DNSServer.ServiceVipPort)
-				},
-			}
-			ep.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			ep.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			ep.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			ep.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			ep.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
+		switch definition.Scope {
+		case model.ScopeMesh:
+			endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+			endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+			endpoints.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
 			if definition.AlternativeWsPath != "" {
-				ep.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				ep.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				ep.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				ep.addListEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				ep.addListEndpoint(ws, "/"+definition.AlternativeWsPath) // listing all resources in all meshes
+				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+				endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+				endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+				endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath) // listing all resources in all meshes
 			}
-		default:
-			switch definition.Scope {
-			case model.ScopeMesh:
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-				endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-				endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-				endpoints.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
-				if definition.AlternativeWsPath != "" {
-					endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-					endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-					endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-					endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-					endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath) // listing all resources in all meshes
-				}
-			case model.ScopeGlobal:
-				endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.WsPath)
-				endpoints.addDeleteEndpoint(ws, "/"+definition.WsPath)
-				endpoints.addFindEndpoint(ws, "/"+definition.WsPath)
-				endpoints.addListEndpoint(ws, "/"+definition.WsPath)
-				if definition.AlternativeWsPath != "" {
-					endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.AlternativeWsPath)
-					endpoints.addDeleteEndpoint(ws, "/"+definition.AlternativeWsPath)
-					endpoints.addFindEndpoint(ws, "/"+definition.AlternativeWsPath)
-					endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath)
-				}
+		case model.ScopeGlobal:
+			endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.WsPath)
+			endpoints.addDeleteEndpoint(ws, "/"+definition.WsPath)
+			endpoints.addFindEndpoint(ws, "/"+definition.WsPath)
+			endpoints.addListEndpoint(ws, "/"+definition.WsPath)
+			if definition.AlternativeWsPath != "" {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.AlternativeWsPath)
+				endpoints.addDeleteEndpoint(ws, "/"+definition.AlternativeWsPath)
+				endpoints.addFindEndpoint(ws, "/"+definition.AlternativeWsPath)
+				endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath)
 			}
 		}
 	}
@@ -414,7 +390,7 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 		a.httpReady.Store(true)
 	}
 	if a.config.HTTPS.Enabled {
-		tlsConfig, err := configureTLS(a.config)
+		tlsConfig, err := configureTLS(a.config, a.certWatchers)
 		if err != nil {
 			return err
 		}
@@ -456,14 +432,14 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 	}
 }
 
-func configureTLS(cfg api_server.ApiServerConfig) (*tls.Config, error) {
-	cert, err := tls.LoadX509KeyPair(cfg.HTTPS.TlsCertFile, cfg.HTTPS.TlsKeyFile)
+func configureTLS(cfg api_server.ApiServerConfig, certWatchers *util_tls.Watchers) (*tls.Config, error) {
+	keyPair, err := certWatchers.Watch(cfg.HTTPS.TlsCertFile, cfg.HTTPS.TlsKeyFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load TLS certificate")
+		return nil, err
 	}
 	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12, // to pass gosec (in practice it's always set after.
+		GetCertificate: keyPair.GetCertificate,
+		MinVersion:     tls.VersionTLS12, // to pass gosec (in practice it's always set after.
 	}
 	tlsConfig.MinVersion, err = config_types.TLSVersion(cfg.HTTPS.TlsMinVersion)
 	if err != nil {
@@ -474,31 +450,6 @@ func configureTLS(cfg api_server.ApiServerConfig) (*tls.Config, error) {
 		return nil, err
 	}
 	clientCertPool := x509.NewCertPool()
-	if cfg.Auth.ClientCertsDir != "" {
-		log.Info("loading client certificates")
-		files, err := os.ReadDir(cfg.Auth.ClientCertsDir)
-		if err != nil {
-			return nil, err
-		}
-		for _, file := range files {
-			if file.IsDir() {
-				continue
-			}
-			if !strings.HasSuffix(file.Name(), ".pem") && !strings.HasSuffix(file.Name(), ".crt") {
-				log.Info("skipping file without .pem or .crt extension", "file", file.Name())
-				continue
-			}
-			log.Info("adding client certificate", "file", file.Name())
-			path := filepath.Join(cfg.Auth.ClientCertsDir, file.Name())
-			caCert, err := os.ReadFile(path)
-			if err != nil {
-				return nil, errors.Wrapf(err, "could not read certificate %q", path)
-			}
-			if !clientCertPool.AppendCertsFromPEM(caCert) {
-				return nil, errors.Errorf("failed to load PEM client certificate from %q", path)
-			}
-		}
-	}
 	if cfg.HTTPS.TlsCaFile != "" {
 		file, err := os.ReadFile(cfg.HTTPS.TlsCaFile)
 		if err != nil {
@@ -512,8 +463,6 @@ func configureTLS(cfg api_server.ApiServerConfig) (*tls.Config, error) {
 	tlsConfig.ClientCAs = clientCertPool
 	if cfg.HTTPS.RequireClientCert {
 		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
-	} else if cfg.Authn.Type == certs.PluginName {
-		tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints when using admin client cert
 	}
 	return tlsConfig, nil
 }
@@ -527,7 +476,6 @@ func SetupServer(rt runtime.Runtime) error {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			rt.CAProvider(),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

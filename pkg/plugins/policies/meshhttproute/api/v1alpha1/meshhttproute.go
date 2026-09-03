@@ -22,7 +22,7 @@ type MeshHTTPRoute struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef *common_api.TopLevelTargetRef `json:"targetRef,omitempty"`
 
 	// To matches destination services of requests and holds configuration.
 	To *[]To `json:"to,omitempty"`
@@ -33,7 +33,7 @@ type To struct {
 	Hostnames *[]string `json:"hostnames,omitempty"`
 	// TargetRef is a reference to the resource that represents a group of
 	// request destinations.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef common_api.OutboundTargetRef `json:"targetRef"`
 	// Rules contains the routing rules applies to a combination of top-level
 	// targetRef and the targetRef in this entry.
 	Rules []Rule `json:"rules"`
@@ -100,8 +100,29 @@ type QueryParamsMatch struct {
 }
 
 type RuleConf struct {
-	Filters     *[]Filter                `json:"filters,omitempty"`
-	BackendRefs *[]common_api.BackendRef `json:"backendRefs,omitempty"`
+	Filters     *[]Filter     `json:"filters,omitempty"`
+	BackendRefs *[]BackendRef `json:"backendRefs,omitempty"`
+}
+
+type BackendRef struct {
+	// +kuma:nolint // keep parity with common_api.BackendRef
+	common_api.TargetRef `json:",inline"`
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=4294967295
+	// +kubebuilder:default=1
+	// +kuma:nolint // keep parity with common_api.BackendRef
+	Weight *uint `json:"weight,omitempty"`
+	// Port is only supported when this ref refers to a MeshService object
+	Port    *uint32   `json:"port,omitempty"`
+	Filters *[]Filter `json:"filters,omitempty"`
+}
+
+func (b BackendRef) CommonBackendRef() common_api.BackendRef {
+	return common_api.BackendRef{
+		TargetRef: b.TargetRef,
+		Weight:    b.Weight,
+		Port:      b.Port,
+	}
 }
 
 // +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier;RequestRedirect;URLRewrite;RequestMirror

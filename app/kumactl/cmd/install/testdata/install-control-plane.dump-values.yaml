@@ -44,7 +44,7 @@ controlPlane:
   # -- Kuma CP log output path: Defaults to /dev/stdout
   logOutputPath: ""
 
-  # -- Kuma CP modes: one of zone,standalone. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart
+  # -- Kuma CP modes: zone, global. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart
   mode: "zone"
 
   # -- (string) Kuma CP zone, if running multizone
@@ -138,7 +138,7 @@ controlPlane:
   injectorFailurePolicy: Fail
 
   madsServer:
-    # -- Whether the Monitoring Assignment Discovery Service (MADS) server is enabled
+    # -- Whether the Monitoring Assignment Discovery Service (MADS) server is enabled. Only applies when controlPlane.environment is "universal"
     enabled: true
 
   service:
@@ -187,6 +187,26 @@ controlPlane:
     enabled: false
     # -- Map of serviceMonitor annotations.
     annotations: {}
+
+  globalZoneSyncService:
+    # -- Whether to create a k8s service for the global zone sync
+    # service. It will only be created when enabled and deploying the global
+    # control plane.
+    enabled: true
+    # -- Service type of the Global-zone sync
+    type: LoadBalancer
+    # -- (string) Optionally specify IP to be used by cloud provider when configuring load balancer
+    loadBalancerIP:
+    # -- Optionally specify allowed source ranges that can access the load balancer
+    loadBalancerSourceRanges: []
+    # -- Additional annotations to put on the Global Zone Sync Service
+    annotations: { }
+    # -- Port on which Global Zone Sync Service is exposed on Node for service of type NodePort
+    nodePort: 30685
+    # -- Port on which Global Zone Sync Service is exposed
+    port: 5685
+    # -- Protocol of the Global Zone Sync service port
+    protocol: grpc
 
   defaults:
     # -- Whether to skip creating the default Mesh
@@ -257,8 +277,6 @@ controlPlane:
     apiServer:
       # -- Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS
       secretName: ""
-      # -- Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
-      clientCertsSecretName: ""
     # - if not creating the zonal control plane, then do nothing
     # - if secretName is empty and create is false, then do nothing
     # - if secretName is non-empty and create is false, then use the secret made outside of helm with the name secretName
@@ -349,6 +367,10 @@ controlPlane:
   # -- Security context at the container level for control plane.
   containerSecurityContext:
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
 
   # -- DNS configuration for the control-plane pod.
   # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
@@ -472,17 +494,6 @@ dataPlane:
       limits:
         cpu: "0"
         memory: 512Mi
-
-  features:
-    # -- Enables automatic injection of the unified naming for Envoy resources and stats feature flag.
-    # When set to true, it sets the environment variable
-    # KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED=true in the control plane,
-    # which causes the sidecar injector to add
-    # KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true to each injected kuma-sidecar container.
-    # This option only automates setting the required flags and does not enable or disable the feature itself.
-    # You can still opt in manually by setting KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED=true
-    # in data plane proxies using a ContainerPatch
-    unifiedResourceNaming: true
 
 # Default pause container image for mesh-scoped zone proxy deployments.
 # Individual meshes[].ingress.image / meshes[].egress.image override per-mesh.
@@ -680,7 +691,7 @@ kubectl:
     # -- The kubectl image repository
     repository: kubectl
     # -- The kubectl image tag
-    tag: v1.36.3@sha256:6e4fce3c83651edb91b74bc67701c5cd263dd8aa3cd4254b1798d6425a5ab789
+    tag: v1.37.0@sha256:5ed410ebac5dc976cc717098994dcdb29bbbd38f6bd65f582311f5be4ba719cf
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
@@ -701,6 +712,10 @@ hooks:
   # -- Security context at the container level for crd/webhook/ns
   containerSecurityContext:
     readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
 
 transparentProxy:
   configMap:

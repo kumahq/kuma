@@ -106,27 +106,12 @@ type Endpoint struct {
 	Port           uint32
 	// Tags is the endpoint's load-balancing identity. It is derived from the
 	// Dataplane's workload/resource labels plus the inbound's protocol
-	// (see BuildEdsEndpointMap), so a single well-known key carries the identity.
+	// (see BuildDataplaneEndpointMap), so a single well-known key carries the identity.
 	Tags            map[string]string
 	Weight          uint32
 	Locality        *Locality
 	ExternalService *ExternalService
 }
-
-func (e Endpoint) Address() string {
-	return fmt.Sprintf("%s:%d", e.Target, e.Port)
-}
-
-func (e Endpoint) Protocol() core_meta.Protocol {
-	if e.ExternalService != nil && e.ExternalService.Protocol != "" {
-		return e.ExternalService.Protocol
-	}
-
-	return core_meta.ParseProtocol(e.Tags[mesh_proto.ProtocolTag])
-}
-
-// EndpointList is a list of Endpoints with convenience methods.
-type EndpointList []Endpoint
 
 // EndpointMap holds routing-related information about a set of endpoints grouped by service name.
 type EndpointMap map[ServiceName][]Endpoint
@@ -164,15 +149,9 @@ type Proxy struct {
 	Policies            MatchedPolicies
 	EnvoyAdminMTLSCerts ServerSideMTLSCerts
 
-	// SecretsTracker allows us to track when a generator references a secret so
-	// we can be sure to include only those secrets later on.
-	SecretsTracker SecretsTracker
-
 	// WorkloadIdentity stores information about identity of the proxy.
 	WorkloadIdentity *WorkloadIdentity
 
-	// RuntimeExtensions a set of extensions to add for custom extensions (.e.g MeshGateway)
-	RuntimeExtensions map[string]any
 	// Zone the zone the proxy is in
 	Zone string
 	// InternalAddresses is a set of address prefixes that are considered internal to the mesh, it will be configured to in Envoy HCM config
@@ -231,41 +210,10 @@ type ServerSideTLSCertPaths struct {
 	KeyPath  string
 }
 
-type IdentityCertRequest interface {
-	Name() string
-	MeshName() string
-}
-
-type CaRequest interface {
-	MeshName() []string
-	Name() string
-}
-
-// SecretsTracker provides a way to ask for a secret and keeps track of which are
-// used, so that they can later be generated and included in the resources.
-type SecretsTracker interface {
-	RequestIdentityCert() IdentityCertRequest
-	RequestCa(mesh string) CaRequest
-	RequestAllInOneCa() CaRequest
-
-	UsedIdentity() bool
-	UsedCas() map[string]struct{}
-	UsedAllInOne() bool
-}
-
 type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
 type Routing struct {
 	OutboundTargets EndpointMap
-}
-
-type CaSecret struct {
-	PemCerts [][]byte
-}
-
-type IdentitySecret struct {
-	PemCerts [][]byte
-	PemKey   []byte
 }
 
 type InternalAddress struct {
@@ -326,10 +274,6 @@ func (e Endpoint) IsExternalService() bool {
 	return e.ExternalService != nil
 }
 
-func (e Endpoint) IsMeshExternalService() bool {
-	return e.ExternalService != nil && !e.ExternalService.OwnerResource.IsEmpty()
-}
-
 func (e Endpoint) LocalityString() string {
 	if e.Locality == nil {
 		return ""
@@ -339,28 +283,6 @@ func (e Endpoint) LocalityString() string {
 
 func (e Endpoint) HasLocality() bool {
 	return e.Locality != nil
-}
-
-// ContainsTags returns 'true' if for every key presented both in 'tags' and 'Endpoint#Tags'
-// values are equal
-func (e Endpoint) ContainsTags(tags map[string]string) bool {
-	for otherKey, otherValue := range tags {
-		endpointValue, ok := e.Tags[otherKey]
-		if !ok || otherValue != endpointValue {
-			return false
-		}
-	}
-	return true
-}
-
-func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
-	var endpoints EndpointList
-	for _, endpoint := range l {
-		if selector.Matches(endpoint.Tags) {
-			endpoints = append(endpoints, endpoint)
-		}
-	}
-	return endpoints
 }
 
 func BuildProxyId(mesh, name string) *ProxyId {
@@ -376,7 +298,6 @@ func ParseProxyIdFromString(id string) (*ProxyId, error) {
 	}
 	parts := strings.SplitN(id, ".", 2)
 	mesh := parts[0]
-	// when proxy is an ingress mesh is empty
 	if len(parts) < 2 {
 		return nil, errors.New("the name should be provided after the dot")
 	}

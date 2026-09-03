@@ -25,21 +25,12 @@ const (
 	// OriginOutbound is the origin for outbound listeners, clusters, and related resources
 	OriginOutbound Origin = "outbound"
 
-	// OriginProbe is the origin for resources produced by the probe/health-check generator
-	OriginProbe Origin = "probe"
-
-	// OriginPrometheus is the origin for resources produced by the Prometheus endpoint generator
+	// OriginPrometheus is the origin for the Prometheus listener and cluster produced by MeshMetric
 	OriginPrometheus Origin = "prometheus"
 
 	// OriginProxyTemplateModifications is the origin for resources created by MeshProxyPatch.
 	// The value is part of the user-facing API (MeshProxyPatch `match.origin`) and must not change.
 	OriginProxyTemplateModifications Origin = "proxy-template-modifications"
-
-	// OriginSecrets is the origin for resources produced by the secrets generator
-	OriginSecrets Origin = "secrets"
-
-	// OriginTracing is the origin for resources produced by the tracing proxy/generator
-	OriginTracing Origin = "tracing"
 
 	// OriginTransparent is the origin for resources produced by the transparent proxy generator
 	OriginTransparent Origin = "transparent"
@@ -54,11 +45,6 @@ const (
 	TransparentInPassThroughIPv6 = "::6"
 	TransparentAllIPv4           = "0.0.0.0"
 	TransparentAllIPv6           = "::"
-)
-
-const (
-	ProbeListenerName    = "probe:listener"
-	ProbeRouteConfigName = "probe:route_configuration"
 )
 
 const DirectAccessClusterName = "direct_access"

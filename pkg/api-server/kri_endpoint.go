@@ -1,6 +1,8 @@
 package api_server
 
 import (
+	"fmt"
+
 	"github.com/emicklei/go-restful/v3"
 
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
@@ -29,14 +31,19 @@ type kriEndpoint struct {
 }
 
 func (k *kriEndpoint) addFindByKriEndpoint(ws *restful.WebService) {
-	ws.Route(ws.GET("/_kri/{kri}").To(k.findByKriRoute()).Doc("Returns a resource by KRI").
+	ws.Route(ws.GET("/_kri/{kri}").To(k.findByKriRoute(false)).Doc("Returns a resource by KRI").
+		Param(ws.PathParameter("kri", "KRI of the resource").DataType("string")).
+		Returns(200, "OK", nil).
+		Returns(400, "Bad request", nil).
+		Returns(404, "Not found", nil))
+	ws.Route(ws.GET("/_kri/{kri}/_overview").To(k.findByKriRoute(true)).Doc("Returns an overview of a resource by KRI").
 		Param(ws.PathParameter("kri", "KRI of the resource").DataType("string")).
 		Returns(200, "OK", nil).
 		Returns(400, "Bad request", nil).
 		Returns(404, "Not found", nil))
 }
 
-func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
+func (k *kriEndpoint) findByKriRoute(withInsight bool) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		kriParam := request.PathParameter("kri")
 		identifier, err := kri.FromString(kriParam)
@@ -48,6 +55,11 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 		descriptor, err := getDescriptor(identifier.ResourceType)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
+			return
+		}
+
+		if withInsight && !descriptor.HasInsights() {
+			rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError(fmt.Sprintf("resource type %s does not have an overview", identifier.ResourceType)), "Could not retrieve an overview")
 			return
 		}
 
@@ -66,6 +78,14 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 		if err := k.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, identifier.Mesh)); err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
 			return
+		}
+
+		if withInsight {
+			resource, err = overviewForResource(request.Request.Context(), k.resManager, *descriptor, resource, name, identifier.Mesh)
+			if err != nil {
+				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
+				return
+			}
 		}
 
 		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper, identifier.Namespace)

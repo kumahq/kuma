@@ -46,17 +46,12 @@ type PolicyKey struct {
 	Key  core_model.ResourceKey
 }
 
-type PoliciesByResourceType map[core_model.ResourceType][]core_model.Resource
-
 type (
 	AttachmentList []Attachment
 	Attachments    map[Attachment][]core_model.Resource
 )
 
-type (
-	AttachmentMap       map[Attachment]PoliciesByResourceType
-	AttachmentsByPolicy map[PolicyKey]AttachmentList
-)
+type AttachmentsByPolicy map[PolicyKey]AttachmentList
 
 func (abp AttachmentsByPolicy) Merge(other AttachmentsByPolicy) {
 	for k, v := range other {
@@ -68,7 +63,7 @@ func (a AttachmentList) Len() int           { return len(a) }
 func (a AttachmentList) Less(i, j int) bool { return fmt.Sprintf("%s", a[i]) < fmt.Sprintf("%s", a[j]) }
 func (a AttachmentList) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
-func BuildAttachments(matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.Dataplane_Networking) Attachments {
+func BuildAttachments(matchedPolicies *xds.MatchedPolicies) Attachments {
 	attachments := Attachments{}
 
 	for inbound, policies := range getInboundMatchedPolicies(matchedPolicies) {
@@ -79,16 +74,10 @@ func BuildAttachments(matchedPolicies *xds.MatchedPolicies, networking *mesh_pro
 		attachments[attachment] = append(attachments[attachment], policies...)
 	}
 
-	serviceByOutbound := map[mesh_proto.OutboundInterface]string{}
-	for _, oface := range networking.GetOutbounds(mesh_proto.NonBackendRefFilter) {
-		serviceByOutbound[networking.ToOutboundInterface(oface)] = oface.GetService()
-	}
-
 	for outbound, policies := range getOutboundMatchedPolicies(matchedPolicies) {
 		attachment := Attachment{
-			Type:    Outbound,
-			Name:    outbound.String(),
-			Service: serviceByOutbound[outbound],
+			Type: Outbound,
+			Name: outbound.String(),
 		}
 		attachments[attachment] = append(attachments[attachment], policies...)
 	}
@@ -107,31 +96,10 @@ func BuildAttachments(matchedPolicies *xds.MatchedPolicies, networking *mesh_pro
 	return attachments
 }
 
-// GroupByAttachment backs the deprecated GET /meshes/{mesh}/dataplanes/{name}/policies
-// endpoint, kept only because the vendored GUI bundle still calls it directly.
-func GroupByAttachment(matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.Dataplane_Networking) AttachmentMap {
-	result := AttachmentMap{}
-
-	for attachment, policies := range BuildAttachments(matchedPolicies, networking) {
-		if len(policies) == 0 {
-			continue
-		}
-		if _, ok := result[attachment]; !ok {
-			result[attachment] = PoliciesByResourceType{}
-		}
-		for _, policy := range policies {
-			resType := policy.Descriptor().Name
-			result[attachment][resType] = append(result[attachment][resType], policy)
-		}
-	}
-
-	return result
-}
-
-func GroupByPolicy(matchedPolicies *xds.MatchedPolicies, networking *mesh_proto.Dataplane_Networking) AttachmentsByPolicy {
+func GroupByPolicy(matchedPolicies *xds.MatchedPolicies) AttachmentsByPolicy {
 	result := AttachmentsByPolicy{}
 
-	for attachment, policies := range BuildAttachments(matchedPolicies, networking) {
+	for attachment, policies := range BuildAttachments(matchedPolicies) {
 		for _, policy := range policies {
 			key := PolicyKey{
 				Type: policy.Descriptor().Name,

@@ -22,7 +22,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
-	sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	kds_setup "github.com/kumahq/kuma/v3/pkg/test/kds/setup"
@@ -150,7 +150,7 @@ var _ = Describe("Client", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			zoneStore := memory.NewStore()
-			resourceSyncer, err := sync_store_v2.NewResourceSyncer(
+			resourceSyncer, err := kds_sync_store.NewResourceSyncer(
 				core.Log.WithName("syncer"),
 				zoneStore,
 				store.NoTransactions{},
@@ -164,9 +164,8 @@ var _ = Describe("Client", func() {
 				"grpc://"+lis.Addr().String(),
 				"zone-1",
 				*rt.Config().Multizone.Zone.KDS,
-				rt.Config().Experimental,
 				metrics,
-				service.NewEnvoyAdminProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient()),
+				service.NewEnvoyAdminProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient(), rt.Config().Multizone.Zone.KDS.MaxMsgSize),
 				resourceSyncer,
 				rt,
 				&testZoneDeltaServer{},
@@ -194,4 +193,118 @@ var _ = Describe("Client", func() {
 			errCode:     codes.Canceled,
 		}),
 	)
+})
+
+// envoyAdminErrServer simulates a Global CP whose Envoy admin rpc fails with
+// ResourceExhausted - a message past its receive limit - while the resource
+// sync streams stay healthy.
+type envoyAdminErrServer struct {
+	mesh_proto.UnimplementedKDSSyncServiceServer
+	mesh_proto.UnimplementedGlobalKDSServiceServer
+	mu                sync.Mutex
+	globalToZoneConns int
+}
+
+func (s *envoyAdminErrServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
+	s.mu.Lock()
+	s.globalToZoneConns++
+	s.mu.Unlock()
+	<-stream.Context().Done()
+	return nil
+}
+
+func (s *envoyAdminErrServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer) error {
+	<-stream.Context().Done()
+	return nil
+}
+
+func (s *envoyAdminErrServer) HealthCheck(_ context.Context, _ *mesh_proto.ZoneHealthCheckRequest) (*mesh_proto.ZoneHealthCheckResponse, error) {
+	return &mesh_proto.ZoneHealthCheckResponse{
+		Interval: durationpb.New(time.Minute),
+	}, nil
+}
+
+func (s *envoyAdminErrServer) StreamXDSConfigs(_ mesh_proto.GlobalKDSService_StreamXDSConfigsServer) error {
+	return status.Error(codes.ResourceExhausted, "could not receive a message: grpc: received message after decompression larger than max (20000000 vs. 10485760)")
+}
+
+func (s *envoyAdminErrServer) StreamStats(stream mesh_proto.GlobalKDSService_StreamStatsServer) error {
+	<-stream.Context().Done()
+	return nil
+}
+
+func (s *envoyAdminErrServer) StreamClusters(stream mesh_proto.GlobalKDSService_StreamClustersServer) error {
+	<-stream.Context().Done()
+	return nil
+}
+
+func (s *envoyAdminErrServer) connections() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.globalToZoneConns
+}
+
+var _ = Describe("Client", func() {
+	// An Envoy admin rpc that dies with ResourceExhausted must not take the
+	// KDS multiplex down. The global CP rejects the message because it is
+	// over its receive limit, and a retry would resend exactly the same
+	// message, so restarting would loop with resource sync down every time.
+	It("does not restart the mux when an Envoy admin rpc exceeds the message size", func() {
+		svc := &envoyAdminErrServer{}
+		lis, err := net.Listen("tcp", "127.0.0.1:0")
+		Expect(err).ToNot(HaveOccurred())
+		defer lis.Close()
+
+		grpcSrv := grpc.NewServer()
+		mesh_proto.RegisterKDSSyncServiceServer(grpcSrv, svc)
+		mesh_proto.RegisterGlobalKDSServiceServer(grpcSrv, svc)
+		go func() { _ = grpcSrv.Serve(lis) }()
+		defer grpcSrv.Stop()
+
+		globalStore := memory.NewStore()
+		cfg := kuma_cp.DefaultConfig()
+		cfg.Multizone.Zone.Name = "zone-1"
+		rt := kds_setup.NewTestRuntime(context.Background(), cfg, globalStore)
+
+		metrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+
+		zoneStore := memory.NewStore()
+		resourceSyncer, err := kds_sync_store.NewResourceSyncer(
+			core.Log.WithName("syncer"),
+			zoneStore,
+			store.NoTransactions{},
+			metrics,
+			context.Background(),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		muxClient := mux.NewClient(
+			context.Background(),
+			"grpc://"+lis.Addr().String(),
+			"zone-1",
+			*rt.Config().Multizone.Zone.KDS,
+			metrics,
+			service.NewEnvoyAdminProcessor(rt.ReadOnlyResourceManager(), rt.EnvoyAdminClient(), rt.Config().Multizone.Zone.KDS.MaxMsgSize),
+			resourceSyncer,
+			rt,
+			&testZoneDeltaServer{},
+		)
+
+		resilient := component.NewResilientComponent(
+			core.Log.WithName("test-resilient"),
+			muxClient,
+			1*time.Millisecond,
+			10*time.Millisecond,
+		)
+
+		stop := make(chan struct{})
+		go func() { _ = resilient.Start(stop) }()
+		defer close(stop)
+
+		Eventually(svc.connections, "10s", "100ms").Should(Equal(1))
+		// The failing rpc stays down, everything else keeps running on the
+		// same connection.
+		Consistently(svc.connections, "2s", "100ms").Should(Equal(1))
+	})
 })

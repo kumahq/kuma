@@ -9,10 +9,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
-type ConnectionInfoTracker interface {
-	ConnectionInfo(dpKey core_model.ResourceKey) *xds_context.ConnectionInfo
-}
-
 // SnapshotReconciler reconciles Envoy XDS configuration (Snapshot) by executing all generators (pkg/xds/generator)
 type SnapshotReconciler interface {
 	Reconcile(context.Context, xds_context.Context, *core_xds.Proxy) (bool, error)

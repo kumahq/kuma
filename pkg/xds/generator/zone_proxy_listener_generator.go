@@ -11,7 +11,6 @@ import (
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
-	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_sni "github.com/kumahq/kuma/v3/pkg/core/resources/sni"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
@@ -21,7 +20,6 @@ import (
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds"
-	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
@@ -72,7 +70,7 @@ func (g ZoneProxyListenerGenerator) Generate(
 			generated, err := g.generateEgressListener(
 				proxy,
 				l,
-				localResources.MeshExternalServices().GetDestinations(),
+				zoneproxy.EgressDestinations(localResources),
 				xdsCtx.Mesh.DataplaneZoneEgressEndpointMap,
 			)
 			if err != nil {
@@ -91,8 +89,6 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	listener *mesh_proto.Dataplane_Networking_Listener,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
-	cp := xdsCtx.ControlPlane
-	meshName := xdsCtx.Mesh.Resource.GetMeta().GetName()
 
 	address := listener.Address
 	port := listener.Port
@@ -106,25 +102,7 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 
 	meshResources := xds_context.Resources{MeshLocalResources: xdsCtx.Mesh.Resources.MeshLocalResources}
 
-	// Only expose services local to this zone.
-	localMS := &meshservice_api.MeshServiceResourceList{}
-	for _, ms := range meshResources.MeshServices().GetItems() {
-		if !ms.(*meshservice_api.MeshServiceResource).IsLocalMeshService() {
-			continue
-		}
-		if err := localMS.AddItem(ms); err != nil {
-			return nil, err
-		}
-	}
-
-	backendRefs := zoneproxy.BuildRealResourceDestinations(
-		util_slices.FlatMap(
-			[]core_resources.DestinationList{localMS, meshResources.MeshMultiZoneServices()},
-			core_resources.DestinationList.GetDestinations,
-		),
-		cp.SystemNamespace,
-		true,
-	)
+	backendRefs := zoneproxy.BuildRealResourceDestinations(zoneproxy.IngressDestinations(meshResources))
 	dest := zoneproxy.MeshDestinations{BackendRefs: backendRefs}
 
 	services := zoneproxy.GetServices(dest)
@@ -133,13 +111,13 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 		return nil, nil
 	}
 
-	cds, err := zoneproxy.GenerateCDS(proxy, services, meshName, metadata.OriginIngress)
+	cds, err := zoneproxy.GenerateCDS(proxy, services, metadata.OriginIngress)
 	if err != nil {
 		return nil, err
 	}
 	rs.AddSet(cds)
 
-	eds, err := zoneproxy.GenerateEDS(proxy, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, services, meshName, metadata.OriginIngress)
+	eds, err := zoneproxy.GenerateEDS(proxy, xdsCtx.Mesh.DataplaneZoneIngressEndpointMap, services, metadata.OriginIngress)
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +273,7 @@ func (g ZoneProxyListenerGenerator) buildEgressFilterChain(
 							Value: "/",
 						},
 					},
-					Split: []envoy_common.Split{split},
+					Split: []xds.BackendRefSplit{xds.NewBackendRefSplit(split)},
 				},
 			},
 		}))

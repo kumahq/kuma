@@ -64,6 +64,14 @@ var _ = Describe("MeshExternalService", func() {
 				name: "external-service",
 				file: "minimal-invalid-extension",
 			}),
+			Entry("extension does not allow File/EnvVar data sources", testCase{
+				name: "external-service",
+				file: "extension-with-local-datasource-invalid",
+			}),
+			Entry("extension does not bypass required data source fields", testCase{
+				name: "external-service",
+				file: "extension-with-incomplete-datasource-invalid",
+			}),
 			Entry("missing client-cert", testCase{
 				name: "external-service",
 				file: "missing-client-cert-invalid",
@@ -79,6 +87,10 @@ var _ = Describe("MeshExternalService", func() {
 			Entry("name too long", testCase{
 				name: "external-service-very-long-very-long-very-long-very-long-very-long-very-long-very-long",
 				file: "name-too-long",
+			}),
+			Entry("name not conforming to RFC 1035", testCase{
+				name: "1external.service",
+				file: "name-not-rfc-1035",
 			}),
 			Entry("name length 63", testCase{
 				name: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",

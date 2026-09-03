@@ -1,24 +1,19 @@
 package zoneproxy
 
 import (
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/origin"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
 	envoy_endpoints "github.com/kumahq/kuma/v3/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
-	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 func GenerateCDS(
 	proxy *core_xds.Proxy,
 	services envoy_common.Services,
-	meshName string,
 	origin origin.Origin,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
@@ -26,20 +21,10 @@ func GenerateCDS(
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 
-		var tagsSlice envoy_tags.TagsSlice
-		for _, cluster := range service.Clusters() {
-			tagsSlice = append(tagsSlice, cluster.Tags())
-		}
-
-		tagKeySlice := tagsSlice.
-			ToTagKeysSlice().
-			Transform(envoy_tags.Without(mesh_proto.ServiceTag))
-
-		clusterName := resolveClusterName(service.BackendRef(), serviceName, meshName)
+		clusterName := service.BackendRef().Resource().String()
 
 		resource, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, clusterName).
 			Configure(envoy_clusters.EdsCluster()).
-			Configure(envoy_clusters.LbSubset(tagKeySlice)).
 			Configure(envoy_clusters.DefaultTimeout()).
 			Build()
 		if err != nil {
@@ -60,7 +45,6 @@ func GenerateEDS(
 	proxy *core_xds.Proxy,
 	endpointMap core_xds.EndpointMap,
 	services envoy_common.Services,
-	meshName string,
 	origin origin.Origin,
 ) (*core_xds.ResourceSet, error) {
 	rs := core_xds.NewResourceSet()
@@ -68,7 +52,7 @@ func GenerateEDS(
 	for _, serviceName := range services.Sorted() {
 		service := services[serviceName]
 		endpoints := endpointMap[serviceName]
-		clusterName := resolveClusterName(service.BackendRef(), serviceName, meshName)
+		clusterName := service.BackendRef().Resource().String()
 
 		cla, err := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints, proxy.APIVersion)
 		if err != nil {
@@ -105,7 +89,7 @@ func CreateFilterChain(
 func GetServices(
 	destinations MeshDestinations,
 ) envoy_common.Services {
-	acc := envoy_common.NewServicesAccumulator(nil)
+	acc := envoy_common.NewServicesAccumulator()
 
 	sniUsed := map[string]struct{}{}
 
@@ -122,22 +106,10 @@ func GetServices(
 			WithName(clusterName).
 			WithService(br.EndpointMapKey).
 			WithSNI(br.SNI).
-			WithMesh(br.Mesh).
 			Build()
 
 		acc.AddBackendRef(&br.ResolvedBackendRef, cluster)
 	}
 
 	return acc.Services()
-}
-
-func resolveClusterName(
-	br *resolve.ResolvedBackendRef,
-	serviceName string,
-	meshName string,
-) string {
-	if !br.ReferencesRealResource() {
-		return envoy_names.GetMeshClusterName(meshName, serviceName)
-	}
-	return br.Resource().String()
 }

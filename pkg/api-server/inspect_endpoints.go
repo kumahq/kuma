@@ -3,7 +3,6 @@ package api_server
 import (
 	"context"
 	"fmt"
-	"sort"
 
 	"github.com/emicklei/go-restful/v3"
 
@@ -15,8 +14,6 @@ import (
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
@@ -27,8 +24,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
 
-// getMatchedPolicies returns information about either sidecar dataplanes or
-// builtin gateway dataplanes as well as the proxy and a potential error.
+// getMatchedPolicies returns information about sidecar dataplanes as well as
+// the proxy and a potential error.
 func getMatchedPolicies(
 	ctx context.Context, cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey,
 ) (
@@ -49,17 +46,6 @@ func addInspectEndpoints(
 	rm manager.ResourceManager,
 	resourceAccess access.ResourceAccess,
 ) {
-	// Deprecated: superseded by GET /meshes/{mesh}/dataplanes/{name}/_policies, kept
-	// because the vendored GUI bundle (app/kuma-ui) still calls it directly and is
-	// re-vendored on its own release cadence, not from this repo's source.
-	ws.Route(
-		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/policies").To(inspectDataplane(cfg, builder)).
-			Doc("inspect dataplane matched policies").
-			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
-			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
-			Returns(200, "OK", nil),
-	)
-
 	for _, desc := range registry.Global().ObjectDescriptors(core_model.AllowedToInspect()) {
 		ws.Route(
 			ws.GET(fmt.Sprintf("/meshes/{mesh}/%s/{name}/dataplanes", desc.WsPath)).To(inspectPolicies(desc.Name, builder, cfg)).
@@ -79,40 +65,8 @@ func addInspectEndpoints(
 	)
 }
 
-func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilder) restful.RouteFunction {
-	return func(request *restful.Request, response *restful.Response) {
-		ctx := request.Request.Context()
-		meshName := request.PathParameter("mesh")
-		dataplaneName := request.PathParameter("dataplane")
-
-		meshContext, err := builder.Build(ctx, meshName)
-		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not build MeshContext")
-			return
-		}
-
-		proxy, err := getMatchedPolicies(
-			request.Request.Context(), cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
-		)
-		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get MatchedPolicies")
-			return
-		}
-
-		inner := api_server_types.NewDataplaneInspectEntryList()
-		inner.Items = append(inner.Items, newDataplaneInspectResponse(&proxy.Policies, proxy.Dataplane)...)
-		inner.Total = uint32(len(inner.Items))
-		result := api_server_types.NewDataplaneInspectResponse(inner)
-		if err := response.WriteAsJson(result); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not write response")
-			return
-		}
-	}
-}
-
-// inspectMeshServiceDataplanes provides standardized /_dataplanes endpoint following MeshGateway/MeshGatewayRoute pattern.
+// inspectMeshServiceDataplanes provides the standardized /_dataplanes endpoint.
 // Uses exact tag matching via meshservice.MatchesDataplane() to fix multizone aggregation issues.
-// Legacy endpoint /meshes/{mesh}/meshservices/{name}/_resources/dataplanes (inspect_mesh_service.go:38) remains for backward compatibility.
 func inspectMeshServiceDataplanes(
 	rm manager.ResourceManager,
 	resourceAccess access.ResourceAccess,
@@ -163,7 +117,7 @@ func inspectPolicies(
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 				return
 			}
-			for policy, attachments := range inspect.GroupByPolicy(&proxy.Policies, dp.Spec.Networking) {
+			for policy, attachments := range inspect.GroupByPolicy(&proxy.Policies) {
 				if policy.Type != resType || policy.Key.Name != policyName || policy.Key.Mesh != meshName {
 					continue
 				}
@@ -188,36 +142,4 @@ func inspectPolicies(
 			return
 		}
 	}
-}
-
-func newDataplaneInspectResponse(matchedPolicies *core_xds.MatchedPolicies, dp *core_mesh.DataplaneResource) []*api_server_types.DataplaneInspectEntry {
-	attachmentMap := inspect.GroupByAttachment(matchedPolicies, dp.Spec.Networking)
-
-	entries := make([]*api_server_types.DataplaneInspectEntry, 0, len(attachmentMap))
-	attachments := []inspect.Attachment{}
-	for attachment := range attachmentMap {
-		attachments = append(attachments, attachment)
-	}
-
-	sort.Stable(inspect.AttachmentList(attachments))
-
-	for _, attachment := range attachments {
-		entry := &api_server_types.DataplaneInspectEntry{
-			AttachmentEntry: api_server_types.AttachmentEntry{
-				Type:    attachment.Type.String(),
-				Name:    attachment.Name,
-				Service: attachment.Service,
-			},
-			MatchedPolicies: map[core_model.ResourceType][]v1alpha1.ResourceMeta{},
-		}
-		for typ, resList := range attachmentMap[attachment] {
-			for _, res := range resList {
-				entry.MatchedPolicies[typ] = append(entry.MatchedPolicies[typ], rest.From.Meta(res))
-			}
-		}
-
-		entries = append(entries, entry)
-	}
-
-	return entries
 }

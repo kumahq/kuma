@@ -3,13 +3,10 @@ package v1alpha1
 import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
-	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
@@ -28,10 +25,6 @@ func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
 }
 
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.MatchedPolicies(api.MeshPassthroughType, dataplane, resources, opts...)
-}
-
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
 	if proxy.Dataplane == nil {
 		return nil
@@ -40,16 +33,12 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if !ok {
 		return nil
 	}
-	if proxy.Dataplane.Spec.GetNetworking().GetGateway().GetType() == v1alpha1.Dataplane_Networking_Gateway_BUILTIN {
-		policies.Warnings = append(policies.Warnings, "policy doesn't support builtin gateway")
-		return nil
-	}
 	if !proxy.GetTransparentProxy().Enabled() || proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
 		policies.Warnings = append(policies.Warnings, "policy doesn't support proxy running without transparent-proxy")
 		return nil
 	}
 	listeners := policies_xds.GatherListeners(rs)
-	if err := applyToOutboundPassthrough(ctx, rs, policies.SingleItemRules, listeners, proxy); err != nil {
+	if err := applyToOutboundPassthrough(ctx, rs, policies.ProxyConf, listeners, proxy); err != nil {
 		return err
 	}
 	return nil
@@ -58,15 +47,14 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 func applyToOutboundPassthrough(
 	_ xds_context.Context,
 	rs *core_xds.ResourceSet,
-	rules core_rules.SingleItemRules,
+	policyConf *core_rules.ProxyConf,
 	listeners policies_xds.Listeners,
 	proxy *core_xds.Proxy,
 ) error {
-	if len(rules.Rules) == 0 {
+	if policyConf == nil {
 		return nil
 	}
-	rawConf := rules.Rules[0].Conf
-	conf := rawConf.(api.Conf)
+	conf := policyConf.Conf.(api.Conf)
 
 	// todo: this should be handled by "base policy"
 	if pointer.Deref(conf.PassthroughMode) == "" {

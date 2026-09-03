@@ -310,7 +310,7 @@ var _ = Describe("Listener modifications", func() {
                 metadata:
                   filterMetadata:
                     io.kuma.tags:
-                      kuma.io/service: backend`,
+                      app: backend`,
 			},
 			modifications: []string{
 				`
@@ -319,7 +319,7 @@ var _ = Describe("Listener modifications", func() {
                    match:
                      name: inbound:192.168.0.1:8080
                      tags:
-                       kuma.io/service: backend
+                       app: backend
                    value: |
                      tcpFastOpenQueueLength: 32`,
 			},
@@ -335,7 +335,7 @@ var _ = Describe("Listener modifications", func() {
                 metadata:
                   filterMetadata:
                     io.kuma.tags:
-                      kuma.io/service: backend
+                      app: backend
                 name: inbound:192.168.0.1:8080
                 tcpFastOpenQueueLength: 32
                 trafficDirection: INBOUND`,
@@ -352,7 +352,7 @@ var _ = Describe("Listener modifications", func() {
                 metadata:
                   filterMetadata:
                     io.kuma.tags:
-                      kuma.io/service: backend`,
+                      app: backend`,
 			},
 			modifications: []string{
 				`
@@ -361,7 +361,7 @@ var _ = Describe("Listener modifications", func() {
                    match:
                      name: inbound:192.168.0.1:8080
                      tags:
-                       kuma.io/service: web
+                       app: web
                    value: |
                      tcpFastOpenQueueLength: 32`,
 			},
@@ -377,7 +377,7 @@ var _ = Describe("Listener modifications", func() {
                 metadata:
                   filterMetadata:
                     io.kuma.tags:
-                      kuma.io/service: backend
+                      app: backend
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
 		}),

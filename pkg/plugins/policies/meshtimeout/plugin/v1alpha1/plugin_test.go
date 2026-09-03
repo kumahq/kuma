@@ -1,4 +1,3 @@
-//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
@@ -18,11 +17,9 @@ import (
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -41,7 +38,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -96,15 +92,13 @@ var _ = Describe("MeshTimeout", func() {
 		context := *xds_builders.Context().
 			WithMeshBuilder(samples.MeshDefaultBuilder()).
 			WithResources(xds_context.NewResources()).
-			AddServiceProtocol("other-service", core_meta.ProtocolHTTP).
-			AddServiceProtocol("second-service", core_meta.ProtocolTCP).
 			Build()
 		proxyBuilder := xds_builders.Proxy().
 			WithDataplane(builders.Dataplane().
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
 			WithRouting(
 				xds_builders.Routing().
 					WithOutboundTargets(
@@ -117,11 +111,6 @@ var _ = Describe("MeshTimeout", func() {
 			WithPolicies(
 				xds_builders.MatchedPolicies().WithPolicy(api.MeshTimeoutType, given.toRules, given.fromRules),
 			)
-		// Outbounds are always built from real resources, so every proxy here
-		// supports unified resource naming.
-		proxyBuilder = proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{
-			Features: xds_types.Features{xds_types.FeatureUnifiedResourceNaming: true},
-		})
 		proxy := proxyBuilder.Build()
 
 		// when
@@ -238,26 +227,6 @@ var _ = Describe("MeshTimeout", func() {
 				},
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{
-						Address: "127.0.0.1",
-						Port:    80,
-					}: []*core_rules.Rule{
-						{
-							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								ConnectionTimeout: test.ParseDuration("10s"),
-								IdleTimeout:       test.ParseDuration("1h"),
-								Http: &api.Http{
-									RequestTimeout:        test.ParseDuration("5s"),
-									StreamIdleTimeout:     test.ParseDuration("1s"),
-									MaxStreamDuration:     test.ParseDuration("10m"),
-									MaxConnectionDuration: test.ParseDuration("10m"),
-								},
-							},
-						},
-					},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{
 						Address: "127.0.0.1",
@@ -276,7 +245,7 @@ var _ = Describe("MeshTimeout", func() {
 					}},
 				},
 			},
-			expectedClusters:  []string{"basic_inbound_cluster_unified_naming.golden.yaml"},
+			expectedClusters:  []string{"basic_inbound_cluster_resource_name.golden.yaml"},
 			expectedListeners: []string{"basic_inbound_listener.golden.yaml"},
 		}),
 		Entry("basic inbound route without defaults", sidecarTestCase{
@@ -292,14 +261,7 @@ var _ = Describe("MeshTimeout", func() {
 					Resource: test_xds.ClusterWithName(naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))),
 				},
 			},
-			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{
-						Address: "127.0.0.1",
-						Port:    80,
-					}: []*core_rules.Rule{},
-				},
-			},
+			fromRules:         core_rules.FromRules{},
 			expectedClusters:  []string{"basic_without_defaults_inbound_cluster.golden.yaml"},
 			expectedListeners: []string{"basic_without_defaults_inbound_listener.golden.yaml"},
 		}),
@@ -405,26 +367,6 @@ var _ = Describe("MeshTimeout", func() {
 				},
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{
-						Address: "127.0.0.1",
-						Port:    80,
-					}: []*core_rules.Rule{
-						{
-							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								ConnectionTimeout: test.ParseDuration("10s"),
-								IdleTimeout:       test.ParseDuration("1h"),
-								Http: &api.Http{
-									RequestTimeout:        test.ParseDuration("5s"),
-									StreamIdleTimeout:     test.ParseDuration("1s"),
-									MaxStreamDuration:     test.ParseDuration("10m"),
-									MaxConnectionDuration: test.ParseDuration("10m"),
-								},
-							},
-						},
-					},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{
 						Address: "127.0.0.1",
@@ -621,7 +563,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
 			WithPolicies(xds_builders.MatchedPolicies().
 				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
 					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
@@ -707,7 +649,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
 			WithPolicies(xds_builders.MatchedPolicies().
 				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
 					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
@@ -781,7 +723,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
 			WithPolicies(xds_builders.MatchedPolicies().
 				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
 					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
@@ -861,8 +803,8 @@ var _ = Describe("MeshTimeout", func() {
 			Labels: map[string]string{},
 		})
 		meshTimeout.Spec = &api.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
-				Kind:        common_api.Dataplane,
+			TargetRef: &common_api.TopLevelTargetRef{
+				Kind:        common_api.TopLevelTargetRefKindDataplane,
 				SectionName: pointer.To("ze-port"),
 			},
 			Rules: &[]api.Rule{{
@@ -941,8 +883,8 @@ var _ = Describe("MeshTimeout", func() {
 			Labels: map[string]string{},
 		})
 		meshTimeout.Spec = &api.MeshTimeout{
-			TargetRef: &common_api.TargetRef{
-				Kind:        common_api.Dataplane,
+			TargetRef: &common_api.TopLevelTargetRef{
+				Kind:        common_api.TopLevelTargetRefKindDataplane,
 				SectionName: pointer.To("ze-port"),
 			},
 			Rules: &[]api.Rule{
@@ -1018,12 +960,16 @@ func httpListenerWithSeveralMeshHTTPRoutes(service string, meshHTTPRoute kri.Ide
 }
 
 func httpInboundListenerWith() envoy_common.NamedResource {
+	// the listener, its route and its cluster all carry the contextual inbound
+	// name, exactly like InboundProxyGenerator names them
+	inboundName := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))
 	return createListener(
-		NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 80, core_xds.SocketAddressProtocolTCP, true),
+		NewListenerBuilder(envoy_common.APIV3, inboundName).
+			Configure(InboundListener("127.0.0.1", 80, core_xds.SocketAddressProtocolTCP, true)),
 		HttpInboundRoute(
-			envoy_names.GetInboundRouteName("backend"),
-			"backend",
-			plugins_xds.NewClusterBuilder().WithService("backend").Build(),
+			inboundName,
+			inboundName,
+			plugins_xds.NewClusterBuilder().WithName(inboundName).Build(),
 		))
 }
 

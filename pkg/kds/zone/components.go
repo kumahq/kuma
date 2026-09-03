@@ -7,9 +7,9 @@ import (
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
+	kds_server "github.com/kumahq/kuma/v3/pkg/kds/server"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
-	kds_server "github.com/kumahq/kuma/v3/pkg/kds/v2/server"
-	kds_sync_store_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 )
 
 var (
@@ -33,12 +33,13 @@ func Setup(rt core_runtime.Runtime) error {
 		kdsCtx.ZoneProvidedFilter,
 		kdsCtx.ZoneResourceMapper,
 		rt.Config().Multizone.Zone.KDS.NackBackoff.Duration,
+		rt.Config().Multizone.Zone.KDS.EventBasedWatchdog.AsRuntimeConfig(),
 	)
 	if err != nil {
 		return err
 	}
 
-	resourceSyncerV2, err := kds_sync_store_v2.NewResourceSyncer(kdsDeltaZoneLog, rt.ResourceStore(), rt.Transactions(), rt.Metrics(), rt.Extensions())
+	resourceSyncer, err := kds_sync_store.NewResourceSyncer(kdsDeltaZoneLog, rt.ResourceStore(), rt.Transactions(), rt.Metrics(), rt.Extensions())
 	if err != nil {
 		return err
 	}
@@ -48,13 +49,13 @@ func Setup(rt core_runtime.Runtime) error {
 		rt.Config().Multizone.Zone.GlobalAddress,
 		zone,
 		*rt.Config().Multizone.Zone.KDS,
-		rt.Config().Experimental,
 		rt.Metrics(),
 		service.NewEnvoyAdminProcessor(
 			rt.ReadOnlyResourceManager(),
 			rt.EnvoyAdminClient(),
+			rt.Config().Multizone.Zone.KDS.MaxMsgSize,
 		),
-		resourceSyncerV2,
+		resourceSyncer,
 		rt,
 		deltaServer,
 	)

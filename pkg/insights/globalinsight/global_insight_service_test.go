@@ -41,9 +41,41 @@ var _ = Describe("Global Insight", func() {
 		Expect(err).ToNot(HaveOccurred())
 		err = createMeshInsight("payments", rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createServiceInsight("si-1", "default", rs)
+		err = createMeshService("svc-1-online", "default", 1, 1, 1, rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createServiceInsight("si-2", "payments", rs)
+		err = createMeshService("svc-1-offline", "default", 0, 0, 1, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createMeshService("svc-2-online", "payments", 1, 1, 1, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createMeshService("svc-2-offline", "payments", 0, 0, 1, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createMeshService("svc-2-partial", "payments", 1, 1, 2, rs)
+		Expect(err).ToNot(HaveOccurred())
+		// connected to the CP but no inbound is ready, so the service is not serving traffic
+		err = createMeshService("svc-2-unhealthy", "payments", 2, 0, 2, rs)
+		Expect(err).ToNot(HaveOccurred())
+		// all proxies connected, only some of them with ready inbounds
+		err = createMeshService("svc-2-degraded", "payments", 2, 1, 2, rs)
+		Expect(err).ToNot(HaveOccurred())
+		// two proxies of the same delegated gateway service, only one of them online
+		err = createGatewayDataplane("edge-gw-1", "default", "edge-gateway", "edge-gw", true, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createGatewayDataplane("edge-gw-2", "default", "edge-gateway", "edge-gw", false, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createGatewayDataplane("payments-gw", "payments", "payments-gateway", "payments-gw", false, rs)
+		Expect(err).ToNot(HaveOccurred())
+		// tag-free gateway, grouped by the workload it belongs to
+		err = createGatewayDataplane("shop-gw", "default", "", "shop", true, rs)
+		Expect(err).ToNot(HaveOccurred())
+		// neither a service tag nor a workload label, so each is its own service,
+		// grouped by the Dataplane name
+		err = createGatewayDataplane("bare-gw-1", "default", "", "", true, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createGatewayDataplane("bare-gw-2", "default", "", "", false, rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createMeshExternalService("es-1", "default", rs)
+		Expect(err).ToNot(HaveOccurred())
+		err = createMeshExternalService("es-2", "payments", rs)
 		Expect(err).ToNot(HaveOccurred())
 		err = createHostnameGenerator("default-hg", rs)
 		Expect(err).ToNot(HaveOccurred())
@@ -52,14 +84,6 @@ var _ = Describe("Global Insight", func() {
 		err = createZoneInsight("zi-1", true, rs)
 		Expect(err).ToNot(HaveOccurred())
 		err = createZoneInsight("zi-2", false, rs)
-		Expect(err).ToNot(HaveOccurred())
-		err = createZoneIngressInsight("zii-1", "default", true, rs)
-		Expect(err).ToNot(HaveOccurred())
-		err = createZoneIngressInsight("zii-2", "payments", false, rs)
-		Expect(err).ToNot(HaveOccurred())
-		err = createZoneEgressInsight("zei-1", "default", true, rs)
-		Expect(err).ToNot(HaveOccurred())
-		err = createZoneEgressInsight("zei-1", "payments", false, rs)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -80,36 +104,74 @@ func createMeshInsight(name string, rs store.ResourceStore) error {
 	return builders.MeshInsight().
 		WithName(name).
 		WithStandardDataplaneStats(1, 1, 1, 3).
-		WithBuiltinGatewayDataplaneStats(1, 0, 0, 1).
 		WithDelegatedGatewayDataplaneStats(2, 1, 0, 3).
 		AddResourceStats("MeshTimeout", 2).
 		AddResourceStats("MeshRetry", 1).
 		Create(rs)
 }
 
-func createServiceInsight(name string, mesh string, rs store.ResourceStore) error {
-	return builders.ServiceInsight().
+func createMeshService(name string, mesh string, connected, healthy, total int, rs store.ResourceStore) error {
+	return builders.MeshService().
 		WithName(name).
 		WithMesh(mesh).
-		AddService("test-service", &mesh_proto.ServiceInsight_Service{
-			ServiceType: mesh_proto.ServiceInsight_Service_internal,
-			Status:      mesh_proto.ServiceInsight_Service_online,
-		}).
-		AddService("test-service-2", &mesh_proto.ServiceInsight_Service{
-			ServiceType: mesh_proto.ServiceInsight_Service_internal,
-			Status:      mesh_proto.ServiceInsight_Service_offline,
-		}).
-		AddService("test-external-service", &mesh_proto.ServiceInsight_Service{
-			ServiceType: mesh_proto.ServiceInsight_Service_external,
-		}).
-		AddService("test-builtin-gateway", &mesh_proto.ServiceInsight_Service{
-			ServiceType: mesh_proto.ServiceInsight_Service_gateway_builtin,
-			Status:      mesh_proto.ServiceInsight_Service_partially_degraded,
-		}).
-		AddService("test-delegated-gateway", &mesh_proto.ServiceInsight_Service{
-			ServiceType: mesh_proto.ServiceInsight_Service_gateway_delegated,
-			Status:      mesh_proto.ServiceInsight_Service_offline,
-		}).
+		WithDataplaneProxies(connected, healthy, total).
+		Create(rs)
+}
+
+// createGatewayDataplane creates a gateway Dataplane along with its insight. An empty
+// service or workload is left out entirely, so gateways can be grouped by any of the
+// service tag, the workload label or the resource name.
+func createGatewayDataplane(
+	name string,
+	mesh string,
+	service string,
+	workload string,
+	online bool,
+	rs store.ResourceStore,
+) error {
+	tags := map[string]string{}
+	if service != "" {
+		tags[mesh_proto.ServiceTag] = service
+	}
+	labels := map[string]string{}
+	if workload != "" {
+		labels["kuma.io/workload"] = workload
+	}
+	dataplane := core_mesh.NewDataplaneResource()
+	dataplane.Spec = &mesh_proto.Dataplane{
+		Networking: &mesh_proto.Dataplane_Networking{
+			Address: "127.0.0.1",
+			Gateway: &mesh_proto.Dataplane_Networking_Gateway{
+				Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
+				Tags: tags,
+			},
+		},
+	}
+	if err := rs.Create(context.Background(), dataplane,
+		store.CreateByKey(name, mesh),
+		store.CreateWithLabels(labels),
+	); err != nil {
+		return err
+	}
+
+	insight := builders.DataplaneInsight().WithName(name).WithMesh(mesh)
+	if online {
+		insight.AddSubscription(&mesh_proto.DiscoverySubscription{
+			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
+		})
+	} else {
+		insight.AddSubscription(&mesh_proto.DiscoverySubscription{
+			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
+			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
+		})
+	}
+	return insight.Create(rs)
+}
+
+func createMeshExternalService(name string, mesh string, rs store.ResourceStore) error {
+	return builders.MeshExternalService().
+		WithName(name).
+		WithMesh(mesh).
 		Create(rs)
 }
 
@@ -132,40 +194,6 @@ func createZoneInsight(name string, online bool, rs store.ResourceStore) error {
 		})
 	} else {
 		builder.AddSubscription(&system_proto.KDSSubscription{
-			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
-			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
-		})
-	}
-
-	return builder.Create(rs)
-}
-
-func createZoneIngressInsight(name string, mesh string, online bool, rs store.ResourceStore) error {
-	builder := builders.ZoneIngressInsight().WithName(name).WithMesh(mesh)
-
-	if online {
-		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
-			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
-		})
-	} else {
-		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
-			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
-			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
-		})
-	}
-
-	return builder.Create(rs)
-}
-
-func createZoneEgressInsight(name string, mesh string, online bool, rs store.ResourceStore) error {
-	builder := builders.ZoneEgressInsight().WithName(name).WithMesh(mesh)
-
-	if online {
-		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
-			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
-		})
-	} else {
-		builder.AddSubscription(&mesh_proto.DiscoverySubscription{
 			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
 			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
 		})

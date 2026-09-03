@@ -2,7 +2,11 @@ name: "release"
 run-name: Release${{ inputs.check && ' and check' || '' }} ${{ inputs.release }}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # `github.ref` is the ref a workflow_dispatch was dispatched from (always `master`),
+  # so it does not distinguish releases. Without the release input, dispatches for
+  # different versions share one group and GitHub cancels whatever is already queued
+  # behind the pending run.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.release || '0.0.0' }}
   cancel-in-progress: false
 on:
   schedule:
@@ -33,16 +37,17 @@ permissions:
   contents: read
 jobs:
   release:
-    timeout-minutes: 30
+    # Headroom for the retried checks below (up to 5 attempts x 3 checks).
+    timeout-minutes: 45
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           ref: "master"
-      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.7.11
+          version: 2026.8.8
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: install-kuma-ci-tools
@@ -61,24 +66,42 @@ jobs:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
           release-tool release changelog --repo ${{ github.repository }} --release ${{ env.RELEASE }}
+      # The three checks below are read-only existence probes against artifact stores
+      # (charts repo releases, packages.konghq.com, hub.docker.com) that are published
+      # by other workflows. Each store lags behind the publishing workflow reporting
+      # success, so a check run right after a tag push sees a 404 for artifacts that
+      # are fine minutes later. Retry so that propagation lag self-heals instead of
+      # needing a manual rerun.
       - name: check-helm
         if: env.RELEASE != '0.0.0' && fromJSON(env.CHECK)
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          release-tool release helm-chart --repo ${{ github.repository }} --charts-repo ${{ env.CHARTS_REPO }} --release ${{ env.RELEASE }}
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 60
+          timeout_minutes: 1
+          command: release-tool release helm-chart --repo "$GITHUB_REPOSITORY" --charts-repo "$CHARTS_REPO" --release "$RELEASE"
       - name: check-binaries
+        if: fromJSON(env.CHECK)
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        if: fromJSON(env.CHECK)
-        run: |
-          release-tool release binaries --repo ${{ github.repository }} --release ${{ env.RELEASE }} --binaries ${{ env.BINARIES }}
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 60
+          timeout_minutes: 1
+          command: release-tool release binaries --repo "$GITHUB_REPOSITORY" --release "$RELEASE" --binaries "$BINARIES"
       - name: check-docker
+        if: fromJSON(env.CHECK)
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        if: fromJSON(env.CHECK)
-        run: |
-          release-tool release docker --repo ${{ github.repository }} --release ${{ env.RELEASE }} --docker-repo ${{env.DOCKER_REPO }} --images ${{ env.DOCKER_IMAGES }}
+        uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
+        with:
+          max_attempts: 5
+          retry_wait_seconds: 60
+          timeout_minutes: 1
+          command: release-tool release docker --repo "$GITHUB_REPOSITORY" --release "$RELEASE" --docker-repo "$DOCKER_REPO" --images "$DOCKER_IMAGES"
       - name: update-active-branches.json
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}

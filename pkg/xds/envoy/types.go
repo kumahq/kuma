@@ -17,7 +17,6 @@ type Cluster interface {
 	Service() string
 	Name() string
 	SNI() string
-	Mesh() string
 	Tags() tags.Tags
 	Hash() string
 	IsExternalService() bool
@@ -34,7 +33,6 @@ type Service struct {
 	name               string
 	clusters           []Cluster
 	hasExternalService bool
-	tlsReady           bool
 	backendRef         *resolve.ResolvedBackendRef
 }
 
@@ -59,10 +57,6 @@ func (c *Service) HasExternalService() bool {
 
 func (c *Service) Clusters() []Cluster {
 	return c.clusters
-}
-
-func (c *Service) TLSReady() bool {
-	return c.tlsReady
 }
 
 func (c *Service) BackendRef() *resolve.ResolvedBackendRef {
@@ -91,14 +85,12 @@ func (s Services) Clusters() []Cluster {
 }
 
 type ServicesAccumulator struct {
-	tlsReadiness map[string]bool
-	services     map[string]*Service
+	services map[string]*Service
 }
 
-func NewServicesAccumulator(tlsReadiness map[string]bool) ServicesAccumulator {
+func NewServicesAccumulator() ServicesAccumulator {
 	return ServicesAccumulator{
-		tlsReadiness: tlsReadiness,
-		services:     map[string]*Service{},
+		services: map[string]*Service{},
 	}
 }
 
@@ -110,8 +102,7 @@ func (sa ServicesAccumulator) Add(clusters ...Cluster) {
 	for _, c := range clusters {
 		if sa.services[c.Service()] == nil {
 			sa.services[c.Service()] = &Service{
-				tlsReady: sa.tlsReadiness[c.Service()],
-				name:     c.Service(),
+				name: c.Service(),
 			}
 		}
 		sa.services[c.Service()].Add(c)
@@ -121,7 +112,6 @@ func (sa ServicesAccumulator) Add(clusters ...Cluster) {
 func (sa ServicesAccumulator) AddBackendRef(backendRef *resolve.ResolvedBackendRef, cluster Cluster) {
 	if sa.services[cluster.Service()] == nil {
 		sa.services[cluster.Service()] = &Service{
-			tlsReady:   sa.tlsReadiness[cluster.Service()],
 			name:       cluster.Service(),
 			backendRef: backendRef,
 		}

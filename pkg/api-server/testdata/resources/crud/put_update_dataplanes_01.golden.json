@@ -9,7 +9,6 @@
   "kuma.io/env": "universal",
   "kuma.io/mesh": "default",
   "kuma.io/origin": "zone",
-  "kuma.io/proxy-type": "sidecar",
   "kuma.io/zone": "default"
  },
  "kri": "kri_dp_default_default__dp-1_",
@@ -17,11 +16,7 @@
   "address": "10.1.2.1",
   "inbound": [
    {
-    "port": 1234,
-    "tags": {
-     "kuma.io/service": "my-svc",
-     "version": "v0"
-    }
+    "port": 1234
    }
   ]
  }

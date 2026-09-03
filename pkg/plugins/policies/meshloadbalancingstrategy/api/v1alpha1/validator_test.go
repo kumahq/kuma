@@ -1,12 +1,26 @@
 package v1alpha1_test
 
 import (
+	"os"
+
 	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/test/resources/validators"
 )
+
+var _ = Describe("generated schema", func() {
+	It("should describe the loadBalancer union with a oneOf", func() {
+		contents, err := os.ReadFile("rest.yaml")
+		Expect(err).ToNot(HaveOccurred())
+
+		// Each branch pairs a type with the property it selects, so consumers do
+		// not have to infer the mapping.
+		Expect(string(contents)).To(MatchRegexp(`(?s)oneOf:.*roundRobin: \{\}.*- RoundRobin`))
+	})
+})
 
 var _ = Describe("validation", func() {
 	DescribeErrorCases(
@@ -35,7 +49,7 @@ to: []
 				Message: "value 'MeshServiceSubset' is not supported",
 			}, {
 				Field:   "spec.to[1].default.localityAwareness.crossZone",
-				Message: "must not be set: MeshService traffic is local",
+				Message: "crossZone is only supported when targetRef.kind is MeshMultiZoneService",
 			}},
 			`
 type: MeshLoadBalancingStrategy
@@ -54,6 +68,38 @@ to:
       labels:
         kuma.io/display-name: real-mesh-service
       sectionName: http
+    default:
+      localityAwareness:
+        crossZone: {}
+`),
+		ErrorCases(
+			"crossZone on unsupported target kinds",
+			[]validators.Violation{
+				{
+					Field:   "spec.to[0].default.localityAwareness.crossZone",
+					Message: "crossZone is only supported when targetRef.kind is MeshMultiZoneService",
+				},
+				{
+					Field:   "spec.to[1].default.localityAwareness.crossZone",
+					Message: "crossZone is only supported when targetRef.kind is MeshMultiZoneService",
+				},
+			},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: Mesh
+    default:
+      localityAwareness:
+        crossZone: {}
+  - targetRef:
+      kind: MeshExternalService
+      labels:
+        kuma.io/display-name: httpbin
     default:
       localityAwareness:
         crossZone: {}
@@ -293,10 +339,6 @@ to:
 					Message: "must be defined",
 				},
 				{
-					Field:   "spec.to[0].default.hashPolicies[2].connection",
-					Message: "must be defined",
-				},
-				{
 					Field:   "spec.to[0].default.hashPolicies[3].queryParameter",
 					Message: "must be defined",
 				},
@@ -320,9 +362,34 @@ to:
       hashPolicies:
         - type: Header
         - type: Cookie
-        - type: SourceIP
+        - type: Connection
+          connection:
+            sourceIP: true
         - type: QueryParameter
         - type: FilterState
+`),
+		ErrorCases(
+			"removed SourceIP hashPolicies type",
+			[]validators.Violation{
+				{
+					Field:   "spec.to[0].default.hashPolicies[0].type",
+					Message: "unrecognized type",
+				},
+			},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshService
+      labels:
+        kuma.io/display-name: svc-2
+    default:
+      hashPolicies:
+        - type: SourceIP
 `),
 		ErrorCases(
 			"MeshHTTPRoute with loadBalancer",

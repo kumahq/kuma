@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -20,27 +19,16 @@ import (
 
 func HeadlessServices() {
 	meshName := "headless-svc"
+	identityName := "headless-svc-identity"
 	namespace := "headless-svc"
 
-	mtlsMesh := func(name string) InstallFunc {
-		return YamlK8s(fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  mtls:
-    enabledBackend: ca-1
-    backends:
-      - name: ca-1
-        type: builtin
-`, name))
-	}
+	trustDomain := fmt.Sprintf("%s.default.mesh.local", meshName)
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(mtlsMesh(meshName)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			Install(MeshKubernetes(meshName)).
+			Install(MeshIdentityBundledKubernetes(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName, trustDomain)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
 				democlient.Install(
@@ -65,18 +53,14 @@ spec:
 
 		// create headless service with port that is not the same as app port
 		headlessSvc := &corev1.Service{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Service",
-				APIVersion: "v1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-server-headless",
-				Namespace: namespace,
-				// Without this the generated MeshService lands in the default mesh
-				// and the client never gets an outbound for it.
-				Labels: map[string]string{
-					"kuma.io/mesh": meshName,
-				},
+			Kind:       "Service",
+			APIVersion: "v1",
+			Name:       "test-server-headless",
+			Namespace:  namespace,
+			// Without this the generated MeshService lands in the default mesh
+			// and the client never gets an outbound for it.
+			Labels: map[string]string{
+				"kuma.io/mesh": meshName,
 			},
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{

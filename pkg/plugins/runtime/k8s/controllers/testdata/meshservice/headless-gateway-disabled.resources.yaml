@@ -29,7 +29,7 @@ metadata:
   namespace: demo
   name: example
   annotations:
-    kuma.io/gateway: builtin
+    kuma.io/gateway: enabled
 spec:
   clusterIP: None
   ports:

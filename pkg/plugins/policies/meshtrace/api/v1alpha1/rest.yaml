@@ -138,6 +138,9 @@ components:
           description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
           type: string
           default: default
+          # keep in sync with core_mesh.MeshNamePattern / MaxNameLength
+          pattern: '^[0-9a-z-_.]*$'
+          maxLength: 253
         kri:
           description: 'A unique identifier for this resource instance used by internal tooling and integrations. Typically derived from resource attributes and may be used for cross-references or indexing'
           type: string
@@ -146,6 +149,9 @@ components:
         name:
           description: 'Name of the Kuma resource'
           type: string
+          # keep in sync with core_mesh.NamePattern / MaxNameLength
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -249,6 +255,22 @@ components:
                     required:
                       - type
                     type: object
+                    oneOf:
+                      - properties:
+                          type:
+                            enum:
+                              - Zipkin
+                          zipkin: {}
+                      - properties:
+                          datadog: {}
+                          type:
+                            enum:
+                              - Datadog
+                      - properties:
+                          openTelemetry: {}
+                          type:
+                            enum:
+                              - OpenTelemetry
                   maxItems: 1
                   type: array
                 sampling:
@@ -342,12 +364,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -363,13 +379,6 @@ components:
                     SectionName is used to target specific section of resource.
                     For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: |-
-                    Tags used to select a subset of proxies by tags. Can only be used with kinds
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -379,13 +388,13 @@ components:
           type: string
           description: 'Time at which the resource was created'
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: 'Time at which the resource was updated'
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshTrace resource.
           properties:

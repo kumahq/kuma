@@ -11,15 +11,17 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshservice_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	"github.com/kumahq/kuma/v3/pkg/xds/generator/gateway/metadata"
 )
 
 func (r *HTTPRouteReconciler) gapiToMeshRules(
@@ -44,7 +46,7 @@ func (r *HTTPRouteReconciler) gapiToMeshRules(
 		rules = append(rules, kumaRule)
 	}
 
-	return rules, prepareConditions(conditions), nil
+	return rules, conditions, nil
 }
 
 func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
@@ -52,48 +54,44 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 	rules []v1alpha1.Rule,
 	parent *kube_core.Service,
 	parentPort *gatewayapi_v1.PortNumber,
-) core_model.ResourceSpec {
+	parentSectionName *gatewayapi_v1.SectionName,
+) (core_model.ResourceSpec, bool) {
 	// consumer route
-	targetRef := common_api.TargetRef{
-		Kind: common_api.LegacyMeshSubsetKind(),
-		Tags: &map[string]string{
+	targetRef := common_api.TopLevelTargetRef{
+		Kind: common_api.TopLevelTargetRefKindDataplane,
+		Labels: &map[string]string{
 			mesh_proto.KubeNamespaceTag: routeNamespace,
 		},
 	}
 
 	// producer route
 	if routeNamespace == parent.GetNamespace() {
-		targetRef = common_api.TargetRef{
-			Kind: common_api.Mesh,
+		targetRef = common_api.TopLevelTargetRef{
+			Kind: common_api.TopLevelTargetRefKindMesh,
 		}
 	}
 
 	var tos []v1alpha1.To
 
-	var servicePorts []kube_core.ServicePort
-	if parentPort != nil {
-		for _, port := range parent.Spec.Ports {
-			if port.Port == *parentPort {
-				servicePorts = append(servicePorts, port)
-			}
+	for _, port := range parent.Spec.Ports {
+		if parentPort != nil && port.Port != *parentPort {
+			continue
 		}
-	} else {
-		servicePorts = parent.Spec.Ports
-	}
 
-	for _, port := range servicePorts {
 		// The MeshService section name is the Service port name, falling back to
 		// the stringified port value for unnamed ports (see meshservice_controller).
-		// It must match how the MeshService is generated: a mismatched sectionName
-		// won't resolve to the intended port, so this `to` entry won't apply to
-		// traffic for that port.
 		sectionName := port.Name
 		if sectionName == "" {
 			sectionName = fmt.Sprintf("%d", port.Port)
 		}
+
+		if parentSectionName != nil && sectionName != string(*parentSectionName) {
+			continue
+		}
+
 		tos = append(tos, v1alpha1.To{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
+			TargetRef: common_api.OutboundTargetRef{
+				Kind: common_api.OutboundTargetRefKindMeshService,
 				Labels: &map[string]string{
 					mesh_proto.DisplayName:      parent.GetName(),
 					mesh_proto.KubeNamespaceTag: parent.GetNamespace(),
@@ -104,10 +102,97 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 		})
 	}
 
+	if len(tos) == 0 && (parentPort != nil || parentSectionName != nil) {
+		return nil, false
+	}
+
 	return &v1alpha1.MeshHTTPRoute{
 		TargetRef: &targetRef,
 		To:        &tos,
+	}, true
+}
+
+// meshServiceRefLabels returns the labels that identify the destination
+// MeshService, mirroring KubernetesMetaAdapter.GetLabels so a display-name
+// annotation override and a headless Service's hashed MeshService name both
+// resolve to the same MeshService the referenced object represents.
+func meshServiceRefLabels(ms *meshservice_k8s.MeshService) map[string]string {
+	displayName := ms.GetName()
+	if annotated, ok := ms.GetAnnotations()[mesh_proto.DisplayName]; ok {
+		displayName = annotated
 	}
+	return map[string]string{
+		mesh_proto.DisplayName:      displayName,
+		mesh_proto.KubeNamespaceTag: ms.GetNamespace(),
+	}
+}
+
+// gapiMeshServiceToMeshRoute returns the MeshHTTPRoute for a MeshService
+// parentRef. It reports false when the parentRef names a port the MeshService
+// does not have, which the caller turns into an unaccepted parent.
+func (r *HTTPRouteReconciler) gapiMeshServiceToMeshRoute(
+	routeNamespace string,
+	rules []v1alpha1.Rule,
+	parent *meshservice_k8s.MeshService,
+	parentPort *gatewayapi_v1.PortNumber,
+	parentSectionName *gatewayapi_v1.SectionName,
+) (core_model.ResourceSpec, bool) {
+	// consumer route
+	targetRef := common_api.TopLevelTargetRef{
+		Kind: common_api.TopLevelTargetRefKindDataplane,
+		Labels: &map[string]string{
+			mesh_proto.KubeNamespaceTag: routeNamespace,
+		},
+	}
+
+	// producer route
+	if routeNamespace == parent.GetNamespace() {
+		targetRef = common_api.TopLevelTargetRef{
+			Kind: common_api.TopLevelTargetRefKindMesh,
+		}
+	}
+
+	var tos []v1alpha1.To
+
+	var ports []meshservice_api.Port
+	if parent.Spec != nil {
+		for _, port := range parent.Spec.Ports {
+			if parentPort != nil && port.Port != *parentPort {
+				continue
+			}
+			// Port.GetName falls back to the stringified port, so a
+			// sectionName matches a named and an unnamed port alike.
+			if parentSectionName != nil && port.GetName() != string(*parentSectionName) {
+				continue
+			}
+			ports = append(ports, port)
+		}
+	}
+
+	// A parentRef that names a port the MeshService does not have is a user
+	// error worth reporting. A MeshService with no ports at all is not: its
+	// port list is briefly empty while its controller observes endpoints, and
+	// reporting that would flap the route status.
+	if len(ports) == 0 && (parentPort != nil || parentSectionName != nil) {
+		return nil, false
+	}
+
+	labels := meshServiceRefLabels(parent)
+	for _, port := range ports {
+		tos = append(tos, v1alpha1.To{
+			TargetRef: common_api.OutboundTargetRef{
+				Kind:        common_api.OutboundTargetRefKindMeshService,
+				Labels:      &labels,
+				SectionName: pointer.To(port.GetName()),
+			},
+			Rules: rules,
+		})
+	}
+
+	return &v1alpha1.MeshHTTPRoute{
+		TargetRef: &targetRef,
+		To:        &tos,
+	}, true
 }
 
 func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
@@ -119,7 +204,8 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 
 	var matches []v1alpha1.Match
 	var filters []v1alpha1.Filter
-	var backendRefs []common_api.BackendRef
+	var backendRefs []v1alpha1.BackendRef
+	unsupportedFilter := false
 
 	for _, gapiMatch := range rule.Matches {
 		match, ok := r.gapiToKumaMeshMatch(gapiMatch)
@@ -145,6 +231,11 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 
 		if len(filterConditions) == 0 {
 			filters = append(filters, filter)
+			continue
+		}
+
+		if hasAcceptedFalse(filterConditions) {
+			unsupportedFilter = true
 		}
 	}
 
@@ -156,10 +247,54 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 
 		refCondition.AddIfFalseAndNotPresent(&conditions)
 
-		backendRefs = append(backendRefs, common_api.BackendRef{
+		var backendFilters []v1alpha1.Filter
+		for _, gapiFilter := range gapiBackendRef.Filters {
+			if gapiFilter.Type != gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier {
+				unsupportedFilter = true
+				addIfFalseAndNotPresent(&conditions, unsupportedBackendRefFilterCondition(route.Namespace, gapiBackendRef))
+				continue
+			}
+
+			filter, filterConditions, ok := r.gapiToKumaMeshFilter(ctx, route.Namespace, gapiFilter)
+			if !ok || filter.Type != v1alpha1.RequestHeaderModifierType {
+				unsupportedFilter = true
+				addIfFalseAndNotPresent(&conditions, unsupportedBackendRefFilterCondition(route.Namespace, gapiBackendRef))
+				continue
+			}
+
+			for _, condition := range filterConditions {
+				if kube_apimeta.FindStatusCondition(conditions, condition.Type) == nil {
+					kube_apimeta.SetStatusCondition(&conditions, condition)
+				}
+			}
+
+			if len(filterConditions) == 0 {
+				backendFilters = append(backendFilters, filter)
+				continue
+			}
+
+			if hasAcceptedFalse(filterConditions) {
+				unsupportedFilter = true
+			}
+		}
+
+		if refCondition.preventsBackendTarget() {
+			continue
+		}
+
+		backendRef := v1alpha1.BackendRef{
 			TargetRef: ref,
 			Weight:    pointer.To(uint(*gapiBackendRef.Weight)),
-		})
+		}
+		if len(backendFilters) > 0 {
+			backendRef.Filters = &backendFilters
+		}
+		backendRefs = append(backendRefs, backendRef)
+	}
+
+	if unsupportedFilter {
+		backendRefs = []v1alpha1.BackendRef{}
+		filters = []v1alpha1.Filter{}
 	}
 
 	return v1alpha1.Rule{
@@ -302,8 +437,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 		port := (*v1alpha1.PortNumber)(redirect.Port)
 		if redirect.Scheme != nil && redirect.Port == nil {
 			// See https://github.com/kubernetes-sigs/gateway-api/pull/1880
-			// this would have been a breaking change for MeshGateway, so handle
-			// it here.
+			// which dropped the implied default port, so derive it here.
 			switch *redirect.Scheme {
 			case "http":
 				port = (*v1alpha1.PortNumber)(pointer.To(int32(80)))
@@ -361,8 +495,48 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 			},
 		}, conditions, true
 	default:
-		return v1alpha1.Filter{}, nil, false
+		return v1alpha1.Filter{}, []kube_meta.Condition{unsupportedHTTPRouteFilterCondition(gapiFilter.Type)}, true
 	}
+}
+
+func unsupportedHTTPRouteFilterCondition(filterType gatewayapi_v1.HTTPRouteFilterType) kube_meta.Condition {
+	return kube_meta.Condition{
+		Type:    string(gatewayapi.RouteConditionAccepted),
+		Status:  kube_meta.ConditionFalse,
+		Reason:  string(gatewayapi.RouteReasonUnsupportedValue),
+		Message: fmt.Sprintf("HTTPRoute filter type %q is not supported", filterType),
+	}
+}
+
+func addIfFalseAndNotPresent(conditions *[]kube_meta.Condition, condition kube_meta.Condition) {
+	if kube_apimeta.FindStatusCondition(*conditions, condition.Type) == nil {
+		kube_apimeta.SetStatusCondition(conditions, condition)
+	}
+}
+
+func unsupportedBackendRefFilterCondition(routeNamespace string, backendRef gatewayapi.HTTPBackendRef) kube_meta.Condition {
+	if len(backendRef.Filters) == 0 {
+		return kube_meta.Condition{}
+	}
+
+	return kube_meta.Condition{
+		Type:   string(gatewayapi.RouteConditionAccepted),
+		Status: kube_meta.ConditionFalse,
+		Reason: string(gatewayapi.RouteReasonUnsupportedValue),
+		Message: fmt.Sprintf(
+			"HTTPBackendRef filter type %q is not supported for backendRef %q",
+			backendRef.Filters[0].Type,
+			backendObjectReferenceString(routeNamespace, backendRef.BackendObjectReference),
+		),
+	}
+}
+
+func backendObjectReferenceString(routeNamespace string, ref gatewayapi.BackendObjectReference) string {
+	namespace := routeNamespace
+	if ref.Namespace != nil {
+		namespace = string(*ref.Namespace)
+	}
+	return kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()
 }
 
 type ResolvedRefsConditionFalse struct {
@@ -373,7 +547,7 @@ type ResolvedRefsConditionFalse struct {
 func (c *ResolvedRefsConditionFalse) AddIfFalseAndNotPresent(conditions *[]kube_meta.Condition) {
 	if c != nil && kube_apimeta.FindStatusCondition(*conditions, string(gatewayapi.RouteConditionResolvedRefs)) == nil {
 		condition := kube_meta.Condition{
-			Type:    string(gatewayapi.RouteReasonResolvedRefs),
+			Type:    string(gatewayapi.RouteConditionResolvedRefs),
 			Status:  kube_meta.ConditionFalse,
 			Reason:  c.Reason,
 			Message: c.Message,
@@ -382,25 +556,62 @@ func (c *ResolvedRefsConditionFalse) AddIfFalseAndNotPresent(conditions *[]kube_
 	}
 }
 
+func (c *ResolvedRefsConditionFalse) preventsBackendTarget() bool {
+	return c != nil && c.Reason == string(gatewayapi.RouteReasonRefNotPermitted)
+}
+
 func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	ctx context.Context, objectNamespace string, ref gatewayapi.BackendObjectReference,
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
+	details, ok := backendObjectReferenceInfo(objectNamespace, ref)
+	refNamespace := objectNamespace
+	if ok {
+		refNamespace = details.Namespace
+	}
+
 	unresolvedTargetRef := common_api.TargetRef{
 		Kind: common_api.MeshService,
 		Labels: &map[string]string{
-			mesh_proto.DisplayName: metadata.UnresolvedBackendServiceTag,
+			mesh_proto.DisplayName:      string(ref.Name),
+			mesh_proto.KubeNamespaceTag: refNamespace,
 		},
 	}
-
-	gk := kube_schema.GroupKind{Kind: string(*ref.Kind), Group: string(*ref.Group)}
-	// the backendRef's namespace, falling back to the route's namespace when unset
-	refNamespace := objectNamespace
-	if ref.Namespace != nil {
-		refNamespace = string(*ref.Namespace)
+	if !ok {
+		return unresolvedTargetRef,
+			&ResolvedRefsConditionFalse{
+				Reason:  string(gatewayapi.RouteReasonInvalidKind),
+				Message: "backend reference must be Service or MeshService",
+			},
+			nil
 	}
-	namespacedName := kube_types.NamespacedName{Namespace: refNamespace, Name: string(ref.Name)}
+
+	namespacedName := kube_types.NamespacedName{Namespace: details.Namespace, Name: details.Name}
+	gk := kube_schema.GroupKind{Kind: details.Kind, Group: details.Group}
+
+	if details.Namespace != objectNamespace {
+		allowed, err := r.referenceGrantAllowsBackendRef(ctx, sourceRouteKindHTTPRoute, objectNamespace, details)
+		if err != nil {
+			return common_api.TargetRef{}, nil, err
+		}
+		if !allowed {
+			return common_api.TargetRef{},
+				&ResolvedRefsConditionFalse{
+					Reason:  string(gatewayapi.RouteReasonRefNotPermitted),
+					Message: fmt.Sprintf("backend reference to %s %q is not permitted by any ReferenceGrant", gk.String(), namespacedName.String()),
+				},
+				nil
+		}
+	}
 
 	if gk.Kind == "Service" && gk.Group == "" {
+		if ref.Port == nil {
+			return unresolvedTargetRef,
+				&ResolvedRefsConditionFalse{
+					Reason:  string(gatewayapi.RouteReasonInvalidKind),
+					Message: "backend reference to Service must include a port",
+				},
+				nil
+		}
 		// References to Services are required by GAPI to include a port
 		port := *ref.Port
 
@@ -418,8 +629,10 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		}
 
 		sectionName := fmt.Sprintf("%d", port)
+		portFound := false
 		for _, svcPort := range svc.Spec.Ports {
 			if svcPort.Port == port {
+				portFound = true
 				if svcPort.Name != "" {
 					sectionName = svcPort.Name
 				}
@@ -427,20 +640,101 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 			}
 		}
 
-		return common_api.TargetRef{
+		targetRef := common_api.TargetRef{
 			Kind: common_api.MeshService,
 			Labels: &map[string]string{
 				mesh_proto.DisplayName:      svc.GetName(),
 				mesh_proto.KubeNamespaceTag: svc.GetNamespace(),
 			},
 			SectionName: pointer.To(sectionName),
+		}
+
+		if !portFound {
+			return targetRef,
+				&ResolvedRefsConditionFalse{
+					Reason:  string(gatewayapi.RouteReasonBackendNotFound),
+					Message: fmt.Sprintf("Service %q does not have a port %d", namespacedName.String(), port),
+				},
+				nil
+		}
+
+		return targetRef, nil, nil
+	}
+
+	if gk.Kind == "MeshService" && gk.Group == meshservice_k8s.GroupVersion.Group {
+		ms := &meshservice_k8s.MeshService{}
+		if err := r.Get(ctx, namespacedName, ms); err != nil {
+			if kube_apierrs.IsNotFound(err) {
+				return unresolvedTargetRef,
+					&ResolvedRefsConditionFalse{
+						Reason:  string(gatewayapi.RouteReasonBackendNotFound),
+						Message: fmt.Sprintf("backend reference references a non-existent MeshService %q", namespacedName.String()),
+					},
+					nil
+			}
+			return common_api.TargetRef{}, nil, err
+		}
+
+		labels := meshServiceRefLabels(ms)
+
+		if ref.Port == nil {
+			return common_api.TargetRef{
+				Kind:   common_api.MeshService,
+				Labels: &labels,
+			}, nil, nil
+		}
+
+		port := *ref.Port
+		sectionName := fmt.Sprintf("%d", port)
+		portFound := false
+		if ms.Spec != nil {
+			for _, msPort := range ms.Spec.Ports {
+				if msPort.Port == port {
+					portFound = true
+					sectionName = msPort.GetName()
+					break
+				}
+			}
+		}
+		if !portFound {
+			return common_api.TargetRef{
+					Kind:        common_api.MeshService,
+					Labels:      &labels,
+					SectionName: pointer.To(sectionName),
+				},
+				&ResolvedRefsConditionFalse{
+					Reason:  string(gatewayapi.RouteReasonBackendNotFound),
+					Message: fmt.Sprintf("MeshService %q does not have a port %d", namespacedName.String(), port),
+				},
+				nil
+		}
+
+		return common_api.TargetRef{
+			Kind:        common_api.MeshService,
+			Labels:      &labels,
+			SectionName: pointer.To(sectionName),
 		}, nil, nil
 	}
 
-	return unresolvedTargetRef,
-		&ResolvedRefsConditionFalse{
-			Reason:  string(gatewayapi.RouteReasonInvalidKind),
-			Message: "backend reference must be Service",
-		},
-		nil
+	return unresolvedTargetRef, nil, nil
+}
+
+func (r *HTTPRouteReconciler) referenceGrantAllowsBackendRef(
+	ctx context.Context,
+	sourceRouteKind string,
+	routeNamespace string,
+	backendRef backendObjectReferenceDetails,
+) (bool, error) {
+	var grants gatewayapi.ReferenceGrantList
+	if err := r.List(ctx, &grants, kube_client.InNamespace(backendRef.Namespace)); err != nil {
+		return false, err
+	}
+
+	for i := range grants.Items {
+		if backendObjectReferenceMatchesGrant(&grants.Items[i], sourceRouteKind, routeNamespace, backendRef) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

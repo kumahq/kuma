@@ -19,7 +19,6 @@ func ServiceProbes() {
 				ProxyOnly(),
 				ServiceProbe()),
 			).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(DemoClientUniversal("demo-client", meshName, ServiceProbe())).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())

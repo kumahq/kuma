@@ -19,12 +19,23 @@ func NewRequestHeaderModifier(modifier api.HeaderModifier) *RequestHeaderModifie
 }
 
 func (f *RequestHeaderModifierConfigurer) Configure(envoyRoute *envoy_route.Route) error {
-	options, removes := headerModifiers(f.headerModifier)
+	ApplyHeaderModifierToRoute(envoyRoute, f.headerModifier)
+
+	return nil
+}
+
+func ApplyHeaderModifierToRoute(envoyRoute *envoy_route.Route, modifier api.HeaderModifier) {
+	options, removes := headerModifiers(modifier)
 
 	envoyRoute.RequestHeadersToAdd = append(envoyRoute.RequestHeadersToAdd, options...)
 	envoyRoute.RequestHeadersToRemove = append(envoyRoute.RequestHeadersToRemove, removes...)
+}
 
-	return nil
+func ApplyHeaderModifierToWeightedCluster(clusterWeight *envoy_route.WeightedCluster_ClusterWeight, modifier api.HeaderModifier) {
+	options, removes := headerModifiers(modifier)
+
+	clusterWeight.RequestHeadersToAdd = append(clusterWeight.RequestHeadersToAdd, options...)
+	clusterWeight.RequestHeadersToRemove = append(clusterWeight.RequestHeadersToRemove, removes...)
 }
 
 func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOption, []string) {

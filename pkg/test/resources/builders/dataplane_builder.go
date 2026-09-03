@@ -120,33 +120,49 @@ func (d *DataplaneBuilder) WithInboundOfTagsMap(tags map[string]string) *Datapla
 	return d.WithoutInbounds().AddInboundOfTagsMap(tags)
 }
 
+func (d *DataplaneBuilder) WithInboundOfTagsAndProtocol(protocol string, tagsKV ...string) *DataplaneBuilder {
+	return d.WithoutInbounds().AddInboundOfTagsAndProtocol(protocol, tagsKV...)
+}
+
 func (d *DataplaneBuilder) AddInboundOfService(service string) *DataplaneBuilder {
 	return d.AddInboundOfTags(mesh_proto.ServiceTag, service)
 }
 
 func (d *DataplaneBuilder) AddInboundHttpOfService(service string) *DataplaneBuilder {
-	return d.AddInboundOfTags(mesh_proto.ServiceTag, service, mesh_proto.ProtocolTag, "http")
+	return d.AddInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, service)
 }
 
 func (d *DataplaneBuilder) AddInboundOfTags(tags ...string) *DataplaneBuilder {
 	return d.AddInboundOfTagsMap(TagsKVToMap(tags))
 }
 
+// AddInboundOfTagsMap adds an inbound with no protocol set. Passing a kuma.io/protocol tag here
+// builds a legacy Universal inbound: the tag is there for policies to match on, but the protocol
+// field production code reads stays empty, so the inbound is served as TCP.
 func (d *DataplaneBuilder) AddInboundOfTagsMap(tags map[string]string) *DataplaneBuilder {
-	return d.AddInbound(
-		Inbound().
-			WithPort(FirstInboundPort + uint32(len(d.res.Spec.Networking.Inbound))).
-			WithServicePort(FirstInboundServicePort + uint32(len(d.res.Spec.Networking.Inbound))).
-			WithTags(tags),
-	)
+	return d.AddInbound(d.nextInbound().WithTags(tags))
+}
+
+// AddInboundOfTagsAndProtocol adds an inbound that declares its protocol the way a current
+// Dataplane does: on the protocol field, and as a kuma.io/protocol tag for policies to match on.
+func (d *DataplaneBuilder) AddInboundOfTagsAndProtocol(protocol string, tagsKV ...string) *DataplaneBuilder {
+	tags := TagsKVToMap(tagsKV)
+	tags[mesh_proto.ProtocolTag] = protocol
+	return d.AddInbound(d.nextInbound().WithProtocol(protocol).WithTags(tags))
+}
+
+// nextInbound returns an inbound builder with the port pair that follows the inbounds added so far.
+func (d *DataplaneBuilder) nextInbound() *InboundBuilder {
+	return Inbound().
+		WithPort(FirstInboundPort + uint32(len(d.res.Spec.Networking.Inbound))).
+		WithServicePort(FirstInboundServicePort + uint32(len(d.res.Spec.Networking.Inbound)))
 }
 
 func (d *DataplaneBuilder) AddInboundWithName(name string) *DataplaneBuilder {
 	return d.AddInbound(
 		Inbound().
 			WithPort(FirstInboundPort + uint32(len(d.res.Spec.Networking.Inbound))).
-			WithName(name).
-			WithService(name),
+			WithName(name),
 	)
 }
 
@@ -168,10 +184,13 @@ func (d *DataplaneBuilder) AddOutbounds(outbounds []*OutboundBuilder) *Dataplane
 }
 
 func (d *DataplaneBuilder) AddOutboundToService(service string) *DataplaneBuilder {
+	port := FirstOutboundPort + uint32(len(d.res.Spec.Networking.Outbound))
 	d.res.Spec.Networking.Outbound = append(d.res.Spec.Networking.Outbound, &mesh_proto.Dataplane_Networking_Outbound{
-		Port: FirstOutboundPort + uint32(len(d.res.Spec.Networking.Outbound)),
-		Tags: map[string]string{
-			mesh_proto.ServiceTag: service,
+		Port: port,
+		BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+			Kind: "MeshService",
+			Name: service,
+			Port: port,
 		},
 	})
 	return d
@@ -223,20 +242,6 @@ func (d *DataplaneBuilder) WithDelegatedGateway(name string) *DataplaneBuilder {
 	return d
 }
 
-// WithBuiltInGateway builds a BUILTIN gateway dataplane. Kuma no longer accepts
-// BUILTIN on create/update (DataplaneResource.Validate rejects it), so this
-// exists only to construct legacy, pre-upgrade-shaped fixtures for testing
-// backward-compat read paths (e.g. label computation, insight resync).
-func (d *DataplaneBuilder) WithBuiltInGateway(name string) *DataplaneBuilder {
-	d.res.Spec.Networking.Gateway = &mesh_proto.Dataplane_Networking_Gateway{
-		Tags: map[string]string{
-			mesh_proto.ServiceTag: name,
-		},
-		Type: mesh_proto.Dataplane_Networking_Gateway_BUILTIN,
-	}
-	return d
-}
-
 func (d *DataplaneBuilder) AddGatewayTags(tags map[string]string) *DataplaneBuilder {
 	maps.Copy(d.res.Spec.Networking.Gateway.Tags, tags)
 	return d
@@ -255,9 +260,7 @@ type InboundBuilder struct {
 
 func Inbound() *InboundBuilder {
 	return &InboundBuilder{
-		res: &mesh_proto.Dataplane_Networking_Inbound{
-			Tags: map[string]string{},
-		},
+		res: &mesh_proto.Dataplane_Networking_Inbound{},
 	}
 }
 
@@ -282,12 +285,19 @@ func (b *InboundBuilder) WithServicePort(port uint32) *InboundBuilder {
 }
 
 func (b *InboundBuilder) WithTags(tags map[string]string) *InboundBuilder {
-	maps.Copy(b.res.Tags, tags)
+	if protocol, ok := tags[mesh_proto.ProtocolTag]; ok {
+		b.res.Protocol = protocol
+	}
+	return b
+}
+
+func (b *InboundBuilder) WithProtocol(protocol string) *InboundBuilder {
+	b.res.Protocol = protocol
 	return b
 }
 
 func (b *InboundBuilder) WithService(name string) *InboundBuilder {
-	b.WithTags(map[string]string{mesh_proto.ServiceTag: name})
+	// Kept for backward compatibility with older tests that still call it.
 	return b
 }
 
@@ -301,9 +311,7 @@ type OutboundBuilder struct {
 
 func Outbound() *OutboundBuilder {
 	return &OutboundBuilder{
-		res: &mesh_proto.Dataplane_Networking_Outbound{
-			Tags: map[string]string{},
-		},
+		res: &mesh_proto.Dataplane_Networking_Outbound{},
 	}
 }
 
@@ -317,18 +325,7 @@ func (b *OutboundBuilder) WithPort(port uint32) *OutboundBuilder {
 	return b
 }
 
-func (b *OutboundBuilder) WithTags(tags map[string]string) *OutboundBuilder {
-	maps.Copy(b.res.Tags, tags)
-	return b
-}
-
-func (b *OutboundBuilder) WithService(name string) *OutboundBuilder {
-	b.WithTags(map[string]string{mesh_proto.ServiceTag: name})
-	return b
-}
-
 func (b *OutboundBuilder) WithMeshService(name string, port uint32) *OutboundBuilder {
-	b.res.Tags = nil
 	b.res.BackendRef = &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 		Kind: "MeshService",
 		Name: name,
@@ -338,7 +335,6 @@ func (b *OutboundBuilder) WithMeshService(name string, port uint32) *OutboundBui
 }
 
 func (b *OutboundBuilder) WithMeshExternalService(name string, port uint32) *OutboundBuilder {
-	b.res.Tags = nil
 	b.res.BackendRef = &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 		Kind: "MeshExternalService",
 		Name: name,
@@ -348,7 +344,6 @@ func (b *OutboundBuilder) WithMeshExternalService(name string, port uint32) *Out
 }
 
 func (b *OutboundBuilder) WithMeshMultiZoneService(name string, port uint32) *OutboundBuilder {
-	b.res.Tags = nil
 	b.res.BackendRef = &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
 		Kind: "MeshMultiZoneService",
 		Name: name,

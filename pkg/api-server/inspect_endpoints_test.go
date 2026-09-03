@@ -82,36 +82,6 @@ var _ = Describe("Inspect WS", func() {
 
 			Expect(resp.Header.Get("content-type")).To(Equal(given.contentType))
 		},
-		Entry("inspect dataplane", testCase{
-			path:    "/meshes/default/dataplanes/backend-1/policies",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().Build(),
-				builders.Dataplane().
-					WithName("backend-1").
-					WithHttpServices("backend").
-					AddOutboundsToServices("redis", "elastic", "postgres", "web").
-					Build(),
-				builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefMesh()).
-					AddRule(v1alpha1.Allow).
-					Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect dataplane, empty response", testCase{
-			path:    "/meshes/default/dataplanes/backend-1/policies",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane_empty-response.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().Build(),
-				builders.Dataplane().
-					WithName("backend-1").
-					WithServices("backend").
-					AddOutboundsToServices("redis", "elastic", "postgres", "web").
-					Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
 		Entry("inspect meshtrafficpermission", testCase{
 			path:    "/meshes/mesh-1/meshtrafficpermissions/mtp-1/dataplanes",
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_meshtrafficpermission.json")),
@@ -146,55 +116,6 @@ var _ = Describe("Inspect WS", func() {
 			},
 			contentType: restful.MIME_JSON,
 		}),
-		Entry("inspect xds for local zone ingress", testCase{
-			path:    "/zoneingresses/zi-1/xds",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_local_zoneingress.json")),
-			resources: []core_model.Resource{
-				builders.ZoneIngress().
-					WithName("zi-1").
-					WithZone("").
-					WithAdminPort(2201).
-					WithAddress("2.2.2.2").
-					WithPort(8080).
-					WithAdvertisedAddress("3.3.3.3").
-					WithAdvertisedPort(80).
-					Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect xds for zone ingress from another zone", testCase{
-			path:    "/zoneingresses/zi-1/xds",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_remote_zoneingress.json")),
-			resources: []core_model.Resource{
-				builders.ZoneIngress().
-					WithName("zi-1").
-					WithZone("not-local-zone").
-					WithAdminPort(2201).
-					WithAddress("2.2.2.2").
-					WithPort(8080).
-					WithAdvertisedAddress("3.3.3.3").
-					WithAdvertisedPort(80).
-					Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect xds for zone ingress on global", testCase{
-			global:  true,
-			path:    "/zoneingresses/zi-1/xds",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_local_zoneingress.json")),
-			resources: []core_model.Resource{
-				builders.ZoneIngress().
-					WithName("zi-1").
-					WithZone(""). // local zone ingress has empty "zone" field
-					WithAdminPort(2201).
-					WithAddress("2.2.2.2").
-					WithPort(8080).
-					WithAdvertisedAddress("3.3.3.3").
-					WithAdvertisedPort(80).
-					Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
 		Entry("inspect xds for dataplane on global", testCase{
 			global:  true,
 			path:    "/meshes/mesh-1/dataplanes/backend-1/xds",
@@ -202,14 +123,6 @@ var _ = Describe("Inspect WS", func() {
 			resources: []core_model.Resource{
 				builders.Mesh().WithName("mesh-1").Build(),
 				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithAdminPort(3301).WithAddress("1.1.1.1").WithServices("backend").Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect xds for zone egress", testCase{
-			path:    "/zoneegresses/ze-1/xds",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_zoneegress.json")),
-			resources: []core_model.Resource{
-				builders.ZoneEgress().WithName("ze-1").WithAddress("4.4.4.4").WithPort(8080).WithAdminPort(4321).Build(),
 			},
 			contentType: restful.MIME_JSON,
 		}),
@@ -263,17 +176,13 @@ var _ = Describe("Inspect WS", func() {
 		}),
 	)
 
-	It("marshals empty meshgateway inspect rule slices as arrays", func() {
-		toRules := []api_common.Rule{}
-		fromRules := []api_common.FromRule{}
+	It("marshals empty InspectRule slice fields as arrays", func() {
 		inboundRules := []api_common.InboundRulesEntry{}
 		toResourceRules := []api_common.ResourceRule{}
 		warnings := []string{"warning"}
 
 		bytes, err := json.Marshal(api_common.InspectRule{
 			Type:            "MeshRetry",
-			ToRules:         &toRules,
-			FromRules:       &fromRules,
 			InboundRules:    &inboundRules,
 			ToResourceRules: &toResourceRules,
 			Warnings:        &warnings,
@@ -281,8 +190,6 @@ var _ = Describe("Inspect WS", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(bytes).To(MatchJSON(`{
 			"type": "MeshRetry",
-			"toRules": [],
-			"fromRules": [],
 			"inboundRules": [],
 			"toResourceRules": [],
 			"warnings": ["warning"]

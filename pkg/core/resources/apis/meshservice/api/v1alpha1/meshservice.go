@@ -28,8 +28,6 @@ type Port struct {
 	AppProtocol core_meta.Protocol `json:"appProtocol,omitempty"`
 }
 
-const maxNameLength = 63
-
 // MeshService represents a service in the mesh with its connectivity and health information. It defines service endpoints by selecting data plane proxies through labels or direct references, configures service ports and protocols, tracks service availability and health status, and provides automatic VIP assignment and hostname generation for service discovery.
 // +kuma:policy:is_policy=false
 // +kuma:policy:has_status=true
@@ -88,12 +86,11 @@ type MeshServiceStatus struct {
 	DataplaneProxies DataplaneProxies `json:"dataplaneProxies,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=ServiceTag;SpiffeID
+// +kubebuilder:validation:Enum=SpiffeID
 type MeshServiceIdentityType string
 
 const (
-	MeshServiceIdentityServiceTagType = "ServiceTag"
-	MeshServiceIdentitySpiffeIDType   = "SpiffeID"
+	MeshServiceIdentitySpiffeIDType = "SpiffeID"
 )
 
 type MeshServiceIdentity struct {

@@ -3,7 +3,7 @@ info:
   title: Kuma API
   description: Kuma API
   version: v1alpha1
-  x-ref-schema-name: DataplaneOverview
+  x-ref-schema-name: ZoneOverview
 security:
   - BasicAuth: []
   - BearerAuth: []
@@ -137,6 +137,162 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/GetDataplaneXDSConfigResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /config:
+    get:
+      operationId: get-config
+      summary: Get the control plane configuration
+      description: >-
+        Returns the configuration of the control plane, with sensitive values
+        redacted.
+      tags:
+        - System
+      responses:
+        '200':
+          $ref: '#/components/responses/ConfigResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{dataplane}/xds:
+    get:
+      operationId: get-dataplane-xds
+      summary: Get the Envoy config dump of this dataplane
+      description: Proxies the Envoy admin config dump of the DPP.
+      tags:
+        - Inspect
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP.
+          schema:
+            type: string
+        - in: path
+          name: dataplane
+          required: true
+          description: The name of the DPP within the mesh.
+          schema:
+            type: string
+        - in: query
+          name: include_eds
+          required: false
+          description: Include endpoint discovery data in the config dump.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: The Envoy config dump.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{dataplane}/clusters:
+    get:
+      operationId: get-dataplane-clusters
+      summary: Get the Envoy clusters of this dataplane
+      description: >-
+        Proxies the Envoy admin clusters output of the DPP. Returns plain text
+        unless `format=json` is requested.
+      tags:
+        - Inspect
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP.
+          schema:
+            type: string
+        - in: path
+          name: dataplane
+          required: true
+          description: The name of the DPP within the mesh.
+          schema:
+            type: string
+        - in: query
+          name: format
+          required: false
+          description: >-
+            Set to `json` to receive the Envoy admin output as JSON instead of
+            plain text.
+          schema:
+            type: string
+            enum:
+              - json
+      responses:
+        '200':
+          description: The Envoy clusters output.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{dataplane}/stats:
+    get:
+      operationId: get-dataplane-stats
+      summary: Get the Envoy stats of this dataplane
+      description: >-
+        Proxies the Envoy admin stats output of the DPP. Returns plain text
+        unless `format=json` is requested.
+      tags:
+        - Inspect
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP.
+          schema:
+            type: string
+        - in: path
+          name: dataplane
+          required: true
+          description: The name of the DPP within the mesh.
+          schema:
+            type: string
+        - in: query
+          name: format
+          required: false
+          description: >-
+            Set to `json` to receive the Envoy admin output as JSON instead of
+            plain text.
+          schema:
+            type: string
+            enum:
+              - json
+        - in: query
+          name: usedonly
+          required: false
+          description: Only return stats Envoy has actually updated.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: The Envoy stats output.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -516,8 +672,35 @@ paths:
                   - $ref: '#/components/schemas/MeshTimeoutItem'
                   - $ref: '#/components/schemas/MeshTraceItem'
                   - $ref: '#/components/schemas/MeshTrafficPermissionItem'
-                  - $ref: '#/components/schemas/ZoneEgressItem'
-                  - $ref: '#/components/schemas/ZoneIngressItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /_kri/{kri}/_overview:
+    get:
+      operationId: getOverviewByKri
+      summary: Returns the overview of a resource by KRI
+      description: >-
+        Returns the resource merged with its insight. Only resource types that
+        have insights are supported.
+      tags:
+        - KRI
+      parameters:
+        - in: path
+          name: kri
+          schema:
+            type: string
+          required: true
+          description: KRI of the resource
+      responses:
+        '200':
+          description: The resource overview
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/DataplaneOverviewWithMeta'
+                  - $ref: '#/components/schemas/MeshOverviewWithMeta'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -2743,6 +2926,83 @@ paths:
       summary: Creates or Updates Mesh entity
       tags:
         - Mesh
+  /mesh-insights/{name}:
+    get:
+      operationId: getMeshInsight
+      summary: Get the insight of a mesh
+      description: >-
+        Returns the observed state of a mesh, computed by the control plane.
+        Read only.
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshInsightResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Internal'
+      parameters:
+        - in: path
+          name: name
+          required: true
+          description: The name of the mesh to get the insight for.
+          schema:
+            type: string
+  /mesh-insights:
+    get:
+      operationId: getMeshInsightList
+      summary: List mesh insights
+      description: >-
+        Returns the observed state of every mesh, computed by the control plane.
+        Read only.
+      parameters:
+        - in: query
+          name: size
+          required: false
+          description: Size of the page.
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          description: Offset of the page to list.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshInsightListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{name}/_overview:
+    get:
+      operationId: getMeshOverview
+      parameters:
+        - in: path
+          name: name
+          required: true
+          description: The name of the mesh to get the overview for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshOverviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/_overview:
+    get:
+      operationId: getMeshOverviewList
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshOverviewListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/secrets:
     get:
       operationId: getSecretList
@@ -2865,202 +3125,33 @@ paths:
       summary: Creates or Updates Secret entity
       tags:
         - Secret
-  /zoneegresses:
+  /zones/{name}/_overview:
     get:
-      operationId: getZoneEgressList
+      operationId: getZoneOverview
       parameters:
-        - description: offset in the list of entities
-          example: 0
-          in: query
-          name: offset
-          required: false
-          schema:
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneEgressList'
-      summary: Returns a list of ZoneEgress in the mesh.
-      tags:
-        - ZoneEgress
-  /zoneegresses/{name}:
-    delete:
-      operationId: deleteZoneEgress
-      parameters:
-        - description: name of the ZoneEgress
-          in: path
+        - in: path
           name: name
           required: true
+          description: The name of the zone to get the overview for.
           schema:
             type: string
       responses:
         '200':
-          $ref: '#/components/responses/ZoneEgressDeleteSuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Deletes ZoneEgress entity
-      tags:
-        - ZoneEgress
+          $ref: '#/components/responses/GetZoneOverviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /zones/_overview:
     get:
-      operationId: getZoneEgress
-      parameters:
-        - description: name of the ZoneEgress
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
+      operationId: getZoneOverviewList
       responses:
         '200':
-          $ref: '#/components/responses/ZoneEgressItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Returns ZoneEgress entity
-      tags:
-        - ZoneEgress
-    put:
-      operationId: putZoneEgress
-      parameters:
-        - description: name of the ZoneEgress
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ZoneEgressItem'
-        description: Put request
-        required: true
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneEgressCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/ZoneEgressCreateOrUpdateSuccessResponse'
-      summary: Creates or Updates ZoneEgress entity
-      tags:
-        - ZoneEgress
-  /zoneingresses:
-    get:
-      operationId: getZoneIngressList
-      parameters:
-        - description: offset in the list of entities
-          example: 0
-          in: query
-          name: offset
-          required: false
-          schema:
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneIngressList'
-      summary: Returns a list of ZoneIngress in the mesh.
-      tags:
-        - ZoneIngress
-  /zoneingresses/{name}:
-    delete:
-      operationId: deleteZoneIngress
-      parameters:
-        - description: name of the ZoneIngress
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneIngressDeleteSuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Deletes ZoneIngress entity
-      tags:
-        - ZoneIngress
-    get:
-      operationId: getZoneIngress
-      parameters:
-        - description: name of the ZoneIngress
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneIngressItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Returns ZoneIngress entity
-      tags:
-        - ZoneIngress
-    put:
-      operationId: putZoneIngress
-      parameters:
-        - description: name of the ZoneIngress
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ZoneIngressItem'
-        description: Put request
-        required: true
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
-      summary: Creates or Updates ZoneIngress entity
-      tags:
-        - ZoneIngress
+          $ref: '#/components/responses/GetZoneOverviewListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /hostnamegenerators/{name}:
     get:
       operationId: getHostnameGenerator
@@ -4287,7 +4378,6 @@ components:
         - total
         - internal
         - external
-        - gatewayBuiltin
         - gatewayDelegated
       properties:
         internal:
@@ -4303,10 +4393,6 @@ components:
             total:
               type: integer
               example: 5
-        gatewayBuiltin:
-          description: Builtin Gateway services statistics
-          allOf:
-            - $ref: '#/components/schemas/FullStatus'
         gatewayDelegated:
           description: Delegated Gateway services statistics
           allOf:
@@ -4338,15 +4424,10 @@ components:
       description: Dataplanes statistics
       required:
         - standard
-        - gatewayBuiltin
         - gatewayDelegated
       properties:
         standard:
           description: Standard dataplane proxy statistics
-          allOf:
-            - $ref: '#/components/schemas/FullStatus'
-        gatewayBuiltin:
-          description: Builtin Gateway dataplane proxy statistics
           allOf:
             - $ref: '#/components/schemas/FullStatus'
         gatewayDelegated:
@@ -4710,10 +4791,14 @@ components:
           type: string
           example: default
           description: the mesh this resource is part of
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         name:
           type: string
           example: my-resource
           description: the name of the resource
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         kri:
           type: string
           readOnly: true
@@ -4724,20 +4809,87 @@ components:
           type: object
           additionalProperties:
             type: string
+          patternProperties:
+            ^kuma\.io/display-name$:
+              type: string
+              readOnly: true
+              description: >-
+                Display name of the resource. Always computed by the control
+                plane.
+            ^kuma\.io/origin$:
+              type: string
+              readOnly: true
+              description: >-
+                Whether the resource originated on a zone or on global. Always
+                computed by the control plane, and immutable.
+            ^k8s\.kuma\.io/namespace$:
+              type: string
+              readOnly: true
+              description: >-
+                Namespace the object lives in. Always computed by the control
+                plane on Kubernetes.
+            ^kuma\.io/policy-role$:
+              type: string
+              readOnly: true
+              description: >-
+                Role driving namespaced policy matching. Always computed by the
+                control plane for namespaced policies on Kubernetes.
+            ^k8s\.kuma\.io/service-account$:
+              type: string
+              readOnly: true
+              description: >-
+                Service account of the workload. Always computed by the control
+                plane on Kubernetes.
+            ^kuma\.io/workload$:
+              type: string
+              readOnly: true
+              description: >-
+                Workload the resource belongs to. Always computed by the control
+                plane.
+            ^kuma\.io/listener-zoneingress$:
+              type: string
+              readOnly: true
+              description: >-
+                Set to `enabled` when the proxy has a zone ingress listener.
+                Always computed by the control plane.
+            ^kuma\.io/listener-zoneegress$:
+              type: string
+              readOnly: true
+              description: >-
+                Set to `enabled` when the proxy has a zone egress listener.
+                Always computed by the control plane.
+            ^kuma\.io/mesh$:
+              type: string
+              description: Mesh the resource belongs to. Defaults to `default` when unset.
+            ^kuma\.io/zone$:
+              type: string
+              description: >-
+                Zone the resource originated in. Defaults to the name of the
+                zone it was applied on when unset, and is immutable afterwards.
+            ^kuma\.io/env$:
+              type: string
+              description: >-
+                Environment the resource was applied in. Defaults to `universal`
+                or `kubernetes` when unset.
           example:
             k8s.kuma.io/namespace: kuma-system
             kuma.io/display-name: mtp
             kuma.io/mesh: default
             kuma.io/origin: zone
           description: >
-            Labels of the resource. Note: certain system labels are immutable
-            after creation:
+            Labels of the resource.
 
-            - `kuma.io/origin`: Resource origin (zone/global). Immutable.
 
-            - `kuma.io/zone`: Zone where resource originated. Immutable.
+            Labels documented as `readOnly` are always computed by the control
+            plane; a value supplied by the
 
-            - `kuma.io/display-name`: Display name for the resource. Immutable.
+            user is overwritten. The remaining documented labels can be set by
+            the user, and the control plane
+
+            only fills in a default when they are absent. `kuma.io/origin` and
+            `kuma.io/zone` are immutable
+
+            after creation.
     ProxyRule:
       description: a rule that affects the entire proxy
       type: object
@@ -4745,45 +4897,6 @@ components:
         - conf
         - origin
       properties:
-        conf:
-          description: The actual conf generated
-          type: object
-          additionalProperties: true
-          x-go-type: interface{}
-        origin:
-          type: array
-          items:
-            $ref: '#/components/schemas/Meta'
-    RuleMatcher:
-      type: object
-      required:
-        - key
-        - value
-        - not
-      description: A matcher to select which traffic this conf applies to
-      properties:
-        key:
-          type: string
-          description: the key to match against
-          example: kuma.io/service
-        value:
-          type: string
-          description: the value for the key to match against
-          example: my-cool-service
-        not:
-          type: boolean
-          description: whether we check on the absence of this key:value pair
-    Rule:
-      type: object
-      required:
-        - matchers
-        - conf
-        - origin
-      properties:
-        matchers:
-          type: array
-          items:
-            $ref: '#/components/schemas/RuleMatcher'
         conf:
           description: The actual conf generated
           type: object
@@ -4842,18 +4955,6 @@ components:
           x-go-type: map[string]string
         port:
           type: integer
-    FromRule:
-      type: object
-      required:
-        - rules
-        - inbound
-      properties:
-        inbound:
-          $ref: '#/components/schemas/Inbound'
-        rules:
-          type: array
-          items:
-            $ref: '#/components/schemas/Rule'
     InboundRule:
       type: object
       required:
@@ -4919,13 +5020,6 @@ components:
           description: the type of the policy
         proxyRule:
           $ref: '#/components/schemas/ProxyRule'
-        toRules:
-          type: array
-          description: >-
-            a set of rules for the outbounds of this proxy. The field is not set
-            when 'meshService.mode' on Mesh is set to 'Exclusive'.
-          items:
-            $ref: '#/components/schemas/Rule'
         toResourceRules:
           type: array
           description: >-
@@ -4933,17 +5027,9 @@ components:
             MeshService, MeshExternalService, MeshMultiZoneService).
           items:
             $ref: '#/components/schemas/ResourceRule'
-        fromRules:
-          type: array
-          description: a set of rules for each inbound of this proxy
-          items:
-            $ref: '#/components/schemas/FromRule'
         inboundRules:
           type: array
-          description: >-
-            a set of rules for each inbound port of the proxy. When the policy
-            descriptor has 'isFromAsRules' set to true, this field supersedes
-            'fromRules' and should be used instead.
+          description: a set of rules for each inbound port of the proxy.
           items:
             $ref: '#/components/schemas/InboundRulesEntry'
         warnings:
@@ -5019,6 +5105,23 @@ components:
           type: string
         proxyResourceName:
           type: string
+    DataplaneListenerCluster:
+      type: object
+      required:
+        - kri
+        - port
+        - protocol
+        - proxyResourceName
+      properties:
+        kri:
+          type: string
+        port:
+          type: integer
+          x-go-type: int32
+        protocol:
+          type: string
+        proxyResourceName:
+          type: string
     DataplaneListener:
       type: object
       required:
@@ -5026,6 +5129,7 @@ components:
         - type
         - port
         - proxyResourceName
+        - clusters
       properties:
         kri:
           type: string
@@ -5039,6 +5143,13 @@ components:
           x-go-type: int32
         proxyResourceName:
           type: string
+        clusters:
+          description: >-
+            The destinations this listener proxies traffic to, one entry per
+            destination port.
+          type: array
+          items:
+            $ref: '#/components/schemas/DataplaneListenerCluster'
     PolicyOrigin:
       type: object
       required:
@@ -5250,6 +5361,8 @@ components:
             type: string
           type: object
         mesh:
+          maxLength: 253
+          pattern: ^[0-9a-z-_.]*$
           type: string
         modificationTime:
           description: Time at which the resource was updated
@@ -5257,6 +5370,8 @@ components:
           readOnly: true
           type: string
         name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
         networking:
           description: >-
@@ -5319,32 +5434,24 @@ components:
                   description: >-
                     Type of gateway this data plane proxy manages.
 
-                    There are two types: `DELEGATED` and `BUILTIN`. Defaults to
 
-                    `DELEGATED`.
+                    The only supported type is `DELEGATED`: an independently
+                    deployed proxy
 
+                    (e.g., Kong, Contour, etc) that receives inbound traffic
+                    that is not
 
-                    A `DELEGATED` gateway is an independently deployed proxy
-                    (e.g., Kong,
+                    proxied by Kuma, and it sends outbound traffic into the data
+                    plane
 
-                    Contour, etc) that receives inbound traffic that is not
-                    proxied by
-
-                    Kuma, and it sends outbound traffic into the data plane
                     proxy.
-
-
-                    The `BUILTIN` gateway type causes the data plane proxy
-                    itself to be
-
-                    configured as a gateway.
 
 
                     See https://kuma.io/docs/latest/explore/gateway/ for more
                     information.
-                  oneOf:
-                    - type: string
-                    - type: integer
+                  enum:
+                    - DELEGATED
+                  type: string
               type: object
             inbound:
               description: >-
@@ -5507,24 +5614,11 @@ components:
                     type: object
                   state:
                     description: State describes the current state of the listener.
-                    oneOf:
-                      - type: string
-                      - type: integer
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: >-
-                      Tags associated with an application this data plane proxy
-                      is deployed
-
-                      next to, e.g. `kuma.io/service=web`, `version=1.0`. You
-                      can then
-
-                      reference these tags in policies like
-                      MeshTrafficPermission.
-
-                      `kuma.io/service` tag is mandatory.
-                    type: object
+                    enum:
+                      - Ready
+                      - NotReady
+                      - Ignored
+                    type: string
                 type: object
               type: array
             listeners:
@@ -5562,9 +5656,10 @@ components:
                       underlying
 
                       pod and sidecar container.
-                    oneOf:
-                      - type: string
-                      - type: integer
+                    enum:
+                      - Ready
+                      - NotReady
+                    type: string
                   type:
                     description: >-
                       Type determines the role of this listener: ZoneIngress for
@@ -5572,9 +5667,11 @@ components:
 
                       cross-zone traffic or ZoneEgress for outbound external
                       traffic.
-                    oneOf:
-                      - type: string
-                      - type: integer
+                    enum:
+                      - Unspecified
+                      - ZoneIngress
+                      - ZoneEgress
+                    type: string
                 type: object
               type: array
             outbound:
@@ -5598,9 +5695,7 @@ components:
                       Headless Service. Defaults to 127.0.0.1
                     type: string
                   backendRef:
-                    description: |-
-                      BackendRef is a way to target MeshService.
-                      Experimental. Do not use on production yet.
+                    description: BackendRef is a way to target MeshService.
                     properties:
                       kind:
                         description: >-
@@ -5637,17 +5732,6 @@ components:
 
                       port.
                     type: integer
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: >-
-                      Tags of consumed data plane proxies.
-
-                      These tags can then be referenced in `to` section in
-                      policies like
-
-                      MeshAccessLog.
-                    type: object
                 type: object
               type: array
             transparentProxying:
@@ -5675,9 +5759,12 @@ components:
                   description: >-
                     The IP family mode to enable for. Can be "IPv4" or
                     "DualStack".
-                  oneOf:
-                    - type: string
-                    - type: integer
+                  enum:
+                    - UnSpecified
+                    - DualStack
+                    - IPv4
+                    - IPv6
+                  type: string
                 reachableBackends:
                   description: >-
                     Reachable backend via transparent proxy when running with
@@ -5727,122 +5814,12 @@ components:
                   type: integer
               type: object
           type: object
-        probes:
-          description: >-
-            Probes describe a list of endpoints that will be exposed without
-            mTLS.
-
-            This is useful to expose the health endpoints of the application so
-            the
-
-            orchestration system (e.g. Kubernetes) can still health check the
-
-            application.
-
-
-            See
-
-            https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes
-
-            for more information.
-
-            Deprecated: this feature will be removed for Universal; on
-            Kubernetes, it's
-
-            not needed anymore.
-          properties:
-            endpoints:
-              description: List of endpoints to expose without mTLS.
-              items:
-                properties:
-                  inboundPath:
-                    description: >-
-                      Inbound path is a path of the application from which we
-                      expose the
-
-                      endpoint. It is recommended to be as specific as possible.
-                    type: string
-                  inboundPort:
-                    description: >-
-                      Inbound port is a port of the application from which we
-                      expose the
-
-                      endpoint.
-                    type: integer
-                  path:
-                    description: >-
-                      Path is a path on which we expose inbound path on the
-                      probes port.
-                    type: string
-                type: object
-              type: array
-            port:
-              description: >-
-                Port on which the probe endpoints will be exposed. This cannot
-                overlap
-
-                with any other ports.
-              type: integer
-          type: object
         type:
           type: string
       required:
         - type
         - name
         - mesh
-      type: object
-    DataSource_File:
-      properties:
-        file:
-          description: |-
-            Data source is a path to a file.
-            Deprecated, use other sources of a data.
-          type: string
-      type: object
-    DataSource_Inline:
-      properties:
-        inline:
-          description: Data source is inline bytes.
-          format: byte
-          type: string
-      type: object
-    DataSource_InlineString:
-      properties:
-        inlineString:
-          description: Data source is inline string
-          type: string
-      type: object
-    DataSource_Secret:
-      properties:
-        secret:
-          description: Data source is a secret with given Secret key.
-          type: string
-      type: object
-    ProvidedCertificateAuthorityConfig:
-      properties:
-        cert:
-          oneOf:
-            - $ref: '#/components/schemas/DataSource_File'
-            - $ref: '#/components/schemas/DataSource_Inline'
-            - $ref: '#/components/schemas/DataSource_InlineString'
-            - $ref: '#/components/schemas/DataSource_Secret'
-        key:
-          oneOf:
-            - $ref: '#/components/schemas/DataSource_File'
-            - $ref: '#/components/schemas/DataSource_Inline'
-            - $ref: '#/components/schemas/DataSource_InlineString'
-            - $ref: '#/components/schemas/DataSource_Secret'
-      type: object
-    BuiltinCertificateAuthorityConfig:
-      properties:
-        caCert:
-          properties:
-            expiration:
-              type: string
-            rsaBits:
-              format: uint32
-              type: integer
-          type: object
       type: object
     MeshItem:
       properties:
@@ -5864,96 +5841,10 @@ components:
           format: date-time
           readOnly: true
           type: string
-        mtls:
-          description: |-
-            mTLS settings.
-            +optional
-          properties:
-            backends:
-              description: List of available Certificate Authority backends
-              items:
-                description: >-
-                  CertificateAuthorityBackend defines Certificate Authority
-                  backend
-                properties:
-                  conf:
-                    oneOf:
-                      - $ref: >-
-                          #/components/schemas/ProvidedCertificateAuthorityConfig
-                      - $ref: '#/components/schemas/BuiltinCertificateAuthorityConfig'
-                    type: object
-                  dpCert:
-                    description: Dataplane certificate settings
-                    properties:
-                      requestTimeout:
-                        description: >-
-                          Timeout on request to CA for DP certificate generation
-                          and retrieval
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
-                      rotation:
-                        description: Rotation settings
-                        properties:
-                          expiration:
-                            description: >-
-                              Time after which generated certificate for
-                              Dataplane will expire
-                            type: string
-                        type: object
-                    type: object
-                  mode:
-                    description: >-
-                      Mode defines the behaviour of inbound listeners with
-                      regard to traffic
-
-                      encryption
-                    oneOf:
-                      - type: string
-                      - type: integer
-                  name:
-                    description: Name of the backend
-                    type: string
-                  rootChain:
-                    properties:
-                      requestTimeout:
-                        description: >-
-                          Timeout on request for to CA for root certificate
-                          chain.
-
-                          If not specified, defaults to 10s.
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
-                    type: object
-                  type:
-                    description: >-
-                      Type of the backend. Has to be one of the loaded plugins
-                      (Kuma ships with
-
-                      builtin and provided)
-                    type: string
-                type: object
-              type: array
-            enabledBackend:
-              description: Name of the enabled backend
-              type: string
-            skipValidation:
-              description: If enabled, skips CA validation.
-              type: boolean
-          type: object
         name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
-        routing:
-          description: Routing settings of the mesh
-          properties: {}
-          type: object
         skipCreatingInitialPolicies:
           description: >-
             List of policies to skip creating by default when the mesh is
@@ -5995,6 +5886,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -6006,6 +5899,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -6071,6 +5966,17 @@ components:
                                   required:
                                     - type
                                   type: object
+                                  oneOf:
+                                    - properties:
+                                        plain: {}
+                                        type:
+                                          enum:
+                                            - Plain
+                                    - properties:
+                                        json: {}
+                                        type:
+                                          enum:
+                                            - Json
                                 path:
                                   description: Path to a file that logs will be written to
                                   example: /tmp/access.log
@@ -6198,6 +6104,17 @@ components:
                                   required:
                                     - type
                                   type: object
+                                  oneOf:
+                                    - properties:
+                                        plain: {}
+                                        type:
+                                          enum:
+                                            - Plain
+                                    - properties:
+                                        json: {}
+                                        type:
+                                          enum:
+                                            - Json
                               required:
                                 - address
                               type: object
@@ -6210,6 +6127,22 @@ components:
                           required:
                             - type
                           type: object
+                          oneOf:
+                            - properties:
+                                tcp: {}
+                                type:
+                                  enum:
+                                    - Tcp
+                            - properties:
+                                file: {}
+                                type:
+                                  enum:
+                                    - File
+                            - properties:
+                                openTelemetry: {}
+                                type:
+                                  enum:
+                                    - OpenTelemetry
                         type: array
                     type: object
                   matches:
@@ -6288,12 +6221,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -6315,15 +6242,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -6388,6 +6306,17 @@ components:
                                   required:
                                     - type
                                   type: object
+                                  oneOf:
+                                    - properties:
+                                        plain: {}
+                                        type:
+                                          enum:
+                                            - Plain
+                                    - properties:
+                                        json: {}
+                                        type:
+                                          enum:
+                                            - Json
                                 path:
                                   description: Path to a file that logs will be written to
                                   example: /tmp/access.log
@@ -6515,6 +6444,17 @@ components:
                                   required:
                                     - type
                                   type: object
+                                  oneOf:
+                                    - properties:
+                                        plain: {}
+                                        type:
+                                          enum:
+                                            - Plain
+                                    - properties:
+                                        json: {}
+                                        type:
+                                          enum:
+                                            - Json
                               required:
                                 - address
                               type: object
@@ -6527,6 +6467,22 @@ components:
                           required:
                             - type
                           type: object
+                          oneOf:
+                            - properties:
+                                tcp: {}
+                                type:
+                                  enum:
+                                    - Tcp
+                            - properties:
+                                file: {}
+                                type:
+                                  enum:
+                                    - File
+                            - properties:
+                                openTelemetry: {}
+                                type:
+                                  enum:
+                                    - OpenTelemetry
                         type: array
                     type: object
                   targetRef:
@@ -6540,13 +6496,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -6569,15 +6522,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -6592,13 +6536,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshAccessLog resource.
           properties:
@@ -6677,6 +6621,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -6688,6 +6634,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -7185,12 +7133,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -7212,15 +7154,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -7709,13 +7642,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -7738,15 +7668,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -7760,13 +7681,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshFaultInjectionItem:
       type: object
       description: >-
@@ -7790,6 +7711,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -7801,6 +7724,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -7980,12 +7905,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -8007,15 +7926,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -8137,13 +8047,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -8166,15 +8073,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -8188,13 +8086,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshHTTPRouteItem:
       type: object
       description: >-
@@ -8228,6 +8126,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -8239,6 +8139,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -8261,12 +8163,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -8288,15 +8184,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -8328,17 +8215,365 @@ components:
                           properties:
                             backendRefs:
                               items:
-                                description: BackendRef defines where to forward traffic.
                                 properties:
+                                  filters:
+                                    items:
+                                      properties:
+                                        requestHeaderModifier:
+                                          description: >-
+                                            Only one action is supported per header
+                                            name.
+
+                                            Configuration to set or add multiple
+                                            values for a header must use RFC 7230
+
+                                            header value formatting, separating each
+                                            value with a comma.
+                                          properties:
+                                            add:
+                                              items:
+                                                properties:
+                                                  name:
+                                                    maxLength: 256
+                                                    minLength: 1
+                                                    pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                    type: string
+                                                  value:
+                                                    type: string
+                                                required:
+                                                  - name
+                                                  - value
+                                                type: object
+                                              maxItems: 16
+                                              type: array
+                                              x-kubernetes-list-map-keys:
+                                                - name
+                                              x-kubernetes-list-type: map
+                                            remove:
+                                              items:
+                                                type: string
+                                              maxItems: 16
+                                              type: array
+                                            set:
+                                              items:
+                                                properties:
+                                                  name:
+                                                    maxLength: 256
+                                                    minLength: 1
+                                                    pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                    type: string
+                                                  value:
+                                                    type: string
+                                                required:
+                                                  - name
+                                                  - value
+                                                type: object
+                                              maxItems: 16
+                                              type: array
+                                              x-kubernetes-list-map-keys:
+                                                - name
+                                              x-kubernetes-list-type: map
+                                          type: object
+                                        requestMirror:
+                                          properties:
+                                            backendRef:
+                                              description: >-
+                                                BackendRef defines where to forward
+                                                traffic.
+                                              properties:
+                                                kind:
+                                                  description: Kind of the referenced resource
+                                                  enum:
+                                                    - Mesh
+                                                    - MeshService
+                                                    - MeshExternalService
+                                                    - MeshMultiZoneService
+                                                    - MeshHTTPRoute
+                                                    - Dataplane
+                                                  type: string
+                                                labels:
+                                                  additionalProperties:
+                                                    type: string
+                                                  description: >-
+                                                    Labels are used to select referenced
+                                                    real resources and to carry legacy
+
+                                                    service identity when a common TargetRef
+                                                    must still target old
+
+                                                    service-tag based paths.
+                                                  type: object
+                                                port:
+                                                  description: >-
+                                                    Port is only supported when this ref
+                                                    refers to a real MeshService object
+                                                  format: int32
+                                                  type: integer
+                                                sectionName:
+                                                  description: >-
+                                                    SectionName is used to target specific
+                                                    section of resource.
+
+                                                    For example, you can target port from
+                                                    MeshService.ports[] by its name. Only
+                                                    traffic to this port will be affected.
+                                                  type: string
+                                                weight:
+                                                  default: 1
+                                                  maximum: 4294967295
+                                                  minimum: 0
+                                                  type: integer
+                                              required:
+                                                - kind
+                                              type: object
+                                            percentage:
+                                              anyOf:
+                                                - type: integer
+                                                - type: string
+                                              description: >-
+                                                Percentage of requests to mirror. If not
+                                                specified, all requests
+
+                                                to the target cluster will be mirrored.
+                                              x-kubernetes-int-or-string: true
+                                          required:
+                                            - backendRef
+                                          type: object
+                                        requestRedirect:
+                                          properties:
+                                            hostname:
+                                              description: >-
+                                                PreciseHostname is the fully qualified
+                                                domain name of a network host. This
+
+                                                matches the RFC 1123 definition of a
+                                                hostname with 1 notable exception that
+
+                                                numeric IP addresses are not allowed.
+
+
+                                                Note that as per RFC1035 and RFC1123, a
+                                                *label* must consist of lower case
+
+                                                alphanumeric characters or '-', and must
+                                                start and end with an alphanumeric
+
+                                                character. No other punctuation is
+                                                allowed.
+                                              maxLength: 253
+                                              minLength: 1
+                                              pattern: >-
+                                                ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                              type: string
+                                            path:
+                                              description: >-
+                                                Path defines parameters used to modify
+                                                the path of the incoming request.
+
+                                                The modified path is then used to
+                                                construct the location header.
+
+                                                When empty, the request path is used
+                                                as-is.
+                                              properties:
+                                                replaceFullPath:
+                                                  type: string
+                                                replacePrefixMatch:
+                                                  type: string
+                                                type:
+                                                  enum:
+                                                    - ReplaceFullPath
+                                                    - ReplacePrefixMatch
+                                                  type: string
+                                              required:
+                                                - type
+                                              type: object
+                                              oneOf:
+                                                - properties:
+                                                    replaceFullPath: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplaceFullPath
+                                                - properties:
+                                                    replacePrefixMatch: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplacePrefixMatch
+                                            port:
+                                              description: >-
+                                                Port is the port to be used in the value
+                                                of the `Location`
+
+                                                header in the response.
+
+                                                When empty, port (if specified) of the
+                                                request is used.
+                                              format: int32
+                                              maximum: 65535
+                                              minimum: 1
+                                              type: integer
+                                            scheme:
+                                              enum:
+                                                - http
+                                                - https
+                                              type: string
+                                            statusCode:
+                                              default: 302
+                                              description: >-
+                                                StatusCode is the HTTP status code to be
+                                                used in response.
+                                              enum:
+                                                - 301
+                                                - 302
+                                                - 303
+                                                - 307
+                                                - 308
+                                              type: integer
+                                          type: object
+                                        responseHeaderModifier:
+                                          description: >-
+                                            Only one action is supported per header
+                                            name.
+
+                                            Configuration to set or add multiple
+                                            values for a header must use RFC 7230
+
+                                            header value formatting, separating each
+                                            value with a comma.
+                                          properties:
+                                            add:
+                                              items:
+                                                properties:
+                                                  name:
+                                                    maxLength: 256
+                                                    minLength: 1
+                                                    pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                    type: string
+                                                  value:
+                                                    type: string
+                                                required:
+                                                  - name
+                                                  - value
+                                                type: object
+                                              maxItems: 16
+                                              type: array
+                                              x-kubernetes-list-map-keys:
+                                                - name
+                                              x-kubernetes-list-type: map
+                                            remove:
+                                              items:
+                                                type: string
+                                              maxItems: 16
+                                              type: array
+                                            set:
+                                              items:
+                                                properties:
+                                                  name:
+                                                    maxLength: 256
+                                                    minLength: 1
+                                                    pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                    type: string
+                                                  value:
+                                                    type: string
+                                                required:
+                                                  - name
+                                                  - value
+                                                type: object
+                                              maxItems: 16
+                                              type: array
+                                              x-kubernetes-list-map-keys:
+                                                - name
+                                              x-kubernetes-list-type: map
+                                          type: object
+                                        type:
+                                          enum:
+                                            - RequestHeaderModifier
+                                            - ResponseHeaderModifier
+                                            - RequestRedirect
+                                            - URLRewrite
+                                            - RequestMirror
+                                          type: string
+                                        urlRewrite:
+                                          properties:
+                                            hostToBackendHostname:
+                                              description: >-
+                                                HostToBackendHostname is not currently
+                                                supported and must not be set.
+                                              type: boolean
+                                            hostname:
+                                              description: >-
+                                                Hostname is the value to be used to
+                                                replace the host header value during
+                                                forwarding.
+                                              maxLength: 253
+                                              minLength: 1
+                                              pattern: >-
+                                                ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                              type: string
+                                            path:
+                                              description: Path defines a path rewrite.
+                                              properties:
+                                                replaceFullPath:
+                                                  type: string
+                                                replacePrefixMatch:
+                                                  type: string
+                                                type:
+                                                  enum:
+                                                    - ReplaceFullPath
+                                                    - ReplacePrefixMatch
+                                                  type: string
+                                              required:
+                                                - type
+                                              type: object
+                                              oneOf:
+                                                - properties:
+                                                    replaceFullPath: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplaceFullPath
+                                                - properties:
+                                                    replacePrefixMatch: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplacePrefixMatch
+                                          type: object
+                                      required:
+                                        - type
+                                      type: object
+                                      oneOf:
+                                        - properties:
+                                            requestHeaderModifier: {}
+                                            type:
+                                              enum:
+                                                - RequestHeaderModifier
+                                        - properties:
+                                            responseHeaderModifier: {}
+                                            type:
+                                              enum:
+                                                - ResponseHeaderModifier
+                                        - properties:
+                                            requestRedirect: {}
+                                            type:
+                                              enum:
+                                                - RequestRedirect
+                                        - properties:
+                                            type:
+                                              enum:
+                                                - URLRewrite
+                                            urlRewrite: {}
+                                        - properties:
+                                            requestMirror: {}
+                                            type:
+                                              enum:
+                                                - RequestMirror
+                                    type: array
                                   kind:
                                     description: Kind of the referenced resource
                                     enum:
                                       - Mesh
-                                      - MeshSubset
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshServiceSubset
                                       - MeshHTTPRoute
                                       - Dataplane
                                     type: string
@@ -8357,7 +8592,7 @@ components:
                                   port:
                                     description: >-
                                       Port is only supported when this ref
-                                      refers to a real MeshService object
+                                      refers to a MeshService object
                                     format: int32
                                     type: integer
                                   sectionName:
@@ -8369,17 +8604,9 @@ components:
                                       MeshService.ports[] by its name. Only
                                       traffic to this port will be affected.
                                     type: string
-                                  tags:
-                                    additionalProperties:
-                                      type: string
-                                    description: >-
-                                      Tags used to select a subset of proxies by
-                                      tags. Can only be used with kinds
-
-                                      `MeshSubset` and `MeshServiceSubset`
-                                    type: object
                                   weight:
                                     default: 1
+                                    maximum: 4294967295
                                     minimum: 0
                                     type: integer
                                 required:
@@ -8455,11 +8682,9 @@ components:
                                             description: Kind of the referenced resource
                                             enum:
                                               - Mesh
-                                              - MeshSubset
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
-                                              - MeshServiceSubset
                                               - MeshHTTPRoute
                                               - Dataplane
                                             type: string
@@ -8490,17 +8715,9 @@ components:
                                               MeshService.ports[] by its name. Only
                                               traffic to this port will be affected.
                                             type: string
-                                          tags:
-                                            additionalProperties:
-                                              type: string
-                                            description: >-
-                                              Tags used to select a subset of proxies
-                                              by tags. Can only be used with kinds
-
-                                              `MeshSubset` and `MeshServiceSubset`
-                                            type: object
                                           weight:
                                             default: 1
+                                            maximum: 4294967295
                                             minimum: 0
                                             type: integer
                                         required:
@@ -8568,6 +8785,17 @@ components:
                                         required:
                                           - type
                                         type: object
+                                        oneOf:
+                                          - properties:
+                                              replaceFullPath: {}
+                                              type:
+                                                enum:
+                                                  - ReplaceFullPath
+                                          - properties:
+                                              replacePrefixMatch: {}
+                                              type:
+                                                enum:
+                                                  - ReplacePrefixMatch
                                       port:
                                         description: >-
                                           Port is the port to be used in the value
@@ -8694,10 +8922,47 @@ components:
                                         required:
                                           - type
                                         type: object
+                                        oneOf:
+                                          - properties:
+                                              replaceFullPath: {}
+                                              type:
+                                                enum:
+                                                  - ReplaceFullPath
+                                          - properties:
+                                              replacePrefixMatch: {}
+                                              type:
+                                                enum:
+                                                  - ReplacePrefixMatch
                                     type: object
                                 required:
                                   - type
                                 type: object
+                                oneOf:
+                                  - properties:
+                                      requestHeaderModifier: {}
+                                      type:
+                                        enum:
+                                          - RequestHeaderModifier
+                                  - properties:
+                                      responseHeaderModifier: {}
+                                      type:
+                                        enum:
+                                          - ResponseHeaderModifier
+                                  - properties:
+                                      requestRedirect: {}
+                                      type:
+                                        enum:
+                                          - RequestRedirect
+                                  - properties:
+                                      type:
+                                        enum:
+                                          - URLRewrite
+                                      urlRewrite: {}
+                                  - properties:
+                                      requestMirror: {}
+                                      type:
+                                        enum:
+                                          - RequestMirror
                               type: array
                           type: object
                         matches:
@@ -8826,13 +9091,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -8855,15 +9117,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -8878,13 +9131,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshHealthCheckItem:
       type: object
       description: >-
@@ -8908,6 +9161,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -8919,6 +9174,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -8941,12 +9198,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -8968,15 +9219,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -9255,13 +9497,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -9284,15 +9523,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -9306,13 +9536,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshLoadBalancingStrategyItem:
       type: object
       description: >-
@@ -9337,6 +9567,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -9348,6 +9580,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -9372,12 +9606,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -9399,15 +9627,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -9526,13 +9745,38 @@ components:
                                 - Header
                                 - Cookie
                                 - Connection
-                                - SourceIP
                                 - QueryParameter
                                 - FilterState
                               type: string
                           required:
                             - type
                           type: object
+                          oneOf:
+                            - properties:
+                                header: {}
+                                type:
+                                  enum:
+                                    - Header
+                            - properties:
+                                cookie: {}
+                                type:
+                                  enum:
+                                    - Cookie
+                            - properties:
+                                connection: {}
+                                type:
+                                  enum:
+                                    - Connection
+                            - properties:
+                                queryParameter: {}
+                                type:
+                                  enum:
+                                    - QueryParameter
+                            - properties:
+                                filterState: {}
+                                type:
+                                  enum:
+                                    - FilterState
                         type: array
                       loadBalancer:
                         description: >-
@@ -9692,6 +9936,32 @@ components:
                         required:
                           - type
                         type: object
+                        oneOf:
+                          - properties:
+                              roundRobin: {}
+                              type:
+                                enum:
+                                  - RoundRobin
+                          - properties:
+                              leastRequest: {}
+                              type:
+                                enum:
+                                  - LeastRequest
+                          - properties:
+                              ringHash: {}
+                              type:
+                                enum:
+                                  - RingHash
+                          - properties:
+                              random: {}
+                              type:
+                                enum:
+                                  - Random
+                          - properties:
+                              maglev: {}
+                              type:
+                                enum:
+                                  - Maglev
                       localityAwareness:
                         description: >-
                           LocalityAwareness contains configuration for locality
@@ -9703,7 +9973,8 @@ components:
                               priorities when dataplane proxies inside local
                               zone
 
-                              are unavailable
+                              are unavailable. Supported only for
+                              to[].targetRef.kind MeshMultiZoneService.
                             properties:
                               failover:
                                 description: >-
@@ -9847,13 +10118,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -9876,15 +10144,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -9898,13 +10157,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshMetricItem:
       type: object
       description: >-
@@ -9928,6 +10187,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -9939,6 +10200,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -10064,6 +10327,17 @@ components:
                     required:
                       - type
                     type: object
+                    oneOf:
+                      - properties:
+                          prometheus: {}
+                          type:
+                            enum:
+                              - Prometheus
+                      - properties:
+                          openTelemetry: {}
+                          type:
+                            enum:
+                              - OpenTelemetry
                   type: array
                 sidecar:
                   description: Sidecar metrics collection configuration
@@ -10178,12 +10452,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -10205,15 +10473,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -10223,13 +10482,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshMetric resource.
           properties:
@@ -10309,6 +10568,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -10320,6 +10581,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -10400,12 +10663,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -10427,15 +10684,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -10445,13 +10693,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshProxyPatchItem:
       type: object
       description: >-
@@ -10476,6 +10724,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -10487,6 +10737,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -10602,6 +10854,27 @@ components:
                             description: >-
                               Value of xDS resource in YAML format to add or
                               patch.
+
+
+                              Patch merges the value into the matched cluster,
+                              and repeated fields are
+
+                              appended to what the cluster already has. Circuit
+                              breaker thresholds are
+
+                              the exception: Envoy resolves them by routing
+                              priority and ignores every
+
+                              threshold after the first one of a given priority,
+                              so appending would be
+
+                              dead config. They are merged into the existing
+                              threshold with the same
+
+                              priority instead, and a value listing one priority
+                              twice keeps only the
+
+                              first entry.
                             type: string
                         required:
                           - operation
@@ -11079,12 +11352,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -11106,15 +11373,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -11126,13 +11384,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshRateLimitItem:
       type: object
       description: >-
@@ -11157,6 +11415,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -11168,6 +11428,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -11382,12 +11644,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -11409,15 +11665,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -11576,13 +11823,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -11605,15 +11849,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -11627,13 +11862,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshRetryItem:
       type: object
       description: >-
@@ -11657,6 +11892,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -11668,6 +11905,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -11690,12 +11929,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -11717,15 +11950,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -12178,13 +12402,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -12207,15 +12428,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -12229,13 +12441,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshTCPRouteItem:
       type: object
       description: >-
@@ -12268,6 +12480,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -12279,6 +12493,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -12301,12 +12517,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -12328,15 +12538,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -12371,11 +12572,9 @@ components:
                                     description: Kind of the referenced resource
                                     enum:
                                       - Mesh
-                                      - MeshSubset
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshServiceSubset
                                       - MeshHTTPRoute
                                       - Dataplane
                                     type: string
@@ -12406,17 +12605,9 @@ components:
                                       MeshService.ports[] by its name. Only
                                       traffic to this port will be affected.
                                     type: string
-                                  tags:
-                                    additionalProperties:
-                                      type: string
-                                    description: >-
-                                      Tags used to select a subset of proxies by
-                                      tags. Can only be used with kinds
-
-                                      `MeshSubset` and `MeshServiceSubset`
-                                    type: object
                                   weight:
                                     default: 1
+                                    maximum: 4294967295
                                     minimum: 0
                                     type: integer
                                 required:
@@ -12440,13 +12631,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -12469,15 +12657,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -12493,13 +12672,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshTLSItem:
       type: object
       description: >-
@@ -12524,6 +12703,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -12535,6 +12716,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -12621,12 +12804,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -12648,15 +12825,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -12666,13 +12834,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshTimeoutItem:
       type: object
       description: >-
@@ -12697,6 +12865,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -12708,6 +12878,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -12873,12 +13045,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -12900,15 +13066,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -13013,13 +13170,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -13042,15 +13196,6 @@ components:
                           MeshService.ports[] by its name. Only traffic to this
                           port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags used to select a subset of proxies by tags. Can
-                          only be used with kinds
-
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -13064,13 +13209,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshTraceItem:
       type: object
       description: >-
@@ -13095,6 +13240,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -13106,6 +13253,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -13234,6 +13383,22 @@ components:
                     required:
                       - type
                     type: object
+                    oneOf:
+                      - properties:
+                          type:
+                            enum:
+                              - Zipkin
+                          zipkin: {}
+                      - properties:
+                          datadog: {}
+                          type:
+                            enum:
+                              - Datadog
+                      - properties:
+                          openTelemetry: {}
+                          type:
+                            enum:
+                              - OpenTelemetry
                   maxItems: 1
                   type: array
                 sampling:
@@ -13365,12 +13530,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -13392,15 +13551,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -13410,13 +13560,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshTrace resource.
           properties:
@@ -13496,6 +13646,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -13507,6 +13659,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -13703,12 +13857,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -13730,15 +13878,6 @@ components:
                     For example, you can target port from MeshService.ports[] by
                     its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags used to select a subset of proxies by tags. Can only be
-                    used with kinds
-
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -13748,161 +13887,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
-    ZoneEgressItem:
-      properties:
-        creationTime:
-          description: Time at which the resource was created
-          format: date-time
-          readOnly: true
-          type: string
-        kri:
-          description: Kuma Resource Identifier (KRI) of the given resource
-          readOnly: true
-          type: string
-        labels:
-          additionalProperties:
-            type: string
-          type: object
-        modificationTime:
-          description: Time at which the resource was updated
-          format: date-time
-          readOnly: true
-          type: string
-        name:
-          type: string
-        networking:
-          description: Networking defines the address and port of the Egress to listen on.
-          properties:
-            address:
-              description: Address on which inbound listener will be exposed
-              type: string
-            admin:
-              description: Admin contains configuration related to Envoy Admin API
-              properties:
-                port:
-                  description: Port on which Envoy Admin API server will be listening
-                  type: integer
-              type: object
-            port:
-              description: >-
-                Port of the inbound interface that will forward requests to the
-                service.
-              type: integer
-          type: object
-        type:
-          type: string
-        zone:
-          description: |-
-            Zone field contains Zone name where egress is serving, field will be
-            automatically set by Global Kuma CP
-          type: string
-      required:
-        - type
-        - name
-      type: object
-    ZoneIngressItem:
-      properties:
-        availableServices:
-          description: |-
-            AvailableService contains tags that represent unique subset of
-            endpoints
-          items:
-            properties:
-              externalService:
-                description: instance of external service available from the zone
-                type: boolean
-              instances:
-                description: number of instances available for given tags
-                type: integer
-              mesh:
-                description: mesh of the instances available for given tags
-                type: string
-              tags:
-                additionalProperties:
-                  type: string
-                description: tags of the service
-                type: object
-            type: object
-          type: array
-        creationTime:
-          description: Time at which the resource was created
-          format: date-time
-          readOnly: true
-          type: string
-        kri:
-          description: Kuma Resource Identifier (KRI) of the given resource
-          readOnly: true
-          type: string
-        labels:
-          additionalProperties:
-            type: string
-          type: object
-        modificationTime:
-          description: Time at which the resource was updated
-          format: date-time
-          readOnly: true
-          type: string
-        name:
-          type: string
-        networking:
-          description: >-
-            Networking defines the address and port of the Ingress to listen on.
-
-            Additionally publicly advertised address and port could be
-            specified.
-          properties:
-            address:
-              description: Address on which inbound listener will be exposed
-              type: string
-            admin:
-              description: Admin contains configuration related to Envoy Admin API
-              properties:
-                port:
-                  description: Port on which Envoy Admin API server will be listening
-                  type: integer
-              type: object
-            advertisedAddress:
-              description: |-
-                AdvertisedAddress defines IP or DNS name on which ZoneIngress is
-                accessible to other Kuma clusters.
-              type: string
-            advertisedPort:
-              description: >-
-                AdvertisedPort defines port on which ZoneIngress is accessible
-                to other
-
-                Kuma clusters.
-              type: integer
-            port:
-              description: >-
-                Port of the inbound interface that will forward requests to the
-                service.
-              type: integer
-          type: object
-        type:
-          type: string
-        zone:
-          description: >-
-            Zone field contains Zone name where ingress is serving, field will
-            be
-
-            automatically set by Global Kuma CP
-          type: string
-      required:
-        - type
-        - name
-      type: object
-    DataplaneOverviewWithMeta:
-      allOf:
-        - $ref: '#/components/schemas/Meta'
-        - $ref: '#/components/schemas/DataplaneOverview'
+          example: '1901-01-01T00:00:00.000Z'
     DataplaneOverview:
       description: DataplaneOverview defines the projected state of a Dataplane.
       properties:
@@ -13972,33 +13963,24 @@ components:
                       description: >-
                         Type of gateway this data plane proxy manages.
 
-                        There are two types: `DELEGATED` and `BUILTIN`. Defaults
-                        to
 
-                        `DELEGATED`.
+                        The only supported type is `DELEGATED`: an independently
+                        deployed proxy
 
+                        (e.g., Kong, Contour, etc) that receives inbound traffic
+                        that is not
 
-                        A `DELEGATED` gateway is an independently deployed proxy
-                        (e.g., Kong,
+                        proxied by Kuma, and it sends outbound traffic into the
+                        data plane
 
-                        Contour, etc) that receives inbound traffic that is not
-                        proxied by
-
-                        Kuma, and it sends outbound traffic into the data plane
                         proxy.
-
-
-                        The `BUILTIN` gateway type causes the data plane proxy
-                        itself to be
-
-                        configured as a gateway.
 
 
                         See https://kuma.io/docs/latest/explore/gateway/ for
                         more information.
-                      oneOf:
-                        - type: string
-                        - type: integer
+                      enum:
+                        - DELEGATED
+                      type: string
                   type: object
                 inbound:
                   description: >-
@@ -14165,24 +14147,11 @@ components:
                         type: object
                       state:
                         description: State describes the current state of the listener.
-                        oneOf:
-                          - type: string
-                          - type: integer
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags associated with an application this data plane
-                          proxy is deployed
-
-                          next to, e.g. `kuma.io/service=web`, `version=1.0`.
-                          You can then
-
-                          reference these tags in policies like
-                          MeshTrafficPermission.
-
-                          `kuma.io/service` tag is mandatory.
-                        type: object
+                        enum:
+                          - Ready
+                          - NotReady
+                          - Ignored
+                        type: string
                     type: object
                   type: array
                 listeners:
@@ -14221,9 +14190,10 @@ components:
                           the underlying
 
                           pod and sidecar container.
-                        oneOf:
-                          - type: string
-                          - type: integer
+                        enum:
+                          - Ready
+                          - NotReady
+                        type: string
                       type:
                         description: >-
                           Type determines the role of this listener: ZoneIngress
@@ -14231,9 +14201,11 @@ components:
 
                           cross-zone traffic or ZoneEgress for outbound external
                           traffic.
-                        oneOf:
-                          - type: string
-                          - type: integer
+                        enum:
+                          - Unspecified
+                          - ZoneIngress
+                          - ZoneEgress
+                        type: string
                     type: object
                   type: array
                 outbound:
@@ -14259,9 +14231,7 @@ components:
                           Headless Service. Defaults to 127.0.0.1
                         type: string
                       backendRef:
-                        description: |-
-                          BackendRef is a way to target MeshService.
-                          Experimental. Do not use on production yet.
+                        description: BackendRef is a way to target MeshService.
                         properties:
                           kind:
                             description: >-
@@ -14299,17 +14269,6 @@ components:
 
                           port.
                         type: integer
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags of consumed data plane proxies.
-
-                          These tags can then be referenced in `to` section in
-                          policies like
-
-                          MeshAccessLog.
-                        type: object
                     type: object
                   type: array
                 transparentProxying:
@@ -14338,9 +14297,12 @@ components:
                       description: >-
                         The IP family mode to enable for. Can be "IPv4" or
                         "DualStack".
-                      oneOf:
-                        - type: string
-                        - type: integer
+                      enum:
+                        - UnSpecified
+                        - DualStack
+                        - IPv4
+                        - IPv6
+                      type: string
                     reachableBackends:
                       description: >-
                         Reachable backend via transparent proxy when running
@@ -14390,65 +14352,6 @@ components:
                         transparently redirected.
                       type: integer
                   type: object
-              type: object
-            probes:
-              description: >-
-                Probes describe a list of endpoints that will be exposed without
-                mTLS.
-
-                This is useful to expose the health endpoints of the application
-                so the
-
-                orchestration system (e.g. Kubernetes) can still health check
-                the
-
-                application.
-
-
-                See
-
-                https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes
-
-                for more information.
-
-                Deprecated: this feature will be removed for Universal; on
-                Kubernetes, it's
-
-                not needed anymore.
-              properties:
-                endpoints:
-                  description: List of endpoints to expose without mTLS.
-                  items:
-                    properties:
-                      inboundPath:
-                        description: >-
-                          Inbound path is a path of the application from which
-                          we expose the
-
-                          endpoint. It is recommended to be as specific as
-                          possible.
-                        type: string
-                      inboundPort:
-                        description: >-
-                          Inbound port is a port of the application from which
-                          we expose the
-
-                          endpoint.
-                        type: integer
-                      path:
-                        description: >-
-                          Path is a path on which we expose inbound path on the
-                          probes port.
-                        type: string
-                    type: object
-                  type: array
-                port:
-                  description: >-
-                    Port on which the probe endpoints will be exposed. This
-                    cannot overlap
-
-                    with any other ports.
-                  type: integer
               type: object
           type: object
         dataplaneInsight:
@@ -14739,6 +14642,286 @@ components:
               type: array
           type: object
       type: object
+    DataplaneOverviewWithMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - $ref: '#/components/schemas/DataplaneOverview'
+    MeshOverview:
+      description: MeshOverview defines the projected state of a Mesh.
+      properties:
+        mesh:
+          properties:
+            skipCreatingInitialPolicies:
+              description: >-
+                List of policies to skip creating by default when the mesh is
+                created.
+
+                e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to
+                skip all
+
+                policies.
+              items:
+                type: string
+              type: array
+          type: object
+        meshInsight:
+          properties:
+            dataplanes:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            dataplanesByType:
+              properties:
+                gateway:
+                  properties:
+                    offline:
+                      type: integer
+                    online:
+                      type: integer
+                    partiallyDegraded:
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+                gatewayDelegated:
+                  properties:
+                    offline:
+                      type: integer
+                    online:
+                      type: integer
+                    partiallyDegraded:
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+                standard:
+                  properties:
+                    offline:
+                      type: integer
+                    online:
+                      type: integer
+                    partiallyDegraded:
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+              type: object
+            dpVersions:
+              properties:
+                envoy:
+                  additionalProperties:
+                    description: DataplaneStat defines statistic specifically for Dataplane
+                    properties:
+                      offline:
+                        type: integer
+                      online:
+                        type: integer
+                      partiallyDegraded:
+                        type: integer
+                      total:
+                        type: integer
+                    type: object
+                  description: Dataplane stats grouped by Envoy version
+                  type: object
+                kumaDp:
+                  additionalProperties:
+                    description: DataplaneStat defines statistic specifically for Dataplane
+                    properties:
+                      offline:
+                        type: integer
+                      online:
+                        type: integer
+                      partiallyDegraded:
+                        type: integer
+                      total:
+                        type: integer
+                    type: object
+                  description: Dataplane stats grouped by KumaDP version
+                  type: object
+              type: object
+            mTLS:
+              description: mTLS statistics
+              properties:
+                issuedBackends:
+                  additionalProperties:
+                    description: DataplaneStat defines statistic specifically for Dataplane
+                    properties:
+                      offline:
+                        type: integer
+                      online:
+                        type: integer
+                      partiallyDegraded:
+                        type: integer
+                      total:
+                        type: integer
+                    type: object
+                  description: Dataplanes grouped by issued backends.
+                  type: object
+                supportedBackends:
+                  additionalProperties:
+                    description: DataplaneStat defines statistic specifically for Dataplane
+                    properties:
+                      offline:
+                        type: integer
+                      online:
+                        type: integer
+                      partiallyDegraded:
+                        type: integer
+                      total:
+                        type: integer
+                    type: object
+                  description: Dataplanes grouped by supported backends.
+                  type: object
+              type: object
+            resources:
+              additionalProperties:
+                properties:
+                  total:
+                    type: integer
+                type: object
+              type: object
+          type: object
+      type: object
+    MeshOverviewWithMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - $ref: '#/components/schemas/MeshOverview'
+    MeshInsightWithMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - $ref: '#/components/schemas/MeshInsight'
+    MeshInsight:
+      description: MeshInsight defines the observed state of a Mesh.
+      properties:
+        dataplanes:
+          properties:
+            offline:
+              type: integer
+            online:
+              type: integer
+            partiallyDegraded:
+              type: integer
+            total:
+              type: integer
+          type: object
+        dataplanesByType:
+          properties:
+            gateway:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            gatewayDelegated:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            standard:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+          type: object
+        dpVersions:
+          properties:
+            envoy:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplane stats grouped by Envoy version
+              type: object
+            kumaDp:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplane stats grouped by KumaDP version
+              type: object
+          type: object
+        mTLS:
+          description: mTLS statistics
+          properties:
+            issuedBackends:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplanes grouped by issued backends.
+              type: object
+            supportedBackends:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplanes grouped by supported backends.
+              type: object
+          type: object
+        resources:
+          additionalProperties:
+            properties:
+              total:
+                type: integer
+            type: object
+          type: object
+      type: object
     SecretItem:
       properties:
         creationTime:
@@ -14755,6 +14938,8 @@ components:
             type: string
           type: object
         mesh:
+          maxLength: 253
+          pattern: ^[0-9a-z-_.]*$
           type: string
         modificationTime:
           description: Time at which the resource was updated
@@ -14762,6 +14947,8 @@ components:
           readOnly: true
           type: string
         name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
         type:
           type: string
@@ -14769,6 +14956,258 @@ components:
         - type
         - name
         - mesh
+      type: object
+    ZoneOverviewWithMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - $ref: '#/components/schemas/ZoneOverview'
+    ZoneOverview:
+      description: ZoneOverview defines the projected state of a Zone.
+      properties:
+        zone:
+          properties:
+            enabled:
+              description: >-
+                enable allows to turn the zone on/off and exclude the whole zone
+                from
+
+                balancing traffic on it
+              type: boolean
+          type: object
+        zoneInsight:
+          properties:
+            envoyAdminStreams:
+              description: |-
+                Statistics about Envoy Admin Streams
+                Deprecated: use kds_streams instead.
+              properties:
+                clustersGlobalInstanceId:
+                  description: Global instance ID that handles Clusters streams.
+                  type: string
+                configDumpGlobalInstanceId:
+                  description: Global instance ID that handles XDS Config Dump streams.
+                  type: string
+                statsGlobalInstanceId:
+                  description: Global instance ID that handles Stats streams.
+                  type: string
+              type: object
+            healthCheck:
+              properties:
+                time:
+                  description: Time last health check received
+                  properties:
+                    nanos:
+                      type: integer
+                    seconds:
+                      type: integer
+                  type: object
+              type: object
+            kdsStreams:
+              description: >-
+                Information about kds streams that are estabilished between
+                global and zone
+              properties:
+                clusters:
+                  description: Details of stream that handles Clusters stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                configDump:
+                  description: Details of stream that handles XDS Config Dump stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                globalToZone:
+                  description: >-
+                    Details of stream that handles global to zone resource sync
+                    stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                stats:
+                  description: Details of stream that handles Stats stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                zoneToGlobal:
+                  description: >-
+                    Details of stream that handles zone to global resource sync
+                    stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+              type: object
+            subscriptions:
+              description: List of KDS subscriptions created by a given Zone Kuma CP.
+              items:
+                description: >-
+                  KDSSubscription describes a single KDS subscription created by
+                  a Zone to the Global.
+                properties:
+                  authTokenProvided:
+                    description: Indicates if subscription provided auth token
+                    type: boolean
+                  config:
+                    description: Config of Zone Kuma CP
+                    type: string
+                  connectTime:
+                    description: Time when a given Zone connected to the Global.
+                    properties:
+                      nanos:
+                        type: integer
+                      seconds:
+                        type: integer
+                    type: object
+                  disconnectTime:
+                    description: Time when a given Zone disconnected from the Global.
+                    properties:
+                      nanos:
+                        type: integer
+                      seconds:
+                        type: integer
+                    type: object
+                  generation:
+                    description: >-
+                      Generation is an integer number which is periodically
+                      increased by the
+
+                      status sink
+                    type: integer
+                  globalInstanceId:
+                    description: Global CP instance that handled given subscription.
+                    type: string
+                  id:
+                    description: Unique id per KDS subscription.
+                    type: string
+                  status:
+                    description: Status of the KDS subscription.
+                    properties:
+                      lastUpdateTime:
+                        description: >-
+                          Time when status of a given KDS subscription was most
+                          recently updated.
+                        properties:
+                          nanos:
+                            type: integer
+                          seconds:
+                            type: integer
+                        type: object
+                      stat:
+                        additionalProperties:
+                          description: >-
+                            DiscoveryServiceStats defines all stats over a
+                            single xDS service.
+                          properties:
+                            responsesAcknowledged:
+                              description: Number of xDS responses ACKed by the Dataplane.
+                              type: integer
+                            responsesRejected:
+                              description: Number of xDS responses NACKed by the Dataplane.
+                              type: integer
+                            responsesSent:
+                              description: Number of xDS responses sent to the Dataplane.
+                              type: integer
+                          type: object
+                        type: object
+                      total:
+                        description: Total defines an aggregate over individual KDS stats.
+                        properties:
+                          responsesAcknowledged:
+                            description: Number of xDS responses ACKed by the Dataplane.
+                            type: integer
+                          responsesRejected:
+                            description: Number of xDS responses NACKed by the Dataplane.
+                            type: integer
+                          responsesSent:
+                            description: Number of xDS responses sent to the Dataplane.
+                            type: integer
+                        type: object
+                    type: object
+                  version:
+                    description: Version of Zone Kuma CP.
+                    properties:
+                      kumaCp:
+                        description: Version of Zone Kuma CP
+                        properties:
+                          buildDate:
+                            description: Build date of Kuma ControlPlane version
+                            type: string
+                          gitCommit:
+                            description: Git commit of Kuma ControlPlane version
+                            type: string
+                          gitTag:
+                            description: Git tag of Kuma ControlPlane version
+                            type: string
+                          kumaCpGlobalCompatible:
+                            description: >-
+                              True iff this Zone CP version is compatible with
+                              Global CP
+                            type: boolean
+                          version:
+                            description: Version number of Kuma ControlPlane
+                            type: string
+                        type: object
+                    type: object
+                  zoneInstanceId:
+                    description: >-
+                      Zone CP instance that handled the given subscription (This
+                      is the leader at
+
+                      time of connection).
+                    type: string
+                type: object
+              type: array
+          type: object
       type: object
     HostnameGeneratorItem:
       type: object
@@ -14799,6 +15238,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -14853,13 +15294,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     MeshExternalServiceItem:
       type: object
       description: >-
@@ -14884,6 +15325,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -14918,6 +15361,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -15032,44 +15477,140 @@ components:
                     caCert:
                       description: CaCert defines a certificate of CA.
                       properties:
-                        inline:
-                          description: Data source is inline bytes.
-                          format: byte
+                        envVar:
+                          properties:
+                            name:
+                              type: string
+                          required:
+                            - name
+                          type: object
+                        file:
+                          properties:
+                            path:
+                              type: string
+                          required:
+                            - path
+                          type: object
+                        insecureInline:
+                          properties:
+                            value:
+                              type: string
+                          required:
+                            - value
+                          type: object
+                        secretRef:
+                          properties:
+                            kind:
+                              enum:
+                                - Secret
+                              type: string
+                            name:
+                              type: string
+                          required:
+                            - kind
+                            - name
+                          type: object
+                        type:
+                          enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                           type: string
-                        inlineString:
-                          description: Data source is inline string`
-                          type: string
-                        secret:
-                          description: Data source is a secret with given Secret key.
-                          type: string
+                      required:
+                        - type
                       type: object
                     clientCert:
                       description: ClientCert defines a certificate of a client.
                       properties:
-                        inline:
-                          description: Data source is inline bytes.
-                          format: byte
+                        envVar:
+                          properties:
+                            name:
+                              type: string
+                          required:
+                            - name
+                          type: object
+                        file:
+                          properties:
+                            path:
+                              type: string
+                          required:
+                            - path
+                          type: object
+                        insecureInline:
+                          properties:
+                            value:
+                              type: string
+                          required:
+                            - value
+                          type: object
+                        secretRef:
+                          properties:
+                            kind:
+                              enum:
+                                - Secret
+                              type: string
+                            name:
+                              type: string
+                          required:
+                            - kind
+                            - name
+                          type: object
+                        type:
+                          enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                           type: string
-                        inlineString:
-                          description: Data source is inline string`
-                          type: string
-                        secret:
-                          description: Data source is a secret with given Secret key.
-                          type: string
+                      required:
+                        - type
                       type: object
                     clientKey:
                       description: ClientKey defines a client private key.
                       properties:
-                        inline:
-                          description: Data source is inline bytes.
-                          format: byte
+                        envVar:
+                          properties:
+                            name:
+                              type: string
+                          required:
+                            - name
+                          type: object
+                        file:
+                          properties:
+                            path:
+                              type: string
+                          required:
+                            - path
+                          type: object
+                        insecureInline:
+                          properties:
+                            value:
+                              type: string
+                          required:
+                            - value
+                          type: object
+                        secretRef:
+                          properties:
+                            kind:
+                              enum:
+                                - Secret
+                              type: string
+                            name:
+                              type: string
+                          required:
+                            - kind
+                            - name
+                          type: object
+                        type:
+                          enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                           type: string
-                        inlineString:
-                          description: Data source is inline string`
-                          type: string
-                        secret:
-                          description: Data source is a secret with given Secret key.
-                          type: string
+                      required:
+                        - type
                       type: object
                     mode:
                       default: Secured
@@ -15148,13 +15689,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: >-
             Status is the current status of the Kuma MeshExternalService
@@ -15284,6 +15825,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -15295,6 +15838,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -15482,6 +16027,22 @@ components:
               required:
                 - type
               type: object
+              oneOf:
+                - properties:
+                    bundled: {}
+                    type:
+                      enum:
+                        - Bundled
+                - properties:
+                    spire: {}
+                    type:
+                      enum:
+                        - Spire
+                - properties:
+                    extension: {}
+                    type:
+                      enum:
+                        - Extension
             selector:
               properties:
                 dataplane:
@@ -15505,13 +16066,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshIdentity resource.
           properties:
@@ -15597,6 +16158,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -15631,6 +16194,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -15680,13 +16245,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: >-
             Status is the current status of the Kuma MeshMultiZoneService
@@ -15887,6 +16452,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -15898,6 +16465,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -16041,13 +16610,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: >-
             Status is the current status of the Kuma MeshOpenTelemetryBackend
@@ -16130,6 +16699,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -16164,6 +16735,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -16177,7 +16750,6 @@ components:
                 properties:
                   type:
                     enum:
-                      - ServiceTag
                       - SpiffeID
                     type: string
                   value:
@@ -16246,13 +16818,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshService resource.
           properties:
@@ -16402,6 +16974,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -16413,6 +16987,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -16463,13 +17039,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshTrust resource.
           properties:
@@ -16505,6 +17081,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -16516,6 +17094,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -16543,13 +17123,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
     WorkloadItem:
       type: object
       description: >-
@@ -16576,6 +17156,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -16587,6 +17169,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -16600,13 +17184,13 @@ components:
           type: string
           description: Time at which the resource was created
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma Workload resource.
           properties:
@@ -16639,6 +17223,13 @@ components:
           type: object
           readOnly: true
   responses:
+    ConfigResponse:
+      description: The control plane configuration.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
     IndexResponse:
       description: A response for the index endpoint
       content:
@@ -17612,6 +18203,50 @@ components:
                 type: number
             type: object
       description: List
+    GetMeshInsightResponse:
+      description: A response containing the insight of a mesh.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshInsightWithMeta'
+    GetMeshInsightListResponse:
+      description: A response containing a list of mesh insights.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 200
+              next:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshInsightWithMeta'
+    GetMeshOverviewResponse:
+      description: A response containing the overview of a mesh.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshOverviewWithMeta'
+    GetMeshOverviewListResponse:
+      description: A response containing a list of mesh overviews.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 200
+              next:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshOverviewWithMeta'
     SecretCreateOrUpdateSuccessResponse:
       content:
         application/json:
@@ -17659,100 +18294,28 @@ components:
                 type: number
             type: object
       description: List
-    ZoneEgressCreateOrUpdateSuccessResponse:
+    GetZoneOverviewResponse:
+      description: A response containing the overview of a zone.
       content:
         application/json:
           schema:
-            properties:
-              warnings:
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-                readOnly: true
-                type: array
-            type: object
-      description: Successful response
-    ZoneEgressDeleteSuccessResponse:
+            $ref: '#/components/schemas/ZoneOverviewWithMeta'
+    GetZoneOverviewListResponse:
+      description: A response containing a list of zone overviews.
       content:
         application/json:
           schema:
             type: object
-      description: Successful response
-    ZoneEgressItem:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ZoneEgressItem'
-      description: Successful response
-    ZoneEgressList:
-      content:
-        application/json:
-          schema:
             properties:
-              items:
-                items:
-                  $ref: '#/components/schemas/ZoneEgressItem'
-                type: array
-              next:
-                description: URL to the next page
-                type: string
               total:
-                description: The total number of entities
-                type: number
-            type: object
-      description: List
-    ZoneIngressCreateOrUpdateSuccessResponse:
-      content:
-        application/json:
-          schema:
-            properties:
-              warnings:
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-                readOnly: true
-                type: array
-            type: object
-      description: Successful response
-    ZoneIngressDeleteSuccessResponse:
-      content:
-        application/json:
-          schema:
-            type: object
-      description: Successful response
-    ZoneIngressItem:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ZoneIngressItem'
-      description: Successful response
-    ZoneIngressList:
-      content:
-        application/json:
-          schema:
-            properties:
-              items:
-                items:
-                  $ref: '#/components/schemas/ZoneIngressItem'
-                type: array
+                type: integer
+                example: 200
               next:
-                description: URL to the next page
                 type: string
-              total:
-                description: The total number of entities
-                type: number
-            type: object
-      description: List
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ZoneOverviewWithMeta'
     HostnameGeneratorItem:
       description: Successful response
       content:
@@ -18194,11 +18757,6 @@ components:
             online: 2
             offline: 1
             partiallyDegraded: 1
-          gatewayBuiltin:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
           internalByStatus:
             total: 4
             online: 2
@@ -18216,11 +18774,6 @@ components:
             total: 1
         dataplanes:
           standard:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
-          gatewayBuiltin:
             total: 4
             online: 2
             offline: 1

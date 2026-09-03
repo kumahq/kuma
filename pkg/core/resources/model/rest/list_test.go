@@ -27,16 +27,12 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				 {
 					"type": "Mesh",
 					"name": "one",
-					"mtls": {
-					  "enabledBackend": "ca-1"
-					}
+					"skipCreatingInitialPolicies": ["MeshRetry"]
 				 },
 				 {
 					"type": "Mesh",
 					"name": "two",
-					"mtls": {
-					  "enabledBackend": "ca-2"
-					}
+					"skipCreatingInitialPolicies": ["MeshTimeout"]
 				 }
 				],
 				"next": "http://localhost:5681/meshes?offset=1"
@@ -62,18 +58,14 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				Name: "one",
 			}))
 			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{
-				Mtls: &mesh_proto.Mesh_Mtls{
-					EnabledBackend: "ca-1",
-				},
+				SkipCreatingInitialPolicies: []string{"MeshRetry"},
 			}))
 			Expect(rs.Items[1].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
 				Type: "Mesh",
 				Name: "two",
 			}))
 			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{
-				Mtls: &mesh_proto.Mesh_Mtls{
-					EnabledBackend: "ca-2",
-				},
+				SkipCreatingInitialPolicies: []string{"MeshTimeout"},
 			}))
 			Expect(*rs.Next).To(Equal("http://localhost:5681/meshes?offset=1"))
 		})
@@ -197,7 +189,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				Name: "mtp1",
 			}))
 			Expect(rs.Items[0].GetSpec()).To(Equal(&policies_api.MeshTrafficPermission{
-				TargetRef: &common_api.TargetRef{
+				TargetRef: &common_api.TopLevelTargetRef{
 					Kind: "MeshService",
 					Labels: pointer.To(map[string]string{
 						mesh_proto.DisplayName: "backend",
@@ -240,7 +232,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				Name: "mtp2",
 			}))
 			Expect(rs.Items[1].GetSpec()).To(Equal(&policies_api.MeshTrafficPermission{
-				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
+				TargetRef: &common_api.TopLevelTargetRef{Kind: "Mesh"},
 				Rules: &[]policies_api.Rule{
 					{
 						Default: policies_api.RuleConf{

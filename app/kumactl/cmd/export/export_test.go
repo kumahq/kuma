@@ -19,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/resources"
 	test_kumactl "github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
 	"github.com/kumahq/kuma/v3/pkg/api-server/mappers"
-	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -103,9 +102,6 @@ var _ = Describe("kumactl export", func() {
 				samples.SampleSigningKeyGlobalSecret(),
 				samples.MeshAccessLogWithFileBackend(),
 				samples.MeshTimeoutInCustomNamespace(),
-				samples.MeshDefaultBuilder().WithName("mesh-with-mtls").WithBuiltinMTLSBackend("ca-1").Build(),
-				samples.SampleSecretBuilder().WithMesh("mesh-with-mtls").WithName(core_system.BuiltinCertSecretName("mesh-with-mtls", "ca-1")).Build(),
-				samples.SampleSecretBuilder().WithMesh("mesh-with-mtls").WithName(core_system.BuiltinKeySecretName("mesh-with-mtls", "ca-1")).Build(),
 			},
 			args: []string{
 				"--format=kubernetes",
@@ -121,9 +117,6 @@ var _ = Describe("kumactl export", func() {
 				samples.MeshAccessLogWithFileBackend(),
 				samples.MeshTimeoutInCustomNamespace(),
 				samples.MeshAccessLogWithZoneOriginLabel(),
-				samples.MeshDefaultBuilder().WithName("mesh-with-mtls").WithBuiltinMTLSBackend("ca-1").Build(),
-				samples.SampleSecretBuilder().WithMesh("mesh-with-mtls").WithName(core_system.BuiltinCertSecretName("mesh-with-mtls", "ca-1")).Build(),
-				samples.SampleSecretBuilder().WithMesh("mesh-with-mtls").WithName(core_system.BuiltinKeySecretName("mesh-with-mtls", "ca-1")).Build(),
 			},
 			args: []string{
 				"--format=universal",
@@ -227,6 +220,7 @@ type staticResourcesListClient struct{}
 var _ client.ResourcesListClient = &staticResourcesListClient{}
 
 func (s staticResourcesListClient) List(ctx context.Context) (api_types.ResourceTypeDescriptionList, error) {
-	defs := registry.Global().ObjectDescriptors()
+	// match the real /_resources endpoint, which only lists types exposed over REST
+	defs := registry.Global().ObjectDescriptors(model.HasWsEnabled())
 	return mappers.MapResourceTypeDescription(defs, false, true), nil
 }

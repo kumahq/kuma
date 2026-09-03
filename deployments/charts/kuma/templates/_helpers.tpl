@@ -57,6 +57,11 @@ Create chart name and version as used by the chart label.
 {{ printf "%s" (default $defaultSvcName .Values.controlPlane.service.name) }}
 {{- end }}
 
+{{- define "kuma.controlPlane.globalZoneSync.serviceName" -}}
+{{- $defaultSvcName := printf "%s-global-zone-sync" (include "kuma.name" .) -}}
+{{ printf "%s" (default $defaultSvcName .Values.controlPlane.globalZoneSyncService.name) }}
+{{- end }}
+
 {{/*
 Common labels
 */}}
@@ -213,7 +218,7 @@ env:
 - name: KUMA_DP_SERVER_HDS_ENABLED
   value: "false"
 - name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
-  value: {{ .Values.controlPlane.madsServer.enabled | quote }}
+  value: "false"
 - name: KUMA_API_SERVER_READ_ONLY
   value: "true"
 - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
@@ -268,10 +273,6 @@ env:
 - name: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
   value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.key
 {{- end }}
-{{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
-- name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-  value: /var/run/secrets/kuma.io/api-server-client-certs/
-{{- end }}
 {{- if and (eq .Values.controlPlane.mode "zone") (or .Values.controlPlane.tls.kdsZoneClient.secretName .Values.controlPlane.tls.kdsZoneClient.create) }}
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
@@ -296,10 +297,6 @@ env:
 {{- end }}
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
-{{- if .Values.dataPlane.features.unifiedResourceNaming }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
-  value: "true"
-{{- end }}
 {{- end }}
 
 {{- define "kuma.controlPlane.tls.general.caSecretName" -}}
@@ -320,6 +317,8 @@ env:
   value: "{{ .Values.postgres.port }}"
 - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
   value: {{ .Values.controlPlane.defaults.skipMeshCreation | quote }}
+- name: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
+  value: {{ .Values.controlPlane.madsServer.enabled | quote }}
 {{ if and (eq .Values.controlPlane.mode "zone") .Values.controlPlane.tls.general.secretName }}
 - name: KUMA_GENERAL_TLS_CERT_FILE
   value: /var/run/secrets/kuma.io/tls-cert/tls.crt
@@ -349,10 +348,6 @@ env:
   value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.crt
 - name: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
   value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.key
-{{- end }}
-{{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
-- name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-  value: /var/run/secrets/kuma.io/api-server-client-certs/
 {{- end }}
 - name: KUMA_STORE_POSTGRES_TLS_MODE
   value: {{ .Values.postgres.tls.mode }}

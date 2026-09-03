@@ -263,15 +263,15 @@ var _ = Describe("Dataplane_Networking", func() {
 })
 
 var _ = Describe("Dataplane_Networking_Inbound", func() {
-	Describe("GetProtocolFallback()", func() {
+	Describe("GetProtocol()", func() {
 		type testCase struct {
 			inbound  *Dataplane_Networking_Inbound
 			expected string
 		}
 
-		DescribeTable("should return protocol from field, falling back to the tag",
+		DescribeTable("should return protocol from field",
 			func(given testCase) {
-				Expect(given.inbound.GetProtocolFallback()).To(Equal(given.expected))
+				Expect(given.inbound.GetProtocol()).To(Equal(given.expected))
 			},
 			Entry("inbound is `nil`", testCase{
 				inbound:  nil,
@@ -287,19 +287,6 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 				},
 				expected: "grpc",
 			}),
-			Entry("legacy inbound carries the protocol only as a tag", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{ProtocolTag: "http"},
-				},
-				expected: "http",
-			}),
-			Entry("protocol field wins over the tag", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Protocol: "grpc",
-					Tags:     map[string]string{ProtocolTag: "http"},
-				},
-				expected: "grpc",
-			}),
 		)
 	})
 
@@ -310,7 +297,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 			expected string
 		}
 
-		DescribeTable("should return the legacy inbound tag, falling back to the Dataplane's service",
+		DescribeTable("should return the provided fallback",
 			func(given testCase) {
 				Expect(given.inbound.GetServiceFallback(given.fallback)).To(Equal(given.expected))
 			},
@@ -319,31 +306,15 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 				fallback: "backend",
 				expected: "backend",
 			}),
-			Entry("inbound carries no tags", testCase{
+			Entry("inbound carries no service", testCase{
 				inbound:  &Dataplane_Networking_Inbound{},
 				fallback: "backend",
 				expected: "backend",
 			}),
-			Entry("inbound carries an empty service tag", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{ServiceTag: ""},
-				},
-				fallback: "backend",
-				expected: "backend",
-			}),
-			Entry("legacy inbound declares its own service", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{ServiceTag: "backend-api"},
-				},
-				fallback: "backend",
-				expected: "backend-api",
-			}),
-			Entry("legacy inbound on a Dataplane with no service at all", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{ServiceTag: "backend-api"},
-				},
+			Entry("empty fallback remains empty", testCase{
+				inbound:  &Dataplane_Networking_Inbound{},
 				fallback: "",
-				expected: "backend-api",
+				expected: "",
 			}),
 		)
 	})
@@ -356,7 +327,6 @@ var _ = Describe("Dataplane classification", func() {
 				Networking: &Dataplane_Networking{},
 			}
 			Expect(dp.IsDelegatedGateway()).To(BeFalse())
-			Expect(dp.IsBuiltinGateway()).To(BeFalse())
 		})
 	})
 
@@ -368,7 +338,6 @@ var _ = Describe("Dataplane classification", func() {
 				},
 			}
 			Expect(gw.IsDelegatedGateway()).To(BeTrue())
-			Expect(gw.IsBuiltinGateway()).To(BeFalse())
 		})
 	})
 
@@ -382,21 +351,6 @@ var _ = Describe("Dataplane classification", func() {
 				},
 			}
 			Expect(gw.IsDelegatedGateway()).To(BeTrue())
-			Expect(gw.IsBuiltinGateway()).To(BeFalse())
-		})
-	})
-
-	Describe("with builtin gateway networking", func() {
-		It("should be a gateway", func() {
-			gw := Dataplane{
-				Networking: &Dataplane_Networking{
-					Gateway: &Dataplane_Networking_Gateway{
-						Type: Dataplane_Networking_Gateway_BUILTIN,
-					},
-				},
-			}
-			Expect(gw.IsDelegatedGateway()).To(BeFalse())
-			Expect(gw.IsBuiltinGateway()).To(BeTrue())
 		})
 	})
 })

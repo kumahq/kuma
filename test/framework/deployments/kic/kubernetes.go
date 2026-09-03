@@ -69,6 +69,12 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		"--set", "controller.ingressController.ingressClass="+t.name,
 		"--set", "controller.podLabels.kuma\\.io/mesh="+t.mesh,
 		"--set", "gateway.podLabels.kuma\\.io/mesh="+t.mesh,
+		// KONG_UPSTREAM_KEEPALIVE_POOL_SIZE=0 makes every proxied request open a
+		// fresh upstream connection. Without it Kong reuses a handful of pooled
+		// connections, and policies the sidecar applies per connection (TCP
+		// proxy load balancing) are sampled once per pool entry instead of once
+		// per request.
+		"--set", "gateway.env.upstream_keepalive_pool_size=0",
 		chartPath,
 	)
 	if err != nil {

@@ -24,7 +24,6 @@ func MeshInsight() *MeshInsightBuilder {
 			Spec: &mesh_proto.MeshInsight{
 				DataplanesByType: &mesh_proto.MeshInsight_DataplanesByType{
 					Standard:         &mesh_proto.MeshInsight_DataplaneStat{},
-					GatewayBuiltin:   &mesh_proto.MeshInsight_DataplaneStat{},
 					GatewayDelegated: &mesh_proto.MeshInsight_DataplaneStat{},
 				},
 				Resources: map[string]*mesh_proto.MeshInsight_ResourceStat{},
@@ -60,19 +59,6 @@ func (mi *MeshInsightBuilder) WithStandardDataplaneStats(
 	mi.res.Spec.DataplanesByType.Standard.Offline = offline
 	mi.res.Spec.DataplanesByType.Standard.PartiallyDegraded = partiallyDegraded
 	mi.res.Spec.DataplanesByType.Standard.Total = total
-	return mi
-}
-
-func (mi *MeshInsightBuilder) WithBuiltinGatewayDataplaneStats(
-	online uint32,
-	offline uint32,
-	partiallyDegraded uint32,
-	total uint32,
-) *MeshInsightBuilder {
-	mi.res.Spec.DataplanesByType.GatewayBuiltin.Online = online
-	mi.res.Spec.DataplanesByType.GatewayBuiltin.Offline = offline
-	mi.res.Spec.DataplanesByType.GatewayBuiltin.PartiallyDegraded = partiallyDegraded
-	mi.res.Spec.DataplanesByType.GatewayBuiltin.Total = total
 	return mi
 }
 

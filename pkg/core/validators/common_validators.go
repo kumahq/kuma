@@ -9,6 +9,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/shopspring/decimal"
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -292,6 +293,22 @@ func ValidateLength(path PathBuilder, maxLength int, v string) ValidationError {
 	return err
 }
 
+// ValidateRFC1035Name checks that the name is a valid RFC 1035 label. Names of
+// resources that are rendered into DNS hostnames by HostnameGenerator have to
+// conform to it. An empty name is skipped, it's rejected by mesh.ValidateMeta
+// which every resource goes through before Validate() is called.
+func ValidateRFC1035Name(path PathBuilder, name string) ValidationError {
+	var err ValidationError
+	if name == "" {
+		return err
+	}
+	if violations := apimachineryvalidation.NameIsDNS1035Label(name, false); len(violations) > 0 {
+		err.AddViolationAt(path, strings.Join(violations, ", "))
+	}
+
+	return err
+}
+
 // ValidateBackendResourceRef checks that a BackendResourceRef has a valid kind and labels set.
 func ValidateBackendResourceRef(ref *common_api.BackendResourceRef) ValidationError {
 	var verr ValidationError
@@ -344,6 +361,9 @@ func ValidateBackendRef(b common_api.BackendRef) ValidationError {
 	verr := OK()
 	if b.Kind == common_api.MeshMultiZoneService && b.Port == nil {
 		verr.AddViolationAt(RootedAt("port"), MustBeDefined+" with kind MeshMultiZoneService")
+	}
+	if b.Weight != nil && *b.Weight > math.MaxUint32 {
+		verr.AddViolationAt(RootedAt("weight"), fmt.Sprintf(HasToBeInRangeFormat, 0, uint64(math.MaxUint32)))
 	}
 	return verr
 }

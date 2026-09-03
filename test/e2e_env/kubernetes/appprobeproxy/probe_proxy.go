@@ -26,15 +26,19 @@ import (
 
 func ApplicationProbeProxy() {
 	meshName := "application-probe-proxy"
+	identityName := "application-probe-proxy-identity"
 	namespace := "application-probe-proxy"
 	httpAppName := "http-test-server"
 	gRPCAppName := "grpc-test-server"
 	tcpAppName := "tcp-test-server"
 
+	trustDomain := fmt.Sprintf("%s.default.mesh.local", meshName)
+
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshKubernetes(meshName)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
+			Install(MeshKubernetes(meshName)).
+			Install(MeshIdentityBundledKubernetes(meshName, identityName)).
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(meshName, trustDomain)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
 				testserver.Install(
@@ -98,7 +102,6 @@ func ApplicationProbeProxy() {
 
 			probeProxyPortAnno := httpPod.Annotations[metadata.KumaApplicationProbeProxyPortAnnotation]
 			g.Expect(probeProxyPortAnno).ToNot(BeEmpty())
-			g.Expect(httpPod.Annotations[metadata.KumaVirtualProbesPortAnnotation]).ToNot(BeEmpty())
 
 			container := getAppContainer(httpPod, httpAppName)
 			g.Expect(container).ToNot(BeNil())
@@ -149,13 +152,11 @@ func ApplicationProbeProxy() {
 					dpName, "--mesh", meshName, "-oyaml")
 
 				g.Expect(err).ToNot(HaveOccurred(), "failed to get dataplane '%s'", dpName)
+				g.Expect(dpYAML).ToNot(ContainSubstring("probes:"), "legacy probes field should be absent")
 				dpRes, err := rest.YAML.UnmarshalCore([]byte(dpYAML))
 				g.Expect(err).ToNot(HaveOccurred(), "invalid dataplane object")
-				dp, ok := dpRes.(*core_mesh.DataplaneResource)
+				_, ok := dpRes.(*core_mesh.DataplaneResource)
 				g.Expect(ok).To(BeTrue(), fmt.Errorf("invalid dataplane object type: %t", dpRes))
-
-				// With application probe proxy enabled (default), the Probes field (used for virtual probes) should be nil
-				g.Expect(dp.Spec.Probes).To(BeNil(), "Probes field should be nil when application probe proxy is enabled")
 			}
 
 			checkDPProbes(httpAppPodName)
@@ -164,15 +165,14 @@ func ApplicationProbeProxy() {
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	It("should fallback to virtual probes when application probe proxy is disabled", func() {
+	It("should leave probes untouched when application probe proxy is disabled", func() {
 		By("patch the application pod and disabling application probe proxy using annotation")
 		kubectlOptsApps := kubernetes.Cluster.GetKubectlOptions(namespace)
 		nextTemplateHash := patchAndWait(kubernetes.Cluster.GetTesting(), Default, kubernetes.Cluster, kubectlOptsApps, httpAppName,
 			`[{"op": "add", "path": "/spec/template/metadata/annotations", "value": {}},{"op":"add", "path":"/spec/template/metadata/annotations/kuma.io~1application-probe-proxy-port", "value":"0"}]`)
 
-		By("checking virtual probes annotations on the new pod")
+		By("checking probes on the new pod are left untouched")
 		var nextRevPodName string
-		// assert the Pod has application probe proxy disabled and virtual probes replaces
 		Eventually(func(g Gomega) {
 			httpPods, err := k8s.ListPodsContextE(kubernetes.Cluster.GetTesting(), context.Background(), kubectlOptsApps,
 				metav1.ListOptions{LabelSelector: "pod-template-hash=" + nextTemplateHash})
@@ -182,16 +182,13 @@ func ApplicationProbeProxy() {
 
 			httpPod := httpPods[0]
 			nextRevPodName = httpPod.Name
-			virtualProbesPortAnno := httpPod.Annotations[metadata.KumaVirtualProbesPortAnnotation]
-			g.Expect(virtualProbesPortAnno).To(Equal("9000"))
+			g.Expect(httpPod.Annotations[metadata.KumaApplicationProbeProxyPortAnnotation]).To(Equal("0"))
 
 			container := getAppContainer(&httpPod, httpAppName)
 			g.Expect(container).ToNot(BeNil())
 			g.Expect(container.ReadinessProbe.HTTPGet).ToNot(BeNil())
-
-			port := intstr.FromString(virtualProbesPortAnno)
-			g.Expect(container.ReadinessProbe.HTTPGet.Port.IntValue()).To(Equal(port.IntValue()))
-			g.Expect(container.ReadinessProbe.HTTPGet.Path).To(Equal("/80/probes?type=readiness"))
+			g.Expect(container.ReadinessProbe.HTTPGet.Port.IntValue()).To(Equal(80))
+			g.Expect(container.ReadinessProbe.HTTPGet.Path).To(Equal("/probes?type=readiness"))
 		}, "30s", "1s").Should(Succeed())
 
 		By("making sure the new pod is ready")

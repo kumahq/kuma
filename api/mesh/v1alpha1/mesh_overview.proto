@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+import "api/mesh/options.proto";
+import "api/mesh/v1alpha1/mesh.proto";
+import "api/mesh/v1alpha1/mesh_insight.proto";
+import "validate/validate.proto";
+
+option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1";
+
+// MeshOverview defines the projected state of a Mesh.
+message MeshOverview {
+  option (kuma.mesh.resource).name = "MeshOverviewResource";
+  option (kuma.mesh.resource).type = "MeshOverview";
+  option (kuma.mesh.resource).global = true;
+  option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).skip_registration = true;
+  option (kuma.mesh.resource).skip_kubernetes_wrappers = true;
+  option (kuma.mesh.resource).policy_matching_exempt = true;
+
+  Mesh mesh = 1 [(validate.rules).message.required = true];
+
+  MeshInsight mesh_insight = 2;
+}

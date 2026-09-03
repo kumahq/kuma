@@ -1,6 +1,7 @@
 package strictinbounds
 
 import (
+	"fmt"
 	"net"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -14,6 +15,31 @@ import (
 
 func StrictInboundPorts() {
 	const meshName = "strict-inbound-ports"
+	const identityName = "strict-inbound-ports-identity"
+
+	// enableMTLS gives the proxies a workload identity, which is what turns
+	// their inbounds into mTLS listeners.
+	enableMTLS := func() InstallFunc {
+		return Combine(
+			MeshIdentityBundled(meshName, identityName),
+			MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+				meshName,
+				MeshIdentityTrustDomain(meshName, universal.Cluster),
+			),
+		)
+	}
+
+	permissiveMeshTLS := fmt.Sprintf(`
+type: MeshTLS
+name: permissive
+mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        mode: Permissive
+`, meshName)
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
@@ -42,6 +68,21 @@ func StrictInboundPorts() {
 
 	AfterEachFailure(func() {
 		DebugUniversal(universal.Cluster, meshName)
+	})
+
+	E2EAfterEach(func() {
+		// drop the identity again, so the next case starts without mTLS
+		for _, policy := range []struct{ plural, singular string }{
+			{"meshtlses", "meshtls"},
+			{"meshtrafficpermissions", "meshtrafficpermission"},
+			{"meshidentities", "meshidentity"},
+		} {
+			items, err := universal.Cluster.GetKumactlOptions().KumactlList(policy.plural, meshName)
+			Expect(err).ToNot(HaveOccurred())
+			for _, item := range items {
+				Expect(universal.Cluster.GetKumactlOptions().KumactlDelete(policy.singular, item, meshName)).To(Succeed())
+			}
+		}
 	})
 
 	E2EAfterAll(func() {
@@ -125,13 +166,8 @@ func StrictInboundPorts() {
 
 	It("should allow all traffic when permissive mode", func() {
 		err := NewClusterSetup().
-			Install(Yaml(samples.MeshDefaultBuilder().
-				WithName(meshName).
-				WithBuiltinMTLSBackend("backend").
-				WithEnabledMTLSBackend("backend").
-				WithPermissiveMTLSBackends(),
-			)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(YamlUniversal(permissiveMeshTLS)).
+			Install(enableMTLS()).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -210,12 +246,7 @@ func StrictInboundPorts() {
 
 	It("should allow only traffic to specific ports when strict mode", func() {
 		err := NewClusterSetup().
-			Install(Yaml(samples.MeshDefaultBuilder().
-				WithName(meshName).
-				WithBuiltinMTLSBackend("backend").
-				WithEnabledMTLSBackend("backend"),
-			)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(enableMTLS()).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 

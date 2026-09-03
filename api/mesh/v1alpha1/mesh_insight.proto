@@ -51,19 +51,17 @@ message MeshInsight {
   // mTLS statistics
   MTLS mTLS = 5;
 
-  // ServiceStat defines statistics of mesh services
-  message ServiceStat {
-    uint32 total = 1;
-    uint32 internal = 2;
-    uint32 external = 3;
-  }
-  ServiceStat services = 6;
+  reserved 6; // formerly services
+  reserved "services";
 
   // DataplanesByType defines statistics splitted by dataplane types
   message DataplanesByType {
     DataplaneStat standard = 1;
     DataplaneStat gateway = 2;
-    DataplaneStat gatewayBuiltin = 3;
+
+    reserved 3; // formerly gatewayBuiltin, removed with the built-in gateway
+    reserved "gatewayBuiltin";
+
     DataplaneStat gatewayDelegated = 4;
   }
   DataplanesByType dataplanesByType = 7;

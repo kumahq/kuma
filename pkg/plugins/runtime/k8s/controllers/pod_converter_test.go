@@ -12,7 +12,6 @@ import (
 	kube_apps "k8s.io/api/apps/v1"
 	kube_batch "k8s.io/api/batch/v1"
 	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -113,7 +112,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 					NodeLabelsToCopy: given.nodeLabelsToCopy,
 				},
 				Zone:              "zone-1",
-				ResourceConverter: k8s.NewSimpleConverter(),
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 				WorkloadLabels:    given.workloadLabels,
 			}
 
@@ -207,18 +206,18 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "19.services-for-pod.yaml",
 			dataplane:      "19.dataplane.yaml",
 		}),
-		Entry("20. Pod with gateway annotation and 1 service identified by deployment", testCase{
+		Entry(`20. Pod with gateway annotation "enabled"`, testCase{
 			pod:              "20.pod.yaml",
 			servicesForPod:   "20.services-for-pod.yaml",
 			otherReplicaSets: "20.replicasets-for-pod.yaml",
 			dataplane:        "20.dataplane.yaml",
 		}),
-		Entry("21. Pod with gateway annotation and 1 service with no replicaset", testCase{
+		Entry(`21. Pod with gateway annotation "true"`, testCase{
 			pod:            "21.pod.yaml",
 			servicesForPod: "21.services-for-pod.yaml",
 			dataplane:      "21.dataplane.yaml",
 		}),
-		Entry("22. Pod with gateway annotation and 1 service with replicaset but no deployment", testCase{
+		Entry(`22. Pod with gateway annotation "disabled" is a regular Dataplane`, testCase{
 			pod:              "22.pod.yaml",
 			servicesForPod:   "22.services-for-pod.yaml",
 			otherReplicaSets: "22.replicasets-for-pod.yaml",
@@ -368,199 +367,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "45.services-for-pod.yaml",
 			dataplane:      "45.dataplane.yaml",
 		}),
-	)
-
-	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
-		func(given testCase) {
-			// given
-			// pod
-			pod := &kube_core.Pod{}
-			bytes, err := os.ReadFile(filepath.Join("testdata", "ingress", given.pod))
-			Expect(err).ToNot(HaveOccurred())
-			err = yaml.Unmarshal(bytes, pod)
-			Expect(err).ToNot(HaveOccurred())
-
-			// services for pod
-			bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.servicesForPod))
-			Expect(err).ToNot(HaveOccurred())
-			YAMLs := util_yaml.SplitYAML(string(bytes))
-			services, err := Parse[*kube_core.Service](YAMLs)
-			Expect(err).ToNot(HaveOccurred())
-
-			// node
-			var nodeGetter kube_client.Reader
-			if given.node != "" {
-				bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.node))
-				Expect(err).ToNot(HaveOccurred())
-				nodeGetter = fakeNodeReader(bytes)
-			}
-
-			converter := PodConverter{
-				NodeGetter:        nodeGetter,
-				ResourceConverter: k8s.NewSimpleConverter(),
-				Zone:              "zone-1",
-				InboundConverter: InboundConverter{
-					NodeGetter: nodeGetter,
-				},
-			}
-
-			// when
-			ingress := &mesh_k8s.ZoneIngress{}
-			if given.existingDataplane != "" {
-				bytes, err = os.ReadFile(filepath.Join("testdata", "ingress", given.existingDataplane))
-				Expect(err).ToNot(HaveOccurred())
-				err = yaml.Unmarshal(bytes, ingress)
-				Expect(err).ToNot(HaveOccurred())
-			}
-			ingress.Name = pod.Name
-
-			// then
-			err = converter.PodToIngress(context.Background(), ingress, pod, services)
-			Expect(err).ToNot(HaveOccurred())
-
-			actual, err := yaml.Marshal(ingress)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "ingress", given.dataplane)))
-		},
-		Entry("01. Ingress with load balancer service and hostname", testCase{ // AWS use case
-			pod:            "01.pod.yaml",
-			servicesForPod: "01.services-for-pod.yaml",
-			dataplane:      "01.dataplane.yaml",
-		}),
-		Entry("02. Ingress with load balancer and ip", testCase{ // GCP use case
-			pod:            "02.pod.yaml",
-			servicesForPod: "02.services-for-pod.yaml",
-			dataplane:      "02.dataplane.yaml",
-		}),
-		Entry("03. Ingress with load balancer without public ip", testCase{
-			pod:            "03.pod.yaml",
-			servicesForPod: "03.services-for-pod.yaml",
-			dataplane:      "03.dataplane.yaml",
-		}),
-		Entry("04. Ingress with node port external IP", testCase{ // Real deployment use case
-			pod:            "04.pod.yaml",
-			servicesForPod: "04.services-for-pod.yaml",
-			dataplane:      "04.dataplane.yaml",
-			node:           "04.node.yaml",
-		}),
-		Entry("05. Ingress with node port internal IP", testCase{ // KIND / Minikube use case
-			pod:            "05.pod.yaml",
-			servicesForPod: "05.services-for-pod.yaml",
-			dataplane:      "05.dataplane.yaml",
-			node:           "05.node.yaml",
-		}),
-		Entry("06. Ingress with annotations override", testCase{
-			pod:            "06.pod.yaml",
-			servicesForPod: "06.services-for-pod.yaml",
-			dataplane:      "06.dataplane.yaml",
-		}),
-		Entry("Existing ZoneIngress with load balancer and ip should not be updated when no change", testCase{
-			pod:               "ingress-exists.pod.yaml",
-			servicesForPod:    "ingress-exists.services-for-pod.yaml",
-			existingDataplane: "ingress-exists.existing-dataplane.yaml",
-			dataplane:         "ingress-exists.dataplane.yaml",
-		}),
-		Entry("Existing ZoneIngress with load balancer and ip should not be updated when no change", testCase{
-			pod:               "ingress-exists.pod.yaml",
-			servicesForPod:    "ingress-exists.services-for-pod.yaml",
-			existingDataplane: "ingress-exists.existing-dataplane.yaml",
-			dataplane:         "ingress-exists.dataplane.yaml",
-		}),
-		Entry("Existing ZoneIngress should be updated when pod labels changes", testCase{
-			pod:               "ingress-exists-labels.pod.yaml",
-			servicesForPod:    "ingress-exists-labels.services-for-pod.yaml",
-			existingDataplane: "ingress-exists-labels.existing-dataplane.yaml",
-			dataplane:         "ingress-exists-labels.dataplane.yaml",
-		}),
-	)
-
-	DescribeTable("should convert Egress Pod into an Egress Dataplane YAML version",
-		func(given testCase) {
-			// given
-			// pod
-			pod := &kube_core.Pod{}
-			bytes, err := os.ReadFile(filepath.Join("testdata", "egress", given.pod))
-			Expect(err).ToNot(HaveOccurred())
-			err = yaml.Unmarshal(bytes, pod)
-			Expect(err).ToNot(HaveOccurred())
-			ctx := context.Background()
-
-			// services for pod
-			bytes, err = os.ReadFile(filepath.Join("testdata", "egress", given.servicesForPod))
-			Expect(err).ToNot(HaveOccurred())
-			YAMLs := util_yaml.SplitYAML(string(bytes))
-			services, err := Parse[*kube_core.Service](YAMLs)
-			Expect(err).ToNot(HaveOccurred())
-
-			// node
-			var nodeGetter kube_client.Reader
-			if given.node != "" {
-				bytes, err = os.ReadFile(filepath.Join("testdata", "egress", given.node))
-				Expect(err).ToNot(HaveOccurred())
-				nodeGetter = fakeNodeReader(bytes)
-			}
-
-			converter := PodConverter{
-				NodeGetter:        nodeGetter,
-				ResourceConverter: k8s.NewSimpleConverter(),
-				Zone:              "zone-1",
-				InboundConverter: InboundConverter{
-					NodeGetter: nodeGetter,
-				},
-			}
-
-			egress := &mesh_k8s.ZoneEgress{}
-			if given.existingDataplane != "" {
-				bytes, err = os.ReadFile(filepath.Join("testdata", "egress", given.existingDataplane))
-				Expect(err).ToNot(HaveOccurred())
-				err = yaml.Unmarshal(bytes, egress)
-				Expect(err).ToNot(HaveOccurred())
-			}
-			egress.Name = pod.Name
-
-			// when
-			err = converter.PodToEgress(ctx, egress, pod, services)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			actual, err := yaml.Marshal(egress)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "egress", given.dataplane)))
-		},
-		Entry("01. Egress with load balancer service and hostname", testCase{ // AWS use case
-			pod:            "01.pod.yaml",
-			servicesForPod: "01.services-for-pod.yaml",
-			dataplane:      "01.dataplane.yaml",
-		}),
-		Entry("02. Egress with load balancer and ip", testCase{ // GCP use case
-			pod:            "02.pod.yaml",
-			servicesForPod: "02.services-for-pod.yaml",
-			dataplane:      "02.dataplane.yaml",
-		}),
-		Entry("03. Egress with load balancer without public ip", testCase{
-			pod:            "03.pod.yaml",
-			servicesForPod: "03.services-for-pod.yaml",
-			dataplane:      "03.dataplane.yaml",
-		}),
-		Entry("04. Egress with node port external IP", testCase{ // Real deployment use case
-			pod:            "04.pod.yaml",
-			servicesForPod: "04.services-for-pod.yaml",
-			dataplane:      "04.dataplane.yaml",
-			node:           "04.node.yaml",
-		}),
-		Entry("05. Egress with node port internal IP", testCase{ // KIND / Minikube use case
-			pod:            "05.pod.yaml",
-			servicesForPod: "05.services-for-pod.yaml",
-			dataplane:      "05.dataplane.yaml",
-			node:           "05.node.yaml",
-		}),
-		Entry("Existing ZoneEgress should be updated when pod labels changes", testCase{ // KIND / Minikube use case
-			pod:               "egress-exists-labels.pod.yaml",
-			servicesForPod:    "egress-exists-labels.services-for-pod.yaml",
-			dataplane:         "egress-exists-labels.dataplane.yaml",
-			node:              "egress-exists-labels.node.yaml",
-			existingDataplane: "egress-exists-labels.existing-dataplane.yaml",
+		Entry("46. Pod with an invalid gateway annotation value", testCase{
+			pod:            "46.pod.yaml",
+			servicesForPod: "46.services-for-pod.yaml",
+			expectedErr:    `annotation "kuma.io/gateway" has wrong value "bogus"`,
 		}),
 	)
 })
@@ -577,10 +387,8 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 		func(given testCase) {
 			// given
 			pod := &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Labels:    given.podLabels,
-				},
+				Namespace: "demo",
+				Labels:    given.podLabels,
 				Spec: kube_core.PodSpec{
 					NodeName: "test-node",
 				},
@@ -588,14 +396,12 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 
 			// and
 			svc := &kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "example",
-					Labels: map[string]string{
-						"more": "labels",
-					},
-					Annotations: given.svcAnnotations,
+				Namespace: "demo",
+				Name:      "example",
+				Labels: map[string]string{
+					"more": "labels",
 				},
+				Annotations: given.svcAnnotations,
 				Spec: kube_core.ServiceSpec{
 					Ports: []kube_core.ServicePort{
 						{
@@ -617,7 +423,6 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 			// expect
 			Expect(inbounds).To(HaveLen(1))
 			Expect(inbounds[0].Port).To(Equal(uint32(8080)))
-			Expect(inbounds[0].Tags).To(Equal(map[string]string{}))
 			Expect(inbounds[0].State).To(Equal(mesh_proto.Dataplane_Networking_Inbound_Ready))
 			Expect(inbounds[0].Health).To(Equal(&mesh_proto.Dataplane_Networking_Inbound_Health{Ready: true}))
 			Expect(inbounds[0].Protocol).To(Equal(given.expected))
@@ -680,12 +485,10 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 
 	It("should prefer a matching inbound over an ignored duplicate on the same port", func() {
 		pod := &kube_core.Pod{
-			ObjectMeta: kube_meta.ObjectMeta{
-				Namespace: "demo",
-				Labels: map[string]string{
-					"app":                        "example",
-					"rollouts-pod-template-hash": "active-hash",
-				},
+			Namespace: "demo",
+			Labels: map[string]string{
+				"app":                        "example",
+				"rollouts-pod-template-hash": "active-hash",
 			},
 			Spec: kube_core.PodSpec{
 				Containers: []kube_core.Container{{
@@ -706,10 +509,8 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 
 		services := []*kube_core.Service{
 			{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "example-preview",
-				},
+				Namespace: "demo",
+				Name:      "example-preview",
 				Spec: kube_core.ServiceSpec{
 					Selector: map[string]string{
 						"app":                        "example",
@@ -725,10 +526,8 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 				},
 			},
 			{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "example",
-				},
+				Namespace: "demo",
+				Name:      "example",
 				Spec: kube_core.ServiceSpec{
 					Selector: map[string]string{
 						"app":                        "example",
@@ -776,11 +575,9 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 		func(given testCase) {
 			// given
 			svc := &kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace:   "demo",
-					Name:        "example",
-					Annotations: given.annotations,
-				},
+				Namespace:   "demo",
+				Name:        "example",
+				Annotations: given.annotations,
 				Spec: kube_core.ServiceSpec{
 					Ports: []kube_core.ServicePort{
 						{

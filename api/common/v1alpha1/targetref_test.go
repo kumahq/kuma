@@ -35,14 +35,14 @@ func TestIncludesGateways(t *testing.T) {
 			},
 			expected: false,
 		},
-		"dataplane with a gateway proxy-type label still excludes gateways": {
+		"dataplane with arbitrary labels still excludes gateways": {
 			// Kind: Dataplane never distinguished gateways even when
-			// proxyTypes existed (the field was never valid on it), and
-			// this label doesn't resurrect that: a targetRef can no longer
-			// scope a policy's rules[]/to[] to gateways-only at all.
+			// proxyTypes existed, and labels do not change that: a targetRef
+			// can no longer scope a policy's rules[]/to[] to gateways-only
+			// at all.
 			ref: TargetRef{
 				Kind:   Dataplane,
-				Labels: &map[string]string{mesh_proto.ProxyTypeLabel: string(mesh_proto.GatewayLabel)},
+				Labels: &map[string]string{"app": "gateway"},
 			},
 			expected: false,
 		},
@@ -96,15 +96,6 @@ func TestBackendRefReferencesRealObject(t *testing.T) {
 				},
 			},
 			expected: true,
-		},
-		"legacy mesh service subset is not real": {
-			ref: BackendRef{
-				TargetRef: TargetRef{
-					Kind:   LegacyMeshServiceSubsetKind(),
-					Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
-				},
-			},
-			expected: false,
 		},
 		"empty ref is not real": {
 			ref:      BackendRef{},
@@ -234,12 +225,10 @@ func TestBackendRefRealResourceSelectorKeepsExplicitSectionNameOverPort(t *testi
 	t.Parallel()
 
 	ref := BackendRef{
-		TargetRef: TargetRef{
-			Kind:        MeshService,
-			Labels:      pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
-			SectionName: pointer.To("http"),
-		},
-		Port: pointer.To(uint32(80)),
+		Kind:        MeshService,
+		Labels:      pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
+		SectionName: pointer.To("http"),
+		Port:        pointer.To(uint32(80)),
 	}
 
 	_, sectionName, ok := ref.RealResourceSelector("kuma-demo")
@@ -255,9 +244,7 @@ func TestBackendRefRealResourceSelectorRejectsRealRefsWithoutLabels(t *testing.T
 	t.Parallel()
 
 	ref := BackendRef{
-		TargetRef: TargetRef{
-			Kind: MeshService,
-		},
+		Kind: MeshService,
 	}
 
 	if _, _, ok := ref.RealResourceSelector("default"); ok {
@@ -322,18 +309,14 @@ func TestBackendRefHashUsesRealResourceLabels(t *testing.T) {
 		t.Parallel()
 
 		a := BackendRef{
-			TargetRef: TargetRef{
-				Kind:   MeshService,
-				Labels: &map[string]string{mesh_proto.DisplayName: "backend", mesh_proto.KubeNamespaceTag: "kuma-demo"},
-			},
-			Port: pointer.To(uint32(8080)),
+			Kind:   MeshService,
+			Labels: &map[string]string{mesh_proto.DisplayName: "backend", mesh_proto.KubeNamespaceTag: "kuma-demo"},
+			Port:   pointer.To(uint32(8080)),
 		}
 		b := BackendRef{
-			TargetRef: TargetRef{
-				Kind:   MeshService,
-				Labels: &map[string]string{mesh_proto.KubeNamespaceTag: "kuma-demo", mesh_proto.DisplayName: "backend"},
-			},
-			Port: pointer.To(uint32(8080)),
+			Kind:   MeshService,
+			Labels: &map[string]string{mesh_proto.KubeNamespaceTag: "kuma-demo", mesh_proto.DisplayName: "backend"},
+			Port:   pointer.To(uint32(8080)),
 		}
 
 		if a.Hash() != b.Hash() {
@@ -341,22 +324,18 @@ func TestBackendRefHashUsesRealResourceLabels(t *testing.T) {
 		}
 	})
 
-	t.Run("legacy backend refs hash service identity from labels", func(t *testing.T) {
+	t.Run("backend refs hash distinguishes derived ports", func(t *testing.T) {
 		t.Parallel()
 
 		base := BackendRef{
-			TargetRef: TargetRef{
-				Kind:   LegacyMeshServiceSubsetKind(),
-				Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
-			},
-			Port: pointer.To(uint32(8080)),
+			Kind:   MeshService,
+			Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
+			Port:   pointer.To(uint32(8080)),
 		}
 		otherPort := BackendRef{
-			TargetRef: TargetRef{
-				Kind:   LegacyMeshServiceSubsetKind(),
-				Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
-			},
-			Port: pointer.To(uint32(9090)),
+			Kind:   MeshService,
+			Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
+			Port:   pointer.To(uint32(9090)),
 		}
 
 		if base.Hash() == otherPort.Hash() {
