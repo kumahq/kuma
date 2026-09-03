@@ -63,9 +63,7 @@ func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
 	// Set defaults.
 	k.isipv6 = Config.IPV6
 	k.installationMode = KumactlInstallationMode
-	// The shipped default is 10s, which is longer than the propagation budget most
-	// specs allow between applying a resource and asserting on proxy behaviour.
-	k.env = map[string]string{"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL": "1s"}
+	k.env = map[string]string{}
 	k.meshUpdateFuncs = map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh{}
 	k.verifyKuma = true
 	k.setupKumactl = true

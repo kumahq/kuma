@@ -83,7 +83,10 @@ func TestConformance(t *testing.T) {
 	g.Expect(cluster.Install(GatewayAPICRDs)).To(Succeed())
 	g.Eventually(func() error {
 		return NewClusterSetup().Install(
-			Kuma(config_core.Zone)).Setup(cluster)
+			// The weighted-routing conformance test retries for ~3s with no delay
+			// between attempts, which the shipped 10s refresh interval outlives.
+			Kuma(config_core.Zone, WithEnv("KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL", "1s")),
+		).Setup(cluster)
 	}, "90s", "3s").Should(Succeed())
 
 	g.Eventually(func() error {
