@@ -17,6 +17,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -39,6 +40,31 @@ type resourceCrudHandler struct {
 	isK8s           bool
 
 	disableOriginLabelValidation bool
+}
+
+// overviewForResource merges a resource with its insight. A missing insight is
+// not an error: the overview is returned with an empty insight, like it is for
+// a proxy that never connected.
+func overviewForResource(
+	ctx context.Context,
+	resManager manager.ResourceManager,
+	descriptor core_model.ResourceTypeDescriptor,
+	resource core_model.Resource,
+	name string,
+	meshName string,
+) (core_model.Resource, error) {
+	insight := descriptor.NewInsight()
+	if err := resManager.Get(ctx, insight, store.GetByKey(name, meshName)); err != nil && !store.IsNotFound(err) {
+		return nil, err
+	}
+	overview, ok := descriptor.NewOverview().(core_model.OverviewResource)
+	if !ok {
+		return nil, fmt.Errorf("type withInsight for '%s' doesn't implement core_model.OverviewResource this shouldn't happen", descriptor.Name)
+	}
+	if err := overview.SetOverviewSpec(resource, insight); err != nil {
+		return nil, err
+	}
+	return overview.(core_model.Resource), nil
 }
 
 func (r *resourceCrudHandler) findResource(withInsight bool) func(request *restful.Request, response *restful.Response) {
@@ -66,21 +92,11 @@ func (r *resourceCrudHandler) findResource(withInsight bool) func(request *restf
 			return
 		}
 		if withInsight {
-			insight := r.descriptor.NewInsight()
-			if err := r.resManager.Get(request.Request.Context(), insight, store.GetByKey(name, meshName)); err != nil && !store.IsNotFound(err) {
+			resource, err = overviewForResource(request.Request.Context(), r.resManager, r.descriptor, resource, name, meshName)
+			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
 				return
 			}
-			overview, ok := r.descriptor.NewOverview().(core_model.OverviewResource)
-			if !ok {
-				rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("type withInsight for '%s' doesn't implement core_model.OverviewResource this shouldn't happen", r.descriptor.Name), "Could not retrieve insights")
-				return
-			}
-			if err := overview.SetOverviewSpec(resource, insight); err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
-				return
-			}
-			resource = overview.(core_model.Resource)
 		}
 		var res any
 

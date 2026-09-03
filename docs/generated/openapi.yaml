@@ -520,6 +520,34 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+  /_kri/{kri}/_overview:
+    get:
+      operationId: getOverviewByKri
+      summary: Returns the overview of a resource by KRI
+      description: >-
+        Returns the resource merged with its insight. Only resource types that
+        have insights are supported.
+      tags:
+        - KRI
+      parameters:
+        - in: path
+          name: kri
+          schema:
+            type: string
+          required: true
+          description: KRI of the resource
+      responses:
+        '200':
+          description: The resource overview
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/DataplaneOverviewWithMeta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshaccesslogs/{name}:
     get:
       operationId: getMeshAccessLog
@@ -13180,10 +13208,6 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '1901-01-01T00:00:00.000Z'
-    DataplaneOverviewWithMeta:
-      allOf:
-        - $ref: '#/components/schemas/Meta'
-        - $ref: '#/components/schemas/DataplaneOverview'
     DataplaneOverview:
       description: DataplaneOverview defines the projected state of a Dataplane.
       properties:
@@ -13924,6 +13948,10 @@ components:
               type: array
           type: object
       type: object
+    DataplaneOverviewWithMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - $ref: '#/components/schemas/DataplaneOverview'
     SecretItem:
       properties:
         creationTime:
