@@ -4,5 +4,7 @@
 #/meshes/default/dataplanes/dp-invalid 400 method=PUT
 # Invalid workload label - starts with number
 #/meshes/default/dataplanes/dp-invalid2 400 method=PUT
+# Invalid workload label on update of an existing dataplane
+#/meshes/default/dataplanes/dp-valid 400 method=PUT
 type: Mesh
 name: default

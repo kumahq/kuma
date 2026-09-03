@@ -257,8 +257,8 @@ func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, e
 // validating them must not apply label value rules to them either.
 //   - "kuma.io/display-name" holds the name a resource had before it was renamed
 //     (namespace suffix on Kubernetes, hash suffix when synced to global).
-//   - "kuma.io/service-account" holds the full ServiceAccount name, which is a DNS
-//     subdomain (253 characters).
+//   - "k8s.kuma.io/service-account" holds the full ServiceAccount name, which is a
+//     DNS subdomain (253 characters).
 //     https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-multiple-service-accounts
 //   - "kuma.io/workload" holds the full workload name.
 var LabelsStoredAsAnnotations = []string{
