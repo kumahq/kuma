@@ -138,13 +138,13 @@ The built-in gateway implementation was removed over the previous releases, and 
 - `GET /meshes/{mesh}/service-insights?type=gateway_builtin` is no longer a valid filter and returns `400`. Use `type=gateway_delegated`.
 - The `gatewayBuiltin` object disappears from the `/global-insight` response, in both `dataplanes` and `services`.
 
-All three protobuf ordinals are reserved, so they can never be reused for something else, and a Zone control plane on an older version still syncs to a Global control plane on this one.
+All three protobuf ordinals are reserved, so they can never be reused for something else. A Zone control plane on an older version still syncs to a Global control plane on this one, though its gateways are not recognised as such until it is upgraded — see [A delegated gateway is marked by the `kuma.io/gateway` label](#a-delegated-gateway-is-marked-by-the-kumaiogateway-label).
 
 **Action required**
 
 Stop consuming the `gatewayBuiltin` fields and the `gateway=builtin` / `type=gateway_builtin` filters if you query the API directly.
 
-A `Dataplane` still carrying `type: BUILTIN` keeps loading after the upgrade, because the field is ignored rather than parsed, so it no longer has to be deleted first. It becomes a delegated gateway, which is not what a built-in gateway did, so find them with `kumactl get dataplanes -o yaml` per mesh, or `kubectl get dataplanes -A -o yaml`, grep for `BUILTIN`, and delete the ones you no longer serve traffic with. Drop `type: BUILTIN` from any manifest you keep under source control.
+A `Dataplane` still carrying `type: BUILTIN` keeps loading after the upgrade, because the whole `networking.gateway` message is ignored rather than parsed, so it no longer has to be deleted first. It becomes an ordinary `Dataplane` with no inbounds — not a gateway, since that is now the `kuma.io/gateway` label — so no policy selects it. Find them with `kumactl get dataplanes -o yaml` per mesh, or `kubectl get dataplanes -A -o yaml`, grep for `BUILTIN`, and delete the ones you no longer serve traffic with. Drop `type: BUILTIN` from any manifest you keep under source control.
 
 ### Control plane RBAC is narrowed on Kubernetes
 

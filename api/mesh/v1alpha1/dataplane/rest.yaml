@@ -98,9 +98,6 @@ components:
                   description: Port on which Envoy Admin API server will be listening
                   type: integer
               type: object
-            gateway:
-              properties: {}
-              type: object
             inbound:
               description: |-
                 Inbound describes a list of inbound interfaces of the data plane proxy.
