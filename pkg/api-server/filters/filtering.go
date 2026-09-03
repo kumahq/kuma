@@ -1,6 +1,7 @@
 package filters
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 )
 
 type FilterOp string
@@ -18,6 +20,31 @@ type FilterOp string
 const (
 	FilterOpEq FilterOp = "eq"
 )
+
+// StatusFilterParam filters overviews by the status computed from their insight.
+// It is handled by the endpoint rather than by a store filter because the status
+// is not a property of the resource itself.
+const StatusFilterParam = "filter[status]"
+
+var statuses = []mesh.Status{mesh.Online, mesh.Offline, mesh.PartiallyDegraded}
+
+// Status returns the requested status, or an empty status when the filter is absent.
+func Status(request *restful.Request) (mesh.Status, error) {
+	value := request.QueryParameter(StatusFilterParam)
+	if value == "" {
+		return "", nil
+	}
+	for _, status := range statuses {
+		if strings.EqualFold(value, status.String()) {
+			return status, nil
+		}
+	}
+	verr := &validators.ValidationError{}
+	verr.AddViolationAt(
+		validators.RootedAt(request.SelectedRoutePath()).Field(StatusFilterParam),
+		fmt.Sprintf("must be one of %s", strings.Join(util_slices.Map(statuses, mesh.Status.String), ", ")))
+	return "", verr
+}
 
 type filterEntry struct {
 	Op    FilterOp
@@ -35,9 +62,12 @@ func labelFilter(request *restful.Request) (store.ListFilterFunc, error) {
 		if !strings.HasPrefix(k, "filter[") {
 			continue
 		}
+		if k == StatusFilterParam {
+			continue
+		}
 		if !strings.HasPrefix(k, "filter[labels.") {
 			verr.AddViolationAt(
-				validators.RootedAt(request.SelectedRoutePath()).Field(k), "filters are only supported on labels")
+				validators.RootedAt(request.SelectedRoutePath()).Field(k), "filters are only supported on labels and status")
 			continue
 		}
 		closingBracket := strings.Index(k, "]")

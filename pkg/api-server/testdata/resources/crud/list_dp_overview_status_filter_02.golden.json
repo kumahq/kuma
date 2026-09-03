@@ -1,0 +1,33 @@
+{
+ "total": 2,
+ "items": [
+  {
+   "type": "DataplaneOverview",
+   "mesh": "default",
+   "name": "dp-online-1",
+   "creationTime": "0001-01-01T00:00:00Z",
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "kri": "kri_dp_default___dp-online-1_",
+   "dataplane": {
+    "networking": {
+     "address": "10.1.2.2",
+     "inbound": [
+      {
+       "port": 1234
+      }
+     ]
+    }
+   },
+   "dataplaneInsight": {
+    "subscriptions": [
+     {
+      "id": "stream-1",
+      "controlPlaneInstanceId": "cp-1",
+      "connectTime": "0001-01-01T00:00:00Z"
+     }
+    ]
+   }
+  }
+ ],
+ "next": "http://{{address}}/meshes/default/dataplanes/_overview?filter%5Bstatus%5D=Online&offset=1&size=1"
+}

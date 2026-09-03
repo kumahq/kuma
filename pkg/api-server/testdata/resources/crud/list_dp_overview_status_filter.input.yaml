@@ -1,0 +1,60 @@
+# Only online dataplanes
+#/meshes/default/dataplanes/_overview?filter[status]=Online 200
+# Case does not matter
+#/meshes/default/dataplanes/_overview?filter[status]=offline 200
+# Status filter combines with pagination
+#/meshes/default/dataplanes/_overview?filter[status]=Online&size=1 200
+# Unknown status
+#/meshes/default/dataplanes/_overview?filter[status]=broken 400
+# Status is not available on the plain list endpoint
+#/meshes/default/dataplanes?filter[status]=Online 400
+# Status is not available on resources without a computed status
+#/zones/_overview?filter[status]=Online 400
+type: Mesh
+name: default
+---
+type: Dataplane
+mesh: default
+name: dp-offline
+networking:
+  address: 10.1.2.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: my-svc
+---
+type: Dataplane
+mesh: default
+name: dp-online-1
+networking:
+  address: 10.1.2.2
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: my-svc
+---
+type: Dataplane
+mesh: default
+name: dp-online-2
+networking:
+  address: 10.1.2.3
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: my-svc
+---
+type: DataplaneInsight
+mesh: default
+name: dp-online-1
+subscriptions:
+  - id: stream-1
+    controlPlaneInstanceId: cp-1
+    connectTime: "2020-07-28T16:18:22.000000Z"
+---
+type: DataplaneInsight
+mesh: default
+name: dp-online-2
+subscriptions:
+  - id: stream-2
+    controlPlaneInstanceId: cp-1
+    connectTime: "2020-07-28T16:18:22.000000Z"
