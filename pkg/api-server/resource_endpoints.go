@@ -443,9 +443,11 @@ func (r *resourceEndpoints) createResource(
 		res.GetMeta().GetLabels(),
 		model.GetNamespace(res.GetMeta(), r.systemNamespace),
 		meshName,
+		name,
 		r.mode,
 		r.isK8s,
 		r.zoneName,
+		false,
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")

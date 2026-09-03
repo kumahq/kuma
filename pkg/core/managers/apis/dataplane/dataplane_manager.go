@@ -61,9 +61,11 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 		opts.Labels,
 		core_model.UnsetNamespace,
 		opts.Mesh,
+		opts.Name,
 		m.mode,
 		m.isK8s,
 		m.zone,
+		false,
 	)
 	if err != nil {
 		return err
@@ -100,9 +102,11 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 		resource.GetMeta().GetLabels(),
 		core_model.GetNamespace(resource.GetMeta(), m.systemNamespace),
 		resource.GetMeta().GetMesh(),
+		resource.GetMeta().GetName(),
 		m.mode,
 		m.isK8s,
 		m.zone,
+		false,
 	)
 	if err != nil {
 		return err

@@ -505,13 +505,21 @@ func ComputeLabels(
 	existingLabels map[string]string,
 	ns Namespace,
 	mesh string,
+	displayName string,
 	mode config_core.CpMode,
 	isK8s bool,
 	localZone string,
+	privileged bool,
 ) (map[string]string, error) {
 	labels := map[string]string{}
 	if len(existingLabels) > 0 {
 		labels = maps.Clone(existingLabels)
+	}
+
+	// Only skip recomputation for resources imported from another CP (e.g. via
+	// KDS sync); locally-originated resources are always recomputed.
+	if privileged && !IsLocallyOriginated(mode, labels) {
+		return labels, nil
 	}
 
 	setIfNotExist := func(k, v string) {
@@ -526,6 +534,8 @@ func ComputeLabels(
 		}
 		return DefaultMesh
 	}
+
+	labels[mesh_proto.DisplayName] = displayName
 
 	if rd.Scope == ScopeMesh {
 		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
