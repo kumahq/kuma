@@ -659,19 +659,20 @@ func ComputeLabels(
 		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
 	}
 
-	if labelsOpts.Mode == config_core.Zone {
+	switch labelsOpts.Mode {
+	case config_core.Global:
+		set(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin))
+	case config_core.Zone:
+		set(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
 		// If resource can't be created on Zone (like Mesh), there is no point in adding
-		// 'kuma.io/zone', 'kuma.io/origin' and 'kuma.io/env' labels even if the zone is non-federated
+		// 'kuma.io/zone' and 'kuma.io/env' labels even if the zone is non-federated
 		if rd.KDSFlags.Has(ProvidedByZoneFlag) {
-			setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
-			if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
-				setIfNotExist(mesh_proto.ZoneTag, labelsOpts.ZoneName)
-				env := mesh_proto.UniversalEnvironment
-				if labelsOpts.IsK8s {
-					env = mesh_proto.KubernetesEnvironment
-				}
-				setIfNotExist(mesh_proto.EnvTag, env)
+			setIfNotExist(mesh_proto.ZoneTag, labelsOpts.ZoneName)
+			env := mesh_proto.UniversalEnvironment
+			if labelsOpts.IsK8s {
+				env = mesh_proto.KubernetesEnvironment
 			}
+			setIfNotExist(mesh_proto.EnvTag, env)
 		}
 	}
 
