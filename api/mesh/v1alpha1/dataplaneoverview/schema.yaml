@@ -31,8 +31,6 @@ components:
                       type: integer
                   type: object
                 gateway:
-                  description: Gateway describes a configuration of the gateway of
-                    the data plane proxy.
                   properties: {}
                   type: object
                 inbound:

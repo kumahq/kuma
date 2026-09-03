@@ -70,11 +70,13 @@
    "name": "gateway-delegated",
    "creationTime": "2018-07-17T16:05:36.995Z",
    "modificationTime": "2018-07-17T16:05:36.995Z",
+   "labels": {
+    "kuma.io/gateway": "true"
+   },
    "kri": "kri_dp_mesh1___gateway-delegated_",
    "dataplane": {
     "networking": {
-     "address": "127.0.0.1",
-     "gateway": {}
+     "address": "127.0.0.1"
     }
    },
    "dataplaneInsight": {

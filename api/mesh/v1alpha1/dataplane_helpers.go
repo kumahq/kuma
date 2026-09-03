@@ -542,14 +542,6 @@ func IsDelegatedGateway(labels map[string]string) bool {
 	return labels[GatewayLabel] == GatewayEnabled
 }
 
-// HasLegacyGatewayField reports whether the spec still carries the deprecated
-// networking.gateway field. The kuma.io/gateway label is the signal now; the
-// control plane backfills it from this field, so only paths that see a spec
-// before its labels are computed need to ask.
-func (d *Dataplane) HasLegacyGatewayField() bool {
-	return d.GetNetworking().GetGateway() != nil
-}
-
 func (t MultiValueTagSet) String() string {
 	var tags []string
 	for tag := range t {
@@ -595,9 +587,9 @@ func (n *Dataplane_Networking) HasZoneProxyListeners() bool {
 }
 
 // IsZoneProxyOnly returns true when the Dataplane has zone proxy listeners but
-// no regular inbounds and no gateway, meaning it acts exclusively as a zone proxy.
+// no regular inbounds, meaning it acts exclusively as a zone proxy.
 func (n *Dataplane_Networking) IsZoneProxyOnly() bool {
-	return n.HasZoneProxyListeners() && len(n.GetInbound()) == 0 && n.GetGateway() == nil
+	return n.HasZoneProxyListeners() && len(n.GetInbound()) == 0
 }
 
 // GetReadyZoneEgressListeners returns all listeners of type ZoneEgress in Ready state.

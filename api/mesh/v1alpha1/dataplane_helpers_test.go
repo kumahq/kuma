@@ -328,24 +328,6 @@ var _ = Describe("Dataplane classification", func() {
 			Expect(IsDelegatedGateway(nil)).To(BeFalse())
 		})
 	})
-
-	Describe("HasLegacyGatewayField", func() {
-		It("should be false without the deprecated field", func() {
-			dp := Dataplane{
-				Networking: &Dataplane_Networking{},
-			}
-			Expect(dp.HasLegacyGatewayField()).To(BeFalse())
-		})
-
-		It("should be true with the deprecated field", func() {
-			gw := Dataplane{
-				Networking: &Dataplane_Networking{
-					Gateway: &Dataplane_Networking_Gateway{},
-				},
-			}
-			Expect(gw.HasLegacyGatewayField()).To(BeTrue())
-		})
-	})
 })
 
 var _ = Describe("TagSelector", func() {

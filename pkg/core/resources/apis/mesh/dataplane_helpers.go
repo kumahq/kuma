@@ -69,7 +69,7 @@ func (d *DataplaneResource) IsDelegatedGateway() bool {
 	if meta := d.GetMeta(); meta != nil {
 		labels = meta.GetLabels()
 	}
-	return mesh_proto.IsDelegatedGateway(labels) || d.Spec.HasLegacyGatewayField()
+	return mesh_proto.IsDelegatedGateway(labels)
 }
 
 func (d *DataplaneResource) IsIPv6() bool {

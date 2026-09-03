@@ -141,9 +141,9 @@ func createGatewayDataplane(
 	dataplane.Spec = &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
 			Address: "127.0.0.1",
-			Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
 		},
 	}
+	labels[mesh_proto.GatewayLabel] = mesh_proto.GatewayEnabled
 	if err := rs.Create(context.Background(), dataplane,
 		store.CreateByKey(name, mesh),
 		store.CreateWithLabels(labels),

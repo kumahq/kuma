@@ -25,7 +25,7 @@ func (t *DataplaneOverviewResource) IsDelegatedGateway() bool {
 	if meta := t.GetMeta(); meta != nil {
 		labels = meta.GetLabels()
 	}
-	return mesh_proto.IsDelegatedGateway(labels) || t.Spec.GetDataplane().HasLegacyGatewayField()
+	return mesh_proto.IsDelegatedGateway(labels)
 }
 
 func (t *DataplaneOverviewResource) Status() (Status, []string) {

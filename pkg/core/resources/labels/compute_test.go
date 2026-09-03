@@ -284,11 +284,14 @@ var _ = Describe("Compute", func() {
 			isK8s:     true,
 			localZone: "zone-1",
 			r: &mesh.DataplaneResource{
-				Meta: &test_model.ResourceMeta{Mesh: "mesh-1", Name: "dp-1"},
+				Meta: &test_model.ResourceMeta{
+					Mesh:   "mesh-1",
+					Name:   "dp-1",
+					Labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
+				},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "127.0.0.1",
-						Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
 					},
 				},
 			},

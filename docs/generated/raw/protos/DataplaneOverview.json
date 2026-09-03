@@ -37,11 +37,6 @@
                     "type": "string",
                     "description": "IP on which the data plane proxy is accessible to the control plane and other data plane proxies in the same network. This can also be a hostname, in which case the control plane will periodically resolve it."
                 },
-                "gateway": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Gateway",
-                    "additionalProperties": true,
-                    "description": "Gateway describes a configuration of the gateway of the data plane proxy."
-                },
                 "inbound": {
                     "items": {
                         "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Inbound"
@@ -78,12 +73,6 @@
             "type": "object",
             "title": "Networking",
             "description": "Networking describes inbound and outbound interfaces of a data plane proxy."
-        },
-        "kuma.mesh.v1alpha1.Dataplane.Networking.Gateway": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Gateway",
-            "description": "Gateway marks this data plane proxy as a delegated gateway: an independently deployed proxy (e.g., Kong) that receives inbound traffic which is not proxied by Kuma, and sends outbound traffic into the data plane proxy. Its presence is the whole signal, so the message carries no fields; the proxy is identified by the Dataplane's labels like any other. See https://kuma.io/docs/latest/explore/gateway/ for more information."
         },
         "kuma.mesh.v1alpha1.Dataplane.Networking.Inbound": {
             "properties": {

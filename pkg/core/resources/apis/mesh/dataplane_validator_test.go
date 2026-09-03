@@ -5,7 +5,9 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
@@ -331,12 +333,14 @@ var _ = Describe("Dataplane", func() {
 
 	type testCase struct {
 		dataplane string
+		labels    map[string]string
 		expected  string
 	}
 	DescribeTable("should validate all fields and return as much individual errors as possible",
 		func(given testCase) {
 			// setup
 			dataplane := core_mesh.NewDataplaneResource()
+			dataplane.Meta = &test_model.ResourceMeta{Name: "dp-1", Mesh: "default", Labels: given.labels}
 
 			// when
 			err := util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)
@@ -442,6 +446,7 @@ var _ = Describe("Dataplane", func() {
                   message:  address has to be valid IP address or domain name`,
 		}),
 		Entry("networking: both inbounds and gateway are defined", testCase{
+			labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
 			dataplane: `
                 type: Dataplane
                 name: dp-1
@@ -451,9 +456,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 8080
                       servicePort: 7777
-                  gateway:
-                    tags:
-                      kuma.io/service: kong
                   outbound:
                     - port: 3333
                       backendRef:
@@ -466,15 +468,13 @@ var _ = Describe("Dataplane", func() {
                   message: inbound cannot be defined for delegated gateways`,
 		}),
 		Entry("networking: delegated gateway must not have listeners", testCase{
+			labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
 			dataplane: `
                 type: Dataplane
                 name: dp-1
                 mesh: default
                 networking:
                   address: 192.168.0.1
-                  gateway:
-                    tags:
-                      kuma.io/service: kong
                   listeners:
                     - type: ZoneEgress
                       address: 192.168.0.1
@@ -1086,14 +1086,18 @@ var _ = Describe("Dataplane", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should accept a bare gateway", func() {
+		It("should accept a gateway marked by the label", func() {
 			dataplane := core_mesh.NewDataplaneResource()
+			dataplane.Meta = &test_model.ResourceMeta{
+				Name:   "dp-1",
+				Mesh:   "default",
+				Labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
+			}
 
 			// when
 			err := util_proto.FromYAML([]byte(`
                 networking:
                   address: 192.168.0.1
-                  gateway: {}
 `), dataplane.Spec)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -1102,9 +1106,9 @@ var _ = Describe("Dataplane", func() {
 			Expect(dataplane.Validate()).To(Succeed())
 		})
 
-		It("should ignore the removed tags and type fields", func() {
-			// given a Dataplane written against the tag-based gateway model,
-			// including the removed built-in gateway type
+		It("should ignore the removed gateway field", func() {
+			// given a Dataplane written against the removed networking.gateway
+			// field, including the removed built-in gateway type
 			dataplane := core_mesh.NewDataplaneResource()
 
 			// when
@@ -1117,10 +1121,10 @@ var _ = Describe("Dataplane", func() {
                       kuma.io/service: kong
 `), dataplane.Spec)
 
-			// then the removed fields are dropped and what is left is a
-			// delegated gateway, so stored resources keep loading after upgrade
+			// then the field is dropped and, without the label, what is left is
+			// an ordinary Dataplane
 			Expect(err).ToNot(HaveOccurred())
-			Expect(dataplane.IsDelegatedGateway()).To(BeTrue())
+			Expect(dataplane.IsDelegatedGateway()).To(BeFalse())
 			Expect(dataplane.Validate()).To(Succeed())
 		})
 	})

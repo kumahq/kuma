@@ -201,10 +201,10 @@ func (p *PodConverter) dataplaneFor(
 			}
 		}
 
-		// Zone-proxy-only dataplane: no inbounds, no gateway, but has listeners.
-		// Set empty reachable_backends so Envoy generates no outbound cluster config.
-		if len(dataplane.Networking.Inbound) == 0 && dataplane.Networking.Gateway == nil &&
-			len(dataplane.Networking.Listeners) > 0 {
+		// Zone-proxy-only dataplane: no inbounds, but has listeners (this branch
+		// already excludes gateways). Set empty reachable_backends so Envoy
+		// generates no outbound cluster config.
+		if len(dataplane.Networking.Inbound) == 0 && len(dataplane.Networking.Listeners) > 0 {
 			if dataplane.Networking.TransparentProxying == nil {
 				dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
 			}

@@ -232,7 +232,12 @@ func TagsKVToMap(tagsKV []string) map[string]string {
 }
 
 func (d *DataplaneBuilder) WithDelegatedGateway() *DataplaneBuilder {
-	d.res.Spec.Networking.Gateway = &mesh_proto.Dataplane_Networking_Gateway{}
+	meta := d.res.Meta.(*test_model.ResourceMeta)
+	if meta.Labels == nil {
+		meta.Labels = map[string]string{}
+	}
+	meta.Labels[mesh_proto.GatewayLabel] = mesh_proto.GatewayEnabled
+	d.res.Spec.Networking.Inbound = nil
 	return d
 }
 

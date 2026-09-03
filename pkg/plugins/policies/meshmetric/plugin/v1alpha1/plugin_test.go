@@ -671,12 +671,6 @@ var _ = Describe("MeshMetric", func() {
 			v1alpha1.ProxyRoleSidecar,
 		),
 		Entry("gateway by label", gatewayDpp(nil), v1alpha1.ProxyRoleGateway),
-		Entry("gateway by legacy spec field",
-			dppWithNetworking(&mesh_proto.Dataplane_Networking{
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
-			}),
-			v1alpha1.ProxyRoleGateway,
-		),
 		Entry("gateway with inbounds (gateway wins)",
 			gatewayDpp(&mesh_proto.Dataplane_Networking{
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{Port: 8080}},

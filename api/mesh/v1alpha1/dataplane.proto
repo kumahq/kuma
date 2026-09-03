@@ -166,21 +166,6 @@ message Dataplane {
       }
     }
 
-    // Gateway marks this data plane proxy as a delegated gateway: an
-    // independently deployed proxy (e.g., Kong) that receives inbound traffic
-    // which is not proxied by Kuma, and sends outbound traffic into the data
-    // plane proxy. Its presence is the whole signal, so the message carries no
-    // fields; the proxy is identified by the Dataplane's labels like any other.
-    //
-    // See https://kuma.io/docs/latest/explore/gateway/ for more information.
-    message Gateway {
-      // `tags = 1` and `type = 2` were removed along with the tag-based
-      // model and the built-in gateway. The ordinals stay reserved so they
-      // are never reused.
-      reserved 1, 2;
-      reserved "tags", "type";
-    }
-
     // TransparentProxying describes configuration for transparent proxying.
     message TransparentProxying {
       enum IpFamilyMode {
@@ -248,8 +233,11 @@ message Dataplane {
       ReachableBackends reachable_backends = 7;
     }
 
-    // Gateway describes a configuration of the gateway of the data plane proxy.
-    Gateway gateway = 3;
+    // `gateway = 3` was removed: a delegated gateway is marked by the
+    // `kuma.io/gateway` label on the Dataplane. The ordinal stays reserved so
+    // it is never reused.
+    reserved 3;
+    reserved "gateway";
 
     // Inbound describes a list of inbound interfaces of the data plane proxy.
     //
