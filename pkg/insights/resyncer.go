@@ -442,12 +442,7 @@ func (r *resyncer) createOrUpdateMeshInsight(
 	log := kuma_log.AddFieldsFromCtx(log, ctx, r.extensions).WithValues("mesh", mesh) // Add info
 	insight := &mesh_proto.MeshInsight{
 		Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{},
-		DataplanesByType: &mesh_proto.MeshInsight_DataplanesByType{
-			Standard:         &mesh_proto.MeshInsight_DataplaneStat{},
-			Gateway:          &mesh_proto.MeshInsight_DataplaneStat{},
-			GatewayDelegated: &mesh_proto.MeshInsight_DataplaneStat{},
-		},
-		Resources: map[string]*mesh_proto.MeshInsight_ResourceStat{},
+		Resources:  map[string]*mesh_proto.MeshInsight_ResourceStat{},
 		DpVersions: &mesh_proto.MeshInsight_DpVersions{
 			KumaDp: map[string]*mesh_proto.MeshInsight_DataplaneStat{},
 			Envoy:  map[string]*mesh_proto.MeshInsight_DataplaneStat{},
@@ -465,34 +460,23 @@ func (r *resyncer) createOrUpdateMeshInsight(
 		dpSubscription := dpInsight.GetLastSubscription().(*mesh_proto.DiscoverySubscription)
 		kumaDpVersion := getOrDefault(dpSubscription.GetVersion().GetKumaDp().GetVersion())
 		envoyVersion := getOrDefault(dpSubscription.GetVersion().GetEnvoy().GetVersion())
-		networking := dpOverview.Spec.GetDataplane().GetNetworking()
 
 		ensureVersionExists(kumaDpVersion, insight.DpVersions.KumaDp)
 		ensureVersionExists(envoyVersion, insight.DpVersions.Envoy)
 
 		status, _ := dpOverview.Status()
 
-		statByType := insight.GetDataplanesByType().GetStandard()
-		if networking.GetGateway() != nil {
-			statByType = insight.GetDataplanesByType().GetGatewayDelegated()
-		}
-
-		statByType.Total++
-
 		switch status {
 		case core_mesh.Online:
 			insight.Dataplanes.Online++
-			statByType.Online++
 			insight.DpVersions.KumaDp[kumaDpVersion].Online++
 			insight.DpVersions.Envoy[envoyVersion].Online++
 		case core_mesh.PartiallyDegraded:
 			insight.Dataplanes.PartiallyDegraded++
-			statByType.PartiallyDegraded++
 			insight.DpVersions.KumaDp[kumaDpVersion].PartiallyDegraded++
 			insight.DpVersions.Envoy[envoyVersion].PartiallyDegraded++
 		case core_mesh.Offline:
 			insight.Dataplanes.Offline++
-			statByType.Offline++
 			insight.DpVersions.KumaDp[kumaDpVersion].Offline++
 			insight.DpVersions.Envoy[envoyVersion].Offline++
 		}
@@ -501,11 +485,6 @@ func (r *resyncer) createOrUpdateMeshInsight(
 		updateTotal(envoyVersion, insight.DpVersions.Envoy)
 		updateMTLS(dpInsight.GetMTLS(), status, insight.MTLS)
 	}
-
-	insight.DataplanesByType.Gateway.Online = insight.GetDataplanesByType().GetGatewayDelegated().GetOnline()
-	insight.DataplanesByType.Gateway.Offline = insight.GetDataplanesByType().GetGatewayDelegated().GetOffline()
-	insight.DataplanesByType.Gateway.PartiallyDegraded = insight.GetDataplanesByType().GetGatewayDelegated().GetPartiallyDegraded()
-	insight.DataplanesByType.Gateway.Total = insight.GetDataplanesByType().GetGatewayDelegated().GetTotal()
 
 	key := MeshInsightKey(mesh)
 	changed := false
