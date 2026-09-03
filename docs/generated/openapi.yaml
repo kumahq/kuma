@@ -4801,6 +4801,23 @@ components:
           type: string
         proxyResourceName:
           type: string
+    DataplaneListenerCluster:
+      type: object
+      required:
+        - kri
+        - port
+        - protocol
+        - proxyResourceName
+      properties:
+        kri:
+          type: string
+        port:
+          type: integer
+          x-go-type: int32
+        protocol:
+          type: string
+        proxyResourceName:
+          type: string
     DataplaneListener:
       type: object
       required:
@@ -4808,6 +4825,7 @@ components:
         - type
         - port
         - proxyResourceName
+        - clusters
       properties:
         kri:
           type: string
@@ -4821,6 +4839,13 @@ components:
           x-go-type: int32
         proxyResourceName:
           type: string
+        clusters:
+          description: >-
+            The destinations this listener proxies traffic to, one entry per
+            destination port.
+          type: array
+          items:
+            $ref: '#/components/schemas/DataplaneListenerCluster'
     PolicyOrigin:
       type: object
       required:
