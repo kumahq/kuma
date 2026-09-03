@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	core_resources "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -23,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator/zoneproxy"
 )
 
 type dataplaneLayoutEndpoint struct {
@@ -94,18 +96,22 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		}
 	})
 
+	meshResources := baseMeshContext.Resources()
 	listeners := []api_common.DataplaneListener{}
 	for _, listener := range dataplane.Spec.GetNetworking().GetListeners() {
 		sectionName := listener.GetSectionName()
 		var listenerType api_common.DataplaneListenerType
 		var proxyResourceName string
+		var clusters []api_common.DataplaneListenerCluster
 		switch listener.GetType() {
 		case v1alpha1.Dataplane_Networking_Listener_ZoneIngress:
 			listenerType = api_common.ZoneIngress
 			proxyResourceName = naming.ContextualZoneIngressListenerName(sectionName)
+			clusters = clustersForDestinations(zoneproxy.IngressDestinations(meshResources), allPorts)
 		case v1alpha1.Dataplane_Networking_Listener_ZoneEgress:
 			listenerType = api_common.ZoneEgress
 			proxyResourceName = naming.ContextualZoneEgressListenerName(sectionName)
+			clusters = clustersForDestinations(zoneproxy.EgressDestinations(meshResources), firstPort)
 		default:
 			continue
 		}
@@ -114,6 +120,7 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 			Type:              listenerType,
 			Port:              int32(listener.GetPort()),
 			ProxyResourceName: proxyResourceName,
+			Clusters:          clusters,
 		})
 	}
 
@@ -145,6 +152,45 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 	if err != nil {
 		log.Error(err, "Could not write response")
 	}
+}
+
+func allPorts(destination core_resources.Destination) []core_resources.Port {
+	return destination.GetPorts()
+}
+
+// firstPort matches the egress generator, which builds a single filter chain
+// per MeshExternalService off its first port.
+func firstPort(destination core_resources.Destination) []core_resources.Port {
+	if ports := destination.GetPorts(); len(ports) > 0 {
+		return ports[:1]
+	}
+	return nil
+}
+
+// clustersForDestinations reports the clusters a zone proxy listener serves.
+// Like the outbounds above it describes what is configured, so a destination
+// with no endpoints yet is still listed.
+func clustersForDestinations(
+	destinations []core_resources.Destination,
+	ports func(core_resources.Destination) []core_resources.Port,
+) []api_common.DataplaneListenerCluster {
+	clusters := []api_common.DataplaneListenerCluster{}
+	for _, destination := range destinations {
+		origin := kri.From(destination)
+		for _, port := range ports(destination) {
+			id := kri.WithSectionName(origin, port.GetName()).String()
+			clusters = append(clusters, api_common.DataplaneListenerCluster{
+				Kri:               id,
+				Port:              port.GetValue(),
+				Protocol:          string(port.GetProtocol()),
+				ProxyResourceName: id,
+			})
+		}
+	}
+	slices.SortStableFunc(clusters, func(a, b api_common.DataplaneListenerCluster) int {
+		return strings.Compare(a.Kri, b.Kri)
+	})
+	return clusters
 }
 
 func (dle *dataplaneLayoutEndpoint) computeSpiffeID(request *restful.Request, meshName string, dataplane *core_mesh.DataplaneResource) *string {
