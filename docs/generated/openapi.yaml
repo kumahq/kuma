@@ -4378,7 +4378,6 @@ components:
         - total
         - internal
         - external
-        - gatewayDelegated
       properties:
         internal:
           description: Internal services statistics
@@ -4393,47 +4392,17 @@ components:
             total:
               type: integer
               example: 5
-        gatewayDelegated:
-          description: Delegated Gateway services statistics
-          allOf:
-            - $ref: '#/components/schemas/FullStatus'
     ZonesStats:
       type: object
       title: Zones Stats
       description: Zone statistics
       required:
         - controlPlanes
-        - zoneEgresses
-        - zoneIngresses
       properties:
         controlPlanes:
           description: Control Planes statistics
           allOf:
             - $ref: '#/components/schemas/BaseStatus'
-        zoneEgresses:
-          description: Zone Egresses statistics
-          allOf:
-            - $ref: '#/components/schemas/BaseStatus'
-        zoneIngresses:
-          description: Zone Ingresses statistics
-          allOf:
-            - $ref: '#/components/schemas/BaseStatus'
-    DataplanesStats:
-      type: object
-      title: Dataplanes Stats
-      description: Dataplanes statistics
-      required:
-        - standard
-        - gatewayDelegated
-      properties:
-        standard:
-          description: Standard dataplane proxy statistics
-          allOf:
-            - $ref: '#/components/schemas/FullStatus'
-        gatewayDelegated:
-          description: Delegated Gateway dataplane proxy statistics
-          allOf:
-            - $ref: '#/components/schemas/FullStatus'
     PoliciesStats:
       type: object
       title: Policies Stats
@@ -4496,7 +4465,7 @@ components:
         dataplanes:
           description: Dataplane proxy statistics
           allOf:
-            - $ref: '#/components/schemas/DataplanesStats'
+            - $ref: '#/components/schemas/FullStatus'
         policies:
           description: Policies statistics
           allOf:
@@ -14426,42 +14395,6 @@ components:
                 total:
                   type: integer
               type: object
-            dataplanesByType:
-              properties:
-                gateway:
-                  properties:
-                    offline:
-                      type: integer
-                    online:
-                      type: integer
-                    partiallyDegraded:
-                      type: integer
-                    total:
-                      type: integer
-                  type: object
-                gatewayDelegated:
-                  properties:
-                    offline:
-                      type: integer
-                    online:
-                      type: integer
-                    partiallyDegraded:
-                      type: integer
-                    total:
-                      type: integer
-                  type: object
-                standard:
-                  properties:
-                    offline:
-                      type: integer
-                    online:
-                      type: integer
-                    partiallyDegraded:
-                      type: integer
-                    total:
-                      type: integer
-                  type: object
-              type: object
             dpVersions:
               properties:
                 envoy:
@@ -14559,42 +14492,6 @@ components:
               type: integer
             total:
               type: integer
-          type: object
-        dataplanesByType:
-          properties:
-            gateway:
-              properties:
-                offline:
-                  type: integer
-                online:
-                  type: integer
-                partiallyDegraded:
-                  type: integer
-                total:
-                  type: integer
-              type: object
-            gatewayDelegated:
-              properties:
-                offline:
-                  type: integer
-                online:
-                  type: integer
-                partiallyDegraded:
-                  type: integer
-                total:
-                  type: integer
-              type: object
-            standard:
-              properties:
-                offline:
-                  type: integer
-                online:
-                  type: integer
-                partiallyDegraded:
-                  type: integer
-                total:
-                  type: integer
-              type: object
           type: object
         dpVersions:
           properties:
@@ -18485,37 +18382,15 @@ components:
             partiallyDegraded: 1
           external:
             total: 1
-          gatewayDelegated:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
-          internalByStatus:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
         zones:
           controlPlanes:
             online: 1
             total: 1
-          zoneEgresses:
-            online: 1
-            total: 1
-          zoneIngresses:
-            online: 1
-            total: 1
         dataplanes:
-          standard:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
-          gatewayDelegated:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
+          total: 4
+          online: 2
+          offline: 1
+          partiallyDegraded: 1
         policies:
           total: 100
         meshes:

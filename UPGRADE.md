@@ -133,7 +133,7 @@ None. Existing generated `MeshHTTPRoute`s are backfilled with the timestamp labe
 The built-in gateway implementation was removed over the previous releases, and the Dataplane validator has been rejecting `networking.gateway.type: BUILTIN` since then. The remaining API surface is now gone too:
 
 - `Dataplane.networking.gateway.type` no longer has a `BUILTIN` value. `DELEGATED` is the only gateway type. A `Dataplane` carrying `type: BUILTIN` is now rejected while it is parsed, as an unknown enum value, instead of producing the previous `BUILTIN gateways are no longer supported, use DELEGATED instead` validation error.
-- `MeshInsight.dataplanesByType.gatewayBuiltin` and the `gateway_builtin` `ServiceInsight` service type are removed. `dataplanesByType.gateway` now reports the delegated gateway totals only.
+- `MeshInsight.dataplanesByType.gatewayBuiltin` and the `gateway_builtin` `ServiceInsight` service type are removed. `dataplanesByType` itself is removed as well, see below.
 - `GET /meshes/{mesh}/dataplanes+insights?gateway=builtin` is no longer a valid filter. Use `gateway=delegated`, or `gateway=true` for any gateway.
 - `GET /meshes/{mesh}/service-insights?type=gateway_builtin` is no longer a valid filter and returns `400`. Use `type=gateway_delegated`.
 - The `gatewayBuiltin` object disappears from the `/global-insight` response, in both `dataplanes` and `services`.
@@ -145,6 +145,20 @@ All three protobuf ordinals are reserved, so they can never be reused for someth
 Delete every `Dataplane` with `networking.gateway.type: BUILTIN` before upgrading. `2.14.x` still accepts them, and after the upgrade the control plane fails to parse them as an unknown enum value, which breaks listing the `Dataplane`s of that mesh. Find them with `kumactl get dataplanes -o yaml` per mesh, or `kubectl get dataplanes -A -o yaml`, and grep for `BUILTIN`.
 
 Also drop `type: BUILTIN` from any manifest you still keep under source control, and stop consuming the `gatewayBuiltin` fields and the `gateway=builtin` / `type=gateway_builtin` filters if you query the API directly.
+
+### The gateway, zone ingress and zone egress breakdowns are removed from the insights
+
+`MeshInsight.dataplanesByType` is removed. `MeshInsight.dataplanes` already carried the same totals across every proxy in the mesh, and the split by type no longer had a source of truth: the built-in gateway is gone, `gateway` was a copy of `gatewayDelegated`, and a delegated gateway is now identified by its `Dataplane` labels rather than by a field on the resource. Field 7 is reserved, so a Zone control plane on an older version still syncs to a Global control plane on this one.
+
+The `/global-insight` response drops three objects with it:
+
+- `dataplanes.standard` and `dataplanes.gatewayDelegated` are replaced by a flat `dataplanes` object with `total`, `online`, `offline` and `partiallyDegraded`.
+- `services.gatewayDelegated` is removed. It grouped gateway `Dataplane`s by their `kuma.io/service` tag, and gateway tags no longer exist.
+- `zones.zoneIngresses` and `zones.zoneEgresses` are removed. They were fed by `ZoneIngressInsight` and `ZoneEgressInsight`, which went away when zone proxies became `Dataplane`s with listeners, and had been reporting zero since.
+
+**Action required**
+
+If you read `/global-insight`, take the dataplane totals from `dataplanes` directly instead of summing `standard` and `gatewayDelegated`. Counts for zone proxies and for delegated gateways are no longer served by the insight API; list the `Dataplane`s and filter by label instead.
 
 ### Control plane RBAC is narrowed on Kubernetes
 

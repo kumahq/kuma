@@ -190,93 +190,6 @@ var _ = Describe("Insight Persistence", func() {
 		}).Should(Succeed())
 	})
 
-	It("should count dataplanes by type", func() {
-		// setup
-		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp1", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		dp1 := core_mesh.NewDataplaneInsightResource()
-		dp1.Spec.Subscriptions = append(dp1.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			Id: strconv.Itoa(1),
-		})
-		err = rm.Create(context.Background(), dp1, store.CreateByKey("dp1", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp2", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		dp2 := core_mesh.NewDataplaneInsightResource()
-		dp2.Spec.Subscriptions = append(dp2.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			Id: strconv.Itoa(2),
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
-			DisconnectTime: &timestamppb.Timestamp{
-				Seconds: 101,
-				Nanos:   202,
-			},
-		})
-		err = rm.Create(context.Background(), dp2, store.CreateByKey("dp2", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp3", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		dp3 := core_mesh.NewDataplaneInsightResource()
-		dp3.Spec.Subscriptions = append(dp3.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			Id: strconv.Itoa(3),
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
-		})
-		err = rm.Create(context.Background(), dp3, store.CreateByKey("dp3", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.GatewayDataplane}, store.CreateByKey("dp4", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		dp4 := core_mesh.NewDataplaneInsightResource()
-		dp4.Spec.Subscriptions = append(dp4.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			Id: strconv.Itoa(4),
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
-		})
-		err = rm.Create(context.Background(), dp4, store.CreateByKey("dp4", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		step(stepsToResync)
-
-		// when
-		Eventually(func(g Gomega) {
-			meshInsight := core_mesh.NewMeshInsightResource()
-			err := rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
-			g.Expect(err).ToNot(HaveOccurred())
-
-			// then
-			standardDP := meshInsight.Spec.GetDataplanesByType().GetStandard()
-			g.Expect(standardDP.GetTotal()).To(Equal(uint32(3)))
-			g.Expect(standardDP.GetOnline()).To(Equal(uint32(1)))
-			g.Expect(standardDP.GetOffline()).To(Equal(uint32(2)))
-
-			gatewayDP := meshInsight.Spec.GetDataplanesByType().GetGateway()
-			g.Expect(gatewayDP.GetTotal()).To(Equal(uint32(1)))
-			g.Expect(gatewayDP.GetOffline()).To(Equal(uint32(0)))
-			g.Expect(gatewayDP.GetOnline()).To(Equal(uint32(1)))
-
-			delegatedGatewayDP := meshInsight.Spec.GetDataplanesByType().GetGatewayDelegated()
-			g.Expect(delegatedGatewayDP.GetTotal()).To(Equal(uint32(1)))
-			g.Expect(delegatedGatewayDP.GetOffline()).To(Equal(uint32(0)))
-			g.Expect(delegatedGatewayDP.GetOnline()).To(Equal(uint32(1)))
-		}).Should(Succeed())
-	})
-
 	It("should count dataplanes by mTLS backends", func() {
 		// given mesh
 		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
@@ -629,7 +542,7 @@ var _ = Describe("Insight Persistence", func() {
 		}).Should(Succeed())
 	})
 
-	It("should return gateway in services", func() {
+	It("should count gateway dataplanes", func() {
 		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 

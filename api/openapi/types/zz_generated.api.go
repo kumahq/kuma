@@ -118,15 +118,6 @@ type DataplaneXDSConfig struct {
 	Xds map[string]interface{} `json:"xds"`
 }
 
-// DataplanesStats Dataplanes statistics
-type DataplanesStats struct {
-	// GatewayDelegated Delegated Gateway dataplane proxy statistics
-	GatewayDelegated FullStatus `json:"gatewayDelegated"`
-
-	// Standard Standard dataplane proxy statistics
-	Standard FullStatus `json:"standard"`
-}
-
 // FullStatus defines model for FullStatus.
 type FullStatus struct {
 	Offline           int `json:"offline"`
@@ -141,7 +132,7 @@ type GlobalInsightBase struct {
 	CreatedAt time.Time `json:"createdAt"`
 
 	// Dataplanes Dataplane proxy statistics
-	Dataplanes DataplanesStats `json:"dataplanes"`
+	Dataplanes FullStatus `json:"dataplanes"`
 
 	// Meshes Mesh statistics
 	Meshes MeshesStats `json:"meshes"`
@@ -243,9 +234,6 @@ type ServicesStats struct {
 		Total int `json:"total"`
 	} `json:"external"`
 
-	// GatewayDelegated Delegated Gateway services statistics
-	GatewayDelegated FullStatus `json:"gatewayDelegated"`
-
 	// Internal Internal services statistics
 	Internal FullStatus `json:"internal"`
 }
@@ -254,12 +242,6 @@ type ServicesStats struct {
 type ZonesStats struct {
 	// ControlPlanes Control Planes statistics
 	ControlPlanes BaseStatus `json:"controlPlanes"`
-
-	// ZoneEgresses Zone Egresses statistics
-	ZoneEgresses BaseStatus `json:"zoneEgresses"`
-
-	// ZoneIngresses Zone Ingresses statistics
-	ZoneIngresses BaseStatus `json:"zoneIngresses"`
 }
 
 // ConfigResponse defines model for ConfigResponse.

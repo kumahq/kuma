@@ -48,10 +48,6 @@
                     "additionalProperties": true,
                     "description": "mTLS statistics"
                 },
-                "dataplanesByType": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplanesByType",
-                    "additionalProperties": true
-                },
                 "resources": {
                     "additionalProperties": {
                         "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.ResourceStat",
@@ -84,26 +80,6 @@
             "type": "object",
             "title": "Dataplane Stat",
             "description": "DataplaneStat defines statistic specifically for Dataplane"
-        },
-        "kuma.mesh.v1alpha1.MeshInsight.DataplanesByType": {
-            "properties": {
-                "standard": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
-                    "additionalProperties": true
-                },
-                "gateway": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
-                    "additionalProperties": true
-                },
-                "gatewayDelegated": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
-                    "additionalProperties": true
-                }
-            },
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Dataplanes By Type",
-            "description": "DataplanesByType defines statistics splitted by dataplane types"
         },
         "kuma.mesh.v1alpha1.MeshInsight.DpVersions": {
             "properties": {
