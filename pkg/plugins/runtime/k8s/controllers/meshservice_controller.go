@@ -113,7 +113,7 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 			}
 			return kube_ctrl.Result{}, nil
 		}
-		if _, ok := svc.GetAnnotations()[metadata.KumaGatewayAnnotation]; ok {
+		if gwEnabled, _, _ := metadata.Annotations(svc.GetAnnotations()).GetEnabled(metadata.KumaGatewayAnnotation); gwEnabled {
 			log.V(1).Info("service is for gateway. Ignoring.")
 			return kube_ctrl.Result{}, nil
 		}
@@ -310,7 +310,7 @@ func (r *MeshServiceReconciler) isServiceForGateway(ctx context.Context, log log
 				return false, errors.Wrap(err, "unable to get Pod for endpoint")
 			}
 
-			if _, ok := pod.GetAnnotations()[metadata.KumaGatewayAnnotation]; ok {
+			if gwEnabled, _, _ := metadata.Annotations(pod.GetAnnotations()).GetEnabled(metadata.KumaGatewayAnnotation); gwEnabled {
 				log.V(1).Info("service backs gateway pods. Ignoring.", "pod", podKey.String())
 				return true, nil
 			}
@@ -600,9 +600,10 @@ func (p GatewayAnnotationChangedPredicate) Update(e event.UpdateEvent) bool {
 	if e.ObjectOld == nil || e.ObjectNew == nil {
 		return false
 	}
-	oldAnnotations := e.ObjectOld.GetAnnotations()
-	newAnnotations := e.ObjectNew.GetAnnotations()
-	_, oldHasGateway := oldAnnotations[metadata.KumaGatewayAnnotation]
-	_, newHasGateway := newAnnotations[metadata.KumaGatewayAnnotation]
-	return oldHasGateway != newHasGateway
+	// Compare the parsed value, not mere presence: flipping the annotation
+	// between enabled and disabled changes whether the Service gets a
+	// MeshService, so it has to trigger a reconcile too.
+	oldGateway, _, _ := metadata.Annotations(e.ObjectOld.GetAnnotations()).GetEnabled(metadata.KumaGatewayAnnotation)
+	newGateway, _, _ := metadata.Annotations(e.ObjectNew.GetAnnotations()).GetEnabled(metadata.KumaGatewayAnnotation)
+	return oldGateway != newGateway
 }

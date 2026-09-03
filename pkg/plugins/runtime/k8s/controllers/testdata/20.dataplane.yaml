@@ -10,6 +10,4 @@ metadata:
 spec:
   networking:
     address: 192.168.0.1
-    gateway:
-      tags:
-        kuma.io/service-name: deploymentOne_demo_svc
+    gateway: {}

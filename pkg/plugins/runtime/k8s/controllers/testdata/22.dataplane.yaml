@@ -10,4 +10,12 @@ metadata:
 spec:
   networking:
     address: 192.168.0.1
-    gateway: {}
+    inbound:
+    - health:
+        ready: true
+      port: 8080
+      protocol: tcp
+    - health:
+        ready: true
+      port: 8443
+      protocol: tcp
