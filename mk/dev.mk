@@ -55,7 +55,10 @@ BUF=$(shell $(MISE) which buf)
 BUF_CACHE_DIR := $(CI_TOOLS_DIR)/buf/cache
 PROTO_GOOGLE_APIS := $(shell $(BUF) export buf.build/googleapis/googleapis --output $(BUF_CACHE_DIR)/googleapis && echo $(BUF_CACHE_DIR)/googleapis)
 PROTO_PGV := $(shell $(BUF) export buf.build/envoyproxy/protoc-gen-validate --output $(BUF_CACHE_DIR)/pgv && echo $(BUF_CACHE_DIR)/pgv)
-PROTO_ENVOY := $(shell $(BUF) export buf.build/envoyproxy/envoy --output $(BUF_CACHE_DIR)/envoy && echo $(BUF_CACHE_DIR)/envoy)
+# Envoy does not publish a BSR proto snapshot for every patch release, but always does
+# for a minor, so follow ENVOY_VERSION's minor. Override to pick up a later patch's API.
+ENVOY_PROTO_VERSION ?= v$(basename $(ENVOY_VERSION)).0
+PROTO_ENVOY := $(shell $(BUF) export buf.build/envoyproxy/envoy:$(ENVOY_PROTO_VERSION) --output $(BUF_CACHE_DIR)/envoy && echo $(BUF_CACHE_DIR)/envoy)
 PROTO_XDS := $(shell $(BUF) export buf.build/cncf/xds --output $(BUF_CACHE_DIR)/xds && echo $(BUF_CACHE_DIR)/xds)
 YQ=$(shell $(MISE) which yq)
 HELM=$(shell $(MISE) which helm)
