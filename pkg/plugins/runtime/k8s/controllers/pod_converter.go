@@ -147,24 +147,19 @@ func (p *PodConverter) dataplaneFor(
 
 	dataplane.Networking.Address = pod.Status.PodIP
 
-	gwType, exist := annotations.GetString(metadata.KumaGatewayAnnotation)
-	if exist {
-		switch gwType {
-		case "enabled":
-			gateway, err := p.GatewayByServiceFor(ctx, pod, services)
-			if err != nil {
-				return nil, err
-			}
-			dataplane.Networking.Gateway = gateway
-		case "provided":
-			gateway, err := p.GatewayByDeploymentFor(ctx, pod, services)
-			if err != nil {
-				return nil, err
-			}
-			dataplane.Networking.Gateway = gateway
-		default:
-			return nil, errors.Errorf("invalid delegated gateway type '%s'", gwType)
+	// The injector parses this annotation as a boolean, so accept exactly the
+	// same values here: a pod the injector treated as a gateway must convert
+	// into a gateway Dataplane, and one it did not must still get a Dataplane.
+	gwEnabled, _, err := annotations.GetEnabled(metadata.KumaGatewayAnnotation)
+	if err != nil {
+		return nil, err
+	}
+	if gwEnabled {
+		gateway, err := p.GatewayByServiceFor(ctx, pod, services)
+		if err != nil {
+			return nil, err
 		}
+		dataplane.Networking.Gateway = gateway
 	} else {
 		var regularServices, zoneProxyServices []*kube_core.Service
 		for _, svc := range services {
@@ -238,21 +233,6 @@ func (p *PodConverter) GatewayByServiceFor(ctx context.Context, pod *kube_core.P
 	return &mesh_proto.Dataplane_Networking_Gateway{
 		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
 		Tags: map[string]string{},
-	}, nil
-}
-
-func (p *PodConverter) GatewayByDeploymentFor(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
-	namespace := pod.GetObjectMeta().GetNamespace()
-	deployment, kind, err := p.InboundConverter.NameExtractor.Name(ctx, pod)
-	if err != nil {
-		return nil, err
-	}
-	if kind != "Deployment" {
-		return p.GatewayByServiceFor(ctx, pod, services)
-	}
-	return &mesh_proto.Dataplane_Networking_Gateway{
-		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-		Tags: map[string]string{"kuma.io/service-name": fmt.Sprintf("%s_%s_svc", deployment, namespace)},
 	}, nil
 }
 

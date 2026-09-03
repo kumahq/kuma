@@ -385,8 +385,91 @@ var _ = Describe("prepareRoutes", func() {
 		Expect(matched).ToNot(BeNil())
 		Expect(matched.BackendRefs).To(BeEmpty())
 		Expect(matched.AllBackendRefsUnresolved).To(BeTrue())
+		Expect(matched.AllBackendRefsHaveZeroWeight).To(BeFalse())
 		Expect(matched.UnresolvedBackendRefsWeight).To(BeZero())
 	})
+
+	DescribeTable("derives the all-zero backendRefs flag only for explicit non-empty zero-weight refs", func(backendRefs []api.BackendRef, expectedAllZero bool) {
+		backend := builders.MeshService().
+			WithName("backend").
+			WithMesh(core_model.DefaultMesh).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			Build()
+		payments := builders.MeshService().
+			WithName("payments-hash").
+			WithMesh(core_model.DefaultMesh).
+			WithLabels(map[string]string{
+				mesh_proto.DisplayName:      "payments",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			}).
+			AddIntPort(8080, 8080, core_meta.ProtocolHTTP).
+			Build()
+
+		meshCtx := xds_builders.Context().
+			WithMeshLocalResources([]core_model.Resource{backend, payments}).
+			Build().
+			Mesh
+
+		matches := []api.Match{{
+			Path: &api.PathMatch{Type: api.PathPrefix, Value: "/zero"},
+		}}
+		policyMeta := &test_model.ResourceMeta{
+			Name: "web-route",
+			Mesh: core_model.DefaultMesh,
+			Labels: map[string]string{
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+			},
+		}
+		toRules := core_rules.ToRules{
+			ResourceRules: outbound.ResourceRules{
+				kri.From(backend): {
+					Resource: backend.GetMeta(),
+					Conf: []any{api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: matches,
+							Default: api.RuleConf{
+								BackendRefs: &backendRefs,
+							},
+						}},
+					}},
+					OriginByMatches: map[common_api.MatchesHash]common.Origin{
+						api.HashMatches(matches): {Resource: policyMeta},
+					},
+				},
+			},
+		}
+		svc := meshroute_xds.DestinationService{
+			Outbound: &xds_types.Outbound{
+				Resource: kri.WithSectionName(kri.From(backend), "8080"),
+				Port:     8080,
+			},
+			Protocol: core_meta.ProtocolHTTP,
+		}
+
+		routes := prepareRoutes(toRules, svc, meshCtx)
+
+		var matched *api.Route
+		for i := range routes {
+			if routes[i].Match.Path != nil && routes[i].Match.Path.Value == "/zero" {
+				matched = &routes[i]
+				break
+			}
+		}
+		Expect(matched).ToNot(BeNil())
+		Expect(matched.AllBackendRefsHaveZeroWeight).To(Equal(expectedAllZero))
+	},
+		Entry("all explicit backendRefs have zero weight", []api.BackendRef{{
+			TargetRef: builders.TargetRefMeshService("payments", "kuma-demo", ""),
+			Port:      pointer.To(uint32(8080)),
+			Weight:    pointer.To(uint(0)),
+		}}, true),
+		Entry("unresolvable explicit backendRefs with zero weight still set the all-zero flag", []api.BackendRef{{
+			TargetRef: builders.TargetRefMeshService("missing-backend", "kuma-demo", ""),
+			Port:      pointer.To(uint32(8080)),
+			Weight:    pointer.To(uint(0)),
+		}}, true),
+		Entry("explicit empty backendRefs do not set the all-zero flag", []api.BackendRef{}, false),
+	)
 
 	DescribeTable("should keep resolved backendRefs while tracking missing-port declared weight", func(refPorts []uint32, refWeights []uint, expectedAllUnresolved bool, expectedResolved []uint32, expectedUnresolvedWeight uint) {
 		backend := builders.MeshService().

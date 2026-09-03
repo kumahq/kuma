@@ -21,6 +21,7 @@ metadata:
           excludePorts:
           - 1234
           - 5678
+          - 9902
           port: 15006
         outbound:
           enabled: true
@@ -128,6 +129,8 @@ spec:
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_ENABLED
       value: "false"
+    - name: KUMA_READINESS_PORT
+      value: "9902"
     - name: POD_NAME
       valueFrom:
         fieldRef:
@@ -151,7 +154,7 @@ spec:
       failureThreshold: 212
       httpGet:
         path: /ready
-        port: 9901
+        port: 9902
       initialDelaySeconds: 260
       periodSeconds: 25
       successThreshold: 1
@@ -161,7 +164,7 @@ spec:
       failureThreshold: 112
       httpGet:
         path: /ready
-        port: 9901
+        port: 9902
       initialDelaySeconds: 11
       periodSeconds: 15
       successThreshold: 11
@@ -187,7 +190,7 @@ spec:
     startupProbe:
       httpGet:
         path: /ready
-        port: 9901
+        port: 9902
       successThreshold: 1
     volumeMounts:
     - mountPath: /tmp

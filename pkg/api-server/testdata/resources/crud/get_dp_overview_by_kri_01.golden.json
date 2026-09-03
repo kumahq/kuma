@@ -1,0 +1,19 @@
+{
+ "type": "DataplaneOverview",
+ "mesh": "default",
+ "name": "dp-2",
+ "creationTime": "0001-01-01T00:00:00Z",
+ "modificationTime": "0001-01-01T00:00:00Z",
+ "kri": "kri_dp_default___dp-2_",
+ "dataplane": {
+  "networking": {
+   "address": "10.1.2.2",
+   "inbound": [
+    {
+     "port": 1234
+    }
+   ]
+  }
+ },
+ "dataplaneInsight": {}
+}

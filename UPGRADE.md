@@ -8,6 +8,20 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Kubernetes probes on the sidecar always use the readiness port
+
+The injected `kuma-sidecar` container had its liveness, readiness and startup probes pointed at the Envoy admin port (`9901`) when `experimental.envoyAdminUnixSocket` was off, and at the kuma-dp readiness port (`9902`) when it was on. Those two settings are decided in different places - the probe port is written into the Pod by the injecting webhook at admission, the admin transport is chosen at bootstrap by whichever control plane instance answers - so a rolling control plane upgrade, or a change to the flag, left a window where they disagreed and pods went into `CrashLoopBackOff`.
+
+Probes now always use the readiness port, whatever the admin transport, and the readiness port is always excluded from inbound transparent proxy interception. To keep the same meaning on both transports, `/ready` on the readiness port is now proxied to the Envoy admin `/ready` in both cases, so a Pod is marked ready only once Envoy has its configuration. Previously the readiness port answered `READY` as soon as kuma-dp was up when admin ran over TCP; the probes did not use that port in that mode, so no probe changes meaning.
+
+Pods injected before the upgrade keep their existing probes on `9901` and continue to work: the `kuma:envoy:admin` listener still serves `/ready` on that port. They move to the readiness port the next time they are recreated.
+
+The sidecar now also receives `KUMA_READINESS_PORT` from `bootstrapServer.params.readinessPort`, so kuma-dp listens on the port the probes use. Previously the injector took the probe port from the control plane setting while kuma-dp took its listen port from its own `KUMA_READINESS_PORT`, and the two agreed only because both default to `9902`. For the same reason `bootstrapServer.params.readinessPort` no longer accepts `0`; a control plane configured that way now fails to start instead of injecting probes for port `0`.
+
+**Action required**
+
+None for most users. If you have a `NetworkPolicy`, a monitoring check, or a `ContainerPatch` that pins the sidecar probe port to `9901`, update it to `9902` (or to `bootstrapServer.params.readinessPort` if you changed it). If you set `bootstrapServer.params.readinessPort` to `0`, or set `KUMA_READINESS_PORT` on the sidecar by hand to a value other than the control plane setting, remove it.
+
 ### The `k8s.kuma.io/service-account` label on a `Dataplane` is managed by the control plane
 
 On Kubernetes this label is computed by the control plane from the Pod's ServiceAccount and is not meant to be set by hand. The admission webhook now rejects any `Dataplane` create or update that carries `k8s.kuma.io/service-account`, unless the request comes from the control plane itself or from another user listed in `runtime.kubernetes.allowedUsers`, on both Zone and Global control planes. A proxy is also rejected at xDS authentication when the label on its `Dataplane` does not match the ServiceAccount of its Pod. Other resource types are unaffected, as are resources synced over KDS and resources written by the control plane.
@@ -542,7 +556,7 @@ networking:
 
 ### Route `backendRef` no longer accepts `MeshServiceSubset`
 
-`MeshHTTPRoute` and `MeshTCPRoute` accept only `MeshService`, `MeshExternalService` and `MeshMultiZoneService` in `backendRefs[]` and in the `RequestMirror` filter's `backendRef`. A route using `kind: MeshServiceSubset` is rejected with `value 'MeshServiceSubset' is not supported`.
+`MeshHTTPRoute` and `MeshTCPRoute` validators now accept only `MeshService`, `MeshExternalService`, and `MeshMultiZoneService` in `backendRefs[]`; the `MeshHTTPRoute` `RequestMirror` filter's `backendRef` is limited to the same kinds. A route using `kind: MeshServiceSubset` is rejected with `value 'MeshServiceSubset' is not supported`.
 
 The xDS path that turned such a ref into a `kuma.io/service` cluster is gone with it, and a `MeshService` ref selected by `kuma.io/display-name` alone no longer falls back to one when it fails to resolve. A backendRef that resolves to no real resource now produces no split at all, rather than a split towards a cluster that is never generated.
 
@@ -566,7 +580,7 @@ backendRefs:
     port: 8080
 ```
 
-**Warning**: Stored routes that still carry a `MeshServiceSubset` backendRef keep being served, but the backend is dropped during xDS generation, so traffic matching those rules loses its destination.
+**Warning**: Stored routes that still carry a `MeshServiceSubset` backendRef keep being served, but the current control plane no longer resolves that kind into a real backend. During xDS generation the backendRef is therefore treated as unresolved, so traffic matching those rules loses its destination.
 
 The `tags` field is also gone from the `backendRef` schema entirely, not just disallowed for `MeshServiceSubset`. On Kubernetes, a `tags` key on a `backendRef` is pruned by the CRD structural schema before it reaches the control plane. On Universal, it is silently ignored when the resource is unmarshalled.
 
@@ -779,9 +793,11 @@ legacy statistics:
   last services reported there, along with their per-service `zones` list.
   The GUI pages backed by that endpoint list nothing. `kumactl inspect
   services` is removed; use `kumactl get meshservices` instead.
-- `MeshInsight.services` (the `Total`/`Internal`/`External` service count
-  stat) is removed from the API. Field number 6 is reserved and will not be
-  reused.
+- `MeshInsight.services` is removed from the API. Field number 6 is reserved
+  and will not be reused. Mesh-scoped service status now comes from
+  `MeshService` and `MeshExternalService`; the aggregated
+  `internal`/`external`/`gatewayDelegated` counts live under `services` in the
+  global insight endpoint, not in `MeshInsight`.
 - The Dataplane/MeshGateway inspect `_rules` endpoint no longer returns the
   legacy `toRules` and `fromRules` fields on each rule entry; both fields are
   removed from the response. `toResourceRules` and `inboundRules` are
@@ -792,13 +808,15 @@ legacy statistics:
 
 **Action required**
 
-Update any automation or dashboards that read `ServiceInsight.services`,
-`MeshInsight.services`, or the `_rules` `toRules`/`fromRules` fields to use
-`MeshService`/`MeshExternalService` status and `_rules` `toResourceRules`/
-`inboundRules` instead. For delegated gateways, which are never turned into a
-`MeshService`, use the `Dataplane`/`DataplaneOverview` endpoints filtered by
-gateway type; aggregated gateway service counts remain available under `services` in the
-global insight endpoint.
+Update any automation or dashboards that read the legacy `ServiceInsight`
+resource or `/meshes/{mesh}/service-insights` endpoints, `MeshInsight.services`,
+or the `_rules` `toRules`/`fromRules` fields. Use `MeshService`/
+`MeshExternalService` status for per-resource service state, `_rules`
+`toResourceRules`/`inboundRules` for inspect output, and the global insight
+endpoint's `services` object for aggregated `internal`/`external`/
+`gatewayDelegated` counts. For delegated gateways, which are never turned into
+a `MeshService`, use the `Dataplane`/`DataplaneOverview` endpoints filtered by
+gateway type when you need per-gateway detail.
 
 ### Zone proxies authenticate with a dataplane token
 
@@ -954,6 +972,20 @@ removed" below for the separate removal of `MeshGatewayInstance` management.
   own system namespace. Remove this key from your config file and Helm
   values — leaving it in place is harmless but has no effect.
 
+### `kuma.io/gateway` is a boolean annotation
+
+The `kuma.io/gateway` Pod annotation is now read the same way on both sides of the injection: as a boolean, accepting `enabled`, `true`, `yes` to mark a delegated gateway and `disabled`, `false`, `no` to opt out. Anything else is rejected with `annotation "kuma.io/gateway" has wrong value "<value>"`.
+
+The `provided` value is gone. It has not worked since 2.10: the injector parses this annotation as a boolean, so a Pod annotated `kuma.io/gateway: provided` fails admission before any `Dataplane` is created. Its only effect on the `Dataplane` was a `kuma.io/service-name` gateway tag that nothing has read since `kuma.io/service` was removed.
+
+Two values that used to be inconsistent now behave as the injector always intended. `kuma.io/gateway: "true"` was injected as a gateway but then failed conversion with `invalid delegated gateway type 'true'`; it now produces a gateway `Dataplane`. `kuma.io/gateway: disabled` was injected as a regular Pod but also failed conversion, so the Pod never got a `Dataplane` at all; it now produces a regular `Dataplane` with inbounds.
+
+The consumers that keyed off the annotation being present rather than its value follow the same rule now. A Pod or `Service` annotated `kuma.io/gateway: disabled` gets a `MeshService` like any other workload instead of being skipped, a change of the annotation between enabled and disabled triggers a `MeshService` reconcile, and the injected sidecar of such a Pod gets the regular application probe proxy port instead of `0`, which previously left its probes pointing at a port nothing served.
+
+**Action required**
+
+Replace `kuma.io/gateway: provided` with `kuma.io/gateway: enabled` on any Pod, Deployment template, or Helm value that still sets it. Such a Pod is currently failing admission, so this is a fix rather than a regression, but the annotation has to change before the Pod can start.
+
 ### Built-in gateway Kubernetes controllers removed
 
 The control plane no longer reconciles `MeshGatewayInstance` resources on
@@ -961,9 +993,9 @@ Kubernetes. It no longer creates or manages the `Service` and `Deployment`
 generated for a `MeshGatewayInstance`, no longer converts `Pod`s annotated
 `kuma.io/gateway: builtin` into a built-in gateway `Dataplane`, and no longer
 runs the `MeshGatewayInstance` admission validator. `kumactl inspect
-meshgateway` has been removed along with its client. Delegated gateway modes
-(`kuma.io/gateway: enabled` / `provided`) and the Gateway API `HTTPRoute`
-GAMMA path are unaffected.
+meshgateway` has been removed along with its client. Delegated gateways
+(`kuma.io/gateway: enabled`) and the Gateway API `HTTPRoute` GAMMA path are
+unaffected.
 
 The `MeshGatewayInstance` CRD, its API types, and the `MeshGateway`/
 `MeshGatewayRoute` resources themselves are not removed by this change.
@@ -975,8 +1007,7 @@ The `MeshGatewayInstance` CRD, its API types, and the `MeshGateway`/
   `Dataplane` it previously generated for them is not updated, recreated, or
   cleaned up automatically. If you still rely on a built-in gateway, migrate
   it to a delegated gateway (bring your own `Deployment`/`Service` fronting a
-  Kuma-injected pod annotated `kuma.io/gateway: enabled` or `provided`) before
-  upgrading.
+  Kuma-injected pod annotated `kuma.io/gateway: enabled`) before upgrading.
 - Before upgrading, or as part of your migration, manually delete the
   `MeshGatewayInstance` resources you no longer need, along with the
   `Service`, `Deployment`, and `Dataplane` objects they previously generated
@@ -1359,12 +1390,11 @@ configuration. Applying, updating, or removing a `TrafficRoute` resource no
 longer changes outbound routing, load balancing, or reachable destinations
 for any dataplane, zone ingress, or zone egress.
 
-Traffic between services now always flows by default, the same way it
-already did in meshes that only use `MeshHTTPRoute`/`MeshTCPRoute`. A
-`TrafficRoute` resource previously already used to be required to make
-communication between services possible; it no longer has any effect,
-including its side effect of disabling default routing until a
-`MeshHTTPRoute`/`MeshTCPRoute` was applied.
+Traffic between services now always flows by default, the same way it already
+did in meshes that only use `MeshHTTPRoute`/`MeshTCPRoute`. A user-authored
+`TrafficRoute` no longer has any effect, including the legacy behavior where
+just having a `TrafficRoute` disabled the default routing fallback when no
+`MeshHTTPRoute`/`MeshTCPRoute` matched instead.
 
 The `TrafficRoute` resource, API, and KDS sync are still in place for this
 release; existing resources are still accepted and stored.
@@ -1536,7 +1566,7 @@ A `Dataplane` with `networking.gateway.type: BUILTIN` is now rejected at
 admission and update. The `Dataplane.networking.gateway` message and the
 `DELEGATED` gateway type are unaffected — delegated gateways (bring your own
 `Deployment`/`Service` fronting a Kuma-injected pod annotated
-`kuma.io/gateway: enabled` or `provided`) continue to work exactly as before.
+`kuma.io/gateway: enabled`) continue to work exactly as before.
 
 **Action required**
 

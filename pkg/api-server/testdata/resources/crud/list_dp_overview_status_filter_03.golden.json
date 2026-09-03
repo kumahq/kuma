@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not retrieve resources",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "/meshes/{mesh}/dataplanes/_overview.filter[status]",
+   "reason": "must be one of Online, Offline, Partially degraded"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "/meshes/{mesh}/dataplanes/_overview.filter[status]",
+   "message": "must be one of Online, Offline, Partially degraded"
+  }
+ ]
+}

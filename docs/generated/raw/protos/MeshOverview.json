@@ -1,0 +1,166 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/MeshOverview",
+    "definitions": {
+        "MeshOverview": {
+            "properties": {
+                "mesh": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh",
+                    "additionalProperties": true
+                },
+                "mesh_insight": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mesh Overview",
+            "description": "MeshOverview defines the projected state of a Mesh."
+        },
+        "kuma.mesh.v1alpha1.Mesh": {
+            "properties": {
+                "skipCreatingInitialPolicies": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array",
+                    "description": "List of policies to skip creating by default when the mesh is created. e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all policies."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mesh",
+            "description": "Mesh defines configuration of a single mesh."
+        },
+        "kuma.mesh.v1alpha1.MeshInsight": {
+            "properties": {
+                "dataplanes": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                    "additionalProperties": true
+                },
+                "dpVersions": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DpVersions",
+                    "additionalProperties": true
+                },
+                "mTLS": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.MTLS",
+                    "additionalProperties": true,
+                    "description": "mTLS statistics"
+                },
+                "dataplanesByType": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplanesByType",
+                    "additionalProperties": true
+                },
+                "resources": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.ResourceStat",
+                        "additionalProperties": true
+                    },
+                    "type": "object"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mesh Insight",
+            "description": "MeshInsight defines the observed state of a Mesh."
+        },
+        "kuma.mesh.v1alpha1.MeshInsight.DataplaneStat": {
+            "properties": {
+                "total": {
+                    "type": "integer"
+                },
+                "online": {
+                    "type": "integer"
+                },
+                "offline": {
+                    "type": "integer"
+                },
+                "partially_degraded": {
+                    "type": "integer"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dataplane Stat",
+            "description": "DataplaneStat defines statistic specifically for Dataplane"
+        },
+        "kuma.mesh.v1alpha1.MeshInsight.DataplanesByType": {
+            "properties": {
+                "standard": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                    "additionalProperties": true
+                },
+                "gateway": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                    "additionalProperties": true
+                },
+                "gatewayDelegated": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dataplanes By Type",
+            "description": "DataplanesByType defines statistics splitted by dataplane types"
+        },
+        "kuma.mesh.v1alpha1.MeshInsight.DpVersions": {
+            "properties": {
+                "kumaDp": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                        "additionalProperties": true
+                    },
+                    "type": "object",
+                    "description": "Dataplane stats grouped by KumaDP version"
+                },
+                "envoy": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                        "additionalProperties": true
+                    },
+                    "type": "object",
+                    "description": "Dataplane stats grouped by Envoy version"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Dp Versions",
+            "description": "DpVersions defines statistics grouped by dataplane versions"
+        },
+        "kuma.mesh.v1alpha1.MeshInsight.MTLS": {
+            "properties": {
+                "issuedBackends": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                        "additionalProperties": true
+                    },
+                    "type": "object",
+                    "description": "Dataplanes grouped by issued backends."
+                },
+                "supportedBackends": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplaneStat",
+                        "additionalProperties": true
+                    },
+                    "type": "object",
+                    "description": "Dataplanes grouped by supported backends."
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "MTLS"
+        },
+        "kuma.mesh.v1alpha1.MeshInsight.ResourceStat": {
+            "properties": {
+                "total": {
+                    "type": "integer"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Resource Stat"
+        }
+    }
+}

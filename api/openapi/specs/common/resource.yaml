@@ -74,16 +74,62 @@ components:
           type: object
           additionalProperties:
             type: string
+          patternProperties:
+            # Always computed by the control plane. A value supplied by the user is overwritten.
+            '^kuma\.io/display-name$':
+              type: string
+              readOnly: true
+              description: Display name of the resource. Always computed by the control plane.
+            '^kuma\.io/origin$':
+              type: string
+              readOnly: true
+              description: Whether the resource originated on a zone or on global. Always computed by the control plane, and immutable.
+            '^k8s\.kuma\.io/namespace$':
+              type: string
+              readOnly: true
+              description: Namespace the object lives in. Always computed by the control plane on Kubernetes.
+            '^kuma\.io/policy-role$':
+              type: string
+              readOnly: true
+              description: Role driving namespaced policy matching. Always computed by the control plane for namespaced policies on Kubernetes.
+            '^k8s\.kuma\.io/service-account$':
+              type: string
+              readOnly: true
+              description: Service account of the workload. Always computed by the control plane on Kubernetes.
+            '^kuma\.io/workload$':
+              type: string
+              readOnly: true
+              description: Workload the resource belongs to. Always computed by the control plane.
+            '^kuma\.io/listener-zoneingress$':
+              type: string
+              readOnly: true
+              description: Set to `enabled` when the proxy has a zone ingress listener. Always computed by the control plane.
+            '^kuma\.io/listener-zoneegress$':
+              type: string
+              readOnly: true
+              description: Set to `enabled` when the proxy has a zone egress listener. Always computed by the control plane.
+            # Can be set by the user. The control plane only fills in a default when the label is absent.
+            '^kuma\.io/mesh$':
+              type: string
+              description: Mesh the resource belongs to. Defaults to `default` when unset.
+            '^kuma\.io/zone$':
+              type: string
+              description: Zone the resource originated in. Defaults to the name of the zone it was applied on when unset, and is immutable afterwards.
+            '^kuma\.io/env$':
+              type: string
+              description: Environment the resource was applied in. Defaults to `universal` or `kubernetes` when unset.
           example:
             "k8s.kuma.io/namespace": "kuma-system"
             "kuma.io/display-name": "mtp"
             "kuma.io/mesh": "default"
             "kuma.io/origin": "zone"
           description: |
-            Labels of the resource. Note: certain system labels are immutable after creation:
-            - `kuma.io/origin`: Resource origin (zone/global). Immutable.
-            - `kuma.io/zone`: Zone where resource originated. Immutable.
-            - `kuma.io/display-name`: Display name for the resource. Immutable.
+            Labels of the resource.
+
+            Labels documented as `readOnly` are always computed by the control plane; a value supplied by the
+            user is overwritten. The remaining documented labels can be set by the user, and the control plane
+            only fills in a default when they are absent. `kuma.io/origin` and `kuma.io/zone` are immutable
+            after creation.
     InspectRule:
       type: object
       required: [type]
@@ -173,7 +219,7 @@ components:
           type: string
     DataplaneListener:
       type: object
-      required: [ kri, type, port, proxyResourceName ]
+      required: [ kri, type, port, proxyResourceName, clusters ]
       properties:
         kri:
           type: string
@@ -183,6 +229,24 @@ components:
         port:
           type: integer
           x-go-type: 'int32'
+        proxyResourceName:
+          type: string
+        clusters:
+          description: The destinations this listener proxies traffic to, one entry per destination port.
+          type: array
+          items:
+            $ref: '#/components/schemas/DataplaneListenerCluster'
+    DataplaneListenerCluster:
+      type: object
+      required: [ kri, port, protocol, proxyResourceName ]
+      properties:
+        kri:
+          type: string
+        port:
+          type: integer
+          x-go-type: 'int32'
+        protocol:
+          type: string
         proxyResourceName:
           type: string
     DataplaneOutbound:

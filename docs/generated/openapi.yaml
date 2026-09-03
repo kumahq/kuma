@@ -3,7 +3,7 @@ info:
   title: Kuma API
   description: Kuma API
   version: v1alpha1
-  x-ref-schema-name: DataplaneOverview
+  x-ref-schema-name: MeshOverview
 security:
   - BasicAuth: []
   - BearerAuth: []
@@ -516,6 +516,35 @@ paths:
                   - $ref: '#/components/schemas/MeshTimeoutItem'
                   - $ref: '#/components/schemas/MeshTraceItem'
                   - $ref: '#/components/schemas/MeshTrafficPermissionItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /_kri/{kri}/_overview:
+    get:
+      operationId: getOverviewByKri
+      summary: Returns the overview of a resource by KRI
+      description: >-
+        Returns the resource merged with its insight. Only resource types that
+        have insights are supported.
+      tags:
+        - KRI
+      parameters:
+        - in: path
+          name: kri
+          schema:
+            type: string
+          required: true
+          description: KRI of the resource
+      responses:
+        '200':
+          description: The resource overview
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/DataplaneOverviewWithMeta'
+                  - $ref: '#/components/schemas/MeshOverviewWithMeta'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -2741,6 +2770,33 @@ paths:
       summary: Creates or Updates Mesh entity
       tags:
         - Mesh
+  /meshes/{name}/_overview:
+    get:
+      operationId: getMeshOverview
+      parameters:
+        - in: path
+          name: name
+          required: true
+          description: The name of the mesh to get the overview for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshOverviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/_overview:
+    get:
+      operationId: getMeshOverviewList
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshOverviewListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/secrets:
     get:
       operationId: getSecretList
@@ -4516,20 +4572,87 @@ components:
           type: object
           additionalProperties:
             type: string
+          patternProperties:
+            ^kuma\.io/display-name$:
+              type: string
+              readOnly: true
+              description: >-
+                Display name of the resource. Always computed by the control
+                plane.
+            ^kuma\.io/origin$:
+              type: string
+              readOnly: true
+              description: >-
+                Whether the resource originated on a zone or on global. Always
+                computed by the control plane, and immutable.
+            ^k8s\.kuma\.io/namespace$:
+              type: string
+              readOnly: true
+              description: >-
+                Namespace the object lives in. Always computed by the control
+                plane on Kubernetes.
+            ^kuma\.io/policy-role$:
+              type: string
+              readOnly: true
+              description: >-
+                Role driving namespaced policy matching. Always computed by the
+                control plane for namespaced policies on Kubernetes.
+            ^k8s\.kuma\.io/service-account$:
+              type: string
+              readOnly: true
+              description: >-
+                Service account of the workload. Always computed by the control
+                plane on Kubernetes.
+            ^kuma\.io/workload$:
+              type: string
+              readOnly: true
+              description: >-
+                Workload the resource belongs to. Always computed by the control
+                plane.
+            ^kuma\.io/listener-zoneingress$:
+              type: string
+              readOnly: true
+              description: >-
+                Set to `enabled` when the proxy has a zone ingress listener.
+                Always computed by the control plane.
+            ^kuma\.io/listener-zoneegress$:
+              type: string
+              readOnly: true
+              description: >-
+                Set to `enabled` when the proxy has a zone egress listener.
+                Always computed by the control plane.
+            ^kuma\.io/mesh$:
+              type: string
+              description: Mesh the resource belongs to. Defaults to `default` when unset.
+            ^kuma\.io/zone$:
+              type: string
+              description: >-
+                Zone the resource originated in. Defaults to the name of the
+                zone it was applied on when unset, and is immutable afterwards.
+            ^kuma\.io/env$:
+              type: string
+              description: >-
+                Environment the resource was applied in. Defaults to `universal`
+                or `kubernetes` when unset.
           example:
             k8s.kuma.io/namespace: kuma-system
             kuma.io/display-name: mtp
             kuma.io/mesh: default
             kuma.io/origin: zone
           description: >
-            Labels of the resource. Note: certain system labels are immutable
-            after creation:
+            Labels of the resource.
 
-            - `kuma.io/origin`: Resource origin (zone/global). Immutable.
 
-            - `kuma.io/zone`: Zone where resource originated. Immutable.
+            Labels documented as `readOnly` are always computed by the control
+            plane; a value supplied by the
 
-            - `kuma.io/display-name`: Display name for the resource. Immutable.
+            user is overwritten. The remaining documented labels can be set by
+            the user, and the control plane
+
+            only fills in a default when they are absent. `kuma.io/origin` and
+            `kuma.io/zone` are immutable
+
+            after creation.
     ProxyRule:
       description: a rule that affects the entire proxy
       type: object
@@ -4745,6 +4868,23 @@ components:
           type: string
         proxyResourceName:
           type: string
+    DataplaneListenerCluster:
+      type: object
+      required:
+        - kri
+        - port
+        - protocol
+        - proxyResourceName
+      properties:
+        kri:
+          type: string
+        port:
+          type: integer
+          x-go-type: int32
+        protocol:
+          type: string
+        proxyResourceName:
+          type: string
     DataplaneListener:
       type: object
       required:
@@ -4752,6 +4892,7 @@ components:
         - type
         - port
         - proxyResourceName
+        - clusters
       properties:
         kri:
           type: string
@@ -4765,6 +4906,13 @@ components:
           x-go-type: int32
         proxyResourceName:
           type: string
+        clusters:
+          description: >-
+            The destinations this listener proxies traffic to, one entry per
+            destination port.
+          type: array
+          items:
+            $ref: '#/components/schemas/DataplaneListenerCluster'
     PolicyOrigin:
       type: object
       required:
@@ -5060,9 +5208,9 @@ components:
 
                     See https://kuma.io/docs/latest/explore/gateway/ for more
                     information.
-                  oneOf:
-                    - type: string
-                    - type: integer
+                  enum:
+                    - DELEGATED
+                  type: string
               type: object
             inbound:
               description: >-
@@ -5225,9 +5373,11 @@ components:
                     type: object
                   state:
                     description: State describes the current state of the listener.
-                    oneOf:
-                      - type: string
-                      - type: integer
+                    enum:
+                      - Ready
+                      - NotReady
+                      - Ignored
+                    type: string
                 type: object
               type: array
             listeners:
@@ -5265,9 +5415,10 @@ components:
                       underlying
 
                       pod and sidecar container.
-                    oneOf:
-                      - type: string
-                      - type: integer
+                    enum:
+                      - Ready
+                      - NotReady
+                    type: string
                   type:
                     description: >-
                       Type determines the role of this listener: ZoneIngress for
@@ -5275,9 +5426,11 @@ components:
 
                       cross-zone traffic or ZoneEgress for outbound external
                       traffic.
-                    oneOf:
-                      - type: string
-                      - type: integer
+                    enum:
+                      - Unspecified
+                      - ZoneIngress
+                      - ZoneEgress
+                    type: string
                 type: object
               type: array
             outbound:
@@ -5365,9 +5518,12 @@ components:
                   description: >-
                     The IP family mode to enable for. Can be "IPv4" or
                     "DualStack".
-                  oneOf:
-                    - type: string
-                    - type: integer
+                  enum:
+                    - UnSpecified
+                    - DualStack
+                    - IPv4
+                    - IPv6
+                  type: string
                 reachableBackends:
                   description: >-
                     Reachable backend via transparent proxy when running with
@@ -13180,10 +13336,6 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '1901-01-01T00:00:00.000Z'
-    DataplaneOverviewWithMeta:
-      allOf:
-        - $ref: '#/components/schemas/Meta'
-        - $ref: '#/components/schemas/DataplaneOverview'
     DataplaneOverview:
       description: DataplaneOverview defines the projected state of a Dataplane.
       properties:
@@ -13268,9 +13420,9 @@ components:
 
                         See https://kuma.io/docs/latest/explore/gateway/ for
                         more information.
-                      oneOf:
-                        - type: string
-                        - type: integer
+                      enum:
+                        - DELEGATED
+                      type: string
                   type: object
                 inbound:
                   description: >-
@@ -13437,9 +13589,11 @@ components:
                         type: object
                       state:
                         description: State describes the current state of the listener.
-                        oneOf:
-                          - type: string
-                          - type: integer
+                        enum:
+                          - Ready
+                          - NotReady
+                          - Ignored
+                        type: string
                     type: object
                   type: array
                 listeners:
@@ -13478,9 +13632,10 @@ components:
                           the underlying
 
                           pod and sidecar container.
-                        oneOf:
-                          - type: string
-                          - type: integer
+                        enum:
+                          - Ready
+                          - NotReady
+                        type: string
                       type:
                         description: >-
                           Type determines the role of this listener: ZoneIngress
@@ -13488,9 +13643,11 @@ components:
 
                           cross-zone traffic or ZoneEgress for outbound external
                           traffic.
-                        oneOf:
-                          - type: string
-                          - type: integer
+                        enum:
+                          - Unspecified
+                          - ZoneIngress
+                          - ZoneEgress
+                        type: string
                     type: object
                   type: array
                 outbound:
@@ -13582,9 +13739,12 @@ components:
                       description: >-
                         The IP family mode to enable for. Can be "IPv4" or
                         "DualStack".
-                      oneOf:
-                        - type: string
-                        - type: integer
+                      enum:
+                        - UnSpecified
+                        - DualStack
+                        - IPv4
+                        - IPv6
+                      type: string
                     reachableBackends:
                       description: >-
                         Reachable backend via transparent proxy when running
@@ -13924,6 +14084,157 @@ components:
               type: array
           type: object
       type: object
+    DataplaneOverviewWithMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - $ref: '#/components/schemas/DataplaneOverview'
+    MeshOverview:
+      description: MeshOverview defines the projected state of a Mesh.
+      properties:
+        mesh:
+          properties:
+            skipCreatingInitialPolicies:
+              description: >-
+                List of policies to skip creating by default when the mesh is
+                created.
+
+                e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to
+                skip all
+
+                policies.
+              items:
+                type: string
+              type: array
+          type: object
+        meshInsight:
+          properties:
+            dataplanes:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            dataplanesByType:
+              properties:
+                gateway:
+                  properties:
+                    offline:
+                      type: integer
+                    online:
+                      type: integer
+                    partiallyDegraded:
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+                gatewayDelegated:
+                  properties:
+                    offline:
+                      type: integer
+                    online:
+                      type: integer
+                    partiallyDegraded:
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+                standard:
+                  properties:
+                    offline:
+                      type: integer
+                    online:
+                      type: integer
+                    partiallyDegraded:
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+              type: object
+            dpVersions:
+              properties:
+                envoy:
+                  additionalProperties:
+                    description: DataplaneStat defines statistic specifically for Dataplane
+                    properties:
+                      offline:
+                        type: integer
+                      online:
+                        type: integer
+                      partiallyDegraded:
+                        type: integer
+                      total:
+                        type: integer
+                    type: object
+                  description: Dataplane stats grouped by Envoy version
+                  type: object
+                kumaDp:
+                  additionalProperties:
+                    description: DataplaneStat defines statistic specifically for Dataplane
+                    properties:
+                      offline:
+                        type: integer
+                      online:
+                        type: integer
+                      partiallyDegraded:
+                        type: integer
+                      total:
+                        type: integer
+                    type: object
+                  description: Dataplane stats grouped by KumaDP version
+                  type: object
+              type: object
+            mTLS:
+              description: mTLS statistics
+              properties:
+                issuedBackends:
+                  additionalProperties:
+                    description: DataplaneStat defines statistic specifically for Dataplane
+                    properties:
+                      offline:
+                        type: integer
+                      online:
+                        type: integer
+                      partiallyDegraded:
+                        type: integer
+                      total:
+                        type: integer
+                    type: object
+                  description: Dataplanes grouped by issued backends.
+                  type: object
+                supportedBackends:
+                  additionalProperties:
+                    description: DataplaneStat defines statistic specifically for Dataplane
+                    properties:
+                      offline:
+                        type: integer
+                      online:
+                        type: integer
+                      partiallyDegraded:
+                        type: integer
+                      total:
+                        type: integer
+                    type: object
+                  description: Dataplanes grouped by supported backends.
+                  type: object
+              type: object
+            resources:
+              additionalProperties:
+                properties:
+                  total:
+                    type: integer
+                type: object
+              type: object
+          type: object
+      type: object
+    MeshOverviewWithMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - $ref: '#/components/schemas/MeshOverview'
     SecretItem:
       properties:
         creationTime:
@@ -16892,6 +17203,28 @@ components:
                 type: number
             type: object
       description: List
+    GetMeshOverviewResponse:
+      description: A response containing the overview of a mesh.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshOverviewWithMeta'
+    GetMeshOverviewListResponse:
+      description: A response containing a list of mesh overviews.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 200
+              next:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshOverviewWithMeta'
     SecretCreateOrUpdateSuccessResponse:
       content:
         application/json:
