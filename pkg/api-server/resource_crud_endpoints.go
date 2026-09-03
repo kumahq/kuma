@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
@@ -12,11 +13,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/api-server/filters"
 	api_server_types "github.com/kumahq/kuma/v3/pkg/api-server/types"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -39,6 +42,31 @@ type resourceCrudHandler struct {
 	isK8s           bool
 
 	disableOriginLabelValidation bool
+}
+
+// overviewForResource merges a resource with its insight. A missing insight is
+// not an error: the overview is returned with an empty insight, like it is for
+// a proxy that never connected.
+func overviewForResource(
+	ctx context.Context,
+	resManager manager.ResourceManager,
+	descriptor core_model.ResourceTypeDescriptor,
+	resource core_model.Resource,
+	name string,
+	meshName string,
+) (core_model.Resource, error) {
+	insight := descriptor.NewInsight()
+	if err := resManager.Get(ctx, insight, store.GetByKey(name, meshName)); err != nil && !store.IsNotFound(err) {
+		return nil, err
+	}
+	overview, ok := descriptor.NewOverview().(core_model.OverviewResource)
+	if !ok {
+		return nil, fmt.Errorf("type withInsight for '%s' doesn't implement core_model.OverviewResource this shouldn't happen", descriptor.Name)
+	}
+	if err := overview.SetOverviewSpec(resource, insight); err != nil {
+		return nil, err
+	}
+	return overview.(core_model.Resource), nil
 }
 
 func (r *resourceCrudHandler) findResource(withInsight bool) func(request *restful.Request, response *restful.Response) {
@@ -66,21 +94,11 @@ func (r *resourceCrudHandler) findResource(withInsight bool) func(request *restf
 			return
 		}
 		if withInsight {
-			insight := r.descriptor.NewInsight()
-			if err := r.resManager.Get(request.Request.Context(), insight, store.GetByKey(name, meshName)); err != nil && !store.IsNotFound(err) {
+			resource, err = overviewForResource(request.Request.Context(), r.resManager, r.descriptor, resource, name, meshName)
+			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
 				return
 			}
-			overview, ok := r.descriptor.NewOverview().(core_model.OverviewResource)
-			if !ok {
-				rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("type withInsight for '%s' doesn't implement core_model.OverviewResource this shouldn't happen", r.descriptor.Name), "Could not retrieve insights")
-				return
-			}
-			if err := overview.SetOverviewSpec(resource, insight); err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
-				return
-			}
-			resource = overview.(core_model.Resource)
 		}
 		var res any
 
@@ -124,6 +142,17 @@ func (r *resourceCrudHandler) listResources(withInsight bool) func(request *rest
 			return
 		}
 		nameContains := request.QueryParameter("name")
+		status, err := filters.Status(request)
+		if err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
+			return
+		}
+		if status != "" {
+			if err := r.validateStatusFilter(withInsight); err != nil {
+				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
+				return
+			}
+		}
 
 		meshName, err := r.meshFromRequest(request)
 		if err != nil {
@@ -141,7 +170,13 @@ func (r *resourceCrudHandler) listResources(withInsight bool) func(request *rest
 			return
 		}
 		list := r.descriptor.NewList()
-		if err := r.resManager.List(request.Request.Context(), list, store.ListByMesh(meshName), store.ListByNameContains(nameContains), store.ListByFilterFunc(filter), store.ListByPage(page.size, page.offset)); err != nil {
+		listOpts := []store.ListOptionsFunc{store.ListByMesh(meshName), store.ListByNameContains(nameContains), store.ListByFilterFunc(filter)}
+		if status == "" {
+			listOpts = append(listOpts, store.ListByPage(page.size, page.offset))
+		}
+		// Status lives on the insight, so the page can only be cut once the
+		// overviews are merged. List everything and paginate below instead.
+		if err := r.resManager.List(request.Request.Context(), list, listOpts...); err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
 			return
 		}
@@ -164,6 +199,13 @@ func (r *resourceCrudHandler) listResources(withInsight bool) func(request *rest
 				rest_errors.HandleError(request.Request.Context(), response, err, "Failed merging overview and insights")
 				return
 			}
+			if status != "" {
+				list, err = r.pageByStatus(list, status, page)
+				if err != nil {
+					rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
+					return
+				}
+			}
 		}
 		restList := rest.From.ResourceList(list)
 		restList.Next = nextLink(request, list.GetPagination().NextOffset)
@@ -171,6 +213,59 @@ func (r *resourceCrudHandler) listResources(withInsight bool) func(request *rest
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not list resources")
 		}
 	}
+}
+
+// statusAware is implemented by overviews exposing a status computed from their
+// insight, which is what StatusFilterParam matches against.
+type statusAware interface {
+	Status() (core_mesh.Status, []string)
+}
+
+func (r *resourceCrudHandler) validateStatusFilter(withInsight bool) error {
+	if !withInsight {
+		return rest_errors.NewBadRequestError("filtering by status is only supported on the _overview endpoint")
+	}
+	if _, ok := r.descriptor.NewOverview().(statusAware); !ok {
+		return rest_errors.NewBadRequestError(fmt.Sprintf("filtering by status is not supported for %s", r.descriptor.Name))
+	}
+	return nil
+}
+
+// pageByStatus keeps the overviews matching status and cuts the requested page
+// out of them, mirroring what the store does for the other filters.
+func (r *resourceCrudHandler) pageByStatus(list core_model.ResourceList, status core_mesh.Status, page page) (core_model.ResourceList, error) {
+	var matching []core_model.Resource
+	for _, item := range list.GetItems() {
+		if itemStatus, _ := item.(statusAware).Status(); itemStatus == status {
+			matching = append(matching, item)
+		}
+	}
+
+	offset := 0
+	if page.offset != "" {
+		o, err := strconv.Atoi(page.offset)
+		if err != nil {
+			return nil, store.ErrorInvalid(fmt.Sprintf("invalid offset: %s", err.Error()))
+		}
+		if o < 0 {
+			return nil, store.ErrorInvalid("invalid offset: must be non-negative")
+		}
+		offset = o
+	}
+
+	paged := r.descriptor.NewOverviewList()
+	for i := offset; i < offset+page.size && i < len(matching); i++ {
+		if err := paged.AddItem(matching[i]); err != nil {
+			return nil, err
+		}
+	}
+	nextOffset := ""
+	if offset+page.size < len(matching) {
+		nextOffset = strconv.Itoa(offset + page.size)
+	}
+	paged.GetPagination().SetNextOffset(nextOffset)
+	paged.GetPagination().SetTotal(uint32(len(matching)))
+	return paged, nil
 }
 
 func (r *resourceCrudHandler) MergeInOverview(resources core_model.ResourceList, insights core_model.ResourceList) (core_model.ResourceList, error) {
