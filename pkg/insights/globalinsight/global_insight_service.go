@@ -202,7 +202,7 @@ func (gis *defaultGlobalInsightService) aggregateGatewayServices(
 
 	hasGateway := false
 	for _, dp := range dataplanes.Items {
-		if dp.Spec.GetNetworking().GetGateway() != nil {
+		if dp.IsDelegatedGateway() {
 			hasGateway = true
 			break
 		}
@@ -219,7 +219,7 @@ func (gis *defaultGlobalInsightService) aggregateGatewayServices(
 	delegated := map[string]*gatewayServiceStat{}
 
 	for _, overview := range mesh.NewDataplaneOverviews(*dataplanes, *dataplaneInsights).Items {
-		if overview.Spec.GetDataplane().GetNetworking().GetGateway() == nil {
+		if !overview.IsDelegatedGateway() {
 			continue
 		}
 

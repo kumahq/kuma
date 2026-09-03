@@ -42,7 +42,7 @@ func (d *DataplaneResource) Validate() error {
 	}
 
 	switch {
-	case d.Spec.IsDelegatedGateway():
+	case d.IsDelegatedGateway():
 		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
 			err.AddViolationAt(net.Field("inbound"),
 				"inbound cannot be defined for delegated gateways")

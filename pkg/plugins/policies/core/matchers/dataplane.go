@@ -145,7 +145,7 @@ func DppSelectedByPolicy(
 	case common_api.Mesh:
 		inbounds := allInboundListeners(dpp)
 		inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
-		return inbounds, dpp.Spec.IsDelegatedGateway(), nil
+		return inbounds, dpp.IsDelegatedGateway(), nil
 	case common_api.Dataplane:
 		if allDataplanesSelected(ref) || isSelectedByLabels(dpp, ref) {
 			inboundInterfaces := dpp.Spec.GetNetworking().InboundsSelectedBySectionName(pointer.Deref(ref.SectionName))
@@ -163,7 +163,7 @@ func DppSelectedByPolicy(
 				}
 				inbounds = append(inbounds, core_rules.InboundListener{Address: addr, Port: l.GetPort()})
 			}
-			return inbounds, dpp.Spec.IsDelegatedGateway(), nil
+			return inbounds, dpp.IsDelegatedGateway(), nil
 		}
 		return []core_rules.InboundListener{}, false, nil
 	case common_api.MeshHTTPRoute:

@@ -660,53 +660,70 @@ var _ = Describe("MeshMetric", func() {
 	})
 
 	DescribeTable("deriveProxyRole",
-		func(networking *mesh_proto.Dataplane_Networking, expected string) {
-			Expect(v1alpha1.DeriveProxyRole(networking)).To(Equal(expected))
+		func(dpp *core_mesh.DataplaneResource, expected string) {
+			Expect(v1alpha1.DeriveProxyRole(dpp)).To(Equal(expected))
 		},
-		Entry("nil networking", (*mesh_proto.Dataplane_Networking)(nil), v1alpha1.ProxyRoleSidecar),
+		Entry("nil networking", dppWithNetworking(nil), v1alpha1.ProxyRoleSidecar),
 		Entry("inbounds only",
-			&mesh_proto.Dataplane_Networking{
+			dppWithNetworking(&mesh_proto.Dataplane_Networking{
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{Port: 8080}},
-			},
+			}),
 			v1alpha1.ProxyRoleSidecar,
 		),
-		Entry("gateway",
-			&mesh_proto.Dataplane_Networking{
+		Entry("gateway by label", gatewayDpp(nil), v1alpha1.ProxyRoleGateway),
+		Entry("gateway by legacy spec field",
+			dppWithNetworking(&mesh_proto.Dataplane_Networking{
 				Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
-			},
+			}),
 			v1alpha1.ProxyRoleGateway,
 		),
 		Entry("gateway with inbounds (gateway wins)",
-			&mesh_proto.Dataplane_Networking{
+			gatewayDpp(&mesh_proto.Dataplane_Networking{
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{Port: 8080}},
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
-			},
+			}),
 			v1alpha1.ProxyRoleGateway,
 		),
 		Entry("zone ingress only",
-			&mesh_proto.Dataplane_Networking{
+			dppWithNetworking(&mesh_proto.Dataplane_Networking{
 				Listeners: []*mesh_proto.Dataplane_Networking_Listener{
 					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneIngress},
 				},
-			},
+			}),
 			v1alpha1.ProxyRoleZoneIngress,
 		),
 		Entry("zone egress only",
-			&mesh_proto.Dataplane_Networking{
+			dppWithNetworking(&mesh_proto.Dataplane_Networking{
 				Listeners: []*mesh_proto.Dataplane_Networking_Listener{
 					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneEgress},
 				},
-			},
+			}),
 			v1alpha1.ProxyRoleZoneEgress,
 		),
 		Entry("both ingress and egress",
-			&mesh_proto.Dataplane_Networking{
+			dppWithNetworking(&mesh_proto.Dataplane_Networking{
 				Listeners: []*mesh_proto.Dataplane_Networking_Listener{
 					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneIngress},
 					{Type: mesh_proto.Dataplane_Networking_Listener_ZoneEgress},
 				},
-			},
+			}),
 			v1alpha1.ProxyRoleZoneProxy,
 		),
 	)
 })
+
+func dppWithNetworking(networking *mesh_proto.Dataplane_Networking) *core_mesh.DataplaneResource {
+	return &core_mesh.DataplaneResource{
+		Meta: &test_model.ResourceMeta{Name: "dpp", Mesh: "default"},
+		Spec: &mesh_proto.Dataplane{Networking: networking},
+	}
+}
+
+func gatewayDpp(networking *mesh_proto.Dataplane_Networking) *core_mesh.DataplaneResource {
+	dpp := dppWithNetworking(networking)
+	dpp.Meta = &test_model.ResourceMeta{
+		Name:   "dpp",
+		Mesh:   "default",
+		Labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
+	}
+	return dpp
+}

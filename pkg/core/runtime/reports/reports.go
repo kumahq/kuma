@@ -14,7 +14,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -139,8 +138,7 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 
 	ngateways := 0
 	for _, dp := range dps.Items {
-		spec := dp.GetSpec().(*mesh_proto.Dataplane)
-		if spec.GetNetworking().GetGateway() != nil {
+		if dp.IsDelegatedGateway() {
 			ngateways++
 		}
 	}

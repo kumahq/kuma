@@ -321,23 +321,29 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 })
 
 var _ = Describe("Dataplane classification", func() {
-	Describe("with normal networking", func() {
-		It("should be a dataplane", func() {
-			dp := Dataplane{
-				Networking: &Dataplane_Networking{},
-			}
-			Expect(dp.IsDelegatedGateway()).To(BeFalse())
+	Describe("IsDelegatedGateway", func() {
+		It("should read the gateway label", func() {
+			Expect(IsDelegatedGateway(map[string]string{GatewayLabel: GatewayEnabled})).To(BeTrue())
+			Expect(IsDelegatedGateway(map[string]string{GatewayLabel: "false"})).To(BeFalse())
+			Expect(IsDelegatedGateway(nil)).To(BeFalse())
 		})
 	})
 
-	Describe("with gateway networking", func() {
-		It("should be a gateway", func() {
+	Describe("HasLegacyGatewayField", func() {
+		It("should be false without the deprecated field", func() {
+			dp := Dataplane{
+				Networking: &Dataplane_Networking{},
+			}
+			Expect(dp.HasLegacyGatewayField()).To(BeFalse())
+		})
+
+		It("should be true with the deprecated field", func() {
 			gw := Dataplane{
 				Networking: &Dataplane_Networking{
 					Gateway: &Dataplane_Networking_Gateway{},
 				},
 			}
-			Expect(gw.IsDelegatedGateway()).To(BeTrue())
+			Expect(gw.HasLegacyGatewayField()).To(BeTrue())
 		})
 	})
 })

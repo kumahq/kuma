@@ -132,7 +132,7 @@ None. Existing generated `MeshHTTPRoute`s are backfilled with the timestamp labe
 
 The built-in gateway implementation was removed over the previous releases, and the Dataplane validator has been rejecting `networking.gateway.type: BUILTIN` since then. The remaining API surface is now gone too:
 
-- `Dataplane.networking.gateway.type` is gone entirely, along with `networking.gateway.tags` — see [`Dataplane.networking.gateway` carries no tags or type](#dataplanenetworkinggateway-carries-no-tags-or-type). A `Dataplane` carrying `type: BUILTIN` no longer produces the `BUILTIN gateways are no longer supported, use DELEGATED instead` validation error; the field is ignored and what remains is an ordinary delegated gateway.
+- `Dataplane.networking.gateway.type` is gone entirely, along with `networking.gateway.tags` — see [A delegated gateway is marked by the `kuma.io/gateway` label](#a-delegated-gateway-is-marked-by-the-kumaiogateway-label). A `Dataplane` carrying `type: BUILTIN` no longer produces the `BUILTIN gateways are no longer supported, use DELEGATED instead` validation error; the field is ignored and what remains is an ordinary delegated gateway.
 - `MeshInsight.dataplanesByType.gatewayBuiltin` and the `gateway_builtin` `ServiceInsight` service type are removed. `dataplanesByType.gateway` now reports the delegated gateway totals only.
 - `GET /meshes/{mesh}/dataplanes+insights?gateway=builtin` is no longer a valid filter. Use `gateway=delegated`, or `gateway=true` for any gateway.
 - `GET /meshes/{mesh}/service-insights?type=gateway_builtin` is no longer a valid filter and returns `400`. Use `type=gateway_delegated`.
@@ -996,11 +996,17 @@ removed" below for the separate removal of `MeshGatewayInstance` management.
   own system namespace. Remove this key from your config file and Helm
   values — leaving it in place is harmless but has no effect.
 
-### `Dataplane.networking.gateway` carries no tags or type
+### A delegated gateway is marked by the `kuma.io/gateway` label
 
-The gateway message is now a bare marker: `networking.gateway.tags` and `networking.gateway.type` are removed and their field numbers reserved. A delegated gateway is a `Dataplane` whose `networking.gateway` is present, and it is identified by its `Dataplane` labels like every other proxy.
+A delegated gateway is now a `Dataplane` carrying the label `kuma.io/gateway: "true"`, and `networking.gateway` is deprecated. The tag map and the single-valued type enum that message held are removed and their field numbers reserved.
 
-Both fields are ignored on input rather than rejected, so `Dataplane` resources already stored with them keep loading and any tooling that still sends them keeps working. This includes `type: BUILTIN`, which used to be rejected as an unknown enum value and is now dropped along with the rest of the message's content, leaving an ordinary delegated gateway.
+On Kubernetes nothing changes for you: the control plane computes the label from the pod's `kuma.io/gateway` annotation, which stays the only thing you set. The annotation also wins over a pod label of the same name, so a stray label can never turn a workload into a gateway.
+
+On Universal you set the label on the `Dataplane` yourself. Resources you already stored are covered: whenever the control plane computes labels for a `Dataplane` that still carries `networking.gateway`, it backfills the label, which also covers a zone control plane on an older version syncing over KDS.
+
+Everything that asks "is this a gateway" reads the label: policy matching, the inbound/listener validation, `DataplaneOverview` status, the `MeshMetric` proxy role, mesh and global insights, and the `?gateway=` filter.
+
+The removed `tags` and `type` fields are ignored on input rather than rejected, so `Dataplane` resources already stored with them keep loading and any tooling that still sends them keeps working. This includes `type: BUILTIN`, which used to be rejected as an unknown enum value and is now dropped along with the rest of the message's content, leaving an ordinary delegated gateway.
 
 What this changes:
 
@@ -1012,7 +1018,11 @@ What this changes:
 
 **Action required**
 
-On Universal, move any key you use in a `MeshLoadBalancingStrategy` `localZone.affinityTags` from `networking.gateway.tags` to the `Dataplane`'s labels — an affinity key that exists only as a gateway tag stops matching and its locality group is dropped. Nothing else has to change: the removed fields in your existing `Dataplane` resources are ignored, so you can clean them up whenever it suits you. If you scrape `kds_zone_attribution_rewrites_total`, drop it from your dashboards and alerts.
+On Universal, move any key you use in a `MeshLoadBalancingStrategy` `localZone.affinityTags` from `networking.gateway.tags` to the `Dataplane`'s labels — an affinity key that exists only as a gateway tag stops matching and its locality group is dropped.
+
+Also on Universal, write `kuma.io/gateway: "true"` in the labels of any new gateway `Dataplane` instead of `networking.gateway`. Existing ones keep working through the backfill, so this can wait until you next touch them, but the field is going away in a later release.
+
+If you scrape `kds_zone_attribution_rewrites_total`, drop it from your dashboards and alerts.
 
 ### `kuma.io/gateway` is a boolean annotation
 

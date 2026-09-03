@@ -61,6 +61,17 @@ func overlap(address1 net.IP, address2 net.IP) bool {
 	return address1.Equal(address2)
 }
 
+// IsDelegatedGateway reports whether this proxy fronts a delegated gateway.
+// The kuma.io/gateway label carries the answer; the legacy networking.gateway
+// field is honored for specs whose labels have not been computed yet.
+func (d *DataplaneResource) IsDelegatedGateway() bool {
+	var labels map[string]string
+	if meta := d.GetMeta(); meta != nil {
+		labels = meta.GetLabels()
+	}
+	return mesh_proto.IsDelegatedGateway(labels) || d.Spec.HasLegacyGatewayField()
+}
+
 func (d *DataplaneResource) IsIPv6() bool {
 	return d != nil && govalidator.IsIPv6(d.Spec.GetNetworking().GetAddress())
 }

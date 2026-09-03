@@ -1098,7 +1098,7 @@ var _ = Describe("Dataplane", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			Expect(dataplane.Spec.IsDelegatedGateway()).To(BeTrue())
+			Expect(dataplane.IsDelegatedGateway()).To(BeTrue())
 			Expect(dataplane.Validate()).To(Succeed())
 		})
 
@@ -1120,7 +1120,7 @@ var _ = Describe("Dataplane", func() {
 			// then the removed fields are dropped and what is left is a
 			// delegated gateway, so stored resources keep loading after upgrade
 			Expect(err).ToNot(HaveOccurred())
-			Expect(dataplane.Spec.IsDelegatedGateway()).To(BeTrue())
+			Expect(dataplane.IsDelegatedGateway()).To(BeTrue())
 			Expect(dataplane.Validate()).To(Succeed())
 		})
 	})

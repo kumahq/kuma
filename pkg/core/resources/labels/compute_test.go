@@ -298,6 +298,7 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":       "zone",
 				"kuma.io/zone":         "zone-1",
 				"kuma.io/env":          "kubernetes",
+				"kuma.io/gateway":      "true",
 			},
 		}),
 		Entry("dataplane proxy", testCase{

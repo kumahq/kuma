@@ -209,6 +209,12 @@ func Compute(
 			} else {
 				delete(labels, mesh_proto.ListenerZoneEgressLabel)
 			}
+			// Backfill the gateway label for Dataplanes written against the
+			// deprecated networking.gateway field: resources stored before the
+			// upgrade, and zones syncing from an older control plane.
+			if dp.GetNetworking().GetGateway() != nil {
+				setIfNotExist(mesh_proto.GatewayLabel, mesh_proto.GatewayEnabled)
+			}
 		}
 	}
 

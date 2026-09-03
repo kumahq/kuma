@@ -106,6 +106,15 @@ const (
 
 	// ListenerZoneEgressLabel is auto-computed when a Dataplane has at least one ZoneEgress listener.
 	ListenerZoneEgressLabel = "kuma.io/listener-zoneegress"
+
+	// GatewayLabel marks a Dataplane as a delegated gateway: a proxy that
+	// receives inbound traffic Kuma does not proxy and sends outbound traffic
+	// into the mesh. On Kubernetes it is set from the pod's kuma.io/gateway
+	// annotation; on Universal it is set by the user.
+	GatewayLabel = "kuma.io/gateway"
+
+	// GatewayEnabled is the only value of GatewayLabel that marks a gateway.
+	GatewayEnabled = "true"
 )
 
 type ResourceOrigin string
@@ -526,9 +535,18 @@ func MultiValueTagSetFrom(data map[string][]string) MultiValueTagSet {
 	return set
 }
 
-// IsDelegatedGateway reports whether this proxy fronts a delegated gateway.
-// The gateway message carries no fields, so its presence is the whole signal.
-func (d *Dataplane) IsDelegatedGateway() bool {
+// IsDelegatedGateway reports whether a proxy with these labels fronts a
+// delegated gateway. The kuma.io/gateway label is the signal; the control
+// plane backfills it from the deprecated networking.gateway field.
+func IsDelegatedGateway(labels map[string]string) bool {
+	return labels[GatewayLabel] == GatewayEnabled
+}
+
+// HasLegacyGatewayField reports whether the spec still carries the deprecated
+// networking.gateway field. The kuma.io/gateway label is the signal now; the
+// control plane backfills it from this field, so only paths that see a spec
+// before its labels are computed need to ask.
+func (d *Dataplane) HasLegacyGatewayField() bool {
 	return d.GetNetworking().GetGateway() != nil
 }
 

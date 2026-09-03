@@ -18,12 +18,22 @@ const (
 	PartiallyDegraded = Status("Partially degraded")
 )
 
+// IsDelegatedGateway reports whether the overviewed proxy fronts a delegated
+// gateway, reading the kuma.io/gateway label the Dataplane carries.
+func (t *DataplaneOverviewResource) IsDelegatedGateway() bool {
+	var labels map[string]string
+	if meta := t.GetMeta(); meta != nil {
+		labels = meta.GetLabels()
+	}
+	return mesh_proto.IsDelegatedGateway(labels) || t.Spec.GetDataplane().HasLegacyGatewayField()
+}
+
 func (t *DataplaneOverviewResource) Status() (Status, []string) {
 	proxyOnline := t.Spec.DataplaneInsight.IsOnline()
 	networking := t.Spec.Dataplane.GetNetworking()
 
 	// Gateway is mutually exclusive with inbounds and zone proxy listeners.
-	if networking.GetGateway() != nil {
+	if t.IsDelegatedGateway() {
 		if proxyOnline {
 			return Online, nil
 		}
