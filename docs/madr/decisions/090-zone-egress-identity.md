@@ -2,7 +2,7 @@
 title: Zone Egress Identity
 status: accepted
 date: 2025-10-29
-tags: [zone-egress, identity, mtls, meshidentity, spire, meshexternalservice]
+tags: [zone-egress, identity, mtls, spire, meshexternalservice, sni]
 summary: A global ZoneEgress serves many meshes and therefore ends up with multiple mTLS identities, breaking the trust model; captures the requirements for giving zone egress a single workload identity.
 related: [094-zone-proxy-deployment-model, 095-mesh-scoped-zone-ingress-egress]
 ---

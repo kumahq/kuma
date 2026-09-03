@@ -14,8 +14,8 @@ It exists so the MADR set can be scanned as a map without opening every file. Wh
 Use the `list.sh` script to list and filter MADRs. Output is `<file> [<status>] <summary> #tag #tag`:
 
 ```bash
-./docs/madr/list.sh                      # list all MADRs
-./docs/madr/list.sh | grep '\[accepted\]' # list only accepted MADRs
-./docs/madr/list.sh | grep -v accepted   # list only not accepted MADRs
-./docs/madr/list.sh | grep '#zone-egress' # list MADRs tagged zone-egress
+./docs/madr/list.sh                          # list all MADRs
+./docs/madr/list.sh | grep '\[accepted\]'    # list only accepted MADRs
+./docs/madr/list.sh | grep -v '\[accepted\]' # list only not accepted MADRs
+./docs/madr/list.sh | grep '#zone-egress'    # list MADRs tagged zone-egress
 ```

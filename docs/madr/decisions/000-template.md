@@ -4,7 +4,7 @@ status: {rejected | accepted | superseded}
 date: {YYYY-MM-DD, when the MADR was written}
 tags: [{3-8 lowercase keywords: components, resources, policies, areas this touches}]
 summary: {one sentence: the problem and the decided solution, so a reader can tell from `list.sh` whether this MADR is relevant}
-related: [{file stems of MADRs this builds on or supersedes, e.g. 095-mesh-scoped-zone-ingress-egress}]
+related: [{file stems, oldest first, of every MADR this builds on, supersedes or is revised by — the earlier ones it derives from as well as the later ones, e.g. 070-resource-identifier, 095-mesh-scoped-zone-ingress-egress}]
 ---
 
 # {short title of solved problem and solution}

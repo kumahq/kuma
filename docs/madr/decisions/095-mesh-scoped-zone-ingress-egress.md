@@ -4,7 +4,7 @@ status: accepted
 date: 2026-03-03
 tags: [zone-proxy, zone-ingress, zone-egress, dataplane, api, multizone, identity]
 summary: Replaces the global-scoped ZoneIngress/ZoneEgress resources with mesh-scoped Dataplanes carrying `listeners`, so zone proxies get a mesh identity and can be targeted by mesh-scoped policies.
-related: [090-zone-egress-identity, 094-zone-proxy-deployment-model, 096-ingress-address-sync, 100-zone-egress-endpoint-storage, 102-zone-proxy-listener-computed-labels, 103-policy-matching-mesh-scoped-zone-proxy]
+related: [089-naming-envoy-resources-and-stats-from-multiple-kuma-policies, 090-zone-egress-identity, 094-zone-proxy-deployment-model, 096-ingress-address-sync, 100-zone-egress-endpoint-storage, 102-zone-proxy-listener-computed-labels, 103-policy-matching-mesh-scoped-zone-proxy]
 ---
 
 # Mesh Scoped Zone Ingress and Zone Egress

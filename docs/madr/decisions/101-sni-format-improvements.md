@@ -2,9 +2,9 @@
 title: SNI Format Improvements
 status: accepted
 date: 2026-04-22
-tags: [sni, kri, naming, multizone, zone-proxy, meshexternalservice, tls]
+tags: [sni, kri, naming, multizone, zone-proxy, meshexternalservice]
 summary: Replaces the hashed SNI format from MADR 055 with a zone-aware format derived from KRI, so an observed SNI converts back to a KRI without a lookup table and global/local resources stop colliding.
-related: [102-zone-proxy-listener-computed-labels, 103-policy-matching-mesh-scoped-zone-proxy, 105-source-listener-tags-from-labels]
+related: [055-sni, 065-sni-in-the-resource, 070-resource-identifier, 102-zone-proxy-listener-computed-labels, 103-policy-matching-mesh-scoped-zone-proxy, 105-source-listener-tags-from-labels]
 ---
 
 # SNI Format Improvements

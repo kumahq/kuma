@@ -4,7 +4,7 @@ status: accepted
 date: 2026-03-12
 tags: [zone-proxy, kubernetes, sidecar-injection, helm, deployment]
 summary: Zone proxies stop being standalone Deployments — a pause container becomes the main container and `kuma-dp` is injected as a sidecar, so Helm upgrades no longer restart zone proxies.
-related: [094-zone-proxy-deployment-model, 095-mesh-scoped-zone-ingress-egress, 098-zone-proxy-deployment-topology]
+related: [094-zone-proxy-deployment-model, 095-mesh-scoped-zone-ingress-egress, 096-ingress-address-sync, 098-zone-proxy-deployment-topology]
 ---
 
 # Zone Proxy Deployment as a Regular Sidecar
