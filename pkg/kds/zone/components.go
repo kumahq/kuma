@@ -54,6 +54,7 @@ func Setup(rt core_runtime.Runtime) error {
 		service.NewEnvoyAdminProcessor(
 			rt.ReadOnlyResourceManager(),
 			rt.EnvoyAdminClient(),
+			rt.Config().Multizone.Zone.KDS.MaxMsgSize,
 		),
 		resourceSyncerV2,
 		rt,
