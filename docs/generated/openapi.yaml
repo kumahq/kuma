@@ -2926,6 +2926,56 @@ paths:
       summary: Creates or Updates Mesh entity
       tags:
         - Mesh
+  /mesh-insights/{name}:
+    get:
+      operationId: getMeshInsight
+      summary: Get the insight of a mesh
+      description: >-
+        Returns the observed state of a mesh, computed by the control plane.
+        Read only.
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshInsightResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Internal'
+      parameters:
+        - in: path
+          name: name
+          required: true
+          description: The name of the mesh to get the insight for.
+          schema:
+            type: string
+  /mesh-insights:
+    get:
+      operationId: getMeshInsightList
+      summary: List mesh insights
+      description: >-
+        Returns the observed state of every mesh, computed by the control plane.
+        Read only.
+      parameters:
+        - in: query
+          name: size
+          required: false
+          description: Size of the page.
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          description: Offset of the page to list.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshInsightListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{name}/_overview:
     get:
       operationId: getMeshOverview
@@ -14492,6 +14542,135 @@ components:
       allOf:
         - $ref: '#/components/schemas/Meta'
         - $ref: '#/components/schemas/MeshOverview'
+    MeshInsightWithMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - $ref: '#/components/schemas/MeshInsight'
+    MeshInsight:
+      description: MeshInsight defines the observed state of a Mesh.
+      properties:
+        dataplanes:
+          properties:
+            offline:
+              type: integer
+            online:
+              type: integer
+            partiallyDegraded:
+              type: integer
+            total:
+              type: integer
+          type: object
+        dataplanesByType:
+          properties:
+            gateway:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            gatewayDelegated:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            standard:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+          type: object
+        dpVersions:
+          properties:
+            envoy:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplane stats grouped by Envoy version
+              type: object
+            kumaDp:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplane stats grouped by KumaDP version
+              type: object
+          type: object
+        mTLS:
+          description: mTLS statistics
+          properties:
+            issuedBackends:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplanes grouped by issued backends.
+              type: object
+            supportedBackends:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplanes grouped by supported backends.
+              type: object
+          type: object
+        resources:
+          additionalProperties:
+            properties:
+              total:
+                type: integer
+            type: object
+          type: object
+      type: object
     SecretItem:
       properties:
         creationTime:
@@ -17757,6 +17936,28 @@ components:
                 type: number
             type: object
       description: List
+    GetMeshInsightResponse:
+      description: A response containing the insight of a mesh.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshInsightWithMeta'
+    GetMeshInsightListResponse:
+      description: A response containing a list of mesh insights.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 200
+              next:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshInsightWithMeta'
     GetMeshOverviewResponse:
       description: A response containing the overview of a mesh.
       content:
