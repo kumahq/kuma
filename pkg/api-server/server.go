@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -34,7 +33,6 @@ import (
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -327,53 +325,30 @@ func addResourcesEndpoints(
 		if defType == system.SecretType || defType == system.GlobalSecretType {
 			endpoints.k8sMapper = k8sSecretMapper
 		}
-		switch defType {
-		case mesh.ServiceInsightType:
-			// ServiceInsight is a bit different
-			ep := serviceInsightEndpoints{
-				resourceEndpoints: endpoints,
-				addressPortGenerator: func(svc string) string {
-					return fmt.Sprintf("%s.%s:%d", svc, cfg.DNSServer.Domain, cfg.DNSServer.ServiceVipPort)
-				},
-			}
-			ep.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			ep.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			ep.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			ep.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			ep.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
+		switch definition.Scope {
+		case model.ScopeMesh:
+			endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+			endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
+			endpoints.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
 			if definition.AlternativeWsPath != "" {
-				ep.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				ep.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				ep.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				ep.addListEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				ep.addListEndpoint(ws, "/"+definition.AlternativeWsPath) // listing all resources in all meshes
+				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+				endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+				endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
+				endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath) // listing all resources in all meshes
 			}
-		default:
-			switch definition.Scope {
-			case model.ScopeMesh:
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-				endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-				endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-				endpoints.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
-				if definition.AlternativeWsPath != "" {
-					endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-					endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-					endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-					endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-					endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath) // listing all resources in all meshes
-				}
-			case model.ScopeGlobal:
-				endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.WsPath)
-				endpoints.addDeleteEndpoint(ws, "/"+definition.WsPath)
-				endpoints.addFindEndpoint(ws, "/"+definition.WsPath)
-				endpoints.addListEndpoint(ws, "/"+definition.WsPath)
-				if definition.AlternativeWsPath != "" {
-					endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.AlternativeWsPath)
-					endpoints.addDeleteEndpoint(ws, "/"+definition.AlternativeWsPath)
-					endpoints.addFindEndpoint(ws, "/"+definition.AlternativeWsPath)
-					endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath)
-				}
+		case model.ScopeGlobal:
+			endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.WsPath)
+			endpoints.addDeleteEndpoint(ws, "/"+definition.WsPath)
+			endpoints.addFindEndpoint(ws, "/"+definition.WsPath)
+			endpoints.addListEndpoint(ws, "/"+definition.WsPath)
+			if definition.AlternativeWsPath != "" {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.AlternativeWsPath)
+				endpoints.addDeleteEndpoint(ws, "/"+definition.AlternativeWsPath)
+				endpoints.addFindEndpoint(ws, "/"+definition.AlternativeWsPath)
+				endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath)
 			}
 		}
 	}
