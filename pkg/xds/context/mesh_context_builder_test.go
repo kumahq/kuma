@@ -151,6 +151,61 @@ var _ = Describe("hash", func() {
 		}
 	}, test.EntriesForFolder("meshcontext_hash"))
 
+	It("resolves a Dataplane address that is a DNS name", func() {
+		// given a builder whose lookup resolves a hostname, as it would on AWS ECS
+		// where the Dataplane is created before the container gets its IP
+		builderWithDNS := xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			func(host string) ([]net.IP, error) {
+				switch host {
+				case "backend.dns.name":
+					return []net.IP{net.ParseIP("192.168.0.10")}, nil
+				case "backend.advertised.dns.name":
+					return []net.IP{net.ParseIP("192.168.0.11")}, nil
+				default:
+					return []net.IP{net.ParseIP(host)}, nil
+				}
+			},
+			"zone-1",
+			vips.NewPersistence(core_manager.NewResourceManager(resourceStore), manager.NewConfigManager(resourceStore), false),
+			"mesh",
+			80,
+			xds_context.AnyToAnyReachableServicesGraphBuilder,
+			nil,
+		)
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+---
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: backend.dns.name
+  advertisedAddress: backend.advertised.dns.name
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: backend
+`)).To(Succeed())
+
+		// when
+		meshCtx, err := builderWithDNS.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the dataplane stored in the mesh context is resolved
+		dataplanes := meshCtx.Resources.Dataplanes().Items
+		Expect(dataplanes).To(HaveLen(1))
+		Expect(dataplanes[0].Spec.GetNetworking().GetAddress()).To(Equal("192.168.0.10"))
+		Expect(dataplanes[0].Spec.GetNetworking().GetAdvertisedAddress()).To(Equal("192.168.0.11"))
+
+		// and so is the endpoint Envoy EDS gets, since it only accepts IPs
+		Expect(meshCtx.EndpointMap["backend"]).To(HaveLen(1))
+		Expect(meshCtx.EndpointMap["backend"][0].Target).To(Equal("192.168.0.11"))
+	})
+
 	It("returns an error instead of panicking when listing resources fails", func() {
 		// given a mesh exists but listing any other resource fails (e.g. DB connection lost).
 		// MeshService is a destination type, whose fetched list used to be read before the
