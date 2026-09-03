@@ -1,0 +1,85 @@
+openapi: 3.1.0
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+  x-ref-schema-name: "MeshInsight"
+
+paths:
+  /mesh-insights/{name}:
+    get:
+      operationId: getMeshInsight
+      summary: Get the insight of a mesh
+      description: Returns the observed state of a mesh, computed by the control plane. Read only.
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshInsightResponse'
+        '400':
+          $ref: '/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest'
+        '404':
+          $ref: '/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound'
+        '500':
+          $ref: '/specs/base/specs/common/error_schema.yaml#/components/responses/Internal'
+      parameters:
+        - in: path
+          name: name
+          required: true
+          description: The name of the mesh to get the insight for.
+          schema:
+            type: string
+  /mesh-insights:
+    get:
+      operationId: getMeshInsightList
+      summary: List mesh insights
+      description: Returns the observed state of every mesh, computed by the control plane. Read only.
+      parameters:
+        - in: query
+          name: size
+          required: false
+          description: Size of the page.
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          description: Offset of the page to list.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshInsightListResponse'
+        '400':
+          $ref: '/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: '/specs/base/specs/common/error_schema.yaml#/components/responses/Internal'
+
+components:
+  schemas:
+    MeshInsightWithMeta:
+      allOf:
+        - $ref: '/specs/base/specs/common/resource.yaml#/components/schemas/Meta'
+        - $ref: '/specs/protoresources/meshinsight/schema.yaml#/components/schemas/MeshInsight'
+
+  responses:
+    GetMeshInsightResponse:
+      description: A response containing the insight of a mesh.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshInsightWithMeta'
+    GetMeshInsightListResponse:
+      description: A response containing a list of mesh insights.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 200
+              next:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshInsightWithMeta'

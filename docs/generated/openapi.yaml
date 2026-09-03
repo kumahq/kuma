@@ -3,7 +3,7 @@ info:
   title: Kuma API
   description: Kuma API
   version: v1alpha1
-  x-ref-schema-name: MeshOverview
+  x-ref-schema-name: ZoneOverview
 security:
   - BasicAuth: []
   - BearerAuth: []
@@ -137,6 +137,162 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/GetDataplaneXDSConfigResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /config:
+    get:
+      operationId: get-config
+      summary: Get the control plane configuration
+      description: >-
+        Returns the configuration of the control plane, with sensitive values
+        redacted.
+      tags:
+        - System
+      responses:
+        '200':
+          $ref: '#/components/responses/ConfigResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{dataplane}/xds:
+    get:
+      operationId: get-dataplane-xds
+      summary: Get the Envoy config dump of this dataplane
+      description: Proxies the Envoy admin config dump of the DPP.
+      tags:
+        - Inspect
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP.
+          schema:
+            type: string
+        - in: path
+          name: dataplane
+          required: true
+          description: The name of the DPP within the mesh.
+          schema:
+            type: string
+        - in: query
+          name: include_eds
+          required: false
+          description: Include endpoint discovery data in the config dump.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: The Envoy config dump.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{dataplane}/clusters:
+    get:
+      operationId: get-dataplane-clusters
+      summary: Get the Envoy clusters of this dataplane
+      description: >-
+        Proxies the Envoy admin clusters output of the DPP. Returns plain text
+        unless `format=json` is requested.
+      tags:
+        - Inspect
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP.
+          schema:
+            type: string
+        - in: path
+          name: dataplane
+          required: true
+          description: The name of the DPP within the mesh.
+          schema:
+            type: string
+        - in: query
+          name: format
+          required: false
+          description: >-
+            Set to `json` to receive the Envoy admin output as JSON instead of
+            plain text.
+          schema:
+            type: string
+            enum:
+              - json
+      responses:
+        '200':
+          description: The Envoy clusters output.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{dataplane}/stats:
+    get:
+      operationId: get-dataplane-stats
+      summary: Get the Envoy stats of this dataplane
+      description: >-
+        Proxies the Envoy admin stats output of the DPP. Returns plain text
+        unless `format=json` is requested.
+      tags:
+        - Inspect
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP.
+          schema:
+            type: string
+        - in: path
+          name: dataplane
+          required: true
+          description: The name of the DPP within the mesh.
+          schema:
+            type: string
+        - in: query
+          name: format
+          required: false
+          description: >-
+            Set to `json` to receive the Envoy admin output as JSON instead of
+            plain text.
+          schema:
+            type: string
+            enum:
+              - json
+        - in: query
+          name: usedonly
+          required: false
+          description: Only return stats Envoy has actually updated.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: The Envoy stats output.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -2770,6 +2926,56 @@ paths:
       summary: Creates or Updates Mesh entity
       tags:
         - Mesh
+  /mesh-insights/{name}:
+    get:
+      operationId: getMeshInsight
+      summary: Get the insight of a mesh
+      description: >-
+        Returns the observed state of a mesh, computed by the control plane.
+        Read only.
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshInsightResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Internal'
+      parameters:
+        - in: path
+          name: name
+          required: true
+          description: The name of the mesh to get the insight for.
+          schema:
+            type: string
+  /mesh-insights:
+    get:
+      operationId: getMeshInsightList
+      summary: List mesh insights
+      description: >-
+        Returns the observed state of every mesh, computed by the control plane.
+        Read only.
+      parameters:
+        - in: query
+          name: size
+          required: false
+          description: Size of the page.
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          description: Offset of the page to list.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetMeshInsightListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{name}/_overview:
     get:
       operationId: getMeshOverview
@@ -2919,6 +3125,33 @@ paths:
       summary: Creates or Updates Secret entity
       tags:
         - Secret
+  /zones/{name}/_overview:
+    get:
+      operationId: getZoneOverview
+      parameters:
+        - in: path
+          name: name
+          required: true
+          description: The name of the zone to get the overview for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetZoneOverviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /zones/_overview:
+    get:
+      operationId: getZoneOverviewList
+      responses:
+        '200':
+          $ref: '#/components/responses/GetZoneOverviewListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /hostnamegenerators/{name}:
     get:
       operationId: getHostnameGenerator
@@ -4558,10 +4791,14 @@ components:
           type: string
           example: default
           description: the mesh this resource is part of
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         name:
           type: string
           example: my-resource
           description: the name of the resource
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         kri:
           type: string
           readOnly: true
@@ -5124,6 +5361,8 @@ components:
             type: string
           type: object
         mesh:
+          maxLength: 253
+          pattern: ^[0-9a-z-_.]*$
           type: string
         modificationTime:
           description: Time at which the resource was updated
@@ -5131,6 +5370,8 @@ components:
           readOnly: true
           type: string
         name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
         networking:
           description: >-
@@ -5568,6 +5809,8 @@ components:
           readOnly: true
           type: string
         name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
         skipCreatingInitialPolicies:
           description: >-
@@ -5610,6 +5853,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -5621,6 +5866,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -6265,6 +6512,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -6276,6 +6525,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -7351,6 +7602,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -7362,6 +7615,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -7762,6 +8017,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -7773,6 +8030,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -8697,6 +8956,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -8708,6 +8969,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -9099,6 +9362,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -9110,6 +9375,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -9663,6 +9930,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -9674,6 +9943,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -10029,6 +10300,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -10040,6 +10313,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -10181,6 +10456,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -10192,6 +10469,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -10868,6 +11147,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -10879,6 +11160,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -11341,6 +11624,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -11352,6 +11637,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -11925,6 +12212,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -11936,6 +12225,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -12144,6 +12435,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -12155,6 +12448,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -12302,6 +12597,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -12313,6 +12610,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -12673,6 +12972,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -12684,6 +12985,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -13059,6 +13362,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -13070,6 +13375,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -14168,6 +14475,135 @@ components:
       allOf:
         - $ref: '#/components/schemas/Meta'
         - $ref: '#/components/schemas/MeshOverview'
+    MeshInsightWithMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - $ref: '#/components/schemas/MeshInsight'
+    MeshInsight:
+      description: MeshInsight defines the observed state of a Mesh.
+      properties:
+        dataplanes:
+          properties:
+            offline:
+              type: integer
+            online:
+              type: integer
+            partiallyDegraded:
+              type: integer
+            total:
+              type: integer
+          type: object
+        dataplanesByType:
+          properties:
+            gateway:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            gatewayDelegated:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            standard:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+          type: object
+        dpVersions:
+          properties:
+            envoy:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplane stats grouped by Envoy version
+              type: object
+            kumaDp:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplane stats grouped by KumaDP version
+              type: object
+          type: object
+        mTLS:
+          description: mTLS statistics
+          properties:
+            issuedBackends:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplanes grouped by issued backends.
+              type: object
+            supportedBackends:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplanes grouped by supported backends.
+              type: object
+          type: object
+        resources:
+          additionalProperties:
+            properties:
+              total:
+                type: integer
+            type: object
+          type: object
+      type: object
     SecretItem:
       properties:
         creationTime:
@@ -14184,6 +14620,8 @@ components:
             type: string
           type: object
         mesh:
+          maxLength: 253
+          pattern: ^[0-9a-z-_.]*$
           type: string
         modificationTime:
           description: Time at which the resource was updated
@@ -14191,6 +14629,8 @@ components:
           readOnly: true
           type: string
         name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
         type:
           type: string
@@ -14198,6 +14638,258 @@ components:
         - type
         - name
         - mesh
+      type: object
+    ZoneOverviewWithMeta:
+      allOf:
+        - $ref: '#/components/schemas/Meta'
+        - $ref: '#/components/schemas/ZoneOverview'
+    ZoneOverview:
+      description: ZoneOverview defines the projected state of a Zone.
+      properties:
+        zone:
+          properties:
+            enabled:
+              description: >-
+                enable allows to turn the zone on/off and exclude the whole zone
+                from
+
+                balancing traffic on it
+              type: boolean
+          type: object
+        zoneInsight:
+          properties:
+            envoyAdminStreams:
+              description: |-
+                Statistics about Envoy Admin Streams
+                Deprecated: use kds_streams instead.
+              properties:
+                clustersGlobalInstanceId:
+                  description: Global instance ID that handles Clusters streams.
+                  type: string
+                configDumpGlobalInstanceId:
+                  description: Global instance ID that handles XDS Config Dump streams.
+                  type: string
+                statsGlobalInstanceId:
+                  description: Global instance ID that handles Stats streams.
+                  type: string
+              type: object
+            healthCheck:
+              properties:
+                time:
+                  description: Time last health check received
+                  properties:
+                    nanos:
+                      type: integer
+                    seconds:
+                      type: integer
+                  type: object
+              type: object
+            kdsStreams:
+              description: >-
+                Information about kds streams that are estabilished between
+                global and zone
+              properties:
+                clusters:
+                  description: Details of stream that handles Clusters stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                configDump:
+                  description: Details of stream that handles XDS Config Dump stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                globalToZone:
+                  description: >-
+                    Details of stream that handles global to zone resource sync
+                    stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                stats:
+                  description: Details of stream that handles Stats stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                zoneToGlobal:
+                  description: >-
+                    Details of stream that handles zone to global resource sync
+                    stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+              type: object
+            subscriptions:
+              description: List of KDS subscriptions created by a given Zone Kuma CP.
+              items:
+                description: >-
+                  KDSSubscription describes a single KDS subscription created by
+                  a Zone to the Global.
+                properties:
+                  authTokenProvided:
+                    description: Indicates if subscription provided auth token
+                    type: boolean
+                  config:
+                    description: Config of Zone Kuma CP
+                    type: string
+                  connectTime:
+                    description: Time when a given Zone connected to the Global.
+                    properties:
+                      nanos:
+                        type: integer
+                      seconds:
+                        type: integer
+                    type: object
+                  disconnectTime:
+                    description: Time when a given Zone disconnected from the Global.
+                    properties:
+                      nanos:
+                        type: integer
+                      seconds:
+                        type: integer
+                    type: object
+                  generation:
+                    description: >-
+                      Generation is an integer number which is periodically
+                      increased by the
+
+                      status sink
+                    type: integer
+                  globalInstanceId:
+                    description: Global CP instance that handled given subscription.
+                    type: string
+                  id:
+                    description: Unique id per KDS subscription.
+                    type: string
+                  status:
+                    description: Status of the KDS subscription.
+                    properties:
+                      lastUpdateTime:
+                        description: >-
+                          Time when status of a given KDS subscription was most
+                          recently updated.
+                        properties:
+                          nanos:
+                            type: integer
+                          seconds:
+                            type: integer
+                        type: object
+                      stat:
+                        additionalProperties:
+                          description: >-
+                            DiscoveryServiceStats defines all stats over a
+                            single xDS service.
+                          properties:
+                            responsesAcknowledged:
+                              description: Number of xDS responses ACKed by the Dataplane.
+                              type: integer
+                            responsesRejected:
+                              description: Number of xDS responses NACKed by the Dataplane.
+                              type: integer
+                            responsesSent:
+                              description: Number of xDS responses sent to the Dataplane.
+                              type: integer
+                          type: object
+                        type: object
+                      total:
+                        description: Total defines an aggregate over individual KDS stats.
+                        properties:
+                          responsesAcknowledged:
+                            description: Number of xDS responses ACKed by the Dataplane.
+                            type: integer
+                          responsesRejected:
+                            description: Number of xDS responses NACKed by the Dataplane.
+                            type: integer
+                          responsesSent:
+                            description: Number of xDS responses sent to the Dataplane.
+                            type: integer
+                        type: object
+                    type: object
+                  version:
+                    description: Version of Zone Kuma CP.
+                    properties:
+                      kumaCp:
+                        description: Version of Zone Kuma CP
+                        properties:
+                          buildDate:
+                            description: Build date of Kuma ControlPlane version
+                            type: string
+                          gitCommit:
+                            description: Git commit of Kuma ControlPlane version
+                            type: string
+                          gitTag:
+                            description: Git tag of Kuma ControlPlane version
+                            type: string
+                          kumaCpGlobalCompatible:
+                            description: >-
+                              True iff this Zone CP version is compatible with
+                              Global CP
+                            type: boolean
+                          version:
+                            description: Version number of Kuma ControlPlane
+                            type: string
+                        type: object
+                    type: object
+                  zoneInstanceId:
+                    description: >-
+                      Zone CP instance that handled the given subscription (This
+                      is the leader at
+
+                      time of connection).
+                    type: string
+                type: object
+              type: array
+          type: object
       type: object
     HostnameGeneratorItem:
       type: object
@@ -14228,6 +14920,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -14313,6 +15007,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -14347,6 +15043,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -14809,6 +15507,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -14820,6 +15520,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -15122,6 +15824,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -15156,6 +15860,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -15412,6 +16118,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -15423,6 +16131,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -15655,6 +16365,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -15689,6 +16401,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -15926,6 +16640,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -15937,6 +16653,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -16029,6 +16747,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -16040,6 +16760,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -16100,6 +16822,8 @@ components:
             be omitted for cluster-scoped resources.
           type: string
           default: default
+          pattern: ^[0-9a-z-_.]*$
+          maxLength: 253
         kri:
           description: >-
             A unique identifier for this resource instance used by internal
@@ -16111,6 +16835,8 @@ components:
         name:
           description: Name of the Kuma resource
           type: string
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -16163,6 +16889,13 @@ components:
           type: object
           readOnly: true
   responses:
+    ConfigResponse:
+      description: The control plane configuration.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
     IndexResponse:
       description: A response for the index endpoint
       content:
@@ -17136,6 +17869,28 @@ components:
                 type: number
             type: object
       description: List
+    GetMeshInsightResponse:
+      description: A response containing the insight of a mesh.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshInsightWithMeta'
+    GetMeshInsightListResponse:
+      description: A response containing a list of mesh insights.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 200
+              next:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshInsightWithMeta'
     GetMeshOverviewResponse:
       description: A response containing the overview of a mesh.
       content:
@@ -17205,6 +17960,28 @@ components:
                 type: number
             type: object
       description: List
+    GetZoneOverviewResponse:
+      description: A response containing the overview of a zone.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneOverviewWithMeta'
+    GetZoneOverviewListResponse:
+      description: A response containing a list of zone overviews.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 200
+              next:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ZoneOverviewWithMeta'
     HostnameGeneratorItem:
       description: Successful response
       content:
