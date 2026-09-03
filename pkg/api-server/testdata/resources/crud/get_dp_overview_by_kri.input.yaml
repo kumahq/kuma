@@ -1,0 +1,49 @@
+# Overview of a dataplane addressed by KRI, merged with its insight
+#/_kri/kri_dp_default_default__dp-1_/_overview 200
+# Dataplane without an insight still returns an overview
+#/_kri/kri_dp_default_default__dp-2_/_overview 200
+# Resource types without insights are rejected
+#/_kri/kri_mtp_default_default__mtp-1_/_overview 400
+type: Mesh
+name: default
+---
+type: Dataplane
+mesh: default
+name: dp-1
+networking:
+  address: 10.1.2.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: my-svc
+---
+type: Dataplane
+mesh: default
+name: dp-2
+networking:
+  address: 10.1.2.2
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: my-svc
+---
+type: DataplaneInsight
+mesh: default
+name: dp-1
+subscriptions:
+  - id: stream-id-1
+    controlPlaneInstanceId: cp-1
+    connectTime: "2020-07-28T16:18:22.000000Z"
+---
+type: MeshTrafficPermission
+name: mtp-1
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://default
