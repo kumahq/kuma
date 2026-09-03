@@ -141,6 +141,162 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
+  /config:
+    get:
+      operationId: get-config
+      summary: Get the control plane configuration
+      description: >-
+        Returns the configuration of the control plane, with sensitive values
+        redacted.
+      tags:
+        - System
+      responses:
+        '200':
+          $ref: '#/components/responses/ConfigResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{dataplane}/xds:
+    get:
+      operationId: get-dataplane-xds
+      summary: Get the Envoy config dump of this dataplane
+      description: Proxies the Envoy admin config dump of the DPP.
+      tags:
+        - Inspect
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP.
+          schema:
+            type: string
+        - in: path
+          name: dataplane
+          required: true
+          description: The name of the DPP within the mesh.
+          schema:
+            type: string
+        - in: query
+          name: include_eds
+          required: false
+          description: Include endpoint discovery data in the config dump.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: The Envoy config dump.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{dataplane}/clusters:
+    get:
+      operationId: get-dataplane-clusters
+      summary: Get the Envoy clusters of this dataplane
+      description: >-
+        Proxies the Envoy admin clusters output of the DPP. Returns plain text
+        unless `format=json` is requested.
+      tags:
+        - Inspect
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP.
+          schema:
+            type: string
+        - in: path
+          name: dataplane
+          required: true
+          description: The name of the DPP within the mesh.
+          schema:
+            type: string
+        - in: query
+          name: format
+          required: false
+          description: >-
+            Set to `json` to receive the Envoy admin output as JSON instead of
+            plain text.
+          schema:
+            type: string
+            enum:
+              - json
+      responses:
+        '200':
+          description: The Envoy clusters output.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{dataplane}/stats:
+    get:
+      operationId: get-dataplane-stats
+      summary: Get the Envoy stats of this dataplane
+      description: >-
+        Proxies the Envoy admin stats output of the DPP. Returns plain text
+        unless `format=json` is requested.
+      tags:
+        - Inspect
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP.
+          schema:
+            type: string
+        - in: path
+          name: dataplane
+          required: true
+          description: The name of the DPP within the mesh.
+          schema:
+            type: string
+        - in: query
+          name: format
+          required: false
+          description: >-
+            Set to `json` to receive the Envoy admin output as JSON instead of
+            plain text.
+          schema:
+            type: string
+            enum:
+              - json
+        - in: query
+          name: usedonly
+          required: false
+          description: Only return stats Envoy has actually updated.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: The Envoy stats output.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_layout:
     get:
       operationId: get-dataplanes-layout
@@ -16230,6 +16386,13 @@ components:
           type: object
           readOnly: true
   responses:
+    ConfigResponse:
+      description: The control plane configuration.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
     IndexResponse:
       description: A response for the index endpoint
       content:
