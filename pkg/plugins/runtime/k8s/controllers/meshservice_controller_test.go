@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	kube_discovery "k8s.io/api/discovery/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_events "k8s.io/client-go/tools/events"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -139,7 +138,7 @@ var _ = Describe("MeshServiceController", func() {
 	DescribeTable("GatewayAnnotationChangedPredicate",
 		func(oldValue string, newValue string, expected bool) {
 			pod := func(value string) *kube_core.Pod {
-				pod := &kube_core.Pod{ObjectMeta: kube_meta.ObjectMeta{Name: "pod", Namespace: "demo"}}
+				pod := &kube_core.Pod{}
 				if value != "" {
 					pod.Annotations = map[string]string{"kuma.io/gateway": value}
 				}
