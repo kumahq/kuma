@@ -157,10 +157,12 @@ type Meta struct {
 	// Example: kri_mtp_default_zone-east_kuma-demo_mypolicy1_
 	KRI *string `json:"kri,omitempty"`
 
-	// Labels Labels of the resource. Note: certain system labels are immutable after creation:
-	// - `kuma.io/origin`: Resource origin (zone/global). Immutable.
-	// - `kuma.io/zone`: Zone where resource originated. Immutable.
-	// - `kuma.io/display-name`: Display name for the resource. Immutable.
+	// Labels Labels of the resource.
+	//
+	// Labels documented as `readOnly` are always computed by the control plane; a value supplied by the
+	// user is overwritten. The remaining documented labels can be set by the user, and the control plane
+	// only fills in a default when they are absent. `kuma.io/origin` and `kuma.io/zone` are immutable
+	// after creation.
 	//
 	//
 	// Example: {"k8s.kuma.io/namespace":"kuma-system","kuma.io/display-name":"mtp","kuma.io/mesh":"default","kuma.io/origin":"zone"}
