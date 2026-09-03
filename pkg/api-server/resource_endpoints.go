@@ -8,6 +8,7 @@ import (
 	"github.com/emicklei/go-restful/v3"
 
 	"github.com/kumahq/kuma/v3/pkg/api-server/authn"
+	"github.com/kumahq/kuma/v3/pkg/api-server/filters"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/access"
@@ -214,6 +215,7 @@ func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix s
 			Doc(fmt.Sprintf("Get a %s", r.descriptor.WsPath)).
 			Param(ws.QueryParameter("size", "size of page").DataType("int")).
 			Param(ws.QueryParameter("offset", "offset of page to list").DataType("string")).
+			Param(ws.QueryParameter(filters.StatusFilterParam, "select only resources with this status").DataType("string")).
 			Param(ws.PathParameter("name", "a pattern to select only resources that contain these characters").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
