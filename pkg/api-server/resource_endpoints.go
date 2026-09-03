@@ -439,9 +439,11 @@ func (r *resourceEndpoints) createResource(
 		res.GetMeta().GetLabels(),
 		core_model.GetNamespace(res.GetMeta(), r.systemNamespace),
 		meshName,
+		name,
 		r.mode,
 		r.isK8s,
 		r.zoneName,
+		false,
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
@@ -485,9 +487,11 @@ func (r *resourceEndpoints) updateResource(
 		newResRest.GetMeta().GetLabels(),
 		core_model.GetNamespace(newResRest.GetMeta(), r.systemNamespace),
 		meshName,
+		currentRes.GetMeta().GetName(),
 		r.mode,
 		r.isK8s,
 		r.zoneName,
+		false,
 	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")

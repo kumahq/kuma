@@ -7,6 +7,7 @@ import (
 
 var AllComputedLabels = map[string]struct{}{
 	metadata.KumaMeshLabel:         {},
+	mesh_proto.DisplayName:         {},
 	mesh_proto.ResourceOriginLabel: {},
 	mesh_proto.ZoneTag:             {},
 	mesh_proto.EnvTag:              {},
