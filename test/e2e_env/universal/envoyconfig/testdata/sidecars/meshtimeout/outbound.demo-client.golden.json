@@ -397,6 +397,7 @@
                   "filterMetadata": {
                     "envoy.lb": {
                       "kuma.io/display-name": "demo-client",
+                      "service": "demo-client",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
@@ -406,6 +407,7 @@
                     },
                     "envoy.transport_socket_match": {
                       "kuma.io/display-name": "demo-client",
+                      "service": "demo-client",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
@@ -443,6 +445,7 @@
                     "envoy.lb": {
                       "instance": "1",
                       "kuma.io/display-name": "test-server",
+                      "service": "test-server",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
@@ -455,6 +458,7 @@
                     "envoy.transport_socket_match": {
                       "instance": "1",
                       "kuma.io/display-name": "test-server",
+                      "service": "test-server",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
@@ -712,6 +716,7 @@
           "filterMetadata": {
             "io.kuma.tags": {
               "kuma.io/display-name": "demo-client",
+              "service": "demo-client",
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig",
               "kuma.io/origin": "zone",

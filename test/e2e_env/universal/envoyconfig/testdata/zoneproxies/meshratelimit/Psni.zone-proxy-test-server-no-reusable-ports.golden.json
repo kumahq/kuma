@@ -499,6 +499,7 @@
                     "envoy.lb": {
                       "kuma.io/access": "external",
                       "kuma.io/display-name": "mes-zone-proxy",
+                      "service": "mes-zone-proxy",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -507,6 +508,7 @@
                     "envoy.transport_socket_match": {
                       "kuma.io/access": "external",
                       "kuma.io/display-name": "mes-zone-proxy",
+                      "service": "mes-zone-proxy",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -816,6 +818,7 @@
               "instance": "1",
               "kuma.io/protocol": "http",
               "kuma.io/display-name": "zone-proxy-test-server-no-reusable-ports",
+              "service": "zone-proxy-test-server-no-reusable-ports",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",
               "version": "v1"

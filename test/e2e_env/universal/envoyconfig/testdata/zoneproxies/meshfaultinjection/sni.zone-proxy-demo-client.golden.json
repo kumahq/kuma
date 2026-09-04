@@ -479,6 +479,7 @@
                     "envoy.lb": {
                       "kuma.io/access": "external",
                       "kuma.io/display-name": "mes-zone-proxy",
+                      "service": "mes-zone-proxy",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -487,6 +488,7 @@
                     "envoy.transport_socket_match": {
                       "kuma.io/access": "external",
                       "kuma.io/display-name": "mes-zone-proxy",
+                      "service": "mes-zone-proxy",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -518,6 +520,7 @@
                   "filterMetadata": {
                     "envoy.lb": {
                       "kuma.io/display-name": "zone-proxy-demo-client",
+                      "service": "zone-proxy-demo-client",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -527,6 +530,7 @@
                     },
                     "envoy.transport_socket_match": {
                       "kuma.io/display-name": "zone-proxy-demo-client",
+                      "service": "zone-proxy-demo-client",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -564,6 +568,7 @@
                     "envoy.lb": {
                       "instance": "1",
                       "kuma.io/display-name": "zone-proxy-test-server-no-reusable-ports",
+                      "service": "zone-proxy-test-server-no-reusable-ports",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -576,6 +581,7 @@
                     "envoy.transport_socket_match": {
                       "instance": "1",
                       "kuma.io/display-name": "zone-proxy-test-server-no-reusable-ports",
+                      "service": "zone-proxy-test-server-no-reusable-ports",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -615,6 +621,7 @@
                     "envoy.lb": {
                       "instance": "1",
                       "kuma.io/display-name": "zone-proxy-test-server",
+                      "service": "zone-proxy-test-server",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -627,6 +634,7 @@
                     "envoy.transport_socket_match": {
                       "instance": "1",
                       "kuma.io/display-name": "zone-proxy-test-server",
+                      "service": "zone-proxy-test-server",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -702,7 +710,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&kuma.io/display-name=zone-proxy-demo-client&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/workload=zone-proxy-demo-client&&kuma.io/zone=kuma-3&&team=client-owners&"
+                          "value": "&kuma.io/display-name=zone-proxy-demo-client&&service=zone-proxy-demo-client&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/workload=zone-proxy-demo-client&&kuma.io/zone=kuma-3&&team=client-owners&"
                         }
                       }
                     ],
@@ -835,7 +843,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&kuma.io/display-name=zone-proxy-demo-client&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/workload=zone-proxy-demo-client&&kuma.io/zone=kuma-3&&team=client-owners&"
+                          "value": "&kuma.io/display-name=zone-proxy-demo-client&&service=zone-proxy-demo-client&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/workload=zone-proxy-demo-client&&kuma.io/zone=kuma-3&&team=client-owners&"
                         }
                       }
                     ],
@@ -933,7 +941,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&kuma.io/display-name=zone-proxy-demo-client&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/workload=zone-proxy-demo-client&&kuma.io/zone=kuma-3&&team=client-owners&"
+                          "value": "&kuma.io/display-name=zone-proxy-demo-client&&service=zone-proxy-demo-client&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/workload=zone-proxy-demo-client&&kuma.io/zone=kuma-3&&team=client-owners&"
                         }
                       }
                     ],
@@ -1089,6 +1097,7 @@
           "filterMetadata": {
             "io.kuma.tags": {
               "kuma.io/display-name": "zone-proxy-demo-client",
+              "service": "zone-proxy-demo-client",
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig-zoneproxies",
               "kuma.io/origin": "zone",
