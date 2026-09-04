@@ -5,7 +5,6 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/config"
 	"github.com/kumahq/kuma/v3/pkg/core/access"
-	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 )
 
@@ -14,16 +13,12 @@ func addConfigEndpoints(ws *restful.WebService, access access.ControlPlaneMetada
 	if err != nil {
 		return err
 	}
-	ws.Route(ws.GET("/config").To(func(req *restful.Request, resp *restful.Response) {
+	ws.Route(ws.GET("/config").To(handle(func(req *restful.Request) (any, error) {
 		ctx := req.Request.Context()
 		if err := access.ValidateView(ctx, user.FromCtx(ctx)); err != nil {
-			rest_errors.HandleError(ctx, resp, err, "Access denied")
-			return
+			return nil, withTitle(err, "Access denied")
 		}
-		resp.AddHeader("content-type", "application/json")
-		if _, err := resp.Write([]byte(cfgForDisplay)); err != nil {
-			log.Error(err, "Could not write the index response")
-		}
-	}))
+		return rawResponse{contentType: "application/json", body: []byte(cfgForDisplay)}, nil
+	})))
 	return nil
 }

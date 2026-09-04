@@ -16,7 +16,6 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/inspect"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -48,7 +47,7 @@ func addInspectEndpoints(
 ) {
 	for _, desc := range registry.Global().ObjectDescriptors(core_model.AllowedToInspect()) {
 		ws.Route(
-			ws.GET(fmt.Sprintf("/meshes/{mesh}/%s/{name}/dataplanes", desc.WsPath)).To(inspectPolicies(desc.Name, builder, cfg)).
+			ws.GET(fmt.Sprintf("/meshes/{mesh}/%s/{name}/dataplanes", desc.WsPath)).To(handle(inspectPolicies(desc.Name, builder, cfg))).
 				Doc("inspect policies").
 				Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 				Param(ws.PathParameter("name", "resource name").DataType("string")).
@@ -57,7 +56,7 @@ func addInspectEndpoints(
 	}
 
 	ws.Route(
-		ws.GET("/meshes/{mesh}/meshservices/{name}/_dataplanes").To(inspectMeshServiceDataplanes(rm, resourceAccess)).
+		ws.GET("/meshes/{mesh}/meshservices/{name}/_dataplanes").To(handle(inspectMeshServiceDataplanes(rm, resourceAccess))).
 			Doc("inspect MeshService").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("name", "resource name").DataType("string")).
@@ -70,11 +69,10 @@ func addInspectEndpoints(
 func inspectMeshServiceDataplanes(
 	rm manager.ResourceManager,
 	resourceAccess access.ResourceAccess,
-) restful.RouteFunction {
-	return func(request *restful.Request, response *restful.Response) {
-		matchingDataplanesForFilter(
+) handlerFunc {
+	return func(request *restful.Request) (any, error) {
+		return matchingDataplanesForFilter(
 			request,
-			response,
 			meshservice_api.MeshServiceResourceTypeDescriptor,
 			rm,
 			resourceAccess,
@@ -92,16 +90,15 @@ func inspectPolicies(
 	resType core_model.ResourceType,
 	builder xds_context.MeshContextBuilder,
 	cfg *kuma_cp.Config,
-) restful.RouteFunction {
-	return func(request *restful.Request, response *restful.Response) {
+) handlerFunc {
+	return func(request *restful.Request) (any, error) {
 		ctx := request.Request.Context()
 		meshName := request.PathParameter("mesh")
 		policyName := request.PathParameter("name")
 
 		meshContext, err := builder.Build(ctx, meshName)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not list Dataplanes")
-			return
+			return nil, withTitle(err, "Could not list Dataplanes")
 		}
 
 		result := api_server_types.NewPolicyInspectEntryList()
@@ -114,8 +111,7 @@ func inspectPolicies(
 			}
 			proxy, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, dpKey)
 			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
-				return
+				return nil, withTitle(err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 			}
 			for policy, attachments := range inspect.GroupByPolicy(&proxy.Policies) {
 				if policy.Type != resType || policy.Key.Name != policyName || policy.Key.Mesh != meshName {
@@ -137,9 +133,6 @@ func inspectPolicies(
 
 		result.Total = uint32(len(result.Items))
 
-		if err := response.WriteAsJson(result); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not write response")
-			return
-		}
+		return result, nil
 	}
 }
