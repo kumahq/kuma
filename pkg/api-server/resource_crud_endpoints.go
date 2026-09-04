@@ -445,11 +445,6 @@ func (r *resourceCrudHandler) updateResource(
 		hook(newResRest, meshName, currentRes.GetMeta().GetName())
 	}
 
-	currentLabels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), currentRes.GetMeta(), meshName, currentRes.GetMeta().GetName())
-	if err != nil {
-		return nil, withTitle(err, "Could not compute current labels")
-	}
-
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 
 	labels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), newResRest.GetMeta(), meshName, currentRes.GetMeta().GetName())
@@ -457,7 +452,7 @@ func (r *resourceCrudHandler) updateResource(
 		return nil, withTitle(err, "Could not compute labels for a resource")
 	}
 
-	if validationErr := r.validateImmutableLabels(currentLabels, labels); validationErr.HasViolations() {
+	if validationErr := r.validateImmutableLabels(currentRes.GetMeta().GetLabels(), labels); validationErr.HasViolations() {
 		var err validators.ValidationError
 		err.AddError("labels", validationErr)
 		return nil, withTitle(&err, "Could not update a resource")
@@ -481,6 +476,11 @@ func (r *resourceCrudHandler) deleteResource(request *restful.Request) (any, err
 
 	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil {
 		return nil, withTitle(err, "Could not delete a resource")
+	}
+
+	if !core_model.IsLocallyOriginated(r.mode, resource.GetMeta().GetLabels()) {
+		origin, _ := core_model.ResourceOrigin(resource.GetMeta())
+		return nil, withTitle(rest_errors.NewBadRequestError(fmt.Sprintf("resource with %s=%s cannot be deleted on this control plane", mesh_proto.ResourceOriginLabel, origin)), "Could not delete a resource")
 	}
 
 	if verr := r.validateOriginForWrite(resource.GetMeta()); verr.HasViolations() {
@@ -555,16 +555,16 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 
 	err.AddError("", r.validateOriginForWrite(resource.GetMeta()))
 
-	if r.mode != config_core.Global {
-		if origin != mesh_proto.GlobalResourceOrigin {
-			zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-			if ok && zoneTag != r.zoneName {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
-			}
-			if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
-			}
+	zoneTag, hasZoneTag := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+	if r.mode == config_core.Global {
+		if hasZoneTag {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s is not allowed on a global control plane", mesh_proto.ZoneTag))
 		}
+	} else if hasZoneTag && zoneTag != r.zoneName {
+		err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
+	}
+	if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
+		err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
 	}
 
 	if r.descriptor.IsPluginOriginated && r.descriptor.IsPolicy {
@@ -582,15 +582,16 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 	return err
 }
 
-func (r *resourceCrudHandler) validateImmutableLabels(currentComputedLabels, newComputedLabels map[string]string) validators.ValidationError {
+func (r *resourceCrudHandler) validateImmutableLabels(storedLabels, newComputedLabels map[string]string) validators.ValidationError {
 	var err validators.ValidationError
 
 	immutableLabels := []string{
 		mesh_proto.ZoneTag,
+		mesh_proto.ResourceOriginLabel,
 	}
 
 	for _, label := range immutableLabels {
-		currentVal, currentExists := currentComputedLabels[label]
+		currentVal, currentExists := storedLabels[label]
 		newVal, newExists := newComputedLabels[label]
 
 		if currentExists && !newExists {

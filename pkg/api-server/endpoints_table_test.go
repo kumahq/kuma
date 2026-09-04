@@ -110,5 +110,28 @@ var _ = Describe("Endpoints", func() {
 		DescribeTable("inspect for services /meshes/{mesh}/{serviceType}/{policyName}/_hostnames", func(inputFile string) {
 			apiTest(inputFile, globalApiServer, globalResourceStore)
 		}, test.EntriesForFolder("resources/inspect/services/_resources/hostnames/global"))
+
+		DescribeTable("resources CRUD", func(inputFile string) {
+			apiTest(inputFile, globalApiServer, globalResourceStore)
+		}, test.EntriesForFolder("resources/crud/global"))
+	})
+
+	Describe("federated zone mode", func() {
+		var zoneApiServer *api_server.ApiServer
+		var zoneResourceStore store.ResourceStore
+		stopZone := func() {}
+
+		BeforeAll(func() {
+			zoneResourceStore = memory.NewStore()
+			zoneApiServer, _, stopZone = StartApiServer(NewTestApiServerConfigurer().WithZone("zone-1").WithStore(store.NewPaginationStore(zoneResourceStore)))
+		})
+
+		AfterAll(func() {
+			stopZone()
+		})
+
+		DescribeTable("resources CRUD", func(inputFile string) {
+			apiTest(inputFile, zoneApiServer, zoneResourceStore)
+		}, test.EntriesForFolder("resources/crud/zone"))
 	})
 }, Ordered)
