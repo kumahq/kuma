@@ -71,12 +71,8 @@ components:
           properties:
             time:
               description: Time last health check received
-              properties:
-                nanos:
-                  type: integer
-                seconds:
-                  type: integer
-              type: object
+              format: date-time
+              type: string
           type: object
         kdsStreams:
           description: Information about kds streams that are estabilished between
@@ -87,12 +83,8 @@ components:
               properties:
                 connectTime:
                   description: Time when the stream was open.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 globalInstanceId:
                   description: Global instance ID that handles the stream.
                   type: string
@@ -102,12 +94,8 @@ components:
               properties:
                 connectTime:
                   description: Time when the stream was open.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 globalInstanceId:
                   description: Global instance ID that handles the stream.
                   type: string
@@ -118,12 +106,8 @@ components:
               properties:
                 connectTime:
                   description: Time when the stream was open.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 globalInstanceId:
                   description: Global instance ID that handles the stream.
                   type: string
@@ -133,12 +117,8 @@ components:
               properties:
                 connectTime:
                   description: Time when the stream was open.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 globalInstanceId:
                   description: Global instance ID that handles the stream.
                   type: string
@@ -149,12 +129,8 @@ components:
               properties:
                 connectTime:
                   description: Time when the stream was open.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 globalInstanceId:
                   description: Global instance ID that handles the stream.
                   type: string
@@ -187,20 +163,12 @@ components:
                 type: string
               connectTime:
                 description: Time when a given Zone connected to the Global.
-                properties:
-                  nanos:
-                    type: integer
-                  seconds:
-                    type: integer
-                type: object
+                format: date-time
+                type: string
               disconnectTime:
                 description: Time when a given Zone disconnected from the Global.
-                properties:
-                  nanos:
-                    type: integer
-                  seconds:
-                    type: integer
-                type: object
+                format: date-time
+                type: string
               generation:
                 description: |-
                   Generation is an integer number which is periodically increased by the
@@ -218,12 +186,8 @@ components:
                   lastUpdateTime:
                     description: Time when status of a given KDS subscription was
                       most recently updated.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   stat:
                     additionalProperties:
                       description: DiscoveryServiceStats defines all stats over a
@@ -334,7 +298,7 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/ZoneInsightList'
-      summary: Returns a list of ZoneInsight in the mesh.
+      summary: Returns a list of ZoneInsight.
       tags:
       - ZoneInsight
   /zone-insights/{name}:

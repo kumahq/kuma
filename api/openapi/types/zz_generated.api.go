@@ -306,7 +306,7 @@ type WhoAmI struct {
 
 // ZoneTokenRequest defines model for ZoneTokenRequest.
 type ZoneTokenRequest struct {
-	// Scope Scope of the token, e.g. zone-ingress
+	// Scope Scope of the token. Kuma defines no built-in scopes, distributions may register their own
 	Scope *[]string `json:"scope,omitempty"`
 
 	// ValidFor How long the token is valid for, e.g. 24h
@@ -375,9 +375,6 @@ type RoutePolicyConfResponse = externalRef0.PoliciesList
 
 // RoutesListResponse defines model for RoutesListResponse.
 type RoutesListResponse = externalRef0.RoutesList
-
-// TokenResponse defines model for TokenResponse.
-type TokenResponse = string
 
 // WhoAmIResponse defines model for WhoAmIResponse.
 type WhoAmIResponse = WhoAmI

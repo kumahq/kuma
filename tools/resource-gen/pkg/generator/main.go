@@ -22,6 +22,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"sigs.k8s.io/yaml"
 
@@ -875,6 +876,11 @@ func valueMapper(r reflect.Type) *jsonschema.Schema {
 		return &jsonschema.Schema{
 			Type:   "string",
 			Format: "byte",
+		}
+	case reflect.TypeFor[timestamppb.Timestamp]():
+		return &jsonschema.Schema{
+			Type:   "string",
+			Format: "date-time",
 		}
 	default:
 		return nil

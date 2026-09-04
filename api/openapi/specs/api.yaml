@@ -1077,7 +1077,7 @@ components:
           type: array
           items:
             type: string
-          description: Scope of the token, e.g. zone-ingress
+          description: Scope of the token. Kuma defines no built-in scopes, distributions may register their own
         validFor:
           type: string
           description: How long the token is valid for, e.g. 24h
@@ -1103,7 +1103,7 @@ components:
     TokenResponse:
       description: A response containing the issued token.
       content:
-        application/json:
+        text/plain:
           schema:
             type: string
     ConfigResponse:

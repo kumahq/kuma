@@ -3889,7 +3889,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshList'
-      summary: Returns a list of Mesh in the mesh.
+      summary: Returns a list of Mesh.
       tags:
         - Mesh
   /meshes/{name}:
@@ -4225,7 +4225,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/ZoneList'
-      summary: Returns a list of Zone in the mesh.
+      summary: Returns a list of Zone.
       tags:
         - Zone
   /zones/{name}:
@@ -4323,7 +4323,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/ZoneInsightList'
-      summary: Returns a list of ZoneInsight in the mesh.
+      summary: Returns a list of ZoneInsight.
       tags:
         - ZoneInsight
   /zone-insights/{name}:
@@ -6214,7 +6214,9 @@ components:
           type: array
           items:
             type: string
-          description: Scope of the token, e.g. zone-ingress
+          description: >-
+            Scope of the token. Kuma defines no built-in scopes, distributions
+            may register their own
         validFor:
           type: string
           description: How long the token is valid for, e.g. 24h
@@ -15884,12 +15886,8 @@ components:
                     for a
 
                     Dataplane.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 certificateRegenerations:
                   description: Number of certificate regenerations for a Dataplane.
                   type: integer
@@ -15898,12 +15896,8 @@ components:
                   type: string
                 lastCertificateRegeneration:
                   description: Time on which the last certificate was generated.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 supportedBackends:
                   description: Supported backends (CA).
                   items:
@@ -16004,12 +15998,8 @@ components:
                     description: >-
                       Time when a given Dataplane connected to the Control
                       Plane.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   controlPlaneInstanceId:
                     description: Control Plane instance that handled given subscription.
                     type: string
@@ -16017,12 +16007,8 @@ components:
                     description: >-
                       Time when a given Dataplane disconnected from the Control
                       Plane.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   generation:
                     description: >-
                       Generation is an integer number which is periodically
@@ -16066,12 +16052,8 @@ components:
                         description: >-
                           Time when status of a given ADS subscription was most
                           recently updated.
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
+                        format: date-time
+                        type: string
                       lds:
                         description: LDS defines all LDS stats.
                         properties:
@@ -16330,12 +16312,8 @@ components:
               description: |-
                 Expiration time of the last certificate that was generated for a
                 Dataplane.
-              properties:
-                nanos:
-                  type: integer
-                seconds:
-                  type: integer
-              type: object
+              format: date-time
+              type: string
             certificateRegenerations:
               description: Number of certificate regenerations for a Dataplane.
               type: integer
@@ -16344,12 +16322,8 @@ components:
               type: string
             lastCertificateRegeneration:
               description: Time on which the last certificate was generated.
-              properties:
-                nanos:
-                  type: integer
-                seconds:
-                  type: integer
-              type: object
+              format: date-time
+              type: string
             supportedBackends:
               description: Supported backends (CA).
               items:
@@ -16461,12 +16435,8 @@ components:
             properties:
               connectTime:
                 description: Time when a given Dataplane connected to the Control Plane.
-                properties:
-                  nanos:
-                    type: integer
-                  seconds:
-                    type: integer
-                type: object
+                format: date-time
+                type: string
               controlPlaneInstanceId:
                 description: Control Plane instance that handled given subscription.
                 type: string
@@ -16474,12 +16444,8 @@ components:
                 description: >-
                   Time when a given Dataplane disconnected from the Control
                   Plane.
-                properties:
-                  nanos:
-                    type: integer
-                  seconds:
-                    type: integer
-                type: object
+                format: date-time
+                type: string
               generation:
                 description: >-
                   Generation is an integer number which is periodically
@@ -16523,12 +16489,8 @@ components:
                     description: >-
                       Time when status of a given ADS subscription was most
                       recently updated.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   lds:
                     description: LDS defines all LDS stats.
                     properties:
@@ -16880,12 +16842,8 @@ components:
           properties:
             time:
               description: Time last health check received
-              properties:
-                nanos:
-                  type: integer
-                seconds:
-                  type: integer
-              type: object
+              format: date-time
+              type: string
           type: object
         kdsStreams:
           description: >-
@@ -16897,12 +16855,8 @@ components:
               properties:
                 connectTime:
                   description: Time when the stream was open.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 globalInstanceId:
                   description: Global instance ID that handles the stream.
                   type: string
@@ -16912,12 +16866,8 @@ components:
               properties:
                 connectTime:
                   description: Time when the stream was open.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 globalInstanceId:
                   description: Global instance ID that handles the stream.
                   type: string
@@ -16929,12 +16879,8 @@ components:
               properties:
                 connectTime:
                   description: Time when the stream was open.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 globalInstanceId:
                   description: Global instance ID that handles the stream.
                   type: string
@@ -16944,12 +16890,8 @@ components:
               properties:
                 connectTime:
                   description: Time when the stream was open.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 globalInstanceId:
                   description: Global instance ID that handles the stream.
                   type: string
@@ -16961,12 +16903,8 @@ components:
               properties:
                 connectTime:
                   description: Time when the stream was open.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 globalInstanceId:
                   description: Global instance ID that handles the stream.
                   type: string
@@ -17000,20 +16938,12 @@ components:
                 type: string
               connectTime:
                 description: Time when a given Zone connected to the Global.
-                properties:
-                  nanos:
-                    type: integer
-                  seconds:
-                    type: integer
-                type: object
+                format: date-time
+                type: string
               disconnectTime:
                 description: Time when a given Zone disconnected from the Global.
-                properties:
-                  nanos:
-                    type: integer
-                  seconds:
-                    type: integer
-                type: object
+                format: date-time
+                type: string
               generation:
                 description: >-
                   Generation is an integer number which is periodically
@@ -17034,12 +16964,8 @@ components:
                     description: >-
                       Time when status of a given KDS subscription was most
                       recently updated.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   stat:
                     additionalProperties:
                       description: >-
@@ -17149,12 +17075,8 @@ components:
               properties:
                 time:
                   description: Time last health check received
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
               type: object
             kdsStreams:
               description: >-
@@ -17166,12 +17088,8 @@ components:
                   properties:
                     connectTime:
                       description: Time when the stream was open.
-                      properties:
-                        nanos:
-                          type: integer
-                        seconds:
-                          type: integer
-                      type: object
+                      format: date-time
+                      type: string
                     globalInstanceId:
                       description: Global instance ID that handles the stream.
                       type: string
@@ -17181,12 +17099,8 @@ components:
                   properties:
                     connectTime:
                       description: Time when the stream was open.
-                      properties:
-                        nanos:
-                          type: integer
-                        seconds:
-                          type: integer
-                      type: object
+                      format: date-time
+                      type: string
                     globalInstanceId:
                       description: Global instance ID that handles the stream.
                       type: string
@@ -17198,12 +17112,8 @@ components:
                   properties:
                     connectTime:
                       description: Time when the stream was open.
-                      properties:
-                        nanos:
-                          type: integer
-                        seconds:
-                          type: integer
-                      type: object
+                      format: date-time
+                      type: string
                     globalInstanceId:
                       description: Global instance ID that handles the stream.
                       type: string
@@ -17213,12 +17123,8 @@ components:
                   properties:
                     connectTime:
                       description: Time when the stream was open.
-                      properties:
-                        nanos:
-                          type: integer
-                        seconds:
-                          type: integer
-                      type: object
+                      format: date-time
+                      type: string
                     globalInstanceId:
                       description: Global instance ID that handles the stream.
                       type: string
@@ -17230,12 +17136,8 @@ components:
                   properties:
                     connectTime:
                       description: Time when the stream was open.
-                      properties:
-                        nanos:
-                          type: integer
-                        seconds:
-                          type: integer
-                      type: object
+                      format: date-time
+                      type: string
                     globalInstanceId:
                       description: Global instance ID that handles the stream.
                       type: string
@@ -17256,20 +17158,12 @@ components:
                     type: string
                   connectTime:
                     description: Time when a given Zone connected to the Global.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   disconnectTime:
                     description: Time when a given Zone disconnected from the Global.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   generation:
                     description: >-
                       Generation is an integer number which is periodically
@@ -17290,12 +17184,8 @@ components:
                         description: >-
                           Time when status of a given KDS subscription was most
                           recently updated.
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
+                        format: date-time
+                        type: string
                       stat:
                         additionalProperties:
                           description: >-
@@ -19398,7 +19288,7 @@ components:
     TokenResponse:
       description: A response containing the issued token.
       content:
-        application/json:
+        text/plain:
           schema:
             type: string
     ConfigResponse:

@@ -63,12 +63,8 @@ components:
               description: |-
                 Expiration time of the last certificate that was generated for a
                 Dataplane.
-              properties:
-                nanos:
-                  type: integer
-                seconds:
-                  type: integer
-              type: object
+              format: date-time
+              type: string
             certificateRegenerations:
               description: Number of certificate regenerations for a Dataplane.
               type: integer
@@ -77,12 +73,8 @@ components:
               type: string
             lastCertificateRegeneration:
               description: Time on which the last certificate was generated.
-              properties:
-                nanos:
-                  type: integer
-                seconds:
-                  type: integer
-              type: object
+              format: date-time
+              type: string
             supportedBackends:
               description: Supported backends (CA).
               items:
@@ -194,24 +186,16 @@ components:
               connectTime:
                 description: Time when a given Dataplane connected to the Control
                   Plane.
-                properties:
-                  nanos:
-                    type: integer
-                  seconds:
-                    type: integer
-                type: object
+                format: date-time
+                type: string
               controlPlaneInstanceId:
                 description: Control Plane instance that handled given subscription.
                 type: string
               disconnectTime:
                 description: Time when a given Dataplane disconnected from the Control
                   Plane.
-                properties:
-                  nanos:
-                    type: integer
-                  seconds:
-                    type: integer
-                type: object
+                format: date-time
+                type: string
               generation:
                 description: |-
                   Generation is an integer number which is periodically increased by the
@@ -252,12 +236,8 @@ components:
                   lastUpdateTime:
                     description: Time when status of a given ADS subscription was
                       most recently updated.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   lds:
                     description: LDS defines all LDS stats.
                     properties:
