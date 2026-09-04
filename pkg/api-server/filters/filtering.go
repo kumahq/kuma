@@ -69,18 +69,21 @@ func labelFilter(request *restful.Request) (store.ListFilterFunc, error) {
 				validators.RootedAt(request.SelectedRoutePath()).Field(k), "filters are only supported on labels and status")
 			continue
 		}
-		closingBracket := strings.Index(k, "]")
-		key := k[len("filter[labels."):closingBracket]
-		if closingBracket != len(k)-1 {
+		// strings.Index returns -1 when "]" is missing, so this guard must run before slicing
+		if closingBracket := strings.Index(k, "]"); closingBracket != len(k)-1 {
 			verr.AddViolationAt(
 				validators.RootedAt(request.SelectedRoutePath()).Field(k), "advanced filters are not supported")
 			continue
 		}
-		op := FilterOpEq
+		if len(v) > 1 {
+			verr.AddViolationAt(
+				validators.RootedAt(request.SelectedRoutePath()).Field(k), "duplicate filter parameter")
+			continue
+		}
 		filters = append(filters, filterEntry{
-			Op:    op,
-			Key:   key,
-			Value: v[len(v)-1],
+			Op:    FilterOpEq,
+			Key:   strings.TrimSuffix(strings.TrimPrefix(k, "filter[labels."), "]"),
+			Value: v[0],
 		})
 	}
 	if verr.HasViolations() {
