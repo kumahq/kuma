@@ -41,7 +41,7 @@ func addInspectEnvoyAdminEndpoints(
 	}
 	ws.Route(
 		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/{type}").
-			To(cl.inspectDataplaneAdmin()).
+			To(handle(cl.inspectDataplaneAdmin())).
 			Doc("inspect dataplane configuration and stats").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
@@ -57,23 +57,21 @@ const (
 	adminTypeStats      adminType = "stats"
 )
 
-func (cl *inspectClient) inspectDataplaneAdmin() restful.RouteFunction {
-	return func(request *restful.Request, response *restful.Response) {
+func (cl *inspectClient) inspectDataplaneAdmin() handlerFunc {
+	return func(request *restful.Request) (any, error) {
 		ctx := request.Request.Context()
 		meshName := request.PathParameter("mesh")
 		dataplaneName := request.PathParameter("dataplane")
 		aType, err := cl.adminType(ctx, request.PathParameter("type"))
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
-			return
+			return nil, withTitle(err, "Could not execute admin operation")
 		}
 
 		dp := core_mesh.NewDataplaneResource()
 		if err := cl.rm.Get(request.Request.Context(), dp, store.GetByKey(dataplaneName, meshName)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get dataplane resource")
-			return
+			return nil, withTitle(err, "Could not get dataplane resource")
 		}
-		cl.inspectProxy(request, response, aType, dp)
+		return cl.inspectProxy(request, aType, dp)
 	}
 }
 
@@ -98,7 +96,7 @@ func (cl *inspectClient) adminType(ctx context.Context, adType string) (adminTyp
 	return res, nil
 }
 
-func (cl *inspectClient) inspectProxy(request *restful.Request, response *restful.Response, adType adminType, proxy core_model.ResourceWithAddress) {
+func (cl *inspectClient) inspectProxy(request *restful.Request, adType adminType, proxy core_model.ResourceWithAddress) (any, error) {
 	ctx := request.Request.Context()
 	contentType := contentTypeText
 
@@ -130,13 +128,8 @@ func (cl *inspectClient) inspectProxy(request *restful.Request, response *restfu
 		res, err = cl.adminClient.Stats(ctx, proxy, format, usedOnly)
 	}
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not execute admin operation")
-		return
+		return nil, withTitle(err, "Could not execute admin operation")
 	}
 
-	response.AddHeader(restful.HEADER_ContentType, contentType)
-	if _, err := response.Write(res); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not write response")
-		return
-	}
+	return rawResponse{contentType: contentType, body: res}, nil
 }

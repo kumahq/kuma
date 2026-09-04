@@ -12,7 +12,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
-	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 )
 
 type globalInsightsEndpoints struct {
@@ -39,12 +38,12 @@ func newGlobalInsightsResponse(resources map[string]globalInsightsStat) *globalI
 }
 
 func (r *globalInsightsEndpoints) addEndpoint(ws *restful.WebService) {
-	ws.Route(ws.GET("/global-insights").To(r.inspectGlobalResources).
+	ws.Route(ws.GET("/global-insights").To(handle(r.inspectGlobalResources)).
 		Doc("Inspect all global resources").
 		Returns(200, "OK", nil))
 }
 
-func (r *globalInsightsEndpoints) inspectGlobalResources(request *restful.Request, response *restful.Response) {
+func (r *globalInsightsEndpoints) inspectGlobalResources(request *restful.Request) (any, error) {
 	resources := map[string]globalInsightsStat{}
 
 	for _, descriptor := range registry.Global().ObjectDescriptors() {
@@ -56,8 +55,7 @@ func (r *globalInsightsEndpoints) inspectGlobalResources(request *restful.Reques
 
 		list := descriptor.NewList()
 		if err := r.resManager.List(request.Request.Context(), list); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve global insights")
-			return
+			return nil, withTitle(err, "Could not retrieve global insights")
 		}
 
 		resources[string(descriptor.Name)] = globalInsightsStat{
@@ -65,9 +63,5 @@ func (r *globalInsightsEndpoints) inspectGlobalResources(request *restful.Reques
 		}
 	}
 
-	insights := newGlobalInsightsResponse(resources)
-
-	if err := response.WriteAsJson(insights); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve global insights")
-	}
+	return newGlobalInsightsResponse(resources), nil
 }
