@@ -13,15 +13,15 @@ networking:
     - port: 8080
       name: main-port
       tags:
-        kuma.io/service: foo
+        kuma.io/display-name: foo
     - port: 9090
       name: secondary-port
       tags:
-        kuma.io/service: bar
+        kuma.io/display-name: bar
     - port: 7070
       name: admin-port
       tags:
-        kuma.io/service: admin-dashboard
+        kuma.io/display-name: admin-dashboard
 ---
 type: MeshTimeout
 name: global

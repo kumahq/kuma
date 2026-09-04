@@ -447,7 +447,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				// given
 				rootCmd.SetArgs([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"inspect", "dataplanes", "--tag", "kuma.io/service=mobile", "--tag", "version=v1",
+					"inspect", "dataplanes", "--tag", "kuma.io/display-name=mobile", "--tag", "version=v1",
 				})
 
 				// when
@@ -455,7 +455,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
-				Expect(testClient.receivedTags).To(HaveKeyWithValue(mesh_proto.ServiceTag, "mobile"))
+				Expect(testClient.receivedTags).To(HaveKeyWithValue("kuma.io/display-name", "mobile"))
 				Expect(testClient.receivedTags).To(HaveKeyWithValue("version", "v1"))
 			})
 		})

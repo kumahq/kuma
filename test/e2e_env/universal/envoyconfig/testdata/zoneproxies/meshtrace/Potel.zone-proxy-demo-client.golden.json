@@ -950,7 +950,8 @@
         "metadata": {
           "filterMetadata": {
             "io.kuma.tags": {
-              "kuma.io/service": "zone-proxy-demo-client",
+              "kuma.io/display-name": "zone-proxy-demo-client",
+              "service": "zone-proxy-demo-client",
               "kuma.io/zone": "kuma-3",
               "team": "client-owners"
             }

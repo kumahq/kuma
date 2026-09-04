@@ -68,7 +68,7 @@ var _ = Describe("Spire Providers Test", func() {
 						metadata.KumaServiceAccount: "my-sa",
 						mesh_proto.KubeNamespaceTag: "my-ns",
 					}).
-					WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+					WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 				Build()
 
 			// create identity
@@ -116,7 +116,7 @@ var _ = Describe("Spire Providers Test", func() {
 						metadata.KumaServiceAccount: "my-sa",
 						mesh_proto.KubeNamespaceTag: "my-ns",
 					}).
-					WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+					WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 				Build()
 
 			// create identity
@@ -162,7 +162,7 @@ var _ = Describe("Spire Providers Test", func() {
 					WithLabels(map[string]string{
 						metadata.KumaWorkload: "web",
 					}).
-					WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+					WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 				Build()
 
 			// create identity

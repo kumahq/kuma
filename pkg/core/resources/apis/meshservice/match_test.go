@@ -37,11 +37,11 @@ var _ = Describe("MatchDataplanesWithMeshServices", func() {
 			dpps: []*core_mesh.DataplaneResource{
 				builders.Dataplane().
 					WithName("redis-01").
-					WithInboundOfTags("kuma.io/service", "redis", "app", "redis", "k8s.kuma.io/namespace", "kuma-demo").
+					WithInboundOfTags("app", "redis", "k8s.kuma.io/namespace", "kuma-demo").
 					Build(),
 				builders.Dataplane().
 					WithName("demo-app-01").
-					WithInboundOfTags("kuma.io/service", "demo-app", "app", "demo-app", "k8s.kuma.io/namespace", "kuma-demo").
+					WithInboundOfTags("app", "demo-app", "k8s.kuma.io/namespace", "kuma-demo").
 					Build(),
 			},
 			meshServices: []*meshservice_api.MeshServiceResource{
@@ -67,7 +67,7 @@ var _ = Describe("MatchDataplanesWithMeshServices", func() {
 			dpps: []*core_mesh.DataplaneResource{
 				builders.Dataplane().
 					WithName("redis-01").
-					WithInboundOfTags("kuma.io/service", "redis", "app", "redis", "k8s.kuma.io/namespace", "kuma-demo").
+					WithInboundOfTags("app", "redis", "k8s.kuma.io/namespace", "kuma-demo").
 					Build(),
 			},
 			meshServices: []*meshservice_api.MeshServiceResource{
@@ -85,7 +85,7 @@ var _ = Describe("MatchDataplanesWithMeshServices", func() {
 			dpps: []*core_mesh.DataplaneResource{
 				builders.Dataplane().
 					WithName("redis-01").
-					WithInboundOfTags("kuma.io/service", "redis", "app", "redis", "k8s.kuma.io/namespace", "kuma-demo").
+					WithInboundOfTags("app", "redis", "k8s.kuma.io/namespace", "kuma-demo").
 					With(func(resource *core_mesh.DataplaneResource) {
 						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
 					}).
@@ -106,17 +106,17 @@ var _ = Describe("MatchDataplanesWithMeshServices", func() {
 				builders.Dataplane().
 					WithName("redis-01").
 					WithLabels(map[string]string{"app": "redis", "version": "v1"}).
-					WithInboundOfTags("kuma.io/service", "redis").
+					WithInboundOfTags().
 					Build(),
 				builders.Dataplane().
 					WithName("redis-02").
 					WithLabels(map[string]string{"app": "redis", "version": "v2"}).
-					WithInboundOfTags("kuma.io/service", "redis").
+					WithInboundOfTags().
 					Build(),
 				builders.Dataplane().
 					WithName("demo-app-01").
 					WithLabels(map[string]string{"app": "demo-app"}).
-					WithInboundOfTags("kuma.io/service", "demo-app").
+					WithInboundOfTags().
 					Build(),
 			},
 			meshServices: []*meshservice_api.MeshServiceResource{
@@ -143,13 +143,13 @@ var _ = Describe("MatchDataplanesWithMeshServices", func() {
 				builders.Dataplane().
 					WithName("redis-01").
 					WithLabels(map[string]string{"app": "redis"}).
-					WithInboundOfTags("kuma.io/service", "redis").
+					WithInboundOfTags().
 					Build(),
 				builders.Dataplane().
 					WithName("redis-02").
 					WithMesh("mesh-other").
 					WithLabels(map[string]string{"app": "redis"}).
-					WithInboundOfTags("kuma.io/service", "redis").
+					WithInboundOfTags().
 					Build(),
 			},
 			meshServices: []*meshservice_api.MeshServiceResource{
@@ -177,7 +177,7 @@ var _ = Describe("MatchDataplanesWithMeshServices", func() {
 				builders.Dataplane().
 					WithName("redis-01").
 					WithLabels(map[string]string{"app": "redis", "version": "v1"}).
-					WithInboundOfTags("kuma.io/service", "redis").
+					WithInboundOfTags().
 					Build(),
 			},
 			meshServices: []*meshservice_api.MeshServiceResource{
@@ -196,7 +196,7 @@ var _ = Describe("MatchDataplanesWithMeshServices", func() {
 				builders.Dataplane().
 					WithName("redis-01").
 					WithLabels(map[string]string{"app": "redis"}).
-					WithInboundOfTags("kuma.io/service", "redis").
+					WithInboundOfTags().
 					With(func(resource *core_mesh.DataplaneResource) {
 						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
 					}).
@@ -217,12 +217,12 @@ var _ = Describe("MatchDataplanesWithMeshServices", func() {
 				builders.Dataplane().
 					WithName("redis-01").
 					WithLabels(map[string]string{"app": "redis"}).
-					WithInboundOfTags("kuma.io/service", "redis").
+					WithInboundOfTags().
 					Build(),
 				builders.Dataplane().
 					WithName("redis-02").
 					WithLabels(map[string]string{"app": "redis"}).
-					WithInboundOfTags("kuma.io/service", "redis").
+					WithInboundOfTags().
 					Build(),
 			},
 			meshServices: []*meshservice_api.MeshServiceResource{
@@ -243,12 +243,12 @@ var _ = Describe("MatchDataplanesWithMeshServices", func() {
 				builders.Dataplane().
 					WithName("redis-01").
 					WithLabels(map[string]string{"app": "redis"}).
-					WithInboundOfTags("kuma.io/service", "redis").
+					WithInboundOfTags().
 					Build(),
 				builders.Dataplane().
 					WithName("demo-app-01").
 					WithLabels(map[string]string{"app": "demo-app"}).
-					WithInboundOfTags("kuma.io/service", "demo-app").
+					WithInboundOfTags().
 					Build(),
 			},
 			meshServices: []*meshservice_api.MeshServiceResource{

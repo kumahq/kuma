@@ -64,8 +64,6 @@ networking:
   address: {{ address }}
   inbound:
   - port: {{ port }}
-    tags:
-      kuma.io/service: demo-client
   transparentProxying:
     redirectPortInbound: 15006
     redirectPortOutbound: 15001

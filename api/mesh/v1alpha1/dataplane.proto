@@ -147,7 +147,7 @@ message Dataplane {
       uint32 port = 4;
 
       reserved 5;
-      reserved "tags"; // Formerly kuma.io/service based outbounds, see #17808
+      reserved "tags"; // Formerly tag-based outbounds, see #17808
 
       // BackendRef is a way to target MeshService.
       BackendRef backendRef = 6;

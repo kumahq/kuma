@@ -68,8 +68,8 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			listenerPort:    5432,
 			statsName:       "db",
 			clusters: []envoy_common.Cluster{
-				plugins_xds.NewClusterBuilder().WithService("db").WithTags(map[string]string{"kuma.io/service": "db", "version": "v1"}).Build(),
-				plugins_xds.NewClusterBuilder().WithService("db").WithTags(map[string]string{"kuma.io/service": "db", "version": "v2"}).Build(),
+				plugins_xds.NewClusterBuilder().WithService("db").WithTags(map[string]string{"kuma.io/display-name": "db", "version": "v1"}).Build(),
+				plugins_xds.NewClusterBuilder().WithService("db").WithTags(map[string]string{"kuma.io/display-name": "db", "version": "v2"}).Build(),
 			},
 			expected: `
             address:
@@ -87,12 +87,14 @@ var _ = Describe("TcpProxyConfigurer", func() {
                     - metadataMatch:
                         filterMetadata:
                           envoy.lb:
+                            kuma.io/display-name: db
                             version: v1
                       name: db
                       weight: 1
                     - metadataMatch:
                         filterMetadata:
                           envoy.lb:
+                            kuma.io/display-name: db
                             version: v2
                       name: db
                       weight: 1

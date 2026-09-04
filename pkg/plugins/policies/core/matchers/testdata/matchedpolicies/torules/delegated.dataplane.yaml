@@ -11,6 +11,6 @@ networking:
       k8s.kuma.io/namespace: kong
       k8s.kuma.io/service-name: kong
       k8s.kuma.io/service-port: "80"
-      kuma.io/service: kong-kong_svc_80
+      kuma.io/display-name: kong-kong_svc_80
       kuma.io/zone: default
       pod-template-hash: 6b5f99ddff

@@ -62,7 +62,7 @@ func MeshTrafficPermission() {
 				TestServerUniversal(
 					"test-server", meshName,
 					WithArgs([]string{"echo", "--instance", "echo"}),
-					WithLabels(map[string]string{"kuma.io/service": "test-server"}),
+					WithLabels(map[string]string{"kuma.io/display-name": "test-server"}),
 				),
 				TestServerExternalServiceUniversal("external-service", 80, false, WithDockerContainerName("kuma-es-4_external-service-mtp-test")),
 				zoneIngress(),

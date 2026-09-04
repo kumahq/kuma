@@ -14,13 +14,13 @@ networking:
       name: main-port
       protocol: http
       tags:
-        kuma.io/service: foo
+        kuma.io/display-name: foo
         kuma.io/protocol: http
     - port: 8081
       name: secondary-port
       protocol: tcp
       tags:
-        kuma.io/service: foo
+        kuma.io/display-name: foo
         kuma.io/protocol: tcp
   transparentProxying:
     redirectPortInbound: 15006
@@ -42,7 +42,7 @@ labels:
 spec:
   selector:
     dataplaneTags:
-      kuma.io/service: test-server
+      kuma.io/display-name: test-server
   ports:
     - port: 80
       targetPort: 80
@@ -62,7 +62,7 @@ labels:
 spec:
   selector:
     dataplaneTags:
-      kuma.io/service: test-server
+      kuma.io/display-name: test-server
   ports:
     - port: 80
       targetPort: 80
@@ -82,7 +82,7 @@ labels:
 spec:
   selector:
     dataplaneTags:
-      kuma.io/service: test-server
+      kuma.io/display-name: test-server
   ports:
     - port: 80
       targetPort: 80

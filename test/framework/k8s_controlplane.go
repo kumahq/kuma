@@ -453,7 +453,7 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service, workload string) (strin
 
 	if service != "" {
 		tokenData["tags"] = map[string][]string{
-			"kuma.io/service": {service},
+			"service": {service},
 		}
 	}
 

@@ -51,7 +51,7 @@ networking:
       tags:
         app: foo
         k8s.kuma.io/namespace: kuma-demo
-        kuma.io/service: foo_kuma-demo_svc_8080
+        kuma.io/display-name: foo_kuma-demo_svc_8080
 ---
 type: Dataplane
 name: foo-dp-2
@@ -67,7 +67,7 @@ networking:
       tags:
         app: foo
         k8s.kuma.io/namespace: kuma-demo
-        kuma.io/service: foo_kuma-demo_svc_8080
+        kuma.io/display-name: foo_kuma-demo_svc_8080
 ---
 type: Dataplane
 name: bar-dp-1
@@ -82,4 +82,4 @@ networking:
       tags:
         app: bar
         k8s.kuma.io/namespace: kuma-demo
-        kuma.io/service: bar_kuma-demo_svc_8080
+        kuma.io/display-name: bar_kuma-demo_svc_8080

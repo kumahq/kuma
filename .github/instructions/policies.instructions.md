@@ -110,7 +110,6 @@ pkg/plugins/policies/<policy-name>/
 **Configurer Types:**
 - `ClusterConfigurer` - Modifies Envoy clusters
 - `ListenerConfigurer` - Modifies Envoy listeners
-- `DeprecatedListenerConfigurer` - Legacy kuma.io/service support
 - Strategy pattern: `func (c *Configurer) Configure(resource) error`
 
 **Protocol Handling:**

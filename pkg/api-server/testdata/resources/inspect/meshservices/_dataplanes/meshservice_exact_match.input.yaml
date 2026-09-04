@@ -50,7 +50,7 @@ networking:
       tags:
         app: echo-server
         k8s.kuma.io/namespace: default
-        kuma.io/service: echo-server-service_default_svc_80
+        kuma.io/display-name: echo-server-service_default_svc_80
 ---
 type: Dataplane
 name: echo-server-dp-02
@@ -66,7 +66,7 @@ networking:
       tags:
         app: echo-server
         k8s.kuma.io/namespace: default
-        kuma.io/service: echo-server-service_default_svc_80
+        kuma.io/display-name: echo-server-service_default_svc_80
 ---
 type: Dataplane
 name: echo-server-2-dp-01
@@ -82,7 +82,7 @@ networking:
       tags:
         app: echo-server-2
         k8s.kuma.io/namespace: default
-        kuma.io/service: echo-server-service-2_default_svc_80
+        kuma.io/display-name: echo-server-service-2_default_svc_80
 ---
 type: Dataplane
 name: echo-server-2-dp-02
@@ -98,4 +98,4 @@ networking:
       tags:
         app: echo-server-2
         k8s.kuma.io/namespace: default
-        kuma.io/service: echo-server-service-2_default_svc_80
+        kuma.io/display-name: echo-server-service-2_default_svc_80

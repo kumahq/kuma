@@ -13,7 +13,7 @@
      "sources": [
       {
        "match": {
-        "kuma.io/service": "*"
+        "kuma.io/display-name": "*"
        }
       }
      ],
@@ -21,7 +21,7 @@
       {
        "match": {
         "kuma.io/protocol": "http",
-        "kuma.io/service": "backend"
+        "kuma.io/display-name": "backend"
        }
       }
      ],
@@ -41,7 +41,7 @@
      "sources": [
       {
        "match": {
-        "kuma.io/service": "*"
+        "kuma.io/display-name": "*"
        }
       }
      ],
@@ -49,7 +49,7 @@
       {
        "match": {
         "kuma.io/protocol": "http",
-        "kuma.io/service": "backend"
+        "kuma.io/display-name": "backend"
        }
       }
      ],
@@ -71,14 +71,14 @@
      "sources": [
       {
        "match": {
-        "kuma.io/service": "*"
+        "kuma.io/display-name": "*"
        }
       }
      ],
      "destinations": [
       {
        "match": {
-        "kuma.io/service": "*"
+        "kuma.io/display-name": "*"
        }
       }
      ]
@@ -100,14 +100,14 @@
      "sources": [
       {
        "match": {
-        "kuma.io/service": "*"
+        "kuma.io/display-name": "*"
        }
       }
      ],
      "destinations": [
       {
        "match": {
-        "kuma.io/service": "redis"
+        "kuma.io/display-name": "redis"
        }
       }
      ],
@@ -143,14 +143,14 @@
      "sources": [
       {
        "match": {
-        "kuma.io/service": "backend"
+        "kuma.io/display-name": "backend"
        }
       }
      ],
      "destinations": [
       {
        "match": {
-        "kuma.io/service": "*"
+        "kuma.io/display-name": "*"
        }
       }
      ],
@@ -178,14 +178,14 @@
      "sources": [
       {
        "match": {
-        "kuma.io/service": "backend"
+        "kuma.io/display-name": "backend"
        }
       }
      ],
      "destinations": [
       {
        "match": {
-        "kuma.io/service": "*"
+        "kuma.io/display-name": "*"
        }
       }
      ],
@@ -213,14 +213,14 @@
      "sources": [
       {
        "match": {
-        "kuma.io/service": "backend"
+        "kuma.io/display-name": "backend"
        }
       }
      ],
      "destinations": [
       {
        "match": {
-        "kuma.io/service": "*"
+        "kuma.io/display-name": "*"
        }
       }
      ],
@@ -248,14 +248,14 @@
      "sources": [
       {
        "match": {
-        "kuma.io/service": "backend"
+        "kuma.io/display-name": "backend"
        }
       }
      ],
      "destinations": [
       {
        "match": {
-        "kuma.io/service": "*"
+        "kuma.io/display-name": "*"
        }
       }
      ],

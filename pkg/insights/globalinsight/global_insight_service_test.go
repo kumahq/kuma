@@ -57,21 +57,17 @@ var _ = Describe("Global Insight", func() {
 		// all proxies connected, only some of them with ready inbounds
 		err = createMeshService("svc-2-degraded", "payments", 2, 1, 2, rs)
 		Expect(err).ToNot(HaveOccurred())
-		// two proxies of the same delegated gateway service, only one of them online
-		err = createGatewayDataplane("edge-gw-1", "default", "edge-gateway", "edge-gw", true, rs)
+		// two proxies of the same delegated gateway workload, only one of them online
+		err = createGatewayDataplane("edge-gw-1", "default", "edge-gw", true, rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createGatewayDataplane("edge-gw-2", "default", "edge-gateway", "edge-gw", false, rs)
+		err = createGatewayDataplane("edge-gw-2", "default", "edge-gw", false, rs)
 		Expect(err).ToNot(HaveOccurred())
-		err = createGatewayDataplane("payments-gw", "payments", "payments-gateway", "payments-gw", false, rs)
+		err = createGatewayDataplane("payments-gw", "payments", "payments-gw", false, rs)
 		Expect(err).ToNot(HaveOccurred())
-		// tag-free gateway, grouped by the workload it belongs to
-		err = createGatewayDataplane("shop-gw", "default", "", "shop", true, rs)
+		// no workload label, so each is its own service, grouped by the Dataplane name
+		err = createGatewayDataplane("bare-gw-1", "default", "", true, rs)
 		Expect(err).ToNot(HaveOccurred())
-		// neither a service tag nor a workload label, so each is its own service,
-		// grouped by the Dataplane name
-		err = createGatewayDataplane("bare-gw-1", "default", "", "", true, rs)
-		Expect(err).ToNot(HaveOccurred())
-		err = createGatewayDataplane("bare-gw-2", "default", "", "", false, rs)
+		err = createGatewayDataplane("bare-gw-2", "default", "", false, rs)
 		Expect(err).ToNot(HaveOccurred())
 		err = createMeshExternalService("es-1", "default", rs)
 		Expect(err).ToNot(HaveOccurred())
@@ -119,20 +115,15 @@ func createMeshService(name string, mesh string, connected, healthy, total int, 
 }
 
 // createGatewayDataplane creates a gateway Dataplane along with its insight. An empty
-// service or workload is left out entirely, so gateways can be grouped by any of the
-// service tag, the workload label or the resource name.
+// workload is left out entirely, so gateways can be grouped by either the workload
+// label or the resource name.
 func createGatewayDataplane(
 	name string,
 	mesh string,
-	service string,
 	workload string,
 	online bool,
 	rs store.ResourceStore,
 ) error {
-	tags := map[string]string{}
-	if service != "" {
-		tags[mesh_proto.ServiceTag] = service
-	}
 	labels := map[string]string{}
 	if workload != "" {
 		labels["kuma.io/workload"] = workload
@@ -177,7 +168,7 @@ func createHostnameGenerator(name string, rs store.ResourceStore) error {
 		WithName(name).
 		WithTemplate("{{ .Name }}.mesh").
 		WithMeshServiceMatchLabels(map[string]string{
-			"kuma.io/service": name,
+			"kuma.io/display-name": name,
 		}).
 		Create(rs)
 }
