@@ -45,7 +45,7 @@ func NewStore(reader kube_client.Reader, writer kube_client.Writer, scheme *runt
 		writer:             writer,
 		scheme:             scheme,
 		secretsConverter:   DefaultConverter(),
-		resourcesConverter: k8s.NewSimpleConverter(),
+		resourcesConverter: k8s.NewSimpleConverter(namespace),
 		namespace:          namespace,
 	}, nil
 }
