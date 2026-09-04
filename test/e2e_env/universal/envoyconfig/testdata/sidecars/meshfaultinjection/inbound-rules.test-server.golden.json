@@ -681,7 +681,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&instance=1&&kuma.io/display-name=test-server&&service=test-server&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig&&kuma.io/origin=zone&&kuma.io/workload=test-server&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
+                          "value": "&instance=1&&kuma.io/display-name=test-server&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig&&kuma.io/origin=zone&&kuma.io/workload=test-server&&kuma.io/zone=kuma-3&&service=test-server&&team=server-owners&&version=v1&"
                         }
                       }
                     ],

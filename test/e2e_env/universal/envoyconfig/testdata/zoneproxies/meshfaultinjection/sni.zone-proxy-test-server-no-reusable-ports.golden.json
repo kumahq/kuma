@@ -492,7 +492,6 @@
                     "envoy.lb": {
                       "kuma.io/access": "external",
                       "kuma.io/display-name": "mes-zone-proxy",
-                      "service": "mes-zone-proxy",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -501,7 +500,6 @@
                     "envoy.transport_socket_match": {
                       "kuma.io/access": "external",
                       "kuma.io/display-name": "mes-zone-proxy",
-                      "service": "mes-zone-proxy",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -723,7 +721,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&instance=1&&kuma.io/display-name=zone-proxy-test-server-no-reusable-ports&&service=zone-proxy-test-server-no-reusable-ports&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/workload=zone-proxy-test-server-no-reusable-ports&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
+                          "value": "&instance=1&&kuma.io/display-name=zone-proxy-test-server-no-reusable-ports&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/workload=zone-proxy-test-server-no-reusable-ports&&kuma.io/zone=kuma-3&&service=zone-proxy-test-server-no-reusable-ports&&team=server-owners&&version=v1&"
                         }
                       }
                     ],
@@ -856,7 +854,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&instance=1&&kuma.io/display-name=zone-proxy-test-server-no-reusable-ports&&service=zone-proxy-test-server-no-reusable-ports&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/workload=zone-proxy-test-server-no-reusable-ports&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
+                          "value": "&instance=1&&kuma.io/display-name=zone-proxy-test-server-no-reusable-ports&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/workload=zone-proxy-test-server-no-reusable-ports&&kuma.io/zone=kuma-3&&service=zone-proxy-test-server-no-reusable-ports&&team=server-owners&&version=v1&"
                         }
                       }
                     ],
@@ -954,7 +952,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&instance=1&&kuma.io/display-name=zone-proxy-test-server-no-reusable-ports&&service=zone-proxy-test-server-no-reusable-ports&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/workload=zone-proxy-test-server-no-reusable-ports&&kuma.io/zone=kuma-3&&team=server-owners&&version=v1&"
+                          "value": "&instance=1&&kuma.io/display-name=zone-proxy-test-server-no-reusable-ports&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig-zoneproxies&&kuma.io/origin=zone&&kuma.io/workload=zone-proxy-test-server-no-reusable-ports&&kuma.io/zone=kuma-3&&service=zone-proxy-test-server-no-reusable-ports&&team=server-owners&&version=v1&"
                         }
                       }
                     ],
