@@ -119,7 +119,7 @@ func RenderDataplaneTemplate(data DataplaneTemplateData) (string, error) {
 	maps.Copy(labels, data.Labels)
 	maps.Copy(labels, data.AdditionalTags)
 	if data.ServiceName != "" {
-		labels["kuma.io/display-name"] = data.ServiceName
+		labels["service"] = data.ServiceName
 	}
 	if data.Team != "" {
 		labels["team"] = data.Team

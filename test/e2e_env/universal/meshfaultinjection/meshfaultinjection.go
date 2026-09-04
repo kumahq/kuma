@@ -102,7 +102,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/display-name: test-service-block-all-sources
+      service: test-service-block-all-sources
   rules:
     - default:
         http:
@@ -129,7 +129,6 @@ spec:
 				"test-server-block-all-sources", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-1"}),
 				WithServiceName("test-service-block-all-sources"),
-				WithLabels(map[string]string{"kuma.io/display-name": "test-service-block-all-sources"}),
 				WithWorkload("test-server-block-all-sources"),
 			)).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithWorkload("demo-client"))).
