@@ -20,8 +20,7 @@ func handle(fn handlerFunc) restful.RouteFunction {
 		body, err := fn(request)
 		if err != nil {
 			title := ""
-			var terr *titledError
-			if errors.As(err, &terr) {
+			if terr, ok := errors.AsType[*titledError](err); ok {
 				title = terr.title
 				err = terr.err
 			}
