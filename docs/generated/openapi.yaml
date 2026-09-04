@@ -4858,6 +4858,12 @@ components:
               description: >-
                 Set to `enabled` when the proxy has a zone egress listener.
                 Always computed by the control plane.
+            ^kuma\.io/gateway$:
+              type: string
+              description: >-
+                Set to `true` on a Dataplane that fronts a delegated gateway. On
+                Kubernetes it is computed from the pod's `kuma.io/gateway`
+                annotation.
             ^kuma\.io/mesh$:
               type: string
               description: Mesh the resource belongs to. Defaults to `default` when unset.
@@ -5413,45 +5419,6 @@ components:
                 port:
                   description: Port on which Envoy Admin API server will be listening
                   type: integer
-              type: object
-            gateway:
-              description: >-
-                Gateway describes a configuration of the gateway of the data
-                plane proxy.
-              properties:
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags associated with a gateway of this data plane to, e.g.
-
-                    `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag
-                    is
-
-                    mandatory.
-                  type: object
-                type:
-                  description: >-
-                    Type of gateway this data plane proxy manages.
-
-
-                    The only supported type is `DELEGATED`: an independently
-                    deployed proxy
-
-                    (e.g., Kong, Contour, etc) that receives inbound traffic
-                    that is not
-
-                    proxied by Kuma, and it sends outbound traffic into the data
-                    plane
-
-                    proxy.
-
-
-                    See https://kuma.io/docs/latest/explore/gateway/ for more
-                    information.
-                  enum:
-                    - DELEGATED
-                  type: string
               type: object
             inbound:
               description: >-
@@ -13941,46 +13908,6 @@ components:
                     port:
                       description: Port on which Envoy Admin API server will be listening
                       type: integer
-                  type: object
-                gateway:
-                  description: >-
-                    Gateway describes a configuration of the gateway of the data
-                    plane proxy.
-                  properties:
-                    tags:
-                      additionalProperties:
-                        type: string
-                      description: >-
-                        Tags associated with a gateway of this data plane to,
-                        e.g.
-
-                        `kuma.io/service=gateway`, `env=prod`. `kuma.io/service`
-                        tag is
-
-                        mandatory.
-                      type: object
-                    type:
-                      description: >-
-                        Type of gateway this data plane proxy manages.
-
-
-                        The only supported type is `DELEGATED`: an independently
-                        deployed proxy
-
-                        (e.g., Kong, Contour, etc) that receives inbound traffic
-                        that is not
-
-                        proxied by Kuma, and it sends outbound traffic into the
-                        data plane
-
-                        proxy.
-
-
-                        See https://kuma.io/docs/latest/explore/gateway/ for
-                        more information.
-                      enum:
-                        - DELEGATED
-                      type: string
                   type: object
                 inbound:
                   description: >-

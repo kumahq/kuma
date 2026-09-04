@@ -321,59 +321,11 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 })
 
 var _ = Describe("Dataplane classification", func() {
-	Describe("with normal networking", func() {
-		It("should be a dataplane", func() {
-			dp := Dataplane{
-				Networking: &Dataplane_Networking{},
-			}
-			Expect(dp.IsDelegatedGateway()).To(BeFalse())
-		})
-	})
-
-	Describe("with gateway networking", func() {
-		It("should be a gateway", func() {
-			gw := Dataplane{
-				Networking: &Dataplane_Networking{
-					Gateway: &Dataplane_Networking_Gateway{},
-				},
-			}
-			Expect(gw.IsDelegatedGateway()).To(BeTrue())
-		})
-	})
-
-	Describe("with delegated gateway networking", func() {
-		It("should be a gateway", func() {
-			gw := Dataplane{
-				Networking: &Dataplane_Networking{
-					Gateway: &Dataplane_Networking_Gateway{
-						Type: Dataplane_Networking_Gateway_DELEGATED,
-					},
-				},
-			}
-			Expect(gw.IsDelegatedGateway()).To(BeTrue())
-		})
-	})
-})
-
-var _ = Describe("Dataplane with gateway", func() {
-	d := Dataplane{
-		Networking: &Dataplane_Networking{
-			Gateway: &Dataplane_Networking_Gateway{
-				Tags: map[string]string{
-					"kuma.io/service": "backend",
-					"version":         "v1",
-				},
-			},
-		},
-	}
-
-	Describe("Tags()", func() {
-		It("should provide combined tags", func() {
-			// when
-			tags := d.TagSet()
-
-			// then
-			Expect(tags.Values("kuma.io/service")).To(Equal([]string{"backend"}))
+	Describe("IsDelegatedGateway", func() {
+		It("should read the gateway label", func() {
+			Expect(IsDelegatedGateway(map[string]string{GatewayLabel: GatewayEnabled})).To(BeTrue())
+			Expect(IsDelegatedGateway(map[string]string{GatewayLabel: "false"})).To(BeFalse())
+			Expect(IsDelegatedGateway(nil)).To(BeFalse())
 		})
 	})
 })

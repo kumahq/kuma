@@ -106,6 +106,15 @@ const (
 
 	// ListenerZoneEgressLabel is auto-computed when a Dataplane has at least one ZoneEgress listener.
 	ListenerZoneEgressLabel = "kuma.io/listener-zoneegress"
+
+	// GatewayLabel marks a Dataplane as a delegated gateway: a proxy that
+	// receives inbound traffic Kuma does not proxy and sends outbound traffic
+	// into the mesh. On Kubernetes it is set from the pod's kuma.io/gateway
+	// annotation; on Universal it is set by the user.
+	GatewayLabel = "kuma.io/gateway"
+
+	// GatewayEnabled is the only value of GatewayLabel that marks a gateway.
+	GatewayEnabled = "true"
 )
 
 type ResourceOrigin string
@@ -338,15 +347,6 @@ func (n *Dataplane_Networking) GetHealthyInbounds() []*Dataplane_Networking_Inbo
 	return inbounds
 }
 
-// MatchTagsFuzzy fuzzy-matches the gateway's tags; regular inbounds are
-// matched via labels.
-func (d *Dataplane) MatchTagsFuzzy(selector TagSelector) bool {
-	if d == nil {
-		return false
-	}
-	return selector.MatchesFuzzy(d.GetNetworking().GetGateway().GetTags())
-}
-
 // GetServiceFallback returns the service this inbound belongs to.
 func (d *Dataplane_Networking_Inbound) GetServiceFallback(fallback string) string {
 	return fallback
@@ -535,33 +535,11 @@ func MultiValueTagSetFrom(data map[string][]string) MultiValueTagSet {
 	return set
 }
 
-// TagSet returns the gateway's tags; regular inbounds carry no tag-shaped
-// identity and are represented by Dataplane labels instead.
-func (d *Dataplane) TagSet() MultiValueTagSet {
-	tags := MultiValueTagSet{}
-	for tag, value := range d.GetNetworking().GetGateway().GetTags() {
-		_, exists := tags[tag]
-		if !exists {
-			tags[tag] = map[string]bool{}
-		}
-		tags[tag][value] = true
-	}
-	return tags
-}
-
-// SingleValueTagSets returns the gateway's tag set; regular inbounds carry
-// no tag-shaped identity and are represented by Dataplane labels instead.
-func (d *Dataplane) SingleValueTagSets() []SingleValueTagSet {
-	var sets []SingleValueTagSet
-	if gateway := d.GetNetworking().GetGateway(); gateway != nil {
-		sets = append(sets, gateway.GetTags())
-	}
-	return sets
-}
-
-func (d *Dataplane) IsDelegatedGateway() bool {
-	return d.GetNetworking().GetGateway() != nil &&
-		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_DELEGATED
+// IsDelegatedGateway reports whether a proxy with these labels fronts a
+// delegated gateway. The kuma.io/gateway label is the signal; the control
+// plane backfills it from the deprecated networking.gateway field.
+func IsDelegatedGateway(labels map[string]string) bool {
+	return labels[GatewayLabel] == GatewayEnabled
 }
 
 func (t MultiValueTagSet) String() string {
@@ -609,9 +587,9 @@ func (n *Dataplane_Networking) HasZoneProxyListeners() bool {
 }
 
 // IsZoneProxyOnly returns true when the Dataplane has zone proxy listeners but
-// no regular inbounds and no gateway, meaning it acts exclusively as a zone proxy.
+// no regular inbounds, meaning it acts exclusively as a zone proxy.
 func (n *Dataplane_Networking) IsZoneProxyOnly() bool {
-	return n.HasZoneProxyListeners() && len(n.GetInbound()) == 0 && n.GetGateway() == nil
+	return n.HasZoneProxyListeners() && len(n.GetInbound()) == 0
 }
 
 // GetReadyZoneEgressListeners returns all listeners of type ZoneEgress in Ready state.

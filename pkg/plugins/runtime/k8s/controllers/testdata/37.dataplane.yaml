@@ -4,6 +4,7 @@ metadata:
     app: mixed-proxy
     k8s.kuma.io/namespace: demo
     kuma.io/display-name: mixed-proxy
+    kuma.io/listener-zoneegress: enabled
     kuma.io/mesh: default
   name: mixed-proxy
 spec:

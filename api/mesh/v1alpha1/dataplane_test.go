@@ -125,19 +125,11 @@ var _ = Describe("Dataplane", func() {
                       kind: MeshService
                       name: backend
                       port: 8080
-                  gateway:
-                    tags:
-                      kuma.io/service: gateway
                   address: 192.168.0.1
 `,
 				expected: `{
   "networking": {
     "address": "192.168.0.1",
-    "gateway": {
-      "tags": {
-        "kuma.io/service": "gateway"
-      }
-    },
     "outbound": [
       {
         "port": 40001,

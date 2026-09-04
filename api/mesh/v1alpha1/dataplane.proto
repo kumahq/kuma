@@ -166,36 +166,6 @@ message Dataplane {
       }
     }
 
-    // Gateway describes a service that ingress should not be proxied.
-    message Gateway {
-      enum GatewayType {
-        // A `DELEGATED` gateway is an independently deployed proxy that
-        // receives inbound traffic that is not proxied by Kuma, and
-        // it sends outbound traffic into the data plane proxy.
-        DELEGATED = 0;
-
-        // `BUILTIN = 1` was removed along with the built-in gateway. The
-        // ordinal stays reserved so it is never reused for a new type.
-        reserved 1;
-        reserved "BUILTIN";
-      }
-
-      // Tags associated with a gateway of this data plane to, e.g.
-      // `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is
-      // mandatory.
-      map<string, string> tags = 1 [(validate.rules).map.min_pairs = 1];
-
-      // Type of gateway this data plane proxy manages.
-      //
-      // The only supported type is `DELEGATED`: an independently deployed proxy
-      // (e.g., Kong, Contour, etc) that receives inbound traffic that is not
-      // proxied by Kuma, and it sends outbound traffic into the data plane
-      // proxy.
-      //
-      // See https://kuma.io/docs/latest/explore/gateway/ for more information.
-      GatewayType type = 2;
-    }
-
     // TransparentProxying describes configuration for transparent proxying.
     message TransparentProxying {
       enum IpFamilyMode {
@@ -263,8 +233,11 @@ message Dataplane {
       ReachableBackends reachable_backends = 7;
     }
 
-    // Gateway describes a configuration of the gateway of the data plane proxy.
-    Gateway gateway = 3;
+    // `gateway = 3` was removed: a delegated gateway is marked by the
+    // `kuma.io/gateway` label on the Dataplane. The ordinal stays reserved so
+    // it is never reused.
+    reserved 3;
+    reserved "gateway";
 
     // Inbound describes a list of inbound interfaces of the data plane proxy.
     //

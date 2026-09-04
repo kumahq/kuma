@@ -579,15 +579,10 @@ func (r *resourceInspectHandler) rulesForResource() restful.RouteFunction {
 						Origin: oapi_helpers.OriginListToResourceRuleOrigin(res.Type, []common.Origin{rulesForInbound[i].Origin}),
 					}
 				}
-				var tags map[string]string
-				if dp.Spec.IsDelegatedGateway() {
-					tags = dp.Spec.Networking.Gateway.Tags
-				}
 				inboundRules = append(inboundRules, api_common.InboundRulesEntry{
 					Inbound: api_common.Inbound{
 						Name: getInboundPortName(inbound.Port),
 						Port: int(inbound.Port),
-						Tags: tags,
 					},
 					Rules: rs,
 				})

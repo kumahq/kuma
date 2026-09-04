@@ -115,6 +115,9 @@ components:
               readOnly: true
               description: Set to `enabled` when the proxy has a zone egress listener. Always computed by the control plane.
             # Can be set by the user. The control plane only fills in a default when the label is absent.
+            '^kuma\.io/gateway$':
+              type: string
+              description: Set to `true` on a Dataplane that fronts a delegated gateway. On Kubernetes it is computed from the pod's `kuma.io/gateway` annotation.
             '^kuma\.io/mesh$':
               type: string
               description: Mesh the resource belongs to. Defaults to `default` when unset.

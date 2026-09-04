@@ -465,7 +465,6 @@ func (r *resyncer) createOrUpdateMeshInsight(
 		dpSubscription := dpInsight.GetLastSubscription().(*mesh_proto.DiscoverySubscription)
 		kumaDpVersion := getOrDefault(dpSubscription.GetVersion().GetKumaDp().GetVersion())
 		envoyVersion := getOrDefault(dpSubscription.GetVersion().GetEnvoy().GetVersion())
-		networking := dpOverview.Spec.GetDataplane().GetNetworking()
 
 		ensureVersionExists(kumaDpVersion, insight.DpVersions.KumaDp)
 		ensureVersionExists(envoyVersion, insight.DpVersions.Envoy)
@@ -473,7 +472,7 @@ func (r *resyncer) createOrUpdateMeshInsight(
 		status, _ := dpOverview.Status()
 
 		statByType := insight.GetDataplanesByType().GetStandard()
-		if networking.GetGateway() != nil {
+		if dpOverview.IsDelegatedGateway() {
 			statByType = insight.GetDataplanesByType().GetGatewayDelegated()
 		}
 
