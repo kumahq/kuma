@@ -56,7 +56,6 @@ var undocumentedRoutes = map[string]string{
 	"GET /zone-insights":            "no rest.yaml fragment is generated for this resource",
 	"GET /zones":                    "no rest.yaml fragment is generated for this resource",
 	"GET /{}/{}/dataplane-insights": "in-mesh list missing from rest.yaml fragment",
-	"GET /{}/{}/{}/{}/dataplanes":   "legacy per-policy inspect route, superseded by the documented _resources/dataplanes path",
 	"GET /{}/{}/{}/{}/{}":           "generic dataplane envoy admin route, spec documents the concrete xds/clusters/stats subpaths",
 	"GET /global-insights":          "spec path is /global-insight, server serves /global-insights",
 	"GET /policies":                 "not documented in the OpenAPI spec",
