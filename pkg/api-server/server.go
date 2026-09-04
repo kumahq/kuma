@@ -56,6 +56,7 @@ var log = core.Log.WithName("api-server")
 
 type ApiServer struct {
 	mux          *http.ServeMux
+	container    *restful.Container
 	config       api_server.ApiServerConfig
 	certWatchers *util_tls.Watchers
 	httpReady    atomic.Bool
@@ -77,6 +78,18 @@ func (a *ApiServer) Config() api_server.ApiServerConfig {
 // Handler returns the underlying HTTP handler for testing purposes
 func (a *ApiServer) Handler() http.Handler {
 	return a.mux
+}
+
+// Routes returns the registered routes as "METHOD /path" pairs, for testing
+// purposes.
+func (a *ApiServer) Routes() []string {
+	var routes []string
+	for _, ws := range a.container.RegisteredWebServices() {
+		for _, route := range ws.Routes() {
+			routes = append(routes, route.Method+" "+route.Path)
+		}
+	}
+	return routes
 }
 
 func init() {
@@ -230,6 +243,7 @@ func NewApiServer(
 
 	newApiServer := &ApiServer{
 		mux:          container.ServeMux,
+		container:    container,
 		config:       *serverConfig,
 		certWatchers: rt.CertWatchers(),
 	}
