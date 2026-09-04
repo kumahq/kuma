@@ -312,14 +312,24 @@ func (r *resourceCrudHandler) createOrUpdateResource(request *restful.Request) (
 	return r.updateResource(request.Request.Context(), resource, resourceRest, meshName)
 }
 
-func (r *resourceCrudHandler) clearMeshTrustOrigin(resRest rest.Resource, meshName string, name string) {
-	if r.descriptor.Name == meshtrust_api.MeshTrustType {
-		if resRest.GetStatus() != nil {
-			status, ok := resRest.GetStatus().(*meshtrust_api.MeshTrustStatus)
-			if ok && status != nil && status.Origin != nil {
-				log.Info("ignoring status.origin as it is read-only", "mesh", meshName, "name", name)
-				status.Origin = nil
-			}
+// beforeWriteHooks mutate the REST representation of a resource of the given
+// type before it is persisted on create or update.
+var beforeWriteHooks = map[core_model.ResourceType]func(resRest rest.Resource, meshName string, name string){
+	meshtrust_api.MeshTrustType: clearMeshTrustOrigin,
+}
+
+// validateCreateHooks run extra validation on create for the given resource
+// type.
+var validateCreateHooks = map[core_model.ResourceType]func(r *resourceCrudHandler, res core_model.Resource) error{
+	core_mesh.DataplaneType: (*resourceCrudHandler).validateUniversalDataplaneWorkloadLabel,
+}
+
+func clearMeshTrustOrigin(resRest rest.Resource, meshName string, name string) {
+	if resRest.GetStatus() != nil {
+		status, ok := resRest.GetStatus().(*meshtrust_api.MeshTrustStatus)
+		if ok && status != nil && status.Origin != nil {
+			log.Info("ignoring status.origin as it is read-only", "mesh", meshName, "name", name)
+			status.Origin = nil
 		}
 	}
 }
@@ -363,14 +373,18 @@ func (r *resourceCrudHandler) createResource(
 		return nil, withTitle(err, "Access Denied")
 	}
 
-	r.clearMeshTrustOrigin(resRest, meshName, name)
+	if hook, ok := beforeWriteHooks[r.descriptor.Name]; ok {
+		hook(resRest, meshName, name)
+	}
 
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(resRest.GetSpec())
 	res.SetMeta(resRest.GetMeta())
 
-	if err := r.validateUniversalDataplaneWorkloadLabel(res); err != nil {
-		return nil, err
+	if hook, ok := validateCreateHooks[r.descriptor.Name]; ok {
+		if err := hook(r, res); err != nil {
+			return nil, err
+		}
 	}
 
 	labels, err := r.computeLabels(res.Descriptor(), res.GetSpec(), res.GetMeta(), meshName, name)
@@ -388,7 +402,7 @@ func (r *resourceCrudHandler) createResource(
 // validateUniversalDataplaneWorkloadLabel validates the workload label of
 // Dataplanes created on Universal zones.
 func (r *resourceCrudHandler) validateUniversalDataplaneWorkloadLabel(res core_model.Resource) error {
-	if r.descriptor.Name != core_mesh.DataplaneType || r.isK8s {
+	if r.isK8s {
 		return nil
 	}
 	workloadName, ok := res.GetMeta().GetLabels()[metadata.KumaWorkload]
@@ -427,7 +441,9 @@ func (r *resourceCrudHandler) updateResource(
 		return nil, withTitle(err, "Access Denied")
 	}
 
-	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
+	if hook, ok := beforeWriteHooks[r.descriptor.Name]; ok {
+		hook(newResRest, meshName, currentRes.GetMeta().GetName())
+	}
 
 	currentLabels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), currentRes.GetMeta(), meshName, currentRes.GetMeta().GetName())
 	if err != nil {
