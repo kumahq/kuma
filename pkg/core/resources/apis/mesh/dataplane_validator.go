@@ -42,7 +42,7 @@ func (d *DataplaneResource) Validate() error {
 	}
 
 	switch {
-	case d.Spec.IsDelegatedGateway():
+	case d.IsDelegatedGateway():
 		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
 			err.AddViolationAt(net.Field("inbound"),
 				"inbound cannot be defined for delegated gateways")
@@ -53,7 +53,6 @@ func (d *DataplaneResource) Validate() error {
 				"listeners cannot be defined for delegated gateways")
 		}
 
-		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
 
 	default:
@@ -270,26 +269,6 @@ func validateListeners(networking *mesh_proto.Dataplane_Networking) validators.V
 			}
 		}
 	}
-
-	return result
-}
-
-func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validators.ValidationError {
-	var result validators.ValidationError
-
-	validateProtocol := func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
-		var result validators.ValidationError
-		if protocol, exist := selector[mesh_proto.ProtocolTag]; exist {
-			if core_meta.ParseProtocol(protocol) != core_meta.ProtocolTCP {
-				result.AddViolationAt(path.Key(mesh_proto.ProtocolTag), fmt.Sprintf(`other values than tcp are not allowed, provided value %q`, protocol))
-			}
-		}
-		return result
-	}
-	result.Add(ValidateTags(validators.RootedAt("tags"), gateway.Tags, ValidateTagsOpts{
-		ExtraTagsValidators: []TagsValidatorFunc{validateProtocol},
-	}),
-	)
 
 	return result
 }

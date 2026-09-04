@@ -229,7 +229,6 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 			k8s.NewSimpleKubeFactory(),
 			g.systemNamespace,
 			g.ingressTagFilters,
-			g.metrics.KdsZoneAttributionRewrites,
 		)
 		zoneName := zone
 		cb.OnNACK = func(resourceType core_model.ResourceType) {

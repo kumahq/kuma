@@ -189,15 +189,10 @@ var _ = Describe("TransparentProxyGenerator", func() {
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "v1",
+						Labels:  map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
 					},
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
-							Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-								Tags: map[string]string{
-									"app": "test-gateway",
-								},
-								Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-							},
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
 								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
 								RedirectPortOutbound: 15001,

@@ -114,3 +114,36 @@ func ToOutboundTargetRef(ref common_api.TargetRef) common_api.OutboundTargetRef 
 		SectionName: ref.SectionName,
 	}
 }
+
+func BackendRefMeshService(name, namespace, sectionName string, port uint32, weight uint) common_api.BackendRef {
+	ref := common_api.BackendRefFrom(TargetRefMeshService(name, namespace, sectionName))
+	ref.Port = pointer.To(port)
+	ref.Weight = pointer.To(weight)
+	return ref
+}
+
+func BackendRefMeshServiceLabels(labels map[string]string, sectionName string, weight uint) common_api.BackendRef {
+	ref := common_api.BackendRefFrom(TargetRefMeshServiceLabels(labels, sectionName))
+	ref.Weight = pointer.To(weight)
+	return ref
+}
+
+func BackendRefService(name string, weight uint) common_api.BackendRef {
+	ref := common_api.BackendRefFrom(TargetRefService(name))
+	ref.Weight = pointer.To(weight)
+	return ref
+}
+
+// BackendRefFrom builds a weighted BackendRef from a TargetRef builder result.
+func BackendRefFrom(t common_api.TargetRef, weight uint) common_api.BackendRef {
+	ref := common_api.BackendRefFrom(t)
+	ref.Weight = pointer.To(weight)
+	return ref
+}
+
+// BackendRefFromWithPort is BackendRefFrom for a reference that also targets a port.
+func BackendRefFromWithPort(t common_api.TargetRef, weight uint, port uint32) common_api.BackendRef {
+	ref := BackendRefFrom(t, weight)
+	ref.Port = pointer.To(port)
+	return ref
+}

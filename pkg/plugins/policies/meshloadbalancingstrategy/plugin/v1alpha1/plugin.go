@@ -10,7 +10,6 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -115,20 +114,20 @@ func (p plugin) applyToRealResource(rctx *rules_outbound.ResourceContext[api.Con
 		}
 		return NewModifier(envoyResource).
 			Configure(clusterConfigurer(conf)).
-			Configure(If(!isEgress && envoyResource.LoadAssignment != nil, staticCLAConfigurer(conf, proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone))).
+			Configure(If(!isEgress && envoyResource.LoadAssignment != nil, staticCLAConfigurer(conf, affinityLabels, proxy.Zone))).
 			Modify()
 	case *envoy_endpoint.ClusterLoadAssignment:
 		return NewModifier(envoyResource).
-			Configure(claConfigurer(rctx.Conf(), proxy.Dataplane.Spec.TagSet(), affinityLabels, proxy.Zone)).
+			Configure(claConfigurer(rctx.Conf(), affinityLabels, proxy.Zone)).
 			Modify()
 	}
 	return nil
 }
 
-func staticCLAConfigurer(conf api.Conf, tags mesh_proto.MultiValueTagSet, podLabels map[string]string, localZone string) Configurer[envoy_cluster.Cluster] {
+func staticCLAConfigurer(conf api.Conf, podLabels map[string]string, localZone string) Configurer[envoy_cluster.Cluster] {
 	return func(c *envoy_cluster.Cluster) error {
 		return NewModifier(c.LoadAssignment).
-			Configure(claConfigurer(conf, tags, podLabels, localZone)).
+			Configure(claConfigurer(conf, podLabels, localZone)).
 			Modify()
 	}
 }
@@ -166,13 +165,13 @@ func clusterConfigurer(conf api.Conf) Configurer[envoy_cluster.Cluster] {
 	}
 }
 
-func claConfigurer(conf api.Conf, tags mesh_proto.MultiValueTagSet, podLabels map[string]string, localZone string) Configurer[envoy_endpoint.ClusterLoadAssignment] {
+func claConfigurer(conf api.Conf, podLabels map[string]string, localZone string) Configurer[envoy_endpoint.ClusterLoadAssignment] {
 	return func(cla *envoy_endpoint.ClusterLoadAssignment) error {
 		atLeastOneLocalityGroup := conf.LocalityAwareness != nil && (conf.LocalityAwareness.LocalZone != nil || conf.LocalityAwareness.CrossZone != nil)
 		isLocalityAware := conf.LocalityAwareness == nil || !pointer.Deref(conf.LocalityAwareness.Disabled)
 		return NewModifier(cla).
 			Configure(bldrs_endpoint.NonLocalPriority(isLocalityAware, localZone)).
-			Configure(If(atLeastOneLocalityGroup, bldrs_endpoint.Endpoints(NewEndpoints(cla.Endpoints, tags, podLabels, pointer.To(conf), localZone)))).
+			Configure(If(atLeastOneLocalityGroup, bldrs_endpoint.Endpoints(NewEndpoints(cla.Endpoints, podLabels, pointer.To(conf), localZone)))).
 			Configure(If(atLeastOneLocalityGroup, bldrs_endpoint.OverprovisioningFactor(overprovisioningFactor(conf)))).
 			Modify()
 	}

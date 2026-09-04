@@ -237,7 +237,8 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dp3, store.CreateByKey("dp3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.GatewayDataplane}, store.CreateByKey("dp4", "mesh-1"))
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.GatewayDataplane}, store.CreateByKey("dp4", "mesh-1"),
+			store.CreateWithLabels(map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled}))
 		Expect(err).ToNot(HaveOccurred())
 
 		dp4 := core_mesh.NewDataplaneInsightResource()
@@ -385,13 +386,10 @@ var _ = Describe("Insight Persistence", func() {
 		delegatedGw.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "10.0.0.2",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/display-name": "delegated-gw"},
-					Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-				},
 			},
 		}
-		err = rm.Create(context.Background(), delegatedGw, store.CreateByKey("dp2", "mesh-1"))
+		err = rm.Create(context.Background(), delegatedGw, store.CreateByKey("dp2", "mesh-1"),
+			store.CreateWithLabels(map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled}))
 		Expect(err).ToNot(HaveOccurred())
 
 		externalService := samples2.MeshExternalServiceExampleBuilder().WithMesh("mesh-1").WithName("es1").Build()
@@ -637,12 +635,10 @@ var _ = Describe("Insight Persistence", func() {
 		dpOnline.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.0.0.1",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/display-name": "gateway"},
-				},
 			},
 		}
-		err = rm.Create(context.Background(), dpOnline, store.CreateByKey("dpOnline", "mesh-1"))
+		err = rm.Create(context.Background(), dpOnline, store.CreateByKey("dpOnline", "mesh-1"),
+			store.CreateWithLabels(map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled}))
 		Expect(err).ToNot(HaveOccurred())
 
 		dpOnlineI := core_mesh.NewDataplaneInsightResource()
@@ -659,12 +655,10 @@ var _ = Describe("Insight Persistence", func() {
 		dpOffline.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.0.0.1",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/display-name": "gateway"},
-				},
 			},
 		}
-		err = rm.Create(context.Background(), dpOffline, store.CreateByKey("dpOffline", "mesh-1"))
+		err = rm.Create(context.Background(), dpOffline, store.CreateByKey("dpOffline", "mesh-1"),
+			store.CreateWithLabels(map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled}))
 		Expect(err).ToNot(HaveOccurred())
 
 		dpOfflineI := core_mesh.NewDataplaneInsightResource()
@@ -684,12 +678,10 @@ var _ = Describe("Insight Persistence", func() {
 		dpNoInsights.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.0.0.1",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/display-name": "gateway"},
-				},
 			},
 		}
-		err = rm.Create(context.Background(), dpNoInsights, store.CreateByKey("dpNoInsights", "mesh-1"))
+		err = rm.Create(context.Background(), dpNoInsights, store.CreateByKey("dpNoInsights", "mesh-1"),
+			store.CreateWithLabels(map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled}))
 		Expect(err).ToNot(HaveOccurred())
 
 		step(stepsToResync)

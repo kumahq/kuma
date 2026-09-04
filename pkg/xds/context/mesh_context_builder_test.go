@@ -616,7 +616,7 @@ var _ = Describe("EndpointMap", func() {
 			WithMesh(meshName).
 			WithName("gateway-delegated-dp").
 			WithAddress("127.0.0.1").
-			WithDelegatedGateway("gateway-delegated")
+			WithDelegatedGateway()
 		Expect(delegatedGatewayBuilder.Create(resourceStore)).To(Succeed())
 
 		// when

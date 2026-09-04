@@ -5,7 +5,9 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
@@ -331,12 +333,14 @@ var _ = Describe("Dataplane", func() {
 
 	type testCase struct {
 		dataplane string
+		labels    map[string]string
 		expected  string
 	}
 	DescribeTable("should validate all fields and return as much individual errors as possible",
 		func(given testCase) {
 			// setup
 			dataplane := core_mesh.NewDataplaneResource()
+			dataplane.Meta = &test_model.ResourceMeta{Name: "dp-1", Mesh: "default", Labels: given.labels}
 
 			// when
 			err := util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)
@@ -442,6 +446,7 @@ var _ = Describe("Dataplane", func() {
                   message:  address has to be valid IP address or domain name`,
 		}),
 		Entry("networking: both inbounds and gateway are defined", testCase{
+			labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
 			dataplane: `
                 type: Dataplane
                 name: dp-1
@@ -451,9 +456,6 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                     - port: 8080
                       servicePort: 7777
-                  gateway:
-                    tags:
-                      kuma.io/display-name: kong
                   outbound:
                     - port: 3333
                       backendRef:
@@ -466,15 +468,13 @@ var _ = Describe("Dataplane", func() {
                   message: inbound cannot be defined for delegated gateways`,
 		}),
 		Entry("networking: delegated gateway must not have listeners", testCase{
+			labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
 			dataplane: `
                 type: Dataplane
                 name: dp-1
                 mesh: default
                 networking:
                   address: 192.168.0.1
-                  gateway:
-                    tags:
-                      kuma.io/display-name: kong
                   listeners:
                     - type: ZoneEgress
                       address: 192.168.0.1
@@ -549,50 +549,6 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.inbound[0].address
                   message: address has to be valid IP address`,
-		}),
-		Entry("networking.gateway: empty tag value", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    tags:
-                      kuma.io/display-name: backend
-                      version:
-                  outbound:
-                    - port: 3333
-                      backendRef:
-                        kind: MeshService
-                        name: redis
-                        port: 6379`,
-			expected: `
-                violations:
-                - field: 'networking.gateway.tags["version"]'
-                  message: tag value must be non-empty`,
-		}),
-		Entry("networking.gateway: protocol http", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    tags:
-                      kuma.io/display-name: backend
-                      kuma.io/protocol: http
-                  outbound:
-                    - port: 3333
-                      backendRef:
-                        kind: MeshService
-                        name: redis
-                        port: 6379`,
-			expected: `
-                violations:
-                - field: 'networking.gateway.tags["kuma.io/protocol"]'
-                  message: other values than tcp are not allowed, provided value "http"`,
 		}),
 		Entry("networking.outbound: missing backendRef", testCase{
 			dataplane: `
@@ -1111,8 +1067,9 @@ var _ = Describe("Dataplane", func() {
 		}),
 	)
 
-	Describe("dataplane and gateway tags", func() {
-		It("should allow dataplane with empty inbound tags", func() {
+	Describe("gateway", func() {
+		It("should allow dataplane with empty inbound tags (tag-free mode)", func() {
+			// setup
 			dataplane := core_mesh.NewDataplaneResource()
 
 			// when
@@ -1124,38 +1081,38 @@ var _ = Describe("Dataplane", func() {
 `), dataplane.Spec)
 			Expect(err).ToNot(HaveOccurred())
 
-			// then
+			// then - empty tags = new setup, no service tag required
 			err = dataplane.Validate()
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should allow dataplane with empty gateway tags", func() {
+		It("should accept a gateway marked by the label", func() {
 			dataplane := core_mesh.NewDataplaneResource()
+			dataplane.Meta = &test_model.ResourceMeta{
+				Name:   "dp-1",
+				Mesh:   "default",
+				Labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
+			}
 
 			// when
 			err := util_proto.FromYAML([]byte(`
                 networking:
                   address: 192.168.0.1
-                  gateway:
-                    type: DELEGATED
-                    tags: {}
 `), dataplane.Spec)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			err = dataplane.Validate()
-			Expect(err).ToNot(HaveOccurred())
+			Expect(dataplane.IsDelegatedGateway()).To(BeTrue())
+			Expect(dataplane.Validate()).To(Succeed())
 		})
 
-		It("should not accept BUILTIN as a gateway type", func() {
-			// given a Dataplane written against the removed built-in gateway
+		It("should ignore the removed gateway field", func() {
+			// given a Dataplane written against the removed networking.gateway
+			// field, including the removed built-in gateway type
 			dataplane := core_mesh.NewDataplaneResource()
 
 			// when
 			err := util_proto.FromYAML([]byte(`
-                type: Dataplane
-                name: dp-1
-                mesh: default
                 networking:
                   address: 192.168.0.1
                   gateway:
@@ -1164,9 +1121,11 @@ var _ = Describe("Dataplane", func() {
                       kuma.io/display-name: kong
 `), dataplane.Spec)
 
-			// then the value is not a known gateway type anymore
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("BUILTIN"))
+			// then the field is dropped and, without the label, what is left is
+			// an ordinary Dataplane
+			Expect(err).ToNot(HaveOccurred())
+			Expect(dataplane.IsDelegatedGateway()).To(BeFalse())
+			Expect(dataplane.Validate()).To(Succeed())
 		})
 	})
 })

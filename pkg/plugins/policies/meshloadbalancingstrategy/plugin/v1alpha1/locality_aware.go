@@ -16,12 +16,11 @@ const defaultOverprovisioningFactor uint32 = 200
 
 func NewEndpoints(
 	existingEndpoints []*envoy_endpoint.LocalityLbEndpoints,
-	tags mesh_proto.MultiValueTagSet,
 	podLabels map[string]string,
 	conf *api.Conf,
 	localZone string,
 ) []*envoy_endpoint.LocalityLbEndpoints {
-	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, tags, podLabels, localZone)
+	localPriorityGroups, crossZonePriorityGroups := GetLocalityGroups(conf, podLabels, localZone)
 	var endpointsList []core_xds.Endpoint
 	for _, localityLbEndpoint := range existingEndpoints {
 		for _, lbEndpoint := range localityLbEndpoint.LbEndpoints {

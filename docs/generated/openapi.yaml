@@ -4858,6 +4858,12 @@ components:
               description: >-
                 Set to `enabled` when the proxy has a zone egress listener.
                 Always computed by the control plane.
+            ^kuma\.io/gateway$:
+              type: string
+              description: >-
+                Set to `true` on a Dataplane that fronts a delegated gateway. On
+                Kubernetes it is computed from the pod's `kuma.io/gateway`
+                annotation.
             ^kuma\.io/mesh$:
               type: string
               description: Mesh the resource belongs to. Defaults to `default` when unset.
@@ -5413,41 +5419,6 @@ components:
                 port:
                   description: Port on which Envoy Admin API server will be listening
                   type: integer
-              type: object
-            gateway:
-              description: >-
-                Gateway describes a configuration of the gateway of the data
-                plane proxy.
-              properties:
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: >-
-                    Tags associated with a gateway of this data plane, e.g.
-                    `env=prod`.
-                  type: object
-                type:
-                  description: >-
-                    Type of gateway this data plane proxy manages.
-
-
-                    The only supported type is `DELEGATED`: an independently
-                    deployed proxy
-
-                    (e.g., Kong, Contour, etc) that receives inbound traffic
-                    that is not
-
-                    proxied by Kuma, and it sends outbound traffic into the data
-                    plane
-
-                    proxy.
-
-
-                    See https://kuma.io/docs/latest/explore/gateway/ for more
-                    information.
-                  enum:
-                    - DELEGATED
-                  type: string
               type: object
             inbound:
               description: >-
@@ -8274,30 +8245,22 @@ components:
                                           properties:
                                             backendRef:
                                               description: >-
-                                                BackendRef defines where to forward
-                                                traffic.
+                                                BackendRef defines the destination
+                                                traffic is routed to.
                                               properties:
                                                 kind:
                                                   description: Kind of the referenced resource
                                                   enum:
-                                                    - Mesh
                                                     - MeshService
                                                     - MeshExternalService
                                                     - MeshMultiZoneService
-                                                    - MeshHTTPRoute
-                                                    - Dataplane
                                                   type: string
                                                 labels:
                                                   additionalProperties:
                                                     type: string
                                                   description: >-
-                                                    Labels are used to select referenced
-                                                    real resources and to carry legacy
-
-                                                    service identity when a common TargetRef
-                                                    must still target old
-
-                                                    service-tag based paths.
+                                                    Labels are used to select the referenced
+                                                    real resource.
                                                   type: object
                                                 port:
                                                   description: >-
@@ -8307,12 +8270,11 @@ components:
                                                   type: integer
                                                 sectionName:
                                                   description: >-
-                                                    SectionName is used to target specific
-                                                    section of resource.
+                                                    SectionName is used to target a specific
+                                                    section of the resource.
 
-                                                    For example, you can target port from
-                                                    MeshService.ports[] by its name. Only
-                                                    traffic to this port will be affected.
+                                                    For example, you can target a port from
+                                                    MeshService.ports[] by its name.
                                                   type: string
                                                 weight:
                                                   default: 1
@@ -8566,39 +8528,30 @@ components:
                                   kind:
                                     description: Kind of the referenced resource
                                     enum:
-                                      - Mesh
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshHTTPRoute
-                                      - Dataplane
                                     type: string
                                   labels:
                                     additionalProperties:
                                       type: string
                                     description: >-
-                                      Labels are used to select referenced real
-                                      resources and to carry legacy
-
-                                      service identity when a common TargetRef
-                                      must still target old
-
-                                      service-tag based paths.
+                                      Labels are used to select the referenced
+                                      real resource.
                                     type: object
                                   port:
                                     description: >-
                                       Port is only supported when this ref
-                                      refers to a MeshService object
+                                      refers to a real MeshService object
                                     format: int32
                                     type: integer
                                   sectionName:
                                     description: >-
-                                      SectionName is used to target specific
-                                      section of resource.
+                                      SectionName is used to target a specific
+                                      section of the resource.
 
-                                      For example, you can target port from
-                                      MeshService.ports[] by its name. Only
-                                      traffic to this port will be affected.
+                                      For example, you can target a port from
+                                      MeshService.ports[] by its name.
                                     type: string
                                   weight:
                                     default: 1
@@ -8671,30 +8624,22 @@ components:
                                     properties:
                                       backendRef:
                                         description: >-
-                                          BackendRef defines where to forward
-                                          traffic.
+                                          BackendRef defines the destination
+                                          traffic is routed to.
                                         properties:
                                           kind:
                                             description: Kind of the referenced resource
                                             enum:
-                                              - Mesh
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
-                                              - MeshHTTPRoute
-                                              - Dataplane
                                             type: string
                                           labels:
                                             additionalProperties:
                                               type: string
                                             description: >-
-                                              Labels are used to select referenced
-                                              real resources and to carry legacy
-
-                                              service identity when a common TargetRef
-                                              must still target old
-
-                                              service-tag based paths.
+                                              Labels are used to select the referenced
+                                              real resource.
                                             type: object
                                           port:
                                             description: >-
@@ -8704,12 +8649,11 @@ components:
                                             type: integer
                                           sectionName:
                                             description: >-
-                                              SectionName is used to target specific
-                                              section of resource.
+                                              SectionName is used to target a specific
+                                              section of the resource.
 
-                                              For example, you can target port from
-                                              MeshService.ports[] by its name. Only
-                                              traffic to this port will be affected.
+                                              For example, you can target a port from
+                                              MeshService.ports[] by its name.
                                             type: string
                                           weight:
                                             default: 1
@@ -12562,29 +12506,23 @@ components:
                           properties:
                             backendRefs:
                               items:
-                                description: BackendRef defines where to forward traffic.
+                                description: >-
+                                  BackendRef defines the destination traffic is
+                                  routed to.
                                 properties:
                                   kind:
                                     description: Kind of the referenced resource
                                     enum:
-                                      - Mesh
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshHTTPRoute
-                                      - Dataplane
                                     type: string
                                   labels:
                                     additionalProperties:
                                       type: string
                                     description: >-
-                                      Labels are used to select referenced real
-                                      resources and to carry legacy
-
-                                      service identity when a common TargetRef
-                                      must still target old
-
-                                      service-tag based paths.
+                                      Labels are used to select the referenced
+                                      real resource.
                                     type: object
                                   port:
                                     description: >-
@@ -12594,12 +12532,11 @@ components:
                                     type: integer
                                   sectionName:
                                     description: >-
-                                      SectionName is used to target specific
-                                      section of resource.
+                                      SectionName is used to target a specific
+                                      section of the resource.
 
-                                      For example, you can target port from
-                                      MeshService.ports[] by its name. Only
-                                      traffic to this port will be affected.
+                                      For example, you can target a port from
+                                      MeshService.ports[] by its name.
                                     type: string
                                   weight:
                                     default: 1
@@ -13937,41 +13874,6 @@ components:
                     port:
                       description: Port on which Envoy Admin API server will be listening
                       type: integer
-                  type: object
-                gateway:
-                  description: >-
-                    Gateway describes a configuration of the gateway of the data
-                    plane proxy.
-                  properties:
-                    tags:
-                      additionalProperties:
-                        type: string
-                      description: >-
-                        Tags associated with a gateway of this data plane, e.g.
-                        `env=prod`.
-                      type: object
-                    type:
-                      description: >-
-                        Type of gateway this data plane proxy manages.
-
-
-                        The only supported type is `DELEGATED`: an independently
-                        deployed proxy
-
-                        (e.g., Kong, Contour, etc) that receives inbound traffic
-                        that is not
-
-                        proxied by Kuma, and it sends outbound traffic into the
-                        data plane
-
-                        proxy.
-
-
-                        See https://kuma.io/docs/latest/explore/gateway/ for
-                        more information.
-                      enum:
-                        - DELEGATED
-                      type: string
                   type: object
                 inbound:
                   description: >-

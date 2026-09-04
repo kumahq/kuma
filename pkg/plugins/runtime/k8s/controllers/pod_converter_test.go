@@ -552,18 +552,6 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 	})
 })
 
-var _ = Describe("PodConverter.GatewayByServiceFor(..)", func() {
-	It("should return an empty delegated gateway tag set", func() {
-		gateway, err := (&PodConverter{}).GatewayByServiceFor(context.Background(), &kube_core.Pod{}, nil)
-
-		Expect(err).ToNot(HaveOccurred())
-		Expect(gateway).To(Equal(&mesh_proto.Dataplane_Networking_Gateway{
-			Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-			Tags: map[string]string{},
-		}))
-	})
-})
-
 var _ = Describe("ProtocolTagFor(..)", func() {
 	type testCase struct {
 		appProtocol *string

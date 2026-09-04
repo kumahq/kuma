@@ -16,7 +16,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -30,8 +29,6 @@ import (
 	resources_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
 )
-
-var globalSyncLog = core.Log.WithName("kds-global-sync")
 
 const (
 	// Retries of an update that lost a write conflict. The first one runs
@@ -462,7 +459,6 @@ func GlobalSyncCallback(
 	kubeFactory resources_k8s.KubeFactory,
 	systemNamespace string,
 	ingressTagFilters []string,
-	rewrites *prometheus.CounterVec,
 ) *kds_client.Callbacks {
 	supportsHashSuffixes := kds.ContextHasFeature(ctx, kds.FeatureHashSuffix)
 
@@ -488,19 +484,6 @@ func GlobalSyncCallback(
 				}
 			}
 
-			// In-spec zone tags are pinned to the connecting zone's client-id
-			// alongside the top-level Spec.Zone, independent of whether xDS
-			// generation still reads them: a zone must not be able to plant a
-			// spoofed kuma.io/zone claim into any synced resource field.
-			clientID := upstream.ControlPlaneId
-			if upstream.Type == core_mesh.DataplaneType {
-				for _, dp := range upstream.AddedResources.(*core_mesh.DataplaneResourceList).Items {
-					var rejected []string
-					rejected = pinZoneTag(dp.Spec.GetNetworking().GetGateway().GetTags(), clientID, rejected)
-					recordZoneRewrite(rewrites, upstream.Type, dp.GetMeta(), clientID, rejected)
-				}
-			}
-
 			return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
 				// Assuming the global CP was updated first, the prefix check is only necessary
 				// if the client doesn't have `supportsHashSuffixes`.
@@ -514,40 +497,6 @@ func GlobalSyncCallback(
 			}), Zone(upstream.ControlPlaneId))
 		},
 	}
-}
-
-// pinZoneTag pins an existing kuma.io/zone tag to zone (an absent tag names no
-// zone, so it is left alone), recording any differing value in rejected. A nil
-// map is fine: the read misses and the write never runs.
-func pinZoneTag(tags map[string]string, zone string, rejected []string) []string {
-	if v, ok := tags[mesh_proto.ZoneTag]; ok {
-		if v != "" && v != zone {
-			rejected = append(rejected, v)
-		}
-		tags[mesh_proto.ZoneTag] = zone
-	}
-	return rejected
-}
-
-// recordZoneRewrite reports an attribution rewrite only when it replaced a
-// differing value (in ordinary sync rejected is empty and nothing is recorded).
-// The counter is deliberately labeled only by resource type to stay
-// low-cardinality; the unbounded detail goes to the log line.
-func recordZoneRewrite(rewrites *prometheus.CounterVec, resType core_model.ResourceType, meta core_model.ResourceMeta, clientID string, rejected []string) {
-	if len(rejected) == 0 {
-		return
-	}
-	if rewrites != nil {
-		rewrites.WithLabelValues(string(resType)).Inc()
-	}
-	globalSyncLog.Info(
-		"[WARNING] rewrote synced resource zone attribution to the connecting zone's client-id because a payload value differed",
-		"type", string(resType),
-		"name", meta.GetName(),
-		"mesh", meta.GetMesh(),
-		"clientID", clientID,
-		"replacedValues", rejected,
-	)
 }
 
 func addNamespaceSuffix(kubeFactory resources_k8s.KubeFactory, upstream kds_client.UpstreamResponse, ns string) error {

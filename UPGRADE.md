@@ -132,19 +132,19 @@ None. Existing generated `MeshHTTPRoute`s are backfilled with the timestamp labe
 
 The built-in gateway implementation was removed over the previous releases, and the Dataplane validator has been rejecting `networking.gateway.type: BUILTIN` since then. The remaining API surface is now gone too:
 
-- `Dataplane.networking.gateway.type` no longer has a `BUILTIN` value. `DELEGATED` is the only gateway type. A `Dataplane` carrying `type: BUILTIN` is now rejected while it is parsed, as an unknown enum value, instead of producing the previous `BUILTIN gateways are no longer supported, use DELEGATED instead` validation error.
+- `Dataplane.networking.gateway` is gone entirely, `type` and `tags` with it — see [A delegated gateway is marked by the `kuma.io/gateway` label](#a-delegated-gateway-is-marked-by-the-kumaiogateway-label). A `Dataplane` carrying `type: BUILTIN` no longer produces the `BUILTIN gateways are no longer supported, use DELEGATED instead` validation error; the whole message is ignored and what remains is an ordinary `Dataplane`.
 - `MeshInsight.dataplanesByType.gatewayBuiltin` and the `gateway_builtin` `ServiceInsight` service type are removed. `dataplanesByType.gateway` now reports the delegated gateway totals only.
 - `GET /meshes/{mesh}/dataplanes+insights?gateway=builtin` is no longer a valid filter. Use `gateway=delegated`, or `gateway=true` for any gateway.
 - `GET /meshes/{mesh}/service-insights?type=gateway_builtin` is no longer a valid filter and returns `400`. Use `type=gateway_delegated`.
 - The `gatewayBuiltin` object disappears from the `/global-insight` response, in both `dataplanes` and `services`.
 
-All three protobuf ordinals are reserved, so they can never be reused for something else, and a Zone control plane on an older version still syncs to a Global control plane on this one.
+All three protobuf ordinals are reserved, so they can never be reused for something else. A Zone control plane on an older version still syncs to a Global control plane on this one, though its gateways are not recognised as such until it is upgraded — see [A delegated gateway is marked by the `kuma.io/gateway` label](#a-delegated-gateway-is-marked-by-the-kumaiogateway-label).
 
 **Action required**
 
-Delete every `Dataplane` with `networking.gateway.type: BUILTIN` before upgrading. `2.14.x` still accepts them, and after the upgrade the control plane fails to parse them as an unknown enum value, which breaks listing the `Dataplane`s of that mesh. Find them with `kumactl get dataplanes -o yaml` per mesh, or `kubectl get dataplanes -A -o yaml`, and grep for `BUILTIN`.
+Stop consuming the `gatewayBuiltin` fields and the `gateway=builtin` / `type=gateway_builtin` filters if you query the API directly.
 
-Also drop `type: BUILTIN` from any manifest you still keep under source control, and stop consuming the `gatewayBuiltin` fields and the `gateway=builtin` / `type=gateway_builtin` filters if you query the API directly.
+A `Dataplane` still carrying `type: BUILTIN` keeps loading after the upgrade, because the whole `networking.gateway` message is ignored rather than parsed, so it no longer has to be deleted first. It becomes an ordinary `Dataplane` with no inbounds — not a gateway, since that is now the `kuma.io/gateway` label — so no policy selects it. Find them with `kumactl get dataplanes -o yaml` per mesh, or `kubectl get dataplanes -A -o yaml`, grep for `BUILTIN`, and delete the ones you no longer serve traffic with. Drop `type: BUILTIN` from any manifest you keep under source control.
 
 ### Control plane RBAC is narrowed on Kubernetes
 
@@ -995,6 +995,46 @@ removed" below for the separate removal of `MeshGatewayInstance` management.
   been removed. The control plane now always scopes its `Secret` watch to its
   own system namespace. Remove this key from your config file and Helm
   values — leaving it in place is harmless but has no effect.
+
+### A delegated gateway is marked by the `kuma.io/gateway` label
+
+`Dataplane.networking.gateway` is removed, field number reserved, along with the tag map and the single-valued type enum it held. A delegated gateway is now a `Dataplane` carrying the label `kuma.io/gateway: "true"` and is otherwise an ordinary `Dataplane`.
+
+Everything that asks "is this a gateway" reads the label: policy matching, the inbound and listener validation, `DataplaneOverview` status, the `MeshMetric` proxy role, mesh and global insights, and the `?gateway=` filter.
+
+On Kubernetes nothing changes for you. The pod annotation `kuma.io/gateway` stays the only thing you set, and the control plane computes the label from it. The annotation also wins over a pod label of the same name, so a stray label cannot turn a workload into a gateway.
+
+On Universal you set the label yourself, and this is a breaking change: the removed field is ignored on input, so a `Dataplane` that still relies on `networking.gateway` becomes a proxy with no inbounds and no gateway marking. No policy selects it, since policies match a proxy through its inbounds or its gateway marking, and it is counted as a standard proxy.
+
+```yaml
+type: Dataplane
+mesh: default
+name: gateway-01
+labels:
+  kuma.io/gateway: "true"      # replaces networking.gateway
+networking:
+  address: 192.168.0.1
+```
+
+**Action required**
+
+Add `kuma.io/gateway: "true"` to the labels of every gateway `Dataplane` on Universal, and drop `networking.gateway` from the manifests and `kuma-dp` dataplane files that still carry it. Do this before upgrading: an unmarked gateway keeps serving traffic but loses every policy that targeted it.
+
+Also move any key you use in a `MeshLoadBalancingStrategy` `localZone.affinityTags` from `networking.gateway.tags` to the `Dataplane`'s labels — an affinity key that exists only as a gateway tag stops matching and its locality group is dropped.
+
+If you scrape `kds_zone_attribution_rewrites_total`, drop it from your dashboards and alerts.
+
+**Multi-zone upgrade order**
+
+Upgrade global first, as usual, then the zones. Between the two, a zone on an older version syncs its gateways without the label, and the upgraded global does not recognise them as gateways: they are counted as standard proxies in mesh and global insights, are returned by `?gateway=false`, and show no gateway marking in `kumactl`. Nothing is lost, and the counts correct themselves once the zone is upgraded and re-syncs its `Dataplane`s. Policy matching and xDS are unaffected, because both happen on the zone.
+
+**What this changes elsewhere**
+
+- `kumactl get dataplanes` and `kumactl inspect dataplanes` print only labels in the `TAGS` column for a gateway, and `?tag=` on the `Dataplane` and `DataplaneOverview` endpoints matches only labels.
+- `GET /meshes/{mesh}/dataplanes+insights?gateway=delegated` matches the same proxies as `gateway=true`, since delegated is the only kind of gateway left.
+- The control plane no longer writes `kuma.io/zone` into a gateway's tags. The `kuma.io/zone` label carries the zone, as it does for every other resource.
+- KDS no longer rewrites a zone tag inside a synced `Dataplane` spec, because there is no in-spec zone tag left to spoof. The `kds_zone_attribution_rewrites_total` metric is removed with it; zone attribution on labels is unaffected.
+- A `Dataplane` carrying `networking.gateway.type: BUILTIN` no longer fails to parse. The whole `networking.gateway` message is dropped on read, so what remains is an ordinary `Dataplane` — one more reason to find those and delete them.
 
 ### `kuma.io/gateway` is a boolean annotation
 

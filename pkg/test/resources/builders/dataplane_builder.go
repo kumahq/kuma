@@ -2,7 +2,6 @@ package builders
 
 import (
 	"context"
-	"maps"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -228,18 +227,13 @@ func TagsKVToMap(tagsKV []string) map[string]string {
 	return tags
 }
 
-func (d *DataplaneBuilder) WithDelegatedGateway(name string) *DataplaneBuilder {
-	d.res.Spec.Networking.Gateway = &mesh_proto.Dataplane_Networking_Gateway{
-		Tags: map[string]string{
-			"kuma.io/display-name": name,
-		},
-		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
+func (d *DataplaneBuilder) WithDelegatedGateway() *DataplaneBuilder {
+	meta := d.res.Meta.(*test_model.ResourceMeta)
+	if meta.Labels == nil {
+		meta.Labels = map[string]string{}
 	}
-	return d
-}
-
-func (d *DataplaneBuilder) AddGatewayTags(tags map[string]string) *DataplaneBuilder {
-	maps.Copy(d.res.Spec.Networking.Gateway.Tags, tags)
+	meta.Labels[mesh_proto.GatewayLabel] = mesh_proto.GatewayEnabled
+	d.res.Spec.Networking.Inbound = nil
 	return d
 }
 

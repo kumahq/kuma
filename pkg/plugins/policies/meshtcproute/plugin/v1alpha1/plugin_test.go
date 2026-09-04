@@ -139,20 +139,14 @@ var _ = Describe("MeshTCPRoute", func() {
 												{
 													Default: api.RuleConf{
 														BackendRefs: &[]common_api.BackendRef{
-															{
-																TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{
-																	mesh_proto.DisplayName: "backend",
-																	"version":              "v1",
-																}, ""),
-																Weight: pointer.To(uint(50)),
-															},
-															{
-																TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{
-																	mesh_proto.DisplayName: "backend",
-																	"version":              "v2",
-																}, ""),
-																Weight: pointer.To(uint(50)),
-															},
+															builders.BackendRefFrom(builders.TargetRefMeshServiceLabels(map[string]string{
+																mesh_proto.DisplayName: "backend",
+																"version":              "v1",
+															}, ""), uint(50)),
+															builders.BackendRefFrom(builders.TargetRefMeshServiceLabels(map[string]string{
+																mesh_proto.DisplayName: "backend",
+																"version":              "v2",
+															}, ""), uint(50)),
 														},
 													},
 												},
@@ -172,20 +166,14 @@ var _ = Describe("MeshTCPRoute", func() {
 						Conf: []any{api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: &[]common_api.BackendRef{
-									{
-										TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{
-											mesh_proto.DisplayName: "backend",
-											"version":              "v1",
-										}, ""),
-										Weight: pointer.To(uint(50)),
-									},
-									{
-										TargetRef: builders.TargetRefMeshServiceLabels(map[string]string{
-											mesh_proto.DisplayName: "backend",
-											"version":              "v2",
-										}, ""),
-										Weight: pointer.To(uint(50)),
-									},
+									builders.BackendRefFrom(builders.TargetRefMeshServiceLabels(map[string]string{
+										mesh_proto.DisplayName: "backend",
+										"version":              "v1",
+									}, ""), uint(50)),
+									builders.BackendRefFrom(builders.TargetRefMeshServiceLabels(map[string]string{
+										mesh_proto.DisplayName: "backend",
+										"version":              "v2",
+									}, ""), uint(50)),
 								},
 							},
 						}},
@@ -363,30 +351,18 @@ var _ = Describe("MeshTCPRoute", func() {
 					kri.From(&meshSvcBackend): test_policies.NewOutboundRule(nil, api.Rule{
 						Default: api.RuleConf{
 							BackendRefs: &[]common_api.BackendRef{
-								{
-									TargetRef: builders.TargetRefMeshService(
-										"backend-eu", "", "tcp-port",
-									),
-									Weight: pointer.To(uint(40)),
-								},
-								{
-									TargetRef: builders.TargetRefMeshService(
-										"backend-us", "", "http-port",
-									),
-									Weight: pointer.To(uint(15)),
-								},
-								{
-									TargetRef: builders.TargetRefMeshService(
-										"other-backend", "", "http-port",
-									),
-									Weight: pointer.To(uint(15)),
-								},
-								{
-									TargetRef: builders.TargetRefMeshExternalService(
-										"externalservice",
-									),
-									Weight: pointer.To(uint(15)),
-								},
+								builders.BackendRefFrom(builders.TargetRefMeshService(
+									"backend-eu", "", "tcp-port",
+								), uint(40)),
+								builders.BackendRefFrom(builders.TargetRefMeshService(
+									"backend-us", "", "http-port",
+								), uint(15)),
+								builders.BackendRefFrom(builders.TargetRefMeshService(
+									"other-backend", "", "http-port",
+								), uint(15)),
+								builders.BackendRefFrom(builders.TargetRefMeshExternalService(
+									"externalservice",
+								), uint(15)),
 							},
 						},
 					}),
@@ -552,11 +528,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						backendMeshExternalServiceIdentifier: test_policies.NewOutboundRule(nil, api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: &[]common_api.BackendRef{
-									{
-										TargetRef: builders.TargetRefMeshExternalService("example2"),
-										Weight:    pointer.To(uint(100)),
-										Port:      pointer.To(uint32(9090)),
-									},
+									builders.BackendRefFromWithPort(builders.TargetRefMeshExternalService("example2"), uint(100), uint32(9090)),
 								},
 							},
 						}),
@@ -678,11 +650,7 @@ var _ = Describe("MeshTCPRoute", func() {
 									backendMeshServiceIdentifier: test_policies.NewOutboundRule(nil, api.Rule{
 										Default: api.RuleConf{
 											BackendRefs: &[]common_api.BackendRef{
-												{
-													TargetRef: builders.TargetRefService("backend"),
-													Weight:    pointer.To(uint(100)),
-													Port:      pointer.To(uint32(80)),
-												},
+												builders.BackendRefFromWithPort(builders.TargetRefService("backend"), uint(100), uint32(80)),
 											},
 										},
 									}),
@@ -737,12 +705,9 @@ var _ = Describe("MeshTCPRoute", func() {
 					kri.From(&meshSvcBackend): test_policies.NewOutboundRule(nil, api.Rule{
 						Default: api.RuleConf{
 							BackendRefs: &[]common_api.BackendRef{
-								{
-									TargetRef: builders.TargetRefMeshService(
-										"tcp-backend", "", "tcp-port",
-									),
-									Weight: pointer.To(uint(1)),
-								},
+								builders.BackendRefFrom(builders.TargetRefMeshService(
+									"tcp-backend", "", "tcp-port",
+								), uint(1)),
 							},
 						},
 					}),
@@ -835,12 +800,9 @@ var _ = Describe("MeshTCPRoute", func() {
 					kri.From(&meshSvcBackend): test_policies.NewOutboundRule(nil, api.Rule{
 						Default: api.RuleConf{
 							BackendRefs: &[]common_api.BackendRef{
-								{
-									TargetRef: builders.TargetRefMeshService(
-										"tcp-backend", "", "tcp-port",
-									),
-									Weight: pointer.To(uint(1)),
-								},
+								builders.BackendRefFrom(builders.TargetRefMeshService(
+									"tcp-backend", "", "tcp-port",
+								), uint(1)),
 							},
 						},
 					}),
@@ -862,10 +824,7 @@ var _ = Describe("MeshTCPRoute", func() {
 								},
 								Default: meshhttproute_api.RuleConf{
 									BackendRefs: &[]meshhttproute_api.BackendRef{
-										{
-											TargetRef: builders.TargetRefMeshService("http-backend", "", "http-port"),
-											Weight:    pointer.To(uint(1)),
-										},
+										{BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("http-backend", "", "http-port"), uint(1))},
 									},
 								},
 							},
@@ -973,12 +932,9 @@ var _ = Describe("MeshTCPRoute", func() {
 					kri.From(&meshSvcBackend): test_policies.NewOutboundRule(nil, api.Rule{
 						Default: api.RuleConf{
 							BackendRefs: &[]common_api.BackendRef{
-								{
-									TargetRef: builders.TargetRefMeshService(
-										"tcp-backend", "", "tcp-port",
-									),
-									Weight: pointer.To(uint(1)),
-								},
+								builders.BackendRefFrom(builders.TargetRefMeshService(
+									"tcp-backend", "", "tcp-port",
+								), uint(1)),
 							},
 						},
 					}),
@@ -1000,10 +956,7 @@ var _ = Describe("MeshTCPRoute", func() {
 								},
 								Default: meshhttproute_api.RuleConf{
 									BackendRefs: &[]meshhttproute_api.BackendRef{
-										{
-											TargetRef: builders.TargetRefMeshService("http-backend", "", "http-port"),
-											Weight:    pointer.To(uint(1)),
-										},
+										{BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("http-backend", "", "http-port"), uint(1))},
 									},
 								},
 							},
