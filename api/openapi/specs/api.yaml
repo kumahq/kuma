@@ -43,6 +43,83 @@ paths:
           $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
           $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /global-insights:
+    get:
+      operationId: get-global-insights
+      description: Returns counts of all global resources
+      summary: Get Global Insights
+      tags: ["GlobalInsight"]
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalInsightsResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /policies:
+    get:
+      operationId: get-policies
+      summary: A list of all policy types
+      description: Returns metadata about every policy type supported by this control plane
+      tags: ["System"]
+      responses:
+        '200':
+          $ref: '#/components/responses/PoliciesResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /who-am-i:
+    get:
+      operationId: who-am-i
+      summary: Identity of the authenticated user
+      description: Returns the name and groups of the user making the request
+      tags: ["System"]
+      responses:
+        '200':
+          $ref: '#/components/responses/WhoAmIResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /tokens/dataplane:
+    post:
+      operationId: issue-dataplane-token
+      summary: Issue a dataplane token
+      description: Issues a token used to authenticate a data plane proxy to the control plane
+      tags: ["Tokens"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataplaneTokenRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /tokens/zone:
+    post:
+      operationId: issue-zone-token
+      summary: Issue a zone token
+      description: Issues a token used to authenticate zone control plane operations
+      tags: ["Tokens"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneTokenRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/{resourceType}/{resourceName}/_rules:
     get:
       operationId: inspect-dataplanes-rules
@@ -909,7 +986,126 @@ components:
         spiffeId:
           type: string
           description: SPIFFE ID of the dataplane's workload identity certificate
+    GlobalInsights:
+      type: object
+      properties:
+        type:
+          type: string
+        creationTime:
+          type: string
+          format: date-time
+        resources:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              total:
+                type: integer
+    PolicyEntry:
+      type: object
+      properties:
+        name:
+          type: string
+        readOnly:
+          type: boolean
+        path:
+          type: string
+        singularDisplayName:
+          type: string
+        pluralDisplayName:
+          type: string
+        isExperimental:
+          type: boolean
+        isTargetRefBased:
+          type: boolean
+        isInbound:
+          type: boolean
+        isOutbound:
+          type: boolean
+    Policies:
+      type: object
+      properties:
+        policies:
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyEntry'
+    WhoAmI:
+      type: object
+      properties:
+        name:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+    DataplaneTokenRequest:
+      type: object
+      required:
+        - mesh
+      properties:
+        name:
+          type: string
+          description: Name of the data plane proxy
+        mesh:
+          type: string
+          description: Mesh of the data plane proxy
+        tags:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Tags of the data plane proxy
+        type:
+          type: string
+          description: Proxy type, only Dataplane is valid
+        workload:
+          type: string
+          description: Workload of the data plane proxy
+        validFor:
+          type: string
+          description: How long the token is valid for, e.g. 24h
+    ZoneTokenRequest:
+      type: object
+      required:
+        - zone
+      properties:
+        zone:
+          type: string
+          description: Name of the zone
+        scope:
+          type: array
+          items:
+            type: string
+          description: Scope of the token, e.g. zone-ingress
+        validFor:
+          type: string
+          description: How long the token is valid for, e.g. 24h
   responses:
+    GlobalInsightsResponse:
+      description: A response containing counts of global resources.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GlobalInsights'
+    PoliciesResponse:
+      description: A response containing all policy types.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Policies'
+    WhoAmIResponse:
+      description: A response containing the identity of the authenticated user.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/WhoAmI'
+    TokenResponse:
+      description: A response containing the issued token.
+      content:
+        application/json:
+          schema:
+            type: string
     ConfigResponse:
       description: The control plane configuration.
       content:
