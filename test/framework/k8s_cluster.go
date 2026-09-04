@@ -707,7 +707,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		return err
 	}
 
-	converter := resources_k8s.NewSimpleConverter()
+	converter := resources_k8s.NewSimpleConverter(Config.KumaNamespace)
 	for name, updateFuncs := range c.opts.meshUpdateFuncs {
 		for _, f := range updateFuncs {
 			Logf("applying update function to mesh %q", name)
