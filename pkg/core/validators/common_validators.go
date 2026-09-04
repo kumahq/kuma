@@ -359,7 +359,7 @@ func ValidateOtelBackendRefOrEndpoint(
 
 func ValidateBackendRef(b common_api.BackendRef) ValidationError {
 	verr := OK()
-	if b.Kind == common_api.MeshMultiZoneService && b.Port == nil {
+	if b.Kind == common_api.BackendRefKindMeshMultiZoneService && b.Port == nil {
 		verr.AddViolationAt(RootedAt("port"), MustBeDefined+" with kind MeshMultiZoneService")
 	}
 	if b.Weight != nil && *b.Weight > math.MaxUint32 {

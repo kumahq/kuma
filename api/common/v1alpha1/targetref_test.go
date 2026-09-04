@@ -72,28 +72,22 @@ func TestBackendRefReferencesRealObject(t *testing.T) {
 	}{
 		"mesh service by name is real": {
 			ref: BackendRef{
-				TargetRef: TargetRef{
-					Kind:   MeshService,
-					Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
-				},
+				Kind:   BackendRefKindMeshService,
+				Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
 			},
 			expected: true,
 		},
 		"mesh external service is real": {
 			ref: BackendRef{
-				TargetRef: TargetRef{
-					Kind:   MeshExternalService,
-					Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "payments"}),
-				},
+				Kind:   BackendRefKindMeshExternalService,
+				Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "payments"}),
 			},
 			expected: true,
 		},
 		"mesh multizone service is real": {
 			ref: BackendRef{
-				TargetRef: TargetRef{
-					Kind:   MeshMultiZoneService,
-					Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "global-backend"}),
-				},
+				Kind:   BackendRefKindMeshMultiZoneService,
+				Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "global-backend"}),
 			},
 			expected: true,
 		},
@@ -124,13 +118,11 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForLabels(t *testing.T) 
 	}{
 		"MeshService": {
 			ref: BackendRef{
-				TargetRef: TargetRef{
-					Kind: MeshService,
-					Labels: pointer.To(map[string]string{
-						mesh_proto.DisplayName:      "backend",
-						mesh_proto.KubeNamespaceTag: "team-a",
-					}),
-				},
+				Kind: BackendRefKindMeshService,
+				Labels: pointer.To(map[string]string{
+					mesh_proto.DisplayName:      "backend",
+					mesh_proto.KubeNamespaceTag: "team-a",
+				}),
 			},
 			defaultNS: "ignored",
 			expectedLabels: map[string]string{
@@ -140,13 +132,11 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForLabels(t *testing.T) 
 		},
 		"MeshExternalService": {
 			ref: BackendRef{
-				TargetRef: TargetRef{
-					Kind: MeshExternalService,
-					Labels: pointer.To(map[string]string{
-						mesh_proto.DisplayName:      "payments",
-						mesh_proto.KubeNamespaceTag: "team-a",
-					}),
-				},
+				Kind: BackendRefKindMeshExternalService,
+				Labels: pointer.To(map[string]string{
+					mesh_proto.DisplayName:      "payments",
+					mesh_proto.KubeNamespaceTag: "team-a",
+				}),
 			},
 			defaultNS: "ignored",
 			expectedLabels: map[string]string{
@@ -156,13 +146,11 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForLabels(t *testing.T) 
 		},
 		"MeshMultiZoneService": {
 			ref: BackendRef{
-				TargetRef: TargetRef{
-					Kind: MeshMultiZoneService,
-					Labels: pointer.To(map[string]string{
-						mesh_proto.DisplayName:      "global-backend",
-						mesh_proto.KubeNamespaceTag: "team-a",
-					}),
-				},
+				Kind: BackendRefKindMeshMultiZoneService,
+				Labels: pointer.To(map[string]string{
+					mesh_proto.DisplayName:      "global-backend",
+					mesh_proto.KubeNamespaceTag: "team-a",
+				}),
 			},
 			defaultNS: "ignored",
 			expectedLabels: map[string]string{
@@ -172,12 +160,10 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForLabels(t *testing.T) 
 		},
 		"MeshService injects default namespace when only display-name is set": {
 			ref: BackendRef{
-				TargetRef: TargetRef{
-					Kind: MeshService,
-					Labels: pointer.To(map[string]string{
-						mesh_proto.DisplayName: "backend",
-					}),
-				},
+				Kind: BackendRefKindMeshService,
+				Labels: pointer.To(map[string]string{
+					mesh_proto.DisplayName: "backend",
+				}),
 			},
 			defaultNS: "team-a",
 			expectedLabels: map[string]string{
@@ -187,13 +173,11 @@ func TestBackendRefRealResourceSelectorDefaultsNamespaceForLabels(t *testing.T) 
 		},
 		"MeshService labels are cloned": {
 			ref: BackendRef{
-				TargetRef: TargetRef{
-					Kind: MeshService,
-					Labels: pointer.To(map[string]string{
-						mesh_proto.DisplayName:      "foo_bar_svc",
-						mesh_proto.KubeNamespaceTag: "explicit-ns",
-					}),
-				},
+				Kind: BackendRefKindMeshService,
+				Labels: pointer.To(map[string]string{
+					mesh_proto.DisplayName:      "foo_bar_svc",
+					mesh_proto.KubeNamespaceTag: "explicit-ns",
+				}),
 			},
 			defaultNS: "ignored",
 			expectedLabels: map[string]string{
@@ -225,7 +209,7 @@ func TestBackendRefRealResourceSelectorKeepsExplicitSectionNameOverPort(t *testi
 	t.Parallel()
 
 	ref := BackendRef{
-		Kind:        MeshService,
+		Kind:        BackendRefKindMeshService,
 		Labels:      pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
 		SectionName: pointer.To("http"),
 		Port:        pointer.To(uint32(80)),
@@ -244,7 +228,7 @@ func TestBackendRefRealResourceSelectorRejectsRealRefsWithoutLabels(t *testing.T
 	t.Parallel()
 
 	ref := BackendRef{
-		Kind: MeshService,
+		Kind: BackendRefKindMeshService,
 	}
 
 	if _, _, ok := ref.RealResourceSelector("default"); ok {
@@ -309,12 +293,12 @@ func TestBackendRefHashUsesRealResourceLabels(t *testing.T) {
 		t.Parallel()
 
 		a := BackendRef{
-			Kind:   MeshService,
+			Kind:   BackendRefKindMeshService,
 			Labels: &map[string]string{mesh_proto.DisplayName: "backend", mesh_proto.KubeNamespaceTag: "kuma-demo"},
 			Port:   pointer.To(uint32(8080)),
 		}
 		b := BackendRef{
-			Kind:   MeshService,
+			Kind:   BackendRefKindMeshService,
 			Labels: &map[string]string{mesh_proto.KubeNamespaceTag: "kuma-demo", mesh_proto.DisplayName: "backend"},
 			Port:   pointer.To(uint32(8080)),
 		}
@@ -328,12 +312,12 @@ func TestBackendRefHashUsesRealResourceLabels(t *testing.T) {
 		t.Parallel()
 
 		base := BackendRef{
-			Kind:   MeshService,
+			Kind:   BackendRefKindMeshService,
 			Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
 			Port:   pointer.To(uint32(8080)),
 		}
 		otherPort := BackendRef{
-			Kind:   MeshService,
+			Kind:   BackendRefKindMeshService,
 			Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "backend"}),
 			Port:   pointer.To(uint32(9090)),
 		}

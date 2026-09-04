@@ -106,23 +106,12 @@ type RuleConf struct {
 
 type BackendRef struct {
 	// +kuma:nolint // keep parity with common_api.BackendRef
-	common_api.TargetRef `json:",inline"`
-	// +kubebuilder:validation:Minimum=0
-	// +kubebuilder:validation:Maximum=4294967295
-	// +kubebuilder:default=1
-	// +kuma:nolint // keep parity with common_api.BackendRef
-	Weight *uint `json:"weight,omitempty"`
-	// Port is only supported when this ref refers to a MeshService object
-	Port    *uint32   `json:"port,omitempty"`
-	Filters *[]Filter `json:"filters,omitempty"`
+	common_api.BackendRef `json:",inline"`
+	Filters               *[]Filter `json:"filters,omitempty"`
 }
 
 func (b BackendRef) CommonBackendRef() common_api.BackendRef {
-	return common_api.BackendRef{
-		TargetRef: b.TargetRef,
-		Weight:    b.Weight,
-		Port:      b.Port,
-	}
+	return b.BackendRef
 }
 
 // +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier;RequestRedirect;URLRewrite;RequestMirror
