@@ -176,7 +176,7 @@ var _ = Describe("PodStatusReconciler", func() {
 			EventRecorder:     kube_events.NewFakeRecorder(10),
 			Scheme:            k8sClientScheme,
 			Log:               core.Log.WithName("test"),
-			ResourceConverter: k8s.NewSimpleConverter(),
+			ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 			EnvoyAdminClient: &runtime.DummyEnvoyAdminClient{
 				PostQuitCalled: &postQuitCalled,
 			},

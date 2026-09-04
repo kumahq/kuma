@@ -21,19 +21,19 @@ type cachingConverter struct {
 	cache *cache.Cache
 }
 
-func NewCachingConverter(expirationTime time.Duration) k8s_common.Converter {
+func NewCachingConverter(expirationTime time.Duration, systemNamespace string) k8s_common.Converter {
 	return &cachingConverter{
 		SimpleConverter: SimpleConverter{
 			KubeFactory: &SimpleKubeFactory{
 				KubeTypes: k8s_registry.Global(),
 			},
+			SystemNamespace: systemNamespace,
 		},
 		cache: cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
 	}
 }
 
 func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error {
-	out.SetMeta(&KubernetesMetaAdapter{ObjectMeta: *obj.GetObjectMeta(), Mesh: obj.GetMesh()})
 	key := strings.Join([]string{
 		obj.GetNamespace(),
 		obj.GetName(),
@@ -41,15 +41,25 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 		obj.GetObjectKind().GroupVersionKind().String(),
 	}, ":")
 	if v, ok := c.cache.Get(key); ok {
-		return out.SetSpec(v.(core_model.ResourceSpec))
+		if err := out.SetSpec(v.(core_model.ResourceSpec)); err != nil {
+			return err
+		}
+		// Only the spec is cached; the labels are derived on every read, enforcement
+		// included, so a hit yields the same label set as the miss did.
+		out.SetMeta(newMetaAdapter(obj, c.SystemNamespace, out.Descriptor(), out.GetSpec()))
+		return nil
 	}
 	spec, err := obj.GetSpec()
 	if err != nil {
 		return err
 	}
+	// SetSpec first, then derive labels from out.GetSpec(): a stored object with an
+	// omitted spec yields a typed-nil here, and SetSpec normalizes it to an empty
+	// spec. Deriving from the raw value would call policy methods on a nil pointer.
 	if err := out.SetSpec(spec); err != nil {
 		return err
 	}
+	out.SetMeta(newMetaAdapter(obj, c.SystemNamespace, out.Descriptor(), out.GetSpec()))
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()
 		if err != nil {

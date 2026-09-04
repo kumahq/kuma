@@ -441,6 +441,34 @@ var _ = Describe("ComputeLabels", func() {
 				"kuma.io/env":           "kubernetes",
 			},
 		}),
+		Entry("user-supplied k8s.kuma.io/namespace label is overwritten with the real namespace", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			// lives in app-ns, carries a label pointing at other-ns
+			r: func() core_model.Resource {
+				r := builders.MeshTimeout().
+					WithMesh("mesh-1").
+					WithName("idle-timeout").
+					WithNamespace("app-ns").
+					WithTargetRef(builders.TargetRefMesh()).
+					AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+						IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+					}).
+					Build()
+				r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag] = "other-ns"
+				return r
+			}(),
+			expectedLabels: map[string]string{
+				"k8s.kuma.io/namespace": "app-ns",
+				"kuma.io/display-name":  "idle-timeout",
+				"kuma.io/policy-role":   "consumer",
+				"kuma.io/mesh":          "mesh-1",
+				"kuma.io/origin":        "zone",
+				"kuma.io/zone":          "zone-1",
+				"kuma.io/env":           "kubernetes",
+			},
+		}),
 		Entry("gateway dataplane proxy", testCase{
 			mode:      core.Zone,
 			isK8s:     true,
