@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not retrieve resources",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "/meshes/{mesh}/dataplanes.filter[labels.foo",
+   "reason": "advanced filters are not supported"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "/meshes/{mesh}/dataplanes.filter[labels.foo",
+   "message": "advanced filters are not supported"
+  }
+ ]
+}
