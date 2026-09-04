@@ -1,8 +1,8 @@
 package types
 
 import (
+	"errors"
 	"fmt"
-	"reflect"
 )
 
 type InvalidPageSizeError struct {
@@ -14,7 +14,8 @@ func (a *InvalidPageSizeError) Error() string {
 }
 
 func (a *InvalidPageSizeError) Is(err error) bool {
-	return reflect.TypeOf(a) == reflect.TypeOf(err)
+	var target *InvalidPageSizeError
+	return errors.As(err, &target)
 }
 
 func NewMaxPageSizeExceeded(pageSize, limit int) error {
