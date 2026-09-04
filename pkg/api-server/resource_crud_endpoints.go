@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
-	"strings"
 
 	"github.com/emicklei/go-restful/v3"
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
@@ -28,15 +27,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
-
-// maxAnnotationBackedLabelValueLength caps the labels Kubernetes stores as
-// annotations (k8s.LabelsStoredAsAnnotations). Their values carry a resource name,
-// so they are bounded by the name length that core_mesh.ValidateMeta enforces
-// rather than by the 63-character label value limit.
-const maxAnnotationBackedLabelValueLength = 253
 
 // resourceCrudHandler serves the resource CRUD endpoints and their validation.
 type resourceCrudHandler struct {
@@ -581,17 +573,18 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 		err.AddError("", r.validatePolicyRole(resource))
 	}
 
-	err.AddError("", r.validateWorkloadLabel(resource))
-
 	for _, k := range maps.SortedKeys(resource.GetMeta().GetLabels()) {
 		v := resource.GetMeta().GetLabels()[k]
 		for _, msg := range validation.IsQualifiedName(k) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
-		// Labels that Kubernetes stores as annotations are never subject to the label
-		// value rules, they only have to fit a resource name.
+		// Labels that Kubernetes stores as annotations hold a resource name, so they
+		// follow the resource name rules (DNS-1123 subdomain, 253 characters) rather
+		// than the label value rules.
 		if slices.Contains(k8s.LabelsStoredAsAnnotations, k) {
-			err.Add(validators.ValidateLength(validators.Root().Key(k), maxAnnotationBackedLabelValueLength, v))
+			for _, msg := range apimachineryvalidation.NameIsDNSSubdomain(v, false) {
+				err.AddViolationAt(validators.Root().Key(k), msg)
+			}
 			continue
 		}
 		for _, msg := range validation.IsValidLabelValue(v) {
@@ -625,34 +618,6 @@ func (r *resourceCrudHandler) validateImmutableLabels(currentComputedLabels, new
 		}
 	}
 
-	return err
-}
-
-// validateWorkloadLabel checks 'kuma.io/workload' on Universal Zone dataplanes.
-// It runs on every write rather than on create only: the label is stored verbatim
-// (the api-server does not pass WithWorkload, so Compute leaves it alone) and feeds
-// the SPIFFE ID and the Universal authenticator, so an update must not be able to
-// put a value there that a create would have rejected.
-func (r *resourceCrudHandler) validateWorkloadLabel(resource rest.Resource) validators.ValidationError {
-	var err validators.ValidationError
-	if r.descriptor.Name != core_mesh.DataplaneType || r.isK8s {
-		return err
-	}
-	workloadName, ok := resource.GetMeta().GetLabels()[metadata.KumaWorkload]
-	if !ok || workloadName == "" {
-		return err
-	}
-	path := validators.Root().Key(metadata.KumaWorkload)
-	if r.mode == config_core.Global {
-		err.AddViolationAt(path, "not allowed on Global control plane")
-		return err
-	}
-	if violations := apimachineryvalidation.NameIsDNS1035Label(workloadName, false); len(violations) > 0 {
-		err.AddViolationAt(path, fmt.Sprintf(
-			"must be a valid DNS-1035 label (at most 63 characters, matching regex [a-z]([-a-z0-9]*[a-z0-9])?): %s",
-			strings.Join(violations, "; "),
-		))
-	}
 	return err
 }
 

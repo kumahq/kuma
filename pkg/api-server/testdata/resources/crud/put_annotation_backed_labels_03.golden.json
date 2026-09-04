@@ -6,14 +6,14 @@
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/display-name\"]",
-   "reason": "must not be longer than 253 characters"
+   "reason": "must be no more than 253 characters"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"kuma.io/display-name\"]",
-   "message": "must not be longer than 253 characters"
+   "message": "must be no more than 253 characters"
   }
  ]
 }

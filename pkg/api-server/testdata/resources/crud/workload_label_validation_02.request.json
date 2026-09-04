@@ -1,9 +1,9 @@
 {
   "type": "Dataplane",
   "mesh": "default",
-  "name": "dp-invalid2",
+  "name": "dp-sa-style",
   "labels": {
-    "kuma.io/workload": "1workload"
+    "kuma.io/workload": "1st-team.backend.v2"
   },
   "networking": {
     "address": "10.1.2.1",
