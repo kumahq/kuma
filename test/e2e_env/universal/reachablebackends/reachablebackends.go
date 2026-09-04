@@ -14,7 +14,7 @@ func ReachableBackends() {
 
 	// Under the Exclusive meshServices mode services are reached via
 	// auto-generated MeshServices, so restrict outbounds with reachableBackends
-	// referencing the MeshService rather than the legacy kuma.io/display-name list.
+	// referencing the MeshService rather than the legacy tag-based service list.
 	reachableBackends := `      refs:
       - kind: MeshService
         name: first-test-server

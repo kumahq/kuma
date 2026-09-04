@@ -1306,7 +1306,6 @@
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig-zoneproxies",
               "kuma.io/origin": "zone",
-              "kuma.io/display-name": "zone-proxy-test-server-no-reusable-ports",
               "kuma.io/workload": "zone-proxy-test-server-no-reusable-ports",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",

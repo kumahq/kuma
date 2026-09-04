@@ -836,7 +836,6 @@
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig",
               "kuma.io/origin": "zone",
-              "kuma.io/display-name": "test-server",
               "kuma.io/workload": "test-server",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",
