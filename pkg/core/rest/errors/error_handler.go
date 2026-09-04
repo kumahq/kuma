@@ -9,7 +9,6 @@ import (
 	"github.com/go-logr/logr"
 	"go.opentelemetry.io/otel/trace"
 
-	api_server_types "github.com/kumahq/kuma/v3/pkg/api-server/types"
 	"github.com/kumahq/kuma/v3/pkg/core/access"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
@@ -71,7 +70,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  title,
 			Detail: err.Error(),
 		}
-	case errors.Is(err, &api_server_types.InvalidPageSizeError{}):
+	case errors.Is(err, &types.InvalidPageSizeError{}):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,
