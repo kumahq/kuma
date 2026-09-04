@@ -15,7 +15,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/v3/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -86,14 +85,14 @@ func (r *resourceEndpoints) route(ws *restful.WebService, method, path string) *
 }
 
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
-	ws.Route(r.route(ws, http.MethodGet, pathPrefix+"/{name}").To(r.findResource(false)).
+	ws.Route(r.route(ws, http.MethodGet, pathPrefix+"/{name}").To(handle(r.findResource(false))).
 		Doc(fmt.Sprintf("Get a %s", r.descriptor.WsPath)).
 		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 		Returns(200, "OK", nil).
 		Returns(404, "Not found", nil))
 	if r.descriptor.HasInsights() {
 		route := r.findResource(true)
-		ws.Route(ws.GET(pathPrefix+"/{name}/_overview").To(route).
+		ws.Route(ws.GET(pathPrefix+"/{name}/_overview").To(handle(route)).
 			Doc(fmt.Sprintf("Get overview of a %s", r.descriptor.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil).
@@ -114,7 +113,7 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Returns(404, "Not found", nil))
 		if r.mode == config_core.Global {
 			msg := "Not allowed on global CP"
-			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(r.methodNotAllowed(msg)).
+			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(handle(r.methodNotAllowed(msg))).
 				Doc(msg).
 				Returns(http.StatusMethodNotAllowed, msg, restful.ServiceError{}))
 		} else {
@@ -169,19 +168,18 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 	}
 }
 
-func (r *resourceEndpoints) methodNotAllowed(detail string) func(request *restful.Request, response *restful.Response) {
-	return func(request *restful.Request, response *restful.Response) {
-		err := &types.Error{
+func (r *resourceEndpoints) methodNotAllowed(detail string) handlerFunc {
+	return func(request *restful.Request) (any, error) {
+		return nil, &types.Error{
 			Status: 405,
 			Title:  "Method not allowed",
 			Detail: detail,
 		}
-		rest_errors.HandleError(request.Request.Context(), response, err, "")
 	}
 }
 
 func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix string) {
-	ws.Route(r.route(ws, http.MethodGet, pathPrefix).To(r.listResources(false)).
+	ws.Route(r.route(ws, http.MethodGet, pathPrefix).To(handle(r.listResources(false))).
 		Doc(fmt.Sprintf("List of %s", r.descriptor.Name)).
 		Param(ws.QueryParameter("size", "size of page").DataType("int")).
 		Param(ws.QueryParameter("offset", "offset of page to list").DataType("string")).
@@ -189,7 +187,7 @@ func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix s
 		Returns(200, "OK", nil))
 	if r.descriptor.HasInsights() {
 		route := r.listResources(true)
-		ws.Route(ws.GET(pathPrefix+"/_overview").To(route).
+		ws.Route(ws.GET(pathPrefix+"/_overview").To(handle(route)).
 			Doc(fmt.Sprintf("Get a %s", r.descriptor.WsPath)).
 			Param(ws.QueryParameter("size", "size of page").DataType("int")).
 			Param(ws.QueryParameter("offset", "offset of page to list").DataType("string")).
@@ -202,11 +200,11 @@ func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix s
 
 func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pathPrefix string) {
 	if r.descriptor.ReadOnly {
-		ws.Route(r.route(ws, http.MethodPut, pathPrefix+"/{name}").To(r.methodNotAllowed(r.readOnlyMessage())).
+		ws.Route(r.route(ws, http.MethodPut, pathPrefix+"/{name}").To(handle(r.methodNotAllowed(r.readOnlyMessage()))).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
-		ws.Route(r.route(ws, http.MethodPut, pathPrefix+"/{name}").To(r.createOrUpdateResource).
+		ws.Route(r.route(ws, http.MethodPut, pathPrefix+"/{name}").To(handle(r.createOrUpdateResource)).
 			Doc(fmt.Sprintf("Updates a %s", r.descriptor.WsPath)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.descriptor.WsPath)).DataType("string")).
 			Returns(200, "OK", nil).
@@ -216,11 +214,11 @@ func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pa
 
 func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix string) {
 	if r.descriptor.ReadOnly {
-		ws.Route(r.route(ws, http.MethodDelete, pathPrefix+"/{name}").To(r.methodNotAllowed(r.readOnlyMessage())).
+		ws.Route(r.route(ws, http.MethodDelete, pathPrefix+"/{name}").To(handle(r.methodNotAllowed(r.readOnlyMessage()))).
 			Doc("Not allowed in read-only mode.").
 			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 	} else {
-		ws.Route(r.route(ws, http.MethodDelete, pathPrefix+"/{name}").To(r.deleteResource).
+		ws.Route(r.route(ws, http.MethodDelete, pathPrefix+"/{name}").To(handle(r.deleteResource)).
 			Doc(fmt.Sprintf("Deletes a %s", r.descriptor.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
 			Returns(200, "OK", nil))
