@@ -93,11 +93,6 @@ func labelFilter(request *restful.Request) (store.ListFilterFunc, error) {
 		labels := rs.GetMeta().GetLabels()
 		for _, filter := range filters {
 			v, ok := labels[filter.Key]
-			if filter.Op == FilterOpEq {
-				if !ok || v != filter.Value {
-					return false
-				}
-			}
 			if !ok || v != filter.Value {
 				return false
 			}
