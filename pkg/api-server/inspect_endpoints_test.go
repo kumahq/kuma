@@ -82,36 +82,6 @@ var _ = Describe("Inspect WS", func() {
 
 			Expect(resp.Header.Get("content-type")).To(Equal(given.contentType))
 		},
-		Entry("inspect dataplane", testCase{
-			path:    "/meshes/default/dataplanes/backend-1/policies",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().Build(),
-				builders.Dataplane().
-					WithName("backend-1").
-					WithHttpServices("backend").
-					AddOutboundsToServices("redis", "elastic", "postgres", "web").
-					Build(),
-				builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefMesh()).
-					AddRule(v1alpha1.Allow).
-					Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
-		Entry("inspect dataplane, empty response", testCase{
-			path:    "/meshes/default/dataplanes/backend-1/policies",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_dataplane_empty-response.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().Build(),
-				builders.Dataplane().
-					WithName("backend-1").
-					WithServices("backend").
-					AddOutboundsToServices("redis", "elastic", "postgres", "web").
-					Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
 		Entry("inspect meshtrafficpermission", testCase{
 			path:    "/meshes/mesh-1/meshtrafficpermissions/mtp-1/dataplanes",
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_meshtrafficpermission.json")),

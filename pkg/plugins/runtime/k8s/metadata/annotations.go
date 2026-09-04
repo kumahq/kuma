@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"fmt"
 	"maps"
 	"strconv"
 	"strings"
@@ -103,28 +102,6 @@ var PodAnnotationDeprecations = []Deprecation{
 type Deprecation struct {
 	Key     string
 	Message string
-}
-
-func NewReplaceByDeprecation(old, n string, removed bool) Deprecation {
-	msg := fmt.Sprintf("'%s' is being replaced by: '%s'", old, n)
-	if removed {
-		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored, use '%s' instead", old, n)
-	}
-	return Deprecation{
-		Key:     old,
-		Message: msg,
-	}
-}
-
-func NewDeprecation(old string, removed bool) Deprecation {
-	msg := fmt.Sprintf("'%s' will be removed in a future release", old)
-	if removed {
-		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored, please see documentation on how to migrate", old)
-	}
-	return Deprecation{
-		Key:     old,
-		Message: msg,
-	}
 }
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.

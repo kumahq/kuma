@@ -138,6 +138,9 @@ components:
           description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
           type: string
           default: default
+          # keep in sync with core_mesh.MeshNamePattern / MaxNameLength
+          pattern: '^[0-9a-z-_.]*$'
+          maxLength: 253
         kri:
           description: 'A unique identifier for this resource instance used by internal tooling and integrations. Typically derived from resource attributes and may be used for cross-references or indexing'
           type: string
@@ -146,6 +149,9 @@ components:
         name:
           description: 'Name of the Kuma resource'
           type: string
+          # keep in sync with core_mesh.NamePattern / MaxNameLength
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -261,25 +267,19 @@ components:
                                         requestMirror:
                                           properties:
                                             backendRef:
-                                              description: BackendRef defines where to forward traffic.
+                                              description: BackendRef defines the destination traffic is routed to.
                                               properties:
                                                 kind:
                                                   description: Kind of the referenced resource
                                                   enum:
-                                                    - Mesh
                                                     - MeshService
                                                     - MeshExternalService
                                                     - MeshMultiZoneService
-                                                    - MeshHTTPRoute
-                                                    - Dataplane
                                                   type: string
                                                 labels:
                                                   additionalProperties:
                                                     type: string
-                                                  description: |-
-                                                    Labels are used to select referenced real resources and to carry legacy
-                                                    service identity when a common TargetRef must still target old
-                                                    service-tag based paths.
+                                                  description: Labels are used to select the referenced real resource.
                                                   type: object
                                                 port:
                                                   description: Port is only supported when this ref refers to a real MeshService object
@@ -287,8 +287,8 @@ components:
                                                   type: integer
                                                 sectionName:
                                                   description: |-
-                                                    SectionName is used to target specific section of resource.
-                                                    For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                                    SectionName is used to target a specific section of the resource.
+                                                    For example, you can target a port from MeshService.ports[] by its name.
                                                   type: string
                                                 weight:
                                                   default: 1
@@ -342,6 +342,17 @@ components:
                                               required:
                                                 - type
                                               type: object
+                                              oneOf:
+                                                - properties:
+                                                    replaceFullPath: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplaceFullPath
+                                                - properties:
+                                                    replacePrefixMatch: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplacePrefixMatch
                                             port:
                                               description: |-
                                                 Port is the port to be used in the value of the `Location`
@@ -451,37 +462,68 @@ components:
                                               required:
                                                 - type
                                               type: object
+                                              oneOf:
+                                                - properties:
+                                                    replaceFullPath: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplaceFullPath
+                                                - properties:
+                                                    replacePrefixMatch: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplacePrefixMatch
                                           type: object
                                       required:
                                         - type
                                       type: object
+                                      oneOf:
+                                        - properties:
+                                            requestHeaderModifier: {}
+                                            type:
+                                              enum:
+                                                - RequestHeaderModifier
+                                        - properties:
+                                            responseHeaderModifier: {}
+                                            type:
+                                              enum:
+                                                - ResponseHeaderModifier
+                                        - properties:
+                                            requestRedirect: {}
+                                            type:
+                                              enum:
+                                                - RequestRedirect
+                                        - properties:
+                                            type:
+                                              enum:
+                                                - URLRewrite
+                                            urlRewrite: {}
+                                        - properties:
+                                            requestMirror: {}
+                                            type:
+                                              enum:
+                                                - RequestMirror
                                     type: array
                                   kind:
                                     description: Kind of the referenced resource
                                     enum:
-                                      - Mesh
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshHTTPRoute
-                                      - Dataplane
                                     type: string
                                   labels:
                                     additionalProperties:
                                       type: string
-                                    description: |-
-                                      Labels are used to select referenced real resources and to carry legacy
-                                      service identity when a common TargetRef must still target old
-                                      service-tag based paths.
+                                    description: Labels are used to select the referenced real resource.
                                     type: object
                                   port:
-                                    description: Port is only supported when this ref refers to a MeshService object
+                                    description: Port is only supported when this ref refers to a real MeshService object
                                     format: int32
                                     type: integer
                                   sectionName:
                                     description: |-
-                                      SectionName is used to target specific section of resource.
-                                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                      SectionName is used to target a specific section of the resource.
+                                      For example, you can target a port from MeshService.ports[] by its name.
                                     type: string
                                   weight:
                                     default: 1
@@ -548,25 +590,19 @@ components:
                                   requestMirror:
                                     properties:
                                       backendRef:
-                                        description: BackendRef defines where to forward traffic.
+                                        description: BackendRef defines the destination traffic is routed to.
                                         properties:
                                           kind:
                                             description: Kind of the referenced resource
                                             enum:
-                                              - Mesh
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
-                                              - MeshHTTPRoute
-                                              - Dataplane
                                             type: string
                                           labels:
                                             additionalProperties:
                                               type: string
-                                            description: |-
-                                              Labels are used to select referenced real resources and to carry legacy
-                                              service identity when a common TargetRef must still target old
-                                              service-tag based paths.
+                                            description: Labels are used to select the referenced real resource.
                                             type: object
                                           port:
                                             description: Port is only supported when this ref refers to a real MeshService object
@@ -574,8 +610,8 @@ components:
                                             type: integer
                                           sectionName:
                                             description: |-
-                                              SectionName is used to target specific section of resource.
-                                              For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                              SectionName is used to target a specific section of the resource.
+                                              For example, you can target a port from MeshService.ports[] by its name.
                                             type: string
                                           weight:
                                             default: 1
@@ -629,6 +665,17 @@ components:
                                         required:
                                           - type
                                         type: object
+                                        oneOf:
+                                          - properties:
+                                              replaceFullPath: {}
+                                              type:
+                                                enum:
+                                                  - ReplaceFullPath
+                                          - properties:
+                                              replacePrefixMatch: {}
+                                              type:
+                                                enum:
+                                                  - ReplacePrefixMatch
                                       port:
                                         description: |-
                                           Port is the port to be used in the value of the `Location`
@@ -738,10 +785,47 @@ components:
                                         required:
                                           - type
                                         type: object
+                                        oneOf:
+                                          - properties:
+                                              replaceFullPath: {}
+                                              type:
+                                                enum:
+                                                  - ReplaceFullPath
+                                          - properties:
+                                              replacePrefixMatch: {}
+                                              type:
+                                                enum:
+                                                  - ReplacePrefixMatch
                                     type: object
                                 required:
                                   - type
                                 type: object
+                                oneOf:
+                                  - properties:
+                                      requestHeaderModifier: {}
+                                      type:
+                                        enum:
+                                          - RequestHeaderModifier
+                                  - properties:
+                                      responseHeaderModifier: {}
+                                      type:
+                                        enum:
+                                          - ResponseHeaderModifier
+                                  - properties:
+                                      requestRedirect: {}
+                                      type:
+                                        enum:
+                                          - RequestRedirect
+                                  - properties:
+                                      type:
+                                        enum:
+                                          - URLRewrite
+                                      urlRewrite: {}
+                                  - properties:
+                                      requestMirror: {}
+                                      type:
+                                        enum:
+                                          - RequestMirror
                               type: array
                           type: object
                         matches:

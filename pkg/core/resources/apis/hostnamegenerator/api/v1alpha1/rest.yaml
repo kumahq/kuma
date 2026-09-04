@@ -118,6 +118,9 @@ components:
         name:
           description: 'Name of the Kuma resource'
           type: string
+          # keep in sync with core_mesh.NamePattern / MaxNameLength
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
         labels:
           additionalProperties:
             type: string

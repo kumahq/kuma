@@ -1,0 +1,242 @@
+components:
+  schemas:
+    ZoneOverview:
+      description: ZoneOverview defines the projected state of a Zone.
+      properties:
+        zone:
+          properties:
+            enabled:
+              description: |-
+                enable allows to turn the zone on/off and exclude the whole zone from
+                balancing traffic on it
+              type: boolean
+          type: object
+        zoneInsight:
+          properties:
+            envoyAdminStreams:
+              description: |-
+                Statistics about Envoy Admin Streams
+                Deprecated: use kds_streams instead.
+              properties:
+                clustersGlobalInstanceId:
+                  description: Global instance ID that handles Clusters streams.
+                  type: string
+                configDumpGlobalInstanceId:
+                  description: Global instance ID that handles XDS Config Dump streams.
+                  type: string
+                statsGlobalInstanceId:
+                  description: Global instance ID that handles Stats streams.
+                  type: string
+              type: object
+            healthCheck:
+              properties:
+                time:
+                  description: Time last health check received
+                  properties:
+                    nanos:
+                      type: integer
+                    seconds:
+                      type: integer
+                  type: object
+              type: object
+            kdsStreams:
+              description: Information about kds streams that are estabilished between
+                global and zone
+              properties:
+                clusters:
+                  description: Details of stream that handles Clusters stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                configDump:
+                  description: Details of stream that handles XDS Config Dump stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                globalToZone:
+                  description: Details of stream that handles global to zone resource
+                    sync stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                stats:
+                  description: Details of stream that handles Stats stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+                zoneToGlobal:
+                  description: Details of stream that handles zone to global resource
+                    sync stream.
+                  properties:
+                    connectTime:
+                      description: Time when the stream was open.
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    globalInstanceId:
+                      description: Global instance ID that handles the stream.
+                      type: string
+                  type: object
+              type: object
+            subscriptions:
+              description: List of KDS subscriptions created by a given Zone Kuma
+                CP.
+              items:
+                description: KDSSubscription describes a single KDS subscription created
+                  by a Zone to the Global.
+                properties:
+                  authTokenProvided:
+                    description: Indicates if subscription provided auth token
+                    type: boolean
+                  config:
+                    description: Config of Zone Kuma CP
+                    type: string
+                  connectTime:
+                    description: Time when a given Zone connected to the Global.
+                    properties:
+                      nanos:
+                        type: integer
+                      seconds:
+                        type: integer
+                    type: object
+                  disconnectTime:
+                    description: Time when a given Zone disconnected from the Global.
+                    properties:
+                      nanos:
+                        type: integer
+                      seconds:
+                        type: integer
+                    type: object
+                  generation:
+                    description: |-
+                      Generation is an integer number which is periodically increased by the
+                      status sink
+                    type: integer
+                  globalInstanceId:
+                    description: Global CP instance that handled given subscription.
+                    type: string
+                  id:
+                    description: Unique id per KDS subscription.
+                    type: string
+                  status:
+                    description: Status of the KDS subscription.
+                    properties:
+                      lastUpdateTime:
+                        description: Time when status of a given KDS subscription
+                          was most recently updated.
+                        properties:
+                          nanos:
+                            type: integer
+                          seconds:
+                            type: integer
+                        type: object
+                      stat:
+                        additionalProperties:
+                          description: DiscoveryServiceStats defines all stats over
+                            a single xDS service.
+                          properties:
+                            responsesAcknowledged:
+                              description: Number of xDS responses ACKed by the Dataplane.
+                              type: integer
+                            responsesRejected:
+                              description: Number of xDS responses NACKed by the Dataplane.
+                              type: integer
+                            responsesSent:
+                              description: Number of xDS responses sent to the Dataplane.
+                              type: integer
+                          type: object
+                        type: object
+                      total:
+                        description: Total defines an aggregate over individual KDS
+                          stats.
+                        properties:
+                          responsesAcknowledged:
+                            description: Number of xDS responses ACKed by the Dataplane.
+                            type: integer
+                          responsesRejected:
+                            description: Number of xDS responses NACKed by the Dataplane.
+                            type: integer
+                          responsesSent:
+                            description: Number of xDS responses sent to the Dataplane.
+                            type: integer
+                        type: object
+                    type: object
+                  version:
+                    description: Version of Zone Kuma CP.
+                    properties:
+                      kumaCp:
+                        description: Version of Zone Kuma CP
+                        properties:
+                          buildDate:
+                            description: Build date of Kuma ControlPlane version
+                            type: string
+                          gitCommit:
+                            description: Git commit of Kuma ControlPlane version
+                            type: string
+                          gitTag:
+                            description: Git tag of Kuma ControlPlane version
+                            type: string
+                          kumaCpGlobalCompatible:
+                            description: True iff this Zone CP version is compatible
+                              with Global CP
+                            type: boolean
+                          version:
+                            description: Version number of Kuma ControlPlane
+                            type: string
+                        type: object
+                    type: object
+                  zoneInstanceId:
+                    description: |-
+                      Zone CP instance that handled the given subscription (This is the leader at
+                      time of connection).
+                    type: string
+                type: object
+              type: array
+          type: object
+      type: object
+info:
+  x-ref-schema-name: ZoneOverview
+openapi: 3.1.0

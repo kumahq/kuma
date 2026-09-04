@@ -138,6 +138,9 @@ components:
           description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
           type: string
           default: default
+          # keep in sync with core_mesh.MeshNamePattern / MaxNameLength
+          pattern: '^[0-9a-z-_.]*$'
+          maxLength: 253
         kri:
           description: 'A unique identifier for this resource instance used by internal tooling and integrations. Typically derived from resource attributes and may be used for cross-references or indexing'
           type: string
@@ -146,6 +149,9 @@ components:
         name:
           description: 'Name of the Kuma resource'
           type: string
+          # keep in sync with core_mesh.NamePattern / MaxNameLength
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -249,6 +255,22 @@ components:
                     required:
                       - type
                     type: object
+                    oneOf:
+                      - properties:
+                          type:
+                            enum:
+                              - Zipkin
+                          zipkin: {}
+                      - properties:
+                          datadog: {}
+                          type:
+                            enum:
+                              - Datadog
+                      - properties:
+                          openTelemetry: {}
+                          type:
+                            enum:
+                              - OpenTelemetry
                   maxItems: 1
                   type: array
                 sampling:

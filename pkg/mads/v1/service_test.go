@@ -163,8 +163,11 @@ var _ = Describe("MADS http service", func() {
 		}
 
 		createDataPlane := func(dp *core_mesh.DataplaneResource) error {
-			err := resManager.Create(context.Background(), dp, store.CreateByKey(dp.Meta.GetName(), dp.GetMeta().GetMesh()))
-			return err
+			opts := []store.CreateOptionsFunc{store.CreateByKey(dp.Meta.GetName(), dp.GetMeta().GetMesh())}
+			if labels := dp.GetMeta().GetLabels(); len(labels) > 0 {
+				opts = append(opts, store.CreateWithLabels(labels))
+			}
+			return resManager.Create(context.Background(), dp, opts...)
 		}
 
 		createMeshMetric := func(mm *meshmetric_api.MeshMetricResource) error {
@@ -206,18 +209,13 @@ var _ = Describe("MADS http service", func() {
 
 		dp1 := &core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{
-				Name: "dp-1",
-				Mesh: testMesh.GetMeta().GetName(),
+				Name:   "dp-1",
+				Mesh:   testMesh.GetMeta().GetName(),
+				Labels: map[string]string{v1alpha1.GatewayLabel: v1alpha1.GatewayEnabled},
 			},
 			Spec: &v1alpha1.Dataplane{
 				Networking: &v1alpha1.Dataplane_Networking{
 					Address: "192.168.0.1",
-					Gateway: &v1alpha1.Dataplane_Networking_Gateway{
-						Tags: map[string]string{
-							"kuma.io/service": "gateway",
-							"region":          "eu",
-						},
-					},
 				},
 			},
 		}

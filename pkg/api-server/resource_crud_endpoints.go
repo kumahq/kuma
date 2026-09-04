@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"slices"
 	"strconv"
 
@@ -68,13 +67,12 @@ func overviewForResource(
 	return overview.(core_model.Resource), nil
 }
 
-func (r *resourceCrudHandler) findResource(withInsight bool) func(request *restful.Request, response *restful.Response) {
-	return func(request *restful.Request, response *restful.Response) {
+func (r *resourceCrudHandler) findResource(withInsight bool) handlerFunc {
+	return func(request *restful.Request) (any, error) {
 		name := request.PathParameter("name")
 		meshName, err := r.meshFromRequest(request)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
-			return
+			return nil, withTitle(err, "Failed to retrieve Mesh")
 		}
 
 		if err := r.resourceAccess.ValidateGet(
@@ -83,32 +81,25 @@ func (r *resourceCrudHandler) findResource(withInsight bool) func(request *restf
 			r.descriptor,
 			user.FromCtx(request.Request.Context()),
 		); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
-			return
+			return nil, withTitle(err, "Access Denied")
 		}
 
 		resource := r.descriptor.NewObject()
 		if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
-			return
+			return nil, withTitle(err, "Could not retrieve a resource")
 		}
 		if withInsight {
 			resource, err = overviewForResource(request.Request.Context(), r.resManager, r.descriptor, resource, name, meshName)
 			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
-				return
+				return nil, withTitle(err, "Could not retrieve insights")
 			}
 		}
-		var res any
 
-		res, err = formatResource(resource, request.QueryParameter("format"), r.k8sMapper, request.QueryParameter("namespace"))
+		res, err := formatResource(resource, request.QueryParameter("format"), r.k8sMapper, request.QueryParameter("namespace"))
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
-			return
+			return nil, withTitle(err, "Could not retrieve a resource")
 		}
-		if err := response.WriteAsJson(res); err != nil {
-			log.Error(err, "Could not write the find response")
-		}
+		return res, nil
 	}
 }
 
@@ -128,35 +119,30 @@ func formatResource(resource core_model.Resource, format string, k8sMapper k8s.R
 	}
 }
 
-func (r *resourceCrudHandler) listResources(withInsight bool) func(request *restful.Request, response *restful.Response) {
-	return func(request *restful.Request, response *restful.Response) {
+func (r *resourceCrudHandler) listResources(withInsight bool) handlerFunc {
+	return func(request *restful.Request) (any, error) {
 		page, err := pagination(request)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
-			return
+			return nil, withTitle(err, "Could not retrieve resources")
 		}
 		filter, err := r.filter(request)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
-			return
+			return nil, withTitle(err, "Could not retrieve resources")
 		}
 		nameContains := request.QueryParameter("name")
 		status, err := filters.Status(request)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
-			return
+			return nil, withTitle(err, "Could not retrieve resources")
 		}
 		if status != "" {
 			if err := r.validateStatusFilter(withInsight); err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
-				return
+				return nil, withTitle(err, "Could not retrieve resources")
 			}
 		}
 
 		meshName, err := r.meshFromRequest(request)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
-			return
+			return nil, withTitle(err, "Failed to retrieve Mesh")
 		}
 
 		if err := r.resourceAccess.ValidateList(
@@ -165,53 +151,52 @@ func (r *resourceCrudHandler) listResources(withInsight bool) func(request *rest
 			r.descriptor,
 			user.FromCtx(request.Request.Context()),
 		); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
-			return
+			return nil, withTitle(err, "Access Denied")
 		}
 		list := r.descriptor.NewList()
 		listOpts := []store.ListOptionsFunc{store.ListByMesh(meshName), store.ListByNameContains(nameContains), store.ListByFilterFunc(filter)}
 		if status == "" {
 			listOpts = append(listOpts, store.ListByPage(page.size, page.offset))
 		}
-		// Status lives on the insight, so the page can only be cut once the
-		// overviews are merged. List everything and paginate below instead.
 		if err := r.resManager.List(request.Request.Context(), list, listOpts...); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
-			return
+			return nil, withTitle(err, "Could not retrieve resources")
 		}
 		if withInsight {
-			// we cannot paginate insights since there is no guarantee that the insights elements will be the same as regular entities
-			// Extract ResourceKeys from filtered dataplanes
-			resourceKeys := make([]core_model.ResourceKey, 0, len(list.GetItems()))
-			for _, item := range list.GetItems() {
-				resourceKeys = append(resourceKeys, core_model.MetaToResourceKey(item.GetMeta()))
-			}
-
-			// Fetch insights only for filtered dataplanes
-			insights := r.descriptor.NewInsightList()
-			if err := r.resManager.List(request.Request.Context(), insights, store.ListByMesh(meshName), store.ListByResourceKeys(resourceKeys)); err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
-				return
-			}
-			list, err = r.MergeInOverview(list, insights)
+			list, err = r.mergeInsights(request.Request.Context(), list, meshName, status, page)
 			if err != nil {
-				rest_errors.HandleError(request.Request.Context(), response, err, "Failed merging overview and insights")
-				return
-			}
-			if status != "" {
-				list, err = r.pageByStatus(list, status, page)
-				if err != nil {
-					rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve resources")
-					return
-				}
+				return nil, err
 			}
 		}
 		restList := rest.From.ResourceList(list)
 		restList.Next = nextLink(request, list.GetPagination().NextOffset)
-		if err := response.WriteAsJson(restList); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not list resources")
+		return restList, nil
+	}
+}
+
+// mergeInsights merges the list with the insights of its items into overviews.
+// Status lives on the insight, so when a status filter is set the page can only
+// be cut once the overviews are merged: everything is listed and paginated here.
+func (r *resourceCrudHandler) mergeInsights(ctx context.Context, list core_model.ResourceList, meshName string, status core_mesh.Status, page page) (core_model.ResourceList, error) {
+	resourceKeys := make([]core_model.ResourceKey, 0, len(list.GetItems()))
+	for _, item := range list.GetItems() {
+		resourceKeys = append(resourceKeys, core_model.MetaToResourceKey(item.GetMeta()))
+	}
+
+	insights := r.descriptor.NewInsightList()
+	if err := r.resManager.List(ctx, insights, store.ListByMesh(meshName), store.ListByResourceKeys(resourceKeys)); err != nil {
+		return nil, withTitle(err, "Could not retrieve resources")
+	}
+	merged, err := r.MergeInOverview(list, insights)
+	if err != nil {
+		return nil, withTitle(err, "Failed merging overview and insights")
+	}
+	if status != "" {
+		merged, err = r.pageByStatus(merged, status, page)
+		if err != nil {
+			return nil, withTitle(err, "Could not retrieve resources")
 		}
 	}
+	return merged, nil
 }
 
 // statusAware is implemented by overviews exposing a status computed from their
@@ -291,24 +276,21 @@ func (r *resourceCrudHandler) MergeInOverview(resources core_model.ResourceList,
 	return items, nil
 }
 
-func (r *resourceCrudHandler) createOrUpdateResource(request *restful.Request, response *restful.Response) {
+func (r *resourceCrudHandler) createOrUpdateResource(request *restful.Request) (any, error) {
 	name := request.PathParameter("name")
 	meshName, err := r.meshFromRequest(request)
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
-		return
+		return nil, withTitle(err, "Failed to retrieve Mesh")
 	}
 
 	bodyBytes, err := io.ReadAll(request.Request.Body)
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
-		return
+		return nil, withTitle(err, "Could not process a resource")
 	}
 
 	resourceRest, err := rest.JSON.Unmarshal(bodyBytes, r.descriptor)
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
-		return
+		return nil, withTitle(err, "Could not process a resource")
 	}
 
 	create := false
@@ -316,20 +298,17 @@ func (r *resourceCrudHandler) createOrUpdateResource(request *restful.Request, r
 	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil && store.IsNotFound(err) {
 		create = true
 	} else if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to find a resource")
-		return
+		return nil, withTitle(err, "Failed to find a resource")
 	}
 
 	if err := r.validateResourceRequest(name, meshName, resourceRest); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
-		return
+		return nil, withTitle(err, "Could not process a resource")
 	}
 
 	if create {
-		r.createResource(request.Request.Context(), name, meshName, resourceRest, response)
-	} else {
-		r.updateResource(request.Request.Context(), resource, resourceRest, response, meshName)
+		return r.createResource(request.Request.Context(), name, meshName, resourceRest)
 	}
+	return r.updateResource(request.Request.Context(), resource, resourceRest, meshName)
 }
 
 func (r *resourceCrudHandler) clearMeshTrustOrigin(resRest rest.Resource, meshName string, name string) {
@@ -372,8 +351,7 @@ func (r *resourceCrudHandler) createResource(
 	name string,
 	meshName string,
 	resRest rest.Resource,
-	response *restful.Response,
-) {
+) (any, error) {
 	if err := r.resourceAccess.ValidateCreate(
 		ctx,
 		core_model.ResourceKey{Mesh: meshName, Name: name},
@@ -381,8 +359,7 @@ func (r *resourceCrudHandler) createResource(
 		r.descriptor,
 		user.FromCtx(ctx),
 	); err != nil {
-		rest_errors.HandleError(ctx, response, err, "Access Denied")
-		return
+		return nil, withTitle(err, "Access Denied")
 	}
 
 	r.clearMeshTrustOrigin(resRest, meshName, name)
@@ -393,28 +370,22 @@ func (r *resourceCrudHandler) createResource(
 
 	labels, err := r.computeLabels(res.Descriptor(), res.GetSpec(), res.GetMeta(), meshName, name)
 	if err != nil {
-		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
-		return
+		return nil, withTitle(err, "Could not compute labels for a resource")
 	}
 
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
-		rest_errors.HandleError(ctx, response, err, "Failed to create a resource")
-		return
+		return nil, withTitle(err, "Failed to create a resource")
 	}
 
-	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(res)}
-	if err := response.WriteHeaderAndJson(http.StatusCreated, resp, "application/json"); err != nil {
-		log.Error(err, "Could not write the create response")
-	}
+	return created(api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(res)}), nil
 }
 
 func (r *resourceCrudHandler) updateResource(
 	ctx context.Context,
 	currentRes core_model.Resource,
 	newResRest rest.Resource,
-	response *restful.Response,
 	meshName string,
-) {
+) (any, error) {
 	if err := r.resourceAccess.ValidateUpdate(
 		ctx,
 		core_model.ResourceKey{Mesh: currentRes.GetMeta().GetMesh(), Name: currentRes.GetMeta().GetName()},
@@ -423,65 +394,51 @@ func (r *resourceCrudHandler) updateResource(
 		r.descriptor,
 		user.FromCtx(ctx),
 	); err != nil {
-		rest_errors.HandleError(ctx, response, err, "Access Denied")
-		return
+		return nil, withTitle(err, "Access Denied")
 	}
 
 	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
 
-	// Compute labels for current state BEFORE modifying spec
 	currentLabels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), currentRes.GetMeta(), meshName, currentRes.GetMeta().GetName())
 	if err != nil {
-		rest_errors.HandleError(ctx, response, err, "Could not compute current labels")
-		return
+		return nil, withTitle(err, "Could not compute current labels")
 	}
 
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 
-	// Compute labels for new request
 	labels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), newResRest.GetMeta(), meshName, currentRes.GetMeta().GetName())
 	if err != nil {
-		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
-		return
+		return nil, withTitle(err, "Could not compute labels for a resource")
 	}
 
-	// Validate immutable labels by comparing computed results
 	if validationErr := r.validateImmutableLabels(currentLabels, labels); validationErr.HasViolations() {
 		var err validators.ValidationError
 		err.AddError("labels", validationErr)
-		rest_errors.HandleError(ctx, response, &err, "Could not update a resource")
-		return
+		return nil, withTitle(&err, "Could not update a resource")
 	}
 
 	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(labels)); err != nil {
-		rest_errors.HandleError(ctx, response, err, "Failed to update a resource")
-		return
+		return nil, withTitle(err, "Failed to update a resource")
 	}
 
-	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(currentRes)}
-	if err := response.WriteHeaderAndJson(http.StatusOK, resp, "application/json"); err != nil {
-		log.Error(err, "Could not write the update response")
-	}
+	return api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(currentRes)}, nil
 }
 
-func (r *resourceCrudHandler) deleteResource(request *restful.Request, response *restful.Response) {
+func (r *resourceCrudHandler) deleteResource(request *restful.Request) (any, error) {
 	name := request.PathParameter("name")
 	meshName, err := r.meshFromRequest(request)
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
-		return
+		return nil, withTitle(err, "Failed to retrieve Mesh")
 	}
 
 	resource := r.descriptor.NewObject()
 
 	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not delete a resource")
-		return
+		return nil, withTitle(err, "Could not delete a resource")
 	}
 
 	if verr := r.validateOriginForWrite(resource.GetMeta()); verr.HasViolations() {
-		rest_errors.HandleError(request.Request.Context(), response, verr.OrNil(), "Could not delete a resource")
-		return
+		return nil, withTitle(verr.OrNil(), "Could not delete a resource")
 	}
 
 	if err := r.resourceAccess.ValidateDelete(
@@ -491,19 +448,14 @@ func (r *resourceCrudHandler) deleteResource(request *restful.Request, response 
 		resource.Descriptor(),
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
-		return
+		return nil, withTitle(err, "Access Denied")
 	}
 
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Could not delete a resource")
-		return
+		return nil, withTitle(err, "Could not delete a resource")
 	}
 
-	resp := api_server_types.DeleteSuccessResponse{}
-	if err := response.WriteHeaderAndJson(http.StatusOK, resp, "application/json"); err != nil {
-		log.Error(err, "Could not write the delete response")
-	}
+	return api_server_types.DeleteSuccessResponse{}, nil
 }
 
 func (r *resourceCrudHandler) validateResourceRequest(name string, meshName string, resource rest.Resource) error {

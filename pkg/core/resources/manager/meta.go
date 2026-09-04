@@ -60,3 +60,14 @@ func metaFromCreateOpts(descriptor core_model.ResourceTypeDescriptor, fs store.C
 		Labels:       fs.Labels,
 	}
 }
+
+// metaWithLabels presents a resource's meta with a different label set, so a
+// write can be validated against the labels it is about to store.
+type metaWithLabels struct {
+	core_model.ResourceMeta
+	labels map[string]string
+}
+
+func (m *metaWithLabels) GetLabels() map[string]string {
+	return m.labels
+}

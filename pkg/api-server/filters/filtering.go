@@ -2,7 +2,6 @@ package filters
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
@@ -94,11 +93,6 @@ func labelFilter(request *restful.Request) (store.ListFilterFunc, error) {
 		labels := rs.GetMeta().GetLabels()
 		for _, filter := range filters {
 			v, ok := labels[filter.Key]
-			if filter.Op == FilterOpEq {
-				if !ok || v != filter.Value {
-					return false
-				}
-			}
 			if !ok || v != filter.Value {
 				return false
 			}
@@ -132,11 +126,11 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 				if !ok { // Sometimes this is going to return insights for example which will not match
 					return true
 				}
-				if !gatewayFilter(dataplane.Spec.GetNetworking().GetGateway()) {
+				if !gatewayFilter(dataplane.IsDelegatedGateway()) {
 					return false
 				}
 
-				if !dataplane.Spec.MatchTagsFuzzy(tags) && !mesh_proto.TagSelector(tags).MatchesFuzzy(dataplane.GetMeta().GetLabels()) {
+				if !mesh_proto.TagSelector(tags).MatchesFuzzy(dataplane.GetMeta().GetLabels()) {
 					return false
 				}
 
@@ -148,7 +142,7 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 	}
 }
 
-type DpFilter func(*mesh_proto.Dataplane_Networking_Gateway) bool
+type DpFilter func(isGateway bool) bool
 
 func gatewayModeFilterFromParameter(request *restful.Request) (DpFilter, error) {
 	mode := strings.ToLower(request.QueryParameter("gateway"))
@@ -160,26 +154,17 @@ func gatewayModeFilterFromParameter(request *restful.Request) (DpFilter, error) 
 		return nil, &verr
 	}
 
-	isnil := func(a any) bool {
-		return a == nil || reflect.ValueOf(a).IsNil()
-	}
 	switch mode {
 	case "true":
-		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return !isnil(a)
-		}, nil
+		return func(isGateway bool) bool { return isGateway }, nil
 	case "false":
-		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return isnil(a)
-		}, nil
+		return func(isGateway bool) bool { return !isGateway }, nil
 	case "delegated":
-		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return !isnil(a) && a.Type == mesh_proto.Dataplane_Networking_Gateway_DELEGATED
-		}, nil
+		// Delegated is the only kind of gateway left, so this matches the
+		// same proxies as `true`.
+		return func(isGateway bool) bool { return isGateway }, nil
 	default:
-		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return true
-		}, nil
+		return func(bool) bool { return true }, nil
 	}
 }
 
