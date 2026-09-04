@@ -459,6 +459,10 @@ func configureTLS(cfg api_server.ApiServerConfig, certWatchers *util_tls.Watcher
 	if err != nil {
 		return nil, err
 	}
+	tlsConfig.MaxVersion, err = config_types.TLSVersion(cfg.HTTPS.TlsMaxVersion)
+	if err != nil {
+		return nil, err
+	}
 	tlsConfig.CipherSuites, err = config_types.TLSCiphers(cfg.HTTPS.TlsCipherSuites)
 	if err != nil {
 		return nil, err
