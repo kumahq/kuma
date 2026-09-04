@@ -8,6 +8,14 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### The legacy per-policy inspect paths `{policy}/{name}/dataplanes` are removed
+
+`GET /meshes/{mesh}/{policyType}/{policyName}/dataplanes` for every inspectable policy type is removed and answers `404`. The replacement `GET /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes` returns the list of dataplanes the policy matches.
+
+**Action required**
+
+Switch to the `_resources/dataplanes` form. Note that `kumactl inspect <policy> NAME` without `--new-api` still calls the removed path and will fail against this control plane; use `kumactl inspect <policy> NAME --new-api` instead.
+
 ### The ServiceInsight REST endpoints are removed
 
 `GET /meshes/{mesh}/service-insights` and `GET /meshes/{mesh}/service-insights/{name}` are removed and answer `404`.
