@@ -1,0 +1,187 @@
+components:
+  responses:
+    ZoneCreateOrUpdateSuccessResponse:
+      content:
+        application/json:
+          schema:
+            properties:
+              warnings:
+                description: |
+                  warnings is a list of warning messages to return to the requesting Kuma API clients.
+                  Warning messages describe a problem the client making the API request should correct or be aware of.
+                items:
+                  type: string
+                readOnly: true
+                type: array
+            type: object
+      description: Successful response
+    ZoneDeleteSuccessResponse:
+      content:
+        application/json:
+          schema:
+            type: object
+      description: Successful response
+    ZoneItem:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneItem'
+      description: Successful response
+    ZoneList:
+      content:
+        application/json:
+          schema:
+            properties:
+              items:
+                items:
+                  $ref: '#/components/schemas/ZoneItem'
+                type: array
+              next:
+                description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
+  schemas:
+    ZoneItem:
+      properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        enabled:
+          description: |-
+            enable allows to turn the zone on/off and exclude the whole zone from
+            balancing traffic on it
+          type: boolean
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
+        name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          type: string
+        type:
+          type: string
+      required:
+      - type
+      - name
+      type: object
+info:
+  description: Kuma API
+  title: Kuma API
+  version: v1alpha1
+openapi: 3.1.0
+paths:
+  /zones:
+    get:
+      operationId: getZoneList
+      parameters:
+      - description: offset in the list of entities
+        example: 0
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+      - description: the number of items per page
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 100
+          maximum: 1000
+          minimum: 1
+          type: integer
+      - description: filter by labels when multiple filters are present, they are
+          ANDed
+        example:
+          label.k8s.kuma.io/namespace: my-ns
+        in: query
+        name: filter
+        required: false
+        schema:
+          properties:
+            key:
+              type: string
+            value:
+              type: string
+          type: object
+      responses:
+        "200":
+          $ref: '#/components/responses/ZoneList'
+      summary: Returns a list of Zone in the mesh.
+      tags:
+      - Zone
+  /zones/{name}:
+    delete:
+      operationId: deleteZone
+      parameters:
+      - description: name of the Zone
+        in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/ZoneDeleteSuccessResponse'
+        "404":
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
+      summary: Deletes Zone entity
+      tags:
+      - Zone
+    get:
+      operationId: getZone
+      parameters:
+      - description: name of the Zone
+        in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/ZoneItem'
+        "404":
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
+      summary: Returns Zone entity
+      tags:
+      - Zone
+    put:
+      operationId: putZone
+      parameters:
+      - description: name of the Zone
+        in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneItem'
+        description: Put request
+        required: true
+      responses:
+        "200":
+          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
+        "201":
+          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
+      summary: Creates or Updates Zone entity
+      tags:
+      - Zone

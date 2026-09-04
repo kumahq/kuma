@@ -31,6 +31,7 @@ paths:
         '404':
           $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
+    {{- if not .ReadOnly}}
     put:
       operationId: put{{ .Name }}
       summary: Creates or Updates {{ .Name }} entity
@@ -87,6 +88,7 @@ paths:
           $ref: '#/components/responses/{{.Name}}DeleteSuccessResponse'
         '404':
           $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+    {{- end}}
 
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}:
     get:

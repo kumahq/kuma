@@ -559,6 +559,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 				"ShortName": r.ShortName,
 				"Scope":     scope,
 				"Path":      r.WsPath,
+				"ReadOnly":  r.WsReadOnly,
 			},
 		); err != nil {
 			return err

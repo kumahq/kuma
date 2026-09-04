@@ -1,0 +1,468 @@
+components:
+  responses:
+    DataplaneInsightCreateOrUpdateSuccessResponse:
+      content:
+        application/json:
+          schema:
+            properties:
+              warnings:
+                description: |
+                  warnings is a list of warning messages to return to the requesting Kuma API clients.
+                  Warning messages describe a problem the client making the API request should correct or be aware of.
+                items:
+                  type: string
+                readOnly: true
+                type: array
+            type: object
+      description: Successful response
+    DataplaneInsightDeleteSuccessResponse:
+      content:
+        application/json:
+          schema:
+            type: object
+      description: Successful response
+    DataplaneInsightItem:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneInsightItem'
+      description: Successful response
+    DataplaneInsightList:
+      content:
+        application/json:
+          schema:
+            properties:
+              items:
+                items:
+                  $ref: '#/components/schemas/DataplaneInsightItem'
+                type: array
+              next:
+                description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
+  schemas:
+    DataplaneInsightItem:
+      properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        mTLS:
+          description: Insights about mTLS for Dataplane.
+          properties:
+            certificateExpirationTime:
+              description: |-
+                Expiration time of the last certificate that was generated for a
+                Dataplane.
+              properties:
+                nanos:
+                  type: integer
+                seconds:
+                  type: integer
+              type: object
+            certificateRegenerations:
+              description: Number of certificate regenerations for a Dataplane.
+              type: integer
+            issuedBackend:
+              description: Backend that was used to generate current certificate
+              type: string
+            lastCertificateRegeneration:
+              description: Time on which the last certificate was generated.
+              properties:
+                nanos:
+                  type: integer
+                seconds:
+                  type: integer
+              type: object
+            supportedBackends:
+              description: Supported backends (CA).
+              items:
+                type: string
+              type: array
+          type: object
+        mesh:
+          maxLength: 253
+          pattern: ^[0-9a-z-_.]*$
+          type: string
+        metadata:
+          properties: {}
+          type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
+        name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          type: string
+        openTelemetry:
+          description: Insights about OTel runtime resolution for this Dataplane.
+          properties:
+            backends:
+              items:
+                properties:
+                  logs:
+                    properties:
+                      blockedReasons:
+                        items:
+                          type: string
+                        type: array
+                      enabled:
+                        type: boolean
+                      envAllowed:
+                        type: boolean
+                      envInputPresent:
+                        type: boolean
+                      missingFields:
+                        items:
+                          type: string
+                        type: array
+                      overrideKinds:
+                        items:
+                          type: string
+                        type: array
+                      state:
+                        type: string
+                    type: object
+                  metrics:
+                    properties:
+                      blockedReasons:
+                        items:
+                          type: string
+                        type: array
+                      enabled:
+                        type: boolean
+                      envAllowed:
+                        type: boolean
+                      envInputPresent:
+                        type: boolean
+                      missingFields:
+                        items:
+                          type: string
+                        type: array
+                      overrideKinds:
+                        items:
+                          type: string
+                        type: array
+                      state:
+                        type: string
+                    type: object
+                  name:
+                    type: string
+                  traces:
+                    properties:
+                      blockedReasons:
+                        items:
+                          type: string
+                        type: array
+                      enabled:
+                        type: boolean
+                      envAllowed:
+                        type: boolean
+                      envInputPresent:
+                        type: boolean
+                      missingFields:
+                        items:
+                          type: string
+                        type: array
+                      overrideKinds:
+                        items:
+                          type: string
+                        type: array
+                      state:
+                        type: string
+                    type: object
+                type: object
+              type: array
+          type: object
+        subscriptions:
+          description: List of ADS subscriptions created by a given Dataplane.
+          items:
+            description: DiscoverySubscription describes a single ADS subscription
+              created by a Dataplane to the Control Plane.
+            properties:
+              connectTime:
+                description: Time when a given Dataplane connected to the Control
+                  Plane.
+                properties:
+                  nanos:
+                    type: integer
+                  seconds:
+                    type: integer
+                type: object
+              controlPlaneInstanceId:
+                description: Control Plane instance that handled given subscription.
+                type: string
+              disconnectTime:
+                description: Time when a given Dataplane disconnected from the Control
+                  Plane.
+                properties:
+                  nanos:
+                    type: integer
+                  seconds:
+                    type: integer
+                type: object
+              generation:
+                description: |-
+                  Generation is an integer number which is periodically increased by the
+                  status sink
+                type: integer
+              id:
+                description: Unique id per ADS subscription.
+                type: string
+              status:
+                description: Status of the ADS subscription.
+                properties:
+                  cds:
+                    description: CDS defines all CDS stats.
+                    properties:
+                      responsesAcknowledged:
+                        description: Number of xDS responses ACKed by the Dataplane.
+                        type: integer
+                      responsesRejected:
+                        description: Number of xDS responses NACKed by the Dataplane.
+                        type: integer
+                      responsesSent:
+                        description: Number of xDS responses sent to the Dataplane.
+                        type: integer
+                    type: object
+                  eds:
+                    description: EDS defines all EDS stats.
+                    properties:
+                      responsesAcknowledged:
+                        description: Number of xDS responses ACKed by the Dataplane.
+                        type: integer
+                      responsesRejected:
+                        description: Number of xDS responses NACKed by the Dataplane.
+                        type: integer
+                      responsesSent:
+                        description: Number of xDS responses sent to the Dataplane.
+                        type: integer
+                    type: object
+                  lastUpdateTime:
+                    description: Time when status of a given ADS subscription was
+                      most recently updated.
+                    properties:
+                      nanos:
+                        type: integer
+                      seconds:
+                        type: integer
+                    type: object
+                  lds:
+                    description: LDS defines all LDS stats.
+                    properties:
+                      responsesAcknowledged:
+                        description: Number of xDS responses ACKed by the Dataplane.
+                        type: integer
+                      responsesRejected:
+                        description: Number of xDS responses NACKed by the Dataplane.
+                        type: integer
+                      responsesSent:
+                        description: Number of xDS responses sent to the Dataplane.
+                        type: integer
+                    type: object
+                  rds:
+                    description: RDS defines all RDS stats.
+                    properties:
+                      responsesAcknowledged:
+                        description: Number of xDS responses ACKed by the Dataplane.
+                        type: integer
+                      responsesRejected:
+                        description: Number of xDS responses NACKed by the Dataplane.
+                        type: integer
+                      responsesSent:
+                        description: Number of xDS responses sent to the Dataplane.
+                        type: integer
+                    type: object
+                  total:
+                    description: Total defines an aggregate over individual xDS stats.
+                    properties:
+                      responsesAcknowledged:
+                        description: Number of xDS responses ACKed by the Dataplane.
+                        type: integer
+                      responsesRejected:
+                        description: Number of xDS responses NACKed by the Dataplane.
+                        type: integer
+                      responsesSent:
+                        description: Number of xDS responses sent to the Dataplane.
+                        type: integer
+                    type: object
+                type: object
+              version:
+                description: Version of Envoy and Kuma dataplane
+                properties:
+                  dependencies:
+                    additionalProperties:
+                      type: string
+                    description: Versions of other dependencies
+                    type: object
+                  envoy:
+                    description: Version of Envoy
+                    properties:
+                      build:
+                        description: Full build tag of Envoy version
+                        type: string
+                      kumaDpCompatible:
+                        description: True iff Envoy version is compatible with Kuma
+                          DP version
+                        type: boolean
+                      version:
+                        description: Version number of Envoy
+                        type: string
+                    type: object
+                  kumaDp:
+                    description: Version of Kuma Dataplane
+                    properties:
+                      buildDate:
+                        description: Build date of Kuma Dataplane version
+                        type: string
+                      gitCommit:
+                        description: Git commit of Kuma Dataplane version
+                        type: string
+                      gitTag:
+                        description: Git tag of Kuma Dataplane version
+                        type: string
+                      kumaCpCompatible:
+                        description: True iff Kuma DP version is compatible with Kuma
+                          CP version
+                        type: boolean
+                      version:
+                        description: Version number of Kuma Dataplane
+                        type: string
+                    type: object
+                type: object
+            type: object
+          type: array
+        type:
+          type: string
+      required:
+      - type
+      - name
+      - mesh
+      type: object
+info:
+  description: Kuma API
+  title: Kuma API
+  version: v1alpha1
+openapi: 3.1.0
+paths:
+  /dataplane-insights:
+    get:
+      operationId: getDataplaneInsightListAllMeshes
+      parameters:
+      - description: offset in the list of entities
+        in: query
+        name: offset
+        required: false
+        schema:
+          example: 0
+          type: integer
+      - description: the number of items per page
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 100
+          maximum: 1000
+          minimum: 1
+          type: integer
+      - description: filter by labels when multiple filters are present, they are
+          ANDed
+        example:
+          label.k8s.kuma.io/namespace: my-ns
+        in: query
+        name: filter
+        required: false
+        schema:
+          properties:
+            key:
+              type: string
+            value:
+              type: string
+          type: object
+      responses:
+        "200":
+          $ref: '#/components/responses/DataplaneInsightList'
+      summary: Returns a list of DataplaneInsight across all meshes.
+      tags:
+      - DataplaneInsight
+  /meshes/{mesh}/dataplane-insights:
+    get:
+      operationId: getDataplaneInsightList
+      parameters:
+      - description: offset in the list of entities
+        example: 0
+        in: query
+        name: offset
+        required: false
+        schema:
+          type: integer
+      - description: the number of items per page
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 100
+          maximum: 1000
+          minimum: 1
+          type: integer
+      - description: filter by labels when multiple filters are present, they are
+          ANDed
+        example:
+          label.k8s.kuma.io/namespace: my-ns
+        in: query
+        name: filter
+        required: false
+        schema:
+          properties:
+            key:
+              type: string
+            value:
+              type: string
+          type: object
+      - description: name of the mesh
+        in: path
+        name: mesh
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/DataplaneInsightList'
+      summary: Returns a list of DataplaneInsight in the mesh.
+      tags:
+      - DataplaneInsight
+  /meshes/{mesh}/dataplane-insights/{name}:
+    get:
+      operationId: getDataplaneInsight
+      parameters:
+      - description: name of the mesh
+        in: path
+        name: mesh
+        required: true
+        schema:
+          type: string
+      - description: name of the DataplaneInsight
+        in: path
+        name: name
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          $ref: '#/components/responses/DataplaneInsightItem'
+        "404":
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
+      summary: Returns DataplaneInsight entity
+      tags:
+      - DataplaneInsight

@@ -50,18 +50,12 @@ func normalizePath(path string, wsPaths []string) string {
 // specs and the registered routes; fixing an entry means documenting it in
 // the spec and removing it from this list.
 var undocumentedRoutes = map[string]string{
-	"GET /dataplane-insights":       "no rest.yaml fragment is generated for this resource",
-	"GET /global-secrets":           "no rest.yaml fragment is generated for this resource",
-	"GET /globalsecrets":            "no rest.yaml fragment is generated for this resource",
-	"GET /zone-insights":            "no rest.yaml fragment is generated for this resource",
-	"GET /zones":                    "no rest.yaml fragment is generated for this resource",
-	"GET /{}/{}/dataplane-insights": "in-mesh list missing from rest.yaml fragment",
-	"GET /{}/{}/{}/{}/{}":           "generic dataplane envoy admin route, spec documents the concrete xds/clusters/stats subpaths",
-	"GET /global-insights":          "spec path is /global-insight, server serves /global-insights",
-	"GET /policies":                 "not documented in the OpenAPI spec",
-	"GET /who-am-i":                 "not documented in the OpenAPI spec",
-	"POST /tokens/dataplane":        "not documented in the OpenAPI spec",
-	"POST /tokens/zone":             "not documented in the OpenAPI spec",
+	"GET /{}/{}/{}/{}/{}":    "generic dataplane envoy admin route, spec documents the concrete xds/clusters/stats subpaths",
+	"GET /global-insights":   "spec path is /global-insight, server serves /global-insights",
+	"GET /policies":          "not documented in the OpenAPI spec",
+	"GET /who-am-i":          "not documented in the OpenAPI spec",
+	"POST /tokens/dataplane": "not documented in the OpenAPI spec",
+	"POST /tokens/zone":      "not documented in the OpenAPI spec",
 }
 
 var _ = Describe("OpenAPI conformance", func() {
