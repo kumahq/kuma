@@ -87,7 +87,7 @@
         "targetRef": {
           "kind": "Dataplane",
           "labels": {
-            "kuma.io/service": "api-play-002_microservice-mesh_svc_8080"
+            "kuma.io/display-name": "api-play-002_microservice-mesh_svc_8080"
           }
         },
         "to": [
@@ -126,7 +126,7 @@
         "targetRef": {
           "kind": "Dataplane",
           "labels": {
-            "kuma.io/service": "api-play-000_microservice-mesh_svc_8080"
+            "kuma.io/display-name": "api-play-000_microservice-mesh_svc_8080"
           }
         },
         "to": [

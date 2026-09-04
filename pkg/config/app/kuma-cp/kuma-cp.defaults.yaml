@@ -544,7 +544,7 @@ general:
 dnsServer:
   # The domain that the server will resolve the services for
   domain: "mesh" # ENV: KUMA_DNS_SERVER_DOMAIN
-  # The port to use along with the `<kuma.io/service>.mesh` dns entry
+  # The port to use along with the `<kuma.io/display-name>.mesh` dns entry
   serviceVipPort: 80 # ENV: KUMA_DNS_SERVICE_SERVICE_VIP_PORT
 # Multizone mode
 multizone:

@@ -394,21 +394,21 @@ var _ = Describe("Updater", func() {
 				builders.Dataplane().
 					WithName("dp-all-inbounds-healthy").
 					WithLabels(map[string]string{"app": "backend"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api"}),
+					AddInboundOfTagsMap(map[string]string{}).
+					AddInboundOfTagsMap(map[string]string{}),
 				builders.Dataplane().
 					WithName("dp-one-inbounds-healthy").
 					WithLabels(map[string]string{"app": "backend"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api"}).
+					AddInboundOfTagsMap(map[string]string{}).
+					AddInboundOfTagsMap(map[string]string{}).
 					With(func(resource *core_mesh.DataplaneResource) {
 						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
 					}),
 				builders.Dataplane().
 					WithName("dp-no-inbounds-healthy").
 					WithLabels(map[string]string{"app": "backend"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api"}).
+					AddInboundOfTagsMap(map[string]string{}).
+					AddInboundOfTagsMap(map[string]string{}).
 					With(func(resource *core_mesh.DataplaneResource) {
 						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
 						resource.Spec.Networking.Inbound[1].State = mesh_proto.Dataplane_Networking_Inbound_NotReady

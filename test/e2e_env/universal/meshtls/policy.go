@@ -47,7 +47,7 @@ spec:
 				WithArgs([]string{"echo", "--instance", "test-server"}),
 				WithServiceName("mesh-tls-test-server"),
 				WithDockerContainerName(testServerContainerName),
-				WithLabels(map[string]string{"kuma.io/service": "mesh-tls-test-server"}),
+				WithLabels(map[string]string{"kuma.io/display-name": "mesh-tls-test-server"}),
 			)).
 			Install(TestServerUniversal(
 				testServer2Name, meshName,
@@ -93,7 +93,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: %s
+      kuma.io/display-name: %s
   rules:
     - default:
         mode: Permissive`, meshName, testServerName)
@@ -187,7 +187,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: %s
+      kuma.io/display-name: %s
   rules:
     - default:
         mode: Strict`, meshName, testServerName)

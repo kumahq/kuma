@@ -105,67 +105,76 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
 	}
-	if r.descriptor.Name == core_mesh.DataplaneType {
-		ws.Route(ws.GET(pathPrefix+"/{name}/_rules").To(handle(r.inspect.rulesForResource())).
-			Doc(fmt.Sprintf("Get matching rules %s", r.descriptor.Name)).
-			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
-			Returns(200, "OK", nil).
-			Returns(404, "Not found", nil))
-		if r.mode == config_core.Global {
-			msg := "Not allowed on global CP"
-			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(handle(r.methodNotAllowed(msg))).
-				Doc(msg).
-				Returns(http.StatusMethodNotAllowed, msg, restful.ServiceError{}))
-		} else {
-			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(handle(r.inspect.configForProxy())).
-				Doc(fmt.Sprintf("Get proxy config%s", r.descriptor.Name)).
-				Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
-				Returns(200, "OK", nil).
-				Returns(404, "Not found", nil))
-		}
+	if extra, ok := extraInspectRoutes[r.descriptor.Name]; ok {
+		extra(r, ws, pathPrefix)
 	}
-	if r.descriptor.Name == core_mesh.DataplaneType {
-		ws.Route(ws.GET(pathPrefix+"/{name}/_policies").To(handle(r.inspect.getPoliciesConf(core_plugins.Plugins().PolicyPlugins(), matchedPoliciesToProxyPolicy))).
-			Doc(fmt.Sprintf("Get policy config %s", r.descriptor.Name)).
+}
+
+// extraInspectRoutes registers type-specific GET routes under
+// pathPrefix+"/{name}" for resource types that expose proxy inspect
+// endpoints, keeping addFindEndpoint free of per-type branches.
+var extraInspectRoutes = map[core_model.ResourceType]func(*resourceEndpoints, *restful.WebService, string){
+	core_mesh.DataplaneType: (*resourceEndpoints).addDataplaneInspectRoutes,
+}
+
+func (r *resourceEndpoints) addDataplaneInspectRoutes(ws *restful.WebService, pathPrefix string) {
+	ws.Route(ws.GET(pathPrefix+"/{name}/_rules").To(handle(r.inspect.rulesForResource())).
+		Doc(fmt.Sprintf("Get matching rules %s", r.descriptor.Name)).
+		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+		Returns(200, "OK", nil).
+		Returns(404, "Not found", nil))
+	if r.mode == config_core.Global {
+		msg := "Not allowed on global CP"
+		ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(handle(r.methodNotAllowed(msg))).
+			Doc(msg).
+			Returns(http.StatusMethodNotAllowed, msg, restful.ServiceError{}))
+	} else {
+		ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(handle(r.inspect.configForProxy())).
+			Doc(fmt.Sprintf("Get proxy config%s", r.descriptor.Name)).
 			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
-			Returns(200, "OK", nil).
-			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/_inbounds/{inbound_kri}/_policies").To(handle(r.inspect.getPoliciesConf(core_plugins.Plugins().PolicyPlugins(), matchedPoliciesToInboundConfig))).
-			Doc("Get policy config for inbound").
-			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
-			Param(ws.PathParameter("inbound_kri", "KRI of a inbound").DataType("string")).
-			Returns(200, "OK", nil).
-			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_policies").To(handle(r.inspect.getPoliciesConf(core_plugins.Plugins().PolicyPlugins(), matchedPoliciesToOutboundPolicy))).
-			Doc("Get policy config for outbound").
-			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
-			Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
-			Returns(200, "OK", nil).
-			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_routes").To(handle(r.inspect.getPoliciesConf(
-			util_slices.Filter(core_plugins.Plugins().PolicyPlugins(), func(p core_plugins.RegisteredPolicyPlugin) bool {
-				return p.Name == core_plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg) ||
-					p.Name == core_plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg)
-			}),
-			matchedPoliciesToRoutes,
-		))).
-			Doc("Get policy config for outbound").
-			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
-			Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
-			Returns(200, "OK", nil).
-			Returns(404, "Not found", nil))
-		ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_routes/{route_kri}/_policies").To(handle(r.inspect.getPoliciesConf(
-			util_slices.Filter(core_plugins.Plugins().PolicyPlugins(), func(p core_plugins.RegisteredPolicyPlugin) bool {
-				return p.Name != core_plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg) &&
-					p.Name != core_plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg)
-			}), matchedPoliciesToRouteConfig))).
-			Doc("Get policy config for route").
-			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
-			Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
-			Param(ws.PathParameter("route_kri", "KRI of a route").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
 	}
+	ws.Route(ws.GET(pathPrefix+"/{name}/_policies").To(handle(r.inspect.getPoliciesConf(core_plugins.Plugins().PolicyPlugins(), matchedPoliciesToProxyPolicy))).
+		Doc(fmt.Sprintf("Get policy config %s", r.descriptor.Name)).
+		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+		Returns(200, "OK", nil).
+		Returns(404, "Not found", nil))
+	ws.Route(ws.GET(pathPrefix+"/{name}/_inbounds/{inbound_kri}/_policies").To(handle(r.inspect.getPoliciesConf(core_plugins.Plugins().PolicyPlugins(), matchedPoliciesToInboundConfig))).
+		Doc("Get policy config for inbound").
+		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+		Param(ws.PathParameter("inbound_kri", "KRI of a inbound").DataType("string")).
+		Returns(200, "OK", nil).
+		Returns(404, "Not found", nil))
+	ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_policies").To(handle(r.inspect.getPoliciesConf(core_plugins.Plugins().PolicyPlugins(), matchedPoliciesToOutboundPolicy))).
+		Doc("Get policy config for outbound").
+		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+		Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
+		Returns(200, "OK", nil).
+		Returns(404, "Not found", nil))
+	ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_routes").To(handle(r.inspect.getPoliciesConf(
+		util_slices.Filter(core_plugins.Plugins().PolicyPlugins(), func(p core_plugins.RegisteredPolicyPlugin) bool {
+			return p.Name == core_plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg) ||
+				p.Name == core_plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg)
+		}),
+		matchedPoliciesToRoutes,
+	))).
+		Doc("Get policy config for outbound").
+		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+		Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
+		Returns(200, "OK", nil).
+		Returns(404, "Not found", nil))
+	ws.Route(ws.GET(pathPrefix+"/{name}/_outbounds/{outbound_kri}/_routes/{route_kri}/_policies").To(handle(r.inspect.getPoliciesConf(
+		util_slices.Filter(core_plugins.Plugins().PolicyPlugins(), func(p core_plugins.RegisteredPolicyPlugin) bool {
+			return p.Name != core_plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg) &&
+				p.Name != core_plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg)
+		}), matchedPoliciesToRouteConfig))).
+		Doc("Get policy config for route").
+		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.descriptor.Name)).DataType("string")).
+		Param(ws.PathParameter("outbound_kri", "KRI of a outbound").DataType("string")).
+		Param(ws.PathParameter("route_kri", "KRI of a route").DataType("string")).
+		Returns(200, "OK", nil).
+		Returns(404, "Not found", nil))
 }
 
 func (r *resourceEndpoints) methodNotAllowed(detail string) handlerFunc {

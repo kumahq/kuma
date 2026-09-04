@@ -3,11 +3,9 @@ package util
 import (
 	"fmt"
 	"maps"
-	"strings"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_labels "k8s.io/apimachinery/pkg/labels"
-	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -146,25 +144,4 @@ func MeshOfByLabel(obj kube_client.Object, namespace *kube_core.Namespace) strin
 	}
 
 	return model.DefaultMesh
-}
-
-// ServiceTag returns the canonical service name for a Kubernetes service,
-// optionally with a specific port.
-func ServiceTag(name kube_types.NamespacedName, svcPort *int32) string {
-	port := ""
-	if svcPort != nil {
-		port = fmt.Sprintf("_%d", *svcPort)
-	}
-	return fmt.Sprintf("%s_%s_svc%s", name.Name, name.Namespace, port)
-}
-
-func NamespacesNameFromServiceTag(serviceName string) (kube_types.NamespacedName, error) {
-	split := strings.Split(serviceName, "_")
-	if len(split) >= 2 {
-		return kube_types.NamespacedName{
-			Name:      split[0],
-			Namespace: split[1],
-		}, nil
-	}
-	return kube_types.NamespacedName{}, fmt.Errorf("incorrect service name: %s", serviceName)
 }

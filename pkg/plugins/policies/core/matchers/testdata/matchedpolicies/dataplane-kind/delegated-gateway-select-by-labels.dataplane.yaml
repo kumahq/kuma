@@ -9,6 +9,6 @@ networking:
     port: 9901
   gateway:
     tags:
-      kuma.io/service: kong_kong_svc_80
+      kuma.io/display-name: kong_kong_svc_80
       kuma.io/zone: default
     type: DELEGATED

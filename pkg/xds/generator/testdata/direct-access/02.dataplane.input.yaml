@@ -6,6 +6,6 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: web
+        kuma.io/display-name: web
   transparentProxying:
     redirectPort: 15001

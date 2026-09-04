@@ -14,4 +14,4 @@ spec:
     inbound:
       - port: 11011
         tags:
-          kuma.io/service: backend
+          kuma.io/display-name: backend

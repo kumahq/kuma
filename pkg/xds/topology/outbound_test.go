@@ -115,7 +115,7 @@ var _ = Describe("TrafficRoute", func() {
 			Entry("uses MeshService", testCase{
 				dataplanes: []*core_mesh.DataplaneResource{
 					{
-						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Name: "redis-0", Labels: map[string]string{mesh_proto.ServiceTag: "redis_svc_6379"}},
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Name: "redis-0", Labels: map[string]string{"kuma.io/display-name": "redis_svc_6379"}},
 						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
@@ -157,7 +157,7 @@ var _ = Describe("TrafficRoute", func() {
 						Build(),
 					builders.MeshService().
 						WithName("redis").
-						WithDataplaneLabelsSelectorKV(mesh_proto.ServiceTag, "redis_svc_6379").
+						WithDataplaneLabelsSelectorKV("kuma.io/display-name", "redis_svc_6379").
 						AddIntPort(6379, 6379, "tcp").
 						Build(),
 					builders.MeshService().
@@ -172,7 +172,7 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target:   "192.168.0.1",
 							Port:     6379,
-							Tags:     map[string]string{mesh_proto.ServiceTag: "redis_svc_6379"},
+							Tags:     map[string]string{"kuma.io/display-name": "redis_svc_6379"},
 							Locality: nil,
 							Weight:   1,
 						},
@@ -181,7 +181,7 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target:   "192.168.0.1",
 							Port:     6379,
-							Tags:     map[string]string{mesh_proto.ServiceTag: "redis_svc_6379"},
+							Tags:     map[string]string{"kuma.io/display-name": "redis_svc_6379"},
 							Locality: nil,
 							Weight:   1,
 						},
@@ -511,8 +511,7 @@ var _ = Describe("TrafficRoute", func() {
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags: map[string]string{
-								"kuma.io/service": "backend-4v44xv7dwv4v8z2d",
-								"kuma.io/zone":    "east",
+								"kuma.io/zone": "east",
 							},
 							Weight:   1,
 							Locality: &core_xds.Locality{Zone: "east", SubZone: "", Priority: 1, Weight: 0},
@@ -531,8 +530,7 @@ var _ = Describe("TrafficRoute", func() {
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags: map[string]string{
-								"kuma.io/service": "backend-4v44xv7dwv4v8z2d",
-								"kuma.io/zone":    "east",
+								"kuma.io/zone": "east",
 							},
 							Weight:   1,
 							Locality: &core_xds.Locality{Zone: "east", SubZone: "", Priority: 1, Weight: 0},
@@ -621,8 +619,7 @@ var _ = Describe("TrafficRoute", func() {
 								Target: "192.168.0.100",
 								Port:   12345,
 								Tags: map[string]string{
-									"kuma.io/service": "backend-k8s-east",
-									"kuma.io/zone":    "east",
+									"kuma.io/zone": "east",
 								},
 								Weight:   1,
 								Locality: &core_xds.Locality{Zone: "east", SubZone: "", Priority: 1, Weight: 0},
@@ -641,8 +638,7 @@ var _ = Describe("TrafficRoute", func() {
 								Target: "192.168.0.100",
 								Port:   12345,
 								Tags: map[string]string{
-									"kuma.io/service": "backend-k8s-east",
-									"kuma.io/zone":    "east",
+									"kuma.io/zone": "east",
 								},
 								Weight:   1,
 								Locality: &core_xds.Locality{Zone: "east", SubZone: "", Priority: 1, Weight: 0},

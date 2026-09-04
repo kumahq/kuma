@@ -344,7 +344,7 @@ var _ = Describe("DppSelectedByPolicy MeshHTTPRoute namespace scoping", func() {
 		WithName("dp-1").
 		WithMesh("mesh-1").
 		WithLabels(map[string]string{mesh_proto.KubeNamespaceTag: "ns-a", "app": "bar"}).
-		AddInboundOfService("backend").
+		AddInbound(builders.Inbound().WithPort(80)).
 		Build()
 
 	ref := common_api.TargetRef{

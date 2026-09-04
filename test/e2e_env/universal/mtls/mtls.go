@@ -188,7 +188,7 @@ spec:
 		func(identity func() InstallFunc) {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).
-				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithLabels(map[string]string{"kuma.io/service": "test-server"}))).
+				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithLabels(map[string]string{"kuma.io/display-name": "test-server"}))).
 				Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 				Setup(universal.Cluster)
 			Expect(err).ToNot(HaveOccurred())
@@ -211,7 +211,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: test-server
+      kuma.io/display-name: test-server
   rules:
     - default:
         allow:

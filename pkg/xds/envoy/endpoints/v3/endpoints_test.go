@@ -97,13 +97,13 @@ var _ = Describe("Endpoints", func() {
 					{
 						Target: "192.168.0.1",
 						Port:   8081,
-						Tags:   map[string]string{"kuma.io/service": "backend", "region": "us"},
+						Tags:   map[string]string{"kuma.io/display-name": "backend", "region": "us"},
 						Weight: 1,
 					},
 					{
 						Target: "192.168.0.2",
 						Port:   8082,
-						Tags:   map[string]string{"kuma.io/service": "backend", "region": "eu"},
+						Tags:   map[string]string{"kuma.io/display-name": "backend", "region": "eu"},
 						Weight: 2,
 					},
 				},
@@ -120,8 +120,10 @@ var _ = Describe("Endpoints", func() {
                       filterMetadata:
                         envoy.lb:
                           region: us
+                          kuma.io/display-name: backend
                         envoy.transport_socket_match:
                           region: us
+                          kuma.io/display-name: backend
                     loadBalancingWeight: 1
                   - endpoint:
                       address:
@@ -132,8 +134,10 @@ var _ = Describe("Endpoints", func() {
                       filterMetadata:
                         envoy.lb:
                           region: eu
+                          kuma.io/display-name: backend
                         envoy.transport_socket_match:
                           region: eu
+                          kuma.io/display-name: backend
                     loadBalancingWeight: 2
 `,
 			}),
@@ -143,13 +147,13 @@ var _ = Describe("Endpoints", func() {
 					{
 						Target: "192.168.0.1",
 						Port:   8081,
-						Tags:   map[string]string{"kuma.io/service": "backend", "region": "us", "kuma.io/zone": "west"},
+						Tags:   map[string]string{"kuma.io/display-name": "backend", "region": "us", "kuma.io/zone": "west"},
 						Weight: 1,
 					},
 					{
 						Target: "192.168.0.2",
 						Port:   8082,
-						Tags:   map[string]string{"kuma.io/service": "backend", "region": "eu", "kuma.io/zone": "west"},
+						Tags:   map[string]string{"kuma.io/display-name": "backend", "region": "eu", "kuma.io/zone": "west"},
 						Weight: 2,
 					},
 				},
@@ -167,9 +171,11 @@ var _ = Describe("Endpoints", func() {
                         envoy.lb:
                           region: us
                           kuma.io/zone: west
+                          kuma.io/display-name: backend
                         envoy.transport_socket_match:
                           region: us
                           kuma.io/zone: west
+                          kuma.io/display-name: backend
                     loadBalancingWeight: 1
                   - endpoint:
                       address:
@@ -181,9 +187,11 @@ var _ = Describe("Endpoints", func() {
                         envoy.lb:
                           region: eu
                           kuma.io/zone: west
+                          kuma.io/display-name: backend
                         envoy.transport_socket_match:
                           region: eu
                           kuma.io/zone: west
+                          kuma.io/display-name: backend
                     loadBalancingWeight: 2
 `,
 			}),

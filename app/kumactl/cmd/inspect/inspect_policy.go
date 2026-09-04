@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/api/openapi/types"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output"
@@ -122,7 +121,7 @@ func attachmentToStr(upperCase bool) func(api_server_types.AttachmentEntry) stri
 
 func tagsToStr(upperCase bool) func(map[string]string) string {
 	return func(destinationTags map[string]string) string {
-		service := destinationTags[mesh_proto.ServiceTag]
+		service := destinationTags["kuma.io/display-name"]
 
 		label := "service"
 		if upperCase {

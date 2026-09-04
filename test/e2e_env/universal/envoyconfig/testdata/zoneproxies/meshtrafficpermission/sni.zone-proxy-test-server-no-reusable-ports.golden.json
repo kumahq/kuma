@@ -531,6 +531,7 @@
                   "filterMetadata": {
                     "envoy.lb": {
                       "kuma.io/display-name": "zone-proxy-demo-client",
+                      "service": "zone-proxy-demo-client",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -540,6 +541,7 @@
                     },
                     "envoy.transport_socket_match": {
                       "kuma.io/display-name": "zone-proxy-demo-client",
+                      "service": "zone-proxy-demo-client",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -577,6 +579,7 @@
                     "envoy.lb": {
                       "instance": "1",
                       "kuma.io/display-name": "zone-proxy-test-server-no-reusable-ports",
+                      "service": "zone-proxy-test-server-no-reusable-ports",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -589,6 +592,7 @@
                     "envoy.transport_socket_match": {
                       "instance": "1",
                       "kuma.io/display-name": "zone-proxy-test-server-no-reusable-ports",
+                      "service": "zone-proxy-test-server-no-reusable-ports",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -628,6 +632,7 @@
                     "envoy.lb": {
                       "instance": "1",
                       "kuma.io/display-name": "zone-proxy-test-server",
+                      "service": "zone-proxy-test-server",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -640,6 +645,7 @@
                     "envoy.transport_socket_match": {
                       "instance": "1",
                       "kuma.io/display-name": "zone-proxy-test-server",
+                      "service": "zone-proxy-test-server",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
                       "kuma.io/origin": "zone",
@@ -1140,10 +1146,10 @@
             "io.kuma.tags": {
               "instance": "1",
               "kuma.io/display-name": "zone-proxy-test-server-no-reusable-ports",
+              "service": "zone-proxy-test-server-no-reusable-ports",
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig-zoneproxies",
               "kuma.io/origin": "zone",
-              "kuma.io/service": "zone-proxy-test-server-no-reusable-ports",
               "kuma.io/workload": "zone-proxy-test-server-no-reusable-ports",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",
