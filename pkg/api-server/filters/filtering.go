@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -79,6 +80,12 @@ func labelFilter(request *restful.Request) (store.ListFilterFunc, error) {
 		if key == "" {
 			verr.AddViolationAt(
 				validators.RootedAt(request.SelectedRoutePath()).Field(k), "label name cannot be empty")
+			continue
+		}
+		if messages := validation.IsQualifiedName(key); len(messages) > 0 {
+			for _, message := range messages {
+				verr.AddViolationAt(validators.RootedAt(request.SelectedRoutePath()).Field(k), message)
+			}
 			continue
 		}
 		if len(v) > 1 {

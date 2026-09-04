@@ -28,6 +28,7 @@ var _ = Describe("Resource filters", func() {
 			},
 			Entry("missing closing bracket", "filter[labels.team=red", "advanced filters are not supported"),
 			Entry("empty label", "filter[labels.]=red", "label name cannot be empty"),
+			Entry("nested bracket", "filter[labels.team[]=red", "name part must consist of"),
 			Entry("empty value", "filter[labels.team]=", "filter value cannot be empty"),
 			Entry("multiple values", "filter[labels.team]=red&filter[labels.team]=blue", "multiple filter values are not supported"),
 			Entry("advanced operation", "filter[labels.team][eq]=red", "advanced filters are not supported"),
