@@ -70,17 +70,32 @@ func labelFilter(request *restful.Request) (store.ListFilterFunc, error) {
 			continue
 		}
 		closingBracket := strings.Index(k, "]")
-		key := k[len("filter[labels."):closingBracket]
-		if closingBracket != len(k)-1 {
+		if closingBracket == -1 || closingBracket != len(k)-1 {
 			verr.AddViolationAt(
 				validators.RootedAt(request.SelectedRoutePath()).Field(k), "advanced filters are not supported")
+			continue
+		}
+		key := k[len("filter[labels."):closingBracket]
+		if key == "" {
+			verr.AddViolationAt(
+				validators.RootedAt(request.SelectedRoutePath()).Field(k), "label name cannot be empty")
+			continue
+		}
+		if len(v) > 1 {
+			verr.AddViolationAt(
+				validators.RootedAt(request.SelectedRoutePath()).Field(k), "multiple filter values are not supported")
+			continue
+		}
+		if len(v) == 0 || v[0] == "" {
+			verr.AddViolationAt(
+				validators.RootedAt(request.SelectedRoutePath()).Field(k), "filter value cannot be empty")
 			continue
 		}
 		op := FilterOpEq
 		filters = append(filters, filterEntry{
 			Op:    op,
 			Key:   key,
-			Value: v[len(v)-1],
+			Value: v[0],
 		})
 	}
 	if verr.HasViolations() {
