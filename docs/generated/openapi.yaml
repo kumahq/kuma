@@ -5962,6 +5962,17 @@ components:
                                   required:
                                     - type
                                   type: object
+                                  oneOf:
+                                    - properties:
+                                        plain: {}
+                                        type:
+                                          enum:
+                                            - Plain
+                                    - properties:
+                                        json: {}
+                                        type:
+                                          enum:
+                                            - Json
                                 path:
                                   description: Path to a file that logs will be written to
                                   example: /tmp/access.log
@@ -6089,6 +6100,17 @@ components:
                                   required:
                                     - type
                                   type: object
+                                  oneOf:
+                                    - properties:
+                                        plain: {}
+                                        type:
+                                          enum:
+                                            - Plain
+                                    - properties:
+                                        json: {}
+                                        type:
+                                          enum:
+                                            - Json
                               required:
                                 - address
                               type: object
@@ -6101,6 +6123,22 @@ components:
                           required:
                             - type
                           type: object
+                          oneOf:
+                            - properties:
+                                tcp: {}
+                                type:
+                                  enum:
+                                    - Tcp
+                            - properties:
+                                file: {}
+                                type:
+                                  enum:
+                                    - File
+                            - properties:
+                                openTelemetry: {}
+                                type:
+                                  enum:
+                                    - OpenTelemetry
                         type: array
                     type: object
                   matches:
@@ -6264,6 +6302,17 @@ components:
                                   required:
                                     - type
                                   type: object
+                                  oneOf:
+                                    - properties:
+                                        plain: {}
+                                        type:
+                                          enum:
+                                            - Plain
+                                    - properties:
+                                        json: {}
+                                        type:
+                                          enum:
+                                            - Json
                                 path:
                                   description: Path to a file that logs will be written to
                                   example: /tmp/access.log
@@ -6391,6 +6440,17 @@ components:
                                   required:
                                     - type
                                   type: object
+                                  oneOf:
+                                    - properties:
+                                        plain: {}
+                                        type:
+                                          enum:
+                                            - Plain
+                                    - properties:
+                                        json: {}
+                                        type:
+                                          enum:
+                                            - Json
                               required:
                                 - address
                               type: object
@@ -6403,6 +6463,22 @@ components:
                           required:
                             - type
                           type: object
+                          oneOf:
+                            - properties:
+                                tcp: {}
+                                type:
+                                  enum:
+                                    - Tcp
+                            - properties:
+                                file: {}
+                                type:
+                                  enum:
+                                    - File
+                            - properties:
+                                openTelemetry: {}
+                                type:
+                                  enum:
+                                    - OpenTelemetry
                         type: array
                     type: object
                   targetRef:
@@ -8308,6 +8384,17 @@ components:
                                               required:
                                                 - type
                                               type: object
+                                              oneOf:
+                                                - properties:
+                                                    replaceFullPath: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplaceFullPath
+                                                - properties:
+                                                    replacePrefixMatch: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplacePrefixMatch
                                             port:
                                               description: >-
                                                 Port is the port to be used in the value
@@ -8434,10 +8521,47 @@ components:
                                               required:
                                                 - type
                                               type: object
+                                              oneOf:
+                                                - properties:
+                                                    replaceFullPath: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplaceFullPath
+                                                - properties:
+                                                    replacePrefixMatch: {}
+                                                    type:
+                                                      enum:
+                                                        - ReplacePrefixMatch
                                           type: object
                                       required:
                                         - type
                                       type: object
+                                      oneOf:
+                                        - properties:
+                                            requestHeaderModifier: {}
+                                            type:
+                                              enum:
+                                                - RequestHeaderModifier
+                                        - properties:
+                                            responseHeaderModifier: {}
+                                            type:
+                                              enum:
+                                                - ResponseHeaderModifier
+                                        - properties:
+                                            requestRedirect: {}
+                                            type:
+                                              enum:
+                                                - RequestRedirect
+                                        - properties:
+                                            type:
+                                              enum:
+                                                - URLRewrite
+                                            urlRewrite: {}
+                                        - properties:
+                                            requestMirror: {}
+                                            type:
+                                              enum:
+                                                - RequestMirror
                                     type: array
                                   kind:
                                     description: Kind of the referenced resource
@@ -8657,6 +8781,17 @@ components:
                                         required:
                                           - type
                                         type: object
+                                        oneOf:
+                                          - properties:
+                                              replaceFullPath: {}
+                                              type:
+                                                enum:
+                                                  - ReplaceFullPath
+                                          - properties:
+                                              replacePrefixMatch: {}
+                                              type:
+                                                enum:
+                                                  - ReplacePrefixMatch
                                       port:
                                         description: >-
                                           Port is the port to be used in the value
@@ -8783,10 +8918,47 @@ components:
                                         required:
                                           - type
                                         type: object
+                                        oneOf:
+                                          - properties:
+                                              replaceFullPath: {}
+                                              type:
+                                                enum:
+                                                  - ReplaceFullPath
+                                          - properties:
+                                              replacePrefixMatch: {}
+                                              type:
+                                                enum:
+                                                  - ReplacePrefixMatch
                                     type: object
                                 required:
                                   - type
                                 type: object
+                                oneOf:
+                                  - properties:
+                                      requestHeaderModifier: {}
+                                      type:
+                                        enum:
+                                          - RequestHeaderModifier
+                                  - properties:
+                                      responseHeaderModifier: {}
+                                      type:
+                                        enum:
+                                          - ResponseHeaderModifier
+                                  - properties:
+                                      requestRedirect: {}
+                                      type:
+                                        enum:
+                                          - RequestRedirect
+                                  - properties:
+                                      type:
+                                        enum:
+                                          - URLRewrite
+                                      urlRewrite: {}
+                                  - properties:
+                                      requestMirror: {}
+                                      type:
+                                        enum:
+                                          - RequestMirror
                               type: array
                           type: object
                         matches:
@@ -9575,6 +9747,32 @@ components:
                           required:
                             - type
                           type: object
+                          oneOf:
+                            - properties:
+                                header: {}
+                                type:
+                                  enum:
+                                    - Header
+                            - properties:
+                                cookie: {}
+                                type:
+                                  enum:
+                                    - Cookie
+                            - properties:
+                                connection: {}
+                                type:
+                                  enum:
+                                    - Connection
+                            - properties:
+                                queryParameter: {}
+                                type:
+                                  enum:
+                                    - QueryParameter
+                            - properties:
+                                filterState: {}
+                                type:
+                                  enum:
+                                    - FilterState
                         type: array
                       loadBalancer:
                         description: >-
@@ -9734,6 +9932,32 @@ components:
                         required:
                           - type
                         type: object
+                        oneOf:
+                          - properties:
+                              roundRobin: {}
+                              type:
+                                enum:
+                                  - RoundRobin
+                          - properties:
+                              leastRequest: {}
+                              type:
+                                enum:
+                                  - LeastRequest
+                          - properties:
+                              ringHash: {}
+                              type:
+                                enum:
+                                  - RingHash
+                          - properties:
+                              random: {}
+                              type:
+                                enum:
+                                  - Random
+                          - properties:
+                              maglev: {}
+                              type:
+                                enum:
+                                  - Maglev
                       localityAwareness:
                         description: >-
                           LocalityAwareness contains configuration for locality
@@ -10099,6 +10323,17 @@ components:
                     required:
                       - type
                     type: object
+                    oneOf:
+                      - properties:
+                          prometheus: {}
+                          type:
+                            enum:
+                              - Prometheus
+                      - properties:
+                          openTelemetry: {}
+                          type:
+                            enum:
+                              - OpenTelemetry
                   type: array
                 sidecar:
                   description: Sidecar metrics collection configuration
@@ -13144,6 +13379,22 @@ components:
                     required:
                       - type
                     type: object
+                    oneOf:
+                      - properties:
+                          type:
+                            enum:
+                              - Zipkin
+                          zipkin: {}
+                      - properties:
+                          datadog: {}
+                          type:
+                            enum:
+                              - Datadog
+                      - properties:
+                          openTelemetry: {}
+                          type:
+                            enum:
+                              - OpenTelemetry
                   maxItems: 1
                   type: array
                 sampling:
@@ -15767,6 +16018,22 @@ components:
               required:
                 - type
               type: object
+              oneOf:
+                - properties:
+                    bundled: {}
+                    type:
+                      enum:
+                        - Bundled
+                - properties:
+                    spire: {}
+                    type:
+                      enum:
+                        - Spire
+                - properties:
+                    extension: {}
+                    type:
+                      enum:
+                        - Extension
             selector:
               properties:
                 dataplane:

@@ -277,6 +277,32 @@ components:
                           required:
                             - type
                           type: object
+                          oneOf:
+                            - properties:
+                                header: {}
+                                type:
+                                  enum:
+                                    - Header
+                            - properties:
+                                cookie: {}
+                                type:
+                                  enum:
+                                    - Cookie
+                            - properties:
+                                connection: {}
+                                type:
+                                  enum:
+                                    - Connection
+                            - properties:
+                                queryParameter: {}
+                                type:
+                                  enum:
+                                    - QueryParameter
+                            - properties:
+                                filterState: {}
+                                type:
+                                  enum:
+                                    - FilterState
                         type: array
                       loadBalancer:
                         description: LoadBalancer allows to specify load balancing algorithm.
@@ -380,6 +406,32 @@ components:
                         required:
                           - type
                         type: object
+                        oneOf:
+                          - properties:
+                              roundRobin: {}
+                              type:
+                                enum:
+                                  - RoundRobin
+                          - properties:
+                              leastRequest: {}
+                              type:
+                                enum:
+                                  - LeastRequest
+                          - properties:
+                              ringHash: {}
+                              type:
+                                enum:
+                                  - RingHash
+                          - properties:
+                              random: {}
+                              type:
+                                enum:
+                                  - Random
+                          - properties:
+                              maglev: {}
+                              type:
+                                enum:
+                                  - Maglev
                       localityAwareness:
                         description: LocalityAwareness contains configuration for locality aware load balancing.
                         properties:
