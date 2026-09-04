@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not delete a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "[\"kuma.io/zone\"]",
+   "reason": "resource originated in zone \"zone-2\" cannot be deleted on zone \"zone-1\""
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "[\"kuma.io/zone\"]",
+   "message": "resource originated in zone \"zone-2\" cannot be deleted on zone \"zone-1\""
+  }
+ ]
+}

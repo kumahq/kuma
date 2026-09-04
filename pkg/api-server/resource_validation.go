@@ -56,6 +56,35 @@ func (r *resourceCrudHandler) validateOriginForWrite(meta core_model.ResourceMet
 	return err
 }
 
+// A policy created in another zone reaches this one through Global with
+// kuma.io/origin: zone and a foreign kuma.io/zone, so the origin label alone
+// does not prove ownership; a non-federated zone owns everything in its store.
+func (r *resourceCrudHandler) validateOwnershipForDelete(meta core_model.ResourceMeta) validators.ValidationError {
+	var err validators.ValidationError
+	if r.disableOriginLabelValidation || !r.federatedZone {
+		return err
+	}
+
+	origin, ok := core_model.ResourceOrigin(meta)
+	if !ok {
+		return err
+	}
+	if origin != mesh_proto.ZoneResourceOrigin {
+		err.AddViolationAt(
+			validators.Root().Key(mesh_proto.ResourceOriginLabel),
+			fmt.Sprintf("resource with %s=%s cannot be deleted on this control plane", mesh_proto.ResourceOriginLabel, origin),
+		)
+		return err
+	}
+	if zoneTag, hasZone := meta.GetLabels()[mesh_proto.ZoneTag]; hasZone && zoneTag != r.zoneName {
+		err.AddViolationAt(
+			validators.Root().Key(mesh_proto.ZoneTag),
+			fmt.Sprintf("resource originated in zone %q cannot be deleted on zone %q", zoneTag, r.zoneName),
+		)
+	}
+	return err
+}
+
 func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
 
@@ -69,14 +98,12 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 	err.AddError("", r.validateOriginForWrite(resource.GetMeta()))
 
 	if r.mode != config_core.Global {
-		if origin != mesh_proto.GlobalResourceOrigin {
-			zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-			if ok && zoneTag != r.zoneName {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
-			}
-			if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
-			}
+		zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+		if ok && zoneTag != r.zoneName {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
+		}
+		if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
 		}
 	}
 
@@ -105,15 +132,20 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 	return err
 }
 
-func (r *resourceCrudHandler) validateImmutableLabels(currentComputedLabels, newComputedLabels map[string]string) validators.ValidationError {
+func (r *resourceCrudHandler) validateImmutableLabels(storedLabels, newComputedLabels map[string]string) validators.ValidationError {
 	var err validators.ValidationError
 
 	immutableLabels := []string{
 		mesh_proto.ZoneTag,
 	}
+	// a non-federated zone owns everything in its store, including leftovers of a
+	// previous federation whose origin gets recomputed to 'zone' on update
+	if !r.disableOriginLabelValidation && (r.mode == config_core.Global || r.federatedZone) {
+		immutableLabels = append(immutableLabels, mesh_proto.ResourceOriginLabel)
+	}
 
 	for _, label := range immutableLabels {
-		currentVal, currentExists := currentComputedLabels[label]
+		currentVal, currentExists := storedLabels[label]
 		newVal, newExists := newComputedLabels[label]
 
 		if currentExists && !newExists {

@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -78,6 +79,14 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
+		resp, err := h.validateOriginNotChanged(req, k8sObj)
+		if err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+		if resp != nil {
+			return *resp
+		}
+
 		if !h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) && coreRes.Descriptor().Scope == core_model.ScopeMesh {
 			if err := h.validateMeshOwnerReference(k8sObj); err.HasViolations() {
 				return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
@@ -122,6 +131,54 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 		return nil, nil, err
 	}
 	return coreRes, k8sObj, nil
+}
+
+// Without this a zone user could take over a Global-synced policy by re-applying it:
+// the defaulting webhook recomputes kuma.io/origin to 'zone' for a non-privileged
+// writer, and the Global->Zone KDS stream then wedges on AlreadyExists.
+func (h *validatingHandler) validateOriginNotChanged(req admission.Request, newObj k8s_model.KubernetesObject) (*admission.Response, error) {
+	if req.Operation != v1.Update || h.DisableOriginLabelValidation {
+		return nil, nil
+	}
+	// a non-federated zone owns everything in its store
+	if h.Mode != core.Global && !h.FederatedZone {
+		return nil, nil
+	}
+	// KDS sync and GC write on behalf of the control plane
+	if h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) {
+		return nil, nil
+	}
+
+	oldObj, err := h.decodeOldObject(req)
+	if err != nil {
+		return nil, err
+	}
+	oldOrigin, ok := oldObj.GetLabels()[mesh_proto.ResourceOriginLabel]
+	if !ok {
+		return nil, nil
+	}
+	if newOrigin := newObj.GetLabels()[mesh_proto.ResourceOriginLabel]; newOrigin != oldOrigin {
+		return forbiddenResponse(fmt.Sprintf(
+			"Operation not allowed. '%s' label is immutable, cannot be changed from '%s' to '%s'",
+			mesh_proto.ResourceOriginLabel, oldOrigin, newOrigin,
+		)), nil
+	}
+	return nil, nil
+}
+
+func (h *validatingHandler) decodeOldObject(req admission.Request) (k8s_model.KubernetesObject, error) {
+	coreRes, err := h.coreRegistry.NewObject(core_model.ResourceType(req.Kind.Kind))
+	if err != nil {
+		return nil, err
+	}
+	k8sObj, err := h.k8sRegistry.NewObject(coreRes.GetSpec())
+	if err != nil {
+		return nil, err
+	}
+	if err := h.decoder.DecodeRaw(req.OldObject, k8sObj); err != nil {
+		return nil, err
+	}
+	return k8sObj, nil
 }
 
 func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validators.ValidationError {

@@ -1,0 +1,18 @@
+#/meshes/default/meshtimeouts/mt-zone-2 400 method=DELETE
+type: Mesh
+name: default
+---
+type: MeshTimeout
+mesh: default
+name: mt-zone-2
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: zone-2
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 20s

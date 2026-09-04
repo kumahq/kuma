@@ -149,11 +149,6 @@ func (r *resourceCrudHandler) updateResource(
 
 	r.applyBeforeWriteHook(newResRest, meshName, currentRes.GetMeta().GetName())
 
-	currentLabels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), currentRes.GetMeta(), meshName, currentRes.GetMeta().GetName())
-	if err != nil {
-		return nil, withTitle(err, "Could not compute current labels")
-	}
-
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 
 	labels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), newResRest.GetMeta(), meshName, currentRes.GetMeta().GetName())
@@ -161,7 +156,7 @@ func (r *resourceCrudHandler) updateResource(
 		return nil, withTitle(err, "Could not compute labels for a resource")
 	}
 
-	if validationErr := r.validateImmutableLabels(currentLabels, labels); validationErr.HasViolations() {
+	if validationErr := r.validateImmutableLabels(currentRes.GetMeta().GetLabels(), labels); validationErr.HasViolations() {
 		var err validators.ValidationError
 		err.AddError("labels", validationErr)
 		return nil, withTitle(&err, "Could not update a resource")
@@ -188,6 +183,10 @@ func (r *resourceCrudHandler) deleteResource(request *restful.Request) (any, err
 	}
 
 	if verr := r.validateOriginForWrite(resource.GetMeta()); verr.HasViolations() {
+		return nil, withTitle(verr.OrNil(), "Could not delete a resource")
+	}
+
+	if verr := r.validateOwnershipForDelete(resource.GetMeta()); verr.HasViolations() {
 		return nil, withTitle(verr.OrNil(), "Could not delete a resource")
 	}
 
