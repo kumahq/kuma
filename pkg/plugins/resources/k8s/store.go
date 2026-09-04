@@ -267,6 +267,46 @@ var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
 type KubernetesMetaAdapter struct {
 	kube_meta.ObjectMeta
 	Mesh string
+
+	// labels is the materialized label set: the object's stored labels, the entries
+	// derived from annotations, and the control-plane-owned ones recomputed by
+	// core_model.EnforcedReadLabels. Callers MUST treat it as read-only - it is
+	// handed out as is.
+	labels map[string]string
+}
+
+// newMetaAdapter is the only place an adapter's labels are computed from a Kubernetes
+// object. Taking rd and spec forces every conversion path to supply what
+// core_model.EnforcedReadLabels needs, so a new converter cannot silently skip the
+// read-side recomputation.
+func newMetaAdapter(
+	obj k8s_model.KubernetesObject,
+	systemNamespace string,
+	rd core_model.ResourceTypeDescriptor,
+	spec core_model.ResourceSpec,
+) *KubernetesMetaAdapter {
+	objMeta := obj.GetObjectMeta()
+
+	computed := maps.Clone(objMeta.GetLabels())
+	if computed == nil {
+		computed = map[string]string{}
+	}
+	if displayName, ok := objMeta.GetAnnotations()[v1alpha1.DisplayName]; ok {
+		computed[v1alpha1.DisplayName] = displayName
+	} else {
+		computed[v1alpha1.DisplayName] = objMeta.GetName()
+	}
+	if sa, ok := objMeta.GetAnnotations()[metadata.KumaServiceAccount]; ok {
+		computed[metadata.KumaServiceAccount] = sa
+	}
+	ns := core_model.NewNamespace(objMeta.GetNamespace(), objMeta.GetNamespace() == systemNamespace)
+	maps.Copy(computed, core_model.EnforcedReadLabels(rd, spec, ns))
+
+	return &KubernetesMetaAdapter{
+		ObjectMeta: *objMeta,
+		Mesh:       obj.GetMesh(),
+		labels:     computed,
+	}
 }
 
 func (m *KubernetesMetaAdapter) GetName() string {
@@ -296,20 +336,12 @@ func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
 	return m.GetObjectMeta().GetCreationTimestamp().Time
 }
 
+// GetLabels returns the materialized label set built at construction time: the
+// object's stored labels, the annotation-derived entries (display name, Kuma service
+// account), and the control-plane-owned ones recomputed by
+// core_model.EnforcedReadLabels. Callers MUST treat the returned map as read-only.
 func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
-	labels := maps.Clone(m.GetObjectMeta().GetLabels())
-	if labels == nil {
-		labels = map[string]string{}
-	}
-	if displayName, ok := m.GetObjectMeta().GetAnnotations()[v1alpha1.DisplayName]; ok {
-		labels[v1alpha1.DisplayName] = displayName
-	} else {
-		labels[v1alpha1.DisplayName] = m.GetObjectMeta().GetName()
-	}
-	if sa, ok := m.GetObjectMeta().GetAnnotations()[metadata.KumaServiceAccount]; ok {
-		labels[metadata.KumaServiceAccount] = sa
-	}
-	return labels
+	return m.labels
 }
 
 type KubeFactory interface {

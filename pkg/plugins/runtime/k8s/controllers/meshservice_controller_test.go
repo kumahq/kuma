@@ -72,7 +72,7 @@ var _ = Describe("MeshServiceController", func() {
 				Log:               logr.Discard(),
 				Scheme:            k8sClientScheme,
 				EventRecorder:     kube_record.NewFakeRecorder(10),
-				ResourceConverter: k8s.NewSimpleConverter(),
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 			}
 
 			key := kube_types.NamespacedName{

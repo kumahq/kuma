@@ -63,7 +63,7 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 
 	// Mutators and Validators convert resources from Request (not from the Store)
 	// these resources doesn't have ResourceVersion, we can't cache them
-	simpleConverter := k8s.NewSimpleConverter()
+	simpleConverter := k8s.NewSimpleConverter(rt.Config().Store.Kubernetes.SystemNamespace)
 	if err := addValidators(mgr, rt, simpleConverter); err != nil {
 		return err
 	}
