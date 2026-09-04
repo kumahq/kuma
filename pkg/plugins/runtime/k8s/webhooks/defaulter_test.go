@@ -126,6 +126,9 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
+				"labels": {
+				  "kuma.io/origin": "global"
+				},
 				"annotations": {
 				  "kuma.io/display-name": "empty"
 				}
@@ -180,6 +183,9 @@ var _ = Describe("Defaulter", func() {
               "kind": "Mesh",
               "metadata": {
 				"name": "empty",
+				"labels": {
+				  "kuma.io/origin": "global"
+				},
 				"annotations": {
 				  "kuma.io/display-name": "empty"
 				}
@@ -230,6 +236,7 @@ var _ = Describe("Defaulter", func() {
                 "name": "empty",
                 "labels": {
                   "kuma.io/mesh": "my-mesh-1",
+                  "kuma.io/origin": "global",
                   "k8s.kuma.io/namespace": "example"
                 },
                 "annotations": {
@@ -333,7 +340,7 @@ var _ = Describe("Defaulter", func() {
             }
 `,
 		}),
-		Entry("should not set zone label when origin is set to global, federated zone", testCase{
+		Entry("should overwrite user-set origin=global on a federated zone", testCase{
 			checker: zoneChecker(true, false),
 			kind:    string(v1alpha1.MeshTrafficPermissionType),
 			inputObject: `
@@ -362,7 +369,56 @@ var _ = Describe("Defaulter", func() {
                 "namespace": "example",
                 "name": "empty",
                 "labels": {
+                  "kuma.io/origin": "zone",
+                  "kuma.io/env": "kubernetes",
                   "kuma.io/mesh": "default",
+                  "kuma.io/policy-role": "workload-owner",
+                  "kuma.io/zone": "zone-1",
+                  "k8s.kuma.io/namespace": "example"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
+                }
+              },
+              "spec": {
+                "targetRef": {
+                  "kind": "Mesh"
+                }
+              }
+            }
+`,
+		}),
+		Entry("should not recompute labels of a resource synced from Global, federated zone", testCase{
+			checker: zoneChecker(true, false),
+			kind:    string(v1alpha1.MeshTrafficPermissionType),
+			// resources with 'origin: global' can only be created by the CP itself (KDS sync)
+			username: "system:serviceaccount:kuma-system:kuma-control-plane",
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "labels": {
+                  "kuma.io/origin": "global"
+                }
+              },
+              "spec": {
+                "targetRef": {
+                  "kind": "Mesh"
+                }
+              }
+            }
+`,
+			expected: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "labels": {
                   "kuma.io/origin": "global"
                 },
                 "annotations": {
@@ -483,7 +539,7 @@ var _ = Describe("Defaulter", func() {
               }
             }`,
 		}),
-		Entry("should not add origin label on Global", testCase{
+		Entry("should add origin=global label on Global", testCase{
 			checker: globalChecker(),
 			kind:    string(v1alpha1.MeshTrafficPermissionType),
 			inputObject: `
@@ -511,6 +567,7 @@ var _ = Describe("Defaulter", func() {
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
+                  "kuma.io/origin": "global",
                   "kuma.io/policy-role": "workload-owner"
                 },
                 "annotations": {
