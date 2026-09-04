@@ -119,9 +119,9 @@ func matchingHostnames(resManager manager.ResourceManager, isGlobal bool) handle
 				}
 				svc.SetMeta(overridden)
 
-			if err := generateAndRecord(svc, svcType, svcZone, hg, byHostname); err != nil {
-				return nil, withTitle(err, "could not generate hostname")
-			}
+				if err := generateAndRecord(svc, svcType, svcZone, hg, byHostname); err != nil {
+					return nil, withTitle(err, "could not generate hostname")
+				}
 			}
 		}
 
