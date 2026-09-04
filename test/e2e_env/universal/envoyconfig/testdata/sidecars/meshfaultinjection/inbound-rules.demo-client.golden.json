@@ -503,7 +503,7 @@
                       {
                         "header": {
                           "key": "x-kuma-tags",
-                          "value": "&kuma.io/display-name=demo-client&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig&&kuma.io/origin=zone&&kuma.io/display-name=demo-client&&kuma.io/workload=demo-client&&kuma.io/zone=kuma-3&&team=client-owners&"
+                          "value": "&kuma.io/display-name=demo-client&&kuma.io/env=universal&&kuma.io/mesh=envoyconfig&&kuma.io/origin=zone&&kuma.io/workload=demo-client&&kuma.io/zone=kuma-3&&team=client-owners&"
                         }
                       }
                     ],
