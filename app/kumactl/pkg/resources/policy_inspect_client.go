@@ -33,7 +33,7 @@ type httpPolicyInspectClient struct {
 }
 
 func (h *httpPolicyInspectClient) DataplanesForPolicy(ctx context.Context, policyDesc core_model.ResourceTypeDescriptor, mesh string, name string) (types.InspectDataplanesForPolicyResponse, error) {
-	resUrl, err := url.Parse(fmt.Sprintf("/meshes/%s/%s/%s/-resources/dataplanes", mesh, policyDesc.WsPath, name))
+	resUrl, err := url.Parse(fmt.Sprintf("/meshes/%s/%s/%s/_resources/dataplanes", mesh, policyDesc.WsPath, name))
 	if err != nil {
 		return types.InspectDataplanesForPolicyResponse{}, errors.Wrap(err, "could not construct the url")
 	}

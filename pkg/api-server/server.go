@@ -170,7 +170,7 @@ func NewApiServer(
 		rt.RouteMetadataProvider(),
 	)
 	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
-	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ResourceManager(), rt.Access().ResourceAccess)
+	addInspectEndpoints(ws, rt.ResourceManager(), rt.Access().ResourceAccess)
 	addInspectEnvoyAdminEndpoints(ws, rt.ResourceManager(), rt.Access().EnvoyAdminAccess, rt.EnvoyAdminClient())
 	addInspectMeshServiceEndpoints(ws, rt.ResourceManager(), cfg.Mode == config_core.Global)
 	guiUrl := ""
