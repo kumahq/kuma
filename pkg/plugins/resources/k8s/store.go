@@ -251,30 +251,35 @@ func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, e
 	}
 }
 
-// Kuma resource labels are generally stored on Kubernetes as labels, except "kuma.io/display-name".
-// We store it as an annotation because the resource name on k8s is limited by 253 and the label value is limited by 63.
+// LabelsStoredAsAnnotations are Kuma labels whose values carry a resource name and
+// therefore can be up to 253 characters, which does not fit the 63-character
+// Kubernetes label value limit. They are stored as annotations instead, so callers
+// validating them must not apply label value rules to them either.
+//   - "kuma.io/display-name" holds the name a resource had before it was renamed
+//     (namespace suffix on Kubernetes, hash suffix when synced to global).
+//   - "k8s.kuma.io/service-account" holds the full ServiceAccount name, which is a
+//     DNS subdomain (253 characters).
+//     https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-multiple-service-accounts
+//   - "kuma.io/workload" holds the full workload name.
+var LabelsStoredAsAnnotations = []string{
+	v1alpha1.DisplayName,
+	metadata.KumaServiceAccount,
+	metadata.KumaWorkload,
+}
+
+// Kuma resource labels are generally stored on Kubernetes as labels, except the ones
+// listed in LabelsStoredAsAnnotations.
 func SplitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations map[string]string) (map[string]string, map[string]string) {
 	labels := maps.Clone(coreLabels)
 	annotations := maps.Clone(currentAnnotations)
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
-	if v, ok := labels[v1alpha1.DisplayName]; ok {
-		annotations[v1alpha1.DisplayName] = v
-		delete(labels, v1alpha1.DisplayName)
-	}
-	// ServiceAccount object names are constrained by the DNS subdomain name specification, with a maximum length of 253 characters.
-	// Since the source name can exceed this length, we are storing the full, original name as an annotation on the ServiceAccount object.
-	// https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-multiple-service-accounts
-	if v, ok := labels[metadata.KumaServiceAccount]; ok {
-		annotations[metadata.KumaServiceAccount] = v
-		delete(labels, metadata.KumaServiceAccount)
-	}
-	// Workload names can exceed 63 characters (up to 253), which exceeds label length limits.
-	// Store as annotation similar to kuma.io/display-name.
-	if v, ok := labels[metadata.KumaWorkload]; ok {
-		annotations[metadata.KumaWorkload] = v
-		delete(labels, metadata.KumaWorkload)
+	for _, key := range LabelsStoredAsAnnotations {
+		if v, ok := labels[key]; ok {
+			annotations[key] = v
+			delete(labels, key)
+		}
 	}
 	return labels, annotations
 }

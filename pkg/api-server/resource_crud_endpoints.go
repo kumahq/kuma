@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 	"strconv"
-	"strings"
 
 	"github.com/emicklei/go-restful/v3"
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
@@ -26,7 +26,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
@@ -369,10 +368,6 @@ func (r *resourceCrudHandler) createResource(
 	_ = res.SetSpec(resRest.GetSpec())
 	res.SetMeta(resRest.GetMeta())
 
-	if err := r.validateUniversalDataplaneWorkloadLabel(res); err != nil {
-		return nil, err
-	}
-
 	labels, err := r.computeLabels(res.Descriptor(), res.GetSpec(), res.GetMeta(), meshName, name)
 	if err != nil {
 		return nil, withTitle(err, "Could not compute labels for a resource")
@@ -383,31 +378,6 @@ func (r *resourceCrudHandler) createResource(
 	}
 
 	return created(api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(res)}), nil
-}
-
-// validateUniversalDataplaneWorkloadLabel validates the workload label of
-// Dataplanes created on Universal zones.
-func (r *resourceCrudHandler) validateUniversalDataplaneWorkloadLabel(res core_model.Resource) error {
-	if r.descriptor.Name != core_mesh.DataplaneType || r.isK8s {
-		return nil
-	}
-	workloadName, ok := res.GetMeta().GetLabels()[metadata.KumaWorkload]
-	if !ok || workloadName == "" {
-		return nil
-	}
-	if r.mode == config_core.Global {
-		return withTitle(
-			rest_errors.NewBadRequestError("labels[\"kuma.io/workload\"]: not allowed on Global control plane"),
-			"Invalid workload label",
-		)
-	}
-	if validationErrs := apimachineryvalidation.NameIsDNS1035Label(workloadName, false); len(validationErrs) != 0 {
-		return withTitle(
-			rest_errors.NewBadRequestError(fmt.Sprintf("labels[\"kuma.io/workload\"]: must be a valid DNS-1035 label (at most 63 characters, matching regex [a-z]([-a-z0-9]*[a-z0-9])?): %s", strings.Join(validationErrs, "; "))),
-			"Invalid workload label",
-		)
-	}
-	return nil
 }
 
 func (r *resourceCrudHandler) updateResource(
@@ -556,10 +526,20 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 	}
 
 	for _, k := range maps.SortedKeys(resource.GetMeta().GetLabels()) {
+		v := resource.GetMeta().GetLabels()[k]
 		for _, msg := range validation.IsQualifiedName(k) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
-		for _, msg := range validation.IsValidLabelValue(resource.GetMeta().GetLabels()[k]) {
+		// Labels that Kubernetes stores as annotations hold a resource name, so they
+		// follow the resource name rules (DNS-1123 subdomain, 253 characters) rather
+		// than the label value rules.
+		if slices.Contains(k8s.LabelsStoredAsAnnotations, k) {
+			for _, msg := range apimachineryvalidation.NameIsDNSSubdomain(v, false) {
+				err.AddViolationAt(validators.Root().Key(k), msg)
+			}
+			continue
+		}
+		for _, msg := range validation.IsValidLabelValue(v) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
 	}

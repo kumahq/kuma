@@ -1,9 +1,9 @@
 {
   "type": "Dataplane",
   "mesh": "default",
-  "name": "dp-sa-style",
+  "name": "dp-valid",
   "labels": {
-    "kuma.io/workload": "1st-team.backend.v2"
+    "kuma.io/workload": "Not_A_DNS1035_Label"
   },
   "networking": {
     "address": "10.1.2.1",
