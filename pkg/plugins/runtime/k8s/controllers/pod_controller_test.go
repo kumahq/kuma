@@ -451,14 +451,14 @@ var _ = Describe("PodReconciler", func() {
 			Scheme:        k8sClientScheme,
 			Log:           core.Log.WithName("test"),
 			PodConverter: PodConverter{
-				ResourceConverter: k8s.NewSimpleConverter(),
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 				ServiceGetter:     kubeClient,
 				Mode:              config_core.Zone,
 				Zone:              "zone-1",
 				SystemNamespace:   "kuma-system",
 			},
 			SystemNamespace:   "kuma-system",
-			ResourceConverter: k8s.NewSimpleConverter(),
+			ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 		}
 	})
 

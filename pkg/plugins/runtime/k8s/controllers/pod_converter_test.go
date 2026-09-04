@@ -131,7 +131,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 					NodeLabelsToCopy: given.nodeLabelsToCopy,
 				},
 				Zone:              "zone-1",
-				ResourceConverter: k8s.NewSimpleConverter(),
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 			}
 
 			// when
@@ -342,7 +342,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			converter := PodConverter{
 				ServiceGetter:     nil,
 				NodeGetter:        nodeGetter,
-				ResourceConverter: k8s.NewSimpleConverter(),
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 				Zone:              "zone-1",
 				InboundConverter: InboundConverter{
 					NodeGetter: nodeGetter,
@@ -435,7 +435,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			converter := PodConverter{
 				ServiceGetter:     nil,
 				NodeGetter:        nodeGetter,
-				ResourceConverter: k8s.NewSimpleConverter(),
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 				Zone:              "zone-1",
 				InboundConverter: InboundConverter{
 					NodeGetter: nodeGetter,

@@ -558,8 +558,12 @@ func ComputeLabels(
 		}
 	}
 
+	// k8s.kuma.io/namespace and kuma.io/policy-role below are computed by the control
+	// plane, not supplied by the user: they drive namespaced policy matching and
+	// workload identity (SPIFFE ID, KRI), so they must always describe the namespace
+	// the object really lives in. Set them, overwriting whatever the object carried.
 	if ns.value != "" && isK8s && IsLocallyOriginated(mode, labels) {
-		setIfNotExist(mesh_proto.KubeNamespaceTag, ns.value)
+		labels[mesh_proto.KubeNamespaceTag] = ns.value
 	}
 
 	if ns.value != "" && rd.IsPolicy && rd.IsPluginOriginated && IsLocallyOriginated(mode, labels) {
