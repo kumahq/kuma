@@ -245,6 +245,13 @@ func mergeLabels(existingLabels map[string]string, labelSets ...map[string]strin
 	for _, labels := range labelSets {
 		maps.Copy(mergedLabels, labels)
 	}
+	// Reserved keys are owned by the control plane: drop whatever the Pod or a
+	// stale Dataplane carried so Compute rebuilds them from scratch.
+	for k := range mergedLabels {
+		if mesh_proto.IsReservedLabelKey(k) {
+			delete(mergedLabels, k)
+		}
+	}
 	return mergedLabels
 }
 

@@ -1,0 +1,14 @@
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: example
+    kuma.io/zone: zone-uni
+    kuma.io/env: universal
+    kuma.io/kds-sync: disabled
+spec:
+  containers:
+    - ports:
+        - containerPort: 8080
+status:
+  podIP: 192.168.0.1
