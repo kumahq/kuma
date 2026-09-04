@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not process a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "labels[\"kuma.io/mesh\"]",
+   "reason": "kuma.io/mesh label must not differ from mesh set on resource"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "labels[\"kuma.io/mesh\"]",
+   "message": "kuma.io/mesh label must not differ from mesh set on resource"
+  }
+ ]
+}

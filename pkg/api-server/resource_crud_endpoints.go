@@ -555,14 +555,16 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 
 	err.AddError("", r.validateOriginForWrite(resource.GetMeta()))
 
-	if r.mode != config_core.Global {
-		zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-		if ok && zoneTag != r.zoneName {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
+	zoneTag, hasZoneTag := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+	if r.mode == config_core.Global {
+		if hasZoneTag {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s is not allowed on a global control plane", mesh_proto.ZoneTag))
 		}
-		if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
-		}
+	} else if hasZoneTag && zoneTag != r.zoneName {
+		err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
+	}
+	if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
+		err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
 	}
 
 	if r.descriptor.IsPluginOriginated && r.descriptor.IsPolicy {

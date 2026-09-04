@@ -110,6 +110,10 @@ var _ = Describe("Endpoints", func() {
 		DescribeTable("inspect for services /meshes/{mesh}/{serviceType}/{policyName}/_hostnames", func(inputFile string) {
 			apiTest(inputFile, globalApiServer, globalResourceStore)
 		}, test.EntriesForFolder("resources/inspect/services/_resources/hostnames/global"))
+
+		DescribeTable("resources CRUD", func(inputFile string) {
+			apiTest(inputFile, globalApiServer, globalResourceStore)
+		}, test.EntriesForFolder("resources/crud/global"))
 	})
 
 	Describe("federated zone mode", func() {
