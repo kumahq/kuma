@@ -136,7 +136,7 @@ var _ = Describe("MeshGatewayInstanceValidator", func() {
 })
 
 func newGatewayInstanceValidatorWebhook(mode core.CpMode) (*kube_admission.Webhook, error) {
-	simpleConverter := k8s_resources.NewSimpleConverter()
+	simpleConverter := k8s_resources.NewSimpleConverter("kuma-system")
 	store, err := k8s_resources.NewStore(kube_client_fake.NewFakeClient(), scheme, simpleConverter)
 	if err != nil {
 		return nil, err
