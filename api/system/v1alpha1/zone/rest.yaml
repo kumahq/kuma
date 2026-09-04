@@ -1,6 +1,6 @@
 components:
   responses:
-    MeshCreateOrUpdateSuccessResponse:
+    ZoneCreateOrUpdateSuccessResponse:
       content:
         application/json:
           schema:
@@ -15,26 +15,26 @@ components:
                 type: array
             type: object
       description: Successful response
-    MeshDeleteSuccessResponse:
+    ZoneDeleteSuccessResponse:
       content:
         application/json:
           schema:
             type: object
       description: Successful response
-    MeshItem:
+    ZoneItem:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/MeshItem'
+            $ref: '#/components/schemas/ZoneItem'
       description: Successful response
-    MeshList:
+    ZoneList:
       content:
         application/json:
           schema:
             properties:
               items:
                 items:
-                  $ref: '#/components/schemas/MeshItem'
+                  $ref: '#/components/schemas/ZoneItem'
                 type: array
               next:
                 description: URL to the next page
@@ -45,13 +45,18 @@ components:
             type: object
       description: List
   schemas:
-    MeshItem:
+    ZoneItem:
       properties:
         creationTime:
           description: Time at which the resource was created
           format: date-time
           readOnly: true
           type: string
+        enabled:
+          description: |-
+            enable allows to turn the zone on/off and exclude the whole zone from
+            balancing traffic on it
+          type: boolean
         kri:
           description: Kuma Resource Identifier (KRI) of the given resource
           readOnly: true
@@ -69,14 +74,6 @@ components:
           maxLength: 253
           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
-        skipCreatingInitialPolicies:
-          description: |-
-            List of policies to skip creating by default when the mesh is created.
-            e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all
-            policies.
-          items:
-            type: string
-          type: array
         type:
           type: string
       required:
@@ -89,9 +86,9 @@ info:
   version: v1alpha1
 openapi: 3.1.0
 paths:
-  /meshes:
+  /zones:
     get:
-      operationId: getMeshList
+      operationId: getZoneList
       parameters:
       - description: offset in the list of entities
         example: 0
@@ -125,15 +122,15 @@ paths:
           type: object
       responses:
         "200":
-          $ref: '#/components/responses/MeshList'
-      summary: Returns a list of Mesh.
+          $ref: '#/components/responses/ZoneList'
+      summary: Returns a list of Zone.
       tags:
-      - Mesh
-  /meshes/{name}:
+      - Zone
+  /zones/{name}:
     delete:
-      operationId: deleteMesh
+      operationId: deleteZone
       parameters:
-      - description: name of the Mesh
+      - description: name of the Zone
         in: path
         name: name
         required: true
@@ -141,16 +138,16 @@ paths:
           type: string
       responses:
         "200":
-          $ref: '#/components/responses/MeshDeleteSuccessResponse'
+          $ref: '#/components/responses/ZoneDeleteSuccessResponse'
         "404":
           $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
-      summary: Deletes Mesh entity
+      summary: Deletes Zone entity
       tags:
-      - Mesh
+      - Zone
     get:
-      operationId: getMesh
+      operationId: getZone
       parameters:
-      - description: name of the Mesh
+      - description: name of the Zone
         in: path
         name: name
         required: true
@@ -158,16 +155,16 @@ paths:
           type: string
       responses:
         "200":
-          $ref: '#/components/responses/MeshItem'
+          $ref: '#/components/responses/ZoneItem'
         "404":
           $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
-      summary: Returns Mesh entity
+      summary: Returns Zone entity
       tags:
-      - Mesh
+      - Zone
     put:
-      operationId: putMesh
+      operationId: putZone
       parameters:
-      - description: name of the Mesh
+      - description: name of the Zone
         in: path
         name: name
         required: true
@@ -177,14 +174,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MeshItem'
+              $ref: '#/components/schemas/ZoneItem'
         description: Put request
         required: true
       responses:
         "200":
-          $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
+          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
         "201":
-          $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
-      summary: Creates or Updates Mesh entity
+          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
+      summary: Creates or Updates Zone entity
       tags:
-      - Mesh
+      - Zone

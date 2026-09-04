@@ -108,6 +108,27 @@ type DataplaneNetworkingLayout struct {
 	SpiffeId *string `json:"spiffeId,omitempty"`
 }
 
+// DataplaneTokenRequest defines model for DataplaneTokenRequest.
+type DataplaneTokenRequest struct {
+	// Mesh Mesh of the data plane proxy
+	Mesh string `json:"mesh"`
+
+	// Name Name of the data plane proxy
+	Name *string `json:"name,omitempty"`
+
+	// Tags Tags of the data plane proxy
+	Tags *map[string][]string `json:"tags,omitempty"`
+
+	// Type Proxy type, only Dataplane is valid
+	Type *string `json:"type,omitempty"`
+
+	// ValidFor How long the token is valid for, e.g. 24h
+	ValidFor *string `json:"validFor,omitempty"`
+
+	// Workload Workload of the data plane proxy
+	Workload *string `json:"workload,omitempty"`
+}
+
 // DataplaneXDSConfig defines model for DataplaneXDSConfig.
 type DataplaneXDSConfig struct {
 	// Diff Contains a diff in a JSONPatch format between the XDS config returned in 'xds' and the current proxy XDS config.
@@ -157,6 +178,15 @@ type GlobalInsightBase struct {
 
 	// Zones Zones statistics
 	Zones ZonesStats `json:"zones"`
+}
+
+// GlobalInsights defines model for GlobalInsights.
+type GlobalInsights struct {
+	CreationTime *time.Time `json:"creationTime,omitempty"`
+	Resources    *map[string]struct {
+		Total *int `json:"total,omitempty"`
+	} `json:"resources,omitempty"`
+	Type *string `json:"type,omitempty"`
 }
 
 // Index Some metadata about the service
@@ -219,10 +249,28 @@ type MeshesStats struct {
 	Total int `json:"total"`
 }
 
+// Policies defines model for Policies.
+type Policies struct {
+	Policies *[]PolicyEntry `json:"policies,omitempty"`
+}
+
 // PoliciesStats Policies statistics
 type PoliciesStats struct {
 	// Total Number of policies
 	Total int `json:"total"`
+}
+
+// PolicyEntry defines model for PolicyEntry.
+type PolicyEntry struct {
+	IsExperimental      *bool   `json:"isExperimental,omitempty"`
+	IsInbound           *bool   `json:"isInbound,omitempty"`
+	IsOutbound          *bool   `json:"isOutbound,omitempty"`
+	IsTargetRefBased    *bool   `json:"isTargetRefBased,omitempty"`
+	Name                *string `json:"name,omitempty"`
+	Path                *string `json:"path,omitempty"`
+	PluralDisplayName   *string `json:"pluralDisplayName,omitempty"`
+	ReadOnly            *bool   `json:"readOnly,omitempty"`
+	SingularDisplayName *string `json:"singularDisplayName,omitempty"`
 }
 
 // ResourceStats Resource statistics
@@ -250,6 +298,24 @@ type ServicesStats struct {
 	Internal FullStatus `json:"internal"`
 }
 
+// WhoAmI defines model for WhoAmI.
+type WhoAmI struct {
+	Groups *[]string `json:"groups,omitempty"`
+	Name   *string   `json:"name,omitempty"`
+}
+
+// ZoneTokenRequest defines model for ZoneTokenRequest.
+type ZoneTokenRequest struct {
+	// Scope Scope of the token. Kuma defines no built-in scopes, distributions may register their own
+	Scope *[]string `json:"scope,omitempty"`
+
+	// ValidFor How long the token is valid for, e.g. 24h
+	ValidFor *string `json:"validFor,omitempty"`
+
+	// Zone Name of the zone
+	Zone string `json:"zone"`
+}
+
 // ZonesStats Zone statistics
 type ZonesStats struct {
 	// ControlPlanes Control Planes statistics
@@ -274,6 +340,9 @@ type GetDataplaneXDSConfigResponse = DataplaneXDSConfig
 // GlobalInsightResponse Global Insight contains statistics for all main resources
 type GlobalInsightResponse = GlobalInsightBase
 
+// GlobalInsightsResponse defines model for GlobalInsightsResponse.
+type GlobalInsightsResponse = GlobalInsights
+
 // InboundPolicyConfResponse defines model for InboundPolicyConfResponse.
 type InboundPolicyConfResponse = externalRef0.InboundPoliciesList
 
@@ -292,6 +361,9 @@ type InspectRulesResponse = InspectRules
 // OutboundPolicyConfResponse defines model for OutboundPolicyConfResponse.
 type OutboundPolicyConfResponse = externalRef0.PoliciesList
 
+// PoliciesResponse defines model for PoliciesResponse.
+type PoliciesResponse = Policies
+
 // ProxyPolicyConfResponse defines model for ProxyPolicyConfResponse.
 type ProxyPolicyConfResponse = externalRef0.PoliciesList
 
@@ -303,6 +375,9 @@ type RoutePolicyConfResponse = externalRef0.PoliciesList
 
 // RoutesListResponse defines model for RoutesListResponse.
 type RoutesListResponse = externalRef0.RoutesList
+
+// WhoAmIResponse defines model for WhoAmIResponse.
+type WhoAmIResponse = WhoAmI
 
 // GetDataplaneClustersParams defines parameters for GetDataplaneClusters.
 type GetDataplaneClustersParams struct {
@@ -373,3 +448,9 @@ type InspectDataplanesRulesParamsResourceType string
 
 // InspectHostnamesParamsServiceType defines parameters for InspectHostnames.
 type InspectHostnamesParamsServiceType string
+
+// IssueDataplaneTokenJSONRequestBody defines body for IssueDataplaneToken for application/json ContentType.
+type IssueDataplaneTokenJSONRequestBody = DataplaneTokenRequest
+
+// IssueZoneTokenJSONRequestBody defines body for IssueZoneToken for application/json ContentType.
+type IssueZoneTokenJSONRequestBody = ZoneTokenRequest

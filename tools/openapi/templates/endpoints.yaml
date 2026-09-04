@@ -31,6 +31,7 @@ paths:
         '404':
           $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
+    {{- if not .ReadOnly}}
     put:
       operationId: put{{ .Name }}
       summary: Creates or Updates {{ .Name }} entity
@@ -87,11 +88,16 @@ paths:
           $ref: '#/components/responses/{{.Name}}DeleteSuccessResponse'
         '404':
           $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+    {{- end}}
 
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}:
     get:
       operationId: get{{ .Name }}List
+      {{- if eq .Scope "Mesh"}}
       summary: Returns a list of {{ .Name }} in the mesh.
+      {{- else}}
+      summary: Returns a list of {{ .Name }}.
+      {{- end}}
       tags: [ "{{ .Name }}" ]
       parameters:
         - in: query

@@ -51,6 +51,90 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
+  /global-insights:
+    get:
+      operationId: get-global-insights
+      description: Returns counts of all global resources
+      summary: Get Global Insights
+      tags:
+        - GlobalInsight
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalInsightsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /policies:
+    get:
+      operationId: get-policies
+      summary: A list of all policy types
+      description: Returns metadata about every policy type supported by this control plane
+      tags:
+        - System
+      responses:
+        '200':
+          $ref: '#/components/responses/PoliciesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /who-am-i:
+    get:
+      operationId: who-am-i
+      summary: Identity of the authenticated user
+      description: Returns the name and groups of the user making the request
+      tags:
+        - System
+      responses:
+        '200':
+          $ref: '#/components/responses/WhoAmIResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /tokens/dataplane:
+    post:
+      operationId: issue-dataplane-token
+      summary: Issue a dataplane token
+      description: >-
+        Issues a token used to authenticate a data plane proxy to the control
+        plane
+      tags:
+        - Tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataplaneTokenRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /tokens/zone:
+    post:
+      operationId: issue-zone-token
+      summary: Issue a zone token
+      description: Issues a token used to authenticate zone control plane operations
+      tags:
+        - Tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneTokenRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/{resourceType}/{resourceName}/_rules:
     get:
       operationId: inspect-dataplanes-rules
@@ -3451,6 +3535,114 @@ paths:
       summary: Creates or Updates Dataplane entity
       tags:
         - Dataplane
+  /dataplane-insights:
+    get:
+      operationId: getDataplaneInsightListAllMeshes
+      parameters:
+        - description: offset in the list of entities
+          in: query
+          name: offset
+          required: false
+          schema:
+            example: 0
+            type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
+            default: 100
+            maximum: 1000
+            minimum: 1
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
+          name: filter
+          required: false
+          schema:
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+            type: object
+      responses:
+        '200':
+          $ref: '#/components/responses/DataplaneInsightList'
+      summary: Returns a list of DataplaneInsight across all meshes.
+      tags:
+        - DataplaneInsight
+  /meshes/{mesh}/dataplane-insights:
+    get:
+      operationId: getDataplaneInsightList
+      parameters:
+        - description: offset in the list of entities
+          example: 0
+          in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
+            default: 100
+            maximum: 1000
+            minimum: 1
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
+          name: filter
+          required: false
+          schema:
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+            type: object
+        - description: name of the mesh
+          in: path
+          name: mesh
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/DataplaneInsightList'
+      summary: Returns a list of DataplaneInsight in the mesh.
+      tags:
+        - DataplaneInsight
+  /meshes/{mesh}/dataplane-insights/{name}:
+    get:
+      operationId: getDataplaneInsight
+      parameters:
+        - description: name of the mesh
+          in: path
+          name: mesh
+          required: true
+          schema:
+            type: string
+        - description: name of the DataplaneInsight
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/DataplaneInsightItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Returns DataplaneInsight entity
+      tags:
+        - DataplaneInsight
   /meshes/{mesh}/dataplanes/{name}/_overview:
     get:
       operationId: getDataplaneOverview
@@ -3491,6 +3683,176 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
+  /globalsecrets/{name}:
+    get:
+      operationId: getGlobalSecret
+      summary: Returns GlobalSecret entity
+      tags:
+        - GlobalSecret
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the GlobalSecret
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalSecretItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putGlobalSecret
+      summary: Creates or Updates GlobalSecret entity
+      tags:
+        - GlobalSecret
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the GlobalSecret
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalSecretItem'
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteGlobalSecret
+      summary: Deletes GlobalSecret entity
+      tags:
+        - GlobalSecret
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the GlobalSecret
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalSecretDeleteSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /globalsecrets:
+    get:
+      operationId: getGlobalSecretList
+      summary: Returns a list of GlobalSecret entities.
+      tags:
+        - GlobalSecret
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+            example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalSecretList'
+  /global-secrets/{name}:
+    get:
+      operationId: getGlobalSecretAlias
+      summary: Returns GlobalSecret entity
+      tags:
+        - GlobalSecret
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the GlobalSecret
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalSecretItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putGlobalSecretAlias
+      summary: Creates or Updates GlobalSecret entity
+      tags:
+        - GlobalSecret
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the GlobalSecret
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalSecretItem'
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteGlobalSecretAlias
+      summary: Deletes GlobalSecret entity
+      tags:
+        - GlobalSecret
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the GlobalSecret
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalSecretDeleteSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /global-secrets:
+    get:
+      operationId: getGlobalSecretListAlias
+      summary: Returns a list of GlobalSecret entities.
+      tags:
+        - GlobalSecret
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+            example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalSecretList'
   /meshes:
     get:
       operationId: getMeshList
@@ -3527,7 +3889,7 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshList'
-      summary: Returns a list of Mesh in the mesh.
+      summary: Returns a list of Mesh.
       tags:
         - Mesh
   /meshes/{name}:
@@ -3827,6 +4189,161 @@ paths:
       summary: Returns a list of Secret across all meshes.
       tags:
         - Secret
+  /zones:
+    get:
+      operationId: getZoneList
+      parameters:
+        - description: offset in the list of entities
+          example: 0
+          in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
+            default: 100
+            maximum: 1000
+            minimum: 1
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
+          name: filter
+          required: false
+          schema:
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+            type: object
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneList'
+      summary: Returns a list of Zone.
+      tags:
+        - Zone
+  /zones/{name}:
+    delete:
+      operationId: deleteZone
+      parameters:
+        - description: name of the Zone
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneDeleteSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Deletes Zone entity
+      tags:
+        - Zone
+    get:
+      operationId: getZone
+      parameters:
+        - description: name of the Zone
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Returns Zone entity
+      tags:
+        - Zone
+    put:
+      operationId: putZone
+      parameters:
+        - description: name of the Zone
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneItem'
+        description: Put request
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
+      summary: Creates or Updates Zone entity
+      tags:
+        - Zone
+  /zone-insights:
+    get:
+      operationId: getZoneInsightList
+      parameters:
+        - description: offset in the list of entities
+          example: 0
+          in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
+            default: 100
+            maximum: 1000
+            minimum: 1
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
+          name: filter
+          required: false
+          schema:
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+            type: object
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneInsightList'
+      summary: Returns a list of ZoneInsight.
+      tags:
+        - ZoneInsight
+  /zone-insights/{name}:
+    get:
+      operationId: getZoneInsight
+      parameters:
+        - description: name of the ZoneInsight
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneInsightItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Returns ZoneInsight entity
+      tags:
+        - ZoneInsight
   /zones/{name}/_overview:
     get:
       operationId: getZoneOverview
@@ -3918,7 +4435,7 @@ paths:
   /hostnamegenerators:
     get:
       operationId: getHostnameGeneratorList
-      summary: Returns a list of HostnameGenerator in the mesh.
+      summary: Returns a list of HostnameGenerator.
       tags:
         - HostnameGenerator
       parameters:
@@ -5606,6 +6123,103 @@ components:
         spiffeId:
           type: string
           description: SPIFFE ID of the dataplane's workload identity certificate
+    GlobalInsights:
+      type: object
+      properties:
+        type:
+          type: string
+        creationTime:
+          type: string
+          format: date-time
+        resources:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              total:
+                type: integer
+    PolicyEntry:
+      type: object
+      properties:
+        name:
+          type: string
+        readOnly:
+          type: boolean
+        path:
+          type: string
+        singularDisplayName:
+          type: string
+        pluralDisplayName:
+          type: string
+        isExperimental:
+          type: boolean
+        isTargetRefBased:
+          type: boolean
+        isInbound:
+          type: boolean
+        isOutbound:
+          type: boolean
+    Policies:
+      type: object
+      properties:
+        policies:
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyEntry'
+    WhoAmI:
+      type: object
+      properties:
+        name:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+    DataplaneTokenRequest:
+      type: object
+      required:
+        - mesh
+      properties:
+        name:
+          type: string
+          description: Name of the data plane proxy
+        mesh:
+          type: string
+          description: Mesh of the data plane proxy
+        tags:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Tags of the data plane proxy
+        type:
+          type: string
+          description: Proxy type, only Dataplane is valid
+        workload:
+          type: string
+          description: Workload of the data plane proxy
+        validFor:
+          type: string
+          description: How long the token is valid for, e.g. 24h
+    ZoneTokenRequest:
+      type: object
+      required:
+        - zone
+      properties:
+        zone:
+          type: string
+          description: Name of the zone
+        scope:
+          type: array
+          items:
+            type: string
+          description: >-
+            Scope of the token. Kuma defines no built-in scopes, distributions
+            may register their own
+        validFor:
+          type: string
+          description: How long the token is valid for, e.g. 24h
     InvalidParameters:
       type: object
       title: Invalid Parameters
@@ -15272,12 +15886,8 @@ components:
                     for a
 
                     Dataplane.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 certificateRegenerations:
                   description: Number of certificate regenerations for a Dataplane.
                   type: integer
@@ -15286,12 +15896,8 @@ components:
                   type: string
                 lastCertificateRegeneration:
                   description: Time on which the last certificate was generated.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 supportedBackends:
                   description: Supported backends (CA).
                   items:
@@ -15392,12 +15998,8 @@ components:
                     description: >-
                       Time when a given Dataplane connected to the Control
                       Plane.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   controlPlaneInstanceId:
                     description: Control Plane instance that handled given subscription.
                     type: string
@@ -15405,12 +16007,8 @@ components:
                     description: >-
                       Time when a given Dataplane disconnected from the Control
                       Plane.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   generation:
                     description: >-
                       Generation is an integer number which is periodically
@@ -15454,12 +16052,8 @@ components:
                         description: >-
                           Time when status of a given ADS subscription was most
                           recently updated.
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
+                        format: date-time
+                        type: string
                       lds:
                         description: LDS defines all LDS stats.
                         properties:
@@ -15700,6 +16294,327 @@ components:
       allOf:
         - $ref: '#/components/schemas/Meta'
         - $ref: '#/components/schemas/MeshOverview'
+    DataplaneInsightItem:
+      properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        mTLS:
+          description: Insights about mTLS for Dataplane.
+          properties:
+            certificateExpirationTime:
+              description: |-
+                Expiration time of the last certificate that was generated for a
+                Dataplane.
+              format: date-time
+              type: string
+            certificateRegenerations:
+              description: Number of certificate regenerations for a Dataplane.
+              type: integer
+            issuedBackend:
+              description: Backend that was used to generate current certificate
+              type: string
+            lastCertificateRegeneration:
+              description: Time on which the last certificate was generated.
+              format: date-time
+              type: string
+            supportedBackends:
+              description: Supported backends (CA).
+              items:
+                type: string
+              type: array
+          type: object
+        mesh:
+          maxLength: 253
+          pattern: ^[0-9a-z-_.]*$
+          type: string
+        metadata:
+          properties: {}
+          type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
+        name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          type: string
+        openTelemetry:
+          description: Insights about OTel runtime resolution for this Dataplane.
+          properties:
+            backends:
+              items:
+                properties:
+                  logs:
+                    properties:
+                      blockedReasons:
+                        items:
+                          type: string
+                        type: array
+                      enabled:
+                        type: boolean
+                      envAllowed:
+                        type: boolean
+                      envInputPresent:
+                        type: boolean
+                      missingFields:
+                        items:
+                          type: string
+                        type: array
+                      overrideKinds:
+                        items:
+                          type: string
+                        type: array
+                      state:
+                        type: string
+                    type: object
+                  metrics:
+                    properties:
+                      blockedReasons:
+                        items:
+                          type: string
+                        type: array
+                      enabled:
+                        type: boolean
+                      envAllowed:
+                        type: boolean
+                      envInputPresent:
+                        type: boolean
+                      missingFields:
+                        items:
+                          type: string
+                        type: array
+                      overrideKinds:
+                        items:
+                          type: string
+                        type: array
+                      state:
+                        type: string
+                    type: object
+                  name:
+                    type: string
+                  traces:
+                    properties:
+                      blockedReasons:
+                        items:
+                          type: string
+                        type: array
+                      enabled:
+                        type: boolean
+                      envAllowed:
+                        type: boolean
+                      envInputPresent:
+                        type: boolean
+                      missingFields:
+                        items:
+                          type: string
+                        type: array
+                      overrideKinds:
+                        items:
+                          type: string
+                        type: array
+                      state:
+                        type: string
+                    type: object
+                type: object
+              type: array
+          type: object
+        subscriptions:
+          description: List of ADS subscriptions created by a given Dataplane.
+          items:
+            description: >-
+              DiscoverySubscription describes a single ADS subscription created
+              by a Dataplane to the Control Plane.
+            properties:
+              connectTime:
+                description: Time when a given Dataplane connected to the Control Plane.
+                format: date-time
+                type: string
+              controlPlaneInstanceId:
+                description: Control Plane instance that handled given subscription.
+                type: string
+              disconnectTime:
+                description: >-
+                  Time when a given Dataplane disconnected from the Control
+                  Plane.
+                format: date-time
+                type: string
+              generation:
+                description: >-
+                  Generation is an integer number which is periodically
+                  increased by the
+
+                  status sink
+                type: integer
+              id:
+                description: Unique id per ADS subscription.
+                type: string
+              status:
+                description: Status of the ADS subscription.
+                properties:
+                  cds:
+                    description: CDS defines all CDS stats.
+                    properties:
+                      responsesAcknowledged:
+                        description: Number of xDS responses ACKed by the Dataplane.
+                        type: integer
+                      responsesRejected:
+                        description: Number of xDS responses NACKed by the Dataplane.
+                        type: integer
+                      responsesSent:
+                        description: Number of xDS responses sent to the Dataplane.
+                        type: integer
+                    type: object
+                  eds:
+                    description: EDS defines all EDS stats.
+                    properties:
+                      responsesAcknowledged:
+                        description: Number of xDS responses ACKed by the Dataplane.
+                        type: integer
+                      responsesRejected:
+                        description: Number of xDS responses NACKed by the Dataplane.
+                        type: integer
+                      responsesSent:
+                        description: Number of xDS responses sent to the Dataplane.
+                        type: integer
+                    type: object
+                  lastUpdateTime:
+                    description: >-
+                      Time when status of a given ADS subscription was most
+                      recently updated.
+                    format: date-time
+                    type: string
+                  lds:
+                    description: LDS defines all LDS stats.
+                    properties:
+                      responsesAcknowledged:
+                        description: Number of xDS responses ACKed by the Dataplane.
+                        type: integer
+                      responsesRejected:
+                        description: Number of xDS responses NACKed by the Dataplane.
+                        type: integer
+                      responsesSent:
+                        description: Number of xDS responses sent to the Dataplane.
+                        type: integer
+                    type: object
+                  rds:
+                    description: RDS defines all RDS stats.
+                    properties:
+                      responsesAcknowledged:
+                        description: Number of xDS responses ACKed by the Dataplane.
+                        type: integer
+                      responsesRejected:
+                        description: Number of xDS responses NACKed by the Dataplane.
+                        type: integer
+                      responsesSent:
+                        description: Number of xDS responses sent to the Dataplane.
+                        type: integer
+                    type: object
+                  total:
+                    description: Total defines an aggregate over individual xDS stats.
+                    properties:
+                      responsesAcknowledged:
+                        description: Number of xDS responses ACKed by the Dataplane.
+                        type: integer
+                      responsesRejected:
+                        description: Number of xDS responses NACKed by the Dataplane.
+                        type: integer
+                      responsesSent:
+                        description: Number of xDS responses sent to the Dataplane.
+                        type: integer
+                    type: object
+                type: object
+              version:
+                description: Version of Envoy and Kuma dataplane
+                properties:
+                  dependencies:
+                    additionalProperties:
+                      type: string
+                    description: Versions of other dependencies
+                    type: object
+                  envoy:
+                    description: Version of Envoy
+                    properties:
+                      build:
+                        description: Full build tag of Envoy version
+                        type: string
+                      kumaDpCompatible:
+                        description: >-
+                          True iff Envoy version is compatible with Kuma DP
+                          version
+                        type: boolean
+                      version:
+                        description: Version number of Envoy
+                        type: string
+                    type: object
+                  kumaDp:
+                    description: Version of Kuma Dataplane
+                    properties:
+                      buildDate:
+                        description: Build date of Kuma Dataplane version
+                        type: string
+                      gitCommit:
+                        description: Git commit of Kuma Dataplane version
+                        type: string
+                      gitTag:
+                        description: Git tag of Kuma Dataplane version
+                        type: string
+                      kumaCpCompatible:
+                        description: >-
+                          True iff Kuma DP version is compatible with Kuma CP
+                          version
+                        type: boolean
+                      version:
+                        description: Version number of Kuma Dataplane
+                        type: string
+                    type: object
+                type: object
+            type: object
+          type: array
+        type:
+          type: string
+      required:
+        - type
+        - name
+        - mesh
+      type: object
+    GlobalSecretItem:
+      type: object
+      required:
+        - type
+        - name
+      properties:
+        type:
+          type: string
+        name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
+        data:
+          description: Value of the secret
+          format: byte
+          type: string
     MeshInsightWithMeta:
       allOf:
         - $ref: '#/components/schemas/Meta'
@@ -15864,6 +16779,264 @@ components:
         - name
         - mesh
       type: object
+    ZoneItem:
+      properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        enabled:
+          description: >-
+            enable allows to turn the zone on/off and exclude the whole zone
+            from
+
+            balancing traffic on it
+          type: boolean
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
+        name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          type: string
+        type:
+          type: string
+      required:
+        - type
+        - name
+      type: object
+    ZoneInsightItem:
+      properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        envoyAdminStreams:
+          description: |-
+            Statistics about Envoy Admin Streams
+            Deprecated: use kds_streams instead.
+          properties:
+            clustersGlobalInstanceId:
+              description: Global instance ID that handles Clusters streams.
+              type: string
+            configDumpGlobalInstanceId:
+              description: Global instance ID that handles XDS Config Dump streams.
+              type: string
+            statsGlobalInstanceId:
+              description: Global instance ID that handles Stats streams.
+              type: string
+          type: object
+        healthCheck:
+          properties:
+            time:
+              description: Time last health check received
+              format: date-time
+              type: string
+          type: object
+        kdsStreams:
+          description: >-
+            Information about kds streams that are estabilished between global
+            and zone
+          properties:
+            clusters:
+              description: Details of stream that handles Clusters stream.
+              properties:
+                connectTime:
+                  description: Time when the stream was open.
+                  format: date-time
+                  type: string
+                globalInstanceId:
+                  description: Global instance ID that handles the stream.
+                  type: string
+              type: object
+            configDump:
+              description: Details of stream that handles XDS Config Dump stream.
+              properties:
+                connectTime:
+                  description: Time when the stream was open.
+                  format: date-time
+                  type: string
+                globalInstanceId:
+                  description: Global instance ID that handles the stream.
+                  type: string
+              type: object
+            globalToZone:
+              description: >-
+                Details of stream that handles global to zone resource sync
+                stream.
+              properties:
+                connectTime:
+                  description: Time when the stream was open.
+                  format: date-time
+                  type: string
+                globalInstanceId:
+                  description: Global instance ID that handles the stream.
+                  type: string
+              type: object
+            stats:
+              description: Details of stream that handles Stats stream.
+              properties:
+                connectTime:
+                  description: Time when the stream was open.
+                  format: date-time
+                  type: string
+                globalInstanceId:
+                  description: Global instance ID that handles the stream.
+                  type: string
+              type: object
+            zoneToGlobal:
+              description: >-
+                Details of stream that handles zone to global resource sync
+                stream.
+              properties:
+                connectTime:
+                  description: Time when the stream was open.
+                  format: date-time
+                  type: string
+                globalInstanceId:
+                  description: Global instance ID that handles the stream.
+                  type: string
+              type: object
+          type: object
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
+        name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          type: string
+        subscriptions:
+          description: List of KDS subscriptions created by a given Zone Kuma CP.
+          items:
+            description: >-
+              KDSSubscription describes a single KDS subscription created by a
+              Zone to the Global.
+            properties:
+              authTokenProvided:
+                description: Indicates if subscription provided auth token
+                type: boolean
+              config:
+                description: Config of Zone Kuma CP
+                type: string
+              connectTime:
+                description: Time when a given Zone connected to the Global.
+                format: date-time
+                type: string
+              disconnectTime:
+                description: Time when a given Zone disconnected from the Global.
+                format: date-time
+                type: string
+              generation:
+                description: >-
+                  Generation is an integer number which is periodically
+                  increased by the
+
+                  status sink
+                type: integer
+              globalInstanceId:
+                description: Global CP instance that handled given subscription.
+                type: string
+              id:
+                description: Unique id per KDS subscription.
+                type: string
+              status:
+                description: Status of the KDS subscription.
+                properties:
+                  lastUpdateTime:
+                    description: >-
+                      Time when status of a given KDS subscription was most
+                      recently updated.
+                    format: date-time
+                    type: string
+                  stat:
+                    additionalProperties:
+                      description: >-
+                        DiscoveryServiceStats defines all stats over a single
+                        xDS service.
+                      properties:
+                        responsesAcknowledged:
+                          description: Number of xDS responses ACKed by the Dataplane.
+                          type: integer
+                        responsesRejected:
+                          description: Number of xDS responses NACKed by the Dataplane.
+                          type: integer
+                        responsesSent:
+                          description: Number of xDS responses sent to the Dataplane.
+                          type: integer
+                      type: object
+                    type: object
+                  total:
+                    description: Total defines an aggregate over individual KDS stats.
+                    properties:
+                      responsesAcknowledged:
+                        description: Number of xDS responses ACKed by the Dataplane.
+                        type: integer
+                      responsesRejected:
+                        description: Number of xDS responses NACKed by the Dataplane.
+                        type: integer
+                      responsesSent:
+                        description: Number of xDS responses sent to the Dataplane.
+                        type: integer
+                    type: object
+                type: object
+              version:
+                description: Version of Zone Kuma CP.
+                properties:
+                  kumaCp:
+                    description: Version of Zone Kuma CP
+                    properties:
+                      buildDate:
+                        description: Build date of Kuma ControlPlane version
+                        type: string
+                      gitCommit:
+                        description: Git commit of Kuma ControlPlane version
+                        type: string
+                      gitTag:
+                        description: Git tag of Kuma ControlPlane version
+                        type: string
+                      kumaCpGlobalCompatible:
+                        description: >-
+                          True iff this Zone CP version is compatible with
+                          Global CP
+                        type: boolean
+                      version:
+                        description: Version number of Kuma ControlPlane
+                        type: string
+                    type: object
+                type: object
+              zoneInstanceId:
+                description: >-
+                  Zone CP instance that handled the given subscription (This is
+                  the leader at
+
+                  time of connection).
+                type: string
+            type: object
+          type: array
+        type:
+          type: string
+      required:
+        - type
+        - name
+      type: object
     ZoneOverviewWithMeta:
       allOf:
         - $ref: '#/components/schemas/Meta'
@@ -15902,12 +17075,8 @@ components:
               properties:
                 time:
                   description: Time last health check received
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
               type: object
             kdsStreams:
               description: >-
@@ -15919,12 +17088,8 @@ components:
                   properties:
                     connectTime:
                       description: Time when the stream was open.
-                      properties:
-                        nanos:
-                          type: integer
-                        seconds:
-                          type: integer
-                      type: object
+                      format: date-time
+                      type: string
                     globalInstanceId:
                       description: Global instance ID that handles the stream.
                       type: string
@@ -15934,12 +17099,8 @@ components:
                   properties:
                     connectTime:
                       description: Time when the stream was open.
-                      properties:
-                        nanos:
-                          type: integer
-                        seconds:
-                          type: integer
-                      type: object
+                      format: date-time
+                      type: string
                     globalInstanceId:
                       description: Global instance ID that handles the stream.
                       type: string
@@ -15951,12 +17112,8 @@ components:
                   properties:
                     connectTime:
                       description: Time when the stream was open.
-                      properties:
-                        nanos:
-                          type: integer
-                        seconds:
-                          type: integer
-                      type: object
+                      format: date-time
+                      type: string
                     globalInstanceId:
                       description: Global instance ID that handles the stream.
                       type: string
@@ -15966,12 +17123,8 @@ components:
                   properties:
                     connectTime:
                       description: Time when the stream was open.
-                      properties:
-                        nanos:
-                          type: integer
-                        seconds:
-                          type: integer
-                      type: object
+                      format: date-time
+                      type: string
                     globalInstanceId:
                       description: Global instance ID that handles the stream.
                       type: string
@@ -15983,12 +17136,8 @@ components:
                   properties:
                     connectTime:
                       description: Time when the stream was open.
-                      properties:
-                        nanos:
-                          type: integer
-                        seconds:
-                          type: integer
-                      type: object
+                      format: date-time
+                      type: string
                     globalInstanceId:
                       description: Global instance ID that handles the stream.
                       type: string
@@ -16009,20 +17158,12 @@ components:
                     type: string
                   connectTime:
                     description: Time when a given Zone connected to the Global.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   disconnectTime:
                     description: Time when a given Zone disconnected from the Global.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   generation:
                     description: >-
                       Generation is an integer number which is periodically
@@ -16043,12 +17184,8 @@ components:
                         description: >-
                           Time when status of a given KDS subscription was most
                           recently updated.
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
+                        format: date-time
+                        type: string
                       stat:
                         additionalProperties:
                           description: >-
@@ -18130,6 +19267,30 @@ components:
           type: object
           readOnly: true
   responses:
+    GlobalInsightsResponse:
+      description: A response containing counts of global resources.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GlobalInsights'
+    PoliciesResponse:
+      description: A response containing all policy types.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Policies'
+    WhoAmIResponse:
+      description: A response containing the identity of the authenticated user.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/WhoAmI'
+    TokenResponse:
+      description: A response containing the issued token.
+      content:
+        text/plain:
+          schema:
+            type: string
     ConfigResponse:
       description: The control plane configuration.
       content:
@@ -19041,6 +20202,53 @@ components:
                 type: number
             type: object
       description: List
+    DataplaneInsightCreateOrUpdateSuccessResponse:
+      content:
+        application/json:
+          schema:
+            properties:
+              warnings:
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+                readOnly: true
+                type: array
+            type: object
+      description: Successful response
+    DataplaneInsightDeleteSuccessResponse:
+      content:
+        application/json:
+          schema:
+            type: object
+      description: Successful response
+    DataplaneInsightItem:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneInsightItem'
+      description: Successful response
+    DataplaneInsightList:
+      content:
+        application/json:
+          schema:
+            properties:
+              items:
+                items:
+                  $ref: '#/components/schemas/DataplaneInsightItem'
+                type: array
+              next:
+                description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
     GetDataplaneOverviewResponse:
       description: A response containing the overview of a dataplane.
       content:
@@ -19063,6 +20271,53 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/DataplaneOverviewWithMeta'
+    GlobalSecretItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GlobalSecretItem'
+    GlobalSecretList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GlobalSecretItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    GlobalSecretCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+    GlobalSecretDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
     MeshCreateOrUpdateSuccessResponse:
       content:
         application/json:
@@ -19192,6 +20447,100 @@ components:
               items:
                 items:
                   $ref: '#/components/schemas/SecretItem'
+                type: array
+              next:
+                description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
+    ZoneCreateOrUpdateSuccessResponse:
+      content:
+        application/json:
+          schema:
+            properties:
+              warnings:
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+                readOnly: true
+                type: array
+            type: object
+      description: Successful response
+    ZoneDeleteSuccessResponse:
+      content:
+        application/json:
+          schema:
+            type: object
+      description: Successful response
+    ZoneItem:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneItem'
+      description: Successful response
+    ZoneList:
+      content:
+        application/json:
+          schema:
+            properties:
+              items:
+                items:
+                  $ref: '#/components/schemas/ZoneItem'
+                type: array
+              next:
+                description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
+    ZoneInsightCreateOrUpdateSuccessResponse:
+      content:
+        application/json:
+          schema:
+            properties:
+              warnings:
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+                readOnly: true
+                type: array
+            type: object
+      description: Successful response
+    ZoneInsightDeleteSuccessResponse:
+      content:
+        application/json:
+          schema:
+            type: object
+      description: Successful response
+    ZoneInsightItem:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneInsightItem'
+      description: Successful response
+    ZoneInsightList:
+      content:
+        application/json:
+          schema:
+            properties:
+              items:
+                items:
+                  $ref: '#/components/schemas/ZoneInsightItem'
                 type: array
               next:
                 description: URL to the next page

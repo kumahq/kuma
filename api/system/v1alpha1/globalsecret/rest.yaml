@@ -1,0 +1,251 @@
+openapi: 3.1.0
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+
+paths:
+  /globalsecrets/{name}:
+    get:
+      operationId: getGlobalSecret
+      summary: Returns GlobalSecret entity
+      tags: [ "GlobalSecret" ]
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the GlobalSecret
+      responses:
+        '200':
+          $ref: "#/components/responses/GlobalSecretItem"
+        '404':
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+    put:
+      operationId: putGlobalSecret
+      summary: Creates or Updates GlobalSecret entity
+      tags: [ "GlobalSecret" ]
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the GlobalSecret
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalSecretItem'
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteGlobalSecret
+      summary: Deletes GlobalSecret entity
+      tags: [ "GlobalSecret" ]
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the GlobalSecret
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalSecretDeleteSuccessResponse'
+        '404':
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+
+  /globalsecrets:
+    get:
+      operationId: getGlobalSecretList
+      summary: Returns a list of GlobalSecret entities.
+      tags: [ "GlobalSecret" ]
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+            example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+      responses:
+        '200':
+          $ref: "#/components/responses/GlobalSecretList"
+
+  /global-secrets/{name}:
+    get:
+      operationId: getGlobalSecretAlias
+      summary: Returns GlobalSecret entity
+      tags: [ "GlobalSecret" ]
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the GlobalSecret
+      responses:
+        '200':
+          $ref: "#/components/responses/GlobalSecretItem"
+        '404':
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+    put:
+      operationId: putGlobalSecretAlias
+      summary: Creates or Updates GlobalSecret entity
+      tags: [ "GlobalSecret" ]
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the GlobalSecret
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalSecretItem'
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteGlobalSecretAlias
+      summary: Deletes GlobalSecret entity
+      tags: [ "GlobalSecret" ]
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the GlobalSecret
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalSecretDeleteSuccessResponse'
+        '404':
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+
+  /global-secrets:
+    get:
+      operationId: getGlobalSecretListAlias
+      summary: Returns a list of GlobalSecret entities.
+      tags: [ "GlobalSecret" ]
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+            example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+      responses:
+        '200':
+          $ref: "#/components/responses/GlobalSecretList"
+
+components:
+  schemas:
+    GlobalSecretItem:
+      type: object
+      required:
+        - type
+        - name
+      properties:
+        type:
+          type: string
+        name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
+        data:
+          description: Value of the secret
+          format: byte
+          type: string
+
+  responses:
+    GlobalSecretItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GlobalSecretItem'
+    GlobalSecretList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GlobalSecretItem"
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    GlobalSecretCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: |
+                  warnings is a list of warning messages to return to the requesting Kuma API clients.
+                  Warning messages describe a problem the client making the API request should correct or be aware of.
+                items:
+                  type: string
+    GlobalSecretDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
