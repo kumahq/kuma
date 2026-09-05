@@ -15,6 +15,8 @@ import (
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -143,6 +145,57 @@ var _ = Describe("Context", func() {
 				},
 			}),
 		)
+
+		It("should strip Status from a MeshTrust before it is sent from Zone to Global", func() {
+			// given a MeshTrust as it would come out of the zone's own store, with its
+			// zone-local Origin status populated (see meshidentity/status/updater.go,
+			// which only runs on Zone/Standalone CPs)
+			kri := "kri_mt_default_zone-1_"
+			given := &meshtrust_api.MeshTrustResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "mt-1",
+				},
+				Spec: &meshtrust_api.MeshTrust{
+					TrustDomain: "example.com",
+					CABundles: []meshtrust_api.CABundle{
+						{Type: meshtrust_api.PemCABundleType, PEM: &meshtrust_api.PEM{Value: "cert"}},
+					},
+				},
+				Status: &meshtrust_api.MeshTrustStatus{
+					Origin: &meshtrust_api.Origin{KRI: &kri},
+				},
+			}
+
+			// when
+			out, err := mapper(kds.Features{}, given)
+
+			// then Status is stripped ...
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out.GetStatus()).To(Equal(&meshtrust_api.MeshTrustStatus{}))
+			// ... while the rest of the resource is unaffected
+			Expect(out.GetSpec()).To(Equal(given.Spec))
+		})
+
+		It("should not strip Status from a MeshService (Global needs its VIP/hostname status)", func() {
+			// given a MeshService as it would come out of the zone's own store, with its
+			// zone-computed VIP status populated
+			given := &meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend",
+				},
+				Spec: &meshservice_api.MeshService{},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
+				},
+			}
+
+			// when
+			out, err := mapper(kds.Features{}, given)
+
+			// then Status is preserved, unlike for MeshTrust above
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out.GetStatus()).To(Equal(given.Status))
+		})
 	})
 	Describe("GlobalProvidedFilter", func() {
 		var rm manager.ResourceManager
