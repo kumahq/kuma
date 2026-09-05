@@ -12,9 +12,11 @@ does not have any particular instructions.
 
 `GET /meshes/{mesh}/{policyType}/{policyName}/dataplanes` for every inspectable policy type is removed and answers `404`. The replacement `GET /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes` returns the list of dataplanes the policy matches.
 
+`kumactl inspect <policy> NAME` now uses the replacement endpoint by default and returns dataplane metadata rather than the legacy attachment details. It does not fall back to the removed endpoint. The `--new-api` flag is still accepted but no longer has any effect. Results are paginated with `--size` and `--offset`.
+
 **Action required**
 
-Switch to the `_resources/dataplanes` form. Note that `kumactl inspect <policy> NAME` without `--new-api` still calls the removed path and will fail against this control plane; use `kumactl inspect <policy> NAME --new-api` instead.
+Upgrade `kumactl` together with the control plane. Update scripts that depend on legacy attachment details to consume the dataplane metadata response instead. The first page contains at most 100 dataplanes unless `--size` is set.
 
 ### The ServiceInsight REST endpoints are removed
 
