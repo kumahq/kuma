@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"slices"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,7 +15,6 @@ import (
 	"github.com/kumahq/kuma/v3/app/kumactl/cmd"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/resources"
 	test_kumactl "github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
-	api_server_types "github.com/kumahq/kuma/v3/pkg/api-server/types"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
@@ -24,22 +22,20 @@ import (
 
 type testPolicyInspectClient struct {
 	ensureMesh string
-	response   *api_server_types.PolicyInspectEntryList
+	ensureName string
+	ensureSize int
+	ensurePage string
 	dpResponse api_types.InspectDataplanesForPolicyResponse
 }
 
-func (t *testPolicyInspectClient) DataplanesForPolicy(ctx context.Context, desc model.ResourceTypeDescriptor, mesh string, name string) (api_types.InspectDataplanesForPolicyResponse, error) {
+func (t *testPolicyInspectClient) DataplanesForPolicy(ctx context.Context, desc model.ResourceTypeDescriptor, mesh, name string, size int, offset string) (api_types.InspectDataplanesForPolicyResponse, error) {
 	if t.ensureMesh != "" {
 		Expect(mesh).To(Equal(t.ensureMesh))
 	}
+	Expect(name).To(Equal(t.ensureName))
+	Expect(size).To(Equal(t.ensureSize))
+	Expect(offset).To(Equal(t.ensurePage))
 	return t.dpResponse, nil
-}
-
-func (t *testPolicyInspectClient) Inspect(ctx context.Context, policyDesc model.ResourceTypeDescriptor, mesh, name string) (*api_server_types.PolicyInspectEntryList, error) {
-	if t.ensureMesh != "" {
-		Expect(mesh).To(Equal(t.ensureMesh))
-	}
-	return t.response, nil
 }
 
 var _ resources.PolicyInspectClient = &testPolicyInspectClient{}
@@ -50,6 +46,8 @@ var _ = Describe("kumactl inspect POLICY", func() {
 		serverResponseFile string
 		mesh               string
 		cmdArgs            []string
+		size               int
+		offset             string
 	}
 	DescribeTable("kumactl inspect dataplane",
 		func(given testCase) {
@@ -57,23 +55,14 @@ var _ = Describe("kumactl inspect POLICY", func() {
 			rawResponse, err := os.ReadFile(path.Join("testdata", given.serverResponseFile))
 			Expect(err).ToNot(HaveOccurred())
 
-			newApi := slices.Contains(given.cmdArgs, "--new-api")
-			var client *testPolicyInspectClient
-			if newApi {
-				entryList := api_types.InspectDataplanesForPolicyResponse{}
-				Expect(json.Unmarshal(rawResponse, &entryList)).To(Succeed())
-				client = &testPolicyInspectClient{
-					ensureMesh: given.mesh,
-					dpResponse: entryList,
-				}
-
-			} else {
-				entryList := &api_server_types.PolicyInspectEntryList{}
-				Expect(json.Unmarshal(rawResponse, entryList)).To(Succeed())
-				client = &testPolicyInspectClient{
-					ensureMesh: given.mesh,
-					response:   entryList,
-				}
+			entryList := api_types.InspectDataplanesForPolicyResponse{}
+			Expect(json.Unmarshal(rawResponse, &entryList)).To(Succeed())
+			client := &testPolicyInspectClient{
+				ensureMesh: given.mesh,
+				ensureName: "tt1",
+				ensureSize: given.size,
+				ensurePage: given.offset,
+				dpResponse: entryList,
 			}
 
 			rootCtx := test_kumactl.MakeMinimalRootContext()
@@ -95,7 +84,14 @@ var _ = Describe("kumactl inspect POLICY", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(buf.String()).To(matchers.MatchGoldenEqual("testdata", given.goldenFile))
 		},
-		Entry("new-api mtp", testCase{
+		Entry("mtp", testCase{
+			goldenFile:         "inspect-mtp-dp.golden.txt",
+			serverResponseFile: "inspect-mtp-dp.server-response.json",
+			cmdArgs:            []string{"inspect", "meshtrafficpermission", "tt1", "--size", "25", "--offset", "next-page"},
+			size:               25,
+			offset:             "next-page",
+		}),
+		Entry("mtp with deprecated new-api flag", testCase{
 			goldenFile:         "inspect-mtp-dp.golden.txt",
 			serverResponseFile: "inspect-mtp-dp.server-response.json",
 			cmdArgs:            []string{"inspect", "meshtrafficpermission", "tt1", "--new-api"},

@@ -2,8 +2,6 @@ package inspect
 
 import (
 	"fmt"
-	"strings"
-	"text/template"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -12,49 +10,12 @@ import (
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/printers"
-	api_server_types "github.com/kumahq/kuma/v3/pkg/api-server/types"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
-var policyInspectTemplate = `Affected data plane proxies:
-
-{{ range .Items }}{{ with IsSidecar . }}  {{ .DataplaneKey.Name }}{{ if . | PrintAttachments }}:
-{{ range .Attachments }}    {{ . | FormatAttachment }}
-{{ end }}{{ end }}
-{{ end }}{{ with IsGateway . }}  {{ .Gateway.Name }}:
-{{ range .Listeners }}    listener ({{ .Protocol }}:{{ .Port }}):
-{{ range .Hosts }}      {{ .HostName }}:
-{{ range .Routes }}        {{ .Route }}:
-{{ range .Destinations }}          {{ FormatTags . }}
-{{ end }}{{ end }}{{ end }}{{ end }}
-{{ end }}{{ end }}`
-
 func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd.RootContext) *cobra.Command {
-	legacyTmpl := template.Must(template.New("policy_inspect").Funcs(template.FuncMap{
-		"IsSidecar": func(e api_server_types.PolicyInspectEntry) *api_server_types.PolicyInspectSidecarEntry {
-			if concrete, ok := e.PolicyInspectEntryKind.(*api_server_types.PolicyInspectSidecarEntry); ok {
-				return concrete
-			}
-			return nil
-		},
-		"IsGateway": func(e api_server_types.PolicyInspectEntry) *api_server_types.PolicyInspectGatewayEntry {
-			if concrete, ok := e.PolicyInspectEntryKind.(*api_server_types.PolicyInspectGatewayEntry); ok {
-				return concrete
-			}
-			return nil
-		},
-		"FormatAttachment": attachmentToStr(false),
-		"PrintAttachments": func(sidecarEntry *api_server_types.PolicyInspectSidecarEntry) bool {
-			if len(sidecarEntry.Attachments) == 1 && sidecarEntry.Attachments[0].Type == "dataplane" {
-				return false
-			}
-			return true
-		},
-		"FormatTags": tagsToStr(false),
-	}).Parse(policyInspectTemplate))
-
-	var newApi bool
-	var offset int
+	var size int
+	var offset string
 	cmd := &cobra.Command{
 		Use:   fmt.Sprintf("%s NAME", policyDesc.KumactlArg),
 		Short: fmt.Sprintf("Inspect %s", policyDesc.Name),
@@ -66,14 +27,7 @@ func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd
 				return errors.Wrap(err, "failed to create a policy inspect client")
 			}
 			name := args[0]
-			if !newApi {
-				entryList, err := client.Inspect(cmd.Context(), policyDesc, pctx.CurrentMesh(), name)
-				if err != nil {
-					return err
-				}
-				return legacyTmpl.Execute(cmd.OutOrStdout(), entryList)
-			}
-			res, err := client.DataplanesForPolicy(cmd.Context(), policyDesc, pctx.CurrentMesh(), name)
+			res, err := client.DataplanesForPolicy(cmd.Context(), policyDesc, pctx.CurrentMesh(), name, size, offset)
 			if err != nil {
 				return err
 			}
@@ -95,38 +49,8 @@ func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd
 		},
 	}
 	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
-	cmd.PersistentFlags().IntVar(&offset, "offset", 0, "the offset for pagination")
-	cmd.PersistentFlags().BoolVar(&newApi, "new-api", false, "use the newer version of the inspect api")
+	cmd.PersistentFlags().IntVar(&size, "size", 0, "maximum number of elements to return")
+	cmd.PersistentFlags().StringVar(&offset, "offset", "", "the offset that indicates starting element of the dataplane list to retrieve")
+	cmd.PersistentFlags().Bool("new-api", false, "deprecated; the current inspect API is always used")
 	return cmd
-}
-
-func attachmentToStr(upperCase bool) func(api_server_types.AttachmentEntry) string {
-	return func(a api_server_types.AttachmentEntry) string {
-		typeToStr := func(t string) string {
-			if upperCase {
-				return strings.ToUpper(t)
-			}
-			return t
-		}
-		switch a.Type {
-		case "dataplane":
-			return typeToStr(a.Type)
-		case "service":
-			return fmt.Sprintf("%s %s", typeToStr(a.Type), a.Name)
-		default:
-			return fmt.Sprintf("%s %s(%s)", typeToStr(a.Type), a.Name, a.Service)
-		}
-	}
-}
-
-func tagsToStr(upperCase bool) func(map[string]string) string {
-	return func(destinationTags map[string]string) string {
-		service := destinationTags["kuma.io/display-name"]
-
-		label := "service"
-		if upperCase {
-			label = strings.ToUpper(label)
-		}
-		return fmt.Sprintf("%s %s", label, service)
-	}
 }
