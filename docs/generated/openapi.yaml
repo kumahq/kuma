@@ -8313,6 +8313,29 @@ components:
                               the upstream cluster.
                             format: int32
                             type: integer
+                          retryBudget:
+                            description: |-
+                              RetryBudget limits concurrent retries as a share of the active requests,
+                              an alternative to the static 'maxRetries' cap. When set, Envoy applies the
+                              budget and ignores 'maxRetries'.
+                            properties:
+                              budgetPercent:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                description: |-
+                                  Maximum share of active requests, as a percentage, that may be used for
+                                  concurrent retries.
+                                  If not specified then the default value is 20.
+                                x-kubernetes-int-or-string: true
+                              minRetryConcurrency:
+                                description: |-
+                                  Minimum number of concurrent retries allowed regardless of the percentage
+                                  budget, so that retries stay possible under low load.
+                                  If not specified then the default value is 3.
+                                format: int32
+                                type: integer
+                            type: object
                         type: object
                       outlierDetection:
                         description: >-
@@ -8827,6 +8850,29 @@ components:
                               the upstream cluster.
                             format: int32
                             type: integer
+                          retryBudget:
+                            description: |-
+                              RetryBudget limits concurrent retries as a share of the active requests,
+                              an alternative to the static 'maxRetries' cap. When set, Envoy applies the
+                              budget and ignores 'maxRetries'.
+                            properties:
+                              budgetPercent:
+                                anyOf:
+                                - type: integer
+                                - type: string
+                                description: |-
+                                  Maximum share of active requests, as a percentage, that may be used for
+                                  concurrent retries.
+                                  If not specified then the default value is 20.
+                                x-kubernetes-int-or-string: true
+                              minRetryConcurrency:
+                                description: |-
+                                  Minimum number of concurrent retries allowed regardless of the percentage
+                                  budget, so that retries stay possible under low load.
+                                  If not specified then the default value is 3.
+                                format: int32
+                                type: integer
+                            type: object
                         type: object
                       outlierDetection:
                         description: >-
