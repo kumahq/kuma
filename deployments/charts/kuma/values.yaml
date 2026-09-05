@@ -62,6 +62,12 @@ controlPlane:
   # -- Minimum number of seconds for which a newly created pod should be ready for it to be considered available.
   minReadySeconds: 0
 
+  # -- Update strategy for the `Deployment` resource. Override to e.g. raise `maxUnavailable` above `0` if the default `RollingUpdate` strategy deadlocks your rollout (for example, on a single-replica cluster with tight PodDisruptionBudget or resource constraints).
+  deploymentStrategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
   # -- Annotations applied only to the `Deployment` resource
   deploymentAnnotations: {}
 
