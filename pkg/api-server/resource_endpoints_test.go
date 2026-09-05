@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/unversioned"
 	rest_v1alpha1 "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	rest_error_types "github.com/kumahq/kuma/v3/pkg/core/rest/errors/types"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
@@ -121,6 +122,43 @@ var _ = Describe("Resource Endpoints", func() {
 		Expect(test_metrics.FindMetric(metrics, "api_server_http_request_duration_seconds")).ToNot(BeNil())
 		Expect(test_metrics.FindMetric(metrics, "api_server_http_requests_inflight")).ToNot(BeNil())
 		Expect(test_metrics.FindMetric(metrics, "api_server_http_response_size_bytes")).ToNot(BeNil())
+	})
+})
+
+var _ = Describe("Read-only Resource Endpoints", func() {
+	It("should retain explicit PUT and DELETE routes", func() {
+		apiServer, _, stop := StartApiServer(NewTestApiServerConfigurer().WithGlobal())
+		defer stop()
+
+		const detail = "On global control plane you can not modify dataplane resources with 'kumactl apply' or via the HTTP API." +
+			" You can still use 'kumactl' or the HTTP API to modify them on the zone control plane.\n"
+		for _, method := range []string{http.MethodPut, http.MethodDelete} {
+			By(method)
+			request, err := http.NewRequestWithContext(
+				context.Background(),
+				method,
+				fmt.Sprintf("http://%s/meshes/default/dataplanes/dp-1", apiServer.Address()),
+				bytes.NewBufferString("not-json"),
+			)
+			Expect(err).ToNot(HaveOccurred())
+			request.Header.Set(restful.HEADER_ContentType, "application/json")
+
+			response, err := http.DefaultClient.Do(request)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.StatusCode).To(Equal(http.StatusMethodNotAllowed))
+			Expect(response.Header.Get(restful.HEADER_ContentType)).To(Equal("application/json"))
+
+			body := rest_error_types.Error{}
+			Expect(json.NewDecoder(response.Body).Decode(&body)).To(Succeed())
+			Expect(response.Body.Close()).To(Succeed())
+			Expect(body).To(Equal(rest_error_types.Error{
+				Type:    "/std-errors",
+				Status:  http.StatusMethodNotAllowed,
+				Title:   "Method not allowed",
+				Detail:  detail,
+				Details: detail,
+			}))
+		}
 	})
 })
 
