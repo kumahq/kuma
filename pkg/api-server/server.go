@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/emicklei/go-restful/v3"
@@ -53,6 +54,8 @@ import (
 )
 
 var log = core.Log.WithName("api-server")
+
+const apiServerShutdownTimeout = 2 * time.Second
 
 type ApiServer struct {
 	mux          *http.ServeMux
@@ -383,8 +386,37 @@ func (a *ApiServer) Ready() bool {
 	return a.httpReady.Load() && a.httpsReady.Load()
 }
 
-func (a *ApiServer) Start(stop <-chan struct{}) error {
-	errChan := make(chan error)
+func (a *ApiServer) Start(stop <-chan struct{}) (result error) {
+	a.httpReady.Store(false)
+	a.httpsReady.Store(false)
+	errChan := make(chan error, 2)
+
+	startedServers := make([]*http.Server, 0, 2)
+	doneChannels := make([]<-chan struct{}, 0, 2)
+	defer func() {
+		a.httpReady.Store(false)
+		a.httpsReady.Store(false)
+		ctx, cancel := context.WithTimeout(context.Background(), apiServerShutdownTimeout)
+		defer cancel()
+		shutdownErrs := make(chan error, len(startedServers))
+		for _, server := range startedServers {
+			go func() {
+				err := server.Shutdown(ctx)
+				if err != nil {
+					err = multierr.Append(err, server.Close())
+				}
+				shutdownErrs <- err
+			}()
+		}
+		for range startedServers {
+			if err := <-shutdownErrs; err != nil {
+				result = multierr.Append(result, err)
+			}
+		}
+		for _, done := range doneChannels {
+			<-done
+		}
+	}()
 
 	var httpServer, httpsServer *http.Server
 	if a.config.HTTP.Enabled {
@@ -397,11 +429,6 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 			Handler:           a.mux,
 			ErrorLog:          adapter.ToStd(log),
 		}
-		if err := kuma_srv.StartServer(log, httpServer, &a.httpReady, errChan); err != nil {
-			return err
-		}
-	} else {
-		a.httpReady.Store(true)
 	}
 	if a.config.HTTPS.Enabled {
 		tlsConfig, err := configureTLS(a.config, a.certWatchers)
@@ -418,29 +445,43 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 			TLSConfig:         tlsConfig,
 			ErrorLog:          adapter.ToStd(log),
 		}
-		if err := kuma_srv.StartServer(log, httpsServer, &a.httpsReady, errChan); err != nil {
+	}
+
+	var httpListener, httpsListener net.Listener
+	if httpServer != nil {
+		listener, err := kuma_srv.NewListener(httpServer)
+		if err != nil {
 			return err
 		}
+		httpListener = listener
+	}
+	if httpsServer != nil {
+		listener, err := kuma_srv.NewListener(httpsServer)
+		if err != nil {
+			if httpListener != nil {
+				err = multierr.Append(err, httpListener.Close())
+			}
+			return err
+		}
+		httpsListener = listener
+	}
+
+	if httpServer != nil {
+		startedServers = append(startedServers, httpServer)
+		doneChannels = append(doneChannels, kuma_srv.ServeServer(log, httpServer, httpListener, &a.httpReady, errChan))
+	} else {
+		a.httpReady.Store(true)
+	}
+	if httpsServer != nil {
+		startedServers = append(startedServers, httpsServer)
+		doneChannels = append(doneChannels, kuma_srv.ServeServer(log, httpsServer, httpsListener, &a.httpsReady, errChan))
 	} else {
 		a.httpsReady.Store(true)
 	}
 	select {
 	case <-stop:
 		log.Info("stopping down API Server")
-		a.httpReady.Store(false)
-		a.httpsReady.Store(false)
-		var errs error
-		if httpServer != nil {
-			if err := httpServer.Shutdown(context.Background()); err != nil {
-				errs = multierr.Append(errs, err)
-			}
-		}
-		if httpsServer != nil {
-			if err := httpsServer.Shutdown(context.Background()); err != nil {
-				errs = multierr.Append(errs, err)
-			}
-		}
-		return errs
+		return nil
 	case err := <-errChan:
 		return err
 	}
