@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Bad Request",
+ "detail": "bad request: resource with kuma.io/origin=global cannot be deleted on this control plane",
+ "details": "bad request: resource with kuma.io/origin=global cannot be deleted on this control plane"
+}
