@@ -2,6 +2,14 @@
 fmt/proto: ## Dev: Run buf format on .proto files
 	$(BUF) format -w
 
+# Keeps the Envoy proto dependency on the same release as ENVOY_VERSION, so an
+# Envoy bump can't leave buf lint resolving a different API than codegen does.
+.PHONY: fmt/proto-deps
+fmt/proto-deps: ## Dev: Pin the buf Envoy dependency to ENVOY_PROTO_VERSION
+	@COMMIT=$$($(BUF) registry module label info buf.build/envoyproxy/envoy:$(ENVOY_PROTO_VERSION) --format json | $(YQ) -p json -r '.commit') && \
+		$(YQ) -i '(.deps[] | select(test("^buf\.build/envoyproxy/envoy"))) = "buf.build/envoyproxy/envoy:'"$$COMMIT"'" | (.deps[] | select(test("^buf\.build/envoyproxy/envoy"))) line_comment = "$(ENVOY_PROTO_VERSION)"' buf.yaml
+	$(BUF) dep update
+
 .PHONY: tidy
 tidy:
 	@TOP=$(shell pwd) && \
@@ -38,7 +46,7 @@ ginkgo/lint:
 	$(GO) run $(TOOLS_DIR)/ci/check_test_files.go
 
 .PHONY: format
-format: fmt/proto generate tidy ginkgo/unfocus fmt/ci docs
+format: fmt/proto fmt/proto-deps generate tidy ginkgo/unfocus fmt/ci docs
 
 .PHONY: kube-lint
 kube-lint:
