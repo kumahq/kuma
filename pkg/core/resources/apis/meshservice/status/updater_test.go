@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
@@ -54,6 +55,40 @@ var _ = Describe("Updater", func() {
 
 	AfterEach(func() {
 		close(stopCh)
+	})
+
+	It("does not mutate the cached MeshService it reads", func() {
+		// given an updater whose read-only manager is the shared resource cache
+		ownMetrics, err := core_metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		cached, err := manager.NewCachedManager(resManager, time.Minute, ownMetrics, multitenant.SingleTenant)
+		Expect(err).ToNot(HaveOccurred())
+		u, err := NewStatusUpdater(logr.Discard(), cached, resManager, 50*time.Millisecond, ownMetrics, "east", config_core.KubernetesEnvironment)
+		Expect(err).ToNot(HaveOccurred())
+		updater := u.(*StatusUpdater)
+
+		Expect(samples.MeshServiceBackendBuilder().Create(resManager)).To(Succeed())
+		Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().Build(), store.CreateByKey("dp-1", model.DefaultMesh), store.CreateWithLabels(map[string]string{
+			metadata.KumaWorkload: "backend",
+		}))).To(Succeed())
+
+		// when the updater runs against the cache
+		list := &meshservice_api.MeshServiceResourceList{}
+		Expect(cached.List(context.Background(), list)).To(Succeed())
+		Expect(list.Items).To(HaveLen(1))
+		cachedMs := list.Items[0]
+		hashBefore := model.Hash(cachedMs)
+
+		Expect(updater.updateStatus(context.Background())).To(Succeed())
+
+		// then the state landed in the store
+		stored := meshservice_api.NewMeshServiceResource()
+		Expect(resManager.Get(context.Background(), stored, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+		Expect(stored.Spec.State).To(Equal(meshservice_api.StateAvailable))
+
+		// but the instance still held in the cache is untouched
+		Expect(model.Hash(cachedMs)).To(Equal(hashBefore))
+		Expect(cachedMs.Spec.State).To(BeEmpty())
 	})
 
 	It("should add identity to status of service", func() {
