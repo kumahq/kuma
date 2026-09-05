@@ -34,7 +34,6 @@ import (
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -304,8 +303,6 @@ func addResourcesEndpoints(
 		k8sSecretMapper = secrets_k8s.NewInferenceMapper(cfg.Store.Kubernetes.SystemNamespace)
 	}
 	for _, definition := range defs {
-		defType := definition.Name
-
 		switch {
 		case cfg.ApiServer.ReadOnly:
 			definition.ReadOnly = true
@@ -325,7 +322,7 @@ func addResourcesEndpoints(
 		endpoints := resourceEndpoints{
 			resourceCrudHandler: &resourceCrudHandler{
 				resourceEndpointsContext:     endpointsCtx,
-				k8sMapper:                    k8sMapper,
+				k8sMapper:                    k8sMapperForDescriptor(definition, k8sMapper, k8sSecretMapper),
 				federatedZone:                cfg.IsFederatedZoneCP(),
 				filter:                       filters.Resource(definition),
 				disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
@@ -338,9 +335,6 @@ func addResourcesEndpoints(
 				xdsHooks:                 xdsHooks,
 				knownInternalAddresses:   cfg.IPAM.KnownInternalCIDRs,
 			},
-		}
-		if defType == system.SecretType || defType == system.GlobalSecretType {
-			endpoints.k8sMapper = k8sSecretMapper
 		}
 		switch definition.Scope {
 		case model.ScopeMesh:
@@ -372,6 +366,7 @@ func addResourcesEndpoints(
 
 	kriEndpoints := kriEndpoint{
 		k8sMapper:       k8sMapper,
+		k8sSecretMapper: k8sSecretMapper,
 		resManager:      resManager,
 		resourceAccess:  resourceAccess,
 		cpMode:          cfg.Mode,
