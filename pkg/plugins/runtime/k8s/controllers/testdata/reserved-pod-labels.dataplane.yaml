@@ -1,3 +1,5 @@
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
 mesh: default
 metadata:
   labels:
@@ -5,8 +7,8 @@ metadata:
     k8s.kuma.io/namespace: demo
     kuma.io/display-name: example
     kuma.io/mesh: default
-    version: "0.1"
   name: example
+  namespace: demo
 spec:
   networking:
     address: 192.168.0.1
@@ -14,4 +16,4 @@ spec:
     - health:
         ready: true
       port: 8080
-      protocol: http
+      protocol: tcp
