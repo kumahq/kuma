@@ -51,6 +51,10 @@ func overviewForResource(
 	if !ok {
 		return nil, fmt.Errorf("type withInsight for '%s' doesn't implement core_model.OverviewResource this shouldn't happen", descriptor.Name)
 	}
+	return populateOverview(overview, resource, insight)
+}
+
+func populateOverview(overview core_model.OverviewResource, resource, insight core_model.Resource) (core_model.Resource, error) {
 	if err := overview.SetOverviewSpec(resource, insight); err != nil {
 		return nil, err
 	}
@@ -254,11 +258,12 @@ func (r *resourceCrudHandler) MergeInOverview(resources core_model.ResourceList,
 		if !ok {
 			return nil, fmt.Errorf("type overview for '%s' doesn't implement core_model.OverviewResource this shouldn't happen", r.descriptor.Name)
 		}
-		if err := overview.SetOverviewSpec(resource, insightsByKey[core_model.MetaToResourceKey(resource.GetMeta())]); err != nil {
+		overviewResource, err := populateOverview(overview, resource, insightsByKey[core_model.MetaToResourceKey(resource.GetMeta())])
+		if err != nil {
 			return nil, err
 		}
 
-		if err := items.AddItem(overview.(core_model.Resource)); err != nil {
+		if err := items.AddItem(overviewResource); err != nil {
 			return nil, err
 		}
 	}
