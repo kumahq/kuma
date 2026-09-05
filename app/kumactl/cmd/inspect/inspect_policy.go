@@ -2,6 +2,7 @@ package inspect
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -10,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/printers"
+	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/table"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
@@ -35,7 +37,19 @@ func newInspectPolicyCmd(policyDesc core_model.ResourceTypeDescriptor, pctx *cmd
 			return printers.GenericPrint(format, res, printers.Table{
 				Headers: []string{"Type", "Mesh", "Name"},
 				FooterFn: func(container any) string {
-					return fmt.Sprintf("Total: %d", container.(types.InspectDataplanesForPolicyResponse).Total)
+					response := container.(types.InspectDataplanesForPolicyResponse)
+					footer := fmt.Sprintf("Total: %d", response.Total)
+					if response.Next == nil {
+						return footer
+					}
+					next, err := url.Parse(*response.Next)
+					if err != nil {
+						return footer
+					}
+					if pagination := table.PaginationFooterForOffset(next.Query().Get("offset")); pagination != "" {
+						return footer + "\n" + pagination
+					}
+					return footer
 				},
 				RowForItem: func(i int, container any) ([]string, error) {
 					items := container.(types.InspectDataplanesForPolicyResponse).Items

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -48,6 +49,7 @@ var _ = Describe("kumactl inspect POLICY", func() {
 		cmdArgs            []string
 		size               int
 		offset             string
+		next               string
 	}
 	DescribeTable("kumactl inspect dataplane",
 		func(given testCase) {
@@ -57,6 +59,9 @@ var _ = Describe("kumactl inspect POLICY", func() {
 
 			entryList := api_types.InspectDataplanesForPolicyResponse{}
 			Expect(json.Unmarshal(rawResponse, &entryList)).To(Succeed())
+			if given.next != "" {
+				entryList.Next = &given.next
+			}
 			client := &testPolicyInspectClient{
 				ensureMesh: given.mesh,
 				ensureName: "tt1",
@@ -82,7 +87,13 @@ var _ = Describe("kumactl inspect POLICY", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(buf.String()).To(matchers.MatchGoldenEqual("testdata", given.goldenFile))
+			actual := buf.String()
+			if given.next != "" {
+				pagination := "\nRerun command with --offset=next-page argument to retrieve more resources"
+				Expect(actual).To(ContainSubstring(pagination))
+				actual = strings.Replace(actual, pagination, "", 1)
+			}
+			Expect(actual).To(matchers.MatchGoldenEqual("testdata", given.goldenFile))
 		},
 		Entry("mtp", testCase{
 			goldenFile:         "inspect-mtp-dp.golden.txt",
@@ -90,6 +101,7 @@ var _ = Describe("kumactl inspect POLICY", func() {
 			cmdArgs:            []string{"inspect", "meshtrafficpermission", "tt1", "--size", "25", "--offset", "next-page"},
 			size:               25,
 			offset:             "next-page",
+			next:               "http://localhost:5681/meshes/default/meshtrafficpermissions/tt1/_resources/dataplanes?offset=next-page&size=25",
 		}),
 		Entry("mtp with deprecated new-api flag", testCase{
 			goldenFile:         "inspect-mtp-dp.golden.txt",
