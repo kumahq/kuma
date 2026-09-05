@@ -1,3 +1,12 @@
+---
+title: Zone Egress Address Storage for Endpoint Generation
+status: accepted
+date: 2026-03-12
+tags: [zone-egress, meshexternalservice, xds, endpoints, dataplane]
+summary: Endpoint generation for MeshExternalService reads the egress address straight from live Dataplanes with a ZoneEgress listener, merged with legacy ZoneEgress resources, instead of mirroring it into `MeshExternalService` status.
+related: [095-mesh-scoped-zone-ingress-egress, 096-ingress-address-sync]
+---
+
 # Zone Egress Address Storage for Endpoint Generation
 
 * Status: accepted
