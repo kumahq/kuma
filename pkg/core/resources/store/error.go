@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	ErrIsAlreadyExists = errors.New("already exists")
-	ErrConflict        = errors.New("conflict")
-	ErrNotFound        = errors.New("not found")
+	ErrIsAlreadyExists      = errors.New("already exists")
+	ErrConflict             = errors.New("conflict")
+	ErrNotFound             = errors.New("not found")
+	ErrNamespaceTerminating = errors.New("namespace is terminating")
 	// ErrInvalid is the store's verdict on one specific resource: the resource is
 	// unacceptable on its own merits, so replaying it unchanged can never succeed.
 	// It is the opposite of a transient failure - a database outage, a lost
@@ -45,6 +46,14 @@ func ErrorResourceNotFound(rt model.ResourceType, name, mesh string) error {
 
 func IsNotFound(err error) bool {
 	return errors.Is(err, ErrNotFound)
+}
+
+func ErrorResourceNamespaceTerminating(rt model.ResourceType, name, mesh string) error {
+	return fmt.Errorf("resource %w: type=%q name=%q mesh=%q", ErrNamespaceTerminating, rt, name, mesh)
+}
+
+func IsNamespaceTerminating(err error) bool {
+	return errors.Is(err, ErrNamespaceTerminating)
 }
 
 func ErrorInvalid(reason string) error {
