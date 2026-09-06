@@ -22,9 +22,46 @@ If you administer a universal control plane installed with this chart through `k
 kumactl config control-planes add --name <name> --address <address> --auth-type=tokens --auth-conf token=<token>
 ```
 
-Getting that first token needs a step the control plane's own startup log does not mention. In universal mode the bootstrapped admin token lives in the `admin-user-token` `GlobalSecret` rather than in a Kubernetes `Secret`, and the log tells you to read it with `curl http://localhost:5681/global-secrets/admin-user-token`. `GlobalSecret` is admin-only, and loopback is no longer admin, so that call now returns 403. Take the token before you upgrade, or set `controlPlane.envVars.KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN` to `"true"` for one release, read the token, and set it back. The row is also readable straight from the Postgres store.
+Where that first token comes from needs a step the control plane's own startup log does not mention. In universal mode the bootstrapped admin token lives in the `admin-user-token` `GlobalSecret`, not in a Kubernetes `Secret`, and the log tells you to read it with `curl http://localhost:5681/global-secrets/admin-user-token`. `GlobalSecret` is admin-only, so once loopback is not admin that call returns 403.
 
-To keep the old behaviour, leave that variable set to `"true"`, understanding that it grants admin to anything that can open a loopback connection to the pod.
+On a control plane that already runs, read the token before you upgrade, while loopback is still admin. It stays valid afterwards.
+
+On a new control plane, issue tokens offline instead. Generate a key pair somewhere that is not the cluster, and keep the private half there:
+
+```sh
+kumactl generate signing-key --format=pem > token-key.pem
+kumactl generate public-key --signing-key-path token-key.pem > token-key.pub
+```
+
+Give the control plane the public half and nothing else:
+
+```yaml
+controlPlane:
+  config: |
+    apiServer:
+      authn:
+        tokens:
+          bootstrapAdminToken: false
+          enableIssuer: false
+          validator:
+            useSecrets: false
+            publicKeys:
+            - kid: "1"
+              key: |
+                -----BEGIN RSA PUBLIC KEY-----
+                ...
+                -----END RSA PUBLIC KEY-----
+```
+
+Then mint an admin token whenever you need one, without reaching the cluster at all:
+
+```sh
+kumactl generate user-token --name mesh-system:admin --group mesh-system:admin --valid-for 24h --signing-key-path token-key.pem --kid 1
+```
+
+`useSecrets: false` is what makes this stricter than the loopback path it replaces: the control plane accepts only tokens signed by a key you configured, so its own stored signing key no longer mints anything it will honour. Leave `useSecrets` at `true` while you still have tokens the control plane issued.
+
+To keep the old behaviour instead, set `controlPlane.envVars.KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN` back to `"true"`, understanding that it grants admin to anything that can open a loopback connection to the pod.
 
 
 ### Resource catalogs report control-plane writability
