@@ -36,6 +36,6 @@ func addPoliciesWsEndpoints(ws *restful.WebService, isGlobal bool, isFederatedZo
 		return response, nil
 	})))
 	ws.Route(ws.GET("/_resources").To(handle(func(_ *restful.Request) (any, error) {
-		return mappers.MapResourceTypeDescription(defs, readOnly, isFederatedZone), nil
+		return mappers.MapResourceTypeDescription(defs, readOnly, isGlobal, isFederatedZone), nil
 	})))
 }

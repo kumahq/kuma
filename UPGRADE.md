@@ -8,6 +8,14 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Resource catalogs report control-plane writability
+
+The `readOnly` field returned by `GET /_resources` now reports whether generic `PUT` and `DELETE` operations are disabled for that resource type on the current control plane. On Global control planes, resources provided by Zones now report `readOnly: true`. On writable federated Zone control planes, resources provided by the Zone now report `readOnly: false`. `GET /policies` already used these semantics and is unchanged.
+
+**Action required**
+
+Dynamic clients should use `readOnly` as the capability of the current control plane, not as an intrinsic property of the resource type. No action is needed for Kubernetes installations using the default read-only API configuration.
+
 ### The legacy per-policy inspect paths `{policy}/{name}/dataplanes` are removed
 
 `GET /meshes/{mesh}/{policyType}/{policyName}/dataplanes` for every inspectable policy type is removed and answers `404`. The replacement `GET /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes` returns the list of dataplanes the policy matches.

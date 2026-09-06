@@ -222,5 +222,5 @@ var _ client.ResourcesListClient = &staticResourcesListClient{}
 func (s staticResourcesListClient) List(ctx context.Context) (api_types.ResourceTypeDescriptionList, error) {
 	// match the real /_resources endpoint, which only lists types exposed over REST
 	defs := registry.Global().ObjectDescriptors(model.HasWsEnabled())
-	return mappers.MapResourceTypeDescription(defs, false, true), nil
+	return mappers.MapResourceTypeDescription(defs, false, false, true), nil
 }
