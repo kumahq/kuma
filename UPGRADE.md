@@ -10,7 +10,7 @@ does not have any particular instructions.
 
 ### The universal Helm path no longer grants loopback callers admin
 
-A universal control plane installed with this chart no longer treats a loopback caller as an administrator. The Kubernetes path already refused them; the universal path granted them, so anyone able to reach the pod over `kubectl port-forward` or `kubectl exec` held full admin without a token.
+A universal control plane installed from the `kuma` Helm chart no longer treats a loopback caller as an administrator. The Kubernetes path already refused them. The universal path granted them, so anyone able to reach the pod over `kubectl port-forward` or `kubectl exec` held full admin without a token.
 
 **Action required**
 
@@ -20,11 +20,11 @@ If you administer such a control plane through `kubectl exec` or `kubectl port-f
 kumactl config control-planes add --name <name> --address <address> --auth-type=tokens --auth-conf token=<token>
 ```
 
-Getting that first token needs a step the control plane's startup log does not mention. It prints a `curl` command for reading the bootstrapped admin token over loopback, and that command starts returning 403 once loopback is no longer admin.
+Getting that first token needs a step the control plane's startup log does not mention. It prints a `curl` command for reading the bootstrapped admin token over loopback, and that command returns 403 once loopback is no longer admin.
 
 On a control plane that already runs, read the token before you upgrade. It stays valid afterwards.
 
-On a new control plane, issue tokens offline instead. Generate a key pair somewhere that is not the cluster, and keep the private half there:
+On a new control plane, issue tokens offline instead. Generate a key pair off-cluster and keep the private half there:
 
 ```sh
 kumactl generate signing-key --format=pem > token-key.pem
@@ -57,10 +57,9 @@ Then mint an admin token whenever you need one, without reaching the cluster at 
 kumactl generate user-token --name mesh-system:admin --group mesh-system:admin --valid-for 24h --signing-key-path token-key.pem --kid 1
 ```
 
-`useSecrets: false` is what makes this stricter than the loopback path it replaces: the control plane then accepts only tokens signed by a key you hold. Leave it at `true` while tokens the control plane issued are still in use.
+`useSecrets: false` is stricter than the loopback path it replaces: the control plane accepts only tokens signed by a key you hold. Leave it at `true` while tokens the control plane issued are still in use.
 
-To keep the old behaviour instead, set `controlPlane.envVars.KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN` back to `"true"`, understanding that it grants admin to anything that can open a loopback connection to the pod.
-
+To keep the old behaviour instead, set `controlPlane.envVars.KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN` back to `"true"`. That grants admin to anything that can open a loopback connection to the pod.
 
 ### Resource catalogs report control-plane writability
 
