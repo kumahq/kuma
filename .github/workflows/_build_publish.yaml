@@ -155,6 +155,17 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
+      # Registry layer cache (DOCKER_BUILDX_OPTS in mk/docker.mk) needs the
+      # container driver; the default docker driver cannot export cache.
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      # Login must precede the build for the cache push; anonymous pulls of the
+      # public cache tags work without it (PR runs).
+      - name: Docker login for buildx cache push
+        if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
+        env:
+          DOCKER_API_KEY: ${{ secrets.DOCKER_API_KEY }}
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+        run: make docker/login
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           version: 2026.8.8
@@ -167,7 +178,7 @@ jobs:
           echo "Extracting image meta for $IMAGE_NAME"
           printf 'image=%s/%s:%s\n' "$REGISTRY" "$IMAGE_NAME" "$VERSION_NAME" >> "$GITHUB_OUTPUT"
       - run: |
-          make images/${{ matrix.image }} PREBUILT_BINARIES=true
+          make images/${{ matrix.image }} PREBUILT_BINARIES=true DOCKER_BUILDX_CACHE=true
       - run: |
           make docker/save/${{ matrix.image }}
       - name: Run container structure test

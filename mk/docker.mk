@@ -23,49 +23,63 @@ export DOCKER_BUILDKIT := 1
 # `docker manifest create --amend` which expects plain image manifests.
 DOCKER_BUILD_OPTS ?= --provenance=false
 
+COMMA := ,
+# Opt-in buildx registry layer cache for CI (DOCKER_BUILDX_CACHE=true): every
+# image/arch keeps its layers in a buildcache-<arch> tag next to the image, so
+# CI jobs no longer rebuild shared base images (static/base/envoy) from
+# scratch. Cache pull is anonymous (public repos); push is gated on ALLOW_PUSH
+# because it needs registry credentials. '--load' keeps the built image in the
+# local daemon for the docker/save and docker/push targets, and requires the
+# container driver (docker/setup-buildx-action in CI).
+ifeq ($(DOCKER_BUILDX_CACHE),true)
+DOCKER_BUILDX_OPTS = --cache-from type=registry$(COMMA)ref=$(DOCKER_REGISTRY)/$(1):buildcache-$(2)$(COMMA)ignore-error=true $(if $(filter $(ALLOW_PUSH),true),--cache-to type=registry$(COMMA)ref=$(DOCKER_REGISTRY)/$(1):buildcache-$(2)$(COMMA)mode=max$(COMMA)ignore-error=true) --load
+else
+DOCKER_BUILDX_OPTS =
+endif
+
 # add targets to build images for each arch
 # $(1) - GOARCH to build for
 
 define IMAGE_TARGETS_BY_ARCH
 .PHONY: image/static/$(1)
 image/static/$(1): ## Dev: Rebuild `kuma-static` Docker image
-	docker build $(DOCKER_BUILD_OPTS) -t kumahq/static-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/static.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,static-debian12,$(1)) -t kumahq/static-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/static.Dockerfile .
 
 .PHONY: image/base/$(1)
 image/base/$(1): ## Dev: Rebuild `kuma-base` Docker image
-	docker build $(DOCKER_BUILD_OPTS) -t kumahq/base-nossl-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,base-nossl-debian12,$(1)) -t kumahq/base-nossl-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base.Dockerfile .
 
 .PHONY: image/base-root/$(1)
 image/base-root/$(1): ## Dev: Rebuild `kuma-base-root` Docker image
-	docker build $(DOCKER_BUILD_OPTS) -t kumahq/base-root-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base-root.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,base-root-debian12,$(1)) -t kumahq/base-root-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base-root.Dockerfile .
 
 .PHONY: image/envoy/$(1)
 image/envoy/$(1): build/artifacts-linux-$(1)/envoy ## Dev: Rebuild `envoy` Docker image
-	docker build $(DOCKER_BUILD_OPTS) -t kumahq/envoy:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/envoy.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,envoy,$(1)) -t kumahq/envoy:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/envoy.Dockerfile .
 
 .PHONY: image/kuma-cp/$(1)
 image/kuma-cp/$(1): image/static/$(1) build/artifacts-linux-$(1)/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
-	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-cp,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-cp.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,kuma-cp,$(1)) -t $$(call build_image,kuma-cp,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-cp.Dockerfile .
 
 .PHONY: image/kuma-dp/$(1)
 image/kuma-dp/$(1): image/base/$(1) image/envoy/$(1) build/artifacts-linux-$(1)/kuma-dp ## Dev: Rebuild `kuma-dp` Docker image
-	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-dp,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-dp.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,kuma-dp,$(1)) -t $$(call build_image,kuma-dp,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-dp.Dockerfile .
 
 .PHONY: image/kumactl/$(1)
 image/kumactl/$(1): image/base/$(1) build/artifacts-linux-$(1)/kumactl ## Dev: Rebuild `kumactl` Docker image
-	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kumactl,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kumactl.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,kumactl,$(1)) -t $$(call build_image,kumactl,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kumactl.Dockerfile .
 
 .PHONY: image/kuma-init/$(1)
 image/kuma-init/$(1): build/artifacts-linux-$(1)/kumactl ## Dev: Rebuild `kuma-init` Docker image
-	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-init,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-init.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,kuma-init,$(1)) -t $$(call build_image,kuma-init,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-init.Dockerfile .
 
 .PHONY: image/kuma-cni/$(1)
 image/kuma-cni/$(1): image/base-root/$(1) build/artifacts-linux-$(1)/kuma-cni build/artifacts-linux-$(1)/install-cni
-	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-cni,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-cni.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,kuma-cni,$(1)) -t $$(call build_image,kuma-cni,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/kuma-cni.Dockerfile .
 
 .PHONY: image/kuma-universal/$(1)
 image/kuma-universal/$(1): image/envoy/$(1) build/artifacts-linux-$(1)/kuma-cp build/artifacts-linux-$(1)/kuma-dp build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/kumactl build/artifacts-linux-$(1)/test-server
-	docker build $(DOCKER_BUILD_OPTS) -t $$(call build_image,kuma-universal,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(KUMA_DIR)/test/dockerfiles/universal.Dockerfile .
+	docker build $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,kuma-universal,$(1)) -t $$(call build_image,kuma-universal,$(1)) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(KUMA_DIR)/test/dockerfiles/universal.Dockerfile .
 endef
 $(foreach goarch,$(SUPPORTED_GOARCHES),$(eval $(call IMAGE_TARGETS_BY_ARCH,$(goarch))))
 
