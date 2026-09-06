@@ -10,21 +10,19 @@ does not have any particular instructions.
 
 ### The universal Helm path no longer grants loopback callers admin
 
-`kuma.universal.defaultEnv` now pins `KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN` to `"false"`, and includes `kuma.parentEnv`. The Kubernetes path already pinned it; the universal path silently ran on the `true` default, so a loopback request was promoted to admin without a token.
-
-The chart always runs the control plane in a pod, and a `kubectl port-forward` or `kubectl exec` connection reaches the API server over loopback with no proxy headers and no `Origin`, which is enough to pass the direct-loopback check. Anyone with `pods/portforward` or `pods/exec` on the namespace therefore had full admin with no credentials.
+A universal control plane installed with this chart no longer treats a loopback caller as an administrator. The Kubernetes path already refused them; the universal path granted them, so anyone able to reach the pod over `kubectl port-forward` or `kubectl exec` held full admin without a token.
 
 **Action required**
 
-If you administer a universal control plane installed with this chart through `kubectl exec` or `kubectl port-forward` plus `kumactl`, that access stops working. Configure `kumactl` with a user token instead:
+If you administer such a control plane through `kubectl exec` or `kubectl port-forward` plus `kumactl`, that access stops working. Configure `kumactl` with a user token instead:
 
 ```sh
 kumactl config control-planes add --name <name> --address <address> --auth-type=tokens --auth-conf token=<token>
 ```
 
-Where that first token comes from needs a step the control plane's own startup log does not mention. In universal mode the bootstrapped admin token lives in the `admin-user-token` `GlobalSecret`, not in a Kubernetes `Secret`, and the log tells you to read it with `curl http://localhost:5681/global-secrets/admin-user-token`. `GlobalSecret` is admin-only, so once loopback is not admin that call returns 403.
+Getting that first token needs a step the control plane's startup log does not mention. It prints a `curl` command for reading the bootstrapped admin token over loopback, and that command starts returning 403 once loopback is no longer admin.
 
-On a control plane that already runs, read the token before you upgrade, while loopback is still admin. It stays valid afterwards.
+On a control plane that already runs, read the token before you upgrade. It stays valid afterwards.
 
 On a new control plane, issue tokens offline instead. Generate a key pair somewhere that is not the cluster, and keep the private half there:
 
@@ -59,7 +57,7 @@ Then mint an admin token whenever you need one, without reaching the cluster at 
 kumactl generate user-token --name mesh-system:admin --group mesh-system:admin --valid-for 24h --signing-key-path token-key.pem --kid 1
 ```
 
-`useSecrets: false` is what makes this stricter than the loopback path it replaces: the control plane accepts only tokens signed by a key you configured, so its own stored signing key no longer mints anything it will honour. Leave `useSecrets` at `true` while you still have tokens the control plane issued.
+`useSecrets: false` is what makes this stricter than the loopback path it replaces: the control plane then accepts only tokens signed by a key you hold. Leave it at `true` while tokens the control plane issued are still in use.
 
 To keep the old behaviour instead, set `controlPlane.envVars.KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN` back to `"true"`, understanding that it grants admin to anything that can open a loopback connection to the pod.
 
