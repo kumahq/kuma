@@ -16,13 +16,15 @@ The chart always runs the control plane in a pod, and a `kubectl port-forward` o
 
 **Action required**
 
-If you administer a universal control plane installed with this chart through `kubectl exec` or `kubectl port-forward` plus `kumactl`, that access stops working. Issue a user token and configure `kumactl` with it:
+If you administer a universal control plane installed with this chart through `kubectl exec` or `kubectl port-forward` plus `kumactl`, that access stops working. Configure `kumactl` with a user token instead:
 
 ```sh
 kumactl config control-planes add --name <name> --address <address> --auth-type=tokens --auth-conf token=<token>
 ```
 
-To keep the old behaviour, set `controlPlane.envVars.KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN` to `"true"` explicitly, understanding that it grants admin to anything that can open a loopback connection to the pod.
+Getting that first token needs a step the control plane's own startup log does not mention. In universal mode the bootstrapped admin token lives in the `admin-user-token` `GlobalSecret` rather than in a Kubernetes `Secret`, and the log tells you to read it with `curl http://localhost:5681/global-secrets/admin-user-token`. `GlobalSecret` is admin-only, and loopback is no longer admin, so that call now returns 403. Take the token before you upgrade, or set `controlPlane.envVars.KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN` to `"true"` for one release, read the token, and set it back. The row is also readable straight from the Postgres store.
+
+To keep the old behaviour, leave that variable set to `"true"`, understanding that it grants admin to anything that can open a loopback connection to the pod.
 
 
 ### Resource catalogs report control-plane writability
