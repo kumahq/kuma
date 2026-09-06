@@ -47,6 +47,9 @@ func ChangeService() {
 			APIVersion: "v1",
 			Name:       "test-server",
 			Namespace:  namespace,
+			Labels: map[string]string{
+				"kuma.io/mesh": mesh,
+			},
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
 					{
