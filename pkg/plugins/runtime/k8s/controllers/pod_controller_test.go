@@ -843,13 +843,13 @@ var _ = Describe("MeshUpdateIgnoredPredicate", func() {
 })
 
 var _ = Describe("ServiceToPodsMapper", func() {
-	newPod := func(name, colour string) *kube_core.Pod {
+	newPod := func(name, color string) *kube_core.Pod {
 		return &kube_core.Pod{
 			Namespace: "demo",
 			Name:      name,
 			Labels: map[string]string{
-				"app":    "test-server",
-				"colour": colour,
+				"app":   "test-server",
+				"color": color,
 			},
 		}
 	}
@@ -859,8 +859,8 @@ var _ = Describe("ServiceToPodsMapper", func() {
 		Name:      "test-server",
 		Spec: kube_core.ServiceSpec{
 			Selector: map[string]string{
-				"app":    "test-server",
-				"colour": "blue",
+				"app":   "test-server",
+				"color": "blue",
 			},
 		},
 	}
@@ -883,6 +883,6 @@ var _ = Describe("ServiceToPodsMapper", func() {
 	})
 
 	It("should enqueue Pods that match once ignored labels are stripped", func() {
-		Expect(enqueued([]string{"colour"})).To(ConsistOf("blue", "green"))
+		Expect(enqueued([]string{"color"})).To(ConsistOf("blue", "green"))
 	})
 })
