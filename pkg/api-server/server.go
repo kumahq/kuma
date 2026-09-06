@@ -268,6 +268,73 @@ func NewApiServer(
 	return newApiServer, nil
 }
 
+type resourceRouteRole int
+
+const (
+	meshCRUDListRoute resourceRouteRole = iota
+	crossMeshListRoute
+	globalCRUDListRoute
+)
+
+type resourcePathRole int
+
+const (
+	primaryResourcePath resourcePathRole = iota
+	aliasResourcePath
+)
+
+type resourceRoute struct {
+	role     resourceRouteRole
+	pathRole resourcePathRole
+}
+
+func resourceRoutes(descriptor model.ResourceTypeDescriptor) []resourceRoute {
+	pathRoles := []resourcePathRole{primaryResourcePath}
+	if descriptor.AlternativeWsPath != "" {
+		pathRoles = append(pathRoles, aliasResourcePath)
+	}
+
+	var routes []resourceRoute
+	for _, pathRole := range pathRoles {
+		switch descriptor.Scope {
+		case model.ScopeMesh:
+			routes = append(routes,
+				resourceRoute{role: meshCRUDListRoute, pathRole: pathRole},
+				resourceRoute{role: crossMeshListRoute, pathRole: pathRole},
+			)
+		case model.ScopeGlobal:
+			routes = append(routes, resourceRoute{role: globalCRUDListRoute, pathRole: pathRole})
+		}
+	}
+	return routes
+}
+
+func (r resourceRoute) pathPrefix(descriptor model.ResourceTypeDescriptor) string {
+	path := descriptor.WsPath
+	if r.pathRole == aliasResourcePath {
+		path = descriptor.AlternativeWsPath
+	}
+	if r.role == meshCRUDListRoute {
+		return "/meshes/{mesh}/" + path
+	}
+	return "/" + path
+}
+
+func registerResourceRoutes(ws *restful.WebService, endpoints resourceEndpoints) {
+	for _, route := range resourceRoutes(endpoints.descriptor) {
+		pathPrefix := route.pathPrefix(endpoints.descriptor)
+		switch route.role {
+		case meshCRUDListRoute, globalCRUDListRoute:
+			endpoints.addCreateOrUpdateEndpoint(ws, pathPrefix)
+			endpoints.addDeleteEndpoint(ws, pathPrefix)
+			endpoints.addFindEndpoint(ws, pathPrefix)
+			endpoints.addListEndpoint(ws, pathPrefix)
+		case crossMeshListRoute:
+			endpoints.addListEndpoint(ws, pathPrefix)
+		}
+	}
+}
+
 func addResourcesEndpoints(
 	ws *restful.WebService,
 	defs []model.ResourceTypeDescriptor,
@@ -336,32 +403,7 @@ func addResourcesEndpoints(
 				knownInternalAddresses:   cfg.IPAM.KnownInternalCIDRs,
 			},
 		}
-		switch definition.Scope {
-		case model.ScopeMesh:
-			endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			endpoints.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
-			if definition.AlternativeWsPath != "" {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath) // listing all resources in all meshes
-			}
-		case model.ScopeGlobal:
-			endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.WsPath)
-			endpoints.addDeleteEndpoint(ws, "/"+definition.WsPath)
-			endpoints.addFindEndpoint(ws, "/"+definition.WsPath)
-			endpoints.addListEndpoint(ws, "/"+definition.WsPath)
-			if definition.AlternativeWsPath != "" {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.AlternativeWsPath)
-				endpoints.addDeleteEndpoint(ws, "/"+definition.AlternativeWsPath)
-				endpoints.addFindEndpoint(ws, "/"+definition.AlternativeWsPath)
-				endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath)
-			}
-		}
+		registerResourceRoutes(ws, endpoints)
 	}
 
 	kriEndpoints := kriEndpoint{
