@@ -134,9 +134,7 @@ func ChangeService() {
 		return resp.Instance, err
 	}
 
-	// Pending: one request is dropped while the selector moves, tracked in
-	// https://github.com/kumahq/kuma/issues/18432
-	XIt("should gracefully switch to other service", func() {
+	It("should gracefully switch to other service", func() {
 		// given traffic to the first server
 		Eventually(func(g Gomega) {
 			instance, err := doRequest()

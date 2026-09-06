@@ -37,6 +37,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -390,3 +391,61 @@ func getRulesAsFromRules(policyRules []api.Rule) core_rules.FromRules {
 		},
 	}
 }
+
+var _ = Describe("MeshTLS on a proxy without inbounds", func() {
+	It("should configure upstream TLS parameters from the mesh wide policy", func() {
+		// given
+		policy := getPolicy("strict-with-tls-params")
+
+		context := *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build()
+
+		proxy := xds_builders.Proxy().
+			WithWorkloadIdentity(workloadIdentity()).
+			WithApiVersion(envoy_common.APIV3).
+			WithDataplane(
+				builders.Dataplane().
+					WithName("gateway").
+					WithMesh("default").
+					WithAddress("127.0.0.1").
+					WithTransparentProxying(15006, 15001, "ipv4").
+					AddOutbound(
+						builders.Outbound().
+							WithAddress("127.0.0.1").
+							WithPort(27777).
+							WithMeshService("outgoing", 80),
+					),
+			).
+			WithPolicies(xds_builders.MatchedPolicies().With(func(policies *core_xds.MatchedPolicies) {
+				policies.Dynamic = core_xds.PluginOriginatedPolicies{
+					api.MeshTLSType: core_xds.TypedMatchingPolicies{
+						Type:              api.MeshTLSType,
+						DataplanePolicies: []core_model.Resource{policy},
+					},
+				}
+			})).
+			Build()
+
+		resourceSet := core_xds.NewResourceSet()
+		resourceSet.Add(getMeshServiceResources(proxy)...)
+
+		// when
+		Expect(plugin.NewPlugin().(core_plugins.PolicyPlugin).Apply(resourceSet, context, proxy)).To(Succeed())
+
+		// then
+		var configured *envoy_cluster.Cluster
+		for _, resource := range resourceSet.Resources(envoy_resource.ClusterType) {
+			if cluster, ok := resource.Resource.(*envoy_cluster.Cluster); ok && cluster.Name == outgoingMeshService.String() {
+				configured = cluster
+			}
+		}
+		Expect(configured).ToNot(BeNil())
+
+		var tlsContext envoy_tls.UpstreamTlsContext
+		Expect(util_proto.UnmarshalAnyTo(configured.TransportSocket.GetTypedConfig(), &tlsContext)).To(Succeed())
+
+		params := tlsContext.GetCommonTlsContext().GetTlsParams()
+		Expect(params).ToNot(BeNil())
+		Expect(params.GetTlsMinimumProtocolVersion()).To(Equal(envoy_tls.TlsParameters_TLSv1_2))
+		Expect(params.GetTlsMaximumProtocolVersion()).To(Equal(envoy_tls.TlsParameters_TLSv1_3))
+	})
+})
