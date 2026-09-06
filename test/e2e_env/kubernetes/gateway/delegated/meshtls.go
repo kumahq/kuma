@@ -45,7 +45,7 @@ spec:
 			)).To(Succeed())
 		})
 
-		XIt("should not break communication once switched to TLS 1.3", func() {
+		It("should not break communication once switched to TLS 1.3", func() {
 			// check that communication to test-server works
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
