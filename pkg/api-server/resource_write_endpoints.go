@@ -64,6 +64,12 @@ var beforeWriteHooks = map[core_model.ResourceType]func(resRest rest.Resource, m
 	meshtrust_api.MeshTrustType: clearMeshTrustOrigin,
 }
 
+func (r *resourceCrudHandler) applyBeforeWriteHook(resRest rest.Resource, meshName string, name string) {
+	if hook, ok := beforeWriteHooks[r.descriptor.Name]; ok {
+		hook(resRest, meshName, name)
+	}
+}
+
 // validateCreateHooks run extra validation on create for the given resource
 // type.
 var validateCreateHooks = map[core_model.ResourceType]func(r *resourceCrudHandler, res core_model.Resource) error{
@@ -119,9 +125,7 @@ func (r *resourceCrudHandler) createResource(
 		return nil, withTitle(err, "Access Denied")
 	}
 
-	if hook, ok := beforeWriteHooks[r.descriptor.Name]; ok {
-		hook(resRest, meshName, name)
-	}
+	r.applyBeforeWriteHook(resRest, meshName, name)
 
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(resRest.GetSpec())
@@ -187,9 +191,7 @@ func (r *resourceCrudHandler) updateResource(
 		return nil, withTitle(err, "Access Denied")
 	}
 
-	if hook, ok := beforeWriteHooks[r.descriptor.Name]; ok {
-		hook(newResRest, meshName, currentRes.GetMeta().GetName())
-	}
+	r.applyBeforeWriteHook(newResRest, meshName, currentRes.GetMeta().GetName())
 
 	currentLabels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), currentRes.GetMeta(), meshName, currentRes.GetMeta().GetName())
 	if err != nil {
