@@ -10,7 +10,7 @@ does not have any particular instructions.
 
 ### The universal Helm path no longer grants loopback callers admin
 
-A universal control plane installed from the `kuma` Helm chart no longer treats a loopback caller as an administrator. The Kubernetes path already refused them. The universal path granted them, so anyone able to reach the pod over `kubectl port-forward` or `kubectl exec` held full admin without a token.
+A universal control plane installed from the `kuma` Helm chart no longer treats a loopback caller as an administrator, which the Kubernetes path already refused. Until now anyone able to reach the pod over `kubectl port-forward` or `kubectl exec` held full admin without a token.
 
 **Action required**
 
