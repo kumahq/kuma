@@ -56,17 +56,20 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      # `check` and `build_check` run before this job and already saved this key for
-      # this exact go.sum. Restore-only: the publish jobs would otherwise each write
-      # a multi-GB cross-compile cache and evict everyone else from the repo budget.
-      - name: Restore Go cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # `check`/`build_check` populate go-build-<os>-<go.sum> with host-arch
+      # artifacts only, while this job cross-compiles every GOOS/GOARCH. A
+      # dedicated dist-scoped key (single entry per go.sum, written only here)
+      # keeps cross-compile artifacts reusable without evicting PR caches from
+      # the repo cache budget.
+      - name: Cache Go cross-compile build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-build-dist-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
+            go-build-dist-${{ runner.os }}-
             go-build-${{ runner.os }}-
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
@@ -77,6 +80,16 @@ jobs:
           echo "::notice title=Image tag::$(make build/info/version)"
       - run: |
           make -j"$(nproc)" build/distributions
+      # Distributions package only kumactl/kuma-cp/kuma-dp, but image jobs also
+      # consume kuma-cni/install-cni from the prebuilt artifact uploaded below.
+      - run: |
+          make -j"$(nproc)" ENABLED_GOOSES=linux build/kuma-cni build/install-cni
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux_binaries
+          path: ./build/artifacts-linux-*
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
+          if-no-files-found: error
       # Gates publishing, not building: a wrong version must never reach Pulp or
       # Cloudsmith, but there is no reason to hold the build back for it. Asserting
       # the binary against the tag also covers this checkout computing the version
@@ -116,6 +129,7 @@ jobs:
         run: |
           make publish/pulp
   build-images:
+    needs: [build-binaries] # consumes the linux_binaries artifact
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       id-token: write # Required for image signing
@@ -130,15 +144,13 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Restore Go cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # Built once by build-binaries; PREBUILT_BINARIES=true makes the image
+      # targets verify these exist instead of recompiling them.
+      - name: Download prebuilt linux binaries
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            go-build-${{ runner.os }}-
+          name: linux_binaries
+          path: ./build
       - name: Install dependencies for cross builds
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
@@ -155,7 +167,7 @@ jobs:
           echo "Extracting image meta for $IMAGE_NAME"
           printf 'image=%s/%s:%s\n' "$REGISTRY" "$IMAGE_NAME" "$VERSION_NAME" >> "$GITHUB_OUTPUT"
       - run: |
-          make images/${{ matrix.image }}
+          make images/${{ matrix.image }} PREBUILT_BINARIES=true
       - run: |
           make docker/save/${{ matrix.image }}
       - name: Run container structure test
