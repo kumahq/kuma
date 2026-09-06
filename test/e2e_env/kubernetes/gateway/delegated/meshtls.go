@@ -66,7 +66,7 @@ spec:
 			// gateway load balances over every replica, so a request fails
 			// until the last of them has the policy, not the first.
 			Eventually(func(g Gomega) {
-				for i := 0; i < TestServerReplicas; i++ {
+				for i := range TestServerReplicas {
 					stdout, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput(
 						"inspect", "dataplane",
 						"-m", config.Mesh,
