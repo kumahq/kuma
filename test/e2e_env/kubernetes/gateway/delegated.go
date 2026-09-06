@@ -82,7 +82,7 @@ metadata:
 							testserver.WithNamespace(config.Namespace),
 							testserver.WithName("test-server"),
 							testserver.WithStatefulSet(),
-							testserver.WithReplicas(3),
+							testserver.WithReplicas(delegated.TestServerReplicas),
 							testserver.WithPodLabels(map[string]string{"app.kubernetes.io/name": "test-server"}),
 						),
 						testserver.Install(

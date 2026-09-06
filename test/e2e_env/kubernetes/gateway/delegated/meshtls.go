@@ -62,18 +62,22 @@ spec:
 
 			// check that the policy reached the data path the gateway uses.
 			// The gateway proxy has no inbounds of its own, so mesh traffic
-			// entering through it is secured by the backend's inbound.
+			// entering through it is secured by the backend's inbound. The
+			// gateway load balances over every replica, so a request fails
+			// until the last of them has the policy, not the first.
 			Eventually(func(g Gomega) {
-				stdout, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput(
-					"inspect", "dataplane",
-					"-m", config.Mesh,
-					fmt.Sprintf("test-server-0.%s", config.Namespace),
-					"--type=config-dump",
-				)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stdout).To(ContainSubstring(`"tls_minimum_protocol_version": "TLSv1_3"`))
-				g.Expect(stdout).To(ContainSubstring(`"tls_maximum_protocol_version": "TLSv1_3"`))
-			}, "30s", "1s").Should(Succeed())
+				for i := 0; i < TestServerReplicas; i++ {
+					stdout, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput(
+						"inspect", "dataplane",
+						"-m", config.Mesh,
+						fmt.Sprintf("test-server-%d.%s", i, config.Namespace),
+						"--type=config-dump",
+					)
+					g.Expect(err).ToNot(HaveOccurred())
+					g.Expect(stdout).To(ContainSubstring(`"tls_minimum_protocol_version": "TLSv1_3"`))
+					g.Expect(stdout).To(ContainSubstring(`"tls_maximum_protocol_version": "TLSv1_3"`))
+				}
+			}, "60s", "1s").Should(Succeed())
 
 			// check that communication to test-server works
 			Eventually(func(g Gomega) {
