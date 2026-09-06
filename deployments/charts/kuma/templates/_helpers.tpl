@@ -305,6 +305,9 @@ env:
 
 {{- define "kuma.universal.defaultEnv" -}}
 env:
+{{ include "kuma.parentEnv" . }}
+- name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
+  value: "false"
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
 - name: KUMA_GENERAL_WORK_DIR

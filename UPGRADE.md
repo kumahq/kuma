@@ -8,6 +8,23 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### The universal Helm path no longer grants loopback callers admin
+
+`kuma.universal.defaultEnv` now pins `KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN` to `"false"`, and includes `kuma.parentEnv`. The Kubernetes path already pinned it; the universal path silently ran on the `true` default, so a loopback request was promoted to admin without a token.
+
+The chart always runs the control plane in a pod, and a `kubectl port-forward` or `kubectl exec` connection reaches the API server over loopback with no proxy headers and no `Origin`, which is enough to pass the direct-loopback check. Anyone with `pods/portforward` or `pods/exec` on the namespace therefore had full admin with no credentials.
+
+**Action required**
+
+If you administer a universal control plane installed with this chart through `kubectl exec` or `kubectl port-forward` plus `kumactl`, that access stops working. Issue a user token and configure `kumactl` with it:
+
+```sh
+kumactl config control-planes add --name <name> --address <address> --auth-type=tokens --auth-conf token=<token>
+```
+
+To keep the old behaviour, set `controlPlane.envVars.KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN` to `"true"` explicitly, understanding that it grants admin to anything that can open a loopback connection to the pod.
+
+
 ### Resource catalogs report control-plane writability
 
 The `readOnly` field returned by `GET /_resources` now reports whether generic `PUT` and `DELETE` operations are disabled for that resource type on the current control plane. On Global control planes, resources provided by Zones now report `readOnly: true`. On writable federated Zone control planes, resources provided by the Zone now report `readOnly: false`. `GET /policies` already used these semantics and is unchanged.

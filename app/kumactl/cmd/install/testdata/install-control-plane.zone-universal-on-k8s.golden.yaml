@@ -202,6 +202,8 @@ spec:
               - ALL
             readOnlyRootFilesystem: true
           env:
+            - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
+              value: "false"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
             - name: KUMA_ENVIRONMENT
@@ -254,6 +256,8 @@ spec:
               - ALL
             readOnlyRootFilesystem: true
           env:
+            - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
+              value: "false"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
             - name: KUMA_ENVIRONMENT
