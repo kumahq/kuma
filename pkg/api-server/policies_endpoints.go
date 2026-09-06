@@ -11,7 +11,7 @@ import (
 )
 
 func addPoliciesWsEndpoints(ws *restful.WebService, isGlobal bool, isFederatedZone bool, readOnly bool, defs []model.ResourceTypeDescriptor) {
-	ws.Route(ws.GET("/policies").To(func(req *restful.Request, resp *restful.Response) {
+	ws.Route(ws.GET("/policies").To(handle(func(_ *restful.Request) (any, error) {
 		response := types.PoliciesResponse{}
 		for _, def := range defs {
 			if !def.IsPolicy {
@@ -33,14 +33,9 @@ func addPoliciesWsEndpoints(ws *restful.WebService, isGlobal bool, isFederatedZo
 			return response.Policies[i].Name < response.Policies[j].Name
 		})
 
-		if err := resp.WriteAsJson(response); err != nil {
-			log.Error(err, "Could not write the response")
-		}
-	}))
-	ws.Route(ws.GET("/_resources").To(func(req *restful.Request, resp *restful.Response) {
-		response := mappers.MapResourceTypeDescription(defs, readOnly, isFederatedZone)
-		if err := resp.WriteAsJson(response); err != nil {
-			log.Error(err, "Could not write the response")
-		}
-	}))
+		return response, nil
+	})))
+	ws.Route(ws.GET("/_resources").To(handle(func(_ *restful.Request) (any, error) {
+		return mappers.MapResourceTypeDescription(defs, readOnly, isFederatedZone), nil
+	})))
 }
