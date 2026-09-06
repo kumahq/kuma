@@ -153,6 +153,8 @@ ifdef DEBUG
 	done; \
 	if [ $$need_start -eq 1 ]; then \
 		$(MAKE) test/e2e/k8s/start; \
+	else \
+		$(MAKE) $(K8SCLUSTERS_LOAD_IMAGES_TARGETS); \
 	fi
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(KUBE_E2E_PKG_LIST)
 else
