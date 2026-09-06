@@ -75,7 +75,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(rs, policies.FromRules, listeners.Inbound, proxy, ctx); err != nil {
 		return err
 	}
-	if err := applyToRealResources(policies.FromRules, rs); err != nil {
+	if err := applyToRealResources(policies, rs); err != nil {
 		return err
 	}
 
@@ -135,17 +135,15 @@ func applyToInbounds(
 }
 
 func applyToRealResources(
-	fromRules core_rules.FromRules,
+	policies core_xds.TypedMatchingPolicies,
 	rs *core_xds.ResourceSet,
 ) error {
-	return policies_xds.ForEachOrigin(rs, func(_ kri.Identifier, resType core_xds.ResourcesByType) error {
-		// there is only one rule always because we're in `Mesh/Mesh`
-		var conf api.Conf
-		for _, r := range fromRules.InboundRules {
-			conf = rules_inbound.MatchesAllIncomingTraffic[api.Conf](r)
-			break
-		}
+	conf, err := allIncomingTrafficConf(policies)
+	if err != nil {
+		return err
+	}
 
+	return policies_xds.ForEachOrigin(rs, func(_ kri.Identifier, resType core_xds.ResourcesByType) error {
 		for _, cluster := range resType[envoy_resource.ClusterType] {
 			if err := configureTLSParams(conf, cluster.Resource.(*envoy_cluster.Cluster)); err != nil {
 				return err
@@ -154,6 +152,34 @@ func applyToRealResources(
 
 		return nil
 	}, core_xds.NonMeshExternalService)
+}
+
+// allIncomingTrafficConf returns the conf that covers every connection, which
+// is what the upstream side of a cluster needs: the policy is always
+// `Mesh/Mesh` here, so any inbound rule carries it.
+//
+// A proxy with no inbounds, a delegated gateway being the case that matters,
+// has no inbound rules at all. Falling back to the policies matched for the
+// whole proxy keeps its clusters configured, instead of leaving them on
+// Envoy's client defaults while the backends they dial are pinned higher.
+func allIncomingTrafficConf(policies core_xds.TypedMatchingPolicies) (api.Conf, error) {
+	for _, rules := range policies.FromRules.InboundRules {
+		return rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules), nil
+	}
+
+	matched := &api.MeshTLSResourceList{}
+	for _, policy := range policies.DataplanePolicies {
+		if err := matched.AddItem(policy); err != nil {
+			return api.Conf{}, err
+		}
+	}
+
+	rules, err := rules_inbound.BuildRules(matched)
+	if err != nil {
+		return api.Conf{}, err
+	}
+
+	return rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules), nil
 }
 
 func configureTLSParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
