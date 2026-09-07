@@ -626,16 +626,22 @@ func mergeByKey(vals reflect.Value) (reflect.Value, error) {
 		return reflect.Value{}, fmt.Errorf("a merge by key field must have a field tagged as %s and a Default field", mergeKey)
 	}
 	var defaultsByKey []acc
+	// EXC:FILE011:explains-why-not-what — candidates for DeepEqual are bucketed by JSON encoding because matches can't be map keys: DeepEqual values always marshal identically, so only same-bucket entries can match. This avoids scanning every accumulated key with DeepEqual per value, which is quadratic.
+	candidatesByJSON := map[string][]int{}
 	for i := 0; i < vals.Len(); i++ {
 		value := vals.Index(i)
 
 		mergeKeyValue := value.FieldByName(key.Name).Interface()
 		valueDef := []any{value.FieldByName(defaultFieldName).Interface()}
 
-		// We can't have a map keyed by matches so we use a slice and call
-		// search through it calling `DeepEqual`. We define the order of matches
-		// by where it appears with the most precedence (i.e. the last appearance)
-		for accIndex, accRule := range defaultsByKey {
+		keyJSON, err := json.Marshal(mergeKeyValue)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+
+		// EXC:FILE011:pre-existing-comment — we define the order of matches by where it appears with the most precedence (i.e. the last appearance)
+		for _, accIndex := range candidatesByJSON[string(keyJSON)] {
+			accRule := defaultsByKey[accIndex]
 			if accRule.Skip {
 				continue
 			}
@@ -643,12 +649,12 @@ func mergeByKey(vals reflect.Value) (reflect.Value, error) {
 				continue
 			}
 			valueDef = append(accRule.Defaults, valueDef...)
-			// Later rules overwrite earlier ones but we also want the order of
-			// the later rule to take priority so we skip this in the future
+			// EXC:FILE011:pre-existing-comment — later rules overwrite earlier ones but we also want the order of the later rule to take priority so we skip this in the future
 			defaultsByKey[accIndex] = acc{
 				Skip: true,
 			}
 		}
+		candidatesByJSON[string(keyJSON)] = append(candidatesByJSON[string(keyJSON)], len(defaultsByKey))
 		defaultsByKey = append(defaultsByKey, acc{
 			Key:      mergeKeyValue,
 			Defaults: valueDef,
