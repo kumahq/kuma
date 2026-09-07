@@ -14,7 +14,10 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 )
 
-var includeUnused = true
+var (
+	includeUnused = true
+	excludeUnused = false
+)
 
 var _ = Describe("Rewriting the metrics URL", func() {
 	type testCase struct {
@@ -51,13 +54,31 @@ var _ = Describe("Rewriting the metrics URL", func() {
 			expected:      "http://127.0.0.1:80/stats",
 			queryModifier: RemoveQueryParameters,
 		}),
-		Entry("add usedonly and filter parameters", testCase{
+		Entry("not add usedonly parameter when unused metrics are included", testCase{
+			address:   "127.0.0.1",
+			input:     "http://foo/bar?one=two&three=four",
+			adminPort: 80,
+			expected:  "http://127.0.0.1:80/stats?one=two&three=four",
+			queryModifier: AddSidecarParameters(&v1alpha1.Sidecar{
+				IncludeUnused: &includeUnused,
+			}),
+		}),
+		Entry("drop usedonly parameter passed by the scraper when unused metrics are included", testCase{
+			address:   "127.0.0.1",
+			input:     "http://foo/bar?one=two&usedonly",
+			adminPort: 80,
+			expected:  "http://127.0.0.1:80/stats?one=two",
+			queryModifier: AddSidecarParameters(&v1alpha1.Sidecar{
+				IncludeUnused: &includeUnused,
+			}),
+		}),
+		Entry("add usedonly parameter when unused metrics are excluded", testCase{
 			address:   "127.0.0.1",
 			input:     "http://foo/bar?one=two&three=four",
 			adminPort: 80,
 			expected:  "http://127.0.0.1:80/stats?one=two&three=four&usedonly=",
 			queryModifier: AddSidecarParameters(&v1alpha1.Sidecar{
-				IncludeUnused: &includeUnused,
+				IncludeUnused: &excludeUnused,
 			}),
 		}),
 		Entry("add default usedonly parameter", testCase{
