@@ -98,15 +98,6 @@ type ControlPlane struct {
 	TlsSkipVerify bool `json:"tlsSkipVerify" envconfig:"kuma_control_plane_tls_skip_verify"`
 }
 
-type ApiServer struct {
-	config.BaseConfig
-
-	// Address defines the address of Control Plane API server.
-	URL string `json:"url,omitempty" envconfig:"kuma_control_plane_api_server_url"`
-	// Retry settings for API Server
-	Retry CpRetry `json:"retry,omitempty"`
-}
-
 type CpRetry struct {
 	config.BaseConfig
 
@@ -357,24 +348,6 @@ func (d *DataplaneRuntime) Validate() error {
 	var errs error
 	if d.BinaryPath == "" {
 		errs = multierr.Append(errs, errors.Errorf(".BinaryPath must be non-empty"))
-	}
-	return errs
-}
-
-var _ config.Config = &ApiServer{}
-
-func (d *ApiServer) Validate() error {
-	var errs error
-	if d.URL == "" {
-		errs = multierr.Append(errs, errors.Errorf(".URL must be non-empty"))
-	}
-	if url, err := url.Parse(d.URL); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".URL must be a valid absolute URI"))
-	} else if !url.IsAbs() {
-		errs = multierr.Append(errs, errors.Errorf(".URL must be a valid absolute URI"))
-	}
-	if err := d.Retry.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrap(err, ".Retry is not valid"))
 	}
 	return errs
 }

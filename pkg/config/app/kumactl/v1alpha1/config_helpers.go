@@ -87,10 +87,3 @@ func (cfg *Configuration) RemoveControlPlane(name string) bool {
 	cfg.ControlPlanes = append(cfg.ControlPlanes[:i], cfg.ControlPlanes[i+1:]...)
 	return true
 }
-
-func (cfg *ControlPlaneCoordinates_ApiServer) HasCerts() bool {
-	if cfg == nil {
-		return false
-	}
-	return cfg.ClientCertFile != "" && cfg.ClientKeyFile != "" && cfg.CaCertFile != ""
-}

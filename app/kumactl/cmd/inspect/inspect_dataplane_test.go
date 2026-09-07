@@ -30,10 +30,6 @@ func (t *testDataplaneInspectClient) InspectPolicies(ctx context.Context, mesh, 
 	return t.response, nil
 }
 
-func (t *testDataplaneInspectClient) InspectConfigDump(ctx context.Context, mesh, name string) ([]byte, error) {
-	return nil, nil
-}
-
 var _ resources.DataplaneInspectClient = &testDataplaneInspectClient{}
 
 var _ = Describe("kumactl inspect dataplane", func() {

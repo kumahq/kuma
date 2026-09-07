@@ -36,8 +36,7 @@ type Extension struct {
 type Origin string
 
 const (
-	OriginGenerator  Origin = "HostnameGenerator"
-	OriginKubernetes Origin = "Kubernetes"
+	OriginGenerator Origin = "HostnameGenerator"
 )
 
 type Address struct {

@@ -59,8 +59,6 @@ func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
 // ServiceName is a convenience type alias to clarify the meaning of string value.
 type ServiceName = string
 
-type MeshName = string
-
 // TagSelectorSet is a set of unique TagSelectors.
 type TagSelectorSet []mesh_proto.TagSelector
 
@@ -210,8 +208,6 @@ type ServerSideTLSCertPaths struct {
 	KeyPath  string
 }
 
-type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
-
 type Routing struct {
 	OutboundTargets EndpointMap
 }
@@ -259,15 +255,6 @@ func (s TagSelectorSet) Add(n mesh_proto.TagSelector) TagSelectorSet {
 		return s
 	}
 	return append(s, n)
-}
-
-func (s TagSelectorSet) Matches(tags map[string]string) bool {
-	for _, selector := range s {
-		if selector.Matches(tags) {
-			return true
-		}
-	}
-	return false
 }
 
 func (e Endpoint) IsExternalService() bool {

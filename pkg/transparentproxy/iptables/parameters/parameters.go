@@ -96,18 +96,6 @@ func (p *Parameters) Build(verbose bool, additionalParameters ...string) []strin
 	return append(result, additionalParameters...)
 }
 
-func (p *Parameters) Append(parameters ...*Parameter) *Parameters {
-	return p.AppendIf(true, parameters...)
-}
-
-func (p *Parameters) AppendIf(predicate bool, parameters ...*Parameter) *Parameters {
-	if predicate {
-		*p = append(*p, parameters...)
-	}
-
-	return p
-}
-
 var _ ParameterBuilder = &SimpleParameter{}
 
 // SimpleParameter represents a straightforward iptables parameter that doesn't

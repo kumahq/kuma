@@ -3,7 +3,6 @@ package util
 import (
 	"fmt"
 	"maps"
-	"strings"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -105,16 +104,6 @@ func AddSuffixToResourceKeyNames(rk []core_model.ResourceKey, suffix string) []c
 		rk[idx].Name = fmt.Sprintf("%s.%s", r.Name, suffix)
 	}
 	return rk
-}
-
-func ResourceNameHasAtLeastOneOfPrefixes(resName string, prefixes ...string) bool {
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(resName, prefix) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func toResources(resourceType core_model.ResourceType, krs []*mesh_proto.KumaResource) (core_model.ResourceList, error) {

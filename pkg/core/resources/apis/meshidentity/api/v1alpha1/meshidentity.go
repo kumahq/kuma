@@ -114,7 +114,6 @@ const (
 	ProviderConditionType         string = "Provider"
 	SpiffeIDProviderConditionType string = "SpiffeIDProvider"
 	MeshTrustConditionType        string = "MeshTrustCreated"
-	DependenciesReadyType         string = "DependenciesReady"
 )
 
 type MeshIdentityStatus struct {

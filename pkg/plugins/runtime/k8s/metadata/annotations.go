@@ -20,9 +20,6 @@ const (
 	// "enabled"/"true"/"yes" only.
 	KumaGatewayAnnotation = "kuma.io/gateway"
 
-	// KumaTagsAnnotation holds a JSON representation of desired tags
-	KumaTagsAnnotation = "kuma.io/tags"
-
 	// KumaDirectAccess defines a comma-separated list of Services that will be accessed directly
 	KumaDirectAccess = "kuma.io/direct-access-services"
 
@@ -131,22 +128,6 @@ const (
 	AnnotationYes      = "yes"
 	AnnotationNo       = "no"
 )
-
-// these values are defined for users to specify in configuration:
-// values comes from mesh_proto.Dataplane_Networking_TransparentProxying_IpFamilyMode_name
-const (
-	IpFamilyModeDualStack = "dualstack"
-	IpFamilyModeIPv4      = "ipv4"
-	IpFamilyModeIPv6      = "ipv6"
-)
-
-func BoolToEnabled(b bool) string {
-	if b {
-		return AnnotationEnabled
-	}
-
-	return AnnotationDisabled
-}
 
 type Annotations map[string]string
 

@@ -7,8 +7,6 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
-type ResourceBuilder any
-
 type SnapshotBuilder interface {
 	With(typ core_model.ResourceType, resources []envoy_types.Resource) SnapshotBuilder
 	Build(version string) envoy_cache.ResourceSnapshot

@@ -171,11 +171,6 @@ func (b *Builder) WithExtensions(ext context.Context) *Builder {
 	return b
 }
 
-func (b *Builder) WithExtension(key any, value any) *Builder {
-	b.ext = context.WithValue(b.ext, key, value)
-	return b
-}
-
 func (b *Builder) WithConfigManager(configm config_manager.ConfigManager) *Builder {
 	b.configm = configm
 	return b
@@ -241,11 +236,6 @@ func (b *Builder) WithAccess(acc Access) *Builder {
 	return b
 }
 
-func (b *Builder) WithExtraReportsFn(fn ExtraReportsFn) *Builder {
-	b.extraReportsFn = fn
-	return b
-}
-
 func (b *Builder) WithTokenIssuers(tokenIssuers builtin.TokenIssuers) *Builder {
 	b.tokenIssuers = tokenIssuers
 	return b
@@ -273,14 +263,6 @@ func (b *Builder) WithPgxConfigCustomizationFn(pgxConfigCustomizationFn config.P
 
 func (b *Builder) WithAPIWebServiceCustomize(customize func(*restful.WebService) error) *Builder {
 	b.apiWebServiceCustomize = append(b.apiWebServiceCustomize, customize)
-	return b
-}
-
-// WithRouteMetadataProvider sets the route-metadata provider. Unlike
-// WithAPIWebServiceCustomize it does not compose: a second call replaces the
-// first, as there is intentionally a single metadata authority.
-func (b *Builder) WithRouteMetadataProvider(provider RouteMetadataProvider) *Builder {
-	b.routeMetadataProvider = provider
 	return b
 }
 
@@ -426,10 +408,6 @@ func (b *Builder) ConfigStore() core_store.ResourceStore {
 	return b.cs
 }
 
-func (b *Builder) GlobalInsightService() globalinsight.GlobalInsightService {
-	return b.gis
-}
-
 func (b *Builder) ResourceManager() core_manager.CustomizableResourceManager {
 	return b.rm
 }
@@ -502,16 +480,8 @@ func (b *Builder) AppCtx() context.Context {
 	return b.appCtx
 }
 
-func (b *Builder) ExtraReportsFn() ExtraReportsFn {
-	return b.extraReportsFn
-}
-
 func (b *Builder) TokenIssuers() builtin.TokenIssuers {
 	return b.tokenIssuers
-}
-
-func (b *Builder) EnvoyAdminClient() admin.EnvoyAdminClient {
-	return b.eac
 }
 
 func (b *Builder) MeshCache() *mesh.Cache {
@@ -532,16 +502,4 @@ func (b *Builder) PgxConfigCustomizationFn() config.PgxConfigCustomization {
 
 func (b *Builder) Tenants() multitenant.Tenants {
 	return b.tenants
-}
-
-func (b *Builder) APIWebServiceCustomize() []func(*restful.WebService) error {
-	return b.apiWebServiceCustomize
-}
-
-func (b *Builder) RouteMetadataProvider() RouteMetadataProvider {
-	return b.routeMetadataProvider
-}
-
-func (b *Builder) IdentityProviders() providers.IdentityProviders {
-	return b.identityProviders
 }

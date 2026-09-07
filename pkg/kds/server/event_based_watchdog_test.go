@@ -27,9 +27,6 @@ func (s staticReconciler) SupportedTypes() []core_model.ResourceType {
 	panic("implement me")
 }
 
-func (s staticReconciler) ForceVersion(node *envoy_core.Node, resourceType core_model.ResourceType) {
-}
-
 func (s staticReconciler) Reconcile(ctx context.Context, node *envoy_core.Node, m map[core_model.ResourceType]struct{}, logger logr.Logger) (error, bool) {
 	s.changedResTypes <- m
 	return nil, true

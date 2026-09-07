@@ -19,10 +19,6 @@ func (u *UnknownTypeError) Error() string {
 	return fmt.Sprintf("unknown message type: %q", u.name)
 }
 
-func (u *UnknownTypeError) Typename() string {
-	return u.name
-}
-
 func NewTypeRegistry() TypeRegistry {
 	return &typeRegistry{
 		objectTypes:     make(map[string]model.KubernetesObject),

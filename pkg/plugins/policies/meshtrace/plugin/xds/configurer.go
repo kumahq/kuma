@@ -48,12 +48,6 @@ type Configurer struct {
 
 var _ v3.FilterChainConfigurer = &Configurer{}
 
-const (
-	ZipkinProviderName        = "zipkin"
-	DatadogProviderName       = "datadog"
-	OpenTelemetryProviderName = "opentelemetry"
-)
-
 func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	var backend api.Backend
 	if backends := pointer.Deref(c.Conf.Backends); len(backends) == 0 {
