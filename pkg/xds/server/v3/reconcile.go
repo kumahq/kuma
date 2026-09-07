@@ -178,7 +178,9 @@ func autoVersion(old, n *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []changed
 		marshaled[i] = m
 	}
 
-	// EXC:FILE011:pre-existing-comment — fold cluster version into endpoint version so that a cluster change forces an EDS re-push even when endpoint content is identical; only when endpoints are non-empty, empty slots stay at ""
+	// Fold cluster version into endpoint version so that a cluster change
+	// forces an EDS re-push even when endpoint content is identical.
+	// Only when endpoints are non-empty; empty slots stay at "".
 	if ep := n.Resources[envoy_types.Endpoint].Version; ep != "" {
 		n.Resources[envoy_types.Endpoint].Version = mixVersions(ep, n.Resources[envoy_types.Cluster].Version)
 	}
