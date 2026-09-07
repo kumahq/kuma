@@ -42,6 +42,12 @@ type K8sControlPlane struct {
 	replicas   int
 	apiHeaders []string
 	refreshMu  sync.Mutex
+
+	// Both inspect callers poll inside an Eventually, so the secret read is
+	// done once per control plane instead of once per request.
+	adminTokenOnce sync.Once
+	adminToken     string
+	adminTokenErr  error
 }
 
 func NewK8sControlPlane(
@@ -238,6 +244,11 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 	if authnType, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TYPE"]; exist && authnType != "tokens" {
 		return "", nil
 	}
+	// Nothing writes the secret when the bootstrap is off, so without this the
+	// read below burns the whole retry budget before returning an error.
+	if bootstrap, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN"]; exist && bootstrap == "false" {
+		return "", nil
+	}
 	if c.cluster.opts.helmOpts["controlPlane.environment"] == "universal" {
 		body, err := http_helper.HTTPDoWithRetryWithOptionsE(c.t, http_helper.HttpDoOptions{
 			Method:    "GET",
@@ -258,6 +269,17 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 		}
 		return string(sec.Data["value"]), nil
 	})
+}
+
+// cachedAdminToken returns the bootstrapped admin token, reading it at most
+// once. An empty string means there is no token to attach, which is the answer
+// on a control plane that does not authenticate with tokens or does not
+// bootstrap one.
+func (c *K8sControlPlane) cachedAdminToken() (string, error) {
+	c.adminTokenOnce.Do(func() {
+		c.adminToken, c.adminTokenErr = c.retrieveAdminToken()
+	})
+	return c.adminToken, c.adminTokenErr
 }
 
 func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
@@ -356,6 +378,14 @@ func (c *K8sControlPlane) InspectEnvoyProxy(inspectPath string, query url.Values
 	if err != nil {
 		return nil, err
 	}
+	token, err := c.cachedAdminToken()
+	if err != nil {
+		return nil, err
+	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	// Set after the token so an explicit Authorization in apiHeaders wins.
 	for _, header := range c.apiHeaders {
 		if kv := strings.SplitN(header, "=", 2); len(kv) == 2 {
 			req.Header.Set(kv[0], kv[1])
