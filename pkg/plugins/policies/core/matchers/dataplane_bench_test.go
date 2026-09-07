@@ -114,7 +114,7 @@ func BenchmarkMatchedPoliciesPluginLoopCacheHitHoistedHash(b *testing.B) {
 	benchmarkPluginLoopCacheHit(b, true)
 }
 
-func BenchmarkMatchedPoliciesCacheMiss(b *testing.B) {
+func BenchmarkMatchedPoliciesNoCache(b *testing.B) {
 	dpp := benchDataplane(b)
 	resources := benchResources(b, 10)
 
