@@ -119,8 +119,12 @@ var _ = Describe("mergeConfs equivalence with jsonpatch.MergePatch", func() {
 				},
 			}
 			if r.Intn(2) == 0 {
+				body := fmt.Sprintf(`{"kvlistValue":{"values":[{"key":"k%d","value":{"stringValue":"v%d"}}]}}`, r.Intn(5), r.Intn(5))
+				if r.Intn(3) == 0 {
+					body = `{"kvlistValue":{"values":[{"key":null}]}}`
+				}
 				backend.OpenTelemetry.Body = &apiextensionsv1.JSON{
-					Raw: []byte(fmt.Sprintf(`{"kvlistValue":{"values":[{"key":"k%d","value":{"stringValue":"v%d"}}]}}`, r.Intn(5), r.Intn(5))),
+					Raw: []byte(body),
 				}
 			}
 			conf.Backends = &[]meshaccesslog_api.Backend{backend}
