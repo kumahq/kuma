@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	"github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -427,5 +428,61 @@ var _ = Describe("Updater", func() {
 		Eventually(func(g Gomega) {
 			g.Expect(test_metrics.FindMetric(metrics, "component_ms_status_updater")).ToNot(BeNil())
 		}, "10s", "100ms").Should(Succeed())
+	})
+})
+
+var _ = Describe("buildTLS", func() {
+	updater := &StatusUpdater{logger: logr.Discard(), localZone: "east"}
+
+	identity := builders.MeshIdentity().
+		WithBundled().
+		WithSelector(&common_api.LabelSelector{
+			MatchLabels: &map[string]string{"app": "test"},
+		}).
+		WithInitializedStatus().
+		Build()
+
+	certifiedDpp := samples.DataplaneBackendBuilder().
+		WithMesh("test").
+		Build()
+	certifiedDpp.Meta = &test_model.ResourceMeta{
+		Name:   "dp-1",
+		Mesh:   "test",
+		Labels: map[string]string{"app": "test"},
+	}
+
+	identities := []*meshidentity_api.MeshIdentityResource{identity}
+	trustDomains := map[string]struct{}{"test.east.mesh.local": {}}
+	dpps := []*core_mesh.DataplaneResource{certifiedDpp}
+
+	It("should hold the first certified pass in Pending", func() {
+		Expect(updater.buildTLS(meshservice_api.TLS{}, dpps, identities, trustDomains).Status).
+			To(Equal(meshservice_api.TLSPending))
+	})
+
+	It("should promote Pending to Ready on the next pass", func() {
+		pending := meshservice_api.TLS{Status: meshservice_api.TLSPending}
+		Expect(updater.buildTLS(pending, dpps, identities, trustDomains).Status).
+			To(Equal(meshservice_api.TLSReady))
+	})
+
+	It("should keep Ready latched", func() {
+		ready := meshservice_api.TLS{Status: meshservice_api.TLSReady}
+		Expect(updater.buildTLS(ready, dpps, identities, trustDomains).Status).
+			To(Equal(meshservice_api.TLSReady))
+	})
+
+	It("should drop back to NotReady when coverage is lost", func() {
+		pending := meshservice_api.TLS{Status: meshservice_api.TLSPending}
+		Expect(updater.buildTLS(pending, dpps, nil, trustDomains).Status).
+			To(Equal(meshservice_api.TLSNotReady))
+	})
+
+	It("should stay NotReady while any proxy is uncertified", func() {
+		uncertified := samples.DataplaneBackendBuilder().WithMesh("test").Build()
+		uncertified.Meta = &test_model.ResourceMeta{Name: "dp-2", Mesh: "test"}
+		both := []*core_mesh.DataplaneResource{certifiedDpp, uncertified}
+		Expect(updater.buildTLS(meshservice_api.TLS{}, both, identities, trustDomains).Status).
+			To(Equal(meshservice_api.TLSNotReady))
 	})
 })
