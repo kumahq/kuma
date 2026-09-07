@@ -63,10 +63,6 @@ func (r *resourceCrudHandler) applyBeforeWriteHook(resRest rest.Resource, meshNa
 	}
 }
 
-// validateCreateHooks run extra validation on create for the given resource
-// type. Rules that must also hold on update belong in validateLabels instead.
-var validateCreateHooks = map[core_model.ResourceType]func(r *resourceCrudHandler, res core_model.Resource) error{}
-
 func clearMeshTrustOrigin(resRest rest.Resource, meshName string, name string) {
 	if resRest.GetStatus() != nil {
 		status, ok := resRest.GetStatus().(*meshtrust_api.MeshTrustStatus)
@@ -121,12 +117,6 @@ func (r *resourceCrudHandler) createResource(
 	res := r.descriptor.NewObject()
 	_ = res.SetSpec(resRest.GetSpec())
 	res.SetMeta(resRest.GetMeta())
-
-	if hook, ok := validateCreateHooks[r.descriptor.Name]; ok {
-		if err := hook(r, res); err != nil {
-			return nil, err
-		}
-	}
 
 	labels, err := r.computeLabels(res.Descriptor(), res.GetSpec(), res.GetMeta(), meshName, name)
 	if err != nil {
