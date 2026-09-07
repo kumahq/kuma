@@ -110,6 +110,14 @@ $(foreach target,$(BUILD_RELEASE_BINARIES) $(BUILD_TEST_BINARIES),$(eval $(call 
 # Build_Go_Application is a build command for the Kuma Go applications.
 Build_Go_Application = GOOS=$(1) GOARCH=$(2) $$(GOENV) $(GO) build -v $$(GOFLAGS) $(call LD_FLAGS,$(1),$(2)) -o $$@/$$(notdir $$@)
 
+# CI image jobs download binaries built once by the binaries job instead of
+# recompiling. With PREBUILT_BINARIES=true a missing artifact must fail fast
+# rather than silently rebuild. Trailing '#' swallows the ./app/<pkg>
+# argument each recipe appends.
+ifeq ($(PREBUILT_BINARIES),true)
+Build_Go_Application = @test -f $$@/$$(notdir $$@) || { echo "missing prebuilt binary: $$@/$$(notdir $$@)"; exit 1; } \#
+endif
+
 # create targets to build binaries for each OS/ARCH combination
 # $(1) - GOOS to build for
 # $(2) - GOARCH to build for
