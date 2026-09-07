@@ -637,12 +637,13 @@ func mergeByKey(vals reflect.Value) (reflect.Value, error) {
 		}
 
 		// EXC:FILE011:pre-existing-comment — we define the order of matches by where it appears with the most precedence (i.e. the last appearance)
-		for _, accIndex := range candidatesByJSON[string(keyJSON)] {
+		bucketKey := string(keyJSON)
+		bucket := candidatesByJSON[bucketKey]
+		active := bucket[:0]
+		for _, accIndex := range bucket {
 			accRule := defaultsByKey[accIndex]
-			if accRule.Skip {
-				continue
-			}
 			if !reflect.DeepEqual(accRule.Key, mergeKeyValue) {
+				active = append(active, accIndex)
 				continue
 			}
 			valueDef = append(accRule.Defaults, valueDef...)
@@ -651,7 +652,7 @@ func mergeByKey(vals reflect.Value) (reflect.Value, error) {
 				Skip: true,
 			}
 		}
-		candidatesByJSON[string(keyJSON)] = append(candidatesByJSON[string(keyJSON)], len(defaultsByKey))
+		candidatesByJSON[bucketKey] = append(active, len(defaultsByKey))
 		defaultsByKey = append(defaultsByKey, acc{
 			Key:      mergeKeyValue,
 			Defaults: valueDef,
