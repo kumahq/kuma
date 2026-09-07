@@ -17,6 +17,7 @@ import (
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/dns/vips"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v2/pkg/test"
@@ -402,6 +403,150 @@ networking:
 		)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(aggregated.ZoneEgressByName).To(HaveKey("egress-terminating"))
+	})
+
+	meshWithLegacyAndMeshScopedEgress := `
+type: Mesh
+name: default
+mtls:
+  enabledBackend: ca-1
+  backends:
+    - name: ca-1
+      type: builtin
+routing:
+  zoneEgress: true
+---
+type: ExternalService
+name: httpbin
+mesh: default
+networking:
+  address: httpbin.org:80
+tags:
+  kuma.io/service: httpbin
+---
+type: ZoneEgress
+name: legacy-egress
+networking:
+  address: 192.168.0.1
+  port: 10002
+---
+type: Dataplane
+name: mesh-scoped-egress
+mesh: default
+labels:
+  app: kuma-default-egress
+  k8s.kuma.io/namespace: kuma-system
+  k8s.kuma.io/service-account: kuma-default-egress
+networking:
+  address: 192.168.0.2
+  listeners:
+    - type: ZoneEgress
+      address: 192.168.0.2
+      port: 10002
+      name: ze-main
+`
+
+	// A mesh-scoped egress evicts the legacy ones from the pool for the whole mesh, but
+	// ZoneProxyListenerGenerator only builds its listener once it has a WorkloadIdentity. Advertising it
+	// before then would point every proxy in the mesh at a port nothing serves.
+	It("keeps the legacy zone egress while the mesh-scoped one has no MeshIdentity", func() {
+		// given
+		resourceStore := memory.NewStore()
+		meshContextBuilder := newMeshContextBuilder(resourceStore, lookupIPFunc)
+		Expect(test_store.LoadResources(context.Background(), resourceStore, meshWithLegacyAndMeshScopedEgress)).To(Succeed())
+
+		// when
+		meshContext, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(meshContext.ZoneEgresses).To(ConsistOf(
+			core_xds.ZoneEgressInstance{Address: "192.168.0.1", Port: 10002},
+		))
+		var targets []string
+		for _, endpoint := range meshContext.EndpointMap["httpbin"] {
+			targets = append(targets, endpoint.Target)
+		}
+		Expect(targets).To(ConsistOf("192.168.0.1"))
+	})
+
+	// A MeshIdentity that only propagates SPIFFE IDs never issues a certificate, so the egress it
+	// selects still has no listener - the SPIFFE ID alone must not put it in the pool.
+	It("keeps the legacy zone egress while the matching MeshIdentity is not initialized", func() {
+		// given
+		resourceStore := memory.NewStore()
+		meshContextBuilder := newMeshContextBuilder(resourceStore, lookupIPFunc)
+		Expect(test_store.LoadResources(context.Background(), resourceStore, meshWithLegacyAndMeshScopedEgress+`
+---
+type: MeshIdentity
+name: spiffe-id-only
+mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+`)).To(Succeed())
+
+		// when
+		meshContext, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(meshContext.ZoneEgresses).To(ConsistOf(
+			core_xds.ZoneEgressInstance{Address: "192.168.0.1", Port: 10002},
+		))
+	})
+
+	It("switches to the mesh-scoped zone egress once an initialized MeshIdentity selects it", func() {
+		// given
+		resourceStore := memory.NewStore()
+		meshContextBuilder := newMeshContextBuilder(resourceStore, lookupIPFunc)
+		Expect(test_store.LoadResources(context.Background(), resourceStore, meshWithLegacyAndMeshScopedEgress+`
+---
+type: MeshIdentity
+name: identity
+mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+  provider:
+    type: Bundled
+    bundled:
+      insecureAllowSelfSigned: true
+      autogenerate:
+        enabled: true
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: Ready
+      message: Successfully initialized
+`)).To(Succeed())
+
+		// when
+		meshContext, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+
+		// then the legacy instance is dropped and clients get the SAN they must verify
+		Expect(err).ToNot(HaveOccurred())
+		Expect(meshContext.ZoneEgresses).To(ConsistOf(
+			core_xds.ZoneEgressInstance{
+				Address: "192.168.0.2",
+				Port:    10002,
+				SAN:     "spiffe://default.zone-1.mesh.local/ns/kuma-system/sa/kuma-default-egress",
+			},
+		))
+		var targets []string
+		for _, endpoint := range meshContext.EndpointMap["httpbin"] {
+			targets = append(targets, endpoint.Target)
+		}
+		Expect(targets).To(ConsistOf("192.168.0.2"))
 	})
 })
 

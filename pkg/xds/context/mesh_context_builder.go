@@ -664,7 +664,10 @@ func resolveZoneEgresses(
 			continue
 		}
 		var san string
-		if identity, ok := meshidentity_api.BestMatched(dp.GetMeta().GetLabels(), identities); ok {
+		// IsInitialized mirrors IdentityProviderManager.GetWorkloadIdentity: an identity that only
+		// propagates SPIFFE IDs, or one whose provider hasn't issued yet, leaves the egress without a
+		// certificate, so it must not be advertised on the strength of a SPIFFE ID it can't present.
+		if identity, ok := meshidentity_api.BestMatched(dp.GetMeta().GetLabels(), identities); ok && identity.Status.IsInitialized() {
 			env := config_core.UniversalEnvironment
 			if _, isK8s := dp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; isK8s {
 				env = config_core.KubernetesEnvironment
@@ -676,6 +679,12 @@ func resolveZoneEgresses(
 			} else {
 				san = spiffeID
 			}
+		}
+		if san == "" {
+			// ZoneProxyListenerGenerator skips the egress listener without a WorkloadIdentity, so
+			// advertising this instance would point every proxy in the mesh at a port nothing serves.
+			// Leaving it out keeps the legacy zone egresses in the pool until identity is enabled.
+			continue
 		}
 		for _, l := range listeners {
 			dpEgresses = append(dpEgresses, xds.ZoneEgressInstance{Address: l.GetAddress(), Port: l.GetPort(), SAN: san})
