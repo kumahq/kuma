@@ -264,6 +264,10 @@ jobs:
         with:
           name: envoy_linux_arm64
           path: ./build/artifacts-linux-arm64/envoy
+      # download-artifact does not restore the executable bit, so binaries
+      # land as 0644 and COPY would propagate that into the images.
+      - name: Restore executable bit on downloaded binaries
+        run: chmod -R +x ./build/artifacts-linux-*
       - name: Install dependencies for cross builds
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
