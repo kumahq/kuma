@@ -316,10 +316,26 @@ func allInboundListeners(dpp *core_mesh.DataplaneResource) []core_rules.InboundL
 }
 
 func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
+	type sortableResource struct {
+		resource    core_model.Resource
+		origin      mesh_proto.ResourceOrigin
+		role        mesh_proto.PolicyRole
+		displayName string
+	}
 	rs := rl.GetItems()
-	slices.SortFunc(rs, func(r1, r2 core_model.Resource) int {
-		p1, ok1 := r1.GetSpec().(core_model.Policy)
-		p2, ok2 := r2.GetSpec().(core_model.Policy)
+	sortable := make([]sortableResource, 0, len(rs))
+	for _, r := range rs {
+		origin, _ := core_model.ResourceOrigin(r.GetMeta())
+		sortable = append(sortable, sortableResource{
+			resource:    r,
+			origin:      origin,
+			role:        core_model.PolicyRole(r.GetMeta()),
+			displayName: core_model.GetDisplayName(r.GetMeta()),
+		})
+	}
+	slices.SortFunc(sortable, func(s1, s2 sortableResource) int {
+		p1, ok1 := s1.resource.GetSpec().(core_model.Policy)
+		p2, ok2 := s2.resource.GetSpec().(core_model.Policy)
 		if !ok1 || !ok2 {
 			panic("resource doesn't support TargetRef matching")
 		}
@@ -333,21 +349,19 @@ func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
 			return less
 		}
 
-		o1, _ := core_model.ResourceOrigin(r1.GetMeta())
-		o2, _ := core_model.ResourceOrigin(r2.GetMeta())
-		if less := o1.Compare(o2); less != 0 {
+		if less := s1.origin.Compare(s2.origin); less != 0 {
 			return less
 		}
 
-		if less := core_model.PolicyRole(r1.GetMeta()).Compare(core_model.PolicyRole(r2.GetMeta())); less != 0 {
+		if less := s1.role.Compare(s2.role); less != 0 {
 			return less
 		}
 
-		return cmp.Compare(core_model.GetDisplayName(r2.GetMeta()), core_model.GetDisplayName(r1.GetMeta()))
+		return cmp.Compare(s2.displayName, s1.displayName)
 	})
 	rv := registry.Global().MustNewList(rl.GetItemType())
-	for _, r := range rs {
-		_ = rv.AddItem(r)
+	for _, s := range sortable {
+		_ = rv.AddItem(s.resource)
 	}
 	return rv
 }
