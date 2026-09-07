@@ -63,9 +63,9 @@ func BenchmarkConfsMeshWidePolicies(b *testing.B) {
 func benchmarkMergeByKey(b *testing.B, policies, rulesPerPolicy int) {
 	b.Helper()
 	confs := []any{}
-	for i := 0; i < policies; i++ {
+	for i := range policies {
 		rules := []meshhttproute_api.Rule{}
-		for j := 0; j < rulesPerPolicy; j++ {
+		for j := range rulesPerPolicy {
 			rules = append(rules, meshhttproute_api.Rule{
 				Matches: []meshhttproute_api.Match{{
 					Path: &meshhttproute_api.PathMatch{
