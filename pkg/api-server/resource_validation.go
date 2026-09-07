@@ -2,7 +2,9 @@ package api_server
 
 import (
 	"fmt"
+	"slices"
 
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -11,6 +13,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
@@ -82,10 +85,20 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 	}
 
 	for _, k := range maps.SortedKeys(resource.GetMeta().GetLabels()) {
+		v := resource.GetMeta().GetLabels()[k]
 		for _, msg := range validation.IsQualifiedName(k) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
-		for _, msg := range validation.IsValidLabelValue(resource.GetMeta().GetLabels()[k]) {
+		// Labels that Kubernetes stores as annotations hold a resource name, so they
+		// follow the resource name rules (DNS-1123 subdomain, 253 characters) rather
+		// than the label value rules.
+		if slices.Contains(k8s.LabelsStoredAsAnnotations, k) {
+			for _, msg := range apimachineryvalidation.NameIsDNSSubdomain(v, false) {
+				err.AddViolationAt(validators.Root().Key(k), msg)
+			}
+			continue
+		}
+		for _, msg := range validation.IsValidLabelValue(v) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
 	}

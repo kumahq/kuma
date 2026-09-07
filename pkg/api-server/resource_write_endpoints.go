@@ -2,25 +2,18 @@ package api_server
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"strings"
 
 	"github.com/emicklei/go-restful/v3"
-	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 
 	api_server_types "github.com/kumahq/kuma/v3/pkg/api-server/types"
-	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 func (r *resourceCrudHandler) createOrUpdateResource(request *restful.Request) (any, error) {
@@ -68,12 +61,6 @@ func (r *resourceCrudHandler) applyBeforeWriteHook(resRest rest.Resource, meshNa
 	if hook, ok := beforeWriteHooks[r.descriptor.Name]; ok {
 		hook(resRest, meshName, name)
 	}
-}
-
-// validateCreateHooks run extra validation on create for the given resource
-// type.
-var validateCreateHooks = map[core_model.ResourceType]func(r *resourceCrudHandler, res core_model.Resource) error{
-	core_mesh.DataplaneType: (*resourceCrudHandler).validateUniversalDataplaneWorkloadLabel,
 }
 
 func clearMeshTrustOrigin(resRest rest.Resource, meshName string, name string) {
@@ -131,12 +118,6 @@ func (r *resourceCrudHandler) createResource(
 	_ = res.SetSpec(resRest.GetSpec())
 	res.SetMeta(resRest.GetMeta())
 
-	if hook, ok := validateCreateHooks[r.descriptor.Name]; ok {
-		if err := hook(r, res); err != nil {
-			return nil, err
-		}
-	}
-
 	labels, err := r.computeLabels(res.Descriptor(), res.GetSpec(), res.GetMeta(), meshName, name)
 	if err != nil {
 		return nil, withTitle(err, "Could not compute labels for a resource")
@@ -147,31 +128,6 @@ func (r *resourceCrudHandler) createResource(
 	}
 
 	return created(api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(res)}), nil
-}
-
-// validateUniversalDataplaneWorkloadLabel validates the workload label of
-// Dataplanes created on Universal zones.
-func (r *resourceCrudHandler) validateUniversalDataplaneWorkloadLabel(res core_model.Resource) error {
-	if r.isK8s {
-		return nil
-	}
-	workloadName, ok := res.GetMeta().GetLabels()[metadata.KumaWorkload]
-	if !ok || workloadName == "" {
-		return nil
-	}
-	if r.mode == config_core.Global {
-		return withTitle(
-			rest_errors.NewBadRequestError("labels[\"kuma.io/workload\"]: not allowed on Global control plane"),
-			"Invalid workload label",
-		)
-	}
-	if validationErrs := apimachineryvalidation.NameIsDNS1035Label(workloadName, false); len(validationErrs) != 0 {
-		return withTitle(
-			rest_errors.NewBadRequestError(fmt.Sprintf("labels[\"kuma.io/workload\"]: must be a valid DNS-1035 label (at most 63 characters, matching regex [a-z]([-a-z0-9]*[a-z0-9])?): %s", strings.Join(validationErrs, "; "))),
-			"Invalid workload label",
-		)
-	}
-	return nil
 }
 
 func (r *resourceCrudHandler) updateResource(
