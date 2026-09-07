@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/asaskevich/govalidator"
-
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -182,16 +180,13 @@ func getMatchType(match api.Match, protocol core_meta.Protocol) (MatchType, bool
 			matchType = WildcardDomain
 		}
 	case api.MatchType("IP"):
-		if govalidator.IsIPv6(match.Value) {
+		if match.IsIPv6() {
 			matchType = IPV6
 		} else {
 			matchType = IP
 		}
 	case api.MatchType("CIDR"):
-		// classify by the canonical form, so an IPv4-mapped IPv6 CIDR lands on
-		// the IPv4 listener the canonical prefix is generated for
-		split := strings.Split(api.CanonicalCIDR(match.Value), "/")
-		if govalidator.IsIPv6(split[0]) {
+		if match.IsIPv6() {
 			matchType = CIDRV6
 		} else {
 			matchType = CIDR

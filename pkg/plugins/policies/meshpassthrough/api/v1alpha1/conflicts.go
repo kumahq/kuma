@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"slices"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 
@@ -25,33 +26,34 @@ const (
 )
 
 func protocolClass(protocol ProtocolType) chainClass {
-	switch {
-	case protocol == TlsProtocol:
+	switch protocol {
+	case TlsProtocol:
 		return tlsChain
-	case slices.Contains(l7Protocols, protocol):
-		return httpChain
-	default:
+	case TcpProtocol, MysqlProtocol:
 		return tcpChain
+	default:
+		// the generator builds an HTTP chain for the L7 protocols and for anything
+		// it doesn't recognize, a protocol a policy stored before validation kept
+		return httpChain
 	}
 }
 
 // FilterChainMatcher identifies the filter chain a match resolves to: all domains
 // of an L7 protocol and port share one chain, TLS domains get a chain per SNI, IPs
-// and CIDRs a chain per normalized address range.
+// and CIDRs a chain per normalized address range on their own listener.
 type FilterChainMatcher struct {
 	class   chainClass
 	port    uint32
 	address string
+	ipv6    bool
 	sni     string
 }
 
 func (m Match) FilterChainMatcher() FilterChainMatcher {
-	matcher := FilterChainMatcher{class: protocolClass(m.Protocol), port: pointer.Deref(m.Port)}
+	matcher := FilterChainMatcher{class: protocolClass(m.Protocol), port: pointer.Deref(m.Port), ipv6: m.IsIPv6()}
 	switch m.Type {
 	case "IP":
-		// the generator picks the listener the same way, a textual IPv6 form is IPv6
-		// even when it encodes an IPv4 address
-		if govalidator.IsIPv6(m.Value) {
+		if matcher.ipv6 {
 			matcher.address = CanonicalCIDR(m.Value + "/128")
 		} else {
 			matcher.address = CanonicalCIDR(m.Value + "/32")
@@ -83,6 +85,21 @@ func (f FilterChainMatcher) String() string {
 		return chain + " on all ports"
 	}
 	return fmt.Sprintf("%s on port %d", chain, f.port)
+}
+
+// IsIPv6 reports whether the generator puts the match on the IPv6 listener: an IP is
+// classified by the value as written, so an IPv4-mapped form stays IPv6, a CIDR by
+// its canonical prefix, which collapses that same form to IPv4.
+func (m Match) IsIPv6() bool {
+	switch m.Type {
+	case "IP":
+		return govalidator.IsIPv6(m.Value)
+	case "CIDR":
+		address, _, _ := strings.Cut(CanonicalCIDR(m.Value), "/")
+		return govalidator.IsIPv6(address)
+	default:
+		return false
+	}
 }
 
 // CanonicalCIDR returns the prefix range Envoy matches on, host bits dropped and

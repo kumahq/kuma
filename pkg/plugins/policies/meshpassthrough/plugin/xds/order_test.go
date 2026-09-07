@@ -442,5 +442,46 @@ var _ = Describe("Match order", func() {
 				`ignoring match "::1/128", matches "0:0:0:0:0:0:0:1" and "::1/128" produce the same filter chain for ::1/128 on port 443`,
 			},
 		}),
+		Entry("an IPv4-mapped IPv6 address next to the IPv4 address it encodes, they get a chain on a different listener", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "::ffff:10.0.0.1",
+						Port:     pointer.To[uint32](443),
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "10.0.0.1",
+						Port:     pointer.To[uint32](443),
+						Protocol: api.ProtocolType("tcp"),
+					},
+				},
+			},
+			orderedGolden: "ipv4-mapped-and-ipv4.golden.yaml",
+		}),
+		Entry("a protocol the generator doesn't know, it builds an HTTP chain for it", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "example.com",
+						Port:     pointer.To[uint32](8080),
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "other.com",
+						Port:     pointer.To[uint32](8080),
+						Protocol: api.ProtocolType("foo"),
+					},
+				},
+			},
+			orderedGolden: "unsupported-protocol-conflict.golden.yaml",
+			warnings: []string{
+				`ignoring match "other.com", protocols http and foo produce the same filter chain for domains on port 8080`,
+			},
+		}),
 	)
 })
