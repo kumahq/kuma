@@ -42,7 +42,7 @@ func runEquivalence[T any](r *rand.Rand, n int, randomConf func(*rand.Rand) T) {
 	GinkgoHelper()
 	confs := []T{}
 	anyConfs := []any{}
-	for i := 0; i < n; i++ {
+	for range n {
 		conf := randomConf(r)
 		confs = append(confs, conf)
 		anyConfs = append(anyConfs, conf)
