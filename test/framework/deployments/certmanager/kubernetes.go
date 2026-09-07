@@ -2,11 +2,9 @@ package certmanager
 
 import (
 	"context"
-	"time"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -29,27 +27,32 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		KubectlOptions: cluster.GetKubectlOptions(t.namespace),
 	}
 
-	// The chart comes from an external repository, so a single unlucky fetch
-	// ("charts.jetstack.io/index.yaml": EOF) would otherwise take down the whole
-	// suite from BeforeAll. `upgrade --install` keeps the retry idempotent if an
-	// attempt fails after the release was created.
-	_, err := retry.DoWithRetryContextE(
-		cluster.GetTesting(), context.Background(),
-		"install cert-manager", 3, 5*time.Second,
-		func() (string, error) {
-			return helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), &opts, "upgrade", "cert-manager",
-				"--install",
-				"--namespace", t.namespace,
-				"--create-namespace",
-				"--repo", "https://charts.jetstack.io",
-				"--version", t.version,
-				"--set", "installCRDs=true",
-				"--set", "startupapicheck.enabled=false",
-				"--wait",
-				"--timeout", "5m",
-				"cert-manager",
-			)
-		},
+	// Pull through the shared chart cache: the first run fetches from the
+	// external repository with retries, later runs reuse the tarball and never
+	// touch the network. Installing from a local chart also keeps the install
+	// itself off the network, so a flaky index fetch cannot fail BeforeAll and
+	// take the whole suite with it.
+	chartPath, err := framework.HelmChartFromRepoE(
+		cluster.GetTesting(),
+		"https://charts.jetstack.io",
+		"cert-manager",
+		t.version,
+	)
+	if err != nil {
+		return err
+	}
+
+	// `upgrade --install` keeps this idempotent if an earlier attempt failed
+	// after the release was created.
+	_, err = helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), &opts, "upgrade", "cert-manager",
+		"--install",
+		"--namespace", t.namespace,
+		"--create-namespace",
+		"--set", "installCRDs=true",
+		"--set", "startupapicheck.enabled=false",
+		"--wait",
+		"--timeout", "5m",
+		chartPath,
 	)
 	if err != nil {
 		return err
