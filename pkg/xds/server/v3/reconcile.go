@@ -165,8 +165,9 @@ func validateResource(r envoy_types.Resource) error {
 // non-empty to force EDS re-push on cluster changes (prevents warming stalls).
 // Returns the versions that changed relative to old.
 func autoVersion(old, n *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []changedVersion, error) {
+	marshaled := make([]map[string]envoy_types.MarshaledResource, len(n.Resources))
 	for i := range n.Resources {
-		ver, err := resourcesVersion(n.Resources[i].Items)
+		ver, m, err := resourcesVersion(n.Resources[i].Items)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err, "failed to hash resources for type %d", i)
 		}
@@ -174,6 +175,7 @@ func autoVersion(old, n *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []changed
 			ver = emptyResourcesVersion()
 		}
 		n.Resources[i].Version = ver
+		marshaled[i] = m
 	}
 
 	// Fold cluster version into endpoint version so that a cluster change
@@ -183,7 +185,7 @@ func autoVersion(old, n *envoy_cache.Snapshot) (*envoy_cache.Snapshot, []changed
 		n.Resources[envoy_types.Endpoint].Version = mixVersions(ep, n.Resources[envoy_types.Cluster].Version)
 	}
 
-	if err := constructVersionMap(n); err != nil {
+	if err := constructVersionMap(n, marshaled); err != nil {
 		return nil, nil, err
 	}
 
@@ -214,25 +216,29 @@ func versionStrings(changed []changedVersion) []string {
 }
 
 // resourcesVersion returns a hex xxHash64 hash over sorted resource names and
-// their deterministic proto serializations. Returns "" for
-// empty slots so that two empty slots compare equal without versioning.
-func resourcesVersion(items map[string]envoy_types.ResourceWithTTL) (string, error) {
+// their deterministic proto serializations, along with the serializations
+// themselves so callers don't have to marshal the same resources again.
+// Returns "" for empty slots so that two empty slots compare equal without
+// versioning.
+func resourcesVersion(items map[string]envoy_types.ResourceWithTTL) (string, map[string]envoy_types.MarshaledResource, error) {
 	if len(items) == 0 {
-		return "", nil
+		return "", nil, nil
 	}
+	marshaled := make(map[string]envoy_types.MarshaledResource, len(items))
 	h := xxhash.New()
 	for _, key := range maps.SortedKeys(items) {
 		writeHashField(h, []byte(key))
 		b, err := envoy_cache.MarshalResource(items[key].Resource)
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
+		marshaled[key] = b
 		writeHashField(h, b)
 	}
-	return formatHash(h.Sum64()), nil
+	return formatHash(h.Sum64()), marshaled, nil
 }
 
-func constructVersionMap(s *envoy_cache.Snapshot) error {
+func constructVersionMap(s *envoy_cache.Snapshot, marshaled []map[string]envoy_types.MarshaledResource) error {
 	s.VersionMap = make(map[string]map[string]string)
 
 	for i, resources := range s.Resources {
@@ -242,12 +248,16 @@ func constructVersionMap(s *envoy_cache.Snapshot) error {
 		}
 
 		s.VersionMap[typeURL] = make(map[string]string, len(resources.Items))
-		for _, resource := range resources.Items {
-			marshaled, err := envoy_cache.MarshalResource(resource.Resource)
-			if err != nil {
-				return err
+		for name, resource := range resources.Items {
+			b, ok := marshaled[i][name]
+			if !ok {
+				var err error
+				b, err = envoy_cache.MarshalResource(resource.Resource)
+				if err != nil {
+					return err
+				}
 			}
-			version := envoy_cache.HashResource(marshaled)
+			version := envoy_cache.HashResource(b)
 			if i == int(envoy_types.Endpoint) && s.Resources[envoy_types.Cluster].Version != "" {
 				version = mixVersions(version, s.Resources[envoy_types.Cluster].Version)
 			}
