@@ -98,6 +98,8 @@ type MatchedPoliciesConfig struct {
 	// nil disables caching
 	Cache              PolicyMatchingCacheAccessor
 	PolicyMatchingHash string
+	// DataplaneHash is a precomputed DataplaneResource.Hash(), computed on demand when nil; callers looping over policy types should set it once. EXC:FILE011:documents-a-non-obvious-invariant
+	DataplaneHash []byte
 }
 
 func NewMatchedPoliciesConfig(opts ...MatchedPoliciesOption) *MatchedPoliciesConfig {
@@ -120,6 +122,12 @@ func WithCache(c PolicyMatchingCacheAccessor, policyMatchingHash string) Matched
 	return func(cfg *MatchedPoliciesConfig) {
 		cfg.Cache = c
 		cfg.PolicyMatchingHash = policyMatchingHash
+	}
+}
+
+func WithDataplaneHash(hash []byte) MatchedPoliciesOption {
+	return func(cfg *MatchedPoliciesConfig) {
+		cfg.DataplaneHash = hash
 	}
 }
 
