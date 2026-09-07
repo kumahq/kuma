@@ -10,7 +10,7 @@ import (
 func BenchmarkIsSubset(b *testing.B) {
 	newLabels := func(n int) map[string]string {
 		m := map[string]string{}
-		for i := 0; i < n; i++ {
+		for i := range n {
 			m[fmt.Sprintf("label-%d", i)] = fmt.Sprintf("value-%d", i)
 		}
 		return m

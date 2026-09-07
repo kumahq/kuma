@@ -18,7 +18,7 @@ func BenchmarkSortByTargetRef(b *testing.B) {
 	for _, n := range []int{10, 50, 200} {
 		b.Run(fmt.Sprintf("policies=%d", n), func(b *testing.B) {
 			list := &v1alpha1.MeshHTTPRouteResourceList{}
-			for i := 0; i < n; i++ {
+			for i := range n {
 				list.Items = append(list.Items, &v1alpha1.MeshHTTPRouteResource{
 					Meta: &test_model.ResourceMeta{
 						Mesh: "mesh-1",
