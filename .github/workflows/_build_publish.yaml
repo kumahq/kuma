@@ -27,7 +27,7 @@ on:
         type: string
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64:
-        value: ${{ jobs.build-binaries.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
+        value: ${{ jobs.publish-binaries.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
       IMAGE_DIGESTS:
         value: ${{ jobs.digest-images.outputs.DIGESTS }}
 permissions:
@@ -43,8 +43,83 @@ env:
   GITHUB_TOKEN: ${{ github.token }}
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
+  # One matrix leg per distribution: cross-compiling all four combos in a
+  # single job serialized on one runner's CPUs, and its go.sum-keyed cache
+  # entry was immutable, so it decayed until the next dependency bump. Each
+  # leg saves its own per-commit cache (restored by prefix from the newest
+  # available entry) and the envoy download is cached per combo.
   build-binaries:
     timeout-minutes: 70
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linux, darwin]
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Cache Go cross-compile build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-${{ hashFiles('**/go.sum') }}-
+            go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.8.8
+      # Resolve through make so per-combo ENVOY_VERSION_<os>_<arch> overrides
+      # in mk/build.mk produce distinct cache keys.
+      - name: Envoy version
+        id: envoy
+        run: |
+          echo "version=$(make -s build/info GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} | grep '^Envoy=' | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+      # A restored directory makes the envoy make target skip its download,
+      # which guards on the binary already existing.
+      - name: Cache envoy binary
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/artifacts-${{ matrix.os }}-${{ matrix.arch }}/envoy
+          key: envoy-dist-${{ matrix.os }}-${{ matrix.arch }}-${{ steps.envoy.outputs.version }}
+      # Command-line variables override the FULL_MATRIX assignment in
+      # mk/build.mk, narrowing the job to this leg's combo.
+      - run: |
+          make -j"$(nproc)" build/distributions ENABLED_GOOSES=${{ matrix.os }} ENABLED_GOARCHES=${{ matrix.arch }}
+      # Distributions package only kumactl/kuma-cp/kuma-dp, but image jobs also
+      # consume kuma-cni/install-cni from the prebuilt artifact uploaded below.
+      - if: ${{ matrix.os == 'linux' }}
+        run: |
+          make -j"$(nproc)" ENABLED_GOOSES=linux ENABLED_GOARCHES=${{ matrix.arch }} build/kuma-cni build/install-cni
+      # Image Dockerfiles COPY from this directory, including envoy.
+      - if: ${{ matrix.os == 'linux' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux_binaries_${{ matrix.arch }}
+          path: ./build/artifacts-linux-${{ matrix.arch }}
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist-tarballs-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            ./build/distributions/out/*-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+            ./build/distributions/out/*-${{ matrix.os }}-${{ matrix.arch }}.tar.gz.sha256
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
+          if-no-files-found: error
+  # Assembles the per-leg tarballs into the same artifact and digest the
+  # single-job build produced, keeping the release surface (artifact name,
+  # combined sha256 file, provenance digest, pulp publish) unchanged.
+  publish-binaries:
+    needs: [build-binaries]
+    timeout-minutes: 30
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       id-token: write
@@ -56,44 +131,34 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      # `check`/`build_check` populate go-build-<os>-<go.sum> with host-arch
-      # artifacts only, while this job cross-compiles every GOOS/GOARCH. A
-      # dedicated dist-scoped key (single entry per go.sum, written only here)
-      # keeps cross-compile artifacts reusable without evicting PR caches from
-      # the repo cache budget.
-      - name: Cache Go cross-compile build
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-build-dist-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            go-build-dist-${{ runner.os }}-
-            go-build-${{ runner.os }}-
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           version: 2026.8.8
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: dist-tarballs-*
+          path: ./build/distributions/out
+          merge-multiple: true
       - id: annotate-image-tag
         name: Image tag
         run: |
           echo "::notice title=Image tag::$(make build/info/version)"
-      - run: |
-          make -j"$(nproc)" build/distributions
-      # Distributions package only kumactl/kuma-cp/kuma-dp, but image jobs also
-      # consume kuma-cni/install-cni from the prebuilt artifact uploaded below.
-      - run: |
-          make -j"$(nproc)" ENABLED_GOOSES=linux build/kuma-cni build/install-cni
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: linux_binaries
-          path: ./build/artifacts-linux-*
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
-          if-no-files-found: error
+      # Replicates the combined sha256 and base64 digest that
+      # mk/distribution.mk derives when all tarballs are built in one job.
+      - name: Bundle checksums and digest
+        run: |
+          version="$(make -s build/info/version)"
+          cd build/distributions/out
+          sha256sum -- *.tar.gz > "kuma-${version}.sha256"
+          base64 -w0 "kuma-${version}.sha256" > ../artifact_digest_file.text
       # Gates publishing, not building: a wrong version must never reach Pulp or
-      # Cloudsmith, but there is no reason to hold the build back for it. Asserting
-      # the binary against the tag also covers this checkout computing the version
-      # wrong, since that is where the binary got stamped from.
+      # Cloudsmith. The assert needs a compiled binary, so pull one linux leg.
+      - name: Download linux amd64 binaries for version assert
+        if: ${{ github.ref_type == 'tag' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: linux_binaries_amd64
+          path: ./build
       - name: Assert built binary reports tag version
         if: ${{ github.ref_type == 'tag' }}
         env:
@@ -149,8 +214,9 @@ jobs:
       - name: Download prebuilt linux binaries
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: linux_binaries
+          pattern: linux_binaries_*
           path: ./build
+          merge-multiple: true
       - name: Install dependencies for cross builds
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
