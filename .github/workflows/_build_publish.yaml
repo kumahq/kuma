@@ -70,7 +70,7 @@ jobs:
             go-build-${{ runner.os }}-
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.8.8
+          version: 2026.8.14
       - id: annotate-image-tag
         name: Image tag
         run: |
@@ -145,7 +145,7 @@ jobs:
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.8.8
+          version: 2026.8.14
       - id: image_meta
         env:
           REGISTRY: ${{ inputs.REGISTRY }}
@@ -283,7 +283,7 @@ jobs:
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.8.8
+          version: 2026.8.14
       - name: package-helm-chart
         id: package-helm
         env:
