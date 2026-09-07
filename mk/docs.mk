@@ -35,13 +35,17 @@ ifneq ($(strip $(DOCS_PROTOS)),)
 		$(DOCS_PROTOS)
 endif
 
+# Built beside the target and moved on success, so a failing generator cannot
+# leave the committed file truncated. pipefail because the redirect would
+# otherwise report sed's status and hide a helm or yq failure entirely.
 .PHONY: docs/generated/raw/rbac.yaml
 docs/generated/raw/rbac.yaml:
 	@mkdir -p docs/generated/raw
-	@$(HELM) template --namespace $(PROJECT_NAME)-system $(PROJECT_NAME) deployments/charts/$(PROJECT_NAME) | \
+	@set -o pipefail; $(HELM) template --namespace $(PROJECT_NAME)-system $(PROJECT_NAME) deployments/charts/$(PROJECT_NAME) | \
 	$(YQ) eval-all 'select((.kind == "ClusterRole" or .kind == "ClusterRoleBinding" or .kind == "Role" or .kind == "RoleBinding") and (.metadata.annotations["helm.sh/hook"] == null)) | del(.metadata.labels)' - | \
 	grep -Ev '^\s*#' | \
-	sed 's/[[:space:]]*#.*$$//' > $@
+	sed 's/[[:space:]]*#.*$$//' > $@.tmp || { rm -f $@.tmp; exit 1; }
+	@mv $@.tmp $@
 
 OAPI_TMP_DIR ?= $(BUILD_DIR)/oapitmp
 API_DIRS     ?= $(TOP)/api/openapi/specs:base
@@ -55,6 +59,8 @@ API_DIRS     ?= $(TOP)/api/openapi/specs:base
 docs/generated:
 	mkdir -p $@
 
+# The merge output is built beside the target and moved on success, so a failing
+# merge cannot leave the committed file truncated.
 .PHONY: docs/generated/openapi.yaml
 docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES) | docs/generated docs/generated/openapi/prepare/specs
 	@echo "Rewriting /specs/ paths in all YAML files..."
@@ -71,7 +77,8 @@ docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES) | docs/generated docs
 			REDOCLY_SUPPRESS_UPDATE_NOTICE=true mise exec -- redocly bundle $$f -o $(BUILD_DIR)/openapi-bundled/$$f || echo "Skipping $$f"; \
 		done
 	@echo "Merging all bundled specs..."
-	@mise exec -- oas-toolkit merge $$(find $(BUILD_DIR)/openapi-bundled -name '*.yaml' | LC_ALL=C sort) > $@
+	@mise exec -- oas-toolkit merge $$(find $(BUILD_DIR)/openapi-bundled -name '*.yaml' | LC_ALL=C sort) > $@.tmp || { rm -f $@.tmp; exit 1; }
+	@mv $@.tmp $@
 	@$(MAKE) --no-print-directory validate/openapi-generated-docs
 
 # Prepare $(OAPI_TMP_DIR) with a normalized directory layout for the generator

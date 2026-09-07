@@ -144,7 +144,7 @@ jobs:
           fetch-depth: 0
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.8.8
+          version: 2026.8.14
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: dist-tarballs-*
@@ -257,7 +257,7 @@ jobs:
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.8.8
+          version: 2026.8.14
       # Login must precede the build for the cache push; anonymous pulls of the
       # public cache tags work without it (PR runs).
       - name: Docker login for buildx cache push
@@ -403,7 +403,7 @@ jobs:
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.8.8
+          version: 2026.8.14
       - name: package-helm-chart
         id: package-helm
         env:
