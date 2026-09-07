@@ -42,7 +42,7 @@ func Confs(confs []any) ([]any, error) {
 
 		result, err := mergeConfs(confs)
 		if err != nil {
-			return nil, errors.Wrap(err, "couldn't merge JSON patches")
+			return nil, errors.Wrap(err, "couldn't merge policy configurations")
 		}
 
 		valueResult := reflect.ValueOf(result)
@@ -440,7 +440,7 @@ func mergePatchDocs(doc, patch rawDoc) {
 	}
 }
 
-// pruneNulls mirrors json-patch: null-valued object keys are dropped recursively, while null array elements are kept. EXC:FILE011:documents-a-non-obvious-invariant
+// pruneNulls mirrors json-patch: nulls are pruned recursively, including inside arrays — stricter than RFC 7396 (arrays atomic), but byte-compatible with the previous jsonpatch.MergePatch chain, which is the compatibility bar. EXC:FILE011:documents-a-non-obvious-invariant
 func pruneNulls(v any) any {
 	switch t := v.(type) {
 	case rawDoc:
