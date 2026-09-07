@@ -27,7 +27,7 @@ jobs:
           fetch-depth: 0
           ref: master
           path: repo
-      - uses: jdx/mise-action@5ac50f778e26fac95da98d50503682459e86d566 # v3.2.0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: "sync docs" # loop over all the branches and generate the docs
