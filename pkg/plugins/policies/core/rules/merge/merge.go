@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
+	"sync"
 
-	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/pkg/errors"
+	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
@@ -37,9 +40,9 @@ func Confs(confs []any) ([]any, error) {
 	for _, taggedConfs := range taggedConfsList {
 		confs := taggedConfs.Confs
 
-		result, err := mergeJSONPatches(confs)
+		result, err := mergeConfs(confs)
 		if err != nil {
-			return nil, errors.Wrap(err, "couldn't merge JSON patches")
+			return nil, errors.Wrap(err, "couldn't merge policy configurations")
 		}
 
 		valueResult := reflect.ValueOf(result)
@@ -59,36 +62,427 @@ func Confs(confs []any) ([]any, error) {
 	return interfaces, nil
 }
 
-// mergeJSONPatches merges a list of confs to a single conf using the algorithm described in https://www.rfc-editor.org/rfc/rfc7396
-func mergeJSONPatches(confs []reflect.Value) (any, error) {
-	resultBytes := []byte{}
-	for i := range confs {
-		conf := confs[i].Interface()
-		confBytes, err := json.Marshal(conf)
-		if err != nil {
-			return nil, err
-		}
-		if len(resultBytes) == 0 {
-			resultBytes = confBytes
-			continue
-		}
-		resultBytes, err = jsonpatch.MergePatch(resultBytes, confBytes)
-		if err != nil {
-			return nil, err
-		}
+// mergeConfs merges a list of confs to a single conf using the algorithm described in https://www.rfc-editor.org/rfc/rfc7396
+func mergeConfs(confs []reflect.Value) (any, error) {
+	if getConfMeta(derefType(confs[0].Type())).supported {
+		return mergeTyped(confs)
 	}
+	return mergeViaJSON(confs)
+}
 
+func derefType(t reflect.Type) reflect.Type {
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	return t
+}
+
+// mergeTyped applies RFC 7396 semantics directly on conf structs, avoiding JSON round-trips entirely. EXC:FILE011:explains-why-not-what
+func mergeTyped(confs []reflect.Value) (any, error) {
 	confType := confs[0].Type()
 	result, err := newConf(confType)
 	if err != nil {
 		return nil, err
 	}
 
+	acc := reflect.ValueOf(result).Elem()
+	if acc.Kind() == reflect.Pointer {
+		acc.Set(reflect.New(acc.Type().Elem()))
+		acc = acc.Elem()
+	}
+	for i := range confs {
+		v := confs[i]
+		for v.Kind() == reflect.Pointer {
+			if v.IsNil() {
+				return nil, errors.New("cannot merge nil conf")
+			}
+			v = v.Elem()
+		}
+		mergeInto(acc, v)
+	}
+
+	return result, nil
+}
+
+func mergeInto(acc, patch reflect.Value) {
+	meta := getConfMeta(patch.Type())
+	for _, f := range meta.fields {
+		pv := patch.Field(f.index)
+		if f.omitEmpty && isEmptyValue(pv) {
+			continue
+		}
+		mergeValue(acc.Field(f.index), pv, f)
+	}
+}
+
+func mergeValue(acc, patch reflect.Value, f confField) {
+	if patch.Kind() == reflect.Pointer {
+		if patch.IsNil() {
+			acc.Set(reflect.Zero(acc.Type()))
+			return
+		}
+		if f.leaf {
+			acc.Set(deepCopyValue(patch))
+			return
+		}
+		if acc.Kind() == reflect.Pointer && !acc.IsNil() {
+			mergeInto(acc.Elem(), patch.Elem())
+			return
+		}
+		acc.Set(deepCopyValue(patch))
+		return
+	}
+	if f.leaf {
+		acc.Set(deepCopyValue(patch))
+		return
+	}
+	mergeInto(acc, patch)
+}
+
+func deepCopyValue(v reflect.Value) reflect.Value {
+	switch v.Kind() {
+	case reflect.Pointer:
+		if v.IsNil() {
+			return reflect.Zero(v.Type())
+		}
+		c := reflect.New(v.Type().Elem())
+		c.Elem().Set(deepCopyValue(v.Elem()))
+		return c
+	case reflect.Slice:
+		if v.IsNil() {
+			return reflect.Zero(v.Type())
+		}
+		c := reflect.MakeSlice(v.Type(), v.Len(), v.Len())
+		for i := range v.Len() {
+			c.Index(i).Set(deepCopyValue(v.Index(i)))
+		}
+		return c
+	case reflect.Struct:
+		c := reflect.New(v.Type()).Elem()
+		c.Set(v)
+		for i := range v.NumField() {
+			if v.Type().Field(i).IsExported() {
+				c.Field(i).Set(deepCopyValue(v.Field(i)))
+			}
+		}
+		return c
+	default:
+		return v
+	}
+}
+
+type confField struct {
+	index     int
+	omitEmpty bool
+	leaf      bool
+}
+
+type confMeta struct {
+	fields    []confField
+	supported bool
+}
+
+var confMetaCache sync.Map
+
+func getConfMeta(t reflect.Type) *confMeta {
+	if meta, ok := confMetaCache.Load(t); ok {
+		return meta.(*confMeta)
+	}
+	meta := buildConfMeta(t)
+	confMetaCache.Store(t, meta)
+	return meta
+}
+
+var scalarJSONLeaves = []reflect.Type{
+	reflect.TypeFor[k8s.Duration](),
+	reflect.TypeFor[intstr.IntOrString](),
+}
+
+var marshalerType = reflect.TypeFor[json.Marshaler]()
+
+// buildConfMeta decides whether a conf type can be merged without JSON
+// round-trips: only plain structs, pointers, slices and scalar leaves are
+// supported. Types with custom JSON marshaling (except known scalar leaves
+// like k8s.Duration), maps, interfaces and embedded fields fall back to
+// mergeViaJSON to preserve exact semantics. EXC:FILE011:documents-a-non-obvious-invariant
+func buildConfMeta(t reflect.Type) *confMeta {
+	meta := &confMeta{supported: true}
+	for f := range t.Fields() {
+		if !f.IsExported() {
+			continue
+		}
+		tag := f.Tag.Get("json")
+		if tag == "-" {
+			continue
+		}
+		name, opts := parseJSONTag(tag)
+		if f.Anonymous && name == "" {
+			meta.supported = false
+			return meta
+		}
+		leaf, supported := classifyField(f.Type)
+		if !supported {
+			meta.supported = false
+			return meta
+		}
+		meta.fields = append(meta.fields, confField{
+			index:     f.Index[0],
+			omitEmpty: opts.Contains("omitempty"),
+			leaf:      leaf,
+		})
+	}
+	return meta
+}
+
+func classifyField(t reflect.Type) (bool, bool) {
+	for t.Kind() == reflect.Pointer {
+		t = t.Elem()
+	}
+	if slices.Contains(scalarJSONLeaves, t) {
+		return true, true
+	}
+	if t.Implements(marshalerType) || reflect.PointerTo(t).Implements(marshalerType) {
+		return false, false
+	}
+	switch t.Kind() {
+	case reflect.Struct:
+		for f := range t.Fields() {
+			if !f.IsExported() {
+				continue
+			}
+			tag := f.Tag.Get("json")
+			if tag == "-" {
+				continue
+			}
+			if f.Anonymous && tag == "" {
+				return false, false
+			}
+			if _, supported := classifyField(f.Type); !supported {
+				return false, false
+			}
+		}
+		return false, true
+	case reflect.Slice, reflect.Array:
+		_, supported := classifyField(t.Elem())
+		return true, supported
+	case reflect.String, reflect.Bool,
+		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64:
+		return true, true
+	default:
+		return false, false
+	}
+}
+
+func parseJSONTag(tag string) (string, tagOptions) {
+	name, opts, _ := strings.Cut(tag, ",")
+	return name, tagOptions(opts)
+}
+
+type tagOptions string
+
+func (o tagOptions) Contains(option string) bool {
+	for s := range strings.SplitSeq(string(o), ",") {
+		if s == option {
+			return true
+		}
+	}
+	return false
+}
+
+// isEmptyValue mirrors encoding/json's omitempty emptiness check. EXC:FILE011:documents-a-non-obvious-invariant
+func isEmptyValue(v reflect.Value) bool {
+	switch v.Kind() {
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
+		return v.Len() == 0
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v.Uint() == 0
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0
+	case reflect.Interface, reflect.Pointer:
+		return v.IsNil()
+	default:
+		return false
+	}
+}
+
+// mergeViaJSON merges a list of confs to a single conf using the algorithm described in https://www.rfc-editor.org/rfc/rfc7396
+func mergeViaJSON(confs []reflect.Value) (any, error) {
+	confType := confs[0].Type()
+	result, err := newConf(confType)
+	if err != nil {
+		return nil, err
+	}
+
+	firstBytes, err := json.Marshal(confs[0].Interface())
+	if err != nil {
+		return nil, err
+	}
+	if len(confs) == 1 {
+		if err := json.Unmarshal(firstBytes, result); err != nil {
+			return nil, err
+		}
+		return result, nil
+	}
+
+	// Decode every conf once and merge on a tree of raw documents: round-tripping the accumulated document through jsonpatch.MergePatch on every step is quadratic in its size. EXC:FILE011:explains-why-not-what
+	acc, err := decodeDoc(firstBytes)
+	if err != nil {
+		return nil, err
+	}
+	for i := 1; i < len(confs); i++ {
+		confBytes, err := json.Marshal(confs[i].Interface())
+		if err != nil {
+			return nil, err
+		}
+		patch, err := decodeDoc(confBytes)
+		if err != nil {
+			return nil, err
+		}
+		if patch == nil {
+			acc = nil
+			continue
+		}
+		if acc == nil {
+			return nil, errors.New("invalid JSON document")
+		}
+		mergePatchDocs(acc, patch)
+	}
+
+	resultBytes, err := json.Marshal(acc)
+	if err != nil {
+		return nil, err
+	}
 	if err := json.Unmarshal(resultBytes, result); err != nil {
 		return nil, err
 	}
 
 	return result, nil
+}
+
+// rawDoc is a decoded JSON object. Values are nil (JSON null), json.RawMessage
+// (verbatim leaf, including unmerged objects) or rawDoc (an object that took
+// part in a merge). Keeping untouched subtrees as RawMessage avoids
+// decode/encode round-trips for them. EXC:FILE011:documents-a-non-obvious-invariant
+type rawDoc map[string]any
+
+func decodeDoc(data []byte) (rawDoc, error) {
+	var doc map[string]json.RawMessage
+	if err := json.Unmarshal(data, &doc); err != nil {
+		return nil, err
+	}
+	if doc == nil {
+		return nil, nil
+	}
+	res := make(rawDoc, len(doc))
+	for k, v := range doc {
+		res[k] = v
+	}
+	return res, nil
+}
+
+func isNullNode(v any) bool {
+	if v == nil {
+		return true
+	}
+	raw, ok := v.(json.RawMessage)
+	return ok && isNullJSON(raw)
+}
+
+func isNullJSON(raw json.RawMessage) bool {
+	return string(raw) == "null"
+}
+
+// asDoc decodes v into a rawDoc if v is a JSON object. EXC:FILE011:documents-a-non-obvious-invariant
+func asDoc(v any) (rawDoc, bool) {
+	switch t := v.(type) {
+	case rawDoc:
+		return t, true
+	case json.RawMessage:
+		doc, err := decodeDoc(t)
+		if err != nil {
+			return nil, false
+		}
+		return doc, doc != nil
+	default:
+		return nil, false
+	}
+}
+
+// mergePatchDocs applies RFC 7396 semantics of jsonpatch.MergePatch: null patch values delete the key, object values present on both sides merge recursively, anything else replaces. EXC:FILE011:documents-a-non-obvious-invariant
+func mergePatchDocs(doc, patch rawDoc) {
+	for k, v := range patch {
+		if isNullNode(v) {
+			delete(doc, k)
+			continue
+		}
+		cur, ok := doc[k]
+		if !ok || isNullNode(cur) {
+			doc[k] = pruneNulls(v)
+			continue
+		}
+		curDoc, curIsDoc := asDoc(cur)
+		patchDoc, patchIsDoc := asDoc(v)
+		switch {
+		case curIsDoc && patchIsDoc:
+			mergePatchDocs(curDoc, patchDoc)
+			doc[k] = curDoc
+		case !curIsDoc:
+			doc[k] = pruneNulls(v)
+		default:
+			doc[k] = v
+		}
+	}
+}
+
+// pruneNulls mirrors json-patch: nulls are pruned recursively, including inside arrays — stricter than RFC 7396 (arrays atomic), but byte-compatible with the previous jsonpatch.MergePatch chain, which is the compatibility bar. EXC:FILE011:documents-a-non-obvious-invariant
+func pruneNulls(v any) any {
+	switch t := v.(type) {
+	case rawDoc:
+		for k, val := range t {
+			if isNullNode(val) {
+				delete(t, k)
+			} else {
+				t[k] = pruneNulls(val)
+			}
+		}
+		return t
+	case json.RawMessage:
+		if doc, ok := asDoc(t); ok {
+			return pruneNulls(doc)
+		}
+		var ary []json.RawMessage
+		if err := json.Unmarshal(t, &ary); err == nil {
+			for i, elem := range ary {
+				if elem == nil || isNullJSON(elem) {
+					continue
+				}
+				switch pruned := pruneNulls(elem).(type) {
+				case json.RawMessage:
+					ary[i] = pruned
+				default:
+					out, err := json.Marshal(pruned)
+					if err != nil {
+						continue
+					}
+					ary[i] = out
+				}
+			}
+			out, err := json.Marshal(ary)
+			if err != nil {
+				return t
+			}
+			return json.RawMessage(out)
+		}
+		return t
+	default:
+		return v
+	}
 }
 
 type acc struct {
