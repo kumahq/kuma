@@ -28,7 +28,7 @@ node = "24"
 "go:github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema" = "v0.0.0-20230606235304-e35f2ad05c0c"
 "go:github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen" = "v2.8.0"
 "go:sigs.k8s.io/controller-tools/cmd/controller-gen" = "v0.21.0"
-"aqua:kubernetes-sigs/controller-runtime/setup-envtest" = "0.24.1"
+"aqua:kubernetes-sigs/controller-runtime/setup-envtest" = "0.25.0"
 "ubi:grafana/dashboard-linter" = "v0.3.0"
 # === tools excluded from GitHub Actions installs ===
 # ⚠️ If you change any tool name below, update `MISE_DISABLE_TOOLS` in:
