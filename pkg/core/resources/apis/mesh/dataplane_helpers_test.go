@@ -685,7 +685,7 @@ func BenchmarkDataplaneHash(b *testing.B) {
 		}).
 		WithAddress("127.0.0.1").
 		WithServices("backend").
-		WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
+		WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 		WithTransparentProxying(15001, 15006, "").
 		Build()
 

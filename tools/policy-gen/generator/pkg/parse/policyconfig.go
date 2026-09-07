@@ -32,6 +32,7 @@ type PolicyConfig struct {
 	PluralDisplayName            string
 	ShortName                    string
 	Path                         string
+	ReadOnly                     bool
 	AlternativeNames             []string
 	HasTo                        bool
 	HasRules                     bool

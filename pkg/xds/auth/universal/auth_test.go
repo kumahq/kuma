@@ -36,7 +36,6 @@ var _ = Describe("Authentication flow", func() {
 	var ctx context.Context
 
 	dpRes := *samples.DataplaneWebBuilder().
-		AddInboundOfService("web-api").
 		Build()
 
 	var dpResWithWorkload core_mesh.DataplaneResource
@@ -63,16 +62,15 @@ var _ = Describe("Authentication flow", func() {
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
 		err = resStore.Create(ctx, &dpRes, core_store.CreateByKey("dp-1", "default"), core_store.CreateWithLabels(map[string]string{
-			"team":                "web",
-			"env":                 "prod",
-			mesh_proto.ServiceTag: "web-api",
+			"team":                 "web",
+			"env":                  "prod",
+			"kuma.io/display-name": "web-api",
 		}))
 		Expect(err).ToNot(HaveOccurred())
 
 		dpResWithWorkload = *samples.DataplaneWebBuilder().
 			WithName("dp-with-workload").
 			WithLabels(map[string]string{metadata.KumaWorkload: "backend", "team": "web"}).
-			AddInboundOfService("web-api").
 			Build()
 		err = resStore.Create(ctx, &dpResWithWorkload, core_store.CreateByKey("dp-with-workload", "default"), core_store.CreateWithLabels(map[string]string{metadata.KumaWorkload: "backend", "team": "web"}))
 		Expect(err).ToNot(HaveOccurred())
@@ -128,16 +126,13 @@ var _ = Describe("Authentication flow", func() {
 			},
 			dpRes: &dpResWithWorkload,
 		}),
-		Entry("should auth with a legacy token bound to the service tags declared in the dataplane spec", testCase{
-			// dpRes declares kuma.io/service only on its inbounds (via
-			// AddInboundOfService), not as a label, so this pins
-			// `kumactl generate dataplane-token --tag` staying usable
-			// against a Dataplane that has not migrated that tag to a
-			// label, even though xDS identity generation is labels-only.
+		Entry("should auth with a token bound to one of several allowed tag values", testCase{
+			// The token allows either "web" or "web-api"; dpRes's actual
+			// kuma.io/display-name label is "web-api", so it still matches.
 			id: builtin_issuer.DataplaneIdentity{
 				Mesh: "default",
 				Tags: map[string]map[string]bool{
-					"kuma.io/service": {
+					"kuma.io/display-name": {
 						"web":     true,
 						"web-api": true,
 					},

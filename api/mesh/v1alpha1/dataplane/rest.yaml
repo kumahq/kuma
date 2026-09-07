@@ -378,6 +378,46 @@ info:
   version: v1alpha1
 openapi: 3.1.0
 paths:
+  /dataplanes:
+    get:
+      operationId: getDataplaneListAllMeshes
+      parameters:
+      - description: offset in the list of entities
+        in: query
+        name: offset
+        required: false
+        schema:
+          example: 0
+          type: integer
+      - description: the number of items per page
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 100
+          maximum: 1000
+          minimum: 1
+          type: integer
+      - description: filter by labels when multiple filters are present, they are
+          ANDed
+        example:
+          label.k8s.kuma.io/namespace: my-ns
+        in: query
+        name: filter
+        required: false
+        schema:
+          properties:
+            key:
+              type: string
+            value:
+              type: string
+          type: object
+      responses:
+        "200":
+          $ref: '#/components/responses/DataplaneList'
+      summary: Returns a list of Dataplane across all meshes.
+      tags:
+      - Dataplane
   /meshes/{mesh}/dataplanes:
     get:
       operationId: getDataplaneList

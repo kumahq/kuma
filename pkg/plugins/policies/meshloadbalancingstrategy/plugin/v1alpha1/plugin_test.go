@@ -139,8 +139,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Zone:       "zone-1",
 				Dataplane: builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						mesh_proto.ZoneTag:    "zone-1",
+						"kuma.io/display-name": "backend",
+						mesh_proto.ZoneTag:     "zone-1",
 					}).
 					Build(),
 				Policies: *xds_builders.MatchedPolicies().
@@ -249,11 +249,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithDataplane(
 					builders.Dataplane().
 						AddInboundOfTagsMap(map[string]string{
-							mesh_proto.ServiceTag: "backend",
-							mesh_proto.ZoneTag:    "zone-1",
-							"k8s.io/node":         "node1",
-							"k8s.io/az":           "test",
-							"k8s.io/region":       "test",
+							"kuma.io/display-name": "backend",
+							mesh_proto.ZoneTag:     "zone-1",
+							"k8s.io/node":          "node1",
+							"k8s.io/az":            "test",
+							"k8s.io/region":        "test",
 						}),
 				).
 				WithRouting(paymentsAndBackendRouting()).
@@ -425,11 +425,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithZone("zone-1").
 				WithDataplane(builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						mesh_proto.ZoneTag:    "zone-1",
-						"k8s.io/node":         "node1",
-						"k8s.io/az":           "test",
-						"k8s.io/region":       "test",
+						"kuma.io/display-name": "backend",
+						mesh_proto.ZoneTag:     "zone-1",
+						"k8s.io/node":          "node1",
+						"k8s.io/az":            "test",
+						"k8s.io/region":        "test",
 					}),
 				).
 				WithRouting(paymentsAndBackendRouting()).
@@ -547,11 +547,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithZone("zone-1").
 				WithDataplane(builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						mesh_proto.ZoneTag:    "zone-1",
-						"k8s.io/node":         "node1",
-						"k8s.io/az":           "test",
-						"k8s.io/region":       "test",
+						"kuma.io/display-name": "backend",
+						mesh_proto.ZoneTag:     "zone-1",
+						"k8s.io/node":          "node1",
+						"k8s.io/az":            "test",
+						"k8s.io/region":        "test",
 					}),
 				).
 				WithRouting(paymentsAndBackendRouting()).
@@ -706,11 +706,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithZone("zone-1").
 				WithDataplane(builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						mesh_proto.ZoneTag:    "zone-1",
-						"k8s.io/node":         "node1",
-						"k8s.io/az":           "test",
-						"k8s.io/region":       "test",
+						"kuma.io/display-name": "backend",
+						mesh_proto.ZoneTag:     "zone-1",
+						"k8s.io/node":          "node1",
+						"k8s.io/az":            "test",
+						"k8s.io/region":        "test",
 					}),
 				).
 				WithRouting(paymentsAndBackendRouting()).
@@ -833,8 +833,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Zone:       "zone-1",
 				Dataplane: builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						mesh_proto.ZoneTag:    "zone-1",
+						"kuma.io/display-name": "backend",
+						mesh_proto.ZoneTag:     "zone-1",
 					}).
 					Build(),
 				Policies: *xds_builders.MatchedPolicies().
@@ -1237,7 +1237,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			WithZone("zone-1").
 			With(func(p *core_xds.Proxy) {
 				p.Dataplane = builders.Dataplane().
-					AddInboundOfTagsMap(map[string]string{mesh_proto.ServiceTag: "backend"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/display-name": "backend"}).
 					Build()
 			}).
 			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(
@@ -1391,7 +1391,7 @@ func outboundRoute(service string, splits ...envoy_common.Split) *meshhttproute_
 			Match: match,
 			Split: backendRefSplits(splits...),
 		}},
-		DpTags: mesh_proto.MultiValueTagSet{"kuma.io/service": {service: true}},
+		DpTags: mesh_proto.MultiValueTagSet{"kuma.io/display-name": {service: true}},
 	}
 }
 
@@ -1432,7 +1432,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 			DestinationResource: destinationName(serviceResourceKRI, port),
 		},
 		routes,
-		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
+		mesh_proto.MultiValueTagSet{"kuma.io/display-name": {"backend": true}},
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener

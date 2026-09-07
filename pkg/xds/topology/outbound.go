@@ -39,7 +39,7 @@ var outboundLog = core.Log.WithName("xds").WithName("outbound")
 //     from the local zone and forwarding it outside the mesh
 //
 // Every destination is backed by a real resource (MeshService, MeshMultiZoneService,
-// MeshExternalService); kuma.io/service is not a source of endpoints.
+// MeshExternalService); tags are not a source of endpoints.
 
 // BuildDataplaneEndpointMap builds the endpoints a regular Dataplane routes to: local and
 // remote MeshServices, MeshMultiZoneServices, and MeshExternalServices reached through a
@@ -209,7 +209,6 @@ func fillRemoteMeshServices(
 			}
 			continue
 		}
-		serviceTag := meshServiceTagValue(ms)
 		for _, port := range ms.Spec.Ports {
 			serviceName := destinationname.MustResolve(ms, port)
 			for _, endpoint := range zoneToEndpoints[msZone] {
@@ -219,8 +218,7 @@ func fillRemoteMeshServices(
 					Priority: priorityRemote,
 				}
 				ep.Tags = map[string]string{
-					mesh_proto.ServiceTag: serviceTag,
-					mesh_proto.ZoneTag:    msZone,
+					mesh_proto.ZoneTag: msZone,
 				}
 				outbound[serviceName] = append(outbound[serviceName], ep)
 			}
@@ -241,14 +239,6 @@ func endpointIdentity(dataplane *core_mesh.DataplaneResource, inbound *mesh_prot
 		tags[mesh_proto.ProtocolTag] = protocol
 	}
 	return tags
-}
-
-func meshServiceTagValue(ms *meshservice_api.MeshServiceResource) string {
-	if serviceTag := ms.GetMeta().GetLabels()[mesh_proto.ServiceTag]; serviceTag != "" {
-		return serviceTag
-	}
-
-	return ms.GetMeta().GetName()
 }
 
 // fillLocalMeshServices adds one endpoint per healthy inbound backing a MeshService of this

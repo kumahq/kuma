@@ -65,12 +65,19 @@ const (
 	StateUnavailable State = "Unavailable"
 )
 
-// +kubebuilder:validation:Enum=Ready;NotReady
+// +kubebuilder:validation:Enum=Ready;NotReady;Pending
 type TLSStatus string
 
 const (
 	TLSReady    TLSStatus = "Ready"
 	TLSNotReady TLSStatus = "NotReady"
+	// TLSPending means every proxy backing the service is certified, but its
+	// clients are not told to originate mTLS yet. A proxy gets its identity
+	// independently of the destination's, so flipping clients in the same pass
+	// that certifies the destination drops every request sent before the
+	// destination's inbound TLS chain arrives. Holding one status interval here
+	// gives destinations that time; the next pass promotes to Ready.
+	TLSPending TLSStatus = "Pending"
 )
 
 type TLS struct {

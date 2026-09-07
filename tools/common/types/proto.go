@@ -8,7 +8,10 @@ import (
 )
 
 var ProtoTypeToType = map[string]reflect.Type{
-	"Mesh":      reflect.TypeFor[mesh_proto.Mesh](),
-	"Secret":    reflect.TypeFor[system_proto.Secret](),
-	"Dataplane": reflect.TypeFor[mesh_proto.Dataplane](),
+	"Mesh":             reflect.TypeFor[mesh_proto.Mesh](),
+	"Secret":           reflect.TypeFor[system_proto.Secret](),
+	"Dataplane":        reflect.TypeFor[mesh_proto.Dataplane](),
+	"DataplaneInsight": reflect.TypeFor[mesh_proto.DataplaneInsight](),
+	"Zone":             reflect.TypeFor[system_proto.Zone](),
+	"ZoneInsight":      reflect.TypeFor[system_proto.ZoneInsight](),
 }

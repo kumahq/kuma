@@ -2,6 +2,7 @@ package api_server
 
 import (
 	"os"
+	"sync"
 
 	"github.com/emicklei/go-restful/v3"
 
@@ -18,9 +19,13 @@ func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, ge
 
 	var instanceId string
 	var clusterId string
+	var idsMutex sync.Mutex
 	ws.Route(ws.GET("/").
 		Metadata(authn.MetadataAuthKey, authn.MetadataAuthSkip).
-		To(func(req *restful.Request, resp *restful.Response) {
+		To(handle(func(_ *restful.Request) (any, error) {
+			idsMutex.Lock()
+			defer idsMutex.Unlock()
+
 			if instanceId == "" {
 				instanceId = getInstanceId()
 			}
@@ -41,9 +46,7 @@ func addIndexWsEndpoints(ws *restful.WebService, getInstanceId func() string, ge
 				response.BasedOnKuma = &kuma_version.Build.BasedOnKuma
 			}
 
-			if err := resp.WriteAsJson(response); err != nil {
-				log.Error(err, "Could not write the index response")
-			}
-		}))
+			return response, nil
+		})))
 	return nil
 }

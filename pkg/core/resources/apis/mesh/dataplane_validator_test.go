@@ -88,7 +88,7 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               gateway:
                 tags:
-                  kuma.io/service: backend
+                  kuma.io/display-name: backend
                   kuam.io/protocol: tcp
                   version: "1"
               outbound:
@@ -106,7 +106,7 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               gateway:
                 tags:
-                  kuma.io/service: backend
+                  kuma.io/display-name: backend
                   version: "1"
                   kuma.io/valid: abc.0123-789.under_score:90
               outbound:
@@ -1118,7 +1118,7 @@ var _ = Describe("Dataplane", func() {
                   gateway:
                     type: BUILTIN
                     tags:
-                      kuma.io/service: kong
+                      kuma.io/display-name: kong
 `), dataplane.Spec)
 
 			// then the field is dropped and, without the label, what is left is

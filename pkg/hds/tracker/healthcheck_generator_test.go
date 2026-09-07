@@ -86,8 +86,6 @@ networking:
       servicePort: 80
       serviceProbe: 
         tcp: {}
-      tags:
-        kuma.io/service: backend
 `,
 			hdsConfig: &dp_server.HdsConfig{
 				Interval: config_types.Duration{Duration: 8 * time.Second},
@@ -112,8 +110,6 @@ networking:
       servicePort: 80
       serviceProbe: 
         tcp: {}
-      tags:
-        kuma.io/service: backend
   transparentProxying:
     redirectPortInbound: 15006
     redirectPortOutbound: 15001
@@ -141,8 +137,6 @@ networking:
       servicePort: 80
       serviceProbe: 
         tcp: {}
-      tags:
-        kuma.io/service: backend
   transparentProxying:
     redirectPortInbound: 15006
     redirectPortOutbound: 15001
@@ -170,8 +164,6 @@ networking:
       servicePort: 80
       serviceProbe:
         tcp: {}
-      tags:
-        kuma.io/service: backend
 `,
 			hdsConfig: &dp_server.HdsConfig{
 				Interval: config_types.Duration{Duration: 8 * time.Second},
@@ -200,8 +192,6 @@ networking:
       servicePort: 80
       serviceProbe:
         tcp: {}
-      tags:
-        kuma.io/service: backend
 `,
 			hdsConfig: &dp_server.HdsConfig{
 				Interval: config_types.Duration{Duration: 8 * time.Second},
@@ -227,8 +217,6 @@ networking:
       serviceProbe:
         interval: 10s
         tcp: {}
-      tags:
-        kuma.io/service: backend
 `,
 			hdsConfig: &dp_server.HdsConfig{
 				Interval: config_types.Duration{Duration: 8 * time.Second},
@@ -254,8 +242,6 @@ networking:
       serviceProbe:
         timeout: 15s
         tcp: {}
-      tags:
-        kuma.io/service: backend
 `,
 			hdsConfig: &dp_server.HdsConfig{
 				Interval: config_types.Duration{Duration: 8 * time.Second},
@@ -280,8 +266,6 @@ networking:
       servicePort: 80
       serviceProbe:
         tcp: {}
-      tags:
-        kuma.io/service: backend
 `,
 			metadata: &structpb.Struct{
 				Fields: map[string]*structpb.Value{

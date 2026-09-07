@@ -32,6 +32,13 @@ func handle(fn handlerFunc) restful.RouteFunction {
 			status = sr.status
 			body = sr.body
 		}
+		if raw, ok := body.(rawResponse); ok {
+			response.AddHeader(restful.HEADER_ContentType, raw.contentType)
+			if _, err := response.Write(raw.body); err != nil {
+				log.Error(err, "Could not write the response")
+			}
+			return
+		}
 		if err := response.WriteHeaderAndJson(status, body, "application/json"); err != nil {
 			log.Error(err, "Could not write the response")
 		}
@@ -65,4 +72,11 @@ type statusResponse struct {
 // created responds with 201 Created.
 func created(body any) any {
 	return statusResponse{status: http.StatusCreated, body: body}
+}
+
+// rawResponse is a response body written as-is with the given Content-Type,
+// for endpoints that don't serve JSON (e.g. Envoy admin output).
+type rawResponse struct {
+	contentType string
+	body        []byte
 }

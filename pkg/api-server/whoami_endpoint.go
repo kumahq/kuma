@@ -12,15 +12,11 @@ type WhoamiResponse struct {
 }
 
 func addWhoamiEndpoints(ws *restful.WebService) {
-	ws.Route(ws.GET("/who-am-i").To(func(req *restful.Request, resp *restful.Response) {
+	ws.Route(ws.GET("/who-am-i").To(handle(func(req *restful.Request) (any, error) {
 		u := user.FromCtx(req.Request.Context())
-		whoamiResp := WhoamiResponse{
+		return WhoamiResponse{
 			Name:   u.Name,
 			Groups: u.Groups,
-		}
-
-		if err := resp.WriteAsJson(whoamiResp); err != nil {
-			log.Error(err, "Could not write the who-am-i response")
-		}
-	}))
+		}, nil
+	})))
 }

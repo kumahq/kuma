@@ -34,14 +34,14 @@
     "destinations": [
       {
         "match": {
-          "kuma.io/service": "*"
+          "kuma.io/display-name": "*"
         }
       }
     ],
     "sources": [
       {
         "match": {
-          "kuma.io/service": "*"
+          "kuma.io/display-name": "*"
         }
       }
     ]

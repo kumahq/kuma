@@ -126,7 +126,7 @@ paths:
       responses:
         "200":
           $ref: '#/components/responses/MeshList'
-      summary: Returns a list of Mesh in the mesh.
+      summary: Returns a list of Mesh.
       tags:
       - Mesh
   /meshes/{name}:

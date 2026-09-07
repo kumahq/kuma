@@ -200,7 +200,7 @@ networking:
   inbound:
     - port: 8080
       tags:
-        kuma.io/service: backend
+        kuma.io/display-name: backend
 `)).To(Succeed())
 
 		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", nil)
@@ -216,7 +216,7 @@ networking:
   inbound:
     - port: 8080
       tags:
-        kuma.io/service: backend
+        kuma.io/display-name: backend
 `)).To(Succeed())
 
 		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
@@ -290,7 +290,7 @@ networking:
   inbound:
     - port: 8080
       tags:
-        kuma.io/service: backend
+        kuma.io/display-name: backend
 `)).To(Succeed())
 
 		before, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", nil)
@@ -305,7 +305,7 @@ networking:
   inbound:
     - port: 8080
       tags:
-        kuma.io/service: backend
+        kuma.io/display-name: backend
 `)).To(Succeed())
 
 		after, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", nil)
@@ -567,7 +567,7 @@ var _ = Describe("EndpointMap", func() {
 		msBuilder := builders.MeshService().
 			WithMesh(meshName).
 			WithName("backend").
-			WithDataplaneLabelsSelectorKV(mesh_proto.ServiceTag, "backend").
+			WithDataplaneLabelsSelectorKV("kuma.io/display-name", "backend").
 			AddIntPort(80, 8080, core_meta.ProtocolHTTP)
 		Expect(msBuilder.Create(resourceStore)).To(Succeed())
 		ms := msBuilder.Build()

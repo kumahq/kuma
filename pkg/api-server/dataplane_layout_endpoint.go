@@ -20,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -54,13 +53,13 @@ func newDataplaneLayoutEndpoint(
 func (dle *dataplaneLayoutEndpoint) addEndpoint(ws *restful.WebService) {
 	ws.Route(
 		ws.GET("/meshes/{mesh}/dataplanes/{name}/_layout").
-			To(dle.getLayout).
+			To(handle(dle.getLayout)).
 			Doc("Get Dataplane Layout").
 			Returns(http.StatusOK, "OK", nil),
 	)
 }
 
-func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response *restful.Response) {
+func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request) (any, error) {
 	meshName := request.PathParameter("mesh")
 	dataplaneName := request.PathParameter("name")
 
@@ -70,21 +69,18 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		core_mesh.DataplaneResourceTypeDescriptor,
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
-		return
+		return nil, withTitle(err, "Access Denied")
 	}
 
 	baseMeshContext, err := dle.meshContextBuilder.BuildBaseMeshContextIfChanged(request.Request.Context(), meshName, nil)
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to build MeshContext")
-		return
+		return nil, withTitle(err, "Failed to build MeshContext")
 	}
 
 	dataplane := core_mesh.NewDataplaneResource()
 	err = dle.resManager.Get(request.Request.Context(), dataplane, store.GetByKey(dataplaneName, meshName))
 	if err != nil {
-		rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Dataplane")
-		return
+		return nil, withTitle(err, "Failed to retrieve Dataplane")
 	}
 
 	inbounds := util_slices.Map(dataplane.Spec.GetNetworking().GetInbound(), func(inbound *v1alpha1.Dataplane_Networking_Inbound) api_common.DataplaneInbound {
@@ -148,10 +144,7 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request, response
 		SpiffeId:  dle.computeSpiffeID(request, meshName, dataplane),
 	}
 
-	err = response.WriteHeaderAndJson(http.StatusOK, networkingLayout, "application/json")
-	if err != nil {
-		log.Error(err, "Could not write response")
-	}
+	return networkingLayout, nil
 }
 
 func allPorts(destination core_resources.Destination) []core_resources.Port {

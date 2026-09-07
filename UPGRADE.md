@@ -8,6 +8,24 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Resource catalogs report control-plane writability
+
+The `readOnly` field returned by `GET /_resources` now reports whether generic `PUT` and `DELETE` operations are disabled for that resource type on the current control plane. On Global control planes, resources provided by Zones now report `readOnly: true`. On writable federated Zone control planes, resources provided by the Zone now report `readOnly: false`. `GET /policies` already used these semantics and is unchanged.
+
+**Action required**
+
+Dynamic clients should use `readOnly` as the capability of the current control plane, not as an intrinsic property of the resource type. No action is needed for Kubernetes installations using the default read-only API configuration.
+
+### The legacy per-policy inspect paths `{policy}/{name}/dataplanes` are removed
+
+`GET /meshes/{mesh}/{policyType}/{policyName}/dataplanes` for every inspectable policy type is removed and answers `404`. The replacement `GET /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes` returns the list of dataplanes the policy matches.
+
+`kumactl inspect <policy> NAME` now uses the replacement endpoint by default and returns dataplane metadata rather than the legacy attachment details. It does not fall back to the removed endpoint. The `--new-api` flag is still accepted but no longer has any effect. Results are paginated with `--size` and `--offset`.
+
+**Action required**
+
+Upgrade `kumactl` together with the control plane. Update scripts that depend on legacy attachment details to consume the dataplane metadata response instead. The first page contains at most 100 dataplanes unless `--size` is set.
+
 ### The ServiceInsight REST endpoints are removed
 
 `GET /meshes/{mesh}/service-insights` and `GET /meshes/{mesh}/service-insights/{name}` are removed and answer `404`.

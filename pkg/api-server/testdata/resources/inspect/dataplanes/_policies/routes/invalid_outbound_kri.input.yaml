@@ -11,7 +11,7 @@ labels:
 spec:
   selector:
     dataplaneTags:
-      kuma.io/service: test-server
+      kuma.io/display-name: test-server
   ports:
     - port: 80
       targetPort: 80
@@ -68,4 +68,4 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: svc-1
+        kuma.io/display-name: svc-1

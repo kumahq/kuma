@@ -31,6 +31,7 @@ paths:
         '404':
           $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
+    {{- if not .ReadOnly}}
     put:
       operationId: put{{ .Name }}
       summary: Creates or Updates {{ .Name }} entity
@@ -87,11 +88,16 @@ paths:
           $ref: '#/components/responses/{{.Name}}DeleteSuccessResponse'
         '404':
           $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+    {{- end}}
 
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}:
     get:
       operationId: get{{ .Name }}List
+      {{- if eq .Scope "Mesh"}}
       summary: Returns a list of {{ .Name }} in the mesh.
+      {{- else}}
+      summary: Returns a list of {{ .Name }}.
+      {{- end}}
       tags: [ "{{ .Name }}" ]
       parameters:
         - in: query
@@ -134,6 +140,47 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/{{.Name}}List"
+
+  {{- if eq .Scope "Mesh"}}
+  /{{ .Path }}:
+    get:
+      operationId: get{{ .Name }}ListAllMeshes
+      summary: Returns a list of {{ .Name }} across all meshes.
+      tags: [ "{{ .Name }}" ]
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+            example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+      responses:
+        '200':
+          $ref: "#/components/responses/{{.Name}}List"
+  {{- end}}
 
 components:
   schemas:

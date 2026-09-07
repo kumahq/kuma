@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/emicklei/go-restful/v3"
@@ -33,7 +34,6 @@ import (
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -54,8 +54,11 @@ import (
 
 var log = core.Log.WithName("api-server")
 
+const apiServerShutdownTimeout = 2 * time.Second
+
 type ApiServer struct {
 	mux          *http.ServeMux
+	container    *restful.Container
 	config       api_server.ApiServerConfig
 	certWatchers *util_tls.Watchers
 	httpReady    atomic.Bool
@@ -77,6 +80,18 @@ func (a *ApiServer) Config() api_server.ApiServerConfig {
 // Handler returns the underlying HTTP handler for testing purposes
 func (a *ApiServer) Handler() http.Handler {
 	return a.mux
+}
+
+// Routes returns the registered routes as "METHOD /path" pairs, for testing
+// purposes.
+func (a *ApiServer) Routes() []string {
+	var routes []string
+	for _, ws := range a.container.RegisteredWebServices() {
+		for _, route := range ws.Routes() {
+			routes = append(routes, route.Method+" "+route.Path)
+		}
+	}
+	return routes
 }
 
 func init() {
@@ -157,7 +172,7 @@ func NewApiServer(
 		rt.RouteMetadataProvider(),
 	)
 	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
-	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ResourceManager(), rt.Access().ResourceAccess)
+	addInspectEndpoints(ws, rt.ResourceManager(), rt.Access().ResourceAccess)
 	addInspectEnvoyAdminEndpoints(ws, rt.ResourceManager(), rt.Access().EnvoyAdminAccess, rt.EnvoyAdminClient())
 	addInspectMeshServiceEndpoints(ws, rt.ResourceManager(), cfg.Mode == config_core.Global)
 	guiUrl := ""
@@ -230,6 +245,7 @@ func NewApiServer(
 
 	newApiServer := &ApiServer{
 		mux:          container.ServeMux,
+		container:    container,
 		config:       *serverConfig,
 		certWatchers: rt.CertWatchers(),
 	}
@@ -250,6 +266,73 @@ func NewApiServer(
 	rt.APIInstaller().Install(container)
 
 	return newApiServer, nil
+}
+
+type resourceRouteRole int
+
+const (
+	meshCRUDListRoute resourceRouteRole = iota
+	crossMeshListRoute
+	globalCRUDListRoute
+)
+
+type resourcePathRole int
+
+const (
+	primaryResourcePath resourcePathRole = iota
+	aliasResourcePath
+)
+
+type resourceRoute struct {
+	role     resourceRouteRole
+	pathRole resourcePathRole
+}
+
+func resourceRoutes(descriptor model.ResourceTypeDescriptor) []resourceRoute {
+	pathRoles := []resourcePathRole{primaryResourcePath}
+	if descriptor.AlternativeWsPath != "" {
+		pathRoles = append(pathRoles, aliasResourcePath)
+	}
+
+	var routes []resourceRoute
+	for _, pathRole := range pathRoles {
+		switch descriptor.Scope {
+		case model.ScopeMesh:
+			routes = append(routes,
+				resourceRoute{role: meshCRUDListRoute, pathRole: pathRole},
+				resourceRoute{role: crossMeshListRoute, pathRole: pathRole},
+			)
+		case model.ScopeGlobal:
+			routes = append(routes, resourceRoute{role: globalCRUDListRoute, pathRole: pathRole})
+		}
+	}
+	return routes
+}
+
+func (r resourceRoute) pathPrefix(descriptor model.ResourceTypeDescriptor) string {
+	path := descriptor.WsPath
+	if r.pathRole == aliasResourcePath {
+		path = descriptor.AlternativeWsPath
+	}
+	if r.role == meshCRUDListRoute {
+		return "/meshes/{mesh}/" + path
+	}
+	return "/" + path
+}
+
+func registerResourceRoutes(ws *restful.WebService, endpoints resourceEndpoints) {
+	for _, route := range resourceRoutes(endpoints.descriptor) {
+		pathPrefix := route.pathPrefix(endpoints.descriptor)
+		switch route.role {
+		case meshCRUDListRoute, globalCRUDListRoute:
+			endpoints.addCreateOrUpdateEndpoint(ws, pathPrefix)
+			endpoints.addDeleteEndpoint(ws, pathPrefix)
+			endpoints.addFindEndpoint(ws, pathPrefix)
+			endpoints.addListEndpoint(ws, pathPrefix)
+		case crossMeshListRoute:
+			endpoints.addListEndpoint(ws, pathPrefix)
+		}
+	}
 }
 
 func addResourcesEndpoints(
@@ -287,8 +370,6 @@ func addResourcesEndpoints(
 		k8sSecretMapper = secrets_k8s.NewInferenceMapper(cfg.Store.Kubernetes.SystemNamespace)
 	}
 	for _, definition := range defs {
-		defType := definition.Name
-
 		switch {
 		case cfg.ApiServer.ReadOnly:
 			definition.ReadOnly = true
@@ -308,7 +389,7 @@ func addResourcesEndpoints(
 		endpoints := resourceEndpoints{
 			resourceCrudHandler: &resourceCrudHandler{
 				resourceEndpointsContext:     endpointsCtx,
-				k8sMapper:                    k8sMapper,
+				k8sMapper:                    k8sMapperForDescriptor(definition, k8sMapper, k8sSecretMapper),
 				federatedZone:                cfg.IsFederatedZoneCP(),
 				filter:                       filters.Resource(definition),
 				disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
@@ -322,39 +403,12 @@ func addResourcesEndpoints(
 				knownInternalAddresses:   cfg.IPAM.KnownInternalCIDRs,
 			},
 		}
-		if defType == system.SecretType || defType == system.GlobalSecretType {
-			endpoints.k8sMapper = k8sSecretMapper
-		}
-		switch definition.Scope {
-		case model.ScopeMesh:
-			endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.WsPath)
-			endpoints.addListEndpoint(ws, "/"+definition.WsPath) // listing all resources in all meshes
-			if definition.AlternativeWsPath != "" {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.AlternativeWsPath)
-				endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath) // listing all resources in all meshes
-			}
-		case model.ScopeGlobal:
-			endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.WsPath)
-			endpoints.addDeleteEndpoint(ws, "/"+definition.WsPath)
-			endpoints.addFindEndpoint(ws, "/"+definition.WsPath)
-			endpoints.addListEndpoint(ws, "/"+definition.WsPath)
-			if definition.AlternativeWsPath != "" {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.AlternativeWsPath)
-				endpoints.addDeleteEndpoint(ws, "/"+definition.AlternativeWsPath)
-				endpoints.addFindEndpoint(ws, "/"+definition.AlternativeWsPath)
-				endpoints.addListEndpoint(ws, "/"+definition.AlternativeWsPath)
-			}
-		}
+		registerResourceRoutes(ws, endpoints)
 	}
 
 	kriEndpoints := kriEndpoint{
 		k8sMapper:       k8sMapper,
+		k8sSecretMapper: k8sSecretMapper,
 		resManager:      resManager,
 		resourceAccess:  resourceAccess,
 		cpMode:          cfg.Mode,
@@ -369,8 +423,37 @@ func (a *ApiServer) Ready() bool {
 	return a.httpReady.Load() && a.httpsReady.Load()
 }
 
-func (a *ApiServer) Start(stop <-chan struct{}) error {
-	errChan := make(chan error)
+func (a *ApiServer) Start(stop <-chan struct{}) (result error) {
+	a.httpReady.Store(false)
+	a.httpsReady.Store(false)
+	errChan := make(chan error, 2)
+
+	startedServers := make([]*http.Server, 0, 2)
+	doneChannels := make([]<-chan struct{}, 0, 2)
+	defer func() {
+		a.httpReady.Store(false)
+		a.httpsReady.Store(false)
+		ctx, cancel := context.WithTimeout(context.Background(), apiServerShutdownTimeout)
+		defer cancel()
+		shutdownErrs := make(chan error, len(startedServers))
+		for _, server := range startedServers {
+			go func() {
+				err := server.Shutdown(ctx)
+				if err != nil {
+					err = multierr.Append(err, server.Close())
+				}
+				shutdownErrs <- err
+			}()
+		}
+		for range startedServers {
+			if err := <-shutdownErrs; err != nil {
+				result = multierr.Append(result, err)
+			}
+		}
+		for _, done := range doneChannels {
+			<-done
+		}
+	}()
 
 	var httpServer, httpsServer *http.Server
 	if a.config.HTTP.Enabled {
@@ -383,11 +466,6 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 			Handler:           a.mux,
 			ErrorLog:          adapter.ToStd(log),
 		}
-		if err := kuma_srv.StartServer(log, httpServer, &a.httpReady, errChan); err != nil {
-			return err
-		}
-	} else {
-		a.httpReady.Store(true)
 	}
 	if a.config.HTTPS.Enabled {
 		tlsConfig, err := configureTLS(a.config, a.certWatchers)
@@ -404,29 +482,43 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 			TLSConfig:         tlsConfig,
 			ErrorLog:          adapter.ToStd(log),
 		}
-		if err := kuma_srv.StartServer(log, httpsServer, &a.httpsReady, errChan); err != nil {
+	}
+
+	var httpListener, httpsListener net.Listener
+	if httpServer != nil {
+		listener, err := kuma_srv.NewListener(httpServer)
+		if err != nil {
 			return err
 		}
+		httpListener = listener
+	}
+	if httpsServer != nil {
+		listener, err := kuma_srv.NewListener(httpsServer)
+		if err != nil {
+			if httpListener != nil {
+				err = multierr.Append(err, httpListener.Close())
+			}
+			return err
+		}
+		httpsListener = listener
+	}
+
+	if httpServer != nil {
+		startedServers = append(startedServers, httpServer)
+		doneChannels = append(doneChannels, kuma_srv.ServeServer(log, httpServer, httpListener, &a.httpReady, errChan))
+	} else {
+		a.httpReady.Store(true)
+	}
+	if httpsServer != nil {
+		startedServers = append(startedServers, httpsServer)
+		doneChannels = append(doneChannels, kuma_srv.ServeServer(log, httpsServer, httpsListener, &a.httpsReady, errChan))
 	} else {
 		a.httpsReady.Store(true)
 	}
 	select {
 	case <-stop:
 		log.Info("stopping down API Server")
-		a.httpReady.Store(false)
-		a.httpsReady.Store(false)
-		var errs error
-		if httpServer != nil {
-			if err := httpServer.Shutdown(context.Background()); err != nil {
-				errs = multierr.Append(errs, err)
-			}
-		}
-		if httpsServer != nil {
-			if err := httpsServer.Shutdown(context.Background()); err != nil {
-				errs = multierr.Append(errs, err)
-			}
-		}
-		return errs
+		return nil
 	case err := <-errChan:
 		return err
 	}
@@ -442,6 +534,10 @@ func configureTLS(cfg api_server.ApiServerConfig, certWatchers *util_tls.Watcher
 		MinVersion:     tls.VersionTLS12, // to pass gosec (in practice it's always set after.
 	}
 	tlsConfig.MinVersion, err = config_types.TLSVersion(cfg.HTTPS.TlsMinVersion)
+	if err != nil {
+		return nil, err
+	}
+	tlsConfig.MaxVersion, err = config_types.TLSVersion(cfg.HTTPS.TlsMaxVersion)
 	if err != nil {
 		return nil, err
 	}

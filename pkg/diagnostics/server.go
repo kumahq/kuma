@@ -95,7 +95,7 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 		ReadHeaderTimeout: time.Second,
 		ErrorLog:          adapter.ToStd(diagnosticsServerLog),
 	}
-	errChan := make(chan error)
+	errChan := make(chan error, 1)
 	if err := kuma_srv.StartServer(diagnosticsServerLog, httpServer, &s.ready, errChan); err != nil {
 		return err
 	}

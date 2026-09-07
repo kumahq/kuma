@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
@@ -100,7 +99,7 @@ var _ = Describe("MeshRetry", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "backend")).
 			WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshRetryType, given.toRules)).
 			Build()
 

@@ -31,7 +31,7 @@ func TestIncludesGateways(t *testing.T) {
 		"dataplane with non proxy type labels excludes gateways": {
 			ref: TargetRef{
 				Kind:   Dataplane,
-				Labels: &map[string]string{"kuma.io/service": "backend"},
+				Labels: &map[string]string{"kuma.io/display-name": "backend"},
 			},
 			expected: false,
 		},

@@ -40,7 +40,7 @@ var _ = Describe("DefaultProxyProfile", func() {
 					{
 						Target: "192.168.0.3",
 						Port:   5432,
-						Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
+						Tags:   map[string]string{"kuma.io/display-name": "db", "role": "master"},
 						Weight: 1,
 					},
 				},
@@ -48,7 +48,7 @@ var _ = Describe("DefaultProxyProfile", func() {
 					{
 						Target: "192.168.0.4",
 						Port:   9200,
-						Tags:   map[string]string{"kuma.io/service": "elastic"},
+						Tags:   map[string]string{"kuma.io/display-name": "elastic"},
 						Weight: 1,
 					},
 				},
@@ -146,14 +146,14 @@ var _ = Describe("DefaultProxyProfile", func() {
                 - port: 80
                   servicePort: 8080
                   tags:
-                    kuma.io/service: backend
+                    kuma.io/display-name: backend
               outbound:
               - port: 54321
                 tags:
-                  kuma.io/service: db
+                  kuma.io/display-name: db
               - port: 59200
                 tags:
-                  kuma.io/service: elastic
+                  kuma.io/display-name: elastic
 `,
 			expected: "1-envoy-config.golden.yaml",
 		}),
@@ -172,14 +172,14 @@ var _ = Describe("DefaultProxyProfile", func() {
                 - port: 80
                   servicePort: 8080
                   tags:
-                    kuma.io/service: backend
+                    kuma.io/display-name: backend
               outbound:
               - port: 54321
                 tags:
-                  kuma.io/service: db
+                  kuma.io/display-name: db
               - port: 59200
                 tags:
-                  kuma.io/service: elastic
+                  kuma.io/display-name: elastic
               transparentProxying:
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006

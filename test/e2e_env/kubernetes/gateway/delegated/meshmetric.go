@@ -87,13 +87,25 @@ spec:
 			)).To(Succeed())
 		})
 
-		XIt("MeshMetric with OpenTelemetry enabled", func() {
+		It("MeshMetric with OpenTelemetry enabled", func() {
 			// given
 			collector := otelcollector.From(kubernetes.Cluster, otelcollector.DefaultDeploymentName)
 			Expect(kubernetes.Cluster.Install(meshMetric(collector.CollectorEndpoint()))).To(Succeed())
 
 			// then
 			Eventually(func(g Gomega) {
+				// The counter below only exists once requests flow through
+				// the gateway. Drive them here rather than asserting on a
+				// cluster that only sees traffic when the Kong Ingress
+				// Controller happens to sync its config.
+				_, err := client.CollectEchoResponse(
+					kubernetes.Cluster,
+					"demo-client",
+					fmt.Sprintf("http://%s/test-server", config.KicIP),
+					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+
 				stdout, _, err := client.CollectResponse(
 					kubernetes.Cluster,
 					"demo-client",
@@ -107,8 +119,7 @@ spec:
 						return strings.Split(stdout, "\n")
 					},
 					ContainElement(MatchRegexp(
-						`envoy_cluster_external_upstream_rq_time_bucket\{.*service="%[1]s-gateway-admin_%[1]s_svc_8444"`,
-						config.Mesh,
+						`envoy_cluster_upstream_rq_total\{envoy_cluster_name="[^"]*test-server[^"]*".*kuma_workload="gateway"`,
 					)),
 				))
 			}, "3m", "5s").Should(Succeed())

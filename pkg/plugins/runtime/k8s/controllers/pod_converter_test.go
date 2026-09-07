@@ -438,11 +438,11 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 			},
 			expected: "tcp",
 		}),
-		Entry("Pod with `service` label", testCase{
+		Entry("Pod with `display-name` label", testCase{
 			podLabels: map[string]string{
-				"kuma.io/service": "something",
-				"app":             "example",
-				"version":         "0.1",
+				"kuma.io/display-name": "something",
+				"app":                  "example",
+				"version":              "0.1",
 			},
 			expected: "tcp",
 		}),

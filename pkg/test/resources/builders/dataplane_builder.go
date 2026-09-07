@@ -86,18 +86,22 @@ func (d *DataplaneBuilder) WithAddress(address string) *DataplaneBuilder {
 	return d
 }
 
+// WithServices adds one plain inbound per name. The names themselves are no
+// longer recorded on the inbound (Dataplane inbounds carry no service tag);
+// this only controls how many inbounds are added.
 func (d *DataplaneBuilder) WithServices(services ...string) *DataplaneBuilder {
 	d.WithoutInbounds()
-	for _, service := range services {
-		d.AddInboundOfService(service)
+	for range services {
+		d.AddInbound(d.nextInbound())
 	}
 	return d
 }
 
+// WithHttpServices adds one HTTP inbound per name, same caveat as WithServices.
 func (d *DataplaneBuilder) WithHttpServices(services ...string) *DataplaneBuilder {
 	d.WithoutInbounds()
-	for _, service := range services {
-		d.AddInboundHttpOfService(service)
+	for range services {
+		d.AddInboundOfTagsAndProtocol("http")
 	}
 	return d
 }
@@ -121,14 +125,6 @@ func (d *DataplaneBuilder) WithInboundOfTagsMap(tags map[string]string) *Datapla
 
 func (d *DataplaneBuilder) WithInboundOfTagsAndProtocol(protocol string, tagsKV ...string) *DataplaneBuilder {
 	return d.WithoutInbounds().AddInboundOfTagsAndProtocol(protocol, tagsKV...)
-}
-
-func (d *DataplaneBuilder) AddInboundOfService(service string) *DataplaneBuilder {
-	return d.AddInboundOfTags(mesh_proto.ServiceTag, service)
-}
-
-func (d *DataplaneBuilder) AddInboundHttpOfService(service string) *DataplaneBuilder {
-	return d.AddInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, service)
 }
 
 func (d *DataplaneBuilder) AddInboundOfTags(tags ...string) *DataplaneBuilder {

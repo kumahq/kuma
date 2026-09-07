@@ -103,7 +103,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 			dataplaneFile: "7-dataplane.input.yaml",
 			expected:      "7-envoy-config.golden.yaml",
 		}),
-		Entry("10. transparent_proxying=false, no kuma.io/service tag, http protocol", testCase{
+		Entry("10. transparent_proxying=false, http protocol", testCase{
 			dataplaneFile: "10-dataplane.input.yaml",
 			expected:      "10-envoy-config.golden.yaml",
 		}),

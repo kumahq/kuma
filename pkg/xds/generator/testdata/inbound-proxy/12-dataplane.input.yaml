@@ -4,5 +4,5 @@ networking:
     - port: 9000
       servicePort: 9001
       tags:
-        kuma.io/service: backend
+        kuma.io/display-name: backend
         kuma.io/protocol: http

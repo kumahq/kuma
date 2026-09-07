@@ -20,7 +20,7 @@ Rules:
     type: MeshTimeout
   OriginByMatches: {}
   Subset:
-  - Key: kuma.io/service
+  - Key: kuma.io/display-name
     Not: false
     Value: foo
 - Conf:
@@ -43,7 +43,7 @@ Rules:
     type: MeshTimeout
   OriginByMatches: {}
   Subset:
-  - Key: kuma.io/service
+  - Key: kuma.io/display-name
     Not: false
     Value: bar
 - Conf:

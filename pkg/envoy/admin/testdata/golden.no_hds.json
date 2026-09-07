@@ -45,7 +45,7 @@
                   {
                     "port": 10006,
                     "tags": {
-                      "kuma.io/service": "gateway"
+                      "kuma.io/display-name": "gateway"
                     }
                   }
                 ],

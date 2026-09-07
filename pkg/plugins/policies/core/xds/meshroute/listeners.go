@@ -14,7 +14,6 @@ import (
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
-	envoy_tags "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 func MakeTCPSplit(
@@ -61,7 +60,6 @@ type DestinationService struct {
 	Outbound            *xds_types.Outbound
 	Protocol            core_meta.Protocol
 	DestinationResource string
-	KumaServiceTagValue string
 }
 
 // OutboundListenerTags returns the outbound listener's io.kuma.tags: the
@@ -139,20 +137,11 @@ func CollectServices(proxy *core_xds.Proxy, meshCtx xds_context.MeshContext) []D
 				Outbound:            outbound,
 				Protocol:            protocol,
 				DestinationResource: outbound.Resource.String(),
-				KumaServiceTagValue: kumaServiceTagValue(svc),
 			},
 		)
 	}
 
 	return result
-}
-
-func kumaServiceTagValue(dest core.Destination) string {
-	if serviceTag := dest.GetMeta().GetLabels()[mesh_proto.ServiceTag]; serviceTag != "" {
-		return serviceTag
-	}
-
-	return dest.GetMeta().GetName()
 }
 
 func DestinationPortFromRef(
@@ -257,7 +246,6 @@ func handleRealResources(
 	clusterBuilder := plugins_xds.NewClusterBuilder().
 		WithService(service).
 		WithName(clusterName).
-		WithTags(envoy_tags.Tags{}.WithTags(mesh_proto.ServiceTag, service)). // todo(lobkovilya): do we need tags for real resource cluster?
 		WithExternalService(isExternalService)
 
 	servicesAcc.AddBackendRef(resolve.NewResolvedBackendRef(ref), clusterBuilder.Build())

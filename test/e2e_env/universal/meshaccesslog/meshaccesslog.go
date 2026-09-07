@@ -35,7 +35,7 @@ spec:
   selector:
     dataplaneLabels:
       matchLabels:
-        kuma.io/service: test-server
+        kuma.io/display-name: test-server
   ports:
   - port: 80
     targetPort: 80
@@ -51,7 +51,7 @@ spec:
 			Install(MeshIdentityBundled(meshName, identityName)).
 			Install(
 				TestServerUniversal(
-					"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName), WithLabels(map[string]string{"kuma.io/service": "test-server"}),
+					"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName), WithLabels(map[string]string{"kuma.io/display-name": "test-server"}),
 				),
 			).
 			Install(YamlUniversal(uniServiceYAML)).
@@ -97,7 +97,7 @@ spec:
 		Expect(
 			NewClusterSetup().
 				Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
-				Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient}))).
+				Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/display-name": AppModeDemoClient}))).
 				Setup(universal.Cluster),
 		).To(Succeed())
 	})
@@ -156,7 +156,7 @@ spec:
  targetRef:
    kind: Dataplane
    labels:
-     kuma.io/service: demo-client
+     kuma.io/display-name: demo-client
  to:
    - targetRef:
        kind: MeshService
@@ -370,7 +370,7 @@ spec:
  targetRef:
    kind: Dataplane
    labels:
-     kuma.io/service: demo-client
+     kuma.io/display-name: demo-client
  to:
    - targetRef:
        kind: MeshService
@@ -439,7 +439,7 @@ spec:
  targetRef:
    kind: Dataplane
    labels:
-     kuma.io/service: demo-client
+     kuma.io/display-name: demo-client
  to:
    - targetRef:
        kind: Mesh
@@ -492,7 +492,7 @@ spec:
  targetRef:
    kind: Dataplane
    labels:
-     kuma.io/service: demo-client
+     kuma.io/display-name: demo-client
  to:
    - targetRef:
        kind: MeshExternalService
@@ -533,7 +533,7 @@ spec:
  targetRef:
    kind: Dataplane
    labels:
-     kuma.io/service: test-server
+     kuma.io/display-name: test-server
  rules:
    - default:
        backends:

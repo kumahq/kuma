@@ -21,7 +21,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -36,19 +35,10 @@ func GenerateOutboundListener(
 	address := svc.Outbound.GetAddressWithFallback("127.0.0.1")
 	port := svc.Outbound.GetPort()
 
-	legacyRouteConfigName := envoy_names.GetOutboundRouteName(svc.KumaServiceTagValue)
-	legacyListenerName := envoy_names.GetOutboundListenerName(address, port)
-
-	routeConfigName := legacyRouteConfigName
-	virtualHostName := svc.KumaServiceTagValue
-	listenerStatPrefix := ""
-	listenerName := legacyListenerName
-	if svc.DestinationResource != "" {
-		routeConfigName = svc.DestinationResource
-		virtualHostName = svc.DestinationResource
-		listenerStatPrefix = svc.DestinationResource
-		listenerName = svc.DestinationResource
-	}
+	routeConfigName := svc.DestinationResource
+	virtualHostName := svc.DestinationResource
+	listenerStatPrefix := svc.DestinationResource
+	listenerName := svc.DestinationResource
 
 	route := &xds.HttpOutboundRouteConfigurer{
 		RouteConfigName: routeConfigName,
