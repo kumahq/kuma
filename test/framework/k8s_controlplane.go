@@ -253,11 +253,23 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 		return "", nil
 	}
 	// Nothing writes the secret when the bootstrap is off, so without this the
-	// read below burns the whole retry budget before returning an error.
-	if bootstrap, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN"]; exist && bootstrap == "false" {
-		return "", nil
+	// read below burns the whole retry budget before returning an error. The
+	// control plane parses this with strconv.ParseBool, so "0" and "False"
+	// disable it too. A deployment that turns it off through WithYamlConfig
+	// instead is not visible here.
+	if bootstrap, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN"]; exist {
+		if enabled, err := strconv.ParseBool(bootstrap); err == nil && !enabled {
+			return "", nil
+		}
 	}
 	if c.cluster.opts.helmOpts["controlPlane.environment"] == "universal" {
+		// Reading the bootstrapped token is itself an admin request, and the
+		// chart pins localhostIsAdmin false on this path, so there is nothing to
+		// read unless the deployment put loopback admin back. Saying so costs
+		// nothing; asking anyway costs the whole retry budget and then fails.
+		if loopbackAdmin, _ := strconv.ParseBool(c.cluster.opts.env["KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN"]); !loopbackAdmin {
+			return "", nil
+		}
 		body, err := http_helper.HTTPDoWithRetryWithOptionsE(c.t, http_helper.HttpDoOptions{
 			Method:    "GET",
 			Url:       c.GetAPIServerAddress() + "/global-secrets/admin-user-token",
@@ -389,14 +401,18 @@ func (c *K8sControlPlane) InspectEnvoyProxy(inspectPath string, query url.Values
 		reqURL += "?" + encoded
 	}
 
+	// Read before the deadline is armed. A cold read retries for longer than
+	// the deadline allows, and spending it here would fail the request itself
+	// with a timeout that blames the control plane.
+	token, err := c.cachedAdminToken()
+	if err != nil {
+		return nil, err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), inspectEnvoyProxyTimeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
-	if err != nil {
-		return nil, err
-	}
-	token, err := c.cachedAdminToken()
 	if err != nil {
 		return nil, err
 	}

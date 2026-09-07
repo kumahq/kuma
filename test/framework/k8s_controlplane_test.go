@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"encoding/base64"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -27,6 +29,23 @@ var _ = Describe("K8sControlPlane", func() {
 		}
 	}
 
+	// universalControlPlane deploys the Helm universal path, where the token is
+	// read over HTTP rather than from a Secret. env overrides the deployment
+	// options that decide whether that read is even attempted.
+	universalControlPlane := func(srv *httptest.Server, env map[string]string) *K8sControlPlane {
+		if env == nil {
+			env = map[string]string{}
+		}
+		return &K8sControlPlane{
+			t:       GinkgoT(),
+			portFwd: portforward.Tunnel{Endpoint: srv.Listener.Addr().String()},
+			cluster: &K8sCluster{opts: kumaDeploymentOptions{
+				env:      env,
+				helmOpts: map[string]string{"controlPlane.environment": "universal"},
+			}},
+		}
+	}
+
 	Describe("retrieveAdminToken", func() {
 		It("should not look for a secret when the control plane does not authenticate with tokens", func() {
 			cp := &K8sControlPlane{cluster: &K8sCluster{opts: kumaDeploymentOptions{
@@ -36,12 +55,30 @@ var _ = Describe("K8sControlPlane", func() {
 			Expect(cp.retrieveAdminToken()).To(BeEmpty())
 		})
 
-		It("should not look for a secret that is never bootstrapped", func() {
-			cp := &K8sControlPlane{cluster: &K8sCluster{opts: kumaDeploymentOptions{
-				env: map[string]string{"KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN": "false"},
-			}}}
+		DescribeTable("should not look for a secret that is never bootstrapped",
+			func(value string) {
+				cp := &K8sControlPlane{cluster: &K8sCluster{opts: kumaDeploymentOptions{
+					env: map[string]string{"KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN": value},
+				}}}
+
+				Expect(cp.retrieveAdminToken()).To(BeEmpty())
+			},
+			// The control plane parses this with strconv.ParseBool, so the guard
+			// has to answer to every spelling that turns the bootstrap off.
+			Entry("false", "false"),
+			Entry("False", "False"),
+			Entry("0", "0"),
+			Entry("f", "f"),
+		)
+
+		It("should not read the universal secret over a loopback that is not admin", func() {
+			var reads int
+			srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { reads++ }))
+			DeferCleanup(srv.Close)
+			cp := universalControlPlane(srv, nil)
 
 			Expect(cp.retrieveAdminToken()).To(BeEmpty())
+			Expect(reads).To(BeZero())
 		})
 	})
 
@@ -66,11 +103,20 @@ var _ = Describe("K8sControlPlane", func() {
 			Expect(cp.cachedAdminToken()).To(BeEmpty())
 		})
 
-		It("should answer from the cache once it holds a token", func() {
-			// No cluster, so a second read would panic rather than pass.
-			cp := &K8sControlPlane{adminToken: "admin-token"}
+		It("should read the secret once and answer from the cache after that", func() {
+			var reads int
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				reads++
+				_, _ = fmt.Fprintf(w, `{"data":%q}`, base64.StdEncoding.EncodeToString([]byte("admin-token")))
+			}))
+			DeferCleanup(srv.Close)
+			cp := universalControlPlane(srv, map[string]string{
+				"KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN": "true",
+			})
 
 			Expect(cp.cachedAdminToken()).To(Equal("admin-token"))
+			Expect(cp.cachedAdminToken()).To(Equal("admin-token"))
+			Expect(reads).To(Equal(1))
 		})
 	})
 
