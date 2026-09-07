@@ -46,8 +46,10 @@ jobs:
   # One matrix leg per distribution: cross-compiling all four combos in a
   # single job serialized on one runner's CPUs, and its go.sum-keyed cache
   # entry was immutable, so it decayed until the next dependency bump. Each
-  # leg saves its own per-commit cache (restored by prefix from the newest
-  # available entry) and the envoy download is cached per combo.
+  # leg restores its own per-commit build cache by prefix and the envoy
+  # download is cached per combo. Cache writes stay off pull requests: an
+  # entry saved from a merge ref is restorable only by that same PR, yet the
+  # repository cache budget is shared with every branch.
   build-binaries:
     timeout-minutes: 70
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
@@ -63,19 +65,24 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Cache Go cross-compile build
+      # Module contents are a pure function of go.sum, so one immutable entry
+      # serves all four legs and stays valid until the next dependency bump.
+      - name: Cache Go modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
+          path: ~/go/pkg/mod
+          key: go-mod-dist-${{ hashFiles('**/go.sum') }}
+      - name: Restore Go build cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/go-build
           key: go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
           restore-keys: |
             go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-${{ hashFiles('**/go.sum') }}-
             go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.8.8
+          version: 2026.8.14
       # Resolve through make so per-combo ENVOY_VERSION_<os>_<arch> overrides
       # in mk/build.mk produce distinct cache keys.
       - name: Envoy version
@@ -98,6 +105,14 @@ jobs:
       - if: ${{ matrix.os == 'linux' }}
         run: |
           make -j"$(nproc)" ENABLED_GOOSES=linux ENABLED_GOARCHES=${{ matrix.arch }} build/kuma-cni build/install-cni
+      # Pull requests restore by prefix from the newest push-event entry
+      # instead of writing their own short-lived merge-ref entries.
+      - name: Save Go build cache
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/go-build
+          key: go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
       # Image Dockerfiles COPY from this directory. Envoy ships separately:
       # only the kuma-dp/kuma-universal image jobs use it, and at
       # ~100-200MB/arch it would dominate every other job's artifact download.
