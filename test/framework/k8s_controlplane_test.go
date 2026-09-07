@@ -67,6 +67,27 @@ var _ = Describe("K8sControlPlane", func() {
 			Entry("f", "f"),
 		)
 
+		DescribeTable("should not look for a secret a yaml config turned off",
+			func(yamlConfig string) {
+				cp := &K8sControlPlane{cluster: &K8sCluster{opts: kumaDeploymentOptions{
+					yamlConfig: yamlConfig,
+				}}}
+
+				Expect(cp.retrieveAdminToken()).To(BeEmpty())
+			},
+			Entry("bootstrap off", "apiServer: {authn: {tokens: {bootstrapAdminToken: false}}}"),
+			Entry("another authenticator", "apiServer: {authn: {type: external}}"),
+		)
+
+		It("should let the environment override the yaml config, as the control plane does", func() {
+			cp := &K8sControlPlane{cluster: &K8sCluster{opts: kumaDeploymentOptions{
+				yamlConfig: "apiServer: {authn: {tokens: {bootstrapAdminToken: false}}}",
+				env:        map[string]string{"KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN": "true"},
+			}}}
+
+			Expect(cp.bootstrapsAdminToken()).To(BeTrue())
+		})
+
 		It("should not read the universal secret over a loopback that is not admin", func() {
 			var reads int
 			srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { reads++ }))

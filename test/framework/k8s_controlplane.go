@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/test/framework/kumactl"
@@ -247,18 +248,55 @@ func (c *K8sControlPlane) FinalizeAddWithPortFwd(
 	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token, c.apiHeaders)
 }
 
-func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
-	if authnType, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TYPE"]; exist && authnType != "tokens" {
-		return "", nil
+// adminTokenSettings is the part of the control plane's own config that decides
+// whether a bootstrapped token exists, so a deployment can turn it off through
+// WithYamlConfig rather than the environment.
+type adminTokenSettings struct {
+	ApiServer struct {
+		Authn struct {
+			Type   string `json:"type"`
+			Tokens struct {
+				BootstrapAdminToken *bool `json:"bootstrapAdminToken"`
+			} `json:"tokens"`
+		} `json:"authn"`
+	} `json:"apiServer"`
+}
+
+// bootstrapsAdminToken answers without reading anything. Without it the read in
+// retrieveAdminToken spends the whole retry budget on a secret nothing writes.
+// The environment wins over the file, as it does in the control plane.
+func (c *K8sControlPlane) bootstrapsAdminToken() bool {
+	var cfg adminTokenSettings
+	if raw := c.cluster.opts.yamlConfig; raw != "" {
+		// A config this malformed fails the deployment itself, so the guard
+		// gives it the benefit of the doubt rather than deciding on it.
+		_ = yaml.Unmarshal([]byte(raw), &cfg)
 	}
-	// Nothing writes the secret when the bootstrap is off, so the read below
-	// would spend the whole retry budget. ParseBool because the control plane
-	// does; a deployment that disables it through WithYamlConfig is invisible
-	// here.
-	if bootstrap, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN"]; exist {
-		if enabled, err := strconv.ParseBool(bootstrap); err == nil && !enabled {
-			return "", nil
+
+	authnType := cfg.ApiServer.Authn.Type
+	if fromEnv, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TYPE"]; exist {
+		authnType = fromEnv
+	}
+	if authnType != "" && authnType != "tokens" {
+		return false
+	}
+
+	bootstrap := true
+	if fromYaml := cfg.ApiServer.Authn.Tokens.BootstrapAdminToken; fromYaml != nil {
+		bootstrap = *fromYaml
+	}
+	if fromEnv, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN"]; exist {
+		// ParseBool because the control plane parses it that way.
+		if parsed, err := strconv.ParseBool(fromEnv); err == nil {
+			bootstrap = parsed
 		}
+	}
+	return bootstrap
+}
+
+func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
+	if !c.bootstrapsAdminToken() {
+		return "", nil
 	}
 	if c.cluster.opts.helmOpts["controlPlane.environment"] == "universal" {
 		// Reading the token is itself an admin request, and the chart pins
