@@ -82,7 +82,12 @@ func TestConformance(t *testing.T) {
 	g.Expect(cluster.Install(GatewayAPICRDs)).To(Succeed())
 	g.Eventually(func() error {
 		return NewClusterSetup().Install(
-			Kuma(config_core.Zone)).Setup(cluster)
+			Kuma(config_core.Zone,
+				// The upstream weighted-distribution tests retry 10 times with no backoff, so a
+				// route has under 2s to reach Envoy before they give up.
+				WithEnv("KUMA_STORE_CACHE_EXPIRATION_TIME", "250ms"),
+				WithEnv("KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL", "250ms"),
+			)).Setup(cluster)
 	}, "90s", "3s").Should(Succeed())
 
 	g.Eventually(func() error {
