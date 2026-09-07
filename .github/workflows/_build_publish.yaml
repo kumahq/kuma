@@ -296,6 +296,25 @@ jobs:
           make images/${{ matrix.image }} PREBUILT_BINARIES=true DOCKER_BUILDX_CACHE=true
       - run: |
           make docker/save/${{ matrix.image }}
+      - name: DEBUG inspect built image
+        run: |
+          IMG="${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}-amd64"
+          echo "== docker images =="
+          docker images | grep -E "${{ matrix.image }}|REPOSITORY" || true
+          echo "== image inspect (config) =="
+          docker image inspect "$IMG" --format '{{json .Config}}' || true
+          echo "== image platform =="
+          docker image inspect "$IMG" --format 'os={{.Os}} arch={{.Architecture}} variant={{.Variant}}' || true
+          echo "== ls /usr/bin via busybox (absolute entrypoint) =="
+          docker run --rm --platform linux/amd64 --entrypoint /busybox/ls "$IMG" -la /usr/bin/ || true
+          echo "== PATH + direct exec via busybox sh =="
+          docker run --rm --platform linux/amd64 --entrypoint /busybox/sh "$IMG" -c 'echo "PATH=$PATH"; ls -la /usr/bin/ | head; /usr/bin/'"${{ matrix.image }}"' version' || true
+          echo "== absolute entrypoint exec =="
+          docker run --rm --platform linux/amd64 --entrypoint "/usr/bin/${{ matrix.image }}" "$IMG" version || true
+          echo "== default entrypoint =="
+          docker run --rm --platform linux/amd64 "$IMG" version || true
+          echo "== tar contents (saved image) =="
+          tar tf "build/docker/${{ matrix.image }}-amd64.tar" | head -20 || true
       - name: Run container structure test
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
         run: |
