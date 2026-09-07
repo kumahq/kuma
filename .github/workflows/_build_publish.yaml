@@ -98,12 +98,23 @@ jobs:
       - if: ${{ matrix.os == 'linux' }}
         run: |
           make -j"$(nproc)" ENABLED_GOOSES=linux ENABLED_GOARCHES=${{ matrix.arch }} build/kuma-cni build/install-cni
-      # Image Dockerfiles COPY from this directory, including envoy.
+      # Image Dockerfiles COPY from this directory. Envoy ships separately:
+      # only the kuma-dp/kuma-universal image jobs use it, and at
+      # ~100-200MB/arch it would dominate every other job's artifact download.
       - if: ${{ matrix.os == 'linux' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: linux_binaries_${{ matrix.arch }}
-          path: ./build/artifacts-linux-${{ matrix.arch }}
+          path: |
+            ./build/artifacts-linux-${{ matrix.arch }}
+            !./build/artifacts-linux-${{ matrix.arch }}/envoy
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
+          if-no-files-found: error
+      - if: ${{ matrix.os == 'linux' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: envoy_linux_${{ matrix.arch }}
+          path: ./build/artifacts-linux-${{ matrix.arch }}/envoy
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
           if-no-files-found: error
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -223,6 +234,20 @@ jobs:
         with:
           name: linux_binaries_arm64
           path: ./build/artifacts-linux-arm64
+      # Only images built FROM kumahq/envoy need the envoy binary; it is the
+      # bulk of the per-arch artifact size, so other jobs skip the download.
+      - name: Download envoy binary (amd64)
+        if: ${{ matrix.image == 'kuma-dp' || matrix.image == 'kuma-universal' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: envoy_linux_amd64
+          path: ./build/artifacts-linux-amd64/envoy
+      - name: Download envoy binary (arm64)
+        if: ${{ matrix.image == 'kuma-dp' || matrix.image == 'kuma-universal' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: envoy_linux_arm64
+          path: ./build/artifacts-linux-arm64/envoy
       - name: Install dependencies for cross builds
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
