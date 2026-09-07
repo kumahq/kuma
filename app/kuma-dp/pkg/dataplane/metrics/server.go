@@ -74,11 +74,18 @@ func AddPrometheusFormat(queryParameters url.Values) url.Values {
 	return queryParameters
 }
 
+// AddSidecarParameters applies the MeshMetric sidecar settings to the Envoy admin query.
+// Envoy treats "usedonly" as a flag, so the key must be absent - not empty - to scrape unused stats.
 func AddSidecarParameters(sidecar *v1alpha12.Sidecar) func(queryParameters url.Values) url.Values {
 	values := v1alpha1.EnvoyMetricsFilter(sidecar)
+	_, filterUnused := values["usedonly"]
 
 	return func(queryParameters url.Values) url.Values {
-		queryParameters.Set("usedonly", values.Get("usedonly"))
+		if filterUnused {
+			queryParameters.Set("usedonly", "")
+		} else {
+			queryParameters.Del("usedonly")
+		}
 		return queryParameters
 	}
 }
