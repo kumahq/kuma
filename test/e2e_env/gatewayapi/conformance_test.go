@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/gateway-api/conformance"
 	conformanceapis "sigs.k8s.io/gateway-api/conformance/apis/v1"
 	"sigs.k8s.io/gateway-api/conformance/tests"
+	conformancegrpc "sigs.k8s.io/gateway-api/conformance/utils/grpc"
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
 	"sigs.k8s.io/gateway-api/pkg/features"
 	"sigs.k8s.io/yaml"
@@ -116,6 +117,7 @@ metadata:
 		Client:               client,
 		RestConfig:           clientConfig,
 		Clientset:            clientset,
+		GRPCClient:           &conformancegrpc.DefaultClient{},
 		ManifestFS:           []fs.FS{&conformance.Manifests},
 		GatewayClassName:     "kuma",
 		CleanupBaseResources: false,
@@ -126,20 +128,25 @@ metadata:
 		},
 		SkipTests: []string{
 			"HTTPRouteNoBackendRefs",
+			// The upstream mesh weight tests sample the traffic distribution
+			// without waiting for the route to be programmed: the only gate is
+			// three consecutive 200s, which the parent Service already answers
+			// before any route exists. The distribution check then retries a
+			// fixed 10 times with no delay, so the whole budget is under two
+			// seconds and Kuma loses the race roughly half the time, reporting
+			// the routeless 50/50 split across the echo-v1 and echo-v2 pods.
+			// Re-enable once the upstream fix that bounds the retries by
+			// TimeoutConfig lands and we bump the conformance module.
+			"MeshGRPCRouteWeight",
 		},
 		// Left undeclared, with what Kuma does not do:
-		//   - SupportMeshHTTPRouteBackendRequestHeaderModification: Kuma's BackendRef type
-		//     (api/common/v1alpha1.BackendRef) has no Filters field, so
-		//     rules[].backendRefs[].filters cannot be translated.
 		//   - SupportMeshHTTPRouteNamedRouteRule: the upstream test is Provisional and
 		//     asserts a backend path of /named for a /unnamed request with no rewrite in
 		//     its own manifest.
-		//   - SupportMeshHTTPRouteQueryParamMatching: requests that don't match any rule's
-		//     query params still land on a backend (200) instead of getting a 404; Kuma
-		//     doesn't have a deny-on-no-match fallback for MeshHTTPRoute.
 		SupportedFeatures: []features.FeatureName{
 			features.SupportHTTPRouteResponseHeaderModification,
 			features.SupportHTTPRoute,
+			features.SupportGRPCRoute,
 			features.SupportHTTPRoute303RedirectStatusCode,
 			features.SupportHTTPRoute307RedirectStatusCode,
 			features.SupportHTTPRoute308RedirectStatusCode,
@@ -147,13 +154,18 @@ metadata:
 			features.SupportMesh,
 			features.SupportMeshClusterIPMatching,
 			features.SupportMeshConsumerRoute,
+			features.SupportMeshHTTPRouteBackendRequestHeaderModification,
 			features.SupportMeshHTTPRouteRedirectPath,
 			features.SupportMeshHTTPRouteRedirectPort,
+			features.SupportMeshHTTPRouteQueryParamMatching,
 			features.SupportMeshHTTPRouteSchemeRedirect,
 			features.SupportMeshHTTPRouteRewritePath,
 		},
-		Implementation:      implementation,
-		ConformanceProfiles: []suite.ConformanceProfileName{suite.MeshHTTPConformanceProfileName},
+		Implementation: implementation,
+		ConformanceProfiles: []suite.ConformanceProfileName{
+			suite.MeshHTTPConformanceProfileName,
+			suite.MeshGRPCConformanceProfileName,
+		},
 	}
 
 	conformanceSuite, err := suite.NewConformanceTestSuite(options)

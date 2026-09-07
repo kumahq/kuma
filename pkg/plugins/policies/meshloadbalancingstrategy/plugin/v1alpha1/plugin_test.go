@@ -139,8 +139,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Zone:       "zone-1",
 				Dataplane: builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						mesh_proto.ZoneTag:    "zone-1",
+						"kuma.io/display-name": "backend",
+						mesh_proto.ZoneTag:     "zone-1",
 					}).
 					Build(),
 				Policies: *xds_builders.MatchedPolicies().
@@ -249,11 +249,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithDataplane(
 					builders.Dataplane().
 						AddInboundOfTagsMap(map[string]string{
-							mesh_proto.ServiceTag: "backend",
-							mesh_proto.ZoneTag:    "zone-1",
-							"k8s.io/node":         "node1",
-							"k8s.io/az":           "test",
-							"k8s.io/region":       "test",
+							"kuma.io/display-name": "backend",
+							mesh_proto.ZoneTag:     "zone-1",
+							"k8s.io/node":          "node1",
+							"k8s.io/az":            "test",
+							"k8s.io/region":        "test",
 						}),
 				).
 				WithRouting(paymentsAndBackendRouting()).
@@ -425,11 +425,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithZone("zone-1").
 				WithDataplane(builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						mesh_proto.ZoneTag:    "zone-1",
-						"k8s.io/node":         "node1",
-						"k8s.io/az":           "test",
-						"k8s.io/region":       "test",
+						"kuma.io/display-name": "backend",
+						mesh_proto.ZoneTag:     "zone-1",
+						"k8s.io/node":          "node1",
+						"k8s.io/az":            "test",
+						"k8s.io/region":        "test",
 					}),
 				).
 				WithRouting(paymentsAndBackendRouting()).
@@ -547,11 +547,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithZone("zone-1").
 				WithDataplane(builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						mesh_proto.ZoneTag:    "zone-1",
-						"k8s.io/node":         "node1",
-						"k8s.io/az":           "test",
-						"k8s.io/region":       "test",
+						"kuma.io/display-name": "backend",
+						mesh_proto.ZoneTag:     "zone-1",
+						"k8s.io/node":          "node1",
+						"k8s.io/az":            "test",
+						"k8s.io/region":        "test",
 					}),
 				).
 				WithRouting(paymentsAndBackendRouting()).
@@ -706,11 +706,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				WithZone("zone-1").
 				WithDataplane(builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						mesh_proto.ZoneTag:    "zone-1",
-						"k8s.io/node":         "node1",
-						"k8s.io/az":           "test",
-						"k8s.io/region":       "test",
+						"kuma.io/display-name": "backend",
+						mesh_proto.ZoneTag:     "zone-1",
+						"k8s.io/node":          "node1",
+						"k8s.io/az":            "test",
+						"k8s.io/region":        "test",
 					}),
 				).
 				WithRouting(paymentsAndBackendRouting()).
@@ -804,27 +804,27 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Match: meshhttproute_api.Match{
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-1"},
 						},
-						Split: []envoy_common.Split{
+						Split: backendRefSplits(
 							xds.NewSplitBuilder().WithClusterName(kri.WithSectionName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), uint32(27777)).String()).Build(),
-						},
+						),
 					},
 					{
 						Name: kri.MustFromString("kri_mhttpr_default_zone-1_ns-1_route-2_").String(),
 						Match: meshhttproute_api.Match{
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-2"},
 						},
-						Split: []envoy_common.Split{
+						Split: backendRefSplits(
 							xds.NewSplitBuilder().WithClusterName(kri.WithSectionName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), uint32(27777)).String()).Build(),
-						},
+						),
 					},
 					{
 						Name: kri.MustFromString("kri_mhttpr_default_zone-1_ns-1_route-3_").String(),
 						Match: meshhttproute_api.Match{
 							Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/route-3"},
 						},
-						Split: []envoy_common.Split{
+						Split: backendRefSplits(
 							xds.NewSplitBuilder().WithClusterName(kri.WithSectionName(kri.MustFromString("kri_msvc_default_zone-1_ns-1_ms-1_"), uint32(27777)).String()).Build(),
-						},
+						),
 					},
 				}),
 			},
@@ -833,8 +833,8 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				Zone:       "zone-1",
 				Dataplane: builders.Dataplane().
 					AddInboundOfTagsMap(map[string]string{
-						mesh_proto.ServiceTag: "backend",
-						mesh_proto.ZoneTag:    "zone-1",
+						"kuma.io/display-name": "backend",
+						mesh_proto.ZoneTag:     "zone-1",
 					}).
 					Build(),
 				Policies: *xds_builders.MatchedPolicies().
@@ -1237,7 +1237,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 			WithZone("zone-1").
 			With(func(p *core_xds.Proxy) {
 				p.Dataplane = builders.Dataplane().
-					AddInboundOfTagsMap(map[string]string{mesh_proto.ServiceTag: "backend"}).
+					AddInboundOfTagsMap(map[string]string{"kuma.io/display-name": "backend"}).
 					Build()
 			}).
 			WithPolicies(xds_builders.MatchedPolicies().WithPolicy(
@@ -1300,9 +1300,9 @@ func zoneProxyEgressListener(id kri.Identifier) *core_xds.Resource {
 					Match: meshhttproute_api.Match{
 						Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.PathPrefix, Value: "/"},
 					},
-					Split: []envoy_common.Split{
+					Split: backendRefSplits(
 						xds.NewSplitBuilder().WithClusterName(id.String()).WithExternalService(true).WithWeight(1).Build(),
-					},
+					),
 				}},
 			})),
 		)).Build()
@@ -1356,6 +1356,14 @@ func createEndpointWithLabels(ip string, labels map[string]string) core_xds.Endp
 		Build()
 }
 
+func backendRefSplits(splits ...envoy_common.Split) []meshhttproute_xds.BackendRefSplit {
+	backendRefSplits := make([]meshhttproute_xds.BackendRefSplit, 0, len(splits))
+	for _, split := range splits {
+		backendRefSplits = append(backendRefSplits, meshhttproute_xds.NewBackendRefSplit(split))
+	}
+	return backendRefSplits
+}
+
 // TODO move to routing builder
 func paymentsAndBackendRouting() *xds_builders.RoutingBuilder {
 	return xds_builders.Routing().
@@ -1381,9 +1389,9 @@ func outboundRoute(service string, splits ...envoy_common.Split) *meshhttproute_
 		Routes: []meshhttproute_xds.OutboundRoute{{
 			Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{match})),
 			Match: match,
-			Split: splits,
+			Split: backendRefSplits(splits...),
 		}},
-		DpTags: mesh_proto.MultiValueTagSet{"kuma.io/service": {service: true}},
+		DpTags: mesh_proto.MultiValueTagSet{"kuma.io/display-name": {service: true}},
 	}
 }
 
@@ -1424,7 +1432,7 @@ func outboundRealServiceHTTPListener(serviceResourceKRI kri.Identifier, port int
 			DestinationResource: destinationName(serviceResourceKRI, port),
 		},
 		routes,
-		mesh_proto.MultiValueTagSet{"kuma.io/service": {"backend": true}},
+		mesh_proto.MultiValueTagSet{"kuma.io/display-name": {"backend": true}},
 	)
 	Expect(err).ToNot(HaveOccurred())
 	return *listener

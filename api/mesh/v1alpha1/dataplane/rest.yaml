@@ -61,6 +61,8 @@ components:
             type: string
           type: object
         mesh:
+          maxLength: 253
+          pattern: ^[0-9a-z-_.]*$
           type: string
         modificationTime:
           description: Time at which the resource was updated
@@ -68,6 +70,8 @@ components:
           readOnly: true
           type: string
         name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
         networking:
           description: |-
@@ -93,32 +97,6 @@ components:
                 port:
                   description: Port on which Envoy Admin API server will be listening
                   type: integer
-              type: object
-            gateway:
-              description: Gateway describes a configuration of the gateway of the
-                data plane proxy.
-              properties:
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: |-
-                    Tags associated with a gateway of this data plane to, e.g.
-                    `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is
-                    mandatory.
-                  type: object
-                type:
-                  description: |-
-                    Type of gateway this data plane proxy manages.
-
-                    The only supported type is `DELEGATED`: an independently deployed proxy
-                    (e.g., Kong, Contour, etc) that receives inbound traffic that is not
-                    proxied by Kuma, and it sends outbound traffic into the data plane
-                    proxy.
-
-                    See https://kuma.io/docs/latest/explore/gateway/ for more information.
-                  oneOf:
-                  - type: string
-                  - type: integer
               type: object
             inbound:
               description: |-
@@ -230,9 +208,11 @@ components:
                     type: object
                   state:
                     description: State describes the current state of the listener.
-                    oneOf:
-                    - type: string
-                    - type: integer
+                    enum:
+                    - Ready
+                    - NotReady
+                    - Ignored
+                    type: string
                 type: object
               type: array
             listeners:
@@ -260,16 +240,19 @@ components:
                       State describes the current health state of the listener.
                       The control plane sets this based on the readiness of the underlying
                       pod and sidecar container.
-                    oneOf:
-                    - type: string
-                    - type: integer
+                    enum:
+                    - Ready
+                    - NotReady
+                    type: string
                   type:
                     description: |-
                       Type determines the role of this listener: ZoneIngress for inbound
                       cross-zone traffic or ZoneEgress for outbound external traffic.
-                    oneOf:
-                    - type: string
-                    - type: integer
+                    enum:
+                    - Unspecified
+                    - ZoneIngress
+                    - ZoneEgress
+                    type: string
                 type: object
               type: array
             outbound:
@@ -334,9 +317,12 @@ components:
                 ipFamilyMode:
                   description: The IP family mode to enable for. Can be "IPv4" or
                     "DualStack".
-                  oneOf:
-                  - type: string
-                  - type: integer
+                  enum:
+                  - UnSpecified
+                  - DualStack
+                  - IPv4
+                  - IPv6
+                  type: string
                 reachableBackends:
                   description: |-
                     Reachable backend via transparent proxy when running with
@@ -392,6 +378,46 @@ info:
   version: v1alpha1
 openapi: 3.1.0
 paths:
+  /dataplanes:
+    get:
+      operationId: getDataplaneListAllMeshes
+      parameters:
+      - description: offset in the list of entities
+        in: query
+        name: offset
+        required: false
+        schema:
+          example: 0
+          type: integer
+      - description: the number of items per page
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 100
+          maximum: 1000
+          minimum: 1
+          type: integer
+      - description: filter by labels when multiple filters are present, they are
+          ANDed
+        example:
+          label.k8s.kuma.io/namespace: my-ns
+        in: query
+        name: filter
+        required: false
+        schema:
+          properties:
+            key:
+              type: string
+            value:
+              type: string
+          type: object
+      responses:
+        "200":
+          $ref: '#/components/responses/DataplaneList'
+      summary: Returns a list of Dataplane across all meshes.
+      tags:
+      - Dataplane
   /meshes/{mesh}/dataplanes:
     get:
       operationId: getDataplaneList

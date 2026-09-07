@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"fmt"
-	"reflect"
 	"slices"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
@@ -22,7 +21,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -37,19 +35,10 @@ func GenerateOutboundListener(
 	address := svc.Outbound.GetAddressWithFallback("127.0.0.1")
 	port := svc.Outbound.GetPort()
 
-	legacyRouteConfigName := envoy_names.GetOutboundRouteName(svc.KumaServiceTagValue)
-	legacyListenerName := envoy_names.GetOutboundListenerName(address, port)
-
-	routeConfigName := legacyRouteConfigName
-	virtualHostName := svc.KumaServiceTagValue
-	listenerStatPrefix := ""
-	listenerName := legacyListenerName
-	if svc.DestinationResource != "" {
-		routeConfigName = svc.DestinationResource
-		virtualHostName = svc.DestinationResource
-		listenerStatPrefix = svc.DestinationResource
-		listenerName = svc.DestinationResource
-	}
+	routeConfigName := svc.DestinationResource
+	virtualHostName := svc.DestinationResource
+	listenerStatPrefix := svc.DestinationResource
+	listenerName := svc.DestinationResource
 
 	route := &xds.HttpOutboundRouteConfigurer{
 		RouteConfigName: routeConfigName,
@@ -103,8 +92,23 @@ func generateFromService(
 	var routes []xds.OutboundRoute
 
 	for _, route := range prepareRoutes(rules, svc, meshCtx) {
-		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
-		if len(split) == 0 && !route.AllBackendRefsUnresolved {
+		var split []xds.BackendRefSplit
+		for _, backendRef := range route.BackendRefs {
+			backendSplit := meshroute_xds.MakeHTTPSplit(
+				clusterCache,
+				servicesAcc,
+				[]resolve.ResolvedBackendRef{backendRef.BackendRef},
+				meshCtx,
+			)
+			if len(backendSplit) == 0 {
+				continue
+			}
+			split = append(split, xds.BackendRefSplit{
+				Split:   backendSplit[0],
+				Filters: backendRef.Filters,
+			})
+		}
+		if len(split) == 0 && !route.AllBackendRefsUnresolved && route.DirectResponseStatus == 0 {
 			continue
 		}
 		// mirrored requests go to a cluster of their own, it has no weight so
@@ -126,13 +130,15 @@ func generateFromService(
 			mirrorSplits[i] = mirrorSplit[0]
 		}
 		routes = append(routes, xds.OutboundRoute{
-			Name:                        route.Name,
-			Match:                       route.Match,
-			Filters:                     route.Filters,
-			UnresolvedBackendRefsWeight: route.UnresolvedBackendRefsWeight,
-			AllBackendRefsUnresolved:    route.AllBackendRefsUnresolved,
-			MirrorSplits:                mirrorSplits,
-			Split:                       split,
+			Name:                         route.Name,
+			Match:                        route.Match,
+			Filters:                      route.Filters,
+			DirectResponseStatus:         route.DirectResponseStatus,
+			UnresolvedBackendRefsWeight:  route.UnresolvedBackendRefsWeight,
+			AllBackendRefsUnresolved:     route.AllBackendRefsUnresolved,
+			AllBackendRefsHaveZeroWeight: route.AllBackendRefsHaveZeroWeight,
+			MirrorSplits:                 mirrorSplits,
+			Split:                        split,
 		})
 	}
 
@@ -200,7 +206,8 @@ func ComputeHTTPRouteConf(
 	return nil, make(map[common_api.MatchesHash]common.Origin)
 }
 
-// prepareRoutes handles the always present, catch all default route
+// prepareRoutes handles the always-present default backend route and the
+// policy-generated catch-all 404 fallback when rules leave unmatched traffic.
 func prepareRoutes(
 	toRules rules.ToRules,
 	svc meshroute_xds.DestinationService,
@@ -223,6 +230,7 @@ func prepareRoutes(
 		filters := pointer.Deref(rule.Default.Filters)
 		backendRefs := pointer.Deref(rule.Default.BackendRefs)
 		hasExplicitBackendRefs := rule.Default.BackendRefs != nil
+		allBackendRefsHaveZeroWeight := hasExplicitBackendRefs && len(backendRefs) > 0
 		matchesHash := api.HashMatches(rule.Matches)
 		routeName := string(matchesHash)
 		origin := originByMatches[matchesHash]
@@ -244,12 +252,19 @@ func prepareRoutes(
 			}
 		}
 
+		for _, br := range backendRefs {
+			if pointer.DerefOr(br.Weight, 1) != 0 {
+				allBackendRefsHaveZeroWeight = false
+				break
+			}
+		}
+
 		for _, match := range rule.Matches {
-			var refs []resolve.ResolvedBackendRef
+			var refs []api.RouteBackendRef
 			var unresolvedWeight uint
 
 			for _, br := range backendRefs {
-				rbr, ok := resolve.BackendRef(originID, br, meshCtx.ResolveResourceIdentifier)
+				rbr, ok := resolve.BackendRef(originID, br.CommonBackendRef(), meshCtx.ResolveResourceIdentifier)
 				if !ok {
 					unresolvedWeight += pointer.DerefOr(br.Weight, 1)
 					continue
@@ -262,20 +277,24 @@ func prepareRoutes(
 					}
 					continue
 				}
-				refs = append(refs, rbr)
+				refs = append(refs, api.RouteBackendRef{
+					BackendRef: rbr,
+					Filters:    pointer.Deref(br.Filters),
+				})
 			}
 
 			routes = append(
 				routes,
 				api.Route{
-					Name:                        routeName,
-					Origin:                      originID,
-					Match:                       match,
-					Filters:                     filters,
-					BackendRefs:                 refs,
-					UnresolvedBackendRefsWeight: unresolvedWeight,
-					AllBackendRefsUnresolved:    hasExplicitBackendRefs && len(refs) == 0,
-					MirrorBackendRefs:           mirrorRefs,
+					Name:                         routeName,
+					Origin:                       originID,
+					Match:                        match,
+					Filters:                      filters,
+					BackendRefs:                  refs,
+					UnresolvedBackendRefsWeight:  unresolvedWeight,
+					AllBackendRefsUnresolved:     hasExplicitBackendRefs && len(refs) == 0,
+					AllBackendRefsHaveZeroWeight: allBackendRefsHaveZeroWeight,
+					MirrorBackendRefs:            mirrorRefs,
 				},
 			)
 		}
@@ -292,15 +311,19 @@ func prepareRoutes(
 	}
 
 	noCatchAll := slices.IndexFunc(routes, func(route api.Route) bool {
-		return reflect.DeepEqual(route.Match, catchAllMatch)
+		return matchIsCatchAll(route.Match)
 	}) == -1
 
 	if noCatchAll {
-		routes = append(routes, api.Route{
+		fallbackRoute := api.Route{
 			Match:  catchAllMatch,
 			Name:   string(api.HashMatches([]api.Match{catchAllMatch})),
 			Origin: svc.Outbound.Resource,
-		})
+		}
+		if len(routes) > 0 && core_meta.IsHTTPBased(svc.Protocol) {
+			fallbackRoute.DirectResponseStatus = 404
+		}
+		routes = append(routes, fallbackRoute)
 	}
 
 	for i := range routes {
@@ -314,14 +337,26 @@ func prepareRoutes(
 			route.Match.Path = pointer.To(catchAllPathMatch)
 		}
 
-		if len(route.BackendRefs) == 0 && !route.AllBackendRefsUnresolved {
-			route.BackendRefs = []resolve.ResolvedBackendRef{
-				*svc.DefaultBackendRef(),
+		if len(route.BackendRefs) == 0 && !route.AllBackendRefsUnresolved && route.DirectResponseStatus == 0 {
+			route.BackendRefs = []api.RouteBackendRef{
+				{
+					BackendRef: *svc.DefaultBackendRef(),
+				},
 			}
 		}
 	}
 
 	return routes
+}
+
+func matchIsCatchAll(match api.Match) bool {
+	if match.Method != nil || len(pointer.Deref(match.Headers)) > 0 || len(pointer.Deref(match.QueryParams)) > 0 {
+		return false
+	}
+	if match.Path == nil {
+		return true
+	}
+	return match.Path.Type == api.PathPrefix && match.Path.Value == "/"
 }
 
 func backendRefProducesHTTPSplit(

@@ -7,7 +7,8 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/server/config"
 	envoy_server_delta "github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
-	envoy_server_sotw "github.com/envoyproxy/go-control-plane/pkg/server/sotw/v3"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -49,21 +50,6 @@ func RegisterXDS(
 	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(rt.AppContext(), watchdogFactory))
 	dpStatusTracker := DefaultDataplaneStatusTracker(rt, otelStatusCache)
 
-	callbacks := util_xds_v3.CallbacksChain{
-		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
-		util_xds_v3.AdaptCallbacks(statsCallbacks),
-		util_xds_v3.AdaptCallbacks(authCallbacks),
-		util_xds_v3.AdaptCallbacks(workloadLabelValidator),
-		util_xds_v3.AdaptCallbacks(dpLifecycle),
-		util_xds_v3.AdaptCallbacks(syncTracker),
-		util_xds_v3.AdaptCallbacks(dpStatusTracker),
-		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff.Duration)),
-	}
-
-	if cb := rt.XDS().ServerCallbacks; cb != nil {
-		callbacks = append(callbacks, util_xds_v3.AdaptCallbacks(cb))
-	}
-
 	deltaCallbacks := util_xds_v3.CallbacksChain{
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
 		util_xds_v3.AdaptDeltaCallbacks(statsCallbacks),
@@ -79,24 +65,22 @@ func RegisterXDS(
 		deltaCallbacks = append(deltaCallbacks, util_xds_v3.AdaptDeltaCallbacks(cb))
 	}
 
-	sotw := envoy_server_sotw.NewServer(rt.AppContext(), xdsContext.Cache(), callbacks, envoy_server_sotw.WithOrderedADS())
 	delta := envoy_server_delta.NewServer(rt.AppContext(), xdsContext.Cache(), deltaCallbacks, func(o *config.Opts) {
 		o.Ordered = true
 	})
 
 	xdsServerLog.Info("registering Aggregated Discovery Service V3 in Dataplane Server")
-	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GrpcServer(), &adsServer{sotw: sotw, delta: delta})
+	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GrpcServer(), &adsServer{delta: delta})
 	return nil
 }
 
 type adsServer struct {
 	envoy_service_discovery.UnimplementedAggregatedDiscoveryServiceServer
-	sotw  envoy_server_sotw.Server
 	delta envoy_server_delta.Server
 }
 
 func (s *adsServer) StreamAggregatedResources(stream envoy_service_discovery.AggregatedDiscoveryService_StreamAggregatedResourcesServer) error {
-	return s.sotw.StreamHandler(stream, envoy_resource.AnyType)
+	return status.Error(codes.Unimplemented, "unsupported SOTW/state-of-the-world xDS StreamAggregatedResources; restart the proxy with a delta-capable bootstrap to use Delta ADS")
 }
 
 func (s *adsServer) DeltaAggregatedResources(stream envoy_service_discovery.AggregatedDiscoveryService_DeltaAggregatedResourcesServer) error {

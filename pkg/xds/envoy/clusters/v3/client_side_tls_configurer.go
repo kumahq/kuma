@@ -6,7 +6,6 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_metadata "github.com/kumahq/kuma/v3/pkg/xds/envoy/metadata/v3"
@@ -91,7 +90,7 @@ func (c *ClientSideTLSConfigurer) createTransportSocketMatch(ep *xds.Endpoint, w
 
 	if withMatch {
 		tsm.Match = &structpb.Struct{
-			Fields: envoy_metadata.MetadataFields(tags.Tags(ep.Tags).WithoutTags(mesh_proto.ServiceTag)),
+			Fields: envoy_metadata.MetadataFields(tags.Tags(ep.Tags)),
 		}
 	}
 

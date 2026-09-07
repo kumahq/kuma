@@ -70,3 +70,31 @@ var _ = Describe("HTTPS server certificate", func() {
 		}, "30s", "100ms").Should(Succeed())
 	})
 })
+
+var _ = Describe("HTTPS server TLS version", func() {
+	DescribeTable("applies the configured maximum",
+		func(maxVersion string, expectSuccess bool) {
+			cfg := NewTestApiServerConfigurer().WithConfigMutator(func(cfg *config.ApiServerConfig) {
+				cfg.HTTPS.TlsMaxVersion = maxVersion
+			})
+			apiServer, _, stop := StartApiServer(cfg)
+			DeferCleanup(stop)
+
+			conn, err := tls.Dial("tcp", fmt.Sprintf("localhost:%d", apiServer.Config().HTTPS.Port), &tls.Config{
+				InsecureSkipVerify: true, // #nosec G402 -- the test verifies protocol negotiation
+				MinVersion:         tls.VersionTLS13,
+				MaxVersion:         tls.VersionTLS13,
+			})
+			if !expectSuccess {
+				Expect(err).To(HaveOccurred())
+				return
+			}
+
+			Expect(err).ToNot(HaveOccurred())
+			DeferCleanup(conn.Close)
+			Expect(conn.ConnectionState().Version).To(Equal(uint16(tls.VersionTLS13)))
+		},
+		Entry("keeps an empty maximum unrestricted", "", true),
+		Entry("rejects TLS 1.3 when the maximum is TLS 1.2", "TLSv1_2", false),
+	)
+})

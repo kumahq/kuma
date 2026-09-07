@@ -4,7 +4,6 @@ import (
 	"context"
 	"maps"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -15,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -251,30 +251,29 @@ func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, e
 	}
 }
 
-// Kuma resource labels are generally stored on Kubernetes as labels, except "kuma.io/display-name".
-// We store it as an annotation because the resource name on k8s is limited by 253 and the label value is limited by 63.
+// LabelsStoredAsAnnotations are Kuma labels whose values carry a resource name and
+// therefore can be up to 253 characters, which does not fit the 63-character
+// Kubernetes label value limit. They are stored as annotations instead, so callers
+// validating them must not apply label value rules to them either.
+var LabelsStoredAsAnnotations = []string{
+	v1alpha1.DisplayName,
+	metadata.KumaServiceAccount,
+	metadata.KumaWorkload,
+}
+
+// Kuma resource labels are generally stored on Kubernetes as labels, except the ones
+// listed in LabelsStoredAsAnnotations.
 func SplitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations map[string]string) (map[string]string, map[string]string) {
 	labels := maps.Clone(coreLabels)
 	annotations := maps.Clone(currentAnnotations)
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
-	if v, ok := labels[v1alpha1.DisplayName]; ok {
-		annotations[v1alpha1.DisplayName] = v
-		delete(labels, v1alpha1.DisplayName)
-	}
-	// ServiceAccount object names are constrained by the DNS subdomain name specification, with a maximum length of 253 characters.
-	// Since the source name can exceed this length, we are storing the full, original name as an annotation on the ServiceAccount object.
-	// https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-multiple-service-accounts
-	if v, ok := labels[metadata.KumaServiceAccount]; ok {
-		annotations[metadata.KumaServiceAccount] = v
-		delete(labels, metadata.KumaServiceAccount)
-	}
-	// Workload names can exceed 63 characters (up to 253), which exceeds label length limits.
-	// Store as annotation similar to kuma.io/display-name.
-	if v, ok := labels[metadata.KumaWorkload]; ok {
-		annotations[metadata.KumaWorkload] = v
-		delete(labels, metadata.KumaWorkload)
+	for _, key := range LabelsStoredAsAnnotations {
+		if v, ok := labels[key]; ok {
+			annotations[key] = v
+			delete(labels, key)
+		}
 	}
 	return labels, annotations
 }
@@ -285,11 +284,58 @@ type KubernetesMetaAdapter struct {
 	kube_meta.ObjectMeta
 	Mesh string
 
-	// cachedLabels memoizes the result of GetLabels. May be pre-populated by
-	// CachingConverter on cache hit to reuse labels computed for an earlier
-	// call against the same resourceVersion.
-	cachedLabels map[string]string
-	labelsOnce   sync.Once
+	// labels is the materialized label set: the object's stored labels, the entries
+	// derived from annotations, and the control-plane-owned ones recomputed by
+	// labels.EnforcedReadLabels. Callers MUST treat it as read-only - it is handed
+	// out as is, and when the adapter came from cachingConverter a clone of it also
+	// sits in the cache.
+	labels map[string]string
+}
+
+// newMetaAdapter is the only place an adapter's labels are computed from a Kubernetes
+// object. Taking rd and spec forces every conversion path to supply what
+// labels.EnforcedReadLabels needs, so a new converter cannot silently skip the
+// read-side recomputation. newMetaAdapterWithLabels is not a second computation: it
+// only re-wraps a set this function already produced.
+func newMetaAdapter(
+	obj k8s_model.KubernetesObject,
+	systemNamespace string,
+	rd core_model.ResourceTypeDescriptor,
+	spec core_model.ResourceSpec,
+) *KubernetesMetaAdapter {
+	objMeta := obj.GetObjectMeta()
+
+	computed := maps.Clone(objMeta.GetLabels())
+	if computed == nil {
+		computed = map[string]string{}
+	}
+	if displayName, ok := objMeta.GetAnnotations()[v1alpha1.DisplayName]; ok {
+		computed[v1alpha1.DisplayName] = displayName
+	} else {
+		computed[v1alpha1.DisplayName] = objMeta.GetName()
+	}
+	if sa, ok := objMeta.GetAnnotations()[metadata.KumaServiceAccount]; ok {
+		computed[metadata.KumaServiceAccount] = sa
+	}
+	if workload, ok := objMeta.GetAnnotations()[metadata.KumaWorkload]; ok {
+		computed[metadata.KumaWorkload] = workload
+	}
+	ns := labels.NewNamespace(objMeta.GetNamespace(), objMeta.GetNamespace() == systemNamespace)
+	maps.Copy(computed, labels.EnforcedReadLabels(rd, spec, ns))
+
+	return &KubernetesMetaAdapter{
+		ObjectMeta: *objMeta,
+		Mesh:       obj.GetMesh(),
+		labels:     computed,
+	}
+}
+
+func newMetaAdapterWithLabels(obj k8s_model.KubernetesObject, labels map[string]string) *KubernetesMetaAdapter {
+	return &KubernetesMetaAdapter{
+		ObjectMeta: *obj.GetObjectMeta(),
+		Mesh:       obj.GetMesh(),
+		labels:     labels,
+	}
 }
 
 func (m *KubernetesMetaAdapter) GetName() string {
@@ -319,36 +365,14 @@ func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
 	return m.GetObjectMeta().GetCreationTimestamp().Time
 }
 
-// GetLabels returns the labels of the underlying Kubernetes object enriched
-// with annotation-derived entries (display name, Kuma service account, Kuma
-// workload). The computation is memoized per adapter instance: callers MUST
-// treat the returned map as read-only. Mutating it would corrupt both the
-// adapter's cache and, when the adapter was produced by CachingConverter, the
-// cross-reconcile entry shared via resourceVersion key.
+// GetLabels returns the materialized label set built at construction time: the
+// object's stored labels, the annotation-derived entries (display name, Kuma service
+// account, Kuma workload), and the control-plane-owned ones recomputed by
+// labels.EnforcedReadLabels. Callers MUST treat the returned map as read-only.
+// Mutating it would corrupt both this adapter and, when the adapter was produced by
+// cachingConverter, the cross-reconcile entry shared via the resourceVersion key.
 func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
-	m.labelsOnce.Do(func() {
-		if m.cachedLabels != nil {
-			// Pre-populated by CachingConverter on cache hit; nothing to do.
-			return
-		}
-		labels := maps.Clone(m.GetObjectMeta().GetLabels())
-		if labels == nil {
-			labels = map[string]string{}
-		}
-		if displayName, ok := m.GetObjectMeta().GetAnnotations()[v1alpha1.DisplayName]; ok {
-			labels[v1alpha1.DisplayName] = displayName
-		} else {
-			labels[v1alpha1.DisplayName] = m.GetObjectMeta().GetName()
-		}
-		if sa, ok := m.GetObjectMeta().GetAnnotations()[metadata.KumaServiceAccount]; ok {
-			labels[metadata.KumaServiceAccount] = sa
-		}
-		if workload, ok := m.GetObjectMeta().GetAnnotations()[metadata.KumaWorkload]; ok {
-			labels[metadata.KumaWorkload] = workload
-		}
-		m.cachedLabels = labels
-	})
-	return m.cachedLabels
+	return m.labels
 }
 
 type KubeFactory interface {

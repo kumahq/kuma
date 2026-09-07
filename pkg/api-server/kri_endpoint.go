@@ -1,11 +1,14 @@
 package api_server
 
 import (
+	"fmt"
+
 	"github.com/emicklei/go-restful/v3"
 
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -20,6 +23,7 @@ import (
 
 type kriEndpoint struct {
 	k8sMapper       k8s.ResourceMapperFunc
+	k8sSecretMapper k8s.ResourceMapperFunc
 	resManager      manager.ResourceManager
 	resourceAccess  access.ResourceAccess
 	cpMode          config_core.CpMode
@@ -29,26 +33,33 @@ type kriEndpoint struct {
 }
 
 func (k *kriEndpoint) addFindByKriEndpoint(ws *restful.WebService) {
-	ws.Route(ws.GET("/_kri/{kri}").To(k.findByKriRoute()).Doc("Returns a resource by KRI").
+	ws.Route(ws.GET("/_kri/{kri}").To(handle(k.findByKriRoute(false))).Doc("Returns a resource by KRI").
+		Param(ws.PathParameter("kri", "KRI of the resource").DataType("string")).
+		Returns(200, "OK", nil).
+		Returns(400, "Bad request", nil).
+		Returns(404, "Not found", nil))
+	ws.Route(ws.GET("/_kri/{kri}/_overview").To(handle(k.findByKriRoute(true))).Doc("Returns an overview of a resource by KRI").
 		Param(ws.PathParameter("kri", "KRI of the resource").DataType("string")).
 		Returns(200, "OK", nil).
 		Returns(400, "Bad request", nil).
 		Returns(404, "Not found", nil))
 }
 
-func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
-	return func(request *restful.Request, response *restful.Response) {
+func (k *kriEndpoint) findByKriRoute(withInsight bool) handlerFunc {
+	return func(request *restful.Request) (any, error) {
 		kriParam := request.PathParameter("kri")
 		identifier, err := kri.FromString(kriParam)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, rest_errors.NewBadRequestError(err.Error()), "Could not parse KRI")
-			return
+			return nil, withTitle(rest_errors.NewBadRequestError(err.Error()), "Could not parse KRI")
 		}
 
 		descriptor, err := getDescriptor(identifier.ResourceType)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
-			return
+			return nil, withTitle(err, "Could not retrieve a resource")
+		}
+
+		if withInsight && !descriptor.HasInsights() {
+			return nil, withTitle(rest_errors.NewBadRequestError(fmt.Sprintf("resource type %s does not have an overview", identifier.ResourceType)), "Could not retrieve an overview")
 		}
 
 		name := k.getCoreName(identifier, *descriptor)
@@ -58,27 +69,40 @@ func (k *kriEndpoint) findByKriRoute() restful.RouteFunction {
 			*descriptor,
 			user.FromCtx(request.Request.Context()),
 		); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
-			return
+			return nil, withTitle(err, "Access Denied")
 		}
 
 		resource := descriptor.NewObject()
 		if err := k.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, identifier.Mesh)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve a resource")
-			return
+			return nil, withTitle(err, "Could not retrieve a resource")
 		}
 
-		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper, identifier.Namespace)
+		if withInsight {
+			resource, err = overviewForResource(request.Request.Context(), k.resManager, *descriptor, resource, name, identifier.Mesh)
+			if err != nil {
+				return nil, withTitle(err, "Could not retrieve insights")
+			}
+		}
+
+		mapper := k8sMapperForDescriptor(*descriptor, k.k8sMapper, k.k8sSecretMapper)
+		res, err := formatResource(resource, request.QueryParameter("format"), mapper, identifier.Namespace)
 		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not format a resource")
-			return
+			return nil, withTitle(err, "Could not format a resource")
 		}
 
-		if err := response.WriteAsJson(res); err != nil {
-			log.Error(err, "Could not write the find response")
-			return
-		}
+		return res, nil
 	}
+}
+
+func k8sMapperForDescriptor(
+	descriptor core_model.ResourceTypeDescriptor,
+	defaultMapper k8s.ResourceMapperFunc,
+	secretMapper k8s.ResourceMapperFunc,
+) k8s.ResourceMapperFunc {
+	if descriptor.Name == system.SecretType || descriptor.Name == system.GlobalSecretType {
+		return secretMapper
+	}
+	return defaultMapper
 }
 
 func (k *kriEndpoint) getCoreName(id kri.Identifier, desc core_model.ResourceTypeDescriptor) string {

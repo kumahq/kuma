@@ -136,9 +136,11 @@ var _ = Describe("MeshService generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 	})
 
-	Context("should not generate MeshService from a Dataplane with not supported kuma.io/service", func() {
-		It("kuma.io/service with underscore sign", func() {
-			err := builders.Dataplane().WithAddress("192.168.0.1").WithServices("backend_svc").Create(resManager)
+	Context("should not generate MeshService from a Dataplane with an invalid kuma.io/workload label", func() {
+		It("kuma.io/workload with underscore sign", func() {
+			err := createDataplaneWithLabels(builders.Dataplane().WithAddress("192.168.0.1"), map[string]string{
+				metadata.KumaWorkload: "backend_svc",
+			})
 			Expect(err).ToNot(HaveOccurred())
 
 			Consistently(func(g Gomega) {
@@ -147,8 +149,10 @@ var _ = Describe("MeshService generator", func() {
 				g.Expect(mss.GetItems()).To(BeEmpty())
 			}, "1s", "100ms").Should(Succeed())
 		})
-		It("kuma.io/service with dot sign", func() {
-			err := builders.Dataplane().WithAddress("192.168.0.1").WithServices("backend.svc").Create(resManager)
+		It("kuma.io/workload with dot sign", func() {
+			err := createDataplaneWithLabels(builders.Dataplane().WithAddress("192.168.0.1"), map[string]string{
+				metadata.KumaWorkload: "backend.svc",
+			})
 			Expect(err).ToNot(HaveOccurred())
 
 			Consistently(func(g Gomega) {
@@ -157,8 +161,10 @@ var _ = Describe("MeshService generator", func() {
 				g.Expect(mss.GetItems()).To(BeEmpty())
 			}, "1s", "100ms").Should(Succeed())
 		})
-		It("kuma.io/service with an alphanumeric started character", func() {
-			err := builders.Dataplane().WithAddress("192.168.0.1").WithServices("00-backend-svc").Create(resManager)
+		It("kuma.io/workload with an alphanumeric started character", func() {
+			err := createDataplaneWithLabels(builders.Dataplane().WithAddress("192.168.0.1"), map[string]string{
+				metadata.KumaWorkload: "00-backend-svc",
+			})
 			Expect(err).ToNot(HaveOccurred())
 
 			Consistently(func(g Gomega) {
@@ -167,9 +173,11 @@ var _ = Describe("MeshService generator", func() {
 				g.Expect(mss.GetItems()).To(BeEmpty())
 			}, "1s", "100ms").Should(Succeed())
 		})
-		It("kuma.io/service with too long name", func() {
+		It("kuma.io/workload with too long name", func() {
 			// 64 chars
-			err := builders.Dataplane().WithAddress("192.168.0.1").WithServices("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").Create(resManager)
+			err := createDataplaneWithLabels(builders.Dataplane().WithAddress("192.168.0.1"), map[string]string{
+				metadata.KumaWorkload: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			})
 			Expect(err).ToNot(HaveOccurred())
 
 			Consistently(func(g Gomega) {
@@ -373,7 +381,7 @@ var _ = Describe("MeshService generator", func() {
 		ms.Spec = &meshservice_api.MeshService{
 			Selector: meshservice_api.Selector{
 				DataplaneLabels: &common_api.LabelSelector{
-					MatchLabels: &map[string]string{mesh_proto.ServiceTag: "remote-backend"},
+					MatchLabels: &map[string]string{"kuma.io/display-name": "remote-backend"},
 				},
 			},
 			Ports: []meshservice_api.Port{{

@@ -182,9 +182,26 @@ type BackendResourceRef struct {
 }
 
 // BackendRef defines where to forward traffic.
+// BackendRefKind is the set of TargetRefKind values valid for a backendRef,
+// which routes traffic to a destination rather than selecting a proxy.
+type BackendRefKind string
+
+const (
+	BackendRefKindMeshService          BackendRefKind = "MeshService"
+	BackendRefKindMeshExternalService  BackendRefKind = "MeshExternalService"
+	BackendRefKindMeshMultiZoneService BackendRefKind = "MeshMultiZoneService"
+)
+
+// BackendRef defines the destination traffic is routed to.
 type BackendRef struct {
-	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
-	TargetRef `json:","`
+	// Kind of the referenced resource
+	// +kubebuilder:validation:Enum=MeshService;MeshExternalService;MeshMultiZoneService
+	Kind BackendRefKind `json:"kind"`
+	// Labels are used to select the referenced real resource.
+	Labels *map[string]string `json:"labels,omitempty"`
+	// SectionName is used to target a specific section of the resource.
+	// For example, you can target a port from MeshService.ports[] by its name.
+	SectionName *string `json:"sectionName,omitempty"`
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4294967295
 	// +kubebuilder:default=1
@@ -194,16 +211,30 @@ type BackendRef struct {
 	Port *uint32 `json:"port,omitempty"`
 }
 
-func (b BackendRef) ReferencesRealObject() bool {
-	switch b.Kind {
-	case MeshService, MeshExternalService, MeshMultiZoneService:
-		return true
-	// empty targetRef should not be treated as real object
-	case "":
-		return false
-	default:
-		return true
+// BackendRefFrom builds a BackendRef from a TargetRef. The kind is narrowed
+// without checking: callers are expected to have validated it, or to be
+// converting a reference that is a routing destination by construction.
+func BackendRefFrom(t TargetRef) BackendRef {
+	return BackendRef{
+		Kind:        BackendRefKind(t.Kind),
+		Labels:      t.Labels,
+		SectionName: t.SectionName,
 	}
+}
+
+// ToTargetRef converts a BackendRef to the shared TargetRef representation used
+// by the policy matching engine.
+func (b BackendRef) ToTargetRef() TargetRef {
+	return TargetRef{
+		Kind:        TargetRefKind(b.Kind),
+		Labels:      b.Labels,
+		SectionName: b.SectionName,
+	}
+}
+
+func (b BackendRef) ReferencesRealObject() bool {
+	// every kind a backendRef accepts is a real object; an unset one is not
+	return b.Kind != ""
 }
 
 // MatchesHash is used to hash route matches to determine the origin resource
@@ -217,7 +248,7 @@ func (b BackendRef) RealResourceSelector(defaultNamespace string) (map[string]st
 		return nil, "", false
 	}
 
-	labels, sectionName, ok := realResourceSelector(b.TargetRef, defaultNamespace)
+	labels, sectionName, ok := realResourceSelector(b.ToTargetRef(), defaultNamespace)
 	if !ok {
 		return nil, "", false
 	}

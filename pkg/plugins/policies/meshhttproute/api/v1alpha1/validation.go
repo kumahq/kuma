@@ -249,7 +249,7 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 			backendRefPath := path.Field("requestMirror").Field("backendRef")
 			errs.AddErrorAt(
 				backendRefPath,
-				mesh.ValidateTargetRef(filter.RequestMirror.BackendRef.TargetRef, &mesh.ValidateTargetRefOpts{
+				mesh.ValidateTargetRef(filter.RequestMirror.BackendRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
 						common_api.MeshExternalService,
@@ -325,15 +325,38 @@ func validateHeaderModifier(modifier *HeaderModifier) validators.ValidationError
 	return errs
 }
 
-func validateBackendRefs(
-	backendRefs []common_api.BackendRef,
-) validators.ValidationError {
+func validateBackendRefFilters(filters *[]Filter) validators.ValidationError {
+	var errs validators.ValidationError
+
+	if filters == nil {
+		return errs
+	}
+
+	for i, filter := range *filters {
+		path := validators.Root().Index(i)
+		switch filter.Type {
+		case RequestHeaderModifierType:
+			field := path.Field("requestHeaderModifier")
+			if filter.RequestHeaderModifier == nil {
+				errs.AddViolationAt(field, validators.MustBeDefined)
+				continue
+			}
+			errs.AddErrorAt(field, validateHeaderModifier(filter.RequestHeaderModifier))
+		default:
+			errs.AddViolationAt(path.Field("type"), "only RequestHeaderModifier is supported on backendRefs")
+		}
+	}
+
+	return errs
+}
+
+func validateBackendRefs(backendRefs []BackendRef) validators.ValidationError {
 	var errs validators.ValidationError
 
 	for i, backendRef := range backendRefs {
 		errs.AddErrorAt(
 			validators.Root().Index(i),
-			mesh.ValidateTargetRef(backendRef.TargetRef, &mesh.ValidateTargetRefOpts{
+			mesh.ValidateTargetRef(backendRef.CommonBackendRef().ToTargetRef(), &mesh.ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.MeshService,
 					common_api.MeshExternalService,
@@ -344,8 +367,9 @@ func validateBackendRefs(
 		)
 		errs.AddErrorAt(
 			validators.Root().Index(i),
-			validators.ValidateBackendRef(backendRef),
+			validators.ValidateBackendRef(backendRef.CommonBackendRef()),
 		)
+		errs.AddErrorAt(validators.Root().Index(i).Field("filters"), validateBackendRefFilters(backendRef.Filters))
 	}
 
 	return errs

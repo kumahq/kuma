@@ -3,7 +3,3 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: kri_msvc_default_remote-zone__backend_80
-- name: kri_msvc_default_remote-zone__backend_test-port
-  resource:
-    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: kri_msvc_default_remote-zone__backend_test-port

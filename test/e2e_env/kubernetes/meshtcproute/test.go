@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -84,6 +85,11 @@ func Test() {
 			kubernetes.Cluster,
 			meshName,
 			v1alpha1.MeshTCPRouteResourceTypeDescriptor,
+		)).To(Succeed())
+		Expect(DeleteMeshResources(
+			kubernetes.Cluster,
+			meshName,
+			meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor,
 		)).To(Succeed())
 		Expect(DeleteMeshResources(
 			kubernetes.Cluster,

@@ -33,12 +33,6 @@ var (
 	}
 	GatewayDataplane = &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
-			Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-				Tags: map[string]string{
-					mesh_proto.ServiceTag: "gateway",
-				},
-				Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-			},
 			Address: "192.168.0.1",
 			Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 				{

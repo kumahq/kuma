@@ -202,7 +202,7 @@ func (gis *defaultGlobalInsightService) aggregateGatewayServices(
 
 	hasGateway := false
 	for _, dp := range dataplanes.Items {
-		if dp.Spec.GetNetworking().GetGateway() != nil {
+		if dp.IsDelegatedGateway() {
 			hasGateway = true
 			break
 		}
@@ -219,7 +219,7 @@ func (gis *defaultGlobalInsightService) aggregateGatewayServices(
 	delegated := map[string]*gatewayServiceStat{}
 
 	for _, overview := range mesh.NewDataplaneOverviews(*dataplanes, *dataplaneInsights).Items {
-		if overview.Spec.GetDataplane().GetNetworking().GetGateway() == nil {
+		if !overview.IsDelegatedGateway() {
 			continue
 		}
 
@@ -242,15 +242,12 @@ func (gis *defaultGlobalInsightService) aggregateGatewayServices(
 	return nil
 }
 
-// gatewayServiceKey identifies the mesh-scoped service a gateway Dataplane belongs
-// to. Gateways carry no kuma.io/service tag in tag-free mode, so fall back to the
-// workload and finally to the Dataplane itself, which keeps every gateway counted.
-// Each tier is prefixed so that gateways grouped by different tiers never share a key.
+// gatewayServiceKey identifies the mesh-scoped service a gateway Dataplane
+// belongs to. Gateways carry no tags, so group them by workload and fall back
+// to the Dataplane itself, which keeps every gateway counted. Each tier is
+// prefixed so that gateways grouped by different tiers never share a key.
 func gatewayServiceKey(overview *mesh.DataplaneOverviewResource) string {
-	key := "tag:" + overview.Spec.GetDataplane().GetNetworking().GetGateway().GetTags()[mesh_proto.ServiceTag]
-	if key == "tag:" {
-		key = "workload:" + overview.GetMeta().GetLabels()[metadata.KumaWorkload]
-	}
+	key := "workload:" + overview.GetMeta().GetLabels()[metadata.KumaWorkload]
 	if key == "workload:" {
 		key = "dataplane:" + overview.GetMeta().GetName()
 	}

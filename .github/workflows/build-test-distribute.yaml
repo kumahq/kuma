@@ -88,7 +88,8 @@ jobs:
                   {label: "test / test_unit", pattern: "^test / test_unit$"},
                   {label: "test / e2e ...", pattern: "^test / e2e"},
                   {label: "build_publish / digest-images", pattern: "^build_publish / digest-images$"},
-                  {label: "build_publish / build-binaries", pattern: "^build_publish / build-binaries$"},
+                  {label: "build_publish / build-binaries", pattern: "^build_publish / build-binaries"},
+                  {label: "build_publish / publish-binaries", pattern: "^build_publish / publish-binaries$"},
                   {label: "build_publish / build-images ...", pattern: "^build_publish / build-images"},
                   {label: "build_publish / publish-helm", pattern: "^build_publish / publish-helm$"}
                 ]
@@ -126,7 +127,7 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.8.8
+          version: 2026.8.14
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Cache Go build
@@ -220,7 +221,7 @@ jobs:
             go-build-${{ runner.os }}-
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.8.8
+          version: 2026.8.14
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0

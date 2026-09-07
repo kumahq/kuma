@@ -161,6 +161,37 @@ spec:
                 port: 80
 `, mesh, multizone.KubeZone2.ZoneName(), k8sZoneNamespace, multizone.KubeZone2.ZoneName(), k8sZoneNamespace))(multizone.Global)).To(Succeed())
 
+		Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshHTTPRoute
+name: route-catch-all
+mesh: %s
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: test-client
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server
+          kuma.io/zone: %s
+          k8s.kuma.io/namespace: %s
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default:
+            backendRefs:
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: test-server
+                  kuma.io/zone: %s
+                  k8s.kuma.io/namespace: %s
+                port: 80
+`, mesh, multizone.KubeZone2.ZoneName(), k8sZoneNamespace, multizone.KubeZone2.ZoneName(), k8sZoneNamespace))(multizone.Global)).To(Succeed())
+
 		// positive control: route matches, but no timeout policy yet
 		Eventually(func(g Gomega) {
 			start := time.Now()

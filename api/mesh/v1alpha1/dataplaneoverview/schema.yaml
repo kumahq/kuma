@@ -30,32 +30,6 @@ components:
                       description: Port on which Envoy Admin API server will be listening
                       type: integer
                   type: object
-                gateway:
-                  description: Gateway describes a configuration of the gateway of
-                    the data plane proxy.
-                  properties:
-                    tags:
-                      additionalProperties:
-                        type: string
-                      description: |-
-                        Tags associated with a gateway of this data plane to, e.g.
-                        `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is
-                        mandatory.
-                      type: object
-                    type:
-                      description: |-
-                        Type of gateway this data plane proxy manages.
-
-                        The only supported type is `DELEGATED`: an independently deployed proxy
-                        (e.g., Kong, Contour, etc) that receives inbound traffic that is not
-                        proxied by Kuma, and it sends outbound traffic into the data plane
-                        proxy.
-
-                        See https://kuma.io/docs/latest/explore/gateway/ for more information.
-                      oneOf:
-                      - type: string
-                      - type: integer
-                  type: object
                 inbound:
                   description: |-
                     Inbound describes a list of inbound interfaces of the data plane proxy.
@@ -166,9 +140,11 @@ components:
                         type: object
                       state:
                         description: State describes the current state of the listener.
-                        oneOf:
-                        - type: string
-                        - type: integer
+                        enum:
+                        - Ready
+                        - NotReady
+                        - Ignored
+                        type: string
                     type: object
                   type: array
                 listeners:
@@ -196,16 +172,19 @@ components:
                           State describes the current health state of the listener.
                           The control plane sets this based on the readiness of the underlying
                           pod and sidecar container.
-                        oneOf:
-                        - type: string
-                        - type: integer
+                        enum:
+                        - Ready
+                        - NotReady
+                        type: string
                       type:
                         description: |-
                           Type determines the role of this listener: ZoneIngress for inbound
                           cross-zone traffic or ZoneEgress for outbound external traffic.
-                        oneOf:
-                        - type: string
-                        - type: integer
+                        enum:
+                        - Unspecified
+                        - ZoneIngress
+                        - ZoneEgress
+                        type: string
                     type: object
                   type: array
                 outbound:
@@ -270,9 +249,12 @@ components:
                     ipFamilyMode:
                       description: The IP family mode to enable for. Can be "IPv4"
                         or "DualStack".
-                      oneOf:
-                      - type: string
-                      - type: integer
+                      enum:
+                      - UnSpecified
+                      - DualStack
+                      - IPv4
+                      - IPv6
+                      type: string
                     reachableBackends:
                       description: |-
                         Reachable backend via transparent proxy when running with
@@ -325,12 +307,8 @@ components:
                   description: |-
                     Expiration time of the last certificate that was generated for a
                     Dataplane.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 certificateRegenerations:
                   description: Number of certificate regenerations for a Dataplane.
                   type: integer
@@ -339,12 +317,8 @@ components:
                   type: string
                 lastCertificateRegeneration:
                   description: Time on which the last certificate was generated.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 supportedBackends:
                   description: Supported backends (CA).
                   items:
@@ -443,24 +417,16 @@ components:
                   connectTime:
                     description: Time when a given Dataplane connected to the Control
                       Plane.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   controlPlaneInstanceId:
                     description: Control Plane instance that handled given subscription.
                     type: string
                   disconnectTime:
                     description: Time when a given Dataplane disconnected from the
                       Control Plane.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   generation:
                     description: |-
                       Generation is an integer number which is periodically increased by the
@@ -501,12 +467,8 @@ components:
                       lastUpdateTime:
                         description: Time when status of a given ADS subscription
                           was most recently updated.
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
+                        format: date-time
+                        type: string
                       lds:
                         description: LDS defines all LDS stats.
                         properties:

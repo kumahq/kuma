@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Bad Request",
+ "detail": "bad request: filtering by status is only supported on the _overview endpoint",
+ "details": "bad request: filtering by status is only supported on the _overview endpoint"
+}

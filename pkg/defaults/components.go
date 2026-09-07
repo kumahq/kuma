@@ -28,7 +28,6 @@ var EnsureDefaultFuncs = []EnsureDefaultFunc{
 	EnsureEnvoyAdminCaExists,
 	EnsureOnlyOneZoneExists,
 	EnsureDefaultMeshExists,
-	EnsureDefaultMeshResourcesUpToDate,
 	EnsureZoneTokenSigningKeyExists,
 	EnsureHostnameGeneratorExists,
 }

@@ -120,7 +120,25 @@ spec:
         loadBalancer:
           type: RingHash`, meshName)
 
+		catchAllRoute := fmt.Sprintf(`
+type: MeshHTTPRoute
+mesh: %s
+name: test-server-catch-all-route
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default: {}`, meshName)
+
 		Expect(universal.Cluster.Install(YamlUniversal(meshHttpRoute))).To(Succeed())
+		Expect(universal.Cluster.Install(YamlUniversal(catchAllRoute))).To(Succeed())
 		Expect(universal.Cluster.Install(YamlUniversal(mlbsForMS))).To(Succeed())
 
 		By("Checking that requests to /no-hash-lb are balanced across all 3 instances")

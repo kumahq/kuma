@@ -21,11 +21,6 @@
                     "type": "string",
                     "description": "IP on which the data plane proxy is accessible to the control plane and other data plane proxies in the same network. This can also be a hostname, in which case the control plane will periodically resolve it."
                 },
-                "gateway": {
-                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Gateway",
-                    "additionalProperties": true,
-                    "description": "Gateway describes a configuration of the gateway of the data plane proxy."
-                },
                 "inbound": {
                     "items": {
                         "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Inbound"
@@ -62,36 +57,6 @@
             "type": "object",
             "title": "Networking",
             "description": "Networking describes inbound and outbound interfaces of a data plane proxy."
-        },
-        "kuma.mesh.v1alpha1.Dataplane.Networking.Gateway": {
-            "properties": {
-                "tags": {
-                    "additionalProperties": {
-                        "type": "string"
-                    },
-                    "type": "object",
-                    "description": "Tags associated with a gateway of this data plane to, e.g. `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is mandatory."
-                },
-                "type": {
-                    "enum": [
-                        "DELEGATED",
-                        0
-                    ],
-                    "oneOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "integer"
-                        }
-                    ],
-                    "title": "Gateway Type"
-                }
-            },
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Gateway",
-            "description": "Gateway describes a service that ingress should not be proxied."
         },
         "kuma.mesh.v1alpha1.Dataplane.Networking.Inbound": {
             "properties": {

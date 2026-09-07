@@ -318,7 +318,7 @@ var File_api_mesh_v1alpha1_service_insight_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_service_insight_proto_rawDesc = "" +
 	"\n" +
-	"'api/mesh/v1alpha1/service_insight.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\"\x9e\b\n" +
+	"'api/mesh/v1alpha1/service_insight.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\"\x89\b\n" +
 	"\x0eServiceInsight\x12L\n" +
 	"\bservices\x18\x02 \x03(\v20.kuma.mesh.v1alpha1.ServiceInsight.ServicesEntryR\bservices\x1a\xe7\x05\n" +
 	"\aService\x12I\n" +
@@ -350,9 +350,8 @@ const file_api_mesh_v1alpha1_service_insight_proto_rawDesc = "" +
 	"\x11gateway_delegated\x10\x02\"\x04\b\x03\x10\x03*\x0fgateway_builtin\x1ag\n" +
 	"\rServicesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12@\n" +
-	"\x05value\x18\x02 \x01(\v2*.kuma.mesh.v1alpha1.ServiceInsight.ServiceR\x05value:\x028\x01:e\xaa\x8c\x89\xa6\x01_\n" +
-	"\x16ServiceInsightResource\x12\x0eServiceInsight\"\x04mesh:\x13\n" +
-	"\x0fservice-insight\x18\x01R\x17model.GlobalToZonesFlag\xa8\x01\x01J\x04\b\x01\x10\x02B-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
+	"\x05value\x18\x02 \x01(\v2*.kuma.mesh.v1alpha1.ServiceInsight.ServiceR\x05value:\x028\x01:P\xaa\x8c\x89\xa6\x01J\n" +
+	"\x16ServiceInsightResource\x12\x0eServiceInsight\"\x04meshR\x17model.GlobalToZonesFlag\xa8\x01\x01J\x04\b\x01\x10\x02B-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
 
 var (
 	file_api_mesh_v1alpha1_service_insight_proto_rawDescOnce sync.Once

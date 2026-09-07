@@ -39,7 +39,7 @@ filterChains:
         requestHeadersToAdd:
         - header:
             key: x-kuma-tags
-            value: '&kuma.io/service=backend&'
+            value: '&kuma.io/display-name=backend&'
         validateClusters: false
         virtualHosts:
         - domains:

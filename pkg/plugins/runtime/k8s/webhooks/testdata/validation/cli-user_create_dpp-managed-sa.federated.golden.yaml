@@ -1,0 +1,10 @@
+Patches: null
+allowed: false
+status:
+  code: 403
+  message: Operation not allowed. Label "k8s.kuma.io/service-account" is managed by
+    Kuma and cannot be set manually.
+  metadata: {}
+  reason: Forbidden
+  status: Failure
+uid: "12345"

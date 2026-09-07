@@ -78,17 +78,6 @@
           }
         }
       ]
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/kri_msvc_envoyconfig_kuma-3__test-server_80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/6/route/hashPolicy",
-      "value": [
-        {
-          "header": {
-            "headerName": "x-header-for-test-server"
-          }
-        }
-      ]
     }
   ],
   "xds": {
@@ -445,6 +434,7 @@
                   "filterMetadata": {
                     "envoy.lb": {
                       "kuma.io/display-name": "demo-client",
+                      "service": "demo-client",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
@@ -454,6 +444,7 @@
                     },
                     "envoy.transport_socket_match": {
                       "kuma.io/display-name": "demo-client",
+                      "service": "demo-client",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
@@ -491,6 +482,7 @@
                     "envoy.lb": {
                       "instance": "1",
                       "kuma.io/display-name": "test-server",
+                      "service": "test-server",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
@@ -503,6 +495,7 @@
                     "envoy.transport_socket_match": {
                       "instance": "1",
                       "kuma.io/display-name": "test-server",
+                      "service": "test-server",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig",
                       "kuma.io/origin": "zone",
@@ -725,22 +718,16 @@
                             }
                           },
                           {
+                            "directResponse": {
+                              "body": {
+                                "inlineString": ""
+                              },
+                              "status": 404
+                            },
                             "match": {
                               "prefix": "/"
                             },
-                            "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
-                            "route": {
-                              "cluster": "kri_msvc_envoyconfig_kuma-3__test-server_80",
-                              "hashPolicy": [
-                                {
-                                  "header": {
-                                    "headerName": "x-header-for-test-server"
-                                  }
-                                }
-                              ],
-                              "idleTimeout": "1800s",
-                              "timeout": "15s"
-                            }
+                            "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo="
                           }
                         ]
                       }
@@ -937,10 +924,10 @@
             "io.kuma.tags": {
               "instance": "1",
               "kuma.io/display-name": "test-server",
+              "service": "test-server",
               "kuma.io/env": "universal",
               "kuma.io/mesh": "envoyconfig",
               "kuma.io/origin": "zone",
-              "kuma.io/service": "test-server",
               "kuma.io/workload": "test-server",
               "kuma.io/zone": "kuma-3",
               "team": "server-owners",

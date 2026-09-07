@@ -2,7 +2,6 @@ EXAMPLE_DATAPLANE_MESH ?= default
 EXAMPLE_DATAPLANE_NAME ?= example
 EXAMPLE_DATAPLANE_INBOUND_PORT ?= 8000
 EXAMPLE_DATAPLANE_SERVICE_PORT ?= 10011
-EXAMPLE_DATAPLANE_SERVICE_TAG ?= echo-service
 ENVOY_ADMIN_PORT = $(shell expr $(EXAMPLE_DATAPLANE_INBOUND_PORT) - 8000 + 9901)
 
 define EXAMPLE_DATAPLANE_RESOURCE
@@ -18,9 +17,6 @@ networking:
     servicePort: $(EXAMPLE_DATAPLANE_SERVICE_PORT)
     serviceProbe:
        tcp: {}
-    tags:
-      kuma.io/service: $(EXAMPLE_DATAPLANE_SERVICE_TAG)
-      kuma.io/protocol: http
 endef
 
 POSTGRES_MODE = standard

@@ -9,12 +9,12 @@ networking:
     - port: 8080
       servicePort: 80
       tags:
-        kuma.io/service: mobile
+        kuma.io/display-name: mobile
         version: v1
     - port: 8090
       servicePort: 90
       tags:
-        kuma.io/service: metrics
+        kuma.io/display-name: metrics
         version: v1
 ---
 creationTime: "0001-01-01T00:00:00Z"
@@ -28,5 +28,5 @@ networking:
     - port: 8080
       servicePort: 80
       tags:
-        kuma.io/service: web
+        kuma.io/display-name: web
         version: v2

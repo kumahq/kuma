@@ -414,16 +414,6 @@
   },
   {
    "includeInFederation": false,
-   "name": "ServiceInsight",
-   "path": "service-insights",
-   "pluralDisplayName": "Service Insights",
-   "readOnly": true,
-   "scope": "Mesh",
-   "shortName": "",
-   "singularDisplayName": "Service Insight"
-  },
-  {
-   "includeInFederation": false,
    "name": "Workload",
    "path": "workloads",
    "pluralDisplayName": "Workloads",

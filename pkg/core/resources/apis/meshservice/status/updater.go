@@ -246,6 +246,15 @@ func (s *StatusUpdater) buildTLS(
 	if tlsReadyDpps != len(dpps) {
 		return notReady
 	}
+	if existing.Status != meshservice_api.TLSPending {
+		// Every proxy is certified for the first time. Leave clients on
+		// plaintext for one interval so the destinations can pick up their
+		// certificates and inbound TLS chains before anyone originates mTLS
+		// towards them.
+		return meshservice_api.TLS{
+			Status: meshservice_api.TLSPending,
+		}
+	}
 	return meshservice_api.TLS{
 		Status: meshservice_api.TLSReady,
 	}

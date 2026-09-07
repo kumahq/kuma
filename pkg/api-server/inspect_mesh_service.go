@@ -21,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 )
@@ -33,7 +32,7 @@ func addInspectMeshServiceEndpoints(
 ) {
 	ws.Route(
 		ws.GET("/meshes/{mesh}/{serviceType}/{name}/_hostnames").
-			To(matchingHostnames(rm, isGlobal)).
+			To(handle(matchingHostnames(rm, isGlobal))).
 			Doc("inspect service hostnames").
 			Param(ws.PathParameter("name", "mesh service name").DataType("string")).
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")),
@@ -46,7 +45,7 @@ var availableServiceTypes = []string{
 	string(types.Meshmultizoneservices),
 }
 
-func matchingHostnames(resManager manager.ResourceManager, isGlobal bool) restful.RouteFunction {
+func matchingHostnames(resManager manager.ResourceManager, isGlobal bool) handlerFunc {
 	generatorsForType := map[types.InspectHostnamesParamsServiceType]hostname.HostnameGenerator{
 		types.Meshservices:          meshservice_hostname.NewMeshServiceHostnameGenerator(resManager),
 		types.Meshexternalservices:  mes_hostname.NewMeshExternalServiceHostnameGenerator(resManager),
@@ -75,32 +74,27 @@ func matchingHostnames(resManager manager.ResourceManager, isGlobal bool) restfu
 		return nil
 	}
 
-	return func(request *restful.Request, response *restful.Response) {
+	return func(request *restful.Request) (any, error) {
 		svcName := request.PathParameter("name")
 		svcMesh := request.PathParameter("mesh")
 		svcType := types.InspectHostnamesParamsServiceType(request.PathParameter("serviceType"))
 
 		desc, ok := typeDescForType[svcType]
 		if !ok {
-			rest_errors.HandleError(
-				request.Request.Context(),
-				response,
+			return nil, withTitle(
 				&validators.ValidationError{},
 				fmt.Sprintf("only %q are available for inspection", strings.Join(availableServiceTypes, ",")),
 			)
-			return
 		}
 
 		svc := desc.NewObject()
 		if err := resManager.Get(request.Request.Context(), svc, store.GetByKey(svcName, svcMesh)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "could not retrieve service")
-			return
+			return nil, withTitle(err, "could not retrieve service")
 		}
 
 		hostnameGenerators := hostnamegenerator_api.HostnameGeneratorResourceList{}
 		if err := resManager.List(request.Request.Context(), &hostnameGenerators); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "could not retrieve hostname generators")
-			return
+			return nil, withTitle(err, "could not retrieve hostname generators")
 		}
 
 		byHostname := map[string]map[string]struct{}{}
@@ -126,8 +120,7 @@ func matchingHostnames(resManager manager.ResourceManager, isGlobal bool) restfu
 				svc.SetMeta(overridden)
 
 				if err := generateAndRecord(svc, svcType, svcZone, hg, byHostname); err != nil {
-					rest_errors.HandleError(request.Request.Context(), response, err, "could not generate hostname")
-					return
+					return nil, withTitle(err, "could not generate hostname")
 				}
 			}
 		}
@@ -150,9 +143,7 @@ func matchingHostnames(resManager manager.ResourceManager, isGlobal bool) restfu
 			})
 		}
 		resp.Total = len(resp.Items)
-		if err := response.WriteAsJson(resp); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed writing response")
-		}
+		return resp, nil
 	}
 }
 

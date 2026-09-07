@@ -166,13 +166,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us")).
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us")).
 				AddEndpoint("default_external-service___extsvc_8085", xds_builders.Endpoint().
 					WithTarget("192.168.0.5").
 					WithPort(8085).
 					WithWeight(1).
 					WithExternalService(&core_xds.ExternalService{OwnerResource: kri.From(&meshExtSvc)}).
-					WithTags(mesh_proto.ServiceTag, "external-service", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+					WithTags("kuma.io/display-name", "external-service", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
 					WithEndpointMap(outboundTargets).
@@ -185,7 +185,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Address:  "10.0.0.1",
@@ -229,7 +229,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
 					WithMeshBuilder(samples.MeshDefaultBuilder()).
@@ -240,7 +240,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Address:  "10.0.0.1",
@@ -259,12 +259,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend")).
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend")).
 				AddEndpoint("default_backend___msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.5").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "other-backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
+					WithTags("kuma.io/display-name", "other-backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
 			meshSvc := meshservice_api.MeshServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
 				Spec: &meshservice_api.MeshService{
@@ -296,7 +296,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web"),
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web"),
 					).
 					WithOutbounds(xds_types.Outbounds{
 						{
@@ -318,7 +318,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
 			meshSvc := meshservice_api.MeshServiceResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "backend", Mesh: "default",
@@ -354,7 +354,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web"),
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web"),
 					).
 					WithOutbounds(xds_types.Outbounds{{
 						Resource: kri.WithSectionName(kri.From(&meshSvc), "80"),
@@ -406,14 +406,14 @@ var _ = Describe("MeshHTTPRoute", func() {
 			dpBuilder := builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")
 			mc := meshContextWithResources(builders.Mesh(), dpBuilder.Build(), &meshSvc)
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("default_backend__remote-zone_msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
 					WithMeshContext(mc).
@@ -441,8 +441,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													Kind:   common_api.MeshService,
+												BackendRefs: &[]api.BackendRef{{
+													Kind:   common_api.BackendRefKindMeshService,
 													Labels: &map[string]string{"app": "backend"},
 													Weight: pointer.To(uint(100)),
 													Port:   pointer.To(uint32(80)),
@@ -512,7 +512,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web"),
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web"),
 					).
 					WithOutbounds(xds_types.Outbounds{{
 						Resource: kri.WithSectionName(extSvcKRI, "9000"),
@@ -534,7 +534,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				AddInbound(builders.Inbound().
 					WithPort(8084).
 					WithTags(map[string]string{
-						mesh_proto.ServiceTag:  "backend",
+						"kuma.io/display-name": "backend",
 						mesh_proto.ProtocolTag: string(core_meta.ProtocolHTTP),
 						"app":                  "backend",
 					}),
@@ -550,7 +550,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{
 						DataplaneLabels: &common_api.LabelSelector{
 							MatchLabels: &map[string]string{
-								mesh_proto.ServiceTag: "backend",
+								"kuma.io/display-name": "backend",
 							},
 						},
 					},
@@ -598,7 +598,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			dp := builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				Build()
 			mc := meshContextWithResources(builders.Mesh(), dp, backendDP, &meshSvc, &meshMZSvc)
 
@@ -637,7 +637,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				AddInbound(builders.Inbound().
 					WithPort(8084).
 					WithTags(map[string]string{
-						mesh_proto.ServiceTag:  "backend",
+						"kuma.io/display-name": "backend",
 						mesh_proto.ProtocolTag: string(core_meta.ProtocolHTTP),
 						"app":                  "backend",
 					}),
@@ -653,7 +653,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Selector: meshservice_api.Selector{
 						DataplaneLabels: &common_api.LabelSelector{
 							MatchLabels: &map[string]string{
-								mesh_proto.ServiceTag: "backend",
+								"kuma.io/display-name": "backend",
 							},
 						},
 					},
@@ -701,7 +701,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			dp := builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				Build()
 			mc := meshContextWithResources(builders.Mesh(), dp, backendDP, &meshSvc, &meshMZSvc)
 
@@ -795,9 +795,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 										},
 									}},
 									Default: api.RuleConf{
-										BackendRefs: &[]common_api.BackendRef{{
-											TargetRef: builders.TargetRefMeshExternalService("example"),
-											Weight:    pointer.To(uint(100)),
+										BackendRefs: &[]api.BackendRef{{
+											BackendRef: builders.BackendRefFrom(builders.TargetRefMeshExternalService("example"), uint(100)),
 										}},
 									},
 								},
@@ -860,23 +859,23 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithTarget("192.168.0.4").
 						WithPort(8084).
 						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
+						WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
 					xds_builders.Endpoint().
 						WithTarget("192.168.0.5").
 						WithPort(8084).
 						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us")).
+						WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us")).
 				AddEndpoints("default_backend-us___msvc_80",
 					xds_builders.Endpoint().
 						WithTarget("192.168.0.6").
 						WithPort(8084).
 						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend-us", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"),
+						WithTags("kuma.io/display-name", "backend-us", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"),
 					xds_builders.Endpoint().
 						WithTarget("192.168.0.7").
 						WithPort(8084).
 						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend-us", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+						WithTags("kuma.io/display-name", "backend-us", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
@@ -886,7 +885,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						builders.Dataplane().
 							WithName("web-01").
 							WithAddress("192.168.0.2").
-							WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web"),
+							WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web"),
 					).
 					WithOutbounds(xds_types.Outbounds{
 						{
@@ -909,9 +908,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefMeshService("backend", "", "test-port"),
-													Weight:    pointer.To(uint(100)),
+												BackendRefs: &[]api.BackendRef{{
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("backend", "", "test-port"), uint(100)),
 												}},
 											},
 										}, {
@@ -927,9 +925,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefMeshService("backend-us", "", "test-port"),
-													Weight:    pointer.To(uint(100)),
+												BackendRefs: &[]api.BackendRef{{
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("backend-us", "", "test-port"), uint(100)),
 												}},
 											},
 										}, {
@@ -940,10 +937,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefMeshService("backend", "", "test-port"),
-													Weight:    pointer.To(uint(100)),
-													Port:      pointer.To(uint32(80)),
+												BackendRefs: &[]api.BackendRef{{
+													BackendRef: builders.BackendRefFromWithPort(builders.TargetRefMeshService("backend", "", "test-port"), uint(100), uint32(80)),
 												}},
 											},
 										}, {
@@ -955,9 +950,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 												}},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefMeshService("backend", "", "test-port"),
-													Weight:    pointer.To(uint(100)),
+												BackendRefs: &[]api.BackendRef{{
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("backend", "", "test-port"), uint(100)),
 												}},
 											},
 										}},
@@ -1026,7 +1020,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			dpBuilder := builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")
 			mc := meshContextWithResources(builders.Mesh(), dpBuilder.Build(), &meshSvc, &meshSvc2)
 
 			outboundTargets := xds_builders.EndpointMap().
@@ -1034,12 +1028,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend")).
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend")).
 				AddEndpoint("default_backend-second___msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.10").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend-second", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend-second"))
+					WithTags("kuma.io/display-name", "backend-second", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend-second"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
 					WithMeshContext(mc).
@@ -1071,8 +1065,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 													},
 												}},
 												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														Kind: common_api.MeshService,
+													BackendRefs: &[]api.BackendRef{{
+														Kind: common_api.BackendRefKindMeshService,
 														Labels: &map[string]string{
 															"app":     "backend",
 															"version": "first",
@@ -1090,8 +1084,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 													},
 												}},
 												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														Kind: common_api.MeshService,
+													BackendRefs: &[]api.BackendRef{{
+														Kind: common_api.BackendRefKindMeshService,
 														Labels: &map[string]string{
 															"app":     "backend",
 															"version": "second",
@@ -1180,7 +1174,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			dpBuilder := builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")
 			mc := meshContextWithResources(builders.Mesh(), dpBuilder.Build(), &meshSvc, &meshMZSvc)
 
 			outboundTargets := xds_builders.EndpointMap().
@@ -1188,12 +1182,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend")).
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend")).
 				AddEndpoint("default_backend___mzsvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.10").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().
 					WithMeshContext(mc).
@@ -1225,8 +1219,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 													},
 												}},
 												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														Kind: common_api.MeshService,
+													BackendRefs: &[]api.BackendRef{{
+														Kind: common_api.BackendRefKindMeshService,
 														Labels: &map[string]string{
 															"app": "backend",
 														},
@@ -1243,8 +1237,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 													},
 												}},
 												Default: api.RuleConf{
-													BackendRefs: &[]common_api.BackendRef{{
-														Kind: common_api.MeshMultiZoneService,
+													BackendRefs: &[]api.BackendRef{{
+														Kind: common_api.BackendRefKindMeshMultiZoneService,
 														Labels: &map[string]string{
 															"app": "backend",
 														},
@@ -1286,12 +1280,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithTarget("192.168.0.4").
 						WithPort(8084).
 						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
+						WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
 					xds_builders.Endpoint().
 						WithTarget("192.168.0.5").
 						WithPort(8084).
 						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+						WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
@@ -1300,7 +1294,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Address:  "10.0.0.1",
@@ -1323,9 +1317,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
-													Weight:    pointer.To(uint(100)),
+												BackendRefs: &[]api.BackendRef{{
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("backend", "", "80"), uint(100)),
 												}},
 											},
 										}, {
@@ -1338,9 +1331,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 												Method: pointer.To(api.Method("GET")),
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
-													Weight:    pointer.To(uint(100)),
+												BackendRefs: &[]api.BackendRef{{
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("backend", "", "80"), uint(100)),
 												}},
 											},
 										}},
@@ -1390,17 +1382,17 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithTarget("192.168.0.4").
 						WithPort(8084).
 						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
+						WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
 					xds_builders.Endpoint().
 						WithTarget("192.168.0.5").
 						WithPort(8084).
 						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us")).
+						WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us")).
 				AddEndpoint("default_other-tcp___msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.10").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "other-tcp", mesh_proto.ProtocolTag, string(core_meta.ProtocolTCP), "app", "other-tcp"))
+					WithTags("kuma.io/display-name", "other-tcp", mesh_proto.ProtocolTag, string(core_meta.ProtocolTCP), "app", "other-tcp"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
@@ -1409,7 +1401,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Address:  "10.0.0.1",
@@ -1437,12 +1429,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
-													Weight:    pointer.To(uint(90)),
+												BackendRefs: &[]api.BackendRef{{
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("backend", "", "80"), uint(90)),
 												}, {
-													TargetRef: builders.TargetRefMeshService("other-tcp", "", "80"),
-													Weight:    pointer.To(uint(10)),
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("other-tcp", "", "80"), uint(10)),
 												}},
 											},
 										}},
@@ -1480,12 +1470,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithTarget("192.168.0.4").
 						WithPort(8084).
 						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
+						WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
 					xds_builders.Endpoint().
 						WithTarget("192.168.0.5").
 						WithPort(8084).
 						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+						WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
@@ -1494,7 +1484,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Address:  "10.0.0.1",
@@ -1517,12 +1507,84 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
-													Weight:    pointer.To(uint(0)),
+												BackendRefs: &[]api.BackendRef{{
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("backend", "", "80"), uint(0)),
 												}, {
-													TargetRef: builders.TargetRefMeshService("alias-backend", "", "80"),
-													Weight:    pointer.To(uint(100)),
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("alias-backend", "", "80"), uint(100)),
+												}},
+											},
+										}},
+									}),
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("zero-weight-backend", func() outboundsTestCase {
+			meshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoints("default_backend___msvc_80",
+					xds_builders.Endpoint().
+						WithTarget("192.168.0.4").
+						WithPort(8084).
+						WithWeight(1).
+						WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
+					xds_builders.Endpoint().
+						WithTarget("192.168.0.5").
+						WithPort(8084).
+						WithWeight(1).
+						WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					WithResources(resources).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(builders.Dataplane().
+						WithName("web-01").
+						WithAddress("192.168.0.2").
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
+					WithOutbounds(xds_types.Outbounds{
+						{
+							Address:  "10.0.0.1",
+							Port:     80,
+							Resource: kri.WithSectionName(kri.From(&meshSvc), "80"),
+						},
+					}).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+									backendMeshServiceIdentifier: test_policies.NewOutboundRule(nil, api.PolicyDefault{
+										Rules: []api.Rule{{
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.PathPrefix,
+													Value: "/v1",
+												},
+											}},
+											Default: api.RuleConf{
+												BackendRefs: &[]api.BackendRef{{
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("backend", "", "80"), uint(0)),
 												}},
 											},
 										}},
@@ -1560,12 +1622,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithTarget("192.168.0.4").
 						WithPort(8084).
 						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
+						WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "eu"),
 					xds_builders.Endpoint().
 						WithTarget("192.168.0.5").
 						WithPort(8084).
 						WithWeight(1).
-						WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+						WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
@@ -1574,7 +1636,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Address:  "10.0.0.1",
@@ -1597,12 +1659,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
-													Weight:    pointer.To(uint(90)),
+												BackendRefs: &[]api.BackendRef{{
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("backend", "", "80"), uint(90)),
 												}, {
-													TargetRef: builders.TargetRefMeshService("backend", "", "9999"),
-													Weight:    pointer.To(uint(10)),
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("backend", "", "9999"), uint(10)),
 												}},
 											},
 										}},
@@ -1637,7 +1697,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
@@ -1646,7 +1706,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Address:  "10.0.0.1",
@@ -1697,6 +1757,109 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("backend-request-header-modifiers", func() outboundsTestCase {
+			meshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
+				},
+			}
+			canarySvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "canary", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8085)),
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.2"}},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc, &canarySvc},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("default_backend___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us")).
+				AddEndpoint("default_canary___msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.5").
+					WithPort(8085).
+					WithWeight(1).
+					WithTags("kuma.io/display-name", "canary", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					WithResources(resources).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(builders.Dataplane().
+						WithName("web-01").
+						WithAddress("192.168.0.2").
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
+					WithOutbounds(xds_types.Outbounds{
+						{
+							Address:  "10.0.0.1",
+							Port:     80,
+							Resource: kri.WithSectionName(kri.From(&meshSvc), "80"),
+						},
+					}).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithMetadata(unifiedNaming()).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
+								ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+									backendMeshServiceIdentifier: test_policies.NewOutboundRule(nil, api.PolicyDefault{
+										Rules: []api.Rule{{
+											Matches: []api.Match{{
+												Path: &api.PathMatch{
+													Type:  api.PathPrefix,
+													Value: "/backend",
+												},
+											}},
+											Default: api.RuleConf{
+												BackendRefs: &[]api.BackendRef{{
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("backend", "", "80"), uint(90)),
+													Filters: &[]api.Filter{{
+														Type: api.RequestHeaderModifierType,
+														RequestHeaderModifier: &api.HeaderModifier{
+															Add: &[]api.HeaderKeyValue{{
+																Name:  "x-backend-add",
+																Value: "backend",
+															}},
+															Set: &[]api.HeaderKeyValue{{
+																Name:  "x-backend-set",
+																Value: "primary",
+															}},
+															Remove: &[]string{"x-backend-remove"},
+														},
+													}},
+												}, {
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("canary", "", "80"), uint(10)),
+												}},
+											},
+										}},
+									}),
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
 		Entry("response-header-modifiers", func() outboundsTestCase {
 			meshSvc := meshservice_api.MeshServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
@@ -1721,7 +1884,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
@@ -1730,7 +1893,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Address:  "10.0.0.1",
@@ -1802,7 +1965,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
@@ -1811,7 +1974,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Address:  "10.0.0.1",
@@ -1873,7 +2036,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
@@ -1882,7 +2045,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Address:  "10.0.0.1",
@@ -1946,7 +2109,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"))
 
 			matches := []api.Match{{
 				Headers: &[]common_api.HeaderMatch{{
@@ -1978,7 +2141,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Address:  "10.0.0.1",
@@ -2027,7 +2190,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolGRPC), "region", "us"))
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolGRPC), "region", "us"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					WithResources(resources).
@@ -2036,7 +2199,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithDataplane(builders.Dataplane().
 						WithName("web-01").
 						WithAddress("192.168.0.2").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")).
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")).
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Address:  "10.0.0.1",
@@ -2059,9 +2222,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 												},
 											}},
 											Default: api.RuleConf{
-												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefMeshService("backend", "", "80"),
-													Weight:    pointer.To(uint(100)),
+												BackendRefs: &[]api.BackendRef{{
+													BackendRef: builders.BackendRefFrom(builders.TargetRefMeshService("backend", "", "80"), uint(100)),
 												}},
 											},
 										}},
@@ -2200,7 +2362,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			dpBuilder := builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")
 			mc := meshContextWithResources(builders.Mesh(), dpBuilder.Build(), &meshSvc, &mirrorSvc, &mirrorMZSvc, &mirrorMESvc)
 
 			outboundTargets := xds_builders.EndpointMap().
@@ -2208,17 +2370,17 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
+					WithTags("kuma.io/display-name", "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
 				AddEndpoint("default_payments-mirror___msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.6").
 					WithPort(8086).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "payments-mirror", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
+					WithTags("kuma.io/display-name", "payments-mirror", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
 				AddEndpoint("default_payments-mz-mirror___mzsvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.7").
 					WithPort(8086).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "payments-mirror", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
+					WithTags("kuma.io/display-name", "payments-mirror", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))).
 				AddEndpoint("default_payments-mes-mirror___extsvc_9090", xds_builders.Endpoint().
 					WithTarget("payments.example.com").
 					WithPort(10000).
@@ -2269,16 +2431,14 @@ var _ = Describe("MeshHTTPRoute", func() {
 														RequestMirror: &api.RequestMirror{
 															Percentage: pointer.To(intstr.FromString("99.9")),
 															BackendRef: common_api.BackendRef{
-																TargetRef: common_api.TargetRef{
-																	Kind:   common_api.MeshService,
-																	Labels: &map[string]string{"app": "payments-mirror"},
-																},
-																Port: pointer.To(uint32(80)),
+																Kind:   common_api.BackendRefKindMeshService,
+																Labels: &map[string]string{"app": "payments-mirror"},
+																Port:   pointer.To(uint32(80)),
 															},
 														},
 													}},
-													BackendRefs: &[]common_api.BackendRef{{
-														Kind:   common_api.MeshService,
+													BackendRefs: &[]api.BackendRef{{
+														Kind:   common_api.BackendRefKindMeshService,
 														Labels: &map[string]string{"app": "backend"},
 														Weight: pointer.To(uint(100)),
 														Port:   pointer.To(uint32(80)),
@@ -2297,16 +2457,14 @@ var _ = Describe("MeshHTTPRoute", func() {
 														Type: api.RequestMirrorType,
 														RequestMirror: &api.RequestMirror{
 															BackendRef: common_api.BackendRef{
-																TargetRef: common_api.TargetRef{
-																	Kind:   common_api.MeshMultiZoneService,
-																	Labels: &map[string]string{"app": "payments-mz-mirror"},
-																},
-																Port: pointer.To(uint32(80)),
+																Kind:   common_api.BackendRefKindMeshMultiZoneService,
+																Labels: &map[string]string{"app": "payments-mz-mirror"},
+																Port:   pointer.To(uint32(80)),
 															},
 														},
 													}},
-													BackendRefs: &[]common_api.BackendRef{{
-														Kind:   common_api.MeshService,
+													BackendRefs: &[]api.BackendRef{{
+														Kind:   common_api.BackendRefKindMeshService,
 														Labels: &map[string]string{"app": "backend"},
 														Weight: pointer.To(uint(100)),
 														Port:   pointer.To(uint32(80)),
@@ -2325,16 +2483,14 @@ var _ = Describe("MeshHTTPRoute", func() {
 														Type: api.RequestMirrorType,
 														RequestMirror: &api.RequestMirror{
 															BackendRef: common_api.BackendRef{
-																TargetRef: common_api.TargetRef{
-																	Kind:   common_api.MeshExternalService,
-																	Labels: &map[string]string{"app": "payments-mes-mirror"},
-																},
-																Port: pointer.To(uint32(9090)),
+																Kind:   common_api.BackendRefKindMeshExternalService,
+																Labels: &map[string]string{"app": "payments-mes-mirror"},
+																Port:   pointer.To(uint32(9090)),
 															},
 														},
 													}},
-													BackendRefs: &[]common_api.BackendRef{{
-														Kind:   common_api.MeshService,
+													BackendRefs: &[]api.BackendRef{{
+														Kind:   common_api.BackendRefKindMeshService,
 														Labels: &map[string]string{"app": "backend"},
 														Weight: pointer.To(uint(100)),
 														Port:   pointer.To(uint32(80)),
@@ -2355,16 +2511,14 @@ var _ = Describe("MeshHTTPRoute", func() {
 														Type: api.RequestMirrorType,
 														RequestMirror: &api.RequestMirror{
 															BackendRef: common_api.BackendRef{
-																TargetRef: common_api.TargetRef{
-																	Kind:   common_api.MeshService,
-																	Labels: &map[string]string{"app": "not-existing-mirror"},
-																},
-																Port: pointer.To(uint32(80)),
+																Kind:   common_api.BackendRefKindMeshService,
+																Labels: &map[string]string{"app": "not-existing-mirror"},
+																Port:   pointer.To(uint32(80)),
 															},
 														},
 													}},
-													BackendRefs: &[]common_api.BackendRef{{
-														Kind:   common_api.MeshService,
+													BackendRefs: &[]api.BackendRef{{
+														Kind:   common_api.BackendRefKindMeshService,
 														Labels: &map[string]string{"app": "backend"},
 														Weight: pointer.To(uint(100)),
 														Port:   pointer.To(uint32(80)),
@@ -2464,7 +2618,7 @@ func dppForMeshExternalService(mes *meshexternalservice_api.MeshExternalServiceR
 	dp := builders.Dataplane().
 		WithName("web-01").
 		WithAddress("192.168.0.2").
-		WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web")
+		WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web")
 	proxy := xds_builders.Proxy().
 		WithDataplane(dp).
 		WithOutbounds(xds_types.Outbounds{

@@ -1,0 +1,130 @@
+components:
+  schemas:
+    MeshInsight:
+      description: MeshInsight defines the observed state of a Mesh.
+      properties:
+        dataplanes:
+          properties:
+            offline:
+              type: integer
+            online:
+              type: integer
+            partiallyDegraded:
+              type: integer
+            total:
+              type: integer
+          type: object
+        dataplanesByType:
+          properties:
+            gateway:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            gatewayDelegated:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            standard:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+          type: object
+        dpVersions:
+          properties:
+            envoy:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplane stats grouped by Envoy version
+              type: object
+            kumaDp:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplane stats grouped by KumaDP version
+              type: object
+          type: object
+        mTLS:
+          description: mTLS statistics
+          properties:
+            issuedBackends:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplanes grouped by issued backends.
+              type: object
+            supportedBackends:
+              additionalProperties:
+                description: DataplaneStat defines statistic specifically for Dataplane
+                properties:
+                  offline:
+                    type: integer
+                  online:
+                    type: integer
+                  partiallyDegraded:
+                    type: integer
+                  total:
+                    type: integer
+                type: object
+              description: Dataplanes grouped by supported backends.
+              type: object
+          type: object
+        resources:
+          additionalProperties:
+            properties:
+              total:
+                type: integer
+            type: object
+          type: object
+      type: object
+info:
+  x-ref-schema-name: MeshInsight
+openapi: 3.1.0

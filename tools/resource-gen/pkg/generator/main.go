@@ -22,12 +22,15 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	commontemplate "github.com/kumahq/kuma/v3/tools/common/template"
 	"github.com/kumahq/kuma/v3/tools/common/types"
 	. "github.com/kumahq/kuma/v3/tools/resource-gen/genutils"
@@ -453,9 +456,14 @@ func Run() {
 	}
 }
 
+var protoEnumType = reflect.TypeFor[protoreflect.Enum]()
+
 var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeFor[v1alpha1.DataplaneOverview](),
+	reflect.TypeFor[v1alpha1.MeshInsight](),
+	reflect.TypeFor[v1alpha1.MeshOverview](),
 	reflect.TypeFor[system_proto.Zone](),
+	reflect.TypeFor[system_proto.ZoneOverview](),
 }
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
@@ -470,9 +478,17 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		}
 		schemaMap := jsonschema.NewProperties()
 		schemaMap.Set("type", &jsonschema.Schema{Type: "string"})
-		schemaMap.Set("name", &jsonschema.Schema{Type: "string"})
+		schemaMap.Set("name", &jsonschema.Schema{
+			Type:      "string",
+			Pattern:   core_model.NamePattern,
+			MaxLength: pointer.To[uint64](core_model.MaxNameLength),
+		})
 		if !r.Global {
-			schemaMap.Set("mesh", &jsonschema.Schema{Type: "string"})
+			schemaMap.Set("mesh", &jsonschema.Schema{
+				Type:      "string",
+				Pattern:   core_model.MeshNamePattern,
+				MaxLength: pointer.To[uint64](core_model.MaxNameLength),
+			})
 		}
 		schemaMap.Set("labels", &jsonschema.Schema{Type: "object", AdditionalProperties: &jsonschema.Schema{Type: "string"}})
 		// kri is only emitted at runtime for resources that have a ShortName
@@ -544,6 +560,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 				"ShortName": r.ShortName,
 				"Scope":     scope,
 				"Path":      r.WsPath,
+				"ReadOnly":  r.WsReadOnly,
 			},
 		); err != nil {
 			return err
@@ -750,6 +767,9 @@ func (r *reflector) mapper(t reflect.Type) (*jsonschema.Schema, error) {
 	if hasOneofField(t) {
 		return r.handleOneOf(t)
 	}
+	if s := enumMapper(t); s != nil {
+		return s, nil
+	}
 	return valueMapper(t), nil
 }
 
@@ -857,9 +877,29 @@ func valueMapper(r reflect.Type) *jsonschema.Schema {
 			Type:   "string",
 			Format: "byte",
 		}
+	case reflect.TypeFor[timestamppb.Timestamp]():
+		return &jsonschema.Schema{
+			Type:   "string",
+			Format: "date-time",
+		}
 	default:
 		return nil
 	}
+}
+
+// enumMapper renders protobuf enums as a string enum. Without it the reflector
+// falls back to `oneOf: [string, integer]` because jsonpb accepts both forms,
+// which makes generated clients type the field as `string | number`.
+func enumMapper(r reflect.Type) *jsonschema.Schema {
+	if !r.Implements(protoEnumType) {
+		return nil
+	}
+	values := reflect.Zero(r).Interface().(protoreflect.Enum).Descriptor().Values()
+	schema := &jsonschema.Schema{Type: "string"}
+	for i := range values.Len() {
+		schema.Enum = append(schema.Enum, string(values.Get(i).Name()))
+	}
+	return schema
 }
 
 func hasOneofField(r reflect.Type) bool {

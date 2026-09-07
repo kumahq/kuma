@@ -193,8 +193,11 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 	if proxyPortAnnoExists {
 		appProbeProxyPort = proxyPortAnno
 	}
-	_, gwExists := metadata.Annotations(podAnnotations).GetString(metadata.KumaGatewayAnnotation)
-	if gwExists {
+	gwEnabled, _, err := metadata.Annotations(podAnnotations).GetEnabled(metadata.KumaGatewayAnnotation)
+	if err != nil {
+		return err
+	}
+	if gwEnabled {
 		if proxyPortAnnoExists && proxyPortAnno > 0 {
 			return errors.New("application probe proxies probes can't be enabled in gateway mode")
 		}

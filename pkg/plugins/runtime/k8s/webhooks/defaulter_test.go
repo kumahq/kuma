@@ -15,19 +15,12 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	k8s_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("Defaulter", func() {
-	var converter k8s_common.Converter
-
-	BeforeEach(func() {
-		converter = k8s_resources.NewSimpleConverter()
-	})
-
 	type testCase struct {
 		inputObject string
 		expected    string
@@ -61,7 +54,9 @@ var _ = Describe("Defaulter", func() {
 
 	DescribeTable("should apply defaults on a target object",
 		func(given testCase) {
-			// given
+			// given - in production both the converter and the checker read the system
+			// namespace from the same config, so they always agree
+			converter := k8s_resources.NewSimpleConverter(given.checker.SystemNamespace)
 			handler := DefaultingWebhookFor(scheme, converter, given.checker)
 
 			req := kube_admission.Request{

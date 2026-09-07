@@ -1,0 +1,15 @@
+{
+ "type": "MeshOverview",
+ "name": "m1",
+ "creationTime": "0001-01-01T00:00:00Z",
+ "modificationTime": "0001-01-01T00:00:00Z",
+ "kri": "kri_m____m1_",
+ "mesh": {},
+ "meshInsight": {
+  "dataplanes": {
+   "total": 2,
+   "online": 1,
+   "offline": 1
+  }
+ }
+}

@@ -112,7 +112,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 					NodeLabelsToCopy: given.nodeLabelsToCopy,
 				},
 				Zone:              "zone-1",
-				ResourceConverter: k8s.NewSimpleConverter(),
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
 				WorkloadLabels:    given.workloadLabels,
 			}
 
@@ -206,18 +206,18 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "19.services-for-pod.yaml",
 			dataplane:      "19.dataplane.yaml",
 		}),
-		Entry("20. Pod with gateway annotation and 1 service identified by deployment", testCase{
+		Entry(`20. Pod with gateway annotation "enabled"`, testCase{
 			pod:              "20.pod.yaml",
 			servicesForPod:   "20.services-for-pod.yaml",
 			otherReplicaSets: "20.replicasets-for-pod.yaml",
 			dataplane:        "20.dataplane.yaml",
 		}),
-		Entry("21. Pod with gateway annotation and 1 service with no replicaset", testCase{
+		Entry(`21. Pod with gateway annotation "true"`, testCase{
 			pod:            "21.pod.yaml",
 			servicesForPod: "21.services-for-pod.yaml",
 			dataplane:      "21.dataplane.yaml",
 		}),
-		Entry("22. Pod with gateway annotation and 1 service with replicaset but no deployment", testCase{
+		Entry(`22. Pod with gateway annotation "disabled" is a regular Dataplane`, testCase{
 			pod:              "22.pod.yaml",
 			servicesForPod:   "22.services-for-pod.yaml",
 			otherReplicaSets: "22.replicasets-for-pod.yaml",
@@ -367,6 +367,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "45.services-for-pod.yaml",
 			dataplane:      "45.dataplane.yaml",
 		}),
+		Entry("46. Pod with an invalid gateway annotation value", testCase{
+			pod:            "46.pod.yaml",
+			servicesForPod: "46.services-for-pod.yaml",
+			expectedErr:    `annotation "kuma.io/gateway" has wrong value "bogus"`,
+		}),
 	)
 })
 
@@ -433,11 +438,11 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 			},
 			expected: "tcp",
 		}),
-		Entry("Pod with `service` label", testCase{
+		Entry("Pod with `display-name` label", testCase{
 			podLabels: map[string]string{
-				"kuma.io/service": "something",
-				"app":             "example",
-				"version":         "0.1",
+				"kuma.io/display-name": "something",
+				"app":                  "example",
+				"version":              "0.1",
 			},
 			expected: "tcp",
 		}),
@@ -544,18 +549,6 @@ var _ = Describe("InboundConverter.InboundInterfacesFor(..)", func() {
 		Expect(inbounds).To(HaveLen(1))
 		Expect(inbounds[0].State).To(Equal(mesh_proto.Dataplane_Networking_Inbound_Ready))
 		Expect(inbounds[0].Health).To(Equal(&mesh_proto.Dataplane_Networking_Inbound_Health{Ready: true}))
-	})
-})
-
-var _ = Describe("PodConverter.GatewayByServiceFor(..)", func() {
-	It("should return an empty delegated gateway tag set", func() {
-		gateway, err := (&PodConverter{}).GatewayByServiceFor(context.Background(), &kube_core.Pod{}, nil)
-
-		Expect(err).ToNot(HaveOccurred())
-		Expect(gateway).To(Equal(&mesh_proto.Dataplane_Networking_Gateway{
-			Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-			Tags: map[string]string{},
-		}))
 	})
 })
 

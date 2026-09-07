@@ -61,10 +61,6 @@ func GatherListeners(rs *xds.ResourceSet) Listeners {
 			}
 		case generator_meta.OriginTransparent:
 			switch listener.Name {
-			case generator_meta.TransparentOutboundNameIPv4:
-				listeners.Ipv4Passthrough = listener
-			case generator_meta.TransparentOutboundNameIPv6:
-				listeners.Ipv6Passthrough = listener
 			case naming.ContextualTransparentProxyName("outbound", 4):
 				listeners.Ipv4Passthrough = listener
 			case naming.ContextualTransparentProxyName("outbound", 6):

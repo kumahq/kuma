@@ -1,16 +1,18 @@
 package filters
 
 import (
-	"reflect"
+	"fmt"
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 )
 
 type FilterOp string
@@ -18,6 +20,31 @@ type FilterOp string
 const (
 	FilterOpEq FilterOp = "eq"
 )
+
+// StatusFilterParam filters overviews by the status computed from their insight.
+// It is handled by the endpoint rather than by a store filter because the status
+// is not a property of the resource itself.
+const StatusFilterParam = "filter[status]"
+
+var statuses = []mesh.Status{mesh.Online, mesh.Offline, mesh.PartiallyDegraded}
+
+// Status returns the requested status, or an empty status when the filter is absent.
+func Status(request *restful.Request) (mesh.Status, error) {
+	value := request.QueryParameter(StatusFilterParam)
+	if value == "" {
+		return "", nil
+	}
+	for _, status := range statuses {
+		if strings.EqualFold(value, status.String()) {
+			return status, nil
+		}
+	}
+	verr := &validators.ValidationError{}
+	verr.AddViolationAt(
+		validators.RootedAt(request.SelectedRoutePath()).Field(StatusFilterParam),
+		fmt.Sprintf("must be one of %s", strings.Join(util_slices.Map(statuses, mesh.Status.String), ", ")))
+	return "", verr
+}
 
 type filterEntry struct {
 	Op    FilterOp
@@ -35,23 +62,47 @@ func labelFilter(request *restful.Request) (store.ListFilterFunc, error) {
 		if !strings.HasPrefix(k, "filter[") {
 			continue
 		}
+		if k == StatusFilterParam {
+			continue
+		}
 		if !strings.HasPrefix(k, "filter[labels.") {
 			verr.AddViolationAt(
-				validators.RootedAt(request.SelectedRoutePath()).Field(k), "filters are only supported on labels")
+				validators.RootedAt(request.SelectedRoutePath()).Field(k), "filters are only supported on labels and status")
 			continue
 		}
 		closingBracket := strings.Index(k, "]")
-		key := k[len("filter[labels."):closingBracket]
-		if closingBracket != len(k)-1 {
+		if closingBracket == -1 || closingBracket != len(k)-1 {
 			verr.AddViolationAt(
 				validators.RootedAt(request.SelectedRoutePath()).Field(k), "advanced filters are not supported")
+			continue
+		}
+		key := k[len("filter[labels."):closingBracket]
+		if key == "" {
+			verr.AddViolationAt(
+				validators.RootedAt(request.SelectedRoutePath()).Field(k), "label name cannot be empty")
+			continue
+		}
+		if messages := validation.IsQualifiedName(key); len(messages) > 0 {
+			for _, message := range messages {
+				verr.AddViolationAt(validators.RootedAt(request.SelectedRoutePath()).Field(k), message)
+			}
+			continue
+		}
+		if len(v) > 1 {
+			verr.AddViolationAt(
+				validators.RootedAt(request.SelectedRoutePath()).Field(k), "multiple filter values are not supported")
+			continue
+		}
+		if len(v) == 0 || v[0] == "" {
+			verr.AddViolationAt(
+				validators.RootedAt(request.SelectedRoutePath()).Field(k), "filter value cannot be empty")
 			continue
 		}
 		op := FilterOpEq
 		filters = append(filters, filterEntry{
 			Op:    op,
 			Key:   key,
-			Value: v[len(v)-1],
+			Value: v[0],
 		})
 	}
 	if verr.HasViolations() {
@@ -64,11 +115,6 @@ func labelFilter(request *restful.Request) (store.ListFilterFunc, error) {
 		labels := rs.GetMeta().GetLabels()
 		for _, filter := range filters {
 			v, ok := labels[filter.Key]
-			if filter.Op == FilterOpEq {
-				if !ok || v != filter.Value {
-					return false
-				}
-			}
 			if !ok || v != filter.Value {
 				return false
 			}
@@ -102,11 +148,11 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 				if !ok { // Sometimes this is going to return insights for example which will not match
 					return true
 				}
-				if !gatewayFilter(dataplane.Spec.GetNetworking().GetGateway()) {
+				if !gatewayFilter(dataplane.IsDelegatedGateway()) {
 					return false
 				}
 
-				if !dataplane.Spec.MatchTagsFuzzy(tags) && !mesh_proto.TagSelector(tags).MatchesFuzzy(dataplane.GetMeta().GetLabels()) {
+				if !mesh_proto.TagSelector(tags).MatchesFuzzy(dataplane.GetMeta().GetLabels()) {
 					return false
 				}
 
@@ -118,7 +164,7 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 	}
 }
 
-type DpFilter func(*mesh_proto.Dataplane_Networking_Gateway) bool
+type DpFilter func(isGateway bool) bool
 
 func gatewayModeFilterFromParameter(request *restful.Request) (DpFilter, error) {
 	mode := strings.ToLower(request.QueryParameter("gateway"))
@@ -130,26 +176,17 @@ func gatewayModeFilterFromParameter(request *restful.Request) (DpFilter, error) 
 		return nil, &verr
 	}
 
-	isnil := func(a any) bool {
-		return a == nil || reflect.ValueOf(a).IsNil()
-	}
 	switch mode {
 	case "true":
-		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return !isnil(a)
-		}, nil
+		return func(isGateway bool) bool { return isGateway }, nil
 	case "false":
-		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return isnil(a)
-		}, nil
+		return func(isGateway bool) bool { return !isGateway }, nil
 	case "delegated":
-		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return !isnil(a) && a.Type == mesh_proto.Dataplane_Networking_Gateway_DELEGATED
-		}, nil
+		// Delegated is the only kind of gateway left, so this matches the
+		// same proxies as `true`.
+		return func(isGateway bool) bool { return isGateway }, nil
 	default:
-		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return true
-		}, nil
+		return func(bool) bool { return true }, nil
 	}
 }
 

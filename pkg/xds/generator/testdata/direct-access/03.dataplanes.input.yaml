@@ -7,12 +7,12 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: web
+        kuma.io/display-name: web
   outbound:
     - address: 192.168.0.4
       port: 1234
       tags:
-        kuma.io/service: redis
+        kuma.io/display-name: redis
   transparentProxying:
     redirectPort: 15001
     directAccessServices: ["*"]
@@ -25,10 +25,10 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: backend
+        kuma.io/display-name: backend
     - port: 1235
       tags:
-        kuma.io/service: backend-api
+        kuma.io/display-name: backend-api
 ---
 type: Dataplane
 name: backend-2
@@ -38,7 +38,7 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: backend
+        kuma.io/display-name: backend
 ---
 type: Dataplane
 name: redis-1
@@ -48,4 +48,4 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: redis
+        kuma.io/display-name: redis

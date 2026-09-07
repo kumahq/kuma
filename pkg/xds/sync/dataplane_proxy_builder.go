@@ -162,7 +162,7 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 		)
 		// convert proto BackendRef to common_api.BackendRef
 		backendRef := common_api.BackendRef{
-			Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
+			Kind:   common_api.BackendRefKind(o.BackendRef.Kind),
 			Labels: pointer.To(labels),
 			Port:   pointer.To(o.BackendRef.Port),
 		}

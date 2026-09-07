@@ -7,8 +7,12 @@ import (
 )
 
 func PaginationFooter(list model.ResourceList) string {
-	if list.GetPagination().NextOffset == "" {
+	return PaginationFooterForOffset(list.GetPagination().NextOffset)
+}
+
+func PaginationFooterForOffset(offset string) string {
+	if offset == "" {
 		return ""
 	}
-	return fmt.Sprintf("Rerun command with --offset=%s argument to retrieve more resources", list.GetPagination().NextOffset)
+	return fmt.Sprintf("Rerun command with --offset=%s argument to retrieve more resources", offset)
 }

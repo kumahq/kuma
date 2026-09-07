@@ -8,9 +8,9 @@
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
    "labels": {
-    "kuma.io/service": "my-svc"
+    "kuma.io/display-name": "my-svc"
    },
-   "kri": "kri_dp_default___dp-1_",
+   "kri": "kri_dp_default___my-svc_",
    "networking": {
     "address": "10.1.2.1",
     "inbound": [
@@ -27,9 +27,9 @@
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
    "labels": {
-    "kuma.io/service": "my-svc"
+    "kuma.io/display-name": "my-svc"
    },
-   "kri": "kri_dp_default___dp-2_",
+   "kri": "kri_dp_default___my-svc_",
    "networking": {
     "address": "10.1.2.2",
     "inbound": [

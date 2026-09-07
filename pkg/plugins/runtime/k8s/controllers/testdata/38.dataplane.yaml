@@ -4,6 +4,7 @@ metadata:
     app: zone-proxy-notready
     k8s.kuma.io/namespace: demo
     kuma.io/display-name: zone-proxy-notready
+    kuma.io/listener-zoneingress: enabled
     kuma.io/mesh: default
   name: zone-proxy-notready
 spec:

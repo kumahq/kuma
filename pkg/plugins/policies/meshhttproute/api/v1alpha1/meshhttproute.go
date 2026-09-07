@@ -100,8 +100,18 @@ type QueryParamsMatch struct {
 }
 
 type RuleConf struct {
-	Filters     *[]Filter                `json:"filters,omitempty"`
-	BackendRefs *[]common_api.BackendRef `json:"backendRefs,omitempty"`
+	Filters     *[]Filter     `json:"filters,omitempty"`
+	BackendRefs *[]BackendRef `json:"backendRefs,omitempty"`
+}
+
+type BackendRef struct {
+	// +kuma:nolint // keep parity with common_api.BackendRef
+	common_api.BackendRef `json:",inline"`
+	Filters               *[]Filter `json:"filters,omitempty"`
+}
+
+func (b BackendRef) CommonBackendRef() common_api.BackendRef {
+	return b.BackendRef
 }
 
 // +kubebuilder:validation:Enum=RequestHeaderModifier;ResponseHeaderModifier;RequestRedirect;URLRewrite;RequestMirror

@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -30,6 +31,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
+	k8s_names "github.com/kumahq/kuma/v3/pkg/util/k8s"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
@@ -108,10 +110,10 @@ func backendObjectReferencesOfRoute(route *gatewayapi.HTTPRoute) []gatewayapi.Ba
 	return refs
 }
 
-func backendObjectReferenceMatchesGrant(grant *gatewayapi.ReferenceGrant, routeNamespace string, backendRef backendObjectReferenceDetails) bool {
+func backendObjectReferenceMatchesGrant(grant *gatewayapi.ReferenceGrant, routeKind, routeNamespace string, backendRef backendObjectReferenceDetails) bool {
 	fromMatches := slices.ContainsFunc(grant.Spec.From, func(from gatewayapi.ReferenceGrantFrom) bool {
 		return string(from.Group) == gatewayapi.GroupVersion.Group &&
-			string(from.Kind) == "HTTPRoute" &&
+			string(from.Kind) == routeKind &&
 			string(from.Namespace) == routeNamespace
 	})
 	if !fromMatches {
@@ -136,7 +138,8 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 			// We don't know the mesh, but we don't need it to delete our
 			// object.
 			if err := common.ReconcileLabelledObject(
-				ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, core_model.NoMesh, &meshhttproute_api.MeshHTTPRoute{}, nil,
+				ctx, r.Log, r.TypeRegistry, r.Client, sourceRouteKindHTTPRoute, req.NamespacedName, core_model.NoMesh, &meshhttproute_api.MeshHTTPRoute{}, nil,
+				common.LegacyOwnerLabelValue(req.NamespacedName),
 			); err != nil {
 				return kube_ctrl.Result{}, errors.Wrap(err, "could not delete owned MeshHTTPRoute.kuma.io")
 			}
@@ -160,9 +163,14 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	}
 
 	if err := common.ReconcileLabelledObject(
-		ctx, r.Log, r.TypeRegistry, r.Client, req.NamespacedName, mesh, &meshhttproute_api.MeshHTTPRoute{}, meshRouteSpecs,
+		ctx, r.Log, r.TypeRegistry, r.Client, sourceRouteKindHTTPRoute, req.NamespacedName, mesh, &meshhttproute_api.MeshHTTPRoute{}, meshRouteSpecs,
+		common.LegacyOwnerLabelValue(req.NamespacedName),
 	); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "could not reconcile owned MeshHTTPRoute.kuma.io")
+		reconcileErr := errors.Wrap(err, "could not reconcile owned MeshHTTPRoute.kuma.io")
+		if statusErr := r.updateStatus(ctx, httpRoute, generatedRouteWriteFailureConditions(conditions, reconcileErr)); statusErr != nil {
+			r.Log.Error(statusErr, "unable to update HTTPRoute status after MeshHTTPRoute reconcile failure", "name", httpRoute.Name, "namespace", httpRoute.Namespace)
+		}
+		return kube_ctrl.Result{}, reconcileErr
 	}
 
 	if err := r.updateStatus(ctx, httpRoute, conditions); err != nil {
@@ -173,6 +181,8 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 }
 
 type ParentConditions map[gatewayapi.ParentReference][]kube_meta.Condition
+
+const maxGeneratedMeshHTTPRouteNameLength = 253
 
 // gapiToKumaRoutes returns some number of GatewayRoutes that should be created
 // for this HTTPRoute along with any statuses to be set on the HTTPRoute.
@@ -253,13 +263,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				continue
 			}
 
-			routeSubName := fmt.Sprintf(
-				"%s-%s-%s.%s",
-				route.Name,
-				route.Namespace,
-				parent.GetName(),
-				parent.GetNamespace(),
-			)
+			routeSubName := generatedMeshHTTPRouteName(sourceRouteKindHTTPRoute, route.Namespace, route.Name, "Service", parent.GetNamespace(), parent.GetName())
 
 			meshRoute, ok := r.gapiServiceToMeshRoute(route.Namespace, rules, &parent, ref.Port, ref.SectionName)
 			if !ok {
@@ -312,13 +316,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				continue
 			}
 
-			routeSubName := fmt.Sprintf(
-				"%s-%s-meshservice-%s.%s",
-				route.Name,
-				route.Namespace,
-				parent.GetName(),
-				parent.GetNamespace(),
-			)
+			routeSubName := generatedMeshHTTPRouteName(sourceRouteKindHTTPRoute, route.Namespace, route.Name, "MeshService", parent.GetNamespace(), parent.GetName())
 
 			meshRoute, ok := r.gapiMeshServiceToMeshRoute(route.Namespace, rules, &parent, ref.Port, ref.SectionName)
 			if !ok {
@@ -383,6 +381,59 @@ func storeMeshHTTPRoute(routes map[string]common.OwnedObject, name string, names
 		}
 	}
 	existingRoute.To = pointer.To(merged)
+}
+
+func generatedMeshHTTPRouteName(routeKind, routeNamespace, routeName, parentKind, parentNamespace, parentName string) string {
+	normalizedParentKind := strings.ToLower(parentKind)
+	normalizedParentNamespace := strings.ToLower(parentNamespace)
+	normalizedParentName := strings.ToLower(parentName)
+	normalizedRouteKind := strings.ToLower(routeKind)
+
+	fullName := strings.Join([]string{
+		generatedMeshHTTPRouteNameSegment("rk", normalizedRouteKind),
+		generatedMeshHTTPRouteNameSegment("rns", routeNamespace),
+		generatedMeshHTTPRouteNameSegment("rn", routeName),
+		generatedMeshHTTPRouteNameSegment("pk", normalizedParentKind),
+		generatedMeshHTTPRouteNameSegment("pns", normalizedParentNamespace),
+		generatedMeshHTTPRouteNameSegment("pn", normalizedParentName),
+	}, "--")
+	if len(fullName) <= maxGeneratedMeshHTTPRouteNameLength {
+		return fullName
+	}
+
+	hasher := k8s_names.NewHasher()
+	hasher.Write([]byte(fullName))
+	hashSuffix := k8s_names.HashToString(hasher)
+	prefix := k8s_names.EnsureMaxLength(fullName, maxGeneratedMeshHTTPRouteNameLength-len(hashSuffix)-1)
+	prefix = strings.TrimRight(prefix, "-.")
+	if prefix == "" {
+		return hashSuffix
+	}
+	return fmt.Sprintf("%s-%s", prefix, hashSuffix)
+}
+
+func generatedMeshHTTPRouteNameSegment(label string, value string) string {
+	return fmt.Sprintf("%s-%d-%s", label, len(value), value)
+}
+
+func generatedRouteWriteFailureConditions(existing ParentConditions, reconcileErr error) ParentConditions {
+	if len(existing) == 0 {
+		return nil
+	}
+
+	failed := ParentConditions{}
+	for ref, existingConditions := range existing {
+		conditions := append([]kube_meta.Condition{}, existingConditions...)
+		conditions = append(conditions, kube_meta.Condition{
+			Type:    string(gatewayapi.RouteConditionAccepted),
+			Status:  kube_meta.ConditionFalse,
+			Reason:  string(gatewayapi.RouteReasonPending),
+			Message: fmt.Sprintf("Failed to write generated MeshHTTPRoute: %s", reconcileErr.Error()),
+		})
+		failed[ref] = prepareConditions(conditions)
+	}
+
+	return failed
 }
 
 // routesForService returns a function that calculates which HTTPRoutes might
@@ -472,7 +523,7 @@ func routesForReferenceGrant(l logr.Logger, client kube_client.Client) kube_hand
 				if !ok || details.Namespace != grant.Namespace || details.Namespace == route.Namespace {
 					continue
 				}
-				if backendObjectReferenceMatchesGrant(grant, route.Namespace, details) {
+				if backendObjectReferenceMatchesGrant(grant, sourceRouteKindHTTPRoute, route.Namespace, details) {
 					requests = append(requests, kube_reconcile.Request{
 						NamespacedName: kube_client.ObjectKeyFromObject(route),
 					})

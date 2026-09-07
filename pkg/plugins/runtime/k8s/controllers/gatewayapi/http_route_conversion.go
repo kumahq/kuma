@@ -204,7 +204,8 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 
 	var matches []v1alpha1.Match
 	var filters []v1alpha1.Filter
-	var backendRefs []common_api.BackendRef
+	var backendRefs []v1alpha1.BackendRef
+	unsupportedFilter := false
 
 	for _, gapiMatch := range rule.Matches {
 		match, ok := r.gapiToKumaMeshMatch(gapiMatch)
@@ -230,6 +231,11 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 
 		if len(filterConditions) == 0 {
 			filters = append(filters, filter)
+			continue
+		}
+
+		if hasAcceptedFalse(filterConditions) {
+			unsupportedFilter = true
 		}
 	}
 
@@ -240,14 +246,57 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshRule(
 		}
 
 		refCondition.AddIfFalseAndNotPresent(&conditions)
+
+		var backendFilters []v1alpha1.Filter
+		for _, gapiFilter := range gapiBackendRef.Filters {
+			if gapiFilter.Type != gatewayapi_v1.HTTPRouteFilterRequestHeaderModifier {
+				unsupportedFilter = true
+				addIfFalseAndNotPresent(&conditions, unsupportedBackendRefFilterCondition(route.Namespace, gapiBackendRef))
+				continue
+			}
+
+			filter, filterConditions, ok := r.gapiToKumaMeshFilter(ctx, route.Namespace, gapiFilter)
+			if !ok || filter.Type != v1alpha1.RequestHeaderModifierType {
+				unsupportedFilter = true
+				addIfFalseAndNotPresent(&conditions, unsupportedBackendRefFilterCondition(route.Namespace, gapiBackendRef))
+				continue
+			}
+
+			for _, condition := range filterConditions {
+				if kube_apimeta.FindStatusCondition(conditions, condition.Type) == nil {
+					kube_apimeta.SetStatusCondition(&conditions, condition)
+				}
+			}
+
+			if len(filterConditions) == 0 {
+				backendFilters = append(backendFilters, filter)
+				continue
+			}
+
+			if hasAcceptedFalse(filterConditions) {
+				unsupportedFilter = true
+			}
+		}
+
 		if refCondition.preventsBackendTarget() {
 			continue
 		}
 
-		backendRefs = append(backendRefs, common_api.BackendRef{
-			TargetRef: ref,
-			Weight:    pointer.To(uint(*gapiBackendRef.Weight)),
-		})
+		backendRef := v1alpha1.BackendRef{
+			Kind:        common_api.BackendRefKind(ref.Kind),
+			Labels:      ref.Labels,
+			SectionName: ref.SectionName,
+			Weight:      pointer.To(uint(*gapiBackendRef.Weight)),
+		}
+		if len(backendFilters) > 0 {
+			backendRef.Filters = &backendFilters
+		}
+		backendRefs = append(backendRefs, backendRef)
+	}
+
+	if unsupportedFilter {
+		backendRefs = []v1alpha1.BackendRef{}
+		filters = []v1alpha1.Filter{}
 	}
 
 	return v1alpha1.Rule{
@@ -442,14 +491,52 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 		return v1alpha1.Filter{
 			Type: v1alpha1.RequestMirrorType,
 			RequestMirror: &v1alpha1.RequestMirror{
-				BackendRef: common_api.BackendRef{
-					TargetRef: ref,
-				},
+				BackendRef: common_api.BackendRefFrom(ref),
 			},
 		}, conditions, true
 	default:
-		return v1alpha1.Filter{}, nil, false
+		return v1alpha1.Filter{}, []kube_meta.Condition{unsupportedHTTPRouteFilterCondition(gapiFilter.Type)}, true
 	}
+}
+
+func unsupportedHTTPRouteFilterCondition(filterType gatewayapi_v1.HTTPRouteFilterType) kube_meta.Condition {
+	return kube_meta.Condition{
+		Type:    string(gatewayapi.RouteConditionAccepted),
+		Status:  kube_meta.ConditionFalse,
+		Reason:  string(gatewayapi.RouteReasonUnsupportedValue),
+		Message: fmt.Sprintf("HTTPRoute filter type %q is not supported", filterType),
+	}
+}
+
+func addIfFalseAndNotPresent(conditions *[]kube_meta.Condition, condition kube_meta.Condition) {
+	if kube_apimeta.FindStatusCondition(*conditions, condition.Type) == nil {
+		kube_apimeta.SetStatusCondition(conditions, condition)
+	}
+}
+
+func unsupportedBackendRefFilterCondition(routeNamespace string, backendRef gatewayapi.HTTPBackendRef) kube_meta.Condition {
+	if len(backendRef.Filters) == 0 {
+		return kube_meta.Condition{}
+	}
+
+	return kube_meta.Condition{
+		Type:   string(gatewayapi.RouteConditionAccepted),
+		Status: kube_meta.ConditionFalse,
+		Reason: string(gatewayapi.RouteReasonUnsupportedValue),
+		Message: fmt.Sprintf(
+			"HTTPBackendRef filter type %q is not supported for backendRef %q",
+			backendRef.Filters[0].Type,
+			backendObjectReferenceString(routeNamespace, backendRef.BackendObjectReference),
+		),
+	}
+}
+
+func backendObjectReferenceString(routeNamespace string, ref gatewayapi.BackendObjectReference) string {
+	namespace := routeNamespace
+	if ref.Namespace != nil {
+		namespace = string(*ref.Namespace)
+	}
+	return kube_types.NamespacedName{Namespace: namespace, Name: string(ref.Name)}.String()
 }
 
 type ResolvedRefsConditionFalse struct {
@@ -502,7 +589,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 	gk := kube_schema.GroupKind{Kind: details.Kind, Group: details.Group}
 
 	if details.Namespace != objectNamespace {
-		allowed, err := r.referenceGrantAllowsBackendRef(ctx, objectNamespace, details)
+		allowed, err := r.referenceGrantAllowsBackendRef(ctx, sourceRouteKindHTTPRoute, objectNamespace, details)
 		if err != nil {
 			return common_api.TargetRef{}, nil, err
 		}
@@ -634,6 +721,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 
 func (r *HTTPRouteReconciler) referenceGrantAllowsBackendRef(
 	ctx context.Context,
+	sourceRouteKind string,
 	routeNamespace string,
 	backendRef backendObjectReferenceDetails,
 ) (bool, error) {
@@ -643,7 +731,7 @@ func (r *HTTPRouteReconciler) referenceGrantAllowsBackendRef(
 	}
 
 	for i := range grants.Items {
-		if backendObjectReferenceMatchesGrant(&grants.Items[i], routeNamespace, backendRef) {
+		if backendObjectReferenceMatchesGrant(&grants.Items[i], sourceRouteKind, routeNamespace, backendRef) {
 			return true, nil
 		}
 	}

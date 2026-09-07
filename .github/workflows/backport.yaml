@@ -76,9 +76,10 @@ jobs:
           BASE_REF=$(echo -n "$PR_INFO_JSON" | jq -r '.baseRefName //empty')
           COMMIT=$(echo -n "$PR_INFO_JSON" | jq -r '.mergeCommit.oid //empty')
           # Carry the original PR's labels over to the backport PR. Drop labels
-          # that would auto-act on the backport (auto-merge, publish).
+          # that would auto-act on the backport (auto-merge, publish) and
+          # 'backport', which only marks the original PR as needing this run.
           LABELS=$(echo -n "$PR_INFO_JSON" | jq -r '
-            [(.labels // [])[].name | select(. != "ci/auto-merge" and . != "ci/force-publish")]
+            [(.labels // [])[].name | select(. != "ci/auto-merge" and . != "ci/force-publish" and . != "backport")]
             | join(",")')
 
           {

@@ -9,6 +9,36 @@ import (
 	externalRef0 "github.com/kumahq/kuma/v3/api/openapi/types/common"
 )
 
+// Defines values for GetDataplaneClustersParamsFormat.
+const (
+	GetDataplaneClustersParamsFormatJson GetDataplaneClustersParamsFormat = "json"
+)
+
+// Valid indicates whether the value is a known member of the GetDataplaneClustersParamsFormat enum.
+func (e GetDataplaneClustersParamsFormat) Valid() bool {
+	switch e {
+	case GetDataplaneClustersParamsFormatJson:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetDataplaneStatsParamsFormat.
+const (
+	GetDataplaneStatsParamsFormatJson GetDataplaneStatsParamsFormat = "json"
+)
+
+// Valid indicates whether the value is a known member of the GetDataplaneStatsParamsFormat enum.
+func (e GetDataplaneStatsParamsFormat) Valid() bool {
+	switch e {
+	case GetDataplaneStatsParamsFormatJson:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GetDataplanesXdsConfigParamsInclude.
 const (
 	Diff GetDataplanesXdsConfigParamsInclude = "diff"
@@ -78,6 +108,27 @@ type DataplaneNetworkingLayout struct {
 	SpiffeId *string `json:"spiffeId,omitempty"`
 }
 
+// DataplaneTokenRequest defines model for DataplaneTokenRequest.
+type DataplaneTokenRequest struct {
+	// Mesh Mesh of the data plane proxy
+	Mesh string `json:"mesh"`
+
+	// Name Name of the data plane proxy
+	Name *string `json:"name,omitempty"`
+
+	// Tags Tags of the data plane proxy
+	Tags *map[string][]string `json:"tags,omitempty"`
+
+	// Type Proxy type, only Dataplane is valid
+	Type *string `json:"type,omitempty"`
+
+	// ValidFor How long the token is valid for, e.g. 24h
+	ValidFor *string `json:"validFor,omitempty"`
+
+	// Workload Workload of the data plane proxy
+	Workload *string `json:"workload,omitempty"`
+}
+
 // DataplaneXDSConfig defines model for DataplaneXDSConfig.
 type DataplaneXDSConfig struct {
 	// Diff Contains a diff in a JSONPatch format between the XDS config returned in 'xds' and the current proxy XDS config.
@@ -127,6 +178,15 @@ type GlobalInsightBase struct {
 
 	// Zones Zones statistics
 	Zones ZonesStats `json:"zones"`
+}
+
+// GlobalInsights defines model for GlobalInsights.
+type GlobalInsights struct {
+	CreationTime *time.Time `json:"creationTime,omitempty"`
+	Resources    *map[string]struct {
+		Total *int `json:"total,omitempty"`
+	} `json:"resources,omitempty"`
+	Type *string `json:"type,omitempty"`
 }
 
 // Index Some metadata about the service
@@ -189,10 +249,28 @@ type MeshesStats struct {
 	Total int `json:"total"`
 }
 
+// Policies defines model for Policies.
+type Policies struct {
+	Policies *[]PolicyEntry `json:"policies,omitempty"`
+}
+
 // PoliciesStats Policies statistics
 type PoliciesStats struct {
 	// Total Number of policies
 	Total int `json:"total"`
+}
+
+// PolicyEntry defines model for PolicyEntry.
+type PolicyEntry struct {
+	IsExperimental      *bool   `json:"isExperimental,omitempty"`
+	IsInbound           *bool   `json:"isInbound,omitempty"`
+	IsOutbound          *bool   `json:"isOutbound,omitempty"`
+	IsTargetRefBased    *bool   `json:"isTargetRefBased,omitempty"`
+	Name                *string `json:"name,omitempty"`
+	Path                *string `json:"path,omitempty"`
+	PluralDisplayName   *string `json:"pluralDisplayName,omitempty"`
+	ReadOnly            *bool   `json:"readOnly,omitempty"`
+	SingularDisplayName *string `json:"singularDisplayName,omitempty"`
 }
 
 // ResourceStats Resource statistics
@@ -220,6 +298,24 @@ type ServicesStats struct {
 	Internal FullStatus `json:"internal"`
 }
 
+// WhoAmI defines model for WhoAmI.
+type WhoAmI struct {
+	Groups *[]string `json:"groups,omitempty"`
+	Name   *string   `json:"name,omitempty"`
+}
+
+// ZoneTokenRequest defines model for ZoneTokenRequest.
+type ZoneTokenRequest struct {
+	// Scope Scope of the token. Kuma defines no built-in scopes, distributions may register their own
+	Scope *[]string `json:"scope,omitempty"`
+
+	// ValidFor How long the token is valid for, e.g. 24h
+	ValidFor *string `json:"validFor,omitempty"`
+
+	// Zone Name of the zone
+	Zone string `json:"zone"`
+}
+
 // ZonesStats Zone statistics
 type ZonesStats struct {
 	// ControlPlanes Control Planes statistics
@@ -232,6 +328,9 @@ type ZonesStats struct {
 	ZoneIngresses BaseStatus `json:"zoneIngresses"`
 }
 
+// ConfigResponse defines model for ConfigResponse.
+type ConfigResponse map[string]interface{}
+
 // DataplaneNetworkingLayoutResponse Dataplane networking layout. It contains the most important information about the dataplane and lists the available inbounds, outbounds, and zone proxy listeners
 type DataplaneNetworkingLayoutResponse = DataplaneNetworkingLayout
 
@@ -240,6 +339,9 @@ type GetDataplaneXDSConfigResponse = DataplaneXDSConfig
 
 // GlobalInsightResponse Global Insight contains statistics for all main resources
 type GlobalInsightResponse = GlobalInsightBase
+
+// GlobalInsightsResponse defines model for GlobalInsightsResponse.
+type GlobalInsightsResponse = GlobalInsights
 
 // InboundPolicyConfResponse defines model for InboundPolicyConfResponse.
 type InboundPolicyConfResponse = externalRef0.InboundPoliciesList
@@ -259,6 +361,9 @@ type InspectRulesResponse = InspectRules
 // OutboundPolicyConfResponse defines model for OutboundPolicyConfResponse.
 type OutboundPolicyConfResponse = externalRef0.PoliciesList
 
+// PoliciesResponse defines model for PoliciesResponse.
+type PoliciesResponse = Policies
+
 // ProxyPolicyConfResponse defines model for ProxyPolicyConfResponse.
 type ProxyPolicyConfResponse = externalRef0.PoliciesList
 
@@ -270,6 +375,36 @@ type RoutePolicyConfResponse = externalRef0.PoliciesList
 
 // RoutesListResponse defines model for RoutesListResponse.
 type RoutesListResponse = externalRef0.RoutesList
+
+// WhoAmIResponse defines model for WhoAmIResponse.
+type WhoAmIResponse = WhoAmI
+
+// GetDataplaneClustersParams defines parameters for GetDataplaneClusters.
+type GetDataplaneClustersParams struct {
+	// Format Set to `json` to receive the Envoy admin output as JSON instead of plain text.
+	Format *GetDataplaneClustersParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+}
+
+// GetDataplaneClustersParamsFormat defines parameters for GetDataplaneClusters.
+type GetDataplaneClustersParamsFormat string
+
+// GetDataplaneStatsParams defines parameters for GetDataplaneStats.
+type GetDataplaneStatsParams struct {
+	// Format Set to `json` to receive the Envoy admin output as JSON instead of plain text.
+	Format *GetDataplaneStatsParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+
+	// Usedonly Only return stats Envoy has actually updated.
+	Usedonly *bool `form:"usedonly,omitempty" json:"usedonly,omitempty"`
+}
+
+// GetDataplaneStatsParamsFormat defines parameters for GetDataplaneStats.
+type GetDataplaneStatsParamsFormat string
+
+// GetDataplaneXdsParams defines parameters for GetDataplaneXds.
+type GetDataplaneXdsParams struct {
+	// IncludeEds Include endpoint discovery data in the config dump.
+	IncludeEds *bool `form:"include_eds,omitempty" json:"include_eds,omitempty"`
+}
 
 // GetDataplanesXdsConfigParams defines parameters for GetDataplanesXdsConfig.
 type GetDataplanesXdsConfigParams struct {
@@ -313,3 +448,9 @@ type InspectDataplanesRulesParamsResourceType string
 
 // InspectHostnamesParamsServiceType defines parameters for InspectHostnames.
 type InspectHostnamesParamsServiceType string
+
+// IssueDataplaneTokenJSONRequestBody defines body for IssueDataplaneToken for application/json ContentType.
+type IssueDataplaneTokenJSONRequestBody = DataplaneTokenRequest
+
+// IssueZoneTokenJSONRequestBody defines body for IssueZoneToken for application/json ContentType.
+type IssueZoneTokenJSONRequestBody = ZoneTokenRequest

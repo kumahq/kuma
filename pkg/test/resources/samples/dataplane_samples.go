@@ -25,7 +25,7 @@ func DataplaneWebBuilder() *builders.DataplaneBuilder {
 	return builders.Dataplane().
 		WithName("web-01").
 		WithAddress("192.168.0.2").
-		WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
+		WithInboundOfTagsAndProtocol("http").
 		WithLabels(map[string]string{metadata.KumaWorkload: "web"}).
 		AddOutboundToService("backend")
 }
@@ -38,7 +38,7 @@ func GatewayDataplaneBuilder() *builders.DataplaneBuilder {
 	return builders.Dataplane().
 		WithName("sample-gateway").
 		WithAddress("192.168.0.1").
-		WithDelegatedGateway("sample-gateway")
+		WithDelegatedGateway()
 }
 
 func IgnoredDataplaneBackendBuilder() *builders.DataplaneBuilder {

@@ -56,7 +56,7 @@ var (
 	_ = Describe("Delegated Gateway", Label("job-2"), Label("kind-not-supported", "ipv6-not-supported"), gateway.Delegated, Ordered)
 	_ = Describe("Graceful", Label("job-1"), graceful.Graceful, Ordered)
 	_ = Describe("Eviction", Label("job-1"), graceful.Eviction, Ordered)
-	_ = XDescribe("Change Service", graceful.ChangeService, Ordered)
+	_ = Describe("Change Service", Label("job-0"), graceful.ChangeService, Ordered)
 	_ = Describe("Jobs", Label("job-3"), jobs.Jobs)
 	_ = Describe("Container Patch", Label("job-3"), container_patch.ContainerPatch, Ordered)
 	_ = Describe("MeshTrace", Label("job-3"), observability.PluginTest, Ordered)

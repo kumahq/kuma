@@ -94,7 +94,7 @@ func validateBackendRefs(backendRefs []common_api.BackendRef) validators.Validat
 		verr.AddErrorAt(
 			validators.Root().Index(i),
 			mesh.ValidateTargetRef(
-				backendRef.TargetRef,
+				backendRef.ToTargetRef(),
 				&mesh.ValidateTargetRefOpts{
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
