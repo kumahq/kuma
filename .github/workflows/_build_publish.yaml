@@ -156,7 +156,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
           version: 2026.5.7
@@ -270,7 +270,7 @@ jobs:
       # Registry layer cache (DOCKER_BUILDX_OPTS in mk/docker.mk) needs the
       # container driver; the default docker driver cannot export cache.
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
-      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
           version: 2026.5.7
@@ -416,7 +416,7 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           # TODO: drop once https://github.com/jdx/mise/discussions/9889 is fixed (mise v2026.5.8 broke cosign public-key bundle verification).
           version: 2026.5.7
