@@ -16,7 +16,7 @@ import (
 func benchmarkConfs(b *testing.B, n int) {
 	b.Helper()
 	confs := []any{}
-	for i := 0; i < n; i++ {
+	for i := range n {
 		confs = append(confs, meshtimeout_api.Conf{
 			ConnectionTimeout: pointer.To(k8s.Duration{Duration: time.Duration(i+1) * time.Second}),
 			IdleTimeout:       pointer.To(k8s.Duration{Duration: time.Duration(20+i%7) * time.Second}),
@@ -47,7 +47,7 @@ func BenchmarkConfs40(b *testing.B) { benchmarkConfs(b, 40) }
 
 func BenchmarkConfsMeshWidePolicies(b *testing.B) {
 	confs := []any{}
-	for i := 0; i < 40; i++ {
+	for i := range 40 {
 		confs = append(confs, meshtimeout_api.Conf{
 			ConnectionTimeout: pointer.To(k8s.Duration{Duration: time.Duration(i+1) * time.Second}),
 			Http: &meshtimeout_api.Http{

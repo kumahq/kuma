@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 
@@ -193,21 +194,20 @@ func getConfMeta(t reflect.Type) *confMeta {
 }
 
 var scalarJSONLeaves = []reflect.Type{
-	reflect.TypeOf(k8s.Duration{}),
-	reflect.TypeOf(intstr.IntOrString{}),
+	reflect.TypeFor[k8s.Duration](),
+	reflect.TypeFor[intstr.IntOrString](),
 }
 
-var marshalerType = reflect.TypeOf((*json.Marshaler)(nil)).Elem()
+var marshalerType = reflect.TypeFor[json.Marshaler]()
 
 // buildConfMeta decides whether a conf type can be merged without JSON
 // round-trips: only plain structs, pointers, slices and scalar leaves are
-// supported. Types with custom JSON marshalling (except known scalar leaves
+// supported. Types with custom JSON marshaling (except known scalar leaves
 // like k8s.Duration), maps, interfaces and embedded fields fall back to
 // mergeViaJSON to preserve exact semantics. EXC:FILE011:documents-a-non-obvious-invariant
 func buildConfMeta(t reflect.Type) *confMeta {
 	meta := &confMeta{supported: true}
-	for i := range t.NumField() {
-		f := t.Field(i)
+	for f := range t.Fields() {
 		if !f.IsExported() {
 			continue
 		}
@@ -226,7 +226,7 @@ func buildConfMeta(t reflect.Type) *confMeta {
 			return meta
 		}
 		meta.fields = append(meta.fields, confField{
-			index:     i,
+			index:     f.Index[0],
 			omitEmpty: opts.Contains("omitempty"),
 			leaf:      leaf,
 		})
@@ -234,22 +234,19 @@ func buildConfMeta(t reflect.Type) *confMeta {
 	return meta
 }
 
-func classifyField(t reflect.Type) (leaf, supported bool) {
+func classifyField(t reflect.Type) (bool, bool) {
 	for t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
-	for _, leafType := range scalarJSONLeaves {
-		if t == leafType {
-			return true, true
-		}
+	if slices.Contains(scalarJSONLeaves, t) {
+		return true, true
 	}
 	if t.Implements(marshalerType) || reflect.PointerTo(t).Implements(marshalerType) {
 		return false, false
 	}
 	switch t.Kind() {
 	case reflect.Struct:
-		for i := range t.NumField() {
-			f := t.Field(i)
+		for f := range t.Fields() {
 			if !f.IsExported() {
 				continue
 			}
