@@ -68,6 +68,27 @@ var _ = Describe("PolicyMatchingCache", func() {
 			k2 := matchers.BuildCacheKey("TypeA", cfg, dppV2)
 			Expect(k1).ToNot(Equal(k2))
 		})
+
+		It("returns the same key for precomputed and on-demand dataplane hash", func() {
+			dpp := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
+			onDemand := matchers.BuildCacheKey("TypeA", core_plugins.NewMatchedPoliciesConfig(core_plugins.WithCache(nil, "hash1")), dpp)
+			precomputed := matchers.BuildCacheKey("TypeA", core_plugins.NewMatchedPoliciesConfig(core_plugins.WithCache(nil, "hash1"), core_plugins.WithDataplaneHash(dpp.Hash())), dpp)
+			Expect(precomputed).To(Equal(onDemand))
+		})
+
+		It("returns distinct keys for distinct dataplanes with precomputed hashes", func() {
+			dpp := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
+			k1 := matchers.BuildCacheKey("TypeA", core_plugins.NewMatchedPoliciesConfig(core_plugins.WithCache(nil, "hash1"), core_plugins.WithDataplaneHash(dpp.Hash())), dpp)
+
+			dppV2 := readDPP(filepath.Join("testdata", "matchedpolicies", "fromrules", "01.dataplane.yaml"))
+			dppV2.SetMeta(&test_model.ResourceMeta{
+				Name:    dppV2.GetMeta().GetName(),
+				Mesh:    dppV2.GetMeta().GetMesh(),
+				Version: "v2",
+			})
+			k2 := matchers.BuildCacheKey("TypeA", core_plugins.NewMatchedPoliciesConfig(core_plugins.WithCache(nil, "hash1"), core_plugins.WithDataplaneHash(dppV2.Hash())), dppV2)
+			Expect(k1).ToNot(Equal(k2))
+		})
 	})
 
 	Describe("GetIfPresent / Put", func() {
