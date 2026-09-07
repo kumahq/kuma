@@ -6,11 +6,11 @@
   {{ end }}
 {{ end }}
 
-{{ if eq .Values.controlPlane.mode "global" }}
-  {{ fail "Kubernetes-native Global Control Plane is not supported: controlPlane.mode=global cannot be deployed with this Helm chart. Deploy Zone or Standalone control planes on Kubernetes; run the Global Control Plane on non-Kubernetes (Universal) infrastructure instead" }}
+{{ if and (eq .Values.controlPlane.environment "kubernetes") (eq .Values.controlPlane.mode "global") }}
+  {{ fail "Kubernetes-native Global Control Plane is not supported: controlPlane.mode=global cannot be deployed with this Helm chart. Deploy Zone control planes on Kubernetes; run the Global Control Plane on non-Kubernetes (Universal) infrastructure instead" }}
 {{ end }}
-{{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "standalone")) }}
-  {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: zone,standalone" .Values.controlPlane.mode }}
+{{ if not (or (eq .Values.controlPlane.mode "zone") (eq .Values.controlPlane.mode "global")) }}
+  {{ $msg := printf "controlPlane.mode invalid got:'%s' supported values: zone, global" .Values.controlPlane.mode }}
   {{ fail $msg }}
 {{ end }}
 {{ if eq .Values.controlPlane.mode "zone" }}
@@ -289,11 +289,6 @@ spec:
               mountPath: /var/run/secrets/kuma.io/postgres-tls-cert/tls.key
               readOnly: true
           {{- end }}
-          {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
-            - name: api-server-client-certs
-              mountPath: /var/run/secrets/kuma.io/api-server-client-certs
-              readOnly: true
-          {{- end }}
           {{- if $kdsZoneClientTLSSecretName }}
             - name: kds-client-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
@@ -375,11 +370,6 @@ spec:
         - name: postgres-tls-cert
           secret:
             secretName: {{ .Values.postgres.tls.secretName }}
-        {{- end }}
-        {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
-        - name: api-server-client-certs
-          secret:
-            secretName: {{ .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
         {{- end }}
         {{- if $kdsZoneClientTLSSecretName }}
         - name: kds-client-tls-cert

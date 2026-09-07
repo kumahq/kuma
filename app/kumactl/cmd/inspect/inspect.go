@@ -15,6 +15,10 @@ func NewInspectCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Use:   "inspect",
 		Short: "Inspect Kuma resources",
 		Long:  `Inspect Kuma resources.`,
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
+		},
 	}
 	inspectCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		if err := kumactl_cmd.RunParentPreRunE(inspectCmd, args); err != nil {
@@ -28,13 +32,8 @@ func NewInspectCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	// sub-commands
 	inspectCmd.AddCommand(newInspectDataplanesCmd(pctx))
 	inspectCmd.AddCommand(newInspectDataplaneCmd(pctx))
-	inspectCmd.AddCommand(newInspectZoneIngressesCmd(pctx))
-	inspectCmd.AddCommand(newInspectZoneIngressCmd(pctx))
-	inspectCmd.AddCommand(newInspectZoneEgressesCmd(pctx))
-	inspectCmd.AddCommand(newInspectZoneEgressCmd(pctx))
 	inspectCmd.AddCommand(newInspectZonesCmd(pctx))
 	inspectCmd.AddCommand(newInspectMeshesCmd(pctx))
-	inspectCmd.AddCommand(newInspectServicesCmd(pctx))
 
 	for _, desc := range registry.Global().ObjectDescriptors(core_model.AllowedToInspect()) {
 		inspectCmd.AddCommand(newInspectPolicyCmd(desc, pctx))

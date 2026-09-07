@@ -16,10 +16,10 @@ import (
 var _ = Describe("BootstrappServerConfig", func() {
 	It("should be loadable from configuration file", func() {
 		// given
-		cfg := BootstrapServerConfig{}
+		cfg := DefaultBootstrapServerConfig()
 
 		// when
-		err := config.Load(filepath.Join("testdata", "valid-config.input.yaml"), &cfg)
+		err := config.Load(filepath.Join("testdata", "valid-config.input.yaml"), cfg)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -66,10 +66,10 @@ var _ = Describe("BootstrappServerConfig", func() {
 			}
 
 			// given
-			cfg := BootstrapServerConfig{}
+			cfg := DefaultBootstrapServerConfig()
 
 			// when
-			err := config.Load("", &cfg)
+			err := config.Load("", cfg)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -84,6 +84,25 @@ var _ = Describe("BootstrappServerConfig", func() {
 			Expect(cfg.Params.XdsGrpcMaxReceiveMessageBytes).To(Equal(uint32(33554432)))
 		})
 	})
+
+	DescribeTable("should validate the readiness port",
+		func(port uint32, valid bool) {
+			cfg := DefaultBootstrapServerConfig()
+			cfg.Params.ReadinessPort = port
+
+			err := cfg.Validate()
+
+			if valid {
+				Expect(err).ToNot(HaveOccurred())
+			} else {
+				Expect(err).To(MatchError(ContainSubstring("ReadinessPort must be in the range (0, 65535]")))
+			}
+		},
+		Entry("zero is rejected, the injector cannot build a probe for it", uint32(0), false),
+		Entry("above the port range is rejected", uint32(65536), false),
+		Entry("the default is accepted", uint32(9902), true),
+		Entry("a custom port is accepted", uint32(19902), true),
+	)
 
 	It("should have consistent defaults", func() {
 		// given

@@ -46,7 +46,7 @@ test/framework/
 **Use e2e (only when necessary):**
 - CP restart/resilience tests
 - Special deployment configurations
-- Zone Egress absence tests
+- Zone egress absence tests
 - Default VIPs disabled tests
 
 **Key Differences:**
@@ -321,7 +321,7 @@ multizone.UniZone2    // Universal zone 2
 - Global CP: Universal
 - 2 Kubernetes zones (KubeZone1, KubeZone2)
 - 2 Universal zones (UniZone1, UniZone2)
-- Zone Egress: Enabled by default
+- Zone egress: Enabled by default
 
 **IMPORTANT:** Call `WaitForMesh(meshName)` before deploying apps in multizone tests.
 

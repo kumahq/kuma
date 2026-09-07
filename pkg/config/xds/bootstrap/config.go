@@ -82,8 +82,8 @@ func (b *BootstrapParamsConfig) Validate() error {
 	if b.AdminAccessLogPath == "" {
 		return errors.New("AdminAccessLogPath cannot be empty")
 	}
-	if b.ReadinessPort > 65535 {
-		return errors.New("ReadinessPort must be in the range [0, 65535]")
+	if b.ReadinessPort == 0 || b.ReadinessPort > 65535 {
+		return errors.New("ReadinessPort must be in the range (0, 65535]")
 	}
 	if b.XdsPort > 65535 {
 		return errors.New("XdsPort must be in the range [0, 65535]")

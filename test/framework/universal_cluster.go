@@ -302,10 +302,10 @@ func (c *UniversalCluster) DeleteNamespace(string, ...NamespaceDeleteHookFunc) e
 	return nil
 }
 
-func (c *UniversalCluster) CreateDP(app *UniversalApp, name string, mesh string, ip string, dpyaml string, envs map[string]string, token string, builtindns bool, concurrency int, transparent bool, dpVersion string) error {
+func (c *UniversalCluster) CreateDP(app *UniversalApp, name string, mesh string, ip string, dpyaml string, envs map[string]string, token string, builtinDNS bool, concurrency int, transparent bool, dpVersion string) error {
 	cpIp := c.controlplane.Networking().IP
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	err := app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, concurrency, envs, transparent, dpVersion)
+	err := app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtinDNS, concurrency, envs, transparent, dpVersion)
 	if err != nil {
 		return err
 	}
@@ -423,7 +423,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 			}
 		}
 
-		builtindns := pointer.DerefOr(opts.builtindns, true)
+		builtinDNS := pointer.DerefOr(opts.builtinDNS, true)
 
 		ip := app.GetIP()
 
@@ -448,7 +448,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		if opts.bindOutbounds {
 			opts.dpEnvs["KUMA_DATAPLANE_RUNTIME_BIND_OUTBOUNDS"] = "true"
 		}
-		if err := c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, opts.dpEnvs, token, builtindns, opts.concurrency, transparent, opts.dpVersion); err != nil {
+		if err := c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, opts.dpEnvs, token, builtinDNS, opts.concurrency, transparent, opts.dpVersion); err != nil {
 			return err
 		}
 	}

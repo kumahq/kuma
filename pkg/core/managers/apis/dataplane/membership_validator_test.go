@@ -42,11 +42,7 @@ var _ = Describe("Membership validator", func() {
 			dp: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-						{
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
-						},
+						{},
 					},
 				},
 			},
@@ -56,11 +52,7 @@ var _ = Describe("Membership validator", func() {
 			dp: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-						{
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
-						},
+						{},
 					},
 				},
 			},

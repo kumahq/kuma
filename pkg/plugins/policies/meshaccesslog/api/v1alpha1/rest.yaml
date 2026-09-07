@@ -122,6 +122,44 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/MeshAccessLogList"
+  /meshaccesslogs:
+    get:
+      operationId: getMeshAccessLogListAllMeshes
+      summary: Returns a list of MeshAccessLog across all meshes.
+      tags: ["MeshAccessLog"]
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+            example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+      responses:
+        '200':
+          $ref: "#/components/responses/MeshAccessLogList"
 components:
   schemas:
     MeshAccessLogItem:
@@ -138,6 +176,9 @@ components:
           description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
           type: string
           default: default
+          # keep in sync with core_mesh.MeshNamePattern / MaxNameLength
+          pattern: '^[0-9a-z-_.]*$'
+          maxLength: 253
         kri:
           description: 'A unique identifier for this resource instance used by internal tooling and integrations. Typically derived from resource attributes and may be used for cross-references or indexing'
           type: string
@@ -146,6 +187,9 @@ components:
         name:
           description: 'Name of the Kuma resource'
           type: string
+          # keep in sync with core_mesh.NamePattern / MaxNameLength
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
         labels:
           additionalProperties:
             type: string
@@ -203,6 +247,17 @@ components:
                                   required:
                                     - type
                                   type: object
+                                  oneOf:
+                                    - properties:
+                                        plain: {}
+                                        type:
+                                          enum:
+                                            - Plain
+                                    - properties:
+                                        json: {}
+                                        type:
+                                          enum:
+                                            - Json
                                 path:
                                   description: Path to a file that logs will be written to
                                   example: /tmp/access.log
@@ -314,6 +369,17 @@ components:
                                   required:
                                     - type
                                   type: object
+                                  oneOf:
+                                    - properties:
+                                        plain: {}
+                                        type:
+                                          enum:
+                                            - Plain
+                                    - properties:
+                                        json: {}
+                                        type:
+                                          enum:
+                                            - Json
                               required:
                                 - address
                               type: object
@@ -326,6 +392,22 @@ components:
                           required:
                             - type
                           type: object
+                          oneOf:
+                            - properties:
+                                tcp: {}
+                                type:
+                                  enum:
+                                    - Tcp
+                            - properties:
+                                file: {}
+                                type:
+                                  enum:
+                                    - File
+                            - properties:
+                                openTelemetry: {}
+                                type:
+                                  enum:
+                                    - OpenTelemetry
                         type: array
                     type: object
                   matches:
@@ -382,12 +464,6 @@ components:
                   description: Kind of the referenced resource
                   enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                   type: string
                 labels:
@@ -403,13 +479,6 @@ components:
                     SectionName is used to target specific section of resource.
                     For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                   type: string
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: |-
-                    Tags used to select a subset of proxies by tags. Can only be used with kinds
-                    `MeshSubset` and `MeshServiceSubset`
-                  type: object
               required:
                 - kind
               type: object
@@ -464,6 +533,17 @@ components:
                                   required:
                                     - type
                                   type: object
+                                  oneOf:
+                                    - properties:
+                                        plain: {}
+                                        type:
+                                          enum:
+                                            - Plain
+                                    - properties:
+                                        json: {}
+                                        type:
+                                          enum:
+                                            - Json
                                 path:
                                   description: Path to a file that logs will be written to
                                   example: /tmp/access.log
@@ -575,6 +655,17 @@ components:
                                   required:
                                     - type
                                   type: object
+                                  oneOf:
+                                    - properties:
+                                        plain: {}
+                                        type:
+                                          enum:
+                                            - Plain
+                                    - properties:
+                                        json: {}
+                                        type:
+                                          enum:
+                                            - Json
                               required:
                                 - address
                               type: object
@@ -587,6 +678,22 @@ components:
                           required:
                             - type
                           type: object
+                          oneOf:
+                            - properties:
+                                tcp: {}
+                                type:
+                                  enum:
+                                    - Tcp
+                            - properties:
+                                file: {}
+                                type:
+                                  enum:
+                                    - File
+                            - properties:
+                                openTelemetry: {}
+                                type:
+                                  enum:
+                                    - OpenTelemetry
                         type: array
                     type: object
                   targetRef:
@@ -598,13 +705,10 @@ components:
                         description: Kind of the referenced resource
                         enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                         type: string
                       labels:
                         additionalProperties:
@@ -619,13 +723,6 @@ components:
                           SectionName is used to target specific section of resource.
                           For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                         type: string
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: |-
-                          Tags used to select a subset of proxies by tags. Can only be used with kinds
-                          `MeshSubset` and `MeshServiceSubset`
-                        type: object
                     required:
                       - kind
                     type: object
@@ -640,13 +737,13 @@ components:
           type: string
           description: 'Time at which the resource was created'
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         modificationTime:
           readOnly: true
           type: string
           description: 'Time at which the resource was updated'
           format: date-time
-          example: '0001-01-01T00:00:00Z'
+          example: '1901-01-01T00:00:00.000Z'
         status:
           description: Status is the current status of the Kuma MeshAccessLog resource.
           properties:

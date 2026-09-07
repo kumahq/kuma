@@ -3,7 +3,7 @@
 #/meshes/default/dataplanes/foo 400 method=PUT
 # Mesh is not the same in the request
 #/meshes/default/dataplanes/dp-3 400 method=PUT
-# Tags present but missing kuma.io/service
+# Type and name in the body don't match the URL
 #/meshes/default/dataplanes/dp-4 400 method=PUT
 # Invalid resource content
 #/meshes/default/dataplanes/dp-5 400 method=PUT
@@ -28,4 +28,4 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: my-svc
+        kuma.io/display-name: my-svc

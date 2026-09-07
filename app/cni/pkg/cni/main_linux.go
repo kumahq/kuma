@@ -192,10 +192,11 @@ func add(ctx context.Context, args *skel.CmdArgs) (*PluginConf, error) {
 		}
 
 		logger.V(1).Info("generated iptables rules", "output", logBuffer.String())
-	} else if intermediate, err := NewIntermediateConfig(annotations); err != nil {
-		return nil, errors.Wrap(err, "pod intermediate config failed due to bad params")
-	} else if err := legacyInjectIptables(ctx, args.Netns, intermediate, logger); err != nil {
-		return nil, errors.Wrap(err, "could not inject rules into namespace")
+	} else {
+		return nil, errors.Errorf(
+			"annotation %q is required for transparent proxy configuration",
+			k8s_metadata.KumaTrafficTransparentProxyConfig,
+		)
 	}
 
 	logger.Info("successfully injected iptables rules")

@@ -32,7 +32,7 @@ var _ = Describe("Readiness Reporter", func() {
 		Expect(lis.Close()).To(Succeed())
 
 		baseURL = fmt.Sprintf("http://127.0.0.1:%d", port)
-		reporter = readiness.NewReporter("127.0.0.1", port, adminSocketPath, nil)
+		reporter = readiness.NewReporter("127.0.0.1", port, readiness.EnvoyAdmin{SocketPath: adminSocketPath}, nil)
 		go func() {
 			defer GinkgoRecover()
 			_ = reporter.Start(stopCh)
@@ -65,7 +65,7 @@ var _ = Describe("Readiness Reporter", func() {
 
 			baseURL = fmt.Sprintf("http://127.0.0.1:%d", port)
 			dnsReady = make(chan struct{})
-			reporter = readiness.NewReporter("127.0.0.1", port, "", dnsReady)
+			reporter = readiness.NewReporter("127.0.0.1", port, readiness.EnvoyAdmin{}, dnsReady)
 			go func() {
 				defer GinkgoRecover()
 				_ = reporter.Start(stopCh)
@@ -113,7 +113,7 @@ var _ = Describe("Readiness Reporter", func() {
 
 			baseURL = fmt.Sprintf("http://127.0.0.1:%d", port)
 			dnsReady := make(chan struct{})
-			reporter = readiness.NewReporterWithDeadline("127.0.0.1", port, "", dnsReady, time.Now().Add(-time.Second))
+			reporter = readiness.NewReporterWithDeadline("127.0.0.1", port, readiness.EnvoyAdmin{}, dnsReady, time.Now().Add(-time.Second))
 			go func() {
 				defer GinkgoRecover()
 				_ = reporter.Start(stopCh)
@@ -277,7 +277,7 @@ var _ = Describe("Readiness Reporter", func() {
 			port = uint32(lis.Addr().(*net.TCPAddr).Port)
 			Expect(lis.Close()).To(Succeed())
 
-			reporter = readiness.NewReporter("::", port, "", nil)
+			reporter = readiness.NewReporter("::", port, readiness.EnvoyAdmin{}, nil)
 			go func() {
 				defer GinkgoRecover()
 				_ = reporter.Start(stopCh)
@@ -306,5 +306,84 @@ var _ = Describe("Readiness Reporter", func() {
 			defer resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
+	})
+})
+
+var _ = Describe("Readiness Reporter with Envoy admin on TCP", func() {
+	var (
+		reporter  *readiness.Reporter
+		baseURL   string
+		stopCh    chan struct{}
+		adminSrv  *http.Server
+		adminCode int
+	)
+
+	BeforeEach(func() {
+		adminCode = http.StatusOK
+
+		adminLis, err := net.Listen("tcp", "127.0.0.1:0")
+		Expect(err).ToNot(HaveOccurred())
+		adminAddr := adminLis.Addr().(*net.TCPAddr)
+
+		mux := http.NewServeMux()
+		mux.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(adminCode)
+			_, _ = w.Write([]byte("LIVE"))
+		})
+		adminSrv = &http.Server{Handler: mux, ReadHeaderTimeout: time.Second}
+		go func() {
+			defer GinkgoRecover()
+			_ = adminSrv.Serve(adminLis)
+		}()
+
+		lis, err := net.Listen("tcp", "127.0.0.1:0")
+		Expect(err).ToNot(HaveOccurred())
+		port := uint32(lis.Addr().(*net.TCPAddr).Port)
+		Expect(lis.Close()).To(Succeed())
+
+		baseURL = fmt.Sprintf("http://127.0.0.1:%d", port)
+		stopCh = make(chan struct{})
+		reporter = readiness.NewReporter("127.0.0.1", port, readiness.EnvoyAdmin{
+			Address: "127.0.0.1",
+			Port:    uint32(adminAddr.Port),
+		}, nil)
+		go func() {
+			defer GinkgoRecover()
+			_ = reporter.Start(stopCh)
+		}()
+		Eventually(func() error {
+			resp, err := http.Get(baseURL + "/ready")
+			if err != nil {
+				return err
+			}
+			resp.Body.Close()
+			return nil
+		}, 5*time.Second, 50*time.Millisecond).Should(Succeed())
+	})
+
+	AfterEach(func() {
+		close(stopCh)
+		Expect(adminSrv.Close()).To(Succeed())
+	})
+
+	It("should report ready when Envoy admin is ready", func() {
+		resp, err := http.Get(baseURL + "/ready")
+		Expect(err).ToNot(HaveOccurred())
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		Expect(string(body)).To(Equal("LIVE"))
+	})
+
+	It("should report not ready when Envoy admin is not ready", func() {
+		adminCode = http.StatusServiceUnavailable
+
+		resp, err := http.Get(baseURL + "/ready")
+		Expect(err).ToNot(HaveOccurred())
+		defer resp.Body.Close()
+
+		Expect(resp.StatusCode).To(Equal(http.StatusServiceUnavailable))
 	})
 })

@@ -10,7 +10,6 @@ import (
 	kuma_cmd "github.com/kumahq/kuma/v3/pkg/cmd"
 	"github.com/kumahq/kuma/v3/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/bootstrap"
 	meshidentity_status "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/status"
 	meshservice_generate "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/generate"
@@ -57,11 +56,6 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				return err
 			}
 
-			//nolint:staticcheck
-			if cfg.Mode == config_core.Standalone {
-				runLog.Info(`[WARNING] "standalone" mode is deprecated. Changing it to "zone". Set KUMA_MODE to "zone" as "standalone" will be removed in the future.`)
-				cfg.Mode = config_core.Zone
-			}
 			kuma_cp.PrintDeprecations(&cfg, cmd.OutOrStdout())
 
 			gracefulCtx, ctx, _ := opts.SetupSignalHandler()

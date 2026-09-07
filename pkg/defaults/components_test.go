@@ -49,15 +49,7 @@ var _ = Describe("Defaults Component", func() {
 			// given
 			mesh := &core_mesh.MeshResource{
 				Spec: &v1alpha1.Mesh{
-					Mtls: &v1alpha1.Mesh_Mtls{
-						EnabledBackend: "builtin",
-						Backends: []*v1alpha1.CertificateAuthorityBackend{
-							{
-								Name: "builtin",
-								Type: "builtin",
-							},
-						},
-					},
+					SkipCreatingInitialPolicies: []string{"MeshRetry"},
 				},
 			}
 			err := manager.Create(context.Background(), mesh, core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
@@ -71,7 +63,7 @@ var _ = Describe("Defaults Component", func() {
 			Expect(err).ToNot(HaveOccurred())
 			err = manager.Get(context.Background(), mesh, core_store.GetByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(mesh.Spec.Mtls.EnabledBackend).To(Equal("builtin"))
+			Expect(mesh.Spec.SkipCreatingInitialPolicies).To(Equal([]string{"MeshRetry"}))
 		})
 	})
 

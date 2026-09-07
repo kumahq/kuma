@@ -2,9 +2,12 @@ package sort
 
 import (
 	"cmp"
+	"strconv"
+	"time"
 
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 func CompareByPolicyAttributes[T common.PolicyAttributes](a, b T) int {
@@ -27,6 +30,23 @@ func CompareByPolicyAttributes[T common.PolicyAttributes](a, b T) int {
 	}
 
 	return 0
+}
+
+// CompareByRouteCreationTimestamp sorts by metadata.GatewayAPIRouteCreationTimestampLabel, oldest last; missing/unparsable label sorts as oldest.
+func CompareByRouteCreationTimestamp[T common.PolicyAttributes](a, b T) int {
+	keyOf := func(item T) time.Time {
+		label, ok := item.GetResourceMeta().GetLabels()[metadata.GatewayAPIRouteCreationTimestampLabel]
+		if !ok {
+			return time.Time{}
+		}
+		nanos, err := strconv.ParseInt(label, 10, 64)
+		if err != nil {
+			return time.Time{}
+		}
+		return time.Unix(0, nanos)
+	}
+
+	return keyOf(b).Compare(keyOf(a))
 }
 
 func CompareByDisplayName[T common.PolicyAttributes](a, b T) int {

@@ -19,20 +19,20 @@ filterChains:
         - addressPrefix: ::1
           prefixLen: 128
       routeConfig:
-        name: inbound:backend
+        name: self_inbound_dp_17777
         requestHeadersToRemove:
         - x-kuma-tags
         validateClusters: false
         virtualHosts:
         - domains:
           - '*'
-          name: backend
+          name: self_inbound_dp_17777
           routes:
           - match:
               prefix: /
             route:
-              cluster: backend
+              cluster: self_inbound_dp_17777
               timeout: 0s
-      statPrefix: "127_0_0_1_17777"
-name: inbound:127.0.0.1:17777
+      statPrefix: self_inbound_dp_17777
+name: self_inbound_dp_17777
 trafficDirection: INBOUND

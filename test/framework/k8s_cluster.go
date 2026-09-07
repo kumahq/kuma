@@ -46,7 +46,6 @@ import (
 
 type K8sNetworkingState struct {
 	KumaCp portforward.Tunnel `json:"kumaCp"`
-	MADS   portforward.Tunnel `json:"mads"`
 }
 
 type K8sCluster struct {
@@ -793,7 +792,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		return err
 	}
 
-	converter := resources_k8s.NewSimpleConverter()
+	converter := resources_k8s.NewSimpleConverter(Config.KumaNamespace)
 	for name, updateFuncs := range c.opts.meshUpdateFuncs {
 		for _, f := range updateFuncs {
 			Logf("applying update function to mesh %q", name)
@@ -1907,19 +1906,11 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 	}
 	proxyName := fmt.Sprintf("%s.%s", pod.Name, args.Namespace)
 
-	var prefix string
-	switch args.AppName {
-	case Config.ZoneEgressApp:
-		prefix = fmt.Sprintf("/zoneegresses/%s", proxyName)
-	case Config.ZoneIngressApp:
-		prefix = fmt.Sprintf("/zoneingresses/%s", proxyName)
-	default:
-		mesh := pod.Labels["kuma.io/mesh"]
-		if mesh == "" {
-			mesh = "default"
-		}
-		prefix = fmt.Sprintf("/meshes/%s/dataplanes/%s", mesh, proxyName)
+	mesh := pod.Labels["kuma.io/mesh"]
+	if mesh == "" {
+		mesh = "default"
 	}
+	prefix := fmt.Sprintf("/meshes/%s/dataplanes/%s", mesh, proxyName)
 
 	tnl = tunnel.NewCPTunnel(func(inspectionPath string, query url.Values) ([]byte, error) {
 		return c.controlplane.InspectEnvoyProxy(fmt.Sprintf("%s/%s", prefix, inspectionPath), query)

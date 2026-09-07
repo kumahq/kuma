@@ -7,7 +7,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -28,16 +27,12 @@ var (
 	k8sClient   client.Client
 	scheme      *kube_runtime.Scheme
 	defaultMesh = &mesh_k8s.Mesh{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name: "default",
-		},
+		Name: "default",
 	}
 	dp1 = &mesh_k8s.Dataplane{
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name:      "dp-1",
-			Namespace: "default",
-		},
-		Mesh: "default",
+		Name:      "dp-1",
+		Namespace: "default",
+		Mesh:      "default",
 	}
 )
 

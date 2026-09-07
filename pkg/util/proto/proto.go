@@ -2,7 +2,6 @@ package proto
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 
 	"github.com/golang/protobuf/jsonpb" //nolint:depguard
@@ -82,19 +81,6 @@ func ToStruct(message proto.Message) (*structpb.Struct, error) {
 		return nil, err
 	}
 	return str, nil
-}
-
-func ToMap(message proto.Message) (map[string]any, error) {
-	configBytes, err := ToJSON(message)
-	if err != nil {
-		return nil, err
-	}
-	value := map[string]any{}
-	err = json.Unmarshal(configBytes, &value)
-	if err != nil {
-		return value, err
-	}
-	return value, err
 }
 
 func MustToStruct(message proto.Message) *structpb.Struct {

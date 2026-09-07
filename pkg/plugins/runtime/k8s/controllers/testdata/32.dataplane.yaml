@@ -6,7 +6,6 @@ metadata:
     k8s.kuma.io/service-account: mysql-service-account
     kuma.io/display-name: mysql-example
     kuma.io/mesh: default
-    kuma.io/proxy-type: sidecar
     kuma.io/sidecar-injection: enabled
     kuma.io/workload: mysql-service-account
     version: "5.7"

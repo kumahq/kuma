@@ -249,7 +249,7 @@ func (in *MeshProxyPatch) DeepCopyInto(out *MeshProxyPatch) {
 	*out = *in
 	if in.TargetRef != nil {
 		in, out := &in.TargetRef, &out.TargetRef
-		*out = new(commonv1alpha1.TargetRef)
+		*out = new(commonv1alpha1.TopLevelTargetRef)
 		(*in).DeepCopyInto(*out)
 	}
 	in.Default.DeepCopyInto(&out.Default)

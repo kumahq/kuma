@@ -27,7 +27,7 @@ func MeshTimeout() *MeshTimeoutBuilder {
 }
 
 func (m *MeshTimeoutBuilder) WithTargetRef(targetRef common_api.TargetRef) *MeshTimeoutBuilder {
-	m.res.Spec.TargetRef = &targetRef
+	m.res.Spec.TargetRef = pointer.To(ToTopLevelTargetRef(targetRef))
 	return m
 }
 
@@ -51,7 +51,7 @@ func (m *MeshTimeoutBuilder) WithNamespace(namespace string) *MeshTimeoutBuilder
 
 func (m *MeshTimeoutBuilder) AddTo(targetRef common_api.TargetRef, conf meshtimeout_api.Conf) *MeshTimeoutBuilder {
 	m.res.Spec.To = pointer.To(append(pointer.Deref(m.res.Spec.To), meshtimeout_api.To{
-		TargetRef: targetRef,
+		TargetRef: ToOutboundTargetRef(targetRef),
 		Default:   conf,
 	}))
 	return m

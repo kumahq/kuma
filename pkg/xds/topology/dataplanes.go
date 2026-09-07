@@ -35,22 +35,6 @@ func ResolveDataplaneAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_m
 	return dataplane, nil
 }
 
-func ResolveZoneIngressPublicAddress(lookupIPFunc lookup.LookupIPFunc, zoneIngress *core_mesh.ZoneIngressResource) (*core_mesh.ZoneIngressResource, error) {
-	ip, err := lookupFirstIp(lookupIPFunc, zoneIngress.Spec.GetNetworking().GetAdvertisedAddress())
-	if err != nil {
-		return nil, err
-	}
-	if ip != "" { // only if we resolve any address, in most cases this is IP not a hostname
-		ziSpec := proto.Clone(zoneIngress.Spec).(*mesh_proto.ZoneIngress)
-		ziSpec.Networking.AdvertisedAddress = ip
-		return &core_mesh.ZoneIngressResource{
-			Meta: zoneIngress.Meta,
-			Spec: ziSpec,
-		}, nil
-	}
-	return zoneIngress, nil
-}
-
 // ResolveMeshZoneAddressPublicAddress resolves 'meshZoneAddress.spec.address' if it has a DNS name in it. On Kubernetes
 // the address is reconciled from the ingress Service and a LoadBalancer hostname takes precedence over its IP, so this
 // is the common case on EKS. Endpoints built from MeshZoneAddress are served over EDS, which requires an IP.

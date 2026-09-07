@@ -75,7 +75,10 @@ var _ = Describe("DNSGenerator", func() {
 			}
 
 			for _, dppOutbound := range dataplane.GetNetworking().GetOutbound() {
-				proxy.Outbounds = append(proxy.Outbounds, &xds_types.Outbound{LegacyOutbound: dppOutbound})
+				proxy.Outbounds = append(proxy.Outbounds, &xds_types.Outbound{
+					Address: dppOutbound.GetAddress(),
+					Port:    dppOutbound.GetPort(),
+				})
 			}
 
 			// when

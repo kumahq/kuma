@@ -22,7 +22,7 @@ filterChains:
         requestHeadersToAdd:
         - header:
             key: x-kuma-tags
-            value: '&kuma.io/service=web&'
+            value: '&kuma.io/display-name=web&'
         validateClusters: false
         virtualHosts:
         - domains:

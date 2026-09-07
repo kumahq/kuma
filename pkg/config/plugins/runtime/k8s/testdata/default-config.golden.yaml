@@ -79,7 +79,6 @@ injector:
     mountPath: /run/spire/sockets
     socketFileName: socket
   transparentProxyConfigMap: kuma-transparent-proxy-config
-  unifiedResourceNamingEnabled: true
   validationContainer:
     resources:
       limits:
@@ -88,8 +87,6 @@ injector:
       requests:
         cpu: 20m
         memory: 20M
-  virtualProbesEnabled: false
-  virtualProbesPort: 9000
 leaderElection:
   leaseDuration: 15s
   renewDeadline: 10s

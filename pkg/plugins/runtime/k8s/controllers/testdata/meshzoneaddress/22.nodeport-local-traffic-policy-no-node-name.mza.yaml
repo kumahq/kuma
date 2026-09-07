@@ -1,0 +1,19 @@
+items:
+- metadata:
+    labels:
+      kuma.io/env: kubernetes
+      kuma.io/managed-by: k8s-controller
+      kuma.io/mesh: default
+      kuma.io/zone: zone-1
+    name: zone-ingress
+    namespace: kuma-system
+    ownerReferences:
+    - apiVersion: v1
+      kind: Service
+      name: zone-ingress
+      uid: ""
+    resourceVersion: "1"
+  spec:
+    address: 192.168.1.1
+    port: 30001
+metadata: {}

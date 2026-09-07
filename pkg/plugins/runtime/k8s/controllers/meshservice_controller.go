@@ -13,7 +13,6 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_discovery "k8s.io/api/discovery/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_event "k8s.io/client-go/tools/events"
@@ -114,7 +113,7 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 			}
 			return kube_ctrl.Result{}, nil
 		}
-		if _, ok := svc.GetAnnotations()[metadata.KumaGatewayAnnotation]; ok {
+		if gwEnabled, _, _ := metadata.Annotations(svc.GetAnnotations()).GetEnabled(metadata.KumaGatewayAnnotation); gwEnabled {
 			log.V(1).Info("service is for gateway. Ignoring.")
 			return kube_ctrl.Result{}, nil
 		}
@@ -227,10 +226,8 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		}
 		delete(trackedPodEndpoints, tracked)
 		ms := meshservice_k8s.MeshService{
-			ObjectMeta: v1.ObjectMeta{
-				Namespace: tracked.Namespace,
-				Name:      tracked.Name,
-			},
+			Namespace: tracked.Namespace,
+			Name:      tracked.Name,
 		}
 		if err := r.Delete(ctx, &ms); err != nil && !kube_apierrs.IsNotFound(err) {
 			return kube_ctrl.Result{}, errors.Wrap(err, "unable to delete MeshService tracking headless Service endpoint")
@@ -313,7 +310,7 @@ func (r *MeshServiceReconciler) isServiceForGateway(ctx context.Context, log log
 				return false, errors.Wrap(err, "unable to get Pod for endpoint")
 			}
 
-			if _, ok := pod.GetAnnotations()[metadata.KumaGatewayAnnotation]; ok {
+			if gwEnabled, _, _ := metadata.Annotations(pod.GetAnnotations()).GetEnabled(metadata.KumaGatewayAnnotation); gwEnabled {
 				log.V(1).Info("service backs gateway pods. Ignoring.", "pod", podKey.String())
 				return true, nil
 			}
@@ -403,11 +400,9 @@ func (r *MeshServiceReconciler) setFromPodAndHeadlessSvc(endpoint kube_discovery
 		}
 		ms.Status.VIPs = vips
 		owner := kube_core.Pod{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      endpoint.TargetRef.Name,
-				Namespace: namespace,
-				UID:       endpoint.TargetRef.UID,
-			},
+			Name:      endpoint.TargetRef.Name,
+			Namespace: namespace,
+			UID:       endpoint.TargetRef.UID,
 		}
 		if err := kube_controllerutil.SetOwnerReference(&owner, ms, r.Scheme); err != nil {
 			return errors.Wrap(err, "could not set owner reference")
@@ -424,10 +419,8 @@ func (r *MeshServiceReconciler) manageMeshService(
 	meshServiceName kube_types.NamespacedName,
 ) (kube_controllerutil.OperationResult, error) {
 	ms := &meshservice_k8s.MeshService{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      meshServiceName.Name,
-			Namespace: meshServiceName.Namespace,
-		},
+		Name:      meshServiceName.Name,
+		Namespace: meshServiceName.Namespace,
 	}
 
 	var unsupportedPorts []string
@@ -484,10 +477,8 @@ func (r *MeshServiceReconciler) manageMeshService(
 
 func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_types.NamespacedName) error {
 	ms := &meshservice_k8s.MeshService{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      key.Name,
-			Namespace: key.Namespace,
-		},
+		Name:      key.Name,
+		Namespace: key.Namespace,
 	}
 	if err := r.Delete(ctx, ms); err != nil && !kube_apierrs.IsNotFound(err) {
 		return errors.Wrap(err, "could not delete MeshService")
@@ -515,7 +506,7 @@ func EndpointSliceToServicesMapper(l logr.Logger, client kube_client.Client) kub
 			return nil
 		}
 		req := []kube_reconcile.Request{
-			{NamespacedName: kube_types.NamespacedName{Namespace: slice.Namespace, Name: svcName}},
+			{Namespace: slice.Namespace, Name: svcName},
 		}
 		return req
 	}
@@ -532,7 +523,7 @@ func NamespaceToServiceMapper(l logr.Logger, client kube_client.Client) kube_han
 		var req []kube_reconcile.Request
 		for _, svc := range services.Items {
 			req = append(req, kube_reconcile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: svc.Namespace, Name: svc.Name},
+				Namespace: svc.Namespace, Name: svc.Name,
 			})
 		}
 		return req
@@ -550,7 +541,7 @@ func MeshToAllMeshServices(l logr.Logger, client kube_client.Client) kube_handle
 		var req []kube_reconcile.Request
 		for _, svc := range services.Items {
 			req = append(req, kube_reconcile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: svc.Namespace, Name: svc.Name},
+				Namespace: svc.Namespace, Name: svc.Name,
 			})
 		}
 		return req
@@ -581,7 +572,7 @@ func PodToServicesMapper(l logr.Logger, client kube_client.Client) kube_handler.
 			}
 			if matches {
 				req = append(req, kube_reconcile.Request{
-					NamespacedName: kube_types.NamespacedName{Namespace: svc.Namespace, Name: svc.Name},
+					Namespace: svc.Namespace, Name: svc.Name,
 				})
 			}
 		}
@@ -609,9 +600,10 @@ func (p GatewayAnnotationChangedPredicate) Update(e event.UpdateEvent) bool {
 	if e.ObjectOld == nil || e.ObjectNew == nil {
 		return false
 	}
-	oldAnnotations := e.ObjectOld.GetAnnotations()
-	newAnnotations := e.ObjectNew.GetAnnotations()
-	_, oldHasGateway := oldAnnotations[metadata.KumaGatewayAnnotation]
-	_, newHasGateway := newAnnotations[metadata.KumaGatewayAnnotation]
-	return oldHasGateway != newHasGateway
+	// Compare the parsed value, not mere presence: flipping the annotation
+	// between enabled and disabled changes whether the Service gets a
+	// MeshService, so it has to trigger a reconcile too.
+	oldGateway, _, _ := metadata.Annotations(e.ObjectOld.GetAnnotations()).GetEnabled(metadata.KumaGatewayAnnotation)
+	newGateway, _, _ := metadata.Annotations(e.ObjectNew.GetAnnotations()).GetEnabled(metadata.KumaGatewayAnnotation)
+	return oldGateway != newGateway
 }

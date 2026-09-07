@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/gateway-api/conformance"
 	conformanceapis "sigs.k8s.io/gateway-api/conformance/apis/v1"
 	"sigs.k8s.io/gateway-api/conformance/tests"
+	conformancegrpc "sigs.k8s.io/gateway-api/conformance/utils/grpc"
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
 	"sigs.k8s.io/gateway-api/pkg/features"
 	"sigs.k8s.io/yaml"
@@ -96,9 +97,6 @@ apiVersion: kuma.io/v1alpha1
 kind: Mesh
 metadata:
   name: default
-spec:
-  meshServices:
-    mode: Disabled
 `)(cluster)
 	}, "30s", "3s").Should(Succeed())
 
@@ -121,38 +119,57 @@ spec:
 	g.Expect(err).ToNot(HaveOccurred())
 
 	options := suite.ConformanceOptions{
-		Client:     client,
-		RestConfig: clientConfig,
-		Clientset:  clientset,
-		ManifestFS: []fs.FS{&conformance.Manifests},
-		ConfigurableOptions: suite.ConfigurableOptions{
-			GatewayClassName:     "kuma",
-			CleanupBaseResources: false,
-			CleanupTestResources: true,
-			Debug:                Config.Debug,
-			NamespaceLabels: map[string]string{
-				metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
-			},
-			SkipTests: []string{
-				"HTTPRouteNoBackendRefs",
-			},
-			SupportedFeatures: []features.FeatureName{
-				features.SupportHTTPRouteResponseHeaderModification,
-				features.SupportHTTPRoute,
-				features.SupportHTTPRouteHostRewrite,
-				features.SupportHTTPRouteMethodMatching,
-				features.SupportHTTPRouteParentRefPort,
-				features.SupportHTTPRoutePathRedirect,
-				features.SupportHTTPRoutePathRewrite,
-				features.SupportHTTPRoutePortRedirect,
-				features.SupportHTTPRouteQueryParamMatching,
-				features.SupportHTTPRouteRequestMirror,
-				features.SupportHTTPRouteSchemeRedirect,
-				features.SupportMesh,
-				features.SupportMeshConsumerRoute,
-			},
-			Implementation:      implementation,
-			ConformanceProfiles: []suite.ConformanceProfileName{suite.MeshHTTPConformanceProfileName},
+		Client:               client,
+		RestConfig:           clientConfig,
+		Clientset:            clientset,
+		GRPCClient:           &conformancegrpc.DefaultClient{},
+		ManifestFS:           []fs.FS{&conformance.Manifests},
+		GatewayClassName:     "kuma",
+		CleanupBaseResources: false,
+		CleanupTestResources: true,
+		Debug:                Config.Debug,
+		NamespaceLabels: map[string]string{
+			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
+		},
+		SkipTests: []string{
+			"HTTPRouteNoBackendRefs",
+			// The upstream mesh weight tests sample the traffic distribution
+			// without waiting for the route to be programmed: the only gate is
+			// three consecutive 200s, which the parent Service already answers
+			// before any route exists. The distribution check then retries a
+			// fixed 10 times with no delay, so the whole budget is under two
+			// seconds and Kuma loses the race roughly half the time, reporting
+			// the routeless 50/50 split across the echo-v1 and echo-v2 pods.
+			// Re-enable once the upstream fix that bounds the retries by
+			// TimeoutConfig lands and we bump the conformance module.
+			"MeshGRPCRouteWeight",
+		},
+		// Left undeclared, with what Kuma does not do:
+		//   - SupportMeshHTTPRouteNamedRouteRule: the upstream test is Provisional and
+		//     asserts a backend path of /named for a /unnamed request with no rewrite in
+		//     its own manifest.
+		SupportedFeatures: []features.FeatureName{
+			features.SupportHTTPRouteResponseHeaderModification,
+			features.SupportHTTPRoute,
+			features.SupportGRPCRoute,
+			features.SupportHTTPRoute303RedirectStatusCode,
+			features.SupportHTTPRoute307RedirectStatusCode,
+			features.SupportHTTPRoute308RedirectStatusCode,
+			features.SupportHTTPRouteParentRefPort,
+			features.SupportMesh,
+			features.SupportMeshClusterIPMatching,
+			features.SupportMeshConsumerRoute,
+			features.SupportMeshHTTPRouteBackendRequestHeaderModification,
+			features.SupportMeshHTTPRouteRedirectPath,
+			features.SupportMeshHTTPRouteRedirectPort,
+			features.SupportMeshHTTPRouteQueryParamMatching,
+			features.SupportMeshHTTPRouteSchemeRedirect,
+			features.SupportMeshHTTPRouteRewritePath,
+		},
+		Implementation: implementation,
+		ConformanceProfiles: []suite.ConformanceProfileName{
+			suite.MeshHTTPConformanceProfileName,
+			suite.MeshGRPCConformanceProfileName,
 		},
 	}
 

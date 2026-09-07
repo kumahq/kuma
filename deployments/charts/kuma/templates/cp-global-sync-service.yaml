@@ -1,0 +1,33 @@
+{{- if and (eq .Values.controlPlane.mode "global") .Values.controlPlane.globalZoneSyncService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kuma.controlPlane.globalZoneSync.serviceName" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    {{- range $key, $value := .Values.controlPlane.globalZoneSyncService.annotations }}
+      {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+spec:
+  type: {{ .Values.controlPlane.globalZoneSyncService.type }}
+  {{- if .Values.controlPlane.globalZoneSyncService.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.controlPlane.globalZoneSyncService.loadBalancerIP }}
+  {{- end }}
+  {{- if .Values.controlPlane.globalZoneSyncService.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+  {{- range .Values.controlPlane.globalZoneSyncService.loadBalancerSourceRanges }}
+    - {{.}}
+  {{- end }}
+  {{- end }}
+  ports:
+    - port: {{ .Values.controlPlane.globalZoneSyncService.port }}
+      appProtocol: {{ .Values.controlPlane.globalZoneSyncService.protocol }}
+      {{- if and (eq .Values.controlPlane.globalZoneSyncService.type "NodePort") .Values.controlPlane.globalZoneSyncService.nodePort }}
+      nodePort: {{ .Values.controlPlane.globalZoneSyncService.nodePort }}
+      {{- end }}
+      name: global-zone-sync
+  selector:
+    app: {{ include "kuma.name" . }}-control-plane
+  {{ include "kuma.selectorLabels" . | nindent 4 }}
+{{- end }}

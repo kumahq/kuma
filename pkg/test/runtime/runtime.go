@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/api-server/customization"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
+	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/access"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
@@ -40,17 +41,15 @@ import (
 	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
-	"github.com/kumahq/kuma/v3/pkg/plugins/authn/api-server/certs"
-	"github.com/kumahq/kuma/v3/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/v3/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	tokens_builtin "github.com/kumahq/kuma/v3/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/v3/pkg/tokens/builtin/access"
 	mesh_cache "github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 	xds_server "github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
@@ -73,7 +72,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore())).
 		WithResourceValidators(core_runtime.ResourceValidators{
 			Dataplane: dataplane.NewMembershipValidator(),
-			Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
+			Mesh:      mesh_managers.NewMeshValidator(builder.ResourceStore()),
 		})
 
 	rm := newResourceManager(builder) //nolint:contextcheck
@@ -84,7 +83,6 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	builder.WithMetrics(metrics)
 
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
-	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.ResourceManager()))
 	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
 	builder.WithLookupIP(func(s string) ([]net.IP, error) {
 		return nil, errors.New("LookupIP not set, set one in your test to resolve things")
@@ -101,7 +99,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 		return nil, err
 	}
 	builder.WithXDS(xdsCtx)
-	dpServer, err := server.NewDpServer(*cfg.DpServer, metrics, func(writer http.ResponseWriter, request *http.Request) bool {
+	dpServer, err := server.NewDpServer(*cfg.DpServer, metrics, builder.CertWatchers(), func(writer http.ResponseWriter, request *http.Request) bool {
 		return true
 	})
 	if err != nil {
@@ -109,12 +107,7 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	}
 	builder.WithDpServer(dpServer)
 	builder.WithKDSContext(kds_context.DefaultContext(appCtx, builder.ResourceManager(), cfg))
-	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), metrics)
-	if err != nil {
-		return nil, err
-	}
-	builder.WithCAProvider(caProvider)
-	builder.WithAPIServerAuthenticator(certs.ClientCertAuthenticator)
+	builder.WithAPIServerAuthenticator(authn.NoopAuthenticator)
 	builder.WithAccess(core_runtime.Access{
 		ResourceAccess:       resources_access.NewAdminResourceAccess(builder.Config().Access.Static.AdminResources),
 		DataplaneTokenAccess: tokens_access.NewStaticGenerateDataplaneTokenAccess(builder.Config().Access.Static.GenerateDPToken),
@@ -155,7 +148,6 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 	meshManager := mesh_managers.NewMeshManager(
 		builder.ResourceStore(),
 		customizableManager,
-		builder.CaManagers(),
 		registry.Global(),
 		builder.ResourceValidators().Mesh,
 		builder.Extensions(),
@@ -163,7 +155,7 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.Customizable
 	)
 	customManagers[core_mesh.MeshType] = meshManager
 
-	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None(), nil, builder.Config().Store.UnsafeDelete)
+	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None())
 	customManagers[system.SecretType] = secretManager
 	return customizableManager
 }
@@ -174,7 +166,6 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		xds_server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		builder.CAProvider(),
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(
@@ -245,6 +236,7 @@ type TestRuntime struct {
 	access               core_runtime.Access
 	tokenIssuers         tokens_builtin.TokenIssuers
 	globalInsightService globalinsight.GlobalInsightService
+	certWatchers         *util_tls.Watchers
 }
 
 func NewTestRuntime(
@@ -264,6 +256,7 @@ func NewTestRuntime(
 		access:               access,
 		tokenIssuers:         tokenIssuers,
 		globalInsightService: globalInsightService,
+		certWatchers:         util_tls.NewWatchers(context.Background(), core.Log.WithName("cert-watcher")),
 	}
 }
 
@@ -304,7 +297,7 @@ func (r *TestRuntime) APIInstaller() customization.APIInstaller {
 }
 
 func (r *TestRuntime) APIServerAuthenticator() authn.Authenticator {
-	return certs.ClientCertAuthenticator
+	return authn.NoopAuthenticator
 }
 
 func (r *TestRuntime) Access() core_runtime.Access {
@@ -325,4 +318,8 @@ func (r *TestRuntime) RouteMetadataProvider() core_runtime.RouteMetadataProvider
 
 func (r *TestRuntime) Extensions() context.Context {
 	return context.Background()
+}
+
+func (r *TestRuntime) CertWatchers() *util_tls.Watchers {
+	return r.certWatchers
 }

@@ -9,7 +9,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: foo
+      kuma.io/display-name: foo
   rules:
     - default:
         allow:
@@ -23,13 +23,13 @@ mesh: default
 labels:
   k8s.kuma.io/namespace: kuma-demo
   kuma.io/display-name: dp-1
-  kuma.io/service: foo
+  kuma.io/display-name: foo
 networking:
   address: 127.0.0.1
   inbound:
     - port: 8080
       tags:
-        kuma.io/service: foo
+        kuma.io/display-name: foo
 ---
 type: Dataplane
 name: dp-2
@@ -42,4 +42,4 @@ networking:
   inbound:
     - port: 8080
       tags:
-        kuma.io/service: bar
+        kuma.io/display-name: bar

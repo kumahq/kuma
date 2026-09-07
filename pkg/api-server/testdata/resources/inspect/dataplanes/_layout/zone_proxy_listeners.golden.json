@@ -6,17 +6,76 @@
  },
  "listeners": [
   {
+   "clusters": [
+    {
+     "kri": "kri_msvc_default_test-zone__local-server_main-port",
+     "port": 80,
+     "protocol": "http",
+     "proxyResourceName": "kri_msvc_default_test-zone__local-server_main-port"
+    },
+    {
+     "kri": "kri_msvc_default_test-zone__local-server_secondary-port",
+     "port": 8080,
+     "protocol": "tcp",
+     "proxyResourceName": "kri_msvc_default_test-zone__local-server_secondary-port"
+    },
+    {
+     "kri": "kri_mzsvc_default___multizone-server_80",
+     "port": 80,
+     "protocol": "http",
+     "proxyResourceName": "kri_mzsvc_default___multizone-server_80"
+    }
+   ],
    "kri": "kri_dp_default_test-zone__dp-zone-proxy_zi-main",
    "port": 10001,
    "proxyResourceName": "self_zoneingress_dp_zi-main",
    "type": "ZoneIngress"
   },
   {
+   "clusters": [
+    {
+     "kri": "kri_extsvc_default___mes-1_9090",
+     "port": 9090,
+     "protocol": "http",
+     "proxyResourceName": "kri_extsvc_default___mes-1_9090"
+    }
+   ],
    "kri": "kri_dp_default_test-zone__dp-zone-proxy_10002",
    "port": 10002,
    "proxyResourceName": "self_zoneegress_dp_10002",
    "type": "ZoneEgress"
   }
  ],
- "outbounds": []
+ "outbounds": [
+  {
+   "kri": "kri_extsvc_default___mes-1_9090",
+   "port": 9090,
+   "protocol": "http",
+   "proxyResourceName": "kri_extsvc_default___mes-1_9090"
+  },
+  {
+   "kri": "kri_msvc_default_other-zone__remote-server_main-port",
+   "port": 80,
+   "protocol": "http",
+   "proxyResourceName": "kri_msvc_default_other-zone__remote-server_main-port"
+  },
+  {
+   "kri": "kri_msvc_default_test-zone__local-server_main-port",
+   "port": 80,
+   "protocol": "http",
+   "proxyResourceName": "kri_msvc_default_test-zone__local-server_main-port"
+  },
+  {
+   "kri": "kri_msvc_default_test-zone__local-server_secondary-port",
+   "port": 8080,
+   "protocol": "tcp",
+   "proxyResourceName": "kri_msvc_default_test-zone__local-server_secondary-port"
+  },
+  {
+   "kri": "kri_mzsvc_default___multizone-server_80",
+   "port": 80,
+   "protocol": "http",
+   "proxyResourceName": "kri_mzsvc_default___multizone-server_80"
+  }
+ ]
 }

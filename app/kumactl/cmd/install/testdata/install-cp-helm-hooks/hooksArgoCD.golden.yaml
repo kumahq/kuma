@@ -85,7 +85,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: pre-delete-job
-          image: "registry.k8s.io/kubectl:v1.36.3@sha256:6e4fce3c83651edb91b74bc67701c5cd263dd8aa3cd4254b1798d6425a5ab789"
+          image: "registry.k8s.io/kubectl:v1.37.0@sha256:5ed410ebac5dc976cc717098994dcdb29bbbd38f6bd65f582311f5be4ba719cf"
           command:
             - 'kubectl'
             - 'delete'
@@ -93,6 +93,10 @@ spec:
             - '--ignore-not-found'
             - kuma-validating-webhook-configuration
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
             runAsUser: 65534
           resources:
@@ -190,8 +194,12 @@ spec:
         runAsNonRoot: true
       containers:
         - name: pre-install-job
-          image: "registry.k8s.io/kubectl:v1.36.3@sha256:6e4fce3c83651edb91b74bc67701c5cd263dd8aa3cd4254b1798d6425a5ab789"
+          image: "registry.k8s.io/kubectl:v1.37.0@sha256:5ed410ebac5dc976cc717098994dcdb29bbbd38f6bd65f582311f5be4ba719cf"
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
             runAsUser: 65534
           resources:
@@ -321,8 +329,12 @@ spec:
         runAsNonRoot: true
       containers:
         - name: pre-upgrade-job
-          image: "registry.k8s.io/kubectl:v1.36.3@sha256:6e4fce3c83651edb91b74bc67701c5cd263dd8aa3cd4254b1798d6425a5ab789"
+          image: "registry.k8s.io/kubectl:v1.37.0@sha256:5ed410ebac5dc976cc717098994dcdb29bbbd38f6bd65f582311f5be4ba719cf"
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
             runAsUser: 65534
           resources:
@@ -341,6 +353,10 @@ spec:
         - name: pre-upgrade-job-init
           image: "docker.io/kumahq/kumactl:0.0.0-preview.vlocal-build"
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
           resources:
              requests:

@@ -15,11 +15,17 @@ import (
 func GatewayIPV6CNIV2() {
 	namespace := "gw-ipv6-cniv2"
 	meshName := "gw-ipv6-cniv2"
+	identityName := "gw-ipv6-cniv2-identity"
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(MeshUniversal(meshName)).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			// Traffic never leaves KubeZone2, so its own trust domain is enough.
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+				meshName,
+				MeshIdentityTrustDomain(meshName, multizone.KubeZone2),
+			)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 

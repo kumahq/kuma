@@ -17,7 +17,7 @@ dynamicResources:
     apiType: DELTA_GRPC
     grpcServices:
     - envoyGrpc:
-        clusterName: ads_cluster
+        clusterName: system_ads
       initialMetadata:
       - key: authorization
         value: token
@@ -35,7 +35,7 @@ hdsConfig:
   apiType: GRPC
   grpcServices:
   - envoyGrpc:
-      clusterName: ads_cluster
+      clusterName: system_ads
     initialMetadata:
     - key: authorization
       value: token
@@ -71,10 +71,7 @@ node:
             {
               "port": 22022,
               "servicePort": 8443,
-              "tags": {
-                "kuma.io/protocol": "http2",
-                "kuma.io/service": "backend"
-              }
+              "protocol": "http2"
             },
           ],
           "admin": {
@@ -104,14 +101,14 @@ staticResources:
   clusters:
   - connectTimeout: 2s
     loadAssignment:
-      clusterName: access_log_sink
+      clusterName: system_access_log_sink
       endpoints:
       - lbEndpoints:
         - endpoint:
             address:
               pipe:
                 path: /tmp/kuma-al-name.namespace-mesh.sock
-    name: access_log_sink
+    name: system_access_log_sink
     type: STATIC
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -125,7 +122,7 @@ staticResources:
         keepaliveTime: 10
   - connectTimeout: 2s
     loadAssignment:
-      clusterName: ads_cluster
+      clusterName: system_ads
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -133,7 +130,7 @@ staticResources:
               socketAddress:
                 address: localhost
                 portValue: 15678
-    name: ads_cluster
+    name: system_ads
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
@@ -173,10 +170,6 @@ statsConfig:
     tagName: name
   - regex: ^grpc.*streams_closed(_([0-9]+))
     tagName: status
-  - regex: ^kafka(\.(\S*[0-9]))\.
-    tagName: kafka_name
-  - regex: ^kafka\..*\.(.*?(?=_duration|$))
-    tagName: kafka_type
   - regex: (worker_([0-9]+)\.)
     tagName: worker
   - regex: ((.+?)\.)rbac\.

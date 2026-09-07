@@ -1,4 +1,4 @@
-NAME    mTLS                AGE
-mesh1   builtin/builtin-1   292y
+NAME    AGE
+mesh1   292y
 
 Rerun command with --offset=1 argument to retrieve more resources

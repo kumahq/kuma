@@ -14,7 +14,7 @@ items:
     targetRef:
       kind: Dataplane
       labels:
-        kuma.io/service: web
+        app: web
         version: v1
   type: MeshTrafficPermission
 next: null

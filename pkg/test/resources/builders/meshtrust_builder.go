@@ -4,7 +4,6 @@ import (
 	"context"
 	"maps"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -105,15 +104,11 @@ func (mtr *MeshTrustBuilder) KubeYaml() string {
 	labels := trust.Meta.GetLabels()
 	labels[mesh_proto.MeshTag] = trust.Meta.GetMesh()
 	kubeTrust := meshtrust_k8s.MeshTrust{
-		TypeMeta: v1.TypeMeta{
-			Kind:       string(meshtrust_api.MeshTrustType),
-			APIVersion: mesh_k8s.GroupVersion.String(),
-		},
-		ObjectMeta: v1.ObjectMeta{
-			Namespace: mtr.namespace,
-			Name:      trust.Meta.GetName(),
-			Labels:    labels,
-		},
+		Kind:       string(meshtrust_api.MeshTrustType),
+		APIVersion: mesh_k8s.GroupVersion.String(),
+		Namespace:  mtr.namespace,
+		Name:       trust.Meta.GetName(),
+		Labels:     labels,
 	}
 	kubeTrust.SetSpec(trust.Spec)
 	res, err := yaml.Marshal(kubeTrust)

@@ -4,9 +4,10 @@ name: "trigger-release-tasks"
 # the per-version post-build release tasks in parallel:
 #   - smoke: the downstream enterprise smoke-test workflow (cross-repo dispatch)
 #   - verify: this repo's own release workflow with check=true (same-repo)
+#   - installer: runs this repo's own installer.sh end-to-end for the version
+#     (kuma.io here; developer.konghq.com/mesh once synced into kong-mesh)
 # Per-branch/event-driven, not a batch fan-out over all versions. A single guard
-# job decides "is this a real release tag?" once; both tasks read its outputs.
-# workflow_dispatch re-runs one version by hand (toggle either task off).
+# job decides "is this a real release tag?" once; all three tasks read it.
 on:
   workflow_run:
     workflows: ["build-test-distribute"]
@@ -32,6 +33,13 @@ on:
         required: false
         type: boolean
         default: true
+      run_installer:
+        description: "Run the installer.sh verification"
+        required: false
+        type: boolean
+        default: true
+
+run-name: "release-tasks · ${{ inputs.version || github.event.workflow_run.head_branch }}"
 
 permissions: {}
 
@@ -132,15 +140,14 @@ jobs:
     steps:
       - name: "Trigger downstream smoke test"
         env:
-          # smoke.yaml has no repository_dispatch trigger and cross-org
-          # workflow_dispatch needs a PAT with actions:write on the target repo
-          # that nobody's provisioned (see PR history). Reuse the
-          # repository_dispatch path pr-merged.yaml already proves works
-          # cross-org (NOTIFY_BOT_PAT_TOKEN/NOTIFY_OWNER) instead: kong-mesh-smoke
-          # listens for KUMA_SMOKE_TEST via dispatch-kuma-smoke.yaml and forwards
-          # to smoke.yaml with the default GITHUB_TOKEN (same-repo, no cross-org
-          # auth needed on that side).
-          GH_TOKEN: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
+          # smoke.yaml has no repository_dispatch trigger, so this dispatches
+          # via repository_dispatch to kong-mesh-smoke instead, which listens
+          # for KUMA_SMOKE_TEST via dispatch-kuma-smoke.yaml and forwards to
+          # smoke.yaml with the default GITHUB_TOKEN (same-repo, no cross-org
+          # auth needed on that side). Needs a classic PAT with `repo` scope,
+          # SSO-authorized for the Kong org - fine-grained PATs aren't enabled
+          # there for cross-org repo selection.
+          GH_TOKEN: ${{ secrets.KONG_MESH_SMOKE_DISPATCH_TOKEN }}
           NOTIFY_OWNER: ${{ secrets.NOTIFY_OWNER }}
           SMOKE_REPO: kong-mesh-smoke
           PRODUCT_VERSION: ${{ needs.guard.outputs.product_version }}
@@ -199,3 +206,43 @@ jobs:
             --ref "${DEFAULT_BRANCH}" \
             --field release="${PRODUCT_VERSION}" \
             --field check=true
+
+  installer:
+    needs: guard
+    # see smoke job: run_installer only gates the manual path.
+    if: >-
+      needs.guard.outputs.should_dispatch == 'true' &&
+      (github.event_name != 'workflow_dispatch' || inputs.run_installer)
+    timeout-minutes: 5
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    permissions: {}
+    steps:
+      - name: "Run installer.sh for the released version"
+        env:
+          PRODUCT_VERSION: ${{ needs.guard.outputs.product_version }}
+        run: |
+          set -euo pipefail
+          # developer.konghq.com/mesh/installer.sh is a thin wrapper that pipes
+          # back through kuma.io/installer.sh with PRODUCT_NAME/REPO overrides,
+          # so hitting the right host is what actually exercises each product's
+          # own published binaries.
+          case "${GITHUB_REPOSITORY}" in
+            */kong-mesh) INSTALLER_URL="https://developer.konghq.com/mesh/installer.sh" ;;
+            *)           INSTALLER_URL="https://kuma.io/installer.sh" ;;
+          esac
+
+          # installer.sh itself exits non-zero (via its `err` helper) when the
+          # version's binary isn't published, so a clean run is the assertion;
+          # still grep its "has been downloaded!" line as a positive check that
+          # it actually reached and confirmed PRODUCT_VERSION rather than
+          # exiting 0 some other way.
+          if ! OUTPUT="$(curl --fail --silent --show-error --location "${INSTALLER_URL}" | VERSION="${PRODUCT_VERSION}" sh - 2>&1)"; then
+            echo "${OUTPUT}"
+            echo "installer.sh failed for version ${PRODUCT_VERSION} via ${INSTALLER_URL}" >&2
+            exit 1
+          fi
+          echo "${OUTPUT}"
+          if ! grep -qF "${PRODUCT_VERSION} has been downloaded" <<< "${OUTPUT}"; then
+            echo "installer.sh did not confirm ${PRODUCT_VERSION} was downloaded via ${INSTALLER_URL}" >&2
+            exit 1
+          fi

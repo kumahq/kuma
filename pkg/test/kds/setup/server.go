@@ -13,7 +13,6 @@ import (
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
@@ -31,16 +30,16 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
 	"github.com/kumahq/kuma/v3/pkg/intercp/client"
 	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
-	reconcile_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/reconcile"
-	kds_server_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/server"
+	kds_reconcile "github.com/kumahq/kuma/v3/pkg/kds/reconcile"
+	kds_server "github.com/kumahq/kuma/v3/pkg/kds/server"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
 	runtime2 "github.com/kumahq/kuma/v3/pkg/test/runtime"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 type testRuntimeContext struct {
@@ -57,6 +56,7 @@ type testRuntimeContext struct {
 	kdsContext               *kds_context.Context
 	ctx                      context.Context
 	envoyAdminClient         admin.EnvoyAdminClient
+	certWatchers             *util_tls.Watchers
 }
 
 func (t *testRuntimeContext) DataSourceLoader() datasource.Loader {
@@ -76,10 +76,6 @@ func (t *testRuntimeContext) ConfigStore() store.ResourceStore {
 }
 
 func (t *testRuntimeContext) GlobalInsightService() globalinsight.GlobalInsightService {
-	panic("implement me")
-}
-
-func (t *testRuntimeContext) CaManagers() core_ca.Managers {
 	panic("implement me")
 }
 
@@ -107,10 +103,6 @@ func (t *testRuntimeContext) XDS() xds_runtime.XDSRuntimeContext {
 	panic("implement me")
 }
 
-func (t *testRuntimeContext) CAProvider() secrets.CaProvider {
-	panic("implement me")
-}
-
 func (t *testRuntimeContext) DpServer() *server.DpServer {
 	panic("implement me")
 }
@@ -133,6 +125,10 @@ func (t *testRuntimeContext) Access() runtime.Access {
 
 func (t *testRuntimeContext) AppContext() context.Context {
 	return t.ctx
+}
+
+func (t *testRuntimeContext) CertWatchers() *util_tls.Watchers {
+	return t.certWatchers
 }
 
 func (t *testRuntimeContext) ExtraReportsFn() runtime.ExtraReportsFn {
@@ -227,8 +223,8 @@ func (t *testRuntimeContext) Add(c ...component.Component) error {
 
 type KdsServerBuilder struct {
 	rt             *testRuntimeContext
-	providedMapper reconcile_v2.ResourceMapper
-	providedFilter reconcile_v2.ResourceFilter
+	providedMapper kds_reconcile.ResourceMapper
+	providedFilter kds_reconcile.ResourceFilter
 	providedTypes  []model.ResourceType
 }
 
@@ -261,25 +257,28 @@ func NewTestRuntime(ctx context.Context, cfg kuma_cp.Config, store store.Resourc
 		eventBus:                 eventBus,
 		kdsContext:               kds_context.DefaultContext(ctx, rm, cfg),
 		envoyAdminClient:         &runtime2.DummyEnvoyAdminClient{},
+		certWatchers:             util_tls.NewWatchers(ctx, core.Log.WithName("cert-watcher")),
 	}
 }
 
 func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 	cfg := kuma_cp.DefaultConfig()
 	cfg.Mode = config_core.Global
-	cfg.Experimental.KDSEventBasedWatchdog.FlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
-	cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+	cfg.Multizone.Global.KDS.EventBasedWatchdog.FlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+	cfg.Multizone.Global.KDS.EventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
 	return &KdsServerBuilder{
 		rt:             NewTestRuntime(context.Background(), cfg, store),
-		providedMapper: reconcile_v2.NoopResourceMapper,
+		providedMapper: kds_reconcile.NoopResourceMapper,
 		providedTypes:  registry.Global().ObjectTypes(model.SentFromGlobalToZone()),
-		providedFilter: reconcile_v2.Any,
+		providedFilter: kds_reconcile.Any,
 	}
 }
 
 func (b *KdsServerBuilder) AsZone(name string) *KdsServerBuilder {
 	b.rt.cfg.Multizone.Zone.Name = name
 	b.rt.cfg.Mode = config_core.Zone
+	b.rt.cfg.Multizone.Zone.KDS.EventBasedWatchdog.FlushInterval = config_types.Duration{Duration: 100 * time.Millisecond}
+	b.rt.cfg.Multizone.Zone.KDS.EventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: 100 * time.Millisecond}
 	b.providedTypes = registry.Global().ObjectTypes(model.SentFromZoneToGlobal())
 	b.rt.RuntimeInfo = runtime.NewRuntimeInfo("zone-cp", b.rt.cfg.Mode)
 	return b
@@ -297,6 +296,10 @@ func (b *KdsServerBuilder) WithTypes(types []model.ResourceType) *KdsServerBuild
 }
 
 func (b *KdsServerBuilder) Delta() (delta.Server, error) {
-	srv, _, err := kds_server_v2.New(core.Log.WithName("kds-delta").WithName(b.rt.GetMode()), b.rt, b.providedTypes, b.rt.Config().Multizone.Zone.Name, b.providedFilter, b.providedMapper, 1*time.Second)
+	watchdogCfg := b.rt.Config().Multizone.Global.KDS.EventBasedWatchdog.AsRuntimeConfig()
+	if b.rt.Config().Mode == config_core.Zone {
+		watchdogCfg = b.rt.Config().Multizone.Zone.KDS.EventBasedWatchdog.AsRuntimeConfig()
+	}
+	srv, _, err := kds_server.New(core.Log.WithName("kds-delta").WithName(b.rt.GetMode()), b.rt, b.providedTypes, b.rt.Config().Multizone.Zone.Name, b.providedFilter, b.providedMapper, 1*time.Second, watchdogCfg)
 	return srv, err
 }

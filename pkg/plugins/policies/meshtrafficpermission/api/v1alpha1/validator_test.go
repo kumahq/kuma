@@ -257,26 +257,4 @@ violations:
 			}),
 		)
 	})
-
-	Describe("Deprecations()", func() {
-		It("does not report any 'from'-related deprecations", func() {
-			mtp := meshtrafficpermissions_proto.NewMeshTrafficPermissionResource()
-
-			err := core_model.FromYAML([]byte(`
-targetRef:
-  kind: Mesh
-rules:
-  - default:
-      allow:
-        - spiffeID:
-            type: Exact
-            value: spiffe://trust.domain/service
-`), &mtp.Spec)
-			Expect(err).ToNot(HaveOccurred())
-
-			deprecations := mtp.Deprecations()
-
-			Expect(deprecations).To(BeEmpty())
-		})
-	})
 })

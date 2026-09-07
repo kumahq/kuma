@@ -6,7 +6,6 @@ import (
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	admissionv1 "k8s.io/api/admission/v1"
 	v1 "k8s.io/api/authentication/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -16,19 +15,12 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	k8s_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/webhooks"
 )
 
 var _ = Describe("Defaulter", func() {
-	var converter k8s_common.Converter
-
-	BeforeEach(func() {
-		converter = k8s_resources.NewSimpleConverter()
-	})
-
 	type testCase struct {
 		inputObject string
 		expected    string
@@ -62,22 +54,22 @@ var _ = Describe("Defaulter", func() {
 
 	DescribeTable("should apply defaults on a target object",
 		func(given testCase) {
-			// given
+			// given - in production both the converter and the checker read the system
+			// namespace from the same config, so they always agree
+			converter := k8s_resources.NewSimpleConverter(given.checker.SystemNamespace)
 			handler := DefaultingWebhookFor(scheme, converter, given.checker)
 
 			req := kube_admission.Request{
-				AdmissionRequest: admissionv1.AdmissionRequest{
-					Namespace: "kuma-system",
-					UID:       kube_types.UID("12345"),
-					Object: kube_runtime.RawExtension{
-						Raw: []byte(given.inputObject),
-					},
-					Kind: kube_meta.GroupVersionKind{
-						Kind: given.kind,
-					},
-					UserInfo: v1.UserInfo{
-						Username: given.username,
-					},
+				Namespace: "kuma-system",
+				UID:       kube_types.UID("12345"),
+				Object: kube_runtime.RawExtension{
+					Raw: []byte(given.inputObject),
+				},
+				Kind: kube_meta.GroupVersionKind{
+					Kind: given.kind,
+				},
+				UserInfo: v1.UserInfo{
+					Username: given.username,
 				},
 			}
 
@@ -320,10 +312,7 @@ var _ = Describe("Defaulter", func() {
                   "address": "127.0.0.1",
                   "inbound": [
                     {
-                      "port": 11011,
-                      "tags": {
-                        "kuma.io/service": "backend"
-                      }
+                      "port": 11011
                     }
                   ]
                 }
@@ -342,7 +331,6 @@ var _ = Describe("Defaulter", func() {
                   "kuma.io/mesh": "demo",
                   "kuma.io/env": "kubernetes",
                   "kuma.io/origin": "zone",
-                  "kuma.io/proxy-type": "sidecar",
                   "kuma.io/zone": "zone-1"
                 },
                 "annotations": {
@@ -354,10 +342,7 @@ var _ = Describe("Defaulter", func() {
                   "address": "127.0.0.1",
                   "inbound": [
                     {
-                      "port": 11011,
-                      "tags": {
-                        "kuma.io/service": "backend"
-                      }
+                      "port": 11011
                     }
                   ]
                 }

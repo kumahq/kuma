@@ -58,9 +58,7 @@
                         "external",
                         1,
                         "gateway_delegated",
-                        2,
-                        "gateway_builtin",
-                        3
+                        2
                     ],
                     "oneOf": [
                         {

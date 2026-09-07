@@ -6,14 +6,8 @@ items:
       inbound:
       - port: 8080
         servicePort: 80
-        tags:
-          kuma.io/service: mobile
-          version: v1
       - port: 8090
         servicePort: 90
-        tags:
-          kuma.io/service: metrics
-          version: v1
   dataplaneInsight:
     mTLS:
       certificateExpirationTime: "2020-05-08T08:28:22Z"
@@ -72,13 +66,9 @@ items:
       inbound:
       - port: 8080
         servicePort: 80
-        tags:
-          kuma.io/service: example
       - health: {}
         port: 9001
         servicePort: 81
-        tags:
-          kuma.io/service: example
   dataplaneInsight:
     mTLS:
       certificateExpirationTime: "2020-05-08T08:28:22Z"
@@ -138,13 +128,9 @@ items:
       - health: {}
         port: 8080
         servicePort: 80
-        tags:
-          kuma.io/service: example
       - health: {}
         port: 9001
         servicePort: 81
-        tags:
-          kuma.io/service: example
   dataplaneInsight:
     mTLS:
       certificateExpirationTime: "2020-05-08T08:28:22Z"
@@ -203,8 +189,6 @@ items:
       inbound:
       - port: 8080
         servicePort: 80
-        tags:
-          kuma.io/service: example
   dataplaneInsight:
     subscriptions:
     - controlPlaneInstanceId: node-001

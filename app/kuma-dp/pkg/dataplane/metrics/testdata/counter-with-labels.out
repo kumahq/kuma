@@ -1,6 +1,6 @@
 # TYPE envoy_cluster_assignment_timeout_received counter
-envoy_cluster_assignment_timeout_received{envoy_cluster_name="access_log_sink",custom_label="value2"} 1
-envoy_cluster_assignment_timeout_received{envoy_cluster_name="ads_cluster",custom_label="value2"} 2
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="access_log_sink",custom_label="value2",kuma_io_mesh_traffic="true"} 1
+envoy_cluster_assignment_timeout_received{envoy_cluster_name="ads_cluster",custom_label="value2",kuma_io_mesh_traffic="true"} 2
 envoy_cluster_assignment_timeout_received{envoy_cluster_name="demo-client",custom_label="value2",kuma_io_mesh_traffic="true"} 3
 envoy_cluster_assignment_timeout_received{envoy_cluster_name="echo-server_kuma-test_svc_8080",custom_label="value2",kuma_io_mesh_traffic="true"} 606
 envoy_cluster_assignment_timeout_received{envoy_cluster_name="inbound_passthrough_ipv4",custom_label="value2",kuma_io_mesh_traffic="true"} 4
@@ -25,8 +25,8 @@ several_labels{envoy_cluster_name="backend",l1="v21",l2="v22",l3="v23",kuma_io_m
 several_labels{envoy_cluster_name="backend",l1="v31",l2="v32",l3="v33",kuma_io_mesh_traffic="true"} 33
 
 # TYPE envoy_cluster_assignment_stale counter
-envoy_cluster_assignment_stale{envoy_cluster_name="access_log_sink",custom_label="value1"} 11
-envoy_cluster_assignment_stale{envoy_cluster_name="ads_cluster",custom_label="value1"} 12
+envoy_cluster_assignment_stale{envoy_cluster_name="access_log_sink",custom_label="value1",kuma_io_mesh_traffic="true"} 11
+envoy_cluster_assignment_stale{envoy_cluster_name="ads_cluster",custom_label="value1",kuma_io_mesh_traffic="true"} 12
 envoy_cluster_assignment_stale{envoy_cluster_name="demo-client",custom_label="value1",kuma_io_mesh_traffic="true"} 13
 envoy_cluster_assignment_stale{envoy_cluster_name="echo-server_kuma-test_svc_8080",custom_label="value1",kuma_io_mesh_traffic="true"} 306
 envoy_cluster_assignment_stale{envoy_cluster_name="inbound_passthrough_ipv4",custom_label="value1",kuma_io_mesh_traffic="true"} 14

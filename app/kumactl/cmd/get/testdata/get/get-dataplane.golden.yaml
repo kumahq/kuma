@@ -11,11 +11,5 @@ networking:
   inbound:
   - port: 8080
     servicePort: 80
-    tags:
-      kuma.io/service: mobile
-      version: v1
   - port: 8090
     servicePort: 90
-    tags:
-      kuma.io/service: metrics
-      version: v1

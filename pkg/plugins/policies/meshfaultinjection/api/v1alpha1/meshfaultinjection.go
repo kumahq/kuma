@@ -14,7 +14,7 @@ type MeshFaultInjection struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef *common_api.TopLevelTargetRef `json:"targetRef,omitempty"`
 
 	// To list makes a match between clients and corresponding configurations
 	To *[]To `json:"to,omitempty"`
@@ -33,7 +33,7 @@ type Rule struct {
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef common_api.OutboundTargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of destinations referenced in
 	// 'targetRef'
 	Default Conf `json:"default,omitempty"`

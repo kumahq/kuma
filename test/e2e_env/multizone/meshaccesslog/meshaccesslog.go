@@ -24,10 +24,6 @@ func ZoneIngress() {
 
 	ingressWorkload := zoneproxy.IngressName(meshName)
 
-	dppEnvs := map[string]string{
-		"KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED": "true",
-	}
-
 	var zone1Name string
 	var tcpSinkDockerName, testServer1SNI, testServer2SNI string
 
@@ -53,19 +49,16 @@ func ZoneIngress() {
 					WithArgs([]string{"echo", "--instance", testServer1}),
 					WithServiceName(testServer1),
 					WithWorkload(testServer1),
-					WithDpEnvs(dppEnvs),
 				),
 				TestServerUniversal(testServer2, meshName,
 					WithArgs([]string{"echo", "--instance", testServer2}),
 					WithServiceName(testServer2),
 					WithWorkload(testServer2),
-					WithDpEnvs(dppEnvs),
 				),
 				TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName)),
 				zoneproxy.Install(
 					zoneproxy.WithMesh(meshName),
 					zoneproxy.WithIngress(),
-					zoneproxy.WithDpEnvs(dppEnvs),
 				),
 			)).
 			SetupInGroup(multizone.UniZone1, &group)
@@ -74,7 +67,6 @@ func ZoneIngress() {
 			Install(DemoClientUniversal(demoClient, meshName,
 				WithTransparentProxy(true),
 				WithWorkload(demoClient),
-				WithDpEnvs(dppEnvs),
 			)).
 			SetupInGroup(multizone.UniZone2, &group)
 		Expect(group.Wait()).To(Succeed())

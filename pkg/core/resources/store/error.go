@@ -11,7 +11,16 @@ var (
 	ErrIsAlreadyExists = errors.New("already exists")
 	ErrConflict        = errors.New("conflict")
 	ErrNotFound        = errors.New("not found")
-	ErrInvalid         = errors.New("invalid")
+	// ErrInvalid is the store's verdict on one specific resource: the resource is
+	// unacceptable on its own merits, so replaying it unchanged can never succeed.
+	// It is the opposite of a transient failure - a database outage, a lost
+	// connection, a timeout - which the caller should retry.
+	//
+	// Callers that apply many resources at once (KDS sync) skip an invalid resource
+	// and carry on with the rest, so a store must only return it when dropping the
+	// resource is the correct outcome. A failure that says nothing about the
+	// resource has to stay a plain error, so it fails the whole operation.
+	ErrInvalid = errors.New("invalid")
 )
 
 func ErrorResourceAlreadyExists(rt model.ResourceType, name, mesh string) error {

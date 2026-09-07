@@ -20,8 +20,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplaneinsight"
 	mesh_managers "github.com/kumahq/kuma/v3/pkg/core/managers/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zone"
-	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneegressinsight"
-	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneingressinsight"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zoneinsight"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
@@ -60,7 +58,6 @@ import (
 	mesh_cache "github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 	xds_server "github.com/kumahq/kuma/v3/pkg/xds/server"
 )
 
@@ -115,7 +112,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 
 	builder.WithResourceValidators(core_runtime.ResourceValidators{
 		Dataplane: dataplane.NewMembershipValidator(),
-		Mesh:      mesh_managers.NewMeshValidator(builder.CaManagers(), builder.ResourceStore()),
+		Mesh:      mesh_managers.NewMeshValidator(builder.ResourceStore()),
 	})
 
 	if err := initializeResourceManager(cfg, builder); err != nil { //nolint:contextcheck
@@ -124,9 +121,6 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ReadOnlyResourceManager()))
 
-	if err := initializeCaManagers(builder); err != nil {
-		return nil, err
-	}
 	if err := initializeIdentityProviders(builder); err != nil {
 		return nil, err
 	}
@@ -136,12 +130,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL.Duration))
 	builder.WithAPIManager(customization.NewAPIList())
-	caProvider, err := secrets.NewCaProvider(builder.CaManagers(), builder.Metrics())
-	if err != nil {
-		return nil, err
-	}
-	builder.WithCAProvider(caProvider)
-	dpServer, err := server.NewDpServer(*cfg.DpServer, builder.Metrics(), func(writer http.ResponseWriter, request *http.Request) bool {
+	dpServer, err := server.NewDpServer(*cfg.DpServer, builder.Metrics(), builder.CertWatchers(), func(writer http.ResponseWriter, request *http.Request) bool {
 		return true
 	})
 	if err != nil {
@@ -169,7 +158,6 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	} else {
 		builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(
 			resourceManager,
-			builder.CaManagers(),
 			builder.Config().GetEnvoyAdminPort(),
 		))
 	}
@@ -373,17 +361,6 @@ func initializeGlobalInsightService(cfg kuma_cp.Config, builder *core_runtime.Bu
 	builder.WithGlobalInsightService(globalInsightService)
 }
 
-func initializeCaManagers(builder *core_runtime.Builder) error {
-	for pluginName, caPlugin := range core_plugins.Plugins().CaPlugins() {
-		caManager, err := caPlugin.NewCaManager(builder, nil)
-		if err != nil {
-			return errors.Wrapf(err, "could not create CA manager for plugin %q", pluginName)
-		}
-		builder.WithCaManager(string(pluginName), caManager)
-	}
-	return nil
-}
-
 func initializeIdentityProviders(builder *core_runtime.Builder) error {
 	for pluginName, idpPlugin := range core_plugins.Plugins().IdentityProviders() {
 		idp, err := idpPlugin.NewIdentityProvider(builder, nil)
@@ -418,7 +395,6 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 		mesh_managers.NewMeshManager(
 			builder.ResourceStore(),
 			customizableManager,
-			builder.CaManagers(),
 			registry.Global(),
 			builder.ResourceValidators().Mesh,
 			builder.Extensions(),
@@ -453,16 +429,6 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 		zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone),
 	)
 
-	customizableManager.Customize(
-		mesh.ZoneIngressInsightType,
-		zoneingressinsight.NewZoneIngressInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane),
-	)
-
-	customizableManager.Customize(
-		mesh.ZoneEgressInsightType,
-		zoneegressinsight.NewZoneEgressInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane),
-	)
-
 	var cipher secret_cipher.Cipher
 	switch cfg.Store.Type {
 	case store.KubernetesStore:
@@ -472,16 +438,9 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	default:
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
 	}
-	var secretValidator secret_manager.SecretValidator
-	if cfg.IsFederatedZoneCP() {
-		secretValidator = secret_manager.ValidateDelete(func(ctx context.Context, secretName string, secretMesh string) error { return nil })
-	} else {
-		secretValidator = secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
-	}
-
 	customizableManager.Customize(
 		system.SecretType,
-		secret_manager.NewSecretManager(builder.SecretStore(), cipher, secretValidator, cfg.Store.UnsafeDelete),
+		secret_manager.NewSecretManager(builder.SecretStore(), cipher),
 	)
 
 	customizableManager.Customize(
@@ -522,7 +481,6 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		xds_server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
-		builder.CAProvider(),
 		mcbOpts...,
 	)
 

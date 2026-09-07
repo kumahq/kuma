@@ -48,7 +48,7 @@ func (l *listenerModificator) patch(resources *core_xds.ResourceSet, listenerPat
 				continue
 			}
 
-			util_proto.Merge(listener.Resource, listenerPatch)
+			util_proto.Merge(listener.Resource, listenerPatch, util_proto.ReplaceDurationOptionFn)
 		}
 	}
 

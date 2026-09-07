@@ -100,7 +100,7 @@ var _ = Describe("kumactl generate zone-token", func() {
 		_, _, err = new(jwt.Parser).ParseUnverified(buf.String(), claims)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(claims.Zone).To(Equal("my-zone"))
-		Expect(claims.Scope).To(Equal([]string{"ingress", "egress"}))
+		Expect(claims.Scope).To(BeEmpty())
 	})
 
 	It("should write error when generating token fails", func() {

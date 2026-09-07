@@ -96,12 +96,37 @@ func CompareMatch(a Match, b Match) int {
 }
 
 type Route struct {
-	Name        string
-	Origin      kri.Identifier
-	Match       Match
-	Filters     []Filter
-	BackendRefs []resolve.ResolvedBackendRef
+	Name    string
+	Origin  kri.Identifier
+	Match   Match
+	Filters []Filter
+	// DirectResponseStatus marks generated internal routes that should answer
+	// without an upstream. Zero means the route should use normal backend routing.
+	DirectResponseStatus uint32
+	BackendRefs          []RouteBackendRef
+	// UnresolvedBackendRefsWeight is the declared sum of backendRef weights that
+	// did not resolve to a routable backend for this rule.
+	UnresolvedBackendRefsWeight uint
+	// AllBackendRefsUnresolved is true when the rule declares backendRefs and
+	// none of them resolve, which is the case the Gateway API answers with 500.
+	AllBackendRefsUnresolved bool
+	// AllBackendRefsHaveZeroWeight is true when the rule explicitly declares a
+	// non-empty backendRefs list and every effective declared weight is zero.
+	AllBackendRefsHaveZeroWeight bool
 	// MirrorBackendRefs contains resolved backendRefs of RequestMirror filters,
 	// keyed by the index of the filter in Filters.
 	MirrorBackendRefs map[int]resolve.ResolvedBackendRef
+}
+
+type RouteBackendRef struct {
+	BackendRef resolve.ResolvedBackendRef
+	Filters    []Filter
+}
+
+func (r RouteBackendRef) ReferencesRealResource() bool {
+	return r.BackendRef.ReferencesRealResource()
+}
+
+func (r RouteBackendRef) Resource() kri.Identifier {
+	return r.BackendRef.Resource()
 }

@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/v3/pkg/core"
+	kds_util "github.com/kumahq/kuma/v3/pkg/kds/util"
 )
 
 var statsLogger = core.Log.WithName("stats-callbacks")
@@ -337,10 +338,14 @@ func (s *statsCallbacks) maybeReportWindowDepletion(last lastSend) {
 	)
 }
 
+// classifyError separates NACKs the user caused from ones that point at a
+// control plane defect. KDS marks the former with kds_util.ErrUserNack: when a
+// resource the peer sends conflicts with one that already exists locally, the
+// CP skips it and NACKs on purpose (pkg/kds/store/sync.go), so the stream is
+// working as designed.
 func classifyError(err string) string {
-	if strings.Contains(err, failedCallingWebhook) {
+	if strings.Contains(err, failedCallingWebhook) || kds_util.IsUserErrorMessage(err) {
 		return userErrorType
-	} else {
-		return otherErrorType
 	}
+	return otherErrorType
 }

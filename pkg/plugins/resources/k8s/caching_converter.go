@@ -34,14 +34,13 @@ type cachedEntry struct {
 	labels map[string]string
 }
 
-func NewCachingConverter(expirationTime time.Duration) k8s_common.Converter {
+func NewCachingConverter(expirationTime time.Duration, systemNamespace string) k8s_common.Converter {
 	return &cachingConverter{
-		SimpleConverter: SimpleConverter{
-			KubeFactory: &SimpleKubeFactory{
-				KubeTypes: k8s_registry.Global(),
-			},
+		KubeFactory: &SimpleKubeFactory{
+			KubeTypes: k8s_registry.Global(),
 		},
-		cache: cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
+		SystemNamespace: systemNamespace,
+		cache:           cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
 	}
 }
 
@@ -54,15 +53,11 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 	}, ":")
 	if v, ok := c.cache.Get(key); ok {
 		entry := v.(cachedEntry)
-		// Pre-populate cachedLabels with a fresh clone so the adapter's
-		// GetLabels skips the annotation-merge work, while keeping the cached
-		// map isolated from downstream consumers that mutate labels in place
-		// (e.g. removeDisplayNameLabel in the ServiceInsight endpoints).
-		out.SetMeta(&KubernetesMetaAdapter{
-			ObjectMeta:   *obj.GetObjectMeta(),
-			Mesh:         obj.GetMesh(),
-			cachedLabels: maps.Clone(entry.labels),
-		})
+		// Reuse the labels computed on the miss - enforcement included - as a fresh
+		// clone, so the cached map stays isolated from downstream consumers that
+		// mutate labels in place (e.g. removeDisplayNameLabel in the ServiceInsight
+		// endpoints).
+		out.SetMeta(newMetaAdapterWithLabels(obj, maps.Clone(entry.labels)))
 		if err := out.SetSpec(entry.spec); err != nil {
 			return err
 		}
@@ -78,15 +73,18 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 		}
 		return nil
 	}
-	adapter := &KubernetesMetaAdapter{ObjectMeta: *obj.GetObjectMeta(), Mesh: obj.GetMesh()}
-	out.SetMeta(adapter)
 	spec, err := obj.GetSpec()
 	if err != nil {
 		return err
 	}
+	// SetSpec first, then derive labels from out.GetSpec(): a stored object with an
+	// omitted spec yields a typed-nil here, and SetSpec normalizes it to an empty
+	// spec. Deriving from the raw value would call policy methods on a nil pointer.
 	if err := out.SetSpec(spec); err != nil {
 		return err
 	}
+	adapter := newMetaAdapter(obj, c.SystemNamespace, out.Descriptor(), out.GetSpec())
+	out.SetMeta(adapter)
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()
 		if err != nil {

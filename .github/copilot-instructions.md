@@ -43,7 +43,7 @@ CNCF service mesh (Envoy-based) for K8s/VMs. L4-L7 connectivity, security, obser
 - **kumactl** - CLI
 - **kuma-cni** - CNI plugin
 
-**Multi-zone:** Global CP → Zone CPs via KDS • Zone Ingress/Egress for cross-zone • K8s + Universal (VMs)
+**Multi-zone:** Global CP → Zone CPs via KDS • Zone ingress/egress proxies for cross-zone • K8s + Universal (VMs)
 
 ### Core Concepts
 
@@ -52,7 +52,7 @@ CNCF service mesh (Envoy-based) for K8s/VMs. L4-L7 connectivity, security, obser
 | **Dataplane** | Envoy proxy instance per workload | Sidecar for each pod/VM |
 | **Mesh** | Isolated namespace for resources | `default` mesh, can have multiple |
 | **ZoneTag** | `kuma.io/zone` auto-added by CP | Marks dataplane origin zone |
-| **TargetRef** | Policy selector | `Mesh`, `MeshService`, `MeshSubset` |
+| **TargetRef** | Policy selector | `Mesh`, `MeshService`, `Dataplane` |
 | **FromRules** | Inbound policies | TrafficPermission from services |
 | **ToRules** | Outbound policies | RetryPolicy to dependencies |
 | **MeshContext** | Cached config for xDS | Dual-tier cache (short TTL + hash) |

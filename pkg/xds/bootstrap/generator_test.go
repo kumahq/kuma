@@ -8,6 +8,7 @@ import (
 	"time"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -19,10 +20,10 @@ import (
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	. "github.com/kumahq/kuma/v3/pkg/xds/bootstrap"
 	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
@@ -43,6 +44,7 @@ var defaultVersion = types.Version{
 
 var _ = Describe("bootstrapGenerator", func() {
 	var resManager core_manager.ResourceManager
+	var dpServerKeyPair *util_tls.Watcher
 
 	authEnabled := map[string]bool{
 		string(mesh_proto.DataplaneProxyType): true,
@@ -54,6 +56,14 @@ var _ = Describe("bootstrapGenerator", func() {
 			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 			return now
 		}
+		ctx, cancel := context.WithCancel(context.Background())
+		DeferCleanup(cancel)
+		var err error
+		dpServerKeyPair, err = util_tls.NewWatchers(ctx, logr.Discard()).Watch(
+			filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
+		)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	defaultDataplane := func() *core_mesh.DataplaneResource {
@@ -65,9 +75,6 @@ var _ = Describe("bootstrapGenerator", func() {
 						{
 							Port:        443,
 							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
 						},
 					},
 					Admin: &mesh_proto.EnvoyAdmin{},
@@ -102,7 +109,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				store.CreateWithLabels(map[string]string{k8s_metadata.KumaWorkload: "backend"}))
 			Expect(err).ToNot(HaveOccurred())
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.serverConfig, dpServerKeyPair, given.dpAuthForProxyType, given.useTokenPath, given.hdsEnabled, 0, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -191,29 +198,6 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.custom-config-minimal-request.golden.yaml",
 			hdsEnabled:         true,
 		}),
-		Entry("default config with minimal request with unified resource naming feature flag", testCase{
-			dpAuthForProxyType: map[string]bool{},
-			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
-				cfg := bootstrap_config.DefaultBootstrapServerConfig()
-				cfg.Params.XdsHost = "localhost"
-				cfg.Params.XdsPort = 5678
-				return cfg
-			}(),
-			dataplane: func() *core_mesh.DataplaneResource {
-				dp := defaultDataplane()
-				dp.Spec.Networking.Admin.Port = 9902
-				return dp
-			},
-			request: types.BootstrapRequest{
-				Mesh:     "mesh",
-				Name:     "name.namespace",
-				Version:  defaultVersion,
-				Workdir:  "/tmp",
-				Features: []string{xds_types.FeatureUnifiedResourceNaming},
-			},
-			expectedConfigFile: "generator.custom-config-minimal-request-with-unified-resource-naming-feature-flag.golden.yaml",
-			hdsEnabled:         false,
-		}),
 		Entry("custom config", testCase{
 			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
@@ -252,10 +236,7 @@ var _ = Describe("bootstrapGenerator", func() {
       {
         "port": 22022,
         "servicePort": 8443,
-        "tags": {
-          "kuma.io/protocol": "http2",
-          "kuma.io/service": "backend"
-        }
+        "protocol": "http2"
       },
     ],
     "admin": {
@@ -420,10 +401,9 @@ var _ = Describe("bootstrapGenerator", func() {
 		}),
 	)
 
-	It("should use the workload label as cluster identity when inbound tags are empty", func() {
+	It("should use the workload label as cluster identity", func() {
 		// given
 		dp := defaultDataplane()
-		dp.Spec.Networking.Inbound[0].Tags = map[string]string{}
 		err := resManager.Create(
 			context.Background(),
 			dp,
@@ -440,7 +420,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		generator, err := NewDefaultBootstrapGenerator(
 			resManager,
 			cfg,
-			filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			dpServerKeyPair,
 			map[string]bool{},
 			false,
 			false,
@@ -464,10 +444,9 @@ var _ = Describe("bootstrapGenerator", func() {
 		Expect(envoyBootstrap.GetNode().GetCluster()).To(Equal("backend-workload"))
 	})
 
-	It("should use unknown service as cluster identity when inbound tags and workload label are empty", func() {
+	It("should use unknown service as cluster identity when workload label is empty", func() {
 		// given
 		dp := defaultDataplane()
-		dp.Spec.Networking.Inbound[0].Tags = map[string]string{}
 		err := resManager.Create(
 			context.Background(),
 			dp,
@@ -481,7 +460,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		generator, err := NewDefaultBootstrapGenerator(
 			resManager,
 			cfg,
-			filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			dpServerKeyPair,
 			map[string]bool{},
 			false,
 			false,
@@ -517,7 +496,7 @@ var _ = Describe("bootstrapGenerator", func() {
 
 			cfg := bootstrap_config.DefaultBootstrapServerConfig()
 
-			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), map[string]bool{}, false, true, 9901, false)
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, dpServerKeyPair, map[string]bool{}, false, true, 9901, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -537,7 +516,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			expected: `A data plane proxy is trying to connect to the control plane using "kuma.internal" address, but the certificate in the control plane has the following SANs ["fd00:a123::1" "localhost"]. Either change the --cp-address in kuma-dp to one of those or execute the following steps:
 1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --hostname=kuma.internal'
 2) Set KUMA_GENERAL_TLS_CERT_FILE and KUMA_GENERAL_TLS_KEY_FILE or the equivalent in Kuma CP config file to the new certificate.
-3) Restart the control plane to read the new certificate and start kuma-dp.`,
+3) Start kuma-dp, the control plane picks up the new certificate on its own.`,
 		}),
 		Entry("when CaCert is not a CA and EnvoyGRPC is used", errTestCase{
 			request: types.BootstrapRequest{

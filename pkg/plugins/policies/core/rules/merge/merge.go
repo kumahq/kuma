@@ -133,7 +133,7 @@ func handleMergeByKeyFields(valueResult reflect.Value) error {
 	// precedence but with MeshHTTPRoute/Gateway API we have "the first rule"
 	// wins as a fallback ordering.
 	// So we need to basically unreverse the transformed rules.
-	if withSet, ok := valueResult.Interface().(core_model.TransformDefaultAfterMerge); ok {
+	if withSet, ok := reflect.TypeAssert[core_model.TransformDefaultAfterMerge](valueResult); ok {
 		withSet.Transform()
 	}
 	return nil

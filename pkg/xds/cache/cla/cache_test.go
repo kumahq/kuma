@@ -14,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/cla"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_endpoints "github.com/kumahq/kuma/v3/pkg/xds/envoy/endpoints/v3"
-	"github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 var _ = Describe("ClusterLoadAssignment CachedRetriever", func() {
@@ -85,45 +84,5 @@ var _ = Describe("ClusterLoadAssignment CachedRetriever", func() {
 		Expect(err).ToNot(HaveOccurred())
 		expectedCla = envoy_endpoints.CreateClusterLoadAssignment("web", endpointMap["web"])
 		Expect(claWeb).To(matchers.MatchProto(expectedCla))
-	})
-
-	It("should pick only endpoints with selected tags", func() {
-		// given
-		endpointMap := xds.EndpointMap{
-			"backend": []xds.Endpoint{
-				{
-					Target: "192.168.0.1",
-					Port:   uint32(1000),
-					Tags: map[string]string{
-						"version": "v1",
-					},
-				},
-				{
-					Target: "192.168.0.2",
-					Port:   uint32(1000),
-					Tags: map[string]string{
-						"version": "v2",
-					},
-				},
-			},
-		}
-
-		// when
-		clusterV1 := plugins_xds.NewClusterBuilder().WithService("backend").WithTags(tags.Tags{}.WithTags("version", "v1")).Build()
-		claV1, err := claCache.GetCLA(context.Background(), "mesh-0", "", clusterV1, envoy_common.APIV3, endpointMap)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		expectedCla := envoy_endpoints.CreateClusterLoadAssignment("backend", []xds.Endpoint{endpointMap["backend"][0]})
-		Expect(claV1).To(matchers.MatchProto(expectedCla))
-
-		// when
-		clusterV2 := plugins_xds.NewClusterBuilder().WithService("backend").WithTags(tags.Tags{}.WithTags("version", "v2")).Build()
-		claV2, err := claCache.GetCLA(context.Background(), "mesh-0", "", clusterV2, envoy_common.APIV3, endpointMap)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		expectedCla = envoy_endpoints.CreateClusterLoadAssignment("backend", []xds.Endpoint{endpointMap["backend"][1]})
-		Expect(claV2).To(matchers.MatchProto(expectedCla))
 	})
 })

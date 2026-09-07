@@ -39,8 +39,8 @@ var _ = Describe("TagsMetadataConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			tags: map[string]string{
-				"kuma.io/service": "backend",
-				"version":         "v2",
+				"kuma.io/display-name": "backend",
+				"version":              "v2",
 			},
 			expected: `
             name: kuma:metrics:prometheus
@@ -51,7 +51,7 @@ var _ = Describe("TagsMetadataConfigurer", func() {
             metadata:
               filterMetadata:
                 io.kuma.tags:
-                  kuma.io/service: backend
+                  kuma.io/display-name: backend
                   version: v2
             trafficDirection: INBOUND
             enableReusePort: true`,

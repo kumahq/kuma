@@ -35,12 +35,10 @@ var _ = Describe("DataplaneConfig functions", func() {
 		It("should return true if IPv4 and redirect is enabled", func() {
 			// given
 			dp := &dummyDP{
-				DataplaneConfig: tproxy_dp.DataplaneConfig{
-					IPFamilyMode: tproxy_config.IPFamilyModeDualStack,
-					Redirect: tproxy_dp.DataplaneRedirect{
-						Inbound:  tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
-						Outbound: tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
-					},
+				IPFamilyMode: tproxy_config.IPFamilyModeDualStack,
+				Redirect: tproxy_dp.DataplaneRedirect{
+					Inbound:  tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
+					Outbound: tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
 				},
 				address: "192.0.2.1",
 			}
@@ -55,12 +53,10 @@ var _ = Describe("DataplaneConfig functions", func() {
 		It("should return false if address is not IPv4 and mode is IPv4", func() {
 			// given
 			dp := &dummyDP{
-				DataplaneConfig: tproxy_dp.DataplaneConfig{
-					IPFamilyMode: tproxy_config.IPFamilyModeIPv4,
-					Redirect: tproxy_dp.DataplaneRedirect{
-						Inbound:  tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
-						Outbound: tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
-					},
+				IPFamilyMode: tproxy_config.IPFamilyModeIPv4,
+				Redirect: tproxy_dp.DataplaneRedirect{
+					Inbound:  tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
+					Outbound: tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
 				},
 				address: "::1",
 			}
@@ -77,9 +73,7 @@ var _ = Describe("DataplaneConfig functions", func() {
 		It("should return true for mode not IPv4", func() {
 			// given
 			dp := &dummyDP{
-				DataplaneConfig: tproxy_dp.DataplaneConfig{
-					IPFamilyMode: tproxy_config.IPFamilyModeDualStack,
-				},
+				IPFamilyMode: tproxy_config.IPFamilyModeDualStack,
 			}
 
 			// when
@@ -124,12 +118,10 @@ var _ = Describe("DataplaneConfig functions", func() {
 			dp := &dummyDP{address: "192.0.2.100"}
 
 			meta := &dummyMeta{
-				DataplaneConfig: tproxy_dp.DataplaneConfig{
-					IPFamilyMode: tproxy_config.IPFamilyModeDualStack,
-					Redirect: tproxy_dp.DataplaneRedirect{
-						Inbound:  tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
-						Outbound: tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
-					},
+				IPFamilyMode: tproxy_config.IPFamilyModeDualStack,
+				Redirect: tproxy_dp.DataplaneRedirect{
+					Inbound:  tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
+					Outbound: tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
 				},
 				features: map[string]bool{
 					core_xds.FeatureTransparentProxyInDataplaneMetadata: true,
@@ -148,12 +140,10 @@ var _ = Describe("DataplaneConfig functions", func() {
 		It("should fallback to dataplane config", func() {
 			// given
 			dp := &dummyDP{
-				DataplaneConfig: tproxy_dp.DataplaneConfig{
-					IPFamilyMode: tproxy_config.IPFamilyModeDualStack,
-					Redirect: tproxy_dp.DataplaneRedirect{
-						Inbound:  tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
-						Outbound: tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
-					},
+				IPFamilyMode: tproxy_config.IPFamilyModeDualStack,
+				Redirect: tproxy_dp.DataplaneRedirect{
+					Inbound:  tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
+					Outbound: tproxy_dp.DatalpaneTrafficFlow{Enabled: true},
 				},
 				address: "192.0.2.50",
 			}

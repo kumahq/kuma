@@ -1,0 +1,5 @@
+violations:
+- field: spec.tls.verification.caCert.secretRef
+  message: must be defined
+- field: spec.tls.verification.clientCert.insecureInline
+  message: must be defined

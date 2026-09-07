@@ -54,6 +54,7 @@ var _ = Describe("DataplaneOverview", func() {
 	Context("GetStatus", func() {
 		type testCase struct {
 			overview   *mesh_proto.DataplaneOverview
+			labels     map[string]string
 			status     Status
 			errReasons []string
 		}
@@ -63,6 +64,7 @@ var _ = Describe("DataplaneOverview", func() {
 				// given
 				resource := NewDataplaneOverviewResource()
 				resource.Spec = given.overview
+				resource.Meta = &model.ResourceMeta{Name: "dp-1", Mesh: "default", Labels: given.labels}
 
 				// when
 				status, errReasons := resource.Status()
@@ -116,11 +118,10 @@ var _ = Describe("DataplaneOverview", func() {
 				status: Online,
 			}),
 			Entry("online when proxy is connected and is gateway", testCase{
+				labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
 				overview: &mesh_proto.DataplaneOverview{
 					Dataplane: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
-						},
+						Networking: &mesh_proto.Dataplane_Networking{},
 					},
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
@@ -183,11 +184,10 @@ var _ = Describe("DataplaneOverview", func() {
 				},
 			}),
 			Entry("online when proxy is disconnected and is a gateway", testCase{
+				labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
 				overview: &mesh_proto.DataplaneOverview{
 					Dataplane: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
-						},
+						Networking: &mesh_proto.Dataplane_Networking{},
 					},
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{

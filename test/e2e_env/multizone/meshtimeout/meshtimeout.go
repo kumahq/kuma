@@ -126,7 +126,9 @@ spec:
 		return s
 	}
 
-	XIt("should apply MeshTimeout policy to MeshHTTPRoute", func() {
+	It("should apply MeshTimeout policy to MeshHTTPRoute", func() {
+		dest := fmt.Sprintf("http://test-server.%s.svc.%s.mesh.local:80", k8sZoneNamespace, multizone.KubeZone2.ZoneName())
+
 		// when
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshHTTPRoute
@@ -134,14 +136,16 @@ name: route-1
 mesh: %s
 spec:
   targetRef:
-    kind: MeshService
+    kind: Dataplane
     labels:
-      kuma.io/display-name: test-client
+      app: test-client
   to:
     - targetRef:
         kind: MeshService
         labels:
           kuma.io/display-name: test-server
+          kuma.io/zone: %s
+          k8s.kuma.io/namespace: %s
       rules:
         - matches:
             - path:
@@ -150,9 +154,57 @@ spec:
           default:
             backendRefs:
               - kind: MeshService
-                name: test-server_multizone-meshtimeout-ns_svc_80
-                weight: 1
-`, mesh))(multizone.Global)).To(Succeed())
+                labels:
+                  kuma.io/display-name: test-server
+                  kuma.io/zone: %s
+                  k8s.kuma.io/namespace: %s
+                port: 80
+`, mesh, multizone.KubeZone2.ZoneName(), k8sZoneNamespace, multizone.KubeZone2.ZoneName(), k8sZoneNamespace))(multizone.Global)).To(Succeed())
+
+		Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshHTTPRoute
+name: route-catch-all
+mesh: %s
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: test-client
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server
+          kuma.io/zone: %s
+          k8s.kuma.io/namespace: %s
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default:
+            backendRefs:
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: test-server
+                  kuma.io/zone: %s
+                  k8s.kuma.io/namespace: %s
+                port: 80
+`, mesh, multizone.KubeZone2.ZoneName(), k8sZoneNamespace, multizone.KubeZone2.ZoneName(), k8sZoneNamespace))(multizone.Global)).To(Succeed())
+
+		// positive control: route matches, but no timeout policy yet
+		Eventually(func(g Gomega) {
+			start := time.Now()
+			response, err := framework_client.CollectEchoResponse(
+				multizone.KubeZone1, "test-client", dest+"/path/with/timeout",
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
+				framework_client.WithMaxTime(10),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(Equal("kube-test-server-2"))
+			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+		}, "30s", "1s").Should(Succeed())
 
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshTimeout
@@ -160,12 +212,12 @@ name: mt1
 mesh: %s
 spec:
   targetRef:
-    kind: MeshHTTPRoute
-    labels:
-      kuma.io/display-name: route-1
+    kind: Mesh
   to:
     - targetRef:
-        kind: Mesh
+        kind: MeshHTTPRoute
+        labels:
+          kuma.io/display-name: route-1
       default:
         http:
           requestTimeout: 2s
@@ -173,25 +225,30 @@ spec:
 
 		Eventually(func(g Gomega) {
 			start := time.Now()
-			_, err := framework_client.CollectEchoResponse(
-				multizone.KubeZone1, "test-client", "test-server_multizone-meshtimeout-ns_svc_80.mesh/path/without/timeout",
-				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
-				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
-				framework_client.WithMaxTime(10),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
-		}, "30s", "1s").Should(Succeed())
-
-		Eventually(func(g Gomega) {
 			response, err := framework_client.CollectFailure(
-				multizone.KubeZone1, "test-client", "test-server_multizone-meshtimeout-ns_svc_80.mesh/path/with/timeout",
+				multizone.KubeZone1, "test-client", dest+"/path/with/timeout",
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
 				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
 				framework_client.WithMaxTime(10),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(504))
+			// the 5s injected delay would also yield a 504, so bound the
+			// duration to prove the 2s requestTimeout is what fired
+			g.Expect(time.Since(start)).To(BeNumerically("<", time.Second*4))
+		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
+
+		// negative control: catch-all route is untouched by the route-scoped timeout
+		Eventually(func(g Gomega) {
+			start := time.Now()
+			_, err := framework_client.CollectEchoResponse(
+				multizone.KubeZone1, "test-client", dest+"/path/without/timeout",
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
+				framework_client.WithMaxTime(10),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
 		}, "30s", "1s").Should(Succeed())
 	})
 

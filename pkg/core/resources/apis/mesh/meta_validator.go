@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"fmt"
 	"regexp"
 
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -8,12 +9,12 @@ import (
 )
 
 var (
-	backwardCompatRegexp = regexp.MustCompile(`^[0-9a-z-_.]*$`)
+	backwardCompatRegexp = regexp.MustCompile(core_model.MeshNamePattern)
 	backwardCompatErrMsg = "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_', '.' symbols."
 )
 
 var (
-	identifierRegexp = regexp.MustCompile(`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`)
+	identifierRegexp = regexp.MustCompile(core_model.NamePattern)
 	identifierErrMsg = "invalid characters. A lowercase RFC 1123 subdomain must consist of lower case alphanumeric " +
 		"characters, '-' or '.', and must start and end with an alphanumeric character"
 )
@@ -41,8 +42,8 @@ func validateIdentifier(identifier string, r *regexp.Regexp, errMsg string) vali
 	switch {
 	case identifier == "":
 		err.AddViolation("", "cannot be empty")
-	case len(identifier) > 253:
-		err.AddViolation("", "value length must less or equal 253")
+	case len(identifier) > core_model.MaxNameLength:
+		err.AddViolation("", fmt.Sprintf("value length must less or equal %d", core_model.MaxNameLength))
 	case !r.MatchString(identifier):
 		err.AddViolation("", errMsg)
 	}

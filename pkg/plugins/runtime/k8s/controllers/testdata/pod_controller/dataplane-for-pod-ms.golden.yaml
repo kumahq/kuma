@@ -7,7 +7,6 @@ metadata:
     kuma.io/env: kubernetes
     kuma.io/mesh: poc-ms
     kuma.io/origin: zone
-    kuma.io/proxy-type: sidecar
     kuma.io/zone: zone-1
   name: pod-with-duplicated-inbound
   namespace: demo

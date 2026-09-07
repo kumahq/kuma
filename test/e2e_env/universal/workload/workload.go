@@ -22,7 +22,6 @@ func Workload() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(mesh)).
-			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -52,7 +51,7 @@ networking:
   inbound:
   - port: 80
     tags:
-      kuma.io/service: test-service
+      kuma.io/display-name: test-service
       kuma.io/protocol: http
 labels:
   kuma.io/workload: auto-workload
@@ -77,7 +76,7 @@ networking:
   inbound:
   - port: 80
     tags:
-      kuma.io/service: manual-service
+      kuma.io/display-name: manual-service
       kuma.io/protocol: http
 labels:
   kuma.io/workload: shared-workload
@@ -91,7 +90,7 @@ networking:
   inbound:
   - port: 80
     tags:
-      kuma.io/service: manual-service
+      kuma.io/display-name: manual-service
       kuma.io/protocol: http
 labels:
   kuma.io/workload: shared-workload
@@ -209,7 +208,7 @@ spec:
         app: api
   spiffeID:
     trustDomain: "mesh.local"
-    path: "/ns/default/sa/{{ label \"kuma.io/service\" }}"
+    path: "/ns/default/sa/{{ label \"kuma.io/display-name\" }}"
   provider:
     type: Bundled
     bundled:

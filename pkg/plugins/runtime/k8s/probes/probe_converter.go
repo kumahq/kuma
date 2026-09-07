@@ -10,15 +10,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// ProxiedApplicationProbe is a type which allows to manipulate Kubernetes HttpGet probes.
-// Probe can be either Virtual or Real.
-//
-// Real probe is a probe provided by user. The only constraint existing for Real
-// probes is that the port must be different from 'virtualPort'.
-//
-// Virtual probe is an automatically generated probe on the basis of the Real probe.
-// If probe's port equal to 'virtualPort' and the first segment of probe's path is an integer
-// then probe is a virtual probe.
+// ProxiedApplicationProbe is a type which allows converting a Kubernetes probe
+// provided by the user into a probe pointed at the application probe proxy port,
+// which forwards the request to the original probe target.
 type ProxiedApplicationProbe kube_core.Probe
 
 func (p ProxiedApplicationProbe) ToVirtual(virtualPort uint32) (ProxiedApplicationProbe, error) {
@@ -69,12 +63,10 @@ func (p ProxiedApplicationProbe) httpProbeToVirtual(virtualPort uint32) (Proxied
 	}
 
 	return ProxiedApplicationProbe{
-		ProbeHandler: kube_core.ProbeHandler{
-			HTTPGet: &kube_core.HTTPGetAction{
-				Port:        intstr.FromInt32(int32(virtualPort)),
-				Path:        fmt.Sprintf("/%d%s", appPort, probePath),
-				HTTPHeaders: headers,
-			},
+		HTTPGet: &kube_core.HTTPGetAction{
+			Port:        intstr.FromInt32(int32(virtualPort)),
+			Path:        fmt.Sprintf("/%d%s", appPort, probePath),
+			HTTPHeaders: headers,
 		},
 	}, nil
 }
@@ -93,12 +85,10 @@ func (p ProxiedApplicationProbe) tcpProbeToVirtual(virtualPort uint32) (ProxiedA
 	}
 
 	return ProxiedApplicationProbe{
-		ProbeHandler: kube_core.ProbeHandler{
-			HTTPGet: &kube_core.HTTPGetAction{
-				Port:        intstr.FromInt32(int32(virtualPort)),
-				Path:        fmt.Sprintf("/tcp/%d", appPort),
-				HTTPHeaders: headers,
-			},
+		HTTPGet: &kube_core.HTTPGetAction{
+			Port:        intstr.FromInt32(int32(virtualPort)),
+			Path:        fmt.Sprintf("/tcp/%d", appPort),
+			HTTPHeaders: headers,
 		},
 	}, nil
 }
@@ -121,12 +111,10 @@ func (p ProxiedApplicationProbe) grpcProbeToVirtual(virtualPort uint32) (Proxied
 	}
 
 	return ProxiedApplicationProbe{
-		ProbeHandler: kube_core.ProbeHandler{
-			HTTPGet: &kube_core.HTTPGetAction{
-				Port:        intstr.FromInt32(int32(virtualPort)),
-				Path:        fmt.Sprintf("/grpc/%d", appPort),
-				HTTPHeaders: headers,
-			},
+		HTTPGet: &kube_core.HTTPGetAction{
+			Port:        intstr.FromInt32(int32(virtualPort)),
+			Path:        fmt.Sprintf("/grpc/%d", appPort),
+			HTTPHeaders: headers,
 		},
 	}, nil
 }

@@ -5,7 +5,6 @@ metadata:
     k8s.kuma.io/namespace: demo
     kuma.io/display-name: example
     kuma.io/mesh: default
-    kuma.io/proxy-type: sidecar
     version: "0.1"
   name: example
 spec:
@@ -24,15 +23,3 @@ spec:
         ready: true
       port: 7070
       protocol: tcp
-  probes:
-    endpoints:
-    - inboundPath: /metrics
-      inboundPort: 8080
-      path: /8080/metrics
-    - inboundPath: /metrics
-      inboundPort: 3001
-      path: /3001/metrics
-    - inboundPath: /metrics
-      inboundPort: 8081
-      path: /8081/metrics
-    port: 19000

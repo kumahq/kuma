@@ -2,12 +2,17 @@ package v1alpha1
 
 import (
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func (r *MeshMultiZoneServiceResource) validate() error {
 	var verr validators.ValidationError
+	if meta := r.GetMeta(); meta != nil {
+		verr.Add(validators.ValidateRFC1035Name(validators.RootedAt("name"), core_model.GetDisplayName(meta)))
+	}
+
 	path := validators.RootedAt("spec")
 	if len(pointer.Deref(r.Spec.Selector.MeshService.MatchLabels)) == 0 {
 		verr.AddViolationAt(path.Field("selector").Field("meshService").Field("matchLabels"), "cannot be empty")

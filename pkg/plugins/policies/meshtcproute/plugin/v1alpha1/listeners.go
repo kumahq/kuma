@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
@@ -11,7 +10,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
@@ -26,20 +24,14 @@ func GenerateOutboundListener(
 	address := svc.Outbound.GetAddressWithFallback("127.0.0.1")
 	port := svc.Outbound.GetPort()
 
-	listenerName := envoy_names.GetOutboundListenerName(address, port)
-	listenerStatPrefix := ""
-	tcpProxyStatPrefix := svc.KumaServiceTagValue
-	if id, ok := svc.Outbound.AssociatedServiceResource(); ok {
-		listenerName = id.String()
-		listenerStatPrefix = listenerName
-		tcpProxyStatPrefix = listenerName
-	}
+	listenerName := svc.DestinationResource
+	listenerStatPrefix := listenerName
+	tcpProxyStatPrefix := listenerName
 
 	tags := svc.OutboundListenerTags()
 
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-		Configure(envoy_listeners.TCPProxy(tcpProxyStatPrefix, splits...)).
-		ConfigureIf(svc.Protocol == core_meta.ProtocolKafka, envoy_listeners.Kafka(tcpProxyStatPrefix))
+		Configure(envoy_listeners.TCPProxy(tcpProxyStatPrefix, splits...))
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, listenerName).
 		Configure(envoy_listeners.StatPrefix(listenerStatPrefix)).

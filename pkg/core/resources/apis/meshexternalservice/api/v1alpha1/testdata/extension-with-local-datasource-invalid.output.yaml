@@ -1,0 +1,5 @@
+violations:
+- field: spec.tls.verification.caCert.type
+  message: 'File must be one of: Secret, InsecureInline'
+- field: spec.tls.verification.clientCert.type
+  message: 'EnvVar must be one of: Secret, InsecureInline'

@@ -22,7 +22,7 @@ func GrpcRetry() {
 				WithProtocol("grpc"),
 				WithArgs([]string{"grpc", "server", "--port", "8080"}),
 				WithTransparentProxy(true),
-				WithLabels(map[string]string{"kuma.io/service": "test-server"}),
+				WithLabels(map[string]string{"kuma.io/display-name": "test-server"}),
 			)).
 			Install(TestServerUniversal(
 				"test-client", meshName,
@@ -30,7 +30,7 @@ func GrpcRetry() {
 				WithArgs([]string{"grpc", "client", "--address", "test-server.svc.mesh.local:80", "--unary", "true"}),
 				WithProtocol("grpc"),
 				WithTransparentProxy(true),
-				WithLabels(map[string]string{"kuma.io/service": "test-client"}),
+				WithLabels(map[string]string{"kuma.io/display-name": "test-client"}),
 			)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -59,7 +59,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: test-server
+      kuma.io/display-name: test-server
   rules:
     - default:
         http:
@@ -75,7 +75,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: test-client
+      kuma.io/display-name: test-client
   to:
     - targetRef:
         kind: MeshService

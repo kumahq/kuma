@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	manager_dataplane "github.com/kumahq/kuma/v3/pkg/core/managers/apis/dataplane"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -71,7 +70,6 @@ func (DirectAccessProxyGenerator) Generate(_ context.Context, _ *core_xds.Resour
 
 	resource, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, meta.DirectAccessClusterName).
 		Configure(envoy_clusters.PassThroughCluster()).
-		Configure(envoy_clusters.UnknownDestinationClientSideMTLS(proxy.SecretsTracker, xdsCtx.Mesh.Resource, len(xdsCtx.Mesh.CAsByTrustDomain) > 0)).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {
@@ -112,9 +110,10 @@ func directAccessEndpoints(dataplane *core_mesh.DataplaneResource, other *core_m
 		if err != nil {
 			return nil, err
 		}
-		dpService := dp.GetMeta().GetLabels()[mesh_proto.ServiceTag]
 		for _, inbound := range append(inbounds, dp.Spec.GetNetworking().GetInbound()...) {
-			if services["*"] || services[inbound.GetServiceFallback(dpService)] {
+			// Matching by an individual service name relied on a now-removed
+			// tag; only the "*" (match everything) entry works.
+			if services["*"] {
 				iface := dp.Spec.GetNetworking().ToInboundInterface(inbound)
 				endpoint := model.Endpoint{
 					Address: iface.DataplaneIP,

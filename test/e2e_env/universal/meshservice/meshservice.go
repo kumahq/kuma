@@ -17,6 +17,7 @@ import (
 
 func MeshService() {
 	meshName := "mesh-service"
+	identityName := "mesh-service-identity"
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
@@ -29,7 +30,10 @@ func MeshService() {
 				WithAdditionalTags(map[string]string{
 					"app": "test-server",
 				}))).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+				meshName,
+				MeshIdentityTrustDomain(meshName, universal.Cluster),
+			)).
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -90,6 +94,14 @@ spec:
 	})
 
 	It("should switch to permissive mTLS without drop of the traffic", func() {
+		// let's wait until Dataplanes are ready
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				universal.Cluster, "demo-client", "first-test-server.svc.mesh.local",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "500ms").Should(Succeed())
+
 		// given constant requests to the service
 		reqError := atomic.Value{}
 		stopCh := make(chan struct{})
@@ -100,7 +112,7 @@ spec:
 					return
 				}
 				_, err := client.CollectEchoResponse(
-					universal.Cluster, "demo-client", "backend.meshservice.othertld",
+					universal.Cluster, "demo-client", "first-test-server.svc.mesh.local",
 				)
 				if err != nil {
 					reqError.Store(err)
@@ -109,18 +121,29 @@ spec:
 			}
 		}()
 
-		// when
-		yaml := `
-type: Mesh
-name: mesh-service
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-    mode: PERMISSIVE
-`
-		err := universal.Cluster.Install(YamlUniversal(yaml))
+		// when permissive mTLS is turned on. MeshTLS goes first: it is a no-op
+		// until the MeshIdentity gives the proxies a certificate, so the
+		// inbounds never spend a moment in strict mode.
+		permissive := fmt.Sprintf(`
+type: MeshTLS
+name: permissive-%[1]s
+mesh: %[1]s
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        mode: Permissive
+`, meshName)
+		err := universal.Cluster.Install(YamlUniversal(permissive))
+		Expect(err).ToNot(HaveOccurred())
+		// Mint the CA and hand the trust bundle to every proxy while the
+		// identity still selects none of them, so widening the selector has
+		// nothing left to do but issue the certificates.
+		Expect(universal.Cluster.Install(MeshIdentityBundledUnselected(meshName, identityName))).To(Succeed())
+		Expect(WaitForMeshIdentityReady(universal.Cluster, meshName, identityName)).To(Succeed())
+		err = universal.Cluster.Install(MeshIdentityBundled(meshName, identityName))
+		Expect(WaitForMeshIdentityReady(universal.Cluster, meshName, identityName)).To(Succeed())
 
 		// then traffic went over mTLS with no errors
 		Expect(err).ToNot(HaveOccurred())
@@ -128,13 +151,14 @@ mtls:
 			cmd := tunnel.AdminCurlCmd("/stats")
 			stdout, _, err := universal.Cluster.Exec("", "", "demo-client", cmd...)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("cluster.kri_msvc_%s_kuma-3__backend_80.ssl.handshake", meshName)))
-			g.Expect(stdout).ToNot(ContainSubstring(fmt.Sprintf("cluster.kri_msvc_%s_kuma-3__backend_80.ssl.handshake: 0", meshName)))
+			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("cluster.kri_msvc_%s_kuma-3__first-test-server_80.ssl.handshake", meshName)))
+			g.Expect(stdout).ToNot(ContainSubstring(fmt.Sprintf("cluster.kri_msvc_%s_kuma-3__first-test-server_80.ssl.handshake: 0", meshName)))
 		}, "30s", "1s").Should(Succeed())
 		Expect(reqError.Load()).To(BeNil())
 
-		// when switch to strict mTLS
-		err = universal.Cluster.Install(MTLSMeshUniversal(meshName))
+		// when switch to strict mTLS, which is the default once the permissive
+		// MeshTLS is gone
+		err = universal.Cluster.GetKumactlOptions().KumactlDelete("meshtls", fmt.Sprintf("permissive-%s", meshName), meshName)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

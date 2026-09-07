@@ -22,10 +22,6 @@ func Matches() {
 	demoClient2 := "demo-client-2"
 	testServer := "test-server"
 
-	dppEnvs := map[string]string{
-		"KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED": "true",
-	}
-
 	var zoneName, tcpSinkDockerName, externalServiceDockerName, demoClient1SpiffeID, demoClient2SpiffeID string
 
 	BeforeAll(func() {
@@ -87,7 +83,6 @@ spec:
 			Install(zoneproxy.Install(
 				zoneproxy.WithMesh(meshName),
 				zoneproxy.WithEgress(),
-				zoneproxy.WithDpEnvs(dppEnvs),
 			)).
 			Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
 			Install(TestServerExternalServiceUniversal(externalServiceName, 80, false,
@@ -95,17 +90,14 @@ spec:
 			Install(DemoClientUniversal(demoClient1, meshName,
 				WithTransparentProxy(true),
 				WithWorkload(demoClient1),
-				WithDpEnvs(dppEnvs),
 			)).
 			Install(DemoClientUniversal(demoClient2, meshName,
 				WithTransparentProxy(true),
 				WithWorkload(demoClient2),
-				WithDpEnvs(dppEnvs),
 			)).
 			Install(TestServerUniversal(testServer, meshName,
 				WithArgs([]string{"echo", "--instance", testServer}),
 				WithWorkload(testServer),
-				WithDpEnvs(dppEnvs),
 			)).
 			Setup(universal.Cluster)).To(Succeed())
 

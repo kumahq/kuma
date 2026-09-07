@@ -6,4 +6,4 @@ networking:
   inbound:
     - port: 8080
       tags:
-        kuma.io/service: bar
+        kuma.io/display-name: bar

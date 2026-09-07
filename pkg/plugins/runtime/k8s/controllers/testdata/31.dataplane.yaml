@@ -6,7 +6,6 @@ metadata:
     k8s.kuma.io/service-account: redis-sa
     kuma.io/display-name: redis-example
     kuma.io/mesh: default
-    kuma.io/proxy-type: sidecar
     kuma.io/sidecar-injection: enabled
     kuma.io/workload: redis
     version: "6.0"

@@ -12,9 +12,7 @@ import (
 	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -86,43 +84,6 @@ var _ = Describe("MeshRateLimit configurer", func() {
 		Expect(hcmFilter).ToNot(BeNil())
 		router := &envoy_router.Router{}
 		Expect(util_proto.UnmarshalAnyTo(hcmFilter.GetTypedConfig(), router)).To(Succeed())
-	})
-
-	It("should add the HTTP local rate limit filter for gateway route-specific rate limits", func() {
-		filterChain := httpFilterChainWithSingleRouteNamed("route-1")
-		hcm := httpConnectionManagerFromFilterChain(filterChain)
-		routeConfig := hcm.GetRouteConfig()
-
-		configurer := &Configurer{
-			Element: subsetutils.MeshElement(),
-			Rules: core_rules.Rules{{
-				Subset: subsetutils.Subset{{
-					Key:   core_rules.RuleMatchesHashTag,
-					Value: "route-1",
-				}},
-				Conf: api.Conf{
-					Local: &api.Local{
-						HTTP: &api.LocalHTTP{
-							RequestRate: &api.Rate{Num: 1, Interval: k8s.Duration{Duration: 10 * time.Second}},
-							OnRateLimit: &api.OnRateLimit{
-								Status: pointer.To(uint32(428)),
-							},
-						},
-					},
-				},
-			}},
-		}
-
-		Expect(configurer.ConfigureGatewayRoute(routeConfig, filterChain)).To(Succeed())
-
-		hcm = httpConnectionManagerFromFilterChain(filterChain)
-		Expect(hcm.GetHttpFilters()).To(HaveLen(2))
-		Expect(hcm.GetHttpFilters()[0].GetName()).To(Equal(httpLocalRateLimitFilterName))
-		Expect(hcm.GetHttpFilters()[1].GetName()).To(Equal("envoy.filters.http.router"))
-
-		routes := routeConfig.GetVirtualHosts()[0].GetRoutes()
-		Expect(routes).To(HaveLen(1))
-		Expect(routes[0].GetTypedPerFilterConfig()).To(HaveKey(httpLocalRateLimitFilterName))
 	})
 })
 

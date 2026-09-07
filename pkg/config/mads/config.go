@@ -29,7 +29,8 @@ func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig
 type MonitoringAssignmentServerConfig struct {
 	config.BaseConfig
 
-	// Enabled if true starts the MADS server.
+	// Enabled if true starts the MADS server. MADS is only supported in universal
+	// deployment mode; this flag is ignored on Kubernetes.
 	Enabled bool `json:"enabled" envconfig:"kuma_monitoring_assignment_server_enabled"`
 	// Port of the server that serves Monitoring Assignment Discovery Service (MADS)
 	// over both grpc and http.

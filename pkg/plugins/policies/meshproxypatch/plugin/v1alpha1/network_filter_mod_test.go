@@ -756,7 +756,7 @@ var _ = Describe("Network Filter modifications", func() {
                 metadata:
                   filterMetadata:
                     io.kuma.tags:
-                      kuma.io/service: backend
+                      app: backend
                 filterChains:
                 - filters:
                   - name: envoy.filters.network.http_connection_manager
@@ -769,7 +769,7 @@ var _ = Describe("Network Filter modifications", func() {
                  match:
                    name: envoy.filters.network.http_connection_manager
                    listenerTags:
-                       kuma.io/service: backend
+                       app: backend
                  value: |
                    name: envoy.filters.network.http_connection_manager
                    typedConfig:
@@ -784,7 +784,7 @@ var _ = Describe("Network Filter modifications", func() {
                 metadata:
                   filterMetadata:
                     io.kuma.tags:
-                      kuma.io/service: backend
+                      app: backend
                 filterChains:
                 - filters:
                   - name: envoy.filters.network.http_connection_manager
@@ -800,7 +800,7 @@ var _ = Describe("Network Filter modifications", func() {
                 metadata:
                   filterMetadata:
                     io.kuma.tags:
-                      kuma.io/service: backend
+                      app: backend
                 filterChains:
                 - filters:
                   - name: envoy.filters.network.http_connection_manager
@@ -813,7 +813,7 @@ var _ = Describe("Network Filter modifications", func() {
                  match:
                    name: envoy.filters.network.http_connection_manager
                    listenerTags:
-                       kuma.io/service: web
+                       app: web
                  value: |
                    name: envoy.filters.network.http_connection_manager
                    typedConfig:
@@ -828,7 +828,7 @@ var _ = Describe("Network Filter modifications", func() {
                 metadata:
                   filterMetadata:
                     io.kuma.tags:
-                      kuma.io/service: backend
+                      app: backend
                 filterChains:
                 - filters:
                   - name: envoy.filters.network.http_connection_manager

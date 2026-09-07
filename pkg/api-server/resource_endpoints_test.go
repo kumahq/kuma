@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/unversioned"
 	rest_v1alpha1 "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	rest_error_types "github.com/kumahq/kuma/v3/pkg/core/rest/errors/types"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
@@ -124,6 +125,45 @@ var _ = Describe("Resource Endpoints", func() {
 	})
 })
 
+var _ = Describe("Read-only Resource Endpoints", func() {
+	It("should retain explicit PUT and DELETE routes", func() {
+		apiServer, _, stop := StartApiServer(NewTestApiServerConfigurer().WithGlobal())
+		defer stop()
+
+		const detail = "On global control plane you can not modify dataplane resources with 'kumactl apply' or via the HTTP API." +
+			" You can still use 'kumactl' or the HTTP API to modify them on the zone control plane.\n"
+		for _, method := range []string{http.MethodPut, http.MethodDelete} {
+			func() {
+				By(method)
+				request, err := http.NewRequestWithContext(
+					context.Background(),
+					method,
+					fmt.Sprintf("http://%s/meshes/default/dataplanes/dp-1", apiServer.Address()),
+					bytes.NewBufferString("not-json"),
+				)
+				Expect(err).ToNot(HaveOccurred())
+				request.Header.Set(restful.HEADER_ContentType, "application/json")
+
+				response, err := http.DefaultClient.Do(request)
+				Expect(err).ToNot(HaveOccurred())
+				defer response.Body.Close()
+				Expect(response.StatusCode).To(Equal(http.StatusMethodNotAllowed))
+				Expect(response.Header.Get(restful.HEADER_ContentType)).To(Equal("application/json"))
+
+				body := rest_error_types.Error{}
+				Expect(json.NewDecoder(response.Body).Decode(&body)).To(Succeed())
+				Expect(body).To(Equal(rest_error_types.Error{
+					Type:    "/std-errors",
+					Status:  http.StatusMethodNotAllowed,
+					Title:   "Method not allowed",
+					Detail:  detail,
+					Details: detail,
+				}))
+			}()
+		}
+	})
+})
+
 var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 	createServer := func(federatedZone, validateOriginLabel bool) (*api_server.ApiServer, core_store.ResourceStore, func()) {
 		store := core_store.NewPaginationStore(memory.NewStore())
@@ -171,11 +211,9 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// when
 		res := &rest_v1alpha1.Resource{
-			ResourceMeta: rest_v1alpha1.ResourceMeta{
-				Name: "mtp-1",
-				Mesh: mesh,
-				Type: string(v1alpha1.MeshTrafficPermissionType),
-			},
+			Name: "mtp-1",
+			Mesh: mesh,
+			Type: string(v1alpha1.MeshTrafficPermissionType),
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
 				AddRule(v1alpha1.Allow).
@@ -199,14 +237,12 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// when
 		res := &rest_v1alpha1.Resource{
-			ResourceMeta: rest_v1alpha1.ResourceMeta{
-				Name: "mtp-1",
-				Mesh: mesh,
-				Type: string(v1alpha1.MeshTrafficPermissionType),
-				Labels: map[string]string{
-					mesh_proto.MeshTag:             "some-other-mesh",
-					mesh_proto.ResourceOriginLabel: "zone",
-				},
+			Name: "mtp-1",
+			Mesh: mesh,
+			Type: string(v1alpha1.MeshTrafficPermissionType),
+			Labels: map[string]string{
+				mesh_proto.MeshTag:             "some-other-mesh",
+				mesh_proto.ResourceOriginLabel: "zone",
 			},
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
@@ -231,14 +267,12 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// when
 		res := &rest_v1alpha1.Resource{
-			ResourceMeta: rest_v1alpha1.ResourceMeta{
-				Name: "mtp-1",
-				Mesh: mesh,
-				Type: string(v1alpha1.MeshTrafficPermissionType),
-				Labels: map[string]string{
-					mesh_proto.MeshTag:             mesh,
-					mesh_proto.ResourceOriginLabel: "zone",
-				},
+			Name: "mtp-1",
+			Mesh: mesh,
+			Type: string(v1alpha1.MeshTrafficPermissionType),
+			Labels: map[string]string{
+				mesh_proto.MeshTag:             mesh,
+				mesh_proto.ResourceOriginLabel: "zone",
 			},
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
@@ -266,11 +300,9 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 			// when
 			res := &rest_v1alpha1.Resource{
-				ResourceMeta: rest_v1alpha1.ResourceMeta{
-					Name: "mtp-1",
-					Mesh: mesh,
-					Type: string(v1alpha1.MeshTrafficPermissionType),
-				},
+				Name: "mtp-1",
+				Mesh: mesh,
+				Type: string(v1alpha1.MeshTrafficPermissionType),
 				Spec: builders.MeshTrafficPermission().
 					WithTargetRef(builders.TargetRefMesh()).
 					AddRule(v1alpha1.Allow).
@@ -329,7 +361,6 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.ZoneTag:             "default",
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
-			mesh_proto.ProxyTypeLabel:      string(mesh_proto.SidecarLabel),
 			mesh_proto.DisplayName:         "dpp-1",
 		}))
 	})
@@ -355,11 +386,9 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// when: PUT a MeshTrafficPermission - Get will fail with non-NotFound error
 		res := &rest_v1alpha1.Resource{
-			ResourceMeta: rest_v1alpha1.ResourceMeta{
-				Name: "mtp-err",
-				Mesh: mesh,
-				Type: string(v1alpha1.MeshTrafficPermissionType),
-			},
+			Name: "mtp-err",
+			Mesh: mesh,
+			Type: string(v1alpha1.MeshTrafficPermissionType),
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
 				AddRule(v1alpha1.Allow).
@@ -381,13 +410,11 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// when
 		res := &rest_v1alpha1.Resource{
-			ResourceMeta: rest_v1alpha1.ResourceMeta{
-				Name: name,
-				Mesh: mesh,
-				Type: string(meshexternalservice_api.MeshExternalServiceType),
-				Labels: map[string]string{
-					"kuma.io/origin": "zone",
-				},
+			Name: name,
+			Mesh: mesh,
+			Type: string(meshexternalservice_api.MeshExternalServiceType),
+			Labels: map[string]string{
+				"kuma.io/origin": "zone",
 			},
 			Spec: &meshexternalservice_api.MeshExternalService{
 				Match: meshexternalservice_api.Match{
@@ -478,13 +505,11 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		// when: PUT a MeshTrafficPermission with a non-system kuma.io/policy-role
 		res := &rest_v1alpha1.Resource{
-			ResourceMeta: rest_v1alpha1.ResourceMeta{
-				Name: "mtp-role",
-				Mesh: mesh,
-				Type: string(v1alpha1.MeshTrafficPermissionType),
-				Labels: map[string]string{
-					mesh_proto.PolicyRoleLabel: string(mesh_proto.WorkloadOwnerPolicyRole),
-				},
+			Name: "mtp-role",
+			Mesh: mesh,
+			Type: string(v1alpha1.MeshTrafficPermissionType),
+			Labels: map[string]string{
+				mesh_proto.PolicyRoleLabel: string(mesh_proto.WorkloadOwnerPolicyRole),
 			},
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).

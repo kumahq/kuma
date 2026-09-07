@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -31,17 +30,15 @@ type EnvoyAdminClient interface {
 
 type envoyAdminClient struct {
 	rm               manager.ResourceManager
-	caManagers       ca.Managers
 	defaultAdminPort uint32
 
 	caCertPool *x509.CertPool
 	clientCert *tls.Certificate
 }
 
-func NewEnvoyAdminClient(rm manager.ResourceManager, caManagers ca.Managers, adminPort uint32) EnvoyAdminClient {
+func NewEnvoyAdminClient(rm manager.ResourceManager, adminPort uint32) EnvoyAdminClient {
 	client := &envoyAdminClient{
 		rm:               rm,
-		caManagers:       caManagers,
 		defaultAdminPort: adminPort,
 	}
 	return client
@@ -177,12 +174,6 @@ func (a *envoyAdminClient) executeRequest(ctx context.Context, proxy core_model.
 
 	switch proxy.(type) {
 	case *core_mesh.DataplaneResource:
-		httpClient, err = a.buildHTTPClient(ctx)
-		if err != nil {
-			return nil, err
-		}
-		u.Scheme = "https"
-	case *core_mesh.ZoneIngressResource, *core_mesh.ZoneEgressResource:
 		httpClient, err = a.buildHTTPClient(ctx)
 		if err != nil {
 			return nil, err

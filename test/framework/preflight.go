@@ -121,8 +121,7 @@ func CapturePreflight(specName, addr string) {
 	if err == nil {
 		return
 	}
-	var ee *exec.ExitError
-	if errors.As(err, &ee) {
+	if ee, ok := errors.AsType[*exec.ExitError](err); ok {
 		switch ee.ExitCode() {
 		case 1, 3: // blockers / inconclusive: expected, snapshot still written
 			return

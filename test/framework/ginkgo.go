@@ -282,8 +282,6 @@ func isSafeReproEnvValueKey(key string) bool {
 		"KUMA_K8S_TYPE",
 		"KUMA_USE_HOSTNAME_INSTEAD_OF_ID",
 		"KUMA_USE_LOAD_BALANCER",
-		"KUMA_ZONE_EGRESS_APP",
-		"KUMA_ZONE_INGRESS_APP",
 		"OS",
 		"PORT_PREFIX",
 	}, key) {

@@ -25,7 +25,7 @@ const FeatureZoneToken string = "zone-token"
 // global control plane to indicate it's still running.
 const FeatureZonePingHealth string = "zone-ping-health"
 
-// FeatureHashSuffix means that the zone control plane has a fix for the MeshGateway renaming
+// FeatureHashSuffix means that the zone control plane has a fix for the resource renaming
 // issue https://github.com/kumahq/kuma/pull/8450 and can handle the hash suffix in the resource name.
 const FeatureHashSuffix string = "hash-suffix"
 
@@ -36,8 +36,6 @@ const FeatureHostnameGeneratorMzSelector string = "hg-mz-selector"
 
 // FeatureProducerPolicyFlow means that the zone control plane supports the producer policy flow.
 const FeatureProducerPolicyFlow string = "producer-policy-flow"
-
-const FeatureOptionalTopLevelTargetRef string = "optional-top-level-target-ref"
 
 func ContextHasFeature(ctx context.Context, feature string) bool {
 	md, _ := metadata.FromIncomingContext(ctx)

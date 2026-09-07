@@ -25,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	"github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -69,12 +70,7 @@ var _ = Describe("Updater", func() {
 			ms := meshservice_api.NewMeshServiceResource()
 			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
-				{
-					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-					Value: "backend",
-				},
-			}))
+			g.Expect(ms.Spec.Identities).To(BeNil())
 		}, "10s", "100ms").Should(Succeed())
 	})
 
@@ -102,7 +98,6 @@ var _ = Describe("Updater", func() {
 			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
-				{Type: "ServiceTag", Value: "backend"},
 				{
 					Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
 					Value: "spiffe://default.east.mesh.local/ns/my-ns/sa/default",
@@ -111,7 +106,7 @@ var _ = Describe("Updater", func() {
 		}, "10s", "100ms").Should(Succeed())
 	})
 
-	It("should add identity to status of service based on MeshIdentity and old mTLS", func() {
+	It("should add identity to status of service based on multiple MeshIdentities", func() {
 		// when
 		mid := builders.MeshIdentity().WithName("identity-1").WithBundled().WithMesh("tls-mesh").WithSelector(&common_api.LabelSelector{
 			MatchLabels: &map[string]string{
@@ -123,7 +118,7 @@ var _ = Describe("Updater", func() {
 		}).WithSpiffeID("another-mesh-domain.east.mesh.local", "/my/domain/test").WithPartiallyReadyStatus().Build()
 		trustDomain := "tls-mesh.east.mesh.local"
 
-		Expect(samples.MeshMTLSBuilder().WithName("tls-mesh").Create(resManager)).To(Succeed())
+		Expect(samples.MeshDefaultBuilder().WithName("tls-mesh").Create(resManager)).To(Succeed())
 		Expect(samples.MeshServiceBackendBuilder().WithMesh("tls-mesh").Create(resManager)).To(Succeed())
 		Expect(builders.MeshTrust().WithMesh("tls-mesh").WithTrustDomain(trustDomain).Create(resManager)).To(Succeed())
 		Expect(resManager.Create(context.TODO(), mid, store.CreateByKey(mid.Meta.GetName(), "tls-mesh"))).To(Succeed())
@@ -142,10 +137,6 @@ var _ = Describe("Updater", func() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(pointer.Deref(ms.Spec.Identities)).To(ContainElements(
 				meshservice_api.MeshServiceIdentity{
-					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-					Value: "backend",
-				},
-				meshservice_api.MeshServiceIdentity{
 					Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
 					Value: "spiffe://tls-mesh.east.mesh.local/ns/my-ns/sa/default",
 				},
@@ -157,7 +148,7 @@ var _ = Describe("Updater", func() {
 		}, "10s", "100ms").Should(Succeed())
 	})
 
-	It("should derive identity from the workload label when inbound tags are absent", func() {
+	It("should derive identity from the workload label", func() {
 		// when
 		Expect(builders.MeshService().
 			WithName("backend").
@@ -167,7 +158,6 @@ var _ = Describe("Updater", func() {
 			AddIntPort(int32(builders.FirstInboundPort), int32(builders.FirstInboundPort), "http").
 			Create(resManager)).To(Succeed())
 		taglessDpp := samples.DataplaneBackendBuilder().Build()
-		taglessDpp.Spec.Networking.Inbound[0].Tags = map[string]string{}
 		Expect(resManager.Create(context.TODO(), taglessDpp, store.CreateByKey("dp-1", model.DefaultMesh), store.CreateWithLabels(map[string]string{
 			metadata.KumaWorkload: "backend",
 		}))).To(Succeed())
@@ -177,24 +167,23 @@ var _ = Describe("Updater", func() {
 			ms := meshservice_api.NewMeshServiceResource()
 			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
-				{
-					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-					Value: "backend",
-				},
-			}))
+			g.Expect(ms.Spec.Identities).To(BeNil())
 		}, "10s", "100ms").Should(Succeed())
 	})
 
 	It("should not override identity to status of service from another zone", func() {
 		// when
-		Expect(samples.MeshServiceBackendBuilder().
+		ms := samples.MeshServiceBackendBuilder().
 			WithLabels(map[string]string{
 				mesh_proto.ZoneTag:             "west",
 				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 			}).
-			AddServiceTagIdentity("backend").
-			Create(resManager)).To(Succeed())
+			Build()
+		ms.Spec.Identities = &[]meshservice_api.MeshServiceIdentity{{
+			Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+			Value: "spiffe://west.mesh.local/workload/backend",
+		}}
+		Expect(resManager.Create(context.TODO(), ms, store.CreateByKey("backend", model.DefaultMesh), store.CreateWithLabels(ms.GetMeta().GetLabels()))).To(Succeed())
 		// and there are no DPPs. If it was a local service it would have no identities
 
 		// then
@@ -204,28 +193,25 @@ var _ = Describe("Updater", func() {
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
 				{
-					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-					Value: "backend",
+					Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+					Value: "spiffe://west.mesh.local/workload/backend",
 				},
 			}))
 		}, "1s", "100ms").Should(Succeed())
 	})
 
 	type testCase struct {
-		meshBuilder            *builders.MeshBuilder
-		meshIdentities         []*meshidentity_api.MeshIdentityResource
-		meshTrusts             []*meshtrust_api.MeshTrustResource
-		dppLabels              map[string]string
-		dpInsightIssuedBackend string
-		dpInsightMissing       bool
-		existingTLSStatus      meshservice_api.TLSStatus
-		expectedTLSStatus      meshservice_api.TLSStatus
+		meshIdentities    []*meshidentity_api.MeshIdentityResource
+		meshTrusts        []*meshtrust_api.MeshTrustResource
+		dppLabels         map[string]string
+		existingTLSStatus meshservice_api.TLSStatus
+		expectedTLSStatus meshservice_api.TLSStatus
 	}
 
 	DescribeTable("mTLS updater",
 		func(given testCase) {
 			// given
-			Expect(given.meshBuilder.WithName("test").Create(resManager)).To(Succeed())
+			Expect(samples.MeshDefaultBuilder().WithName("test").Create(resManager)).To(Succeed())
 			for _, mid := range given.meshIdentities {
 				Expect(resManager.Create(context.TODO(), mid, store.CreateByKey(mid.Meta.GetName(), "test"))).To(Succeed())
 			}
@@ -238,12 +224,6 @@ var _ = Describe("Updater", func() {
 			dppLabels := map[string]string{metadata.KumaWorkload: "backend"}
 			maps.Copy(dppLabels, given.dppLabels)
 			Expect(resManager.Create(context.TODO(), samples.DataplaneBackendBuilder().WithMesh("test").Build(), store.CreateByKey("dp-1", "test"), store.CreateWithLabels(dppLabels))).To(Succeed())
-			if !given.dpInsightMissing {
-				Expect(samples.DataplaneInsightBackendBuilder().
-					WithMesh("test").
-					WithMTLSIssuedBackend(given.dpInsightIssuedBackend).
-					Create(resManager)).To(Succeed())
-			}
 			Expect(samples.MeshServiceBackendBuilder().
 				WithMesh("test").
 				WithTLSStatus(given.existingTLSStatus).
@@ -260,39 +240,11 @@ var _ = Describe("Updater", func() {
 			}, "10s", "50ms").MustPassRepeatedly(3).Should(Succeed())
 			// MustPassRepeatedly is to make sure that when existingTLSStatus == expectedTLSStatus we actually preserve it.
 		},
-		Entry("should set TLS to NotReady when mTLS is disabled", testCase{
-			meshBuilder:            samples.MeshDefaultBuilder(),
-			dpInsightIssuedBackend: "builtin-1",
-			existingTLSStatus:      meshservice_api.TLSReady,
-			expectedTLSStatus:      meshservice_api.TLSNotReady,
-		}),
-		Entry("should set TLS to Ready when we issued certs to all DPPs", testCase{
-			meshBuilder:            samples.MeshMTLSBuilder(),
-			dpInsightIssuedBackend: "builtin-1",
-			existingTLSStatus:      meshservice_api.TLSNotReady,
-			expectedTLSStatus:      meshservice_api.TLSReady,
-		}),
-		Entry("should set TLS to NotReady when we did not issued certs to all DPPs", testCase{
-			meshBuilder:            samples.MeshMTLSBuilder(),
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      "",
-			expectedTLSStatus:      meshservice_api.TLSNotReady,
-		}),
-		Entry("should preserve TLS Ready even through we did not issue certs to all DPPs", testCase{
-			meshBuilder:            samples.MeshMTLSBuilder(),
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      meshservice_api.TLSReady,
-			expectedTLSStatus:      meshservice_api.TLSReady,
-		}),
-		Entry("should set TLS to NotReady when DP has no insight", testCase{
-			meshBuilder:            samples.MeshMTLSBuilder(),
-			dpInsightMissing:       true,
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      "",
-			expectedTLSStatus:      meshservice_api.TLSNotReady,
+		Entry("should set TLS to NotReady when there is no MeshIdentity", testCase{
+			existingTLSStatus: meshservice_api.TLSReady,
+			expectedTLSStatus: meshservice_api.TLSNotReady,
 		}),
 		Entry("should set TLS to Ready when there is MeshIdentity and Trust", testCase{
-			meshBuilder: samples.MeshDefaultBuilder(),
 			meshIdentities: []*meshidentity_api.MeshIdentityResource{
 				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
 					MatchLabels: &map[string]string{
@@ -307,12 +259,10 @@ var _ = Describe("Updater", func() {
 				"app":                         "test",
 				"k8s.kuma.io/service-account": "default",
 			},
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      "",
-			expectedTLSStatus:      meshservice_api.TLSReady,
+			existingTLSStatus: "",
+			expectedTLSStatus: meshservice_api.TLSReady,
 		}),
 		Entry("should set TLS to NotReady when there is no matching MeshIdentity", testCase{
-			meshBuilder: samples.MeshDefaultBuilder(),
 			meshIdentities: []*meshidentity_api.MeshIdentityResource{
 				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
 					MatchLabels: &map[string]string{
@@ -327,12 +277,10 @@ var _ = Describe("Updater", func() {
 				"app":                         "test",
 				"k8s.kuma.io/service-account": "default",
 			},
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      "",
-			expectedTLSStatus:      meshservice_api.TLSNotReady,
+			existingTLSStatus: "",
+			expectedTLSStatus: meshservice_api.TLSNotReady,
 		}),
 		Entry("should set TLS to NotReady when there is no MeshTrust for identity", testCase{
-			meshBuilder: samples.MeshDefaultBuilder(),
 			meshIdentities: []*meshidentity_api.MeshIdentityResource{
 				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
 					MatchLabels: &map[string]string{
@@ -347,12 +295,10 @@ var _ = Describe("Updater", func() {
 				"app":                         "test",
 				"k8s.kuma.io/service-account": "default",
 			},
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      "",
-			expectedTLSStatus:      meshservice_api.TLSNotReady,
+			existingTLSStatus: "",
+			expectedTLSStatus: meshservice_api.TLSNotReady,
 		}),
 		Entry("should preserve TLS Ready even through we did not issue certs to all DPPs with MeshIdentity", testCase{
-			meshBuilder: samples.MeshDefaultBuilder(),
 			meshIdentities: []*meshidentity_api.MeshIdentityResource{
 				builders.MeshIdentity().WithBundled().WithSelector(&common_api.LabelSelector{
 					MatchLabels: &map[string]string{
@@ -367,9 +313,8 @@ var _ = Describe("Updater", func() {
 				"app":                         "test",
 				"k8s.kuma.io/service-account": "default",
 			},
-			dpInsightIssuedBackend: "",
-			existingTLSStatus:      meshservice_api.TLSReady,
-			expectedTLSStatus:      meshservice_api.TLSReady,
+			existingTLSStatus: meshservice_api.TLSReady,
+			expectedTLSStatus: meshservice_api.TLSReady,
 		}),
 	)
 
@@ -450,21 +395,21 @@ var _ = Describe("Updater", func() {
 				builders.Dataplane().
 					WithName("dp-all-inbounds-healthy").
 					WithLabels(map[string]string{"app": "backend"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api"}),
+					AddInboundOfTagsMap(map[string]string{}).
+					AddInboundOfTagsMap(map[string]string{}),
 				builders.Dataplane().
 					WithName("dp-one-inbounds-healthy").
 					WithLabels(map[string]string{"app": "backend"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api"}).
+					AddInboundOfTagsMap(map[string]string{}).
+					AddInboundOfTagsMap(map[string]string{}).
 					With(func(resource *core_mesh.DataplaneResource) {
 						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
 					}),
 				builders.Dataplane().
 					WithName("dp-no-inbounds-healthy").
 					WithLabels(map[string]string{"app": "backend"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-proxy"}).
-					AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend-api"}).
+					AddInboundOfTagsMap(map[string]string{}).
+					AddInboundOfTagsMap(map[string]string{}).
 					With(func(resource *core_mesh.DataplaneResource) {
 						resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
 						resource.Spec.Networking.Inbound[1].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
@@ -483,5 +428,61 @@ var _ = Describe("Updater", func() {
 		Eventually(func(g Gomega) {
 			g.Expect(test_metrics.FindMetric(metrics, "component_ms_status_updater")).ToNot(BeNil())
 		}, "10s", "100ms").Should(Succeed())
+	})
+})
+
+var _ = Describe("buildTLS", func() {
+	updater := &StatusUpdater{logger: logr.Discard(), localZone: "east"}
+
+	identity := builders.MeshIdentity().
+		WithBundled().
+		WithSelector(&common_api.LabelSelector{
+			MatchLabels: &map[string]string{"app": "test"},
+		}).
+		WithInitializedStatus().
+		Build()
+
+	certifiedDpp := samples.DataplaneBackendBuilder().
+		WithMesh("test").
+		Build()
+	certifiedDpp.Meta = &test_model.ResourceMeta{
+		Name:   "dp-1",
+		Mesh:   "test",
+		Labels: map[string]string{"app": "test"},
+	}
+
+	identities := []*meshidentity_api.MeshIdentityResource{identity}
+	trustDomains := map[string]struct{}{"test.east.mesh.local": {}}
+	dpps := []*core_mesh.DataplaneResource{certifiedDpp}
+
+	It("should hold the first certified pass in Pending", func() {
+		Expect(updater.buildTLS(meshservice_api.TLS{}, dpps, identities, trustDomains).Status).
+			To(Equal(meshservice_api.TLSPending))
+	})
+
+	It("should promote Pending to Ready on the next pass", func() {
+		pending := meshservice_api.TLS{Status: meshservice_api.TLSPending}
+		Expect(updater.buildTLS(pending, dpps, identities, trustDomains).Status).
+			To(Equal(meshservice_api.TLSReady))
+	})
+
+	It("should keep Ready latched", func() {
+		ready := meshservice_api.TLS{Status: meshservice_api.TLSReady}
+		Expect(updater.buildTLS(ready, dpps, identities, trustDomains).Status).
+			To(Equal(meshservice_api.TLSReady))
+	})
+
+	It("should drop back to NotReady when coverage is lost", func() {
+		pending := meshservice_api.TLS{Status: meshservice_api.TLSPending}
+		Expect(updater.buildTLS(pending, dpps, nil, trustDomains).Status).
+			To(Equal(meshservice_api.TLSNotReady))
+	})
+
+	It("should stay NotReady while any proxy is uncertified", func() {
+		uncertified := samples.DataplaneBackendBuilder().WithMesh("test").Build()
+		uncertified.Meta = &test_model.ResourceMeta{Name: "dp-2", Mesh: "test"}
+		both := []*core_mesh.DataplaneResource{certifiedDpp, uncertified}
+		Expect(updater.buildTLS(meshservice_api.TLS{}, both, identities, trustDomains).Status).
+			To(Equal(meshservice_api.TLSNotReady))
 	})
 })

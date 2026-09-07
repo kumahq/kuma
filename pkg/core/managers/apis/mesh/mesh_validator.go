@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	core_ca "github.com/kumahq/kuma/v3/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
@@ -18,14 +17,12 @@ type MeshValidator interface {
 }
 
 type meshValidator struct {
-	CaManagers core_ca.Managers
-	Store      core_store.ResourceStore
+	Store core_store.ResourceStore
 }
 
-func NewMeshValidator(caManagers core_ca.Managers, store core_store.ResourceStore) MeshValidator {
+func NewMeshValidator(store core_store.ResourceStore) MeshValidator {
 	return &meshValidator{
-		CaManagers: caManagers,
-		Store:      store,
+		Store: store,
 	}
 }
 
@@ -34,37 +31,11 @@ func (m *meshValidator) ValidateCreate(ctx context.Context, name string, resourc
 	if len(name) > 63 {
 		verr.AddViolation("name", "cannot be longer than 63 characters")
 	}
-	verr.Add(ValidateMTLSBackends(ctx, m.CaManagers, name, resource))
 	return verr.OrNil()
-}
-
-func ValidateMTLSBackends(ctx context.Context, caManagers core_ca.Managers, name string, resource *core_mesh.MeshResource) validators.ValidationError {
-	verr := validators.ValidationError{}
-	path := validators.RootedAt("mtls").Field("backends")
-
-	for idx, backend := range resource.Spec.GetMtls().GetBackends() {
-		caManager, exist := caManagers[backend.Type]
-		if !exist {
-			verr.AddViolationAt(path.Index(idx).Field("type"), "could not find installed plugin for this type")
-			return verr
-		} else if !resource.Spec.GetMtls().GetSkipValidation() {
-			if err := caManager.ValidateBackend(ctx, name, backend); err != nil {
-				if configErr, ok := err.(*validators.ValidationError); ok {
-					verr.AddErrorAt(path.Index(idx).Field("conf"), *configErr)
-				} else {
-					verr.AddViolationAt(path, err.Error())
-				}
-			}
-		}
-	}
-	return verr
 }
 
 func (m *meshValidator) ValidateUpdate(ctx context.Context, previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) error {
-	var verr validators.ValidationError
-	verr.Add(m.validateMTLSBackendChange(previousMesh, newMesh))
-	verr.Add(ValidateMTLSBackends(ctx, m.CaManagers, newMesh.Meta.GetName(), newMesh))
-	return verr.OrNil()
+	return nil
 }
 
 func (m *meshValidator) ValidateDelete(ctx context.Context, name string) error {
@@ -85,12 +56,4 @@ func ValidateNoActiveDP(ctx context.Context, name string, store core_store.Resou
 		return validationErr
 	}
 	return nil
-}
-
-func (m *meshValidator) validateMTLSBackendChange(previousMesh *core_mesh.MeshResource, newMesh *core_mesh.MeshResource) validators.ValidationError {
-	verr := validators.ValidationError{}
-	if previousMesh.MTLSEnabled() && newMesh.MTLSEnabled() && previousMesh.Spec.GetMtls().GetEnabledBackend() != newMesh.Spec.GetMtls().GetEnabledBackend() {
-		verr.AddViolation("mtls.enabledBackend", "Changing CA when mTLS is enabled is forbidden. Disable mTLS first and then change the CA")
-	}
-	return verr
 }

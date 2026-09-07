@@ -25,7 +25,30 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/utils"
 )
 
-func ControlPlaneAssertions(cluster Cluster) {
+// CPAssertionOpt relaxes one of the control plane assertions for a single
+// call site.
+type CPAssertionOpt func(*cpAssertionOpts)
+
+type cpAssertionOpts struct {
+	// knownNacks maps a NACK counter family to why it is exempt.
+	knownNacks map[string]string
+}
+
+// KnownNack exempts a NACK counter family on this cluster from the NACK
+// assertion. Use it only for a NACK a spec provokes on purpose, or a product
+// bug that is already fixed but not yet released, and say which in reason.
+// Everything else on the cluster stays asserted, including the other NACK
+// families.
+func KnownNack(family string, reason string) CPAssertionOpt {
+	return func(opts *cpAssertionOpts) {
+		if opts.knownNacks == nil {
+			opts.knownNacks = map[string]string{}
+		}
+		opts.knownNacks[family] = reason
+	}
+}
+
+func ControlPlaneAssertions(cluster Cluster, opts ...CPAssertionOpt) {
 	ginkgo.GinkgoHelper()
 	defer ginkgo.GinkgoRecover() // Ensures that Ginkgo can recover from any failures
 	logs := cluster.GetKumaCPLogs()
@@ -43,7 +66,7 @@ func ControlPlaneAssertions(cluster Cluster) {
 	default:
 		ginkgo.Fail("unknown cluster")
 	}
-	assertNoXdsNacks(cluster)
+	assertNoXdsNacks(cluster, opts...)
 	assertNoXdsChurn(cluster, logs)
 }
 
@@ -60,38 +83,115 @@ func assertNoXdsChurn(cluster Cluster, logs map[string]string) {
 	}
 }
 
-// assertNoXdsNacks scrapes the CP /metrics endpoint and fails if any xDS
-// request has been answered with a NACK. A non-zero counter means the CP
-// produced a config that Envoy rejected.
-func assertNoXdsNacks(cluster Cluster) {
+// nackCounter is a CP counter family that records a rejected config, the
+// label pair that marks a NACK series inside that family, and how many NACKs
+// are tolerated before the suite fails.
+type nackCounter struct {
+	family string
+	// label and value select the NACK series. Empty label means every
+	// series in the family is a NACK by construction.
+	label string
+	value string
+	// skipErrorType exempts series carrying this error_type. Used for
+	// "user", which marks a NACK the user caused rather than a CP defect.
+	skipErrorType string
+	// maxTolerated is the highest value that still passes.
+	maxTolerated float64
+}
+
+// nackCounters covers both the proxy-facing xDS servers and the KDS streams
+// between zone and global. The two sides are separate metric families because
+// they come from separate servers:
+//   - "xds"/"delta_xds" prefixes: pkg/xds/server/components.go, a NACK means
+//     Envoy rejected a config this CP generated.
+//   - "kds_delta" prefix: pkg/kds/server/components.go, a NACK means the peer
+//     CP rejected a resource this CP sent over KDS.
+//   - kds_nack_total: pkg/kds/mux/zone_sync.go, a NACK this CP sent back
+//     because a resource the peer sent failed validation. Every series is a
+//     NACK, and the family is absent until the first one.
+//
+// KDS tolerates nothing. A KDS NACK is not a transient eventual-consistency
+// blip that resolves itself: the sender keeps resending the same rejected
+// resource on every resync, so the stream never converges and the two CPs
+// disagree about state for as long as the resource exists. The proxy-facing
+// thresholds are left as they were.
+//
+// The exception is error_type="user", which KDS sets when the peer sent a
+// resource that conflicts with one the user already created locally. The CP
+// skips it and NACKs on purpose (pkg/kds/store/sync.go), and
+// test/e2e_env/multizone/sync asserts exactly that, so it is not a defect.
+var nackCounters = []nackCounter{
+	{family: "xds_requests_received", label: "confirmation", value: "NACK", maxTolerated: 2},
+	{family: "delta_xds_requests_received", label: "confirmation", value: "NACK", maxTolerated: 2},
+	{family: "kds_delta_requests_received", label: "confirmation", value: "NACK", skipErrorType: "user", maxTolerated: 0},
+	{family: "kds_nack_total", maxTolerated: 0},
+}
+
+// assertNoXdsNacks scrapes the CP /metrics endpoint and fails if any xDS or
+// KDS request has been answered with a NACK. A non-zero counter means the CP
+// produced a config that Envoy or a peer control plane rejected.
+func assertNoXdsNacks(cluster Cluster, opts ...CPAssertionOpt) {
 	ginkgo.GinkgoHelper()
+	options := cpAssertionOpts{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+	for family, reason := range options.knownNacks {
+		Logf("[WARNING]: not asserting %s on CP %s: %s", family, cluster.Name(), reason)
+	}
+
 	raw, err := cluster.GetKuma().GetMetrics()
 	Expect(err).ToNot(HaveOccurred(), "failed to scrape metrics from CP %s", cluster.Name())
 
+	nacks, err := findNacks(raw, options.knownNacks)
+	Expect(err).ToNot(HaveOccurred(), "failed to parse metrics from CP %s", cluster.Name())
+	Expect(nacks).To(BeEmpty(), "CP %s reported NACK(s): %s", cluster.Name(), strings.Join(nacks, ", "))
+}
+
+// findNacks returns one description per NACK counter that exceeds its
+// tolerance in a Prometheus text exposition, skipping the families named in
+// knownNacks.
+func findNacks(raw string, knownNacks map[string]string) ([]string, error) {
 	parser := expfmt.NewTextParser(model.UTF8Validation)
 	families, err := parser.TextToMetricFamilies(strings.NewReader(raw))
-	Expect(err).ToNot(HaveOccurred(), "failed to parse metrics from CP %s", cluster.Name())
+	if err != nil {
+		return nil, err
+	}
 
-	for _, metricName := range []string{"xds_requests_received", "delta_xds_requests_received"} {
-		family, ok := families[metricName]
+	var nacks []string
+	for _, counter := range nackCounters {
+		if _, known := knownNacks[counter.family]; known {
+			continue
+		}
+		family, ok := families[counter.family]
 		if !ok {
 			continue
 		}
 		for _, metric := range family.GetMetric() {
-			isNack := false
-			for _, label := range metric.GetLabel() {
-				if label.GetName() == "confirmation" && label.GetValue() == "NACK" {
-					isNack = true
-					break
-				}
-			}
-			if !isNack {
+			if counter.label != "" && !hasLabel(metric.GetLabel(), counter.label, counter.value) {
 				continue
 			}
-			Expect(metric.GetCounter().GetValue()).To(BeNumerically("<", 3),
-				"CP %s reported %s NACK(s) for labels %s", cluster.Name(), metricName, formatLabels(metric.GetLabel()))
+			if counter.skipErrorType != "" && hasLabel(metric.GetLabel(), "error_type", counter.skipErrorType) {
+				continue
+			}
+			value := metric.GetCounter().GetValue()
+			if value <= counter.maxTolerated {
+				continue
+			}
+			nacks = append(nacks, fmt.Sprintf("%s%s = %v (tolerated %v)",
+				counter.family, formatLabels(metric.GetLabel()), value, counter.maxTolerated))
 		}
 	}
+	return nacks, nil
+}
+
+func hasLabel(labels []*io_prometheus_client.LabelPair, name string, value string) bool {
+	for _, label := range labels {
+		if label.GetName() == name && label.GetValue() == value {
+			return true
+		}
+	}
+	return false
 }
 
 func formatLabels(labels []*io_prometheus_client.LabelPair) string {
@@ -132,9 +232,7 @@ func DumpState(cluster Cluster, mesh string, namespaces ...string) {
 	debugCPLogs(cluster)
 	errs = multierr.Combine(
 		debugExport(cluster, &kumactlOpts),
-		inspectDataplane(&kumactlOpts, cluster, mesh, dataplaneType),
-		inspectDataplane(&kumactlOpts, cluster, mesh, zoneegressType),
-		inspectDataplane(&kumactlOpts, cluster, mesh, zoneingressType),
+		inspectDataplane(&kumactlOpts, cluster, mesh),
 	)
 	switch cluster.(type) {
 	case *K8sCluster:
@@ -236,7 +334,9 @@ func debugKubeNamespace(cluster Cluster, namespace string) error {
 	} else {
 		Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
 	}
-	report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", "manifests.yaml"), out)
+	// Per namespace, like the events below: this function runs once for every
+	// namespace and a shared path would leave only the last one's manifests.
+	report.AddFileToReportEntry(path.Join(cluster.Name(), "k8s", namespace, "manifests.yaml"), out)
 
 	events, err := k8s.RunKubectlAndGetOutputContextE(cluster.GetTesting(), context.Background(), &kubeOptions, "get", "events", "--sort-by=.lastTimestamp", "-owide")
 	if err != nil {
@@ -272,34 +372,15 @@ func debugKubeNamespace(cluster Cluster, namespace string) error {
 	return errs
 }
 
-type dpType string
-
-const (
-	dataplaneType   dpType = "dataplane"
-	zoneegressType  dpType = "zoneegress"
-	zoneingressType dpType = "zoneingress"
-)
-
-func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh string, dpType dpType) error {
+func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh string) error {
 	var errs error
-	var args []string
-	switch dpType {
-	case dataplaneType:
-		args = []string{"get", "dataplanes", "--mesh", mesh, "-ojson"}
-	case zoneegressType:
-		args = []string{"get", "zoneegresses", "-ojson"}
-	case zoneingressType:
-		args = []string{"get", "zone-ingresses", "-ojson"}
-	default:
-		panic("unknown dp type " + string(dpType))
-	}
-	dpListJson, err := kumactlOpts.RunKumactlAndGetOutput(args...)
+	dpListJson, err := kumactlOpts.RunKumactlAndGetOutput("get", "dataplanes", "--mesh", mesh, "-ojson")
 	if err != nil {
-		return fmt.Errorf("failed to retrieve dps of type %q, %w", dpType, err)
+		return fmt.Errorf("failed to retrieve dataplanes, %w", err)
 	}
 	dpResp := dataplaneListResponse{}
 	if jsonErr := json.Unmarshal([]byte(dpListJson), &dpResp); jsonErr != nil {
-		return fmt.Errorf("failed to unmarshall dps of type %q, %w", dpType, err)
+		return fmt.Errorf("failed to unmarshall dataplanes, %w", jsonErr)
 	}
 
 	for _, dpObj := range dpResp.Items {
@@ -311,23 +392,12 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh
 			"stats":       ".txt",
 			"clusters":    ".txt",
 		} {
-			// zoneingress and zoneegress do not have policies nor config
-			if dpType != dataplaneType && slices.Contains([]string{"policies", "config"}, inspectType) {
-				continue
-			}
-
 			dpName := dpObj.Name
-			args := []string{"inspect", string(dpType), dpName, "--type", inspectType}
+			args := []string{"inspect", "dataplane", dpName, "--type", inspectType}
 			if inspectType == "get" {
-				if dpType == zoneingressType {
-					args = []string{"get", "zone-ingress", dpName, "-oyaml"}
-				} else {
-					args = []string{"get", string(dpType), dpName, "-oyaml"}
-				}
+				args = []string{"get", "dataplane", dpName, "-oyaml"}
 			}
-			if dpType == dataplaneType {
-				args = append(args, "--mesh", mesh)
-			}
+			args = append(args, "--mesh", mesh)
 			inspectResp, err := kumactlOpts.RunKumactlAndGetOutput(args...)
 
 			if err != nil {

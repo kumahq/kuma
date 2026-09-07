@@ -56,12 +56,12 @@ func interfaceFrom[T any](field reflect.Value) T {
 		return zero
 	}
 
-	if val, ok := field.Interface().(T); ok {
+	if val, ok := reflect.TypeAssert[T](field); ok {
 		return val
 	}
 
 	if field.CanAddr() {
-		if val, ok := field.Addr().Interface().(T); ok {
+		if val, ok := reflect.TypeAssert[T](field.Addr()); ok {
 			return val
 		}
 	}

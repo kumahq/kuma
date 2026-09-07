@@ -212,15 +212,13 @@ const (
 
 // Mode
 const (
-    Standalone CpMode = "standalone"  // Single-zone
-    Global     CpMode = "global"      // Multi-zone coordinator
-    Zone       CpMode = "zone"        // Multi-zone member
+    Global CpMode = "global"      // Multi-zone coordinator
+    Zone   CpMode = "zone"        // Multi-zone member
 )
 
 switch cfg.Mode {
 case core.Zone:      // Requires XdsServer, GlobalAddress
 case core.Global:    // Requires KDS server
-case core.Standalone:// No multizone deps
 }
 ```
 
@@ -245,7 +243,7 @@ type Deprecation struct {
 }
 
 deprecations := []Deprecation{
-    {Env: "KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT", EnvMsg: "Use KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL"},
+    {Env: "KUMA_OLD_ENV_VAR", EnvMsg: "Use KUMA_NEW_ENV_VAR instead"},
 }
 config.PrintDeprecations(deprecations, cfg, stdout)
 ```

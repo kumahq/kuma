@@ -10,9 +10,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	envoy "github.com/kumahq/kuma/v3/pkg/xds/envoy/tags"
 )
 
 func toLines(r io.Reader) []string {
@@ -84,21 +81,6 @@ var _ = Describe("Merge", func() {
 var _ = Describe("Detect mergable clusters", func() {
 	It("should crack split cluster names", func() {
 		clusterName := "foo-service-5bac935803abcdd1"
-		Expect(clusterName).ToNot(BeEmpty())
-
-		name, ok := isMergeableClusterName(clusterName)
-		Expect(ok).To(BeTrue())
-		Expect(name).To(Equal("foo-service"))
-	})
-
-	It("should crack gateway cluster names", func() {
-		clusterName, err := envoy.Tags(map[string]string{
-			mesh_proto.ServiceTag: "foo-service",
-			mesh_proto.ZoneTag:    "foo-zone",
-		}).DestinationClusterName(map[string]string{
-			"custom": "tag",
-		})
-		Expect(err).To(Succeed())
 		Expect(clusterName).ToNot(BeEmpty())
 
 		name, ok := isMergeableClusterName(clusterName)

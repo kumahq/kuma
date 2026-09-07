@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -32,6 +33,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap"
 )
 
@@ -88,12 +90,16 @@ var _ = Describe("Bootstrap Server", func() {
 			ReadHeaderTimeout:       config_types.Duration{Duration: 5 * time.Second},
 			GracefulShutdownTimeout: config_types.Duration{Duration: 10 * time.Second},
 		}
-		dpServer, err := server.NewDpServer(dpServerCfg, metrics, func(writer http.ResponseWriter, request *http.Request) bool {
+		watchers := util_tls.NewWatchers(context.Background(), logr.Discard())
+		dpServer, err := server.NewDpServer(dpServerCfg, metrics, watchers, func(writer http.ResponseWriter, request *http.Request) bool {
 			return true
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, true, 0, false)
+		// the same key pair the DP server serves
+		dpServerKeyPair, err := watchers.Watch(dpServerCfg.TlsCertFile, dpServerCfg.TlsKeyFile)
+		Expect(err).ToNot(HaveOccurred())
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, dpServerKeyPair, authEnabled, false, true, 0, false)
 		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
 			Generator: generator,
@@ -138,9 +144,6 @@ var _ = Describe("Bootstrap Server", func() {
 						{
 							Port:        443,
 							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
 						},
 					},
 					Admin: &mesh_proto.EnvoyAdmin{},
@@ -241,9 +244,6 @@ var _ = Describe("Bootstrap Server", func() {
 						{
 							Port:        443,
 							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
 						},
 					},
 				},
@@ -280,9 +280,6 @@ var _ = Describe("Bootstrap Server", func() {
 						{
 							Port:        443,
 							ServicePort: 8443,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
 						},
 					},
 				},

@@ -52,15 +52,11 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	}
 	opts := core_store.NewCreateOptions(fs...)
 	cm := &kube_core.ConfigMap{
-		TypeMeta: kube_meta.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name:      opts.Name,
-			Namespace: s.namespace,
-		},
-		Immutable: nil,
+		Kind:       "ConfigMap",
+		APIVersion: "v1",
+		Name:       opts.Name,
+		Namespace:  s.namespace,
+		Immutable:  nil,
 		Data: map[string]string{
 			configMapKey: configRes.Spec.Config,
 		},
@@ -96,10 +92,8 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	}
 	opts := core_store.NewUpdateOptions(fs...)
 	cm := &kube_core.ConfigMap{
-		TypeMeta: kube_meta.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
+		Kind:       "ConfigMap",
+		APIVersion: "v1",
 		ObjectMeta: r.GetMeta().(*KubernetesMetaAdapter).ObjectMeta,
 		Immutable:  nil,
 		Data: map[string]string{
@@ -133,15 +127,11 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 	}
 	opts := core_store.NewDeleteOptions(fs...)
 	cm := &kube_core.ConfigMap{
-		TypeMeta: kube_meta.TypeMeta{
-			Kind:       "ConfigMap",
-			APIVersion: "v1",
-		},
-		ObjectMeta: kube_meta.ObjectMeta{
-			Name:      opts.Name,
-			Namespace: s.namespace,
-		},
-		Immutable: nil,
+		Kind:       "ConfigMap",
+		APIVersion: "v1",
+		Name:       opts.Name,
+		Namespace:  s.namespace,
+		Immutable:  nil,
 		Data: map[string]string{
 			configMapKey: configRes.Spec.Config,
 		},

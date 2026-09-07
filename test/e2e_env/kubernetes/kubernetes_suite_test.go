@@ -14,7 +14,6 @@ import (
 	externalname_services "github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/externalname-services"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/gateway"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/graceful"
-	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/healthcheck"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/inspect"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/jobs"
 	"github.com/kumahq/kuma/v3/test/e2e_env/kubernetes/k8s_api_bypass"
@@ -54,11 +53,10 @@ var (
 )
 
 var (
-	_ = Describe("Virtual Probes", Label("job-2"), healthcheck.VirtualProbes, Ordered)
 	_ = Describe("Delegated Gateway", Label("job-2"), Label("kind-not-supported", "ipv6-not-supported"), gateway.Delegated, Ordered)
 	_ = Describe("Graceful", Label("job-1"), graceful.Graceful, Ordered)
 	_ = Describe("Eviction", Label("job-1"), graceful.Eviction, Ordered)
-	_ = XDescribe("Change Service", graceful.ChangeService, Ordered)
+	_ = Describe("Change Service", Label("job-0"), graceful.ChangeService, Ordered)
 	_ = Describe("Jobs", Label("job-3"), jobs.Jobs)
 	_ = Describe("Container Patch", Label("job-3"), container_patch.ContainerPatch, Ordered)
 	_ = Describe("MeshTrace", Label("job-3"), observability.PluginTest, Ordered)

@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/file"
+	"github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 var _ = Describe("SortToEntries", func() {
@@ -18,7 +19,7 @@ var _ = Describe("SortToEntries", func() {
 		func(inputFile string) {
 			// given
 			resources := file.ReadInputFile(inputFile)
-			entries, err := outbound.GetEntries(matchedPolicies(resources))
+			entries, err := outbound.GetEntries(matchedPolicies(resources), context.Resources{})
 			Expect(err).ToNot(HaveOccurred())
 
 			// when

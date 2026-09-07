@@ -72,7 +72,8 @@ var _ = Describe("Validating Webhook", func() {
 func newValidatingWebhook(mode core.CpMode, federatedZone bool) *kube_admission.Webhook {
 	checker := webhooks.ResourceAdmissionChecker{
 		AllowedUsers: []string{
-			"system:serviceaccount:kube-system:generic-garbage-collector",
+			webhooks.GenericGarbageCollectorUser,
+			webhooks.StorageVersionMigratorUser,
 			"system:serviceaccount:kuma-system:kuma-control-plane",
 		},
 		Mode:                         mode,
@@ -81,7 +82,7 @@ func newValidatingWebhook(mode core.CpMode, federatedZone bool) *kube_admission.
 		SystemNamespace:              "kuma-system",
 		ZoneName:                     "zone-1",
 	}
-	handler := webhooks.NewValidatingWebhook(k8s_resources.NewSimpleConverter(), core_registry.Global(), k8s_registry.Global(), checker)
+	handler := webhooks.NewValidatingWebhook(k8s_resources.NewSimpleConverter("kuma-system"), core_registry.Global(), k8s_registry.Global(), checker)
 	handler.InjectDecoder(kube_admission.NewDecoder(scheme))
 	return &kube_admission.Webhook{
 		Handler: handler,
@@ -140,25 +141,23 @@ func webhookRequest(inputFile string) kube_admission.Request {
 	Expect(err).ToNot(HaveOccurred())
 
 	req := kube_admission.Request{
-		AdmissionRequest: admissionv1.AdmissionRequest{
-			UID: kube_types.UID("12345"),
-			Object: kube_runtime.RawExtension{
-				Raw: obj,
-			},
-			OldObject: kube_runtime.RawExtension{
-				Raw: oldObj,
-			},
-			Kind: kube_meta.GroupVersionKind{
-				Group:   gv.Group,
-				Version: gv.Version,
-				Kind:    gvk.Kind,
-			},
-			UserInfo: authenticationv1.UserInfo{
-				Username: user,
-			},
-			Operation: admissionv1.Operation(op),
-			Namespace: ns,
+		UID: kube_types.UID("12345"),
+		Object: kube_runtime.RawExtension{
+			Raw: obj,
 		},
+		OldObject: kube_runtime.RawExtension{
+			Raw: oldObj,
+		},
+		Kind: kube_meta.GroupVersionKind{
+			Group:   gv.Group,
+			Version: gv.Version,
+			Kind:    gvk.Kind,
+		},
+		UserInfo: authenticationv1.UserInfo{
+			Username: user,
+		},
+		Operation: admissionv1.Operation(op),
+		Namespace: ns,
 	}
 
 	return req

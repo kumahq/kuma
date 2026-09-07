@@ -8,7 +8,7 @@ items:
     targetRef:
       kind: Dataplane
       labels:
-        kuma.io/service: test-client_multizone-meshtimeout-ns_svc_80
+        app: test-client
     to:
     - default:
         http:

@@ -22,7 +22,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config"
-	config_kumacp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/config/multizone"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -30,10 +29,10 @@ import (
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v3/pkg/kds"
+	kds_client "github.com/kumahq/kuma/v3/pkg/kds/client"
+	kds_server "github.com/kumahq/kuma/v3/pkg/kds/server"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
-	kds_client_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/client"
-	kds_server_v2 "github.com/kumahq/kuma/v3/pkg/kds/v2/server"
-	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/v2/store"
+	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	resources_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -46,7 +45,6 @@ type client struct {
 	globalURL           string
 	clientID            string
 	config              multizone.KdsClientConfig
-	experimantalConfig  config_kumacp.ExperimentalConfig
 	metrics             metrics.Metrics
 	ctx                 context.Context
 	envoyAdminProcessor service.EnvoyAdminProcessor
@@ -61,7 +59,6 @@ func NewClient(
 	globalURL string,
 	clientID string,
 	config multizone.KdsClientConfig,
-	experimantalConfig config_kumacp.ExperimentalConfig,
 	metrics metrics.Metrics,
 	envoyAdminProcessor service.EnvoyAdminProcessor,
 	resourceSyncer kds_sync_store.ResourceSyncer,
@@ -73,7 +70,6 @@ func NewClient(
 		globalURL:           globalURL,
 		clientID:            clientID,
 		config:              config,
-		experimantalConfig:  experimantalConfig,
 		metrics:             metrics,
 		envoyAdminProcessor: envoyAdminProcessor,
 		resourceSyncer:      resourceSyncer,
@@ -167,14 +163,14 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 		trySend(ctx, errorCh, err)
 		return
 	}
-	kdsStream := kds_client_v2.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson, len(c.typesSentByGlobal))
+	kdsStream := kds_client.NewDeltaKDSStream(stream, c.clientID, c.rt.GetInstanceId(), cfgJson, len(c.typesSentByGlobal))
 	defer func() {
 		if err := kdsStream.CloseSend(); err != nil {
 			log.Error(err, "CloseSend returned an error")
 		}
 	}()
 
-	syncClient := kds_client_v2.NewKDSSyncClient(
+	syncClient := kds_client.NewKDSSyncClient(
 		log,
 		c.typesSentByGlobal,
 		kdsStream,
@@ -185,7 +181,7 @@ func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, con
 			resources_k8s.NewSimpleKubeFactory(),
 			c.rt.Config().Store.Kubernetes.SystemNamespace,
 		),
-		kds_client_v2.SyncClientConfig{
+		kds_client.SyncClientConfig{
 			ResponseBackoff: c.rt.Config().Multizone.Zone.KDS.ResponseBackoff.Duration,
 			LogPayloads:     c.rt.Config().Multizone.Zone.KDS.LogPayloads,
 		},
@@ -213,7 +209,7 @@ func (c *client) startZoneToGlobalSync(ctx context.Context, log logr.Logger, con
 	}()
 
 	log.Info("ZoneToGlobalSync new session created")
-	errorStream := NewErrorRecorderStream(kds_server_v2.NewServerStream(stream))
+	errorStream := NewErrorRecorderStream(kds_server.NewServerStream(stream))
 	err = c.deltaServer.DeltaStreamHandler(errorStream, "")
 	if err == nil {
 		err = errorStream.Err()
@@ -353,11 +349,18 @@ func (c *client) handleProcessingErrors(
 		// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
 		return
 	}
-	if errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled {
+	switch {
+	case status.Code(err) == codes.ResourceExhausted:
+		log.Error(err, "rpc stream failed, because a message exceeded the maximum KDS message size. This rpc is unavailable until the KDS connection is re-established. Align maxMsgSize between the zone CP and the global CP, or trim the proxy config with reachableBackends.")
+		// Do not rethrow the error. Retrying resends the same oversized message,
+		// so restarting the KDS multiplex would only take resource sync down
+		// with it in a loop.
+		err = nil
+	case errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled:
 		log.Info("rpc stream shutting down")
 		// Let's not propagate this error further as we've already cancelled the context
 		err = nil
-	} else {
+	default:
 		log.Error(err, "rpc stream failed prematurely, will restart in background")
 	}
 	if err := stream.CloseSend(); err != nil {

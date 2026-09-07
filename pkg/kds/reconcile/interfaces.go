@@ -1,0 +1,29 @@
+package reconcile
+
+import (
+	"context"
+
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/go-logr/logr"
+
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	kds_cache "github.com/kumahq/kuma/v3/pkg/kds/cache"
+)
+
+// Reconciler re-computes configuration for a given node.
+type Reconciler interface {
+	// Reconcile reconciles state of node given changed resource types.
+	// Returns error and bool which is true if any resource was changed.
+	Reconcile(context.Context, *envoy_core.Node, map[model.ResourceType]struct{}, logr.Logger) (error, bool)
+
+	// SupportedTypes returns a list of resource types that are supported by this Reconciler.
+	SupportedTypes() []model.ResourceType
+	// Clear remove local state of node
+	Clear(*envoy_core.Node) error
+}
+
+// Generates a snapshot of xDS resources for a given node.
+type SnapshotGenerator interface {
+	GenerateSnapshot(context.Context, *envoy_core.Node, kds_cache.SnapshotBuilder, map[model.ResourceType]struct{}) (envoy_cache.ResourceSnapshot, error)
+}

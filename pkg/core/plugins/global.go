@@ -45,8 +45,6 @@ func pluginKind(p Plugin) string {
 		return string(configStorePlugin)
 	case RuntimePlugin:
 		return string(runtimePlugin)
-	case CaPlugin:
-		return string(caPlugin)
 	case AuthnAPIServerPlugin:
 		return string(authnAPIServer)
 	case PolicyPlugin:

@@ -42,7 +42,6 @@ spec:
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().WithName(mesh))).
-			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 

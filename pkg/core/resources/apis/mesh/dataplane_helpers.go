@@ -61,6 +61,18 @@ func overlap(address1 net.IP, address2 net.IP) bool {
 	return address1.Equal(address2)
 }
 
+// IsDelegatedGateway reports whether this proxy fronts a delegated gateway,
+// which the kuma.io/gateway label marks. A resource whose labels have not been
+// computed yet is not a gateway, so validate a write with the labels it is
+// about to store (see manager.ValidateWithLabels).
+func (d *DataplaneResource) IsDelegatedGateway() bool {
+	var labels map[string]string
+	if meta := d.GetMeta(); meta != nil {
+		labels = meta.GetLabels()
+	}
+	return mesh_proto.IsDelegatedGateway(labels)
+}
+
 func (d *DataplaneResource) IsIPv6() bool {
 	return d != nil && govalidator.IsIPv6(d.Spec.GetNetworking().GetAddress())
 }
@@ -166,27 +178,19 @@ func (d *DataplaneResource) IdentifyingName() string {
 	return mesh_proto.ServiceUnknown
 }
 
-// DisplayTags returns the dataplane's resource labels merged with its
-// gateway tags (if any), formatted for CLI/API display (the TAGS column
-// and the `?tag=` filter).
+// DisplayTags returns the dataplane's resource labels formatted for CLI/API
+// display (the TAGS column and the `?tag=` filter).
 func (d *DataplaneResource) DisplayTags() mesh_proto.MultiValueTagSet {
-	return DisplayTags(d.Spec, d.GetMeta().GetLabels())
+	return DisplayTags(d.GetMeta().GetLabels())
 }
 
-// DisplayTags merges labels with a dataplane's gateway tags (if any) for
-// CLI/API display. Split from the DataplaneResource method so overview
-// endpoints, which carry the Dataplane spec and its labels separately, can
-// call it too.
-func DisplayTags(dataplane *mesh_proto.Dataplane, labels map[string]string) mesh_proto.MultiValueTagSet {
+// DisplayTags formats labels for CLI/API display. Split from the
+// DataplaneResource method so overview endpoints, which carry the labels
+// separately, can call it too.
+func DisplayTags(labels map[string]string) mesh_proto.MultiValueTagSet {
 	tags := mesh_proto.MultiValueTagSet{}
 	for key, value := range labels {
 		tags[key] = map[string]bool{value: true}
-	}
-	for key, value := range dataplane.GetNetworking().GetGateway().GetTags() {
-		if _, ok := tags[key]; !ok {
-			tags[key] = map[string]bool{}
-		}
-		tags[key][value] = true
 	}
 	return tags
 }

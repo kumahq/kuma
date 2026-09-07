@@ -15,9 +15,9 @@ violations:
   message: protocol tcp is not supported for a domain
 - field: spec.default.appendMatch[4].value
   message: provided CIDR has incorrect value
-- field: spec.default.appendMatch[6].port
-  message: 'using the same port in multiple matches requires the same protocol for
-    the following protocols: [grpc http http2]'
+- field: spec.default.appendMatch[6].protocol
+  message: protocols http and http2 produce the same filter chain for domains on port
+    8080
 - field: spec.default.appendMatch[7].value
   message: provided DNS has incorrect value, partial wildcard is currently not supported
 - field: spec.default.appendMatch[9].value

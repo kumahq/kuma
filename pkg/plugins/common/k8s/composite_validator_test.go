@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	admissionv1 "k8s.io/api/admission/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -48,10 +47,8 @@ var _ = Describe("Composite Validator", func() {
 
 		kubeTypes = k8s_registry.NewTypeRegistry()
 		err := kubeTypes.RegisterObjectType(&mesh_proto.Mesh{}, &mesh_k8s.Mesh{
-			TypeMeta: kube_meta.TypeMeta{
-				APIVersion: mesh_k8s.GroupVersion.String(),
-				Kind:       "Mesh",
-			},
+			APIVersion: mesh_k8s.GroupVersion.String(),
+			Kind:       "Mesh",
 		})
 		Expect(err).ToNot(HaveOccurred())
 
@@ -77,16 +74,14 @@ var _ = Describe("Composite Validator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		req := kube_admission.Request{
-			AdmissionRequest: admissionv1.AdmissionRequest{
-				UID: kube_types.UID("12345"),
-				Object: kube_runtime.RawExtension{
-					Raw: []byte(yaml),
-				},
-				Kind: kube_meta.GroupVersionKind{
-					Group:   obj.GetObjectKind().GroupVersionKind().Group,
-					Version: obj.GetObjectKind().GroupVersionKind().Version,
-					Kind:    obj.GetObjectKind().GroupVersionKind().Kind,
-				},
+			UID: kube_types.UID("12345"),
+			Object: kube_runtime.RawExtension{
+				Raw: []byte(yaml),
+			},
+			Kind: kube_meta.GroupVersionKind{
+				Group:   obj.GetObjectKind().GroupVersionKind().Group,
+				Version: obj.GetObjectKind().GroupVersionKind().Version,
+				Kind:    obj.GetObjectKind().GroupVersionKind().Kind,
 			},
 		}
 
@@ -115,16 +110,14 @@ var _ = Describe("Composite Validator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		req := kube_admission.Request{
-			AdmissionRequest: admissionv1.AdmissionRequest{
-				UID: kube_types.UID("12345"),
-				Object: kube_runtime.RawExtension{
-					Raw: []byte(yaml),
-				},
-				Kind: kube_meta.GroupVersionKind{
-					Group:   obj.GetObjectKind().GroupVersionKind().Group,
-					Version: obj.GetObjectKind().GroupVersionKind().Version,
-					Kind:    obj.GetObjectKind().GroupVersionKind().Kind,
-				},
+			UID: kube_types.UID("12345"),
+			Object: kube_runtime.RawExtension{
+				Raw: []byte(yaml),
+			},
+			Kind: kube_meta.GroupVersionKind{
+				Group:   obj.GetObjectKind().GroupVersionKind().Group,
+				Version: obj.GetObjectKind().GroupVersionKind().Version,
+				Kind:    obj.GetObjectKind().GroupVersionKind().Kind,
 			},
 		}
 

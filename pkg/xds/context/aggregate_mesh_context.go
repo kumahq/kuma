@@ -2,12 +2,10 @@ package context
 
 import (
 	"context"
-	"encoding/base64"
 	"strings"
 
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/sha256"
 )
@@ -41,31 +39,10 @@ func AggregateMeshContexts(
 		meshes = append(meshes, mesh)
 	}
 
-	hash := aggregatedHash(meshContexts)
-
-	egressByName := map[string]*core_mesh.ZoneEgressResource{}
-	if len(meshContexts) > 0 {
-		for _, egress := range meshContexts[0].Resources.ZoneEgresses().Items {
-			egressByName[egress.Meta.GetName()] = egress
-		}
-	} else {
-		var egressList core_mesh.ZoneEgressResourceList
-		if err := resManager.List(ctx, &egressList, core_store.ListOrdered()); err != nil {
-			return AggregatedMeshContexts{}, err
-		}
-
-		for _, egress := range egressList.GetItems() {
-			egressByName[egress.GetMeta().GetName()] = egress.(*core_mesh.ZoneEgressResource)
-		}
-
-		hash = base64.StdEncoding.EncodeToString(core_model.ResourceListHash(&egressList))
-	}
-
 	result := AggregatedMeshContexts{
-		Hash:               hash,
+		Hash:               aggregatedHash(meshContexts),
 		Meshes:             meshes,
 		MeshContextsByName: meshContextsByName,
-		ZoneEgressByName:   egressByName,
 	}
 	return result, nil
 }

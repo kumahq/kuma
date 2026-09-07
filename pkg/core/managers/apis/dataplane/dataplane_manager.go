@@ -12,7 +12,6 @@ import (
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/validator"
 )
 
 func NewDataplaneManager(
@@ -45,9 +44,6 @@ type dataplaneManager struct {
 }
 
 func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
-	if err := validator.Validate(resource); err != nil {
-		return err
-	}
 	dp, err := m.dataplane(resource)
 	if err != nil {
 		return err
@@ -60,7 +56,6 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 		return core_manager.MeshNotFound(opts.Mesh)
 	}
 
-	m.setGatewayClusterTag(dp)
 	m.setHealth(dp)
 	labels, err := resource_labels.Compute(
 		resource.Descriptor(),
@@ -77,6 +72,12 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 		return err
 	}
 	fs = append(fs, core_store.CreateWithLabels(labels))
+
+	// Validate against the computed labels: a delegated gateway is marked by
+	// one, and the resource itself does not carry them yet.
+	if err := core_manager.ValidateWithLabels(resource, labels); err != nil {
+		return err
+	}
 
 	key := core_model.ResourceKey{
 		Mesh: opts.Mesh,
@@ -99,8 +100,6 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 	if err := m.store.Get(ctx, owner, core_store.GetByKey(resource.GetMeta().GetMesh(), core_model.NoMesh)); err != nil {
 		return core_manager.MeshNotFound(resource.GetMeta().GetMesh())
 	}
-
-	m.setGatewayClusterTag(dp)
 
 	opts := core_store.NewUpdateOptions(fs...)
 	labels, err := resource_labels.Compute(
@@ -131,16 +130,6 @@ func (m *dataplaneManager) dataplane(resource core_model.Resource) (*core_mesh.D
 		return nil, errors.Errorf("invalid resource type: expected=%T, got=%T", (*core_mesh.DataplaneResource)(nil), resource)
 	}
 	return dp, nil
-}
-
-func (m *dataplaneManager) setGatewayClusterTag(dp *core_mesh.DataplaneResource) {
-	if m.zone == "" || dp.Spec.GetNetworking().GetGateway() == nil {
-		return
-	}
-	if dp.Spec.Networking.Gateway.Tags == nil {
-		dp.Spec.Networking.Gateway.Tags = make(map[string]string)
-	}
-	dp.Spec.Networking.Gateway.Tags[mesh_proto.ZoneTag] = m.zone
 }
 
 func (m *dataplaneManager) setHealth(dp *core_mesh.DataplaneResource) {

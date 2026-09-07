@@ -41,12 +41,23 @@ const (
 	zoneProxyEgressDP  = "zone-proxy-egress"
 )
 
-// zoneProxyDpEnvs pins the kuma-dp socket directory to /tmp. Without this,
+// zoneProxyDPPs is every dataplane whose config the goldens pin. Both the
+// suite setup and the per-entry cleanup settle all of them, so an entry never
+// captures a baseline while an xDS push is still in flight.
+var zoneProxyDPPs = []string{
+	zoneProxyIngressDP,
+	zoneProxyEgressDP,
+	"zone-proxy-demo-client",
+	"zone-proxy-test-server",
+	"zone-proxy-test-server-no-reusable-ports",
+}
+
+// dppEnvs pins the kuma-dp work directory to /tmp. Without this,
 // kuma-dp creates a randomized /tmp/kuma-dp-<N>/ directory each run and that
 // random suffix would leak into the generated socket paths in the goldens,
 // making the test flaky.
 var dppEnvs = map[string]string{
-	"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":   "/tmp",
+	"KUMA_DATAPLANE_RUNTIME_WORK_DIR":     "/tmp",
 	"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED": "false",
 }
 
@@ -200,7 +211,7 @@ spec:
 			WithServiceName("zone-proxy-test-server-no-reusable-ports"),
 			WithWorkload("zone-proxy-test-server-no-reusable-ports"),
 			WithDpEnvs(map[string]string{
-				"KUMA_DATAPLANE_RUNTIME_SOCKET_DIR":         "/tmp",
+				"KUMA_DATAPLANE_RUNTIME_WORK_DIR":           "/tmp",
 				"KUMA_DATAPLANE_RUNTIME_IPV6_ENABLED":       "false",
 				"KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED": "false",
 			})),
@@ -241,12 +252,21 @@ spec:
 		_, err := client.CollectEchoResponse(universal.Cluster, "zone-proxy-demo-client", "zone-proxy-test-server-no-reusable-ports.svc.mesh.local")
 		g.Expect(err).ToNot(HaveOccurred())
 	}).Should(Succeed())
+
+	// Every entry but the first one starts from a settled mesh, because the
+	// cleanup that runs after each entry waits for one. The first entry starts
+	// from whatever this setup left in flight, which is why the failure always
+	// landed on whichever entry happened to run first rather than on a
+	// particular policy. Settle here too.
+	for _, dpp := range zoneProxyDPPs {
+		waitConfigStable(zoneProxyMeshName, dpp)
+	}
 }
 
 func CleanupAfterZoneProxyTest(policies ...core_model.ResourceTypeDescriptor) func() {
 	return cleanupAfterTest(
 		zoneProxyMeshName,
-		[]string{zoneProxyIngressDP, zoneProxyEgressDP, "zone-proxy-demo-client", "zone-proxy-test-server", "zone-proxy-test-server-no-reusable-ports"},
+		zoneProxyDPPs,
 		func(cluster Cluster) error {
 			return MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
 				zoneProxyMeshName,

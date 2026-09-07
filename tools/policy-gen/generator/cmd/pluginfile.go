@@ -29,10 +29,6 @@ func newPluginFile(rootArgs *args) *cobra.Command {
 				return err
 			}
 
-			if pconfig.SkipRegistration {
-				return nil
-			}
-
 			files, err := os.ReadDir(apiDir)
 			if err != nil {
 				return err
@@ -43,6 +39,41 @@ func newPluginFile(rootArgs *args) *cobra.Command {
 				if file.IsDir() {
 					versions = append(versions, file.Name())
 				}
+			}
+
+			if pconfig.IsPolicy {
+				for _, version := range versions {
+					pluginDir := filepath.Join(rootArgs.pluginDir, "plugin", version)
+					if _, err := os.Stat(pluginDir); err != nil {
+						if os.IsNotExist(err) {
+							continue
+						}
+						return err
+					}
+
+					matcherData := struct {
+						Package     string
+						Name        string
+						GoModule    string
+						ResourceDir string
+						Version     string
+					}{
+						Package:     version,
+						Name:        pconfig.Name,
+						GoModule:    rootArgs.goModule,
+						ResourceDir: rootArgs.pluginDir,
+						Version:     version,
+					}
+
+					matcherOutPath := filepath.Join(pluginDir, "zz_generated.matcher.go")
+					if err := commontemplate.GoTemplate(pluginMatcherTemplate, matcherData, matcherOutPath); err != nil {
+						return err
+					}
+				}
+			}
+
+			if pconfig.SkipRegistration {
+				return nil
 			}
 
 			data := struct {
@@ -112,5 +143,22 @@ func InitPlugin() {
 	plugins.Register(plugins.PluginName(api_{{ $version }}.{{ $name }}ResourceTypeDescriptor.KumactlArg), generator_{{ $version }}.NewPlugin())
 {{- end }}
 	{{- end}}
+}
+`))
+
+var pluginMatcherTemplate = template.Must(template.New("plugin-matcher-go").Parse(`
+package {{ .Package }}
+
+import (
+	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
+	api "{{ .GoModule }}/{{ .ResourceDir }}/api/{{ .Version }}"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+)
+
+func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.MatchedPolicies(api.{{ .Name }}Type, dataplane, resources, opts...)
 }
 `))

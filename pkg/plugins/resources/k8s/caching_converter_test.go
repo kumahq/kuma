@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
@@ -19,20 +18,16 @@ import (
 var _ = Describe("CachingConverter", func() {
 	It("should preserve status on cache hit", func() {
 		// setup
-		converter := k8s.NewCachingConverter(5 * time.Minute)
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
 
 		// given - K8s Workload object with status
 		k8sWorkload := &workload_k8s.Workload{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: workload_k8s.GroupVersion.String(),
-				Kind:       "Workload",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace:       "demo",
-				Name:            "backend",
-				ResourceVersion: "1",
-			},
-			Spec: &workload_api.Workload{},
+			APIVersion:      workload_k8s.GroupVersion.String(),
+			Kind:            "Workload",
+			Namespace:       "demo",
+			Name:            "backend",
+			ResourceVersion: "1",
+			Spec:            &workload_api.Workload{},
 			Status: &workload_api.WorkloadStatus{
 				DataplaneProxies: workload_api.DataplaneProxies{
 					Connected: 5,
@@ -67,20 +62,16 @@ var _ = Describe("CachingConverter", func() {
 
 	It("should preserve status even when cache hit with different status values", func() {
 		// setup
-		converter := k8s.NewCachingConverter(5 * time.Minute)
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
 
 		// given - K8s Workload object with initial status
 		k8sWorkload := &workload_k8s.Workload{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: workload_k8s.GroupVersion.String(),
-				Kind:       "Workload",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace:       "demo",
-				Name:            "backend",
-				ResourceVersion: "1",
-			},
-			Spec: &workload_api.Workload{},
+			APIVersion:      workload_k8s.GroupVersion.String(),
+			Kind:            "Workload",
+			Namespace:       "demo",
+			Name:            "backend",
+			ResourceVersion: "1",
+			Spec:            &workload_api.Workload{},
 			Status: &workload_api.WorkloadStatus{
 				DataplaneProxies: workload_api.DataplaneProxies{
 					Connected: 5,
@@ -112,22 +103,24 @@ var _ = Describe("CachingConverter", func() {
 		Expect(out2.Status.DataplaneProxies.Total).To(Equal(int32(7)))
 	})
 
-	It("should memoize labels on the meta adapter across repeated GetLabels calls", func() {
-		adapter := &k8s.KubernetesMetaAdapter{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "backend",
-				Namespace: "demo",
-				Labels:    map[string]string{"app": "backend"},
-				Annotations: map[string]string{
-					v1alpha1.DisplayName:        "Backend Display",
-					metadata.KumaServiceAccount: "sa-backend",
-				},
+	It("should return a stable label map across repeated GetLabels calls", func() {
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
+		out := workload_api.NewWorkloadResource()
+		Expect(converter.ToCoreResource(&workload_k8s.Workload{
+			APIVersion: workload_k8s.GroupVersion.String(),
+			Kind:       "Workload",
+			Name:       "backend",
+			Namespace:  "demo",
+			Labels:     map[string]string{"app": "backend"},
+			Annotations: map[string]string{
+				v1alpha1.DisplayName:        "Backend Display",
+				metadata.KumaServiceAccount: "sa-backend",
 			},
-			Mesh: "default",
-		}
+			Spec: &workload_api.Workload{},
+		}, out)).To(Succeed())
 
-		first := adapter.GetLabels()
-		second := adapter.GetLabels()
+		first := out.GetMeta().GetLabels()
+		second := out.GetMeta().GetLabels()
 
 		// same map instance returned on repeat calls -> no per-call maps.Clone
 		Expect(reflect.ValueOf(first).Pointer()).To(Equal(reflect.ValueOf(second).Pointer()))
@@ -137,19 +130,15 @@ var _ = Describe("CachingConverter", func() {
 	})
 
 	It("should serve labels from cache for the same resourceVersion", func() {
-		converter := k8s.NewCachingConverter(5 * time.Minute)
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
 		k8sWorkload := &workload_k8s.Workload{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: workload_k8s.GroupVersion.String(),
-				Kind:       "Workload",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace:       "demo",
-				Name:            "backend",
-				ResourceVersion: "1",
-				Labels:          map[string]string{"app": "backend"},
-			},
-			Spec: &workload_api.Workload{},
+			APIVersion:      workload_k8s.GroupVersion.String(),
+			Kind:            "Workload",
+			Namespace:       "demo",
+			Name:            "backend",
+			ResourceVersion: "1",
+			Labels:          map[string]string{"app": "backend"},
+			Spec:            &workload_api.Workload{},
 		}
 
 		out1 := workload_api.NewWorkloadResource()
@@ -174,20 +163,16 @@ var _ = Describe("CachingConverter", func() {
 	})
 
 	It("should not corrupt the cache when consumers mutate the returned labels map", func() {
-		converter := k8s.NewCachingConverter(5 * time.Minute)
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
 		k8sWorkload := &workload_k8s.Workload{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: workload_k8s.GroupVersion.String(),
-				Kind:       "Workload",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace:       "demo",
-				Name:            "backend",
-				ResourceVersion: "1",
-				Labels:          map[string]string{"app": "backend"},
-				Annotations: map[string]string{
-					v1alpha1.DisplayName: "Backend Display",
-				},
+			APIVersion:      workload_k8s.GroupVersion.String(),
+			Kind:            "Workload",
+			Namespace:       "demo",
+			Name:            "backend",
+			ResourceVersion: "1",
+			Labels:          map[string]string{"app": "backend"},
+			Annotations: map[string]string{
+				v1alpha1.DisplayName: "Backend Display",
 			},
 			Spec: &workload_api.Workload{},
 		}
@@ -219,25 +204,19 @@ var _ = Describe("CachingConverter", func() {
 	})
 
 	It("should route ToCoreList through the caching ToCoreResource", func() {
-		converter := k8s.NewCachingConverter(5 * time.Minute)
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
 		list := &workload_k8s.WorkloadList{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: workload_k8s.GroupVersion.String(),
-				Kind:       "WorkloadList",
-			},
+			APIVersion: workload_k8s.GroupVersion.String(),
+			Kind:       "WorkloadList",
 			Items: []workload_k8s.Workload{
 				{
-					TypeMeta: metav1.TypeMeta{
-						APIVersion: workload_k8s.GroupVersion.String(),
-						Kind:       "Workload",
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace:       "demo",
-						Name:            "backend",
-						ResourceVersion: "1",
-						Labels:          map[string]string{"app": "backend"},
-					},
-					Spec: &workload_api.Workload{},
+					APIVersion:      workload_k8s.GroupVersion.String(),
+					Kind:            "Workload",
+					Namespace:       "demo",
+					Name:            "backend",
+					ResourceVersion: "1",
+					Labels:          map[string]string{"app": "backend"},
+					Spec:            &workload_api.Workload{},
 				},
 			},
 		}
@@ -261,19 +240,15 @@ var _ = Describe("CachingConverter", func() {
 	})
 
 	It("should compute fresh labels when resourceVersion changes", func() {
-		converter := k8s.NewCachingConverter(5 * time.Minute)
+		converter := k8s.NewCachingConverter(5*time.Minute, "kuma-system")
 		k8sWorkload := &workload_k8s.Workload{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: workload_k8s.GroupVersion.String(),
-				Kind:       "Workload",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace:       "demo",
-				Name:            "backend",
-				ResourceVersion: "1",
-				Labels:          map[string]string{"app": "backend"},
-			},
-			Spec: &workload_api.Workload{},
+			APIVersion:      workload_k8s.GroupVersion.String(),
+			Kind:            "Workload",
+			Namespace:       "demo",
+			Name:            "backend",
+			ResourceVersion: "1",
+			Labels:          map[string]string{"app": "backend"},
+			Spec:            &workload_api.Workload{},
 		}
 
 		out1 := workload_api.NewWorkloadResource()

@@ -21,10 +21,7 @@ type Configurer struct {
 
 func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
 	clustersAccumulator := map[string]core_meta.Protocol{}
-	filterChainMatches, err := GetOrderedMatchers(c.Conf)
-	if err != nil {
-		return err
-	}
+	filterChainMatches := GetOrderedMatchers(c.Conf)
 
 	if hasIPv4Matches(filterChainMatches) {
 		if err := c.configureListener(filterChainMatches, ipv4, clustersAccumulator, false, c.IPv6Enabled); err != nil {
@@ -91,12 +88,8 @@ func (c Configurer) configureListener(
 }
 
 func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener, listenerFiltersExcludedOnPorts []uint32) error {
-	hasTlsInspector := false
 	hasHttpInspector := false
 	for _, filter := range listener.ListenerFilters {
-		if filter.Name == xds_listeners_v3.TlsInspectorName {
-			hasTlsInspector = true
-		}
 		if filter.Name == xds_listeners_v3.HttpInspectorName {
 			hasHttpInspector = true
 		}
@@ -107,13 +100,7 @@ func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener, l
 	if err != nil {
 		return err
 	}
-	if !hasTlsInspector {
-		configurer := xds_listeners_v3.TLSInspectorConfigurer{
-			DisabledPorts: listenerFiltersExcludedOnPorts,
-		}
-		err = configurer.Configure(listener)
-	}
-	if err != nil {
+	if err := xds_listeners_v3.EnsureTLSInspector(listener, listenerFiltersExcludedOnPorts...); err != nil {
 		return err
 	}
 	if !hasHttpInspector {

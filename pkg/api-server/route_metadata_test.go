@@ -33,10 +33,8 @@ var _ = Describe("route metadata provider", func() {
 		}
 		endpoints := resourceEndpoints{
 			resourceCrudHandler: &resourceCrudHandler{
-				resourceEndpointsContext: resourceEndpointsContext{
-					descriptor:            descriptor,
-					routeMetadataProvider: provider,
-				},
+				descriptor:            descriptor,
+				routeMetadataProvider: provider,
 			},
 		}
 		ws := new(restful.WebService)
@@ -51,10 +49,8 @@ var _ = Describe("route metadata provider", func() {
 	It("attaches no metadata when the provider is nil", func() {
 		endpoints := resourceEndpoints{
 			resourceCrudHandler: &resourceCrudHandler{
-				resourceEndpointsContext: resourceEndpointsContext{
-					descriptor:            descriptor,
-					routeMetadataProvider: nil,
-				},
+				descriptor:            descriptor,
+				routeMetadataProvider: nil,
 			},
 		}
 		ws := new(restful.WebService)
@@ -72,10 +68,8 @@ var _ = Describe("route metadata provider", func() {
 		}
 		endpoints := resourceEndpoints{
 			resourceCrudHandler: &resourceCrudHandler{
-				resourceEndpointsContext: resourceEndpointsContext{
-					descriptor:            descriptor,
-					routeMetadataProvider: provider,
-				},
+				descriptor:            descriptor,
+				routeMetadataProvider: provider,
 			},
 		}
 		ws := new(restful.WebService)

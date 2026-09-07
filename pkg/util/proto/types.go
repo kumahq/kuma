@@ -48,10 +48,6 @@ func Bytes(b []byte) *wrapperspb.BytesValue {
 	return &wrapperspb.BytesValue{Value: b}
 }
 
-func String(s string) *wrapperspb.StringValue {
-	return &wrapperspb.StringValue{Value: s}
-}
-
 func UInt32(u uint32) *wrapperspb.UInt32Value {
 	return &wrapperspb.UInt32Value{Value: u}
 }

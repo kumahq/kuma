@@ -27,7 +27,6 @@ import (
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 	"github.com/kumahq/kuma/v3/pkg/xds/server"
 	"github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
@@ -86,7 +85,6 @@ var _ = Describe("Dataplane Watchdog", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			zone,
-			nil,
 		)
 		newMetrics, err := metrics.NewMetrics(zone)
 		Expect(err).ToNot(HaveOccurred())
@@ -95,9 +93,6 @@ var _ = Describe("Dataplane Watchdog", func() {
 		cache, err := mesh.NewCache(cacheExpirationTime, meshContextBuilder, newMetrics)
 		Expect(err).ToNot(HaveOccurred())
 		eventBus, err := events.NewEventBus(10, newMetrics)
-		Expect(err).ToNot(HaveOccurred())
-
-		secrets, err := secrets.NewSecrets(nil, nil, newMetrics, issuer.Unlimited()) // nil is ok for now, because we don't use it
 		Expect(err).ToNot(HaveOccurred())
 
 		plugins := map[string]providers.IdentityProvider{
@@ -111,7 +106,6 @@ var _ = Describe("Dataplane Watchdog", func() {
 			},
 			DataplaneReconciler: snapshotReconciler,
 			EnvoyCpCtx: &xds_context.ControlPlaneContext{
-				Secrets:         secrets,
 				Zone:            zone,
 				IdentityManager: providers.NewIdentityProviderManager(plugins, eventBus, issuer.Unlimited()),
 			},

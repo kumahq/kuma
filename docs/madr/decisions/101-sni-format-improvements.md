@@ -178,12 +178,16 @@ Keep the existing SNI format unchanged:
 <format-version><hash>.<resource-name>.<port>.<mesh-name>.<resource-type>
 ```
 
-The existing `SNIForResource` function already accepts an `additionalData map[string]string` parameter
-that gets mixed into the FNV hash:
+At the time this alternative was evaluated, the `pkg/xds/envoy/tls` package exposed an
+`SNIForResource` helper with an `additionalData map[string]string` parameter that got mixed
+into the FNV hash:
 
 ```go
 func SNIForResource(resName string, meshName string, resType model.ResourceType, port int32, additionalData map[string]string) string
 ```
+
+That helper has since been removed in favor of the KRI-based helpers in `pkg/core/resources/sni`,
+so this option is documented here only as a rejected historical alternative.
 
 Today, all callers pass `nil` for `additionalData`.
 The fix is to systematically pass `zone` and `namespace` (when present) in this map.
@@ -317,4 +321,3 @@ Related MADRs:
 - [MADR 055](055-sni.md) - Original SNI format for MeshService, MeshExternalService
 - [MADR 065](065-sni-in-the-resource.md) - SNI stored in resource definition
 - [MADR 070](070-resource-identifier.md) - Resource Identifier (KRI) format
-

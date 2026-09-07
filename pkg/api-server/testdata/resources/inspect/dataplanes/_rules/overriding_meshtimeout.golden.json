@@ -8,14 +8,11 @@
  },
  "rules": [
   {
-   "fromRules": [],
    "inboundRules": [
     {
      "inbound": {
       "port": 8080,
-      "tags": {
-       "kuma.io/service": "foo"
-      }
+      "tags": null
      },
      "rules": [
       {
@@ -92,7 +89,6 @@
      "resourceSectionName": ""
     }
    ],
-   "toRules": [],
    "type": "MeshTimeout",
    "warnings": []
   }

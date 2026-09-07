@@ -34,7 +34,7 @@ func Sync() {
 
 	BeforeAll(func() {
 		Expect(
-			multizone.Global.Install(MTLSMeshUniversal(meshName)),
+			multizone.Global.Install(MeshUniversal(meshName)),
 		).To(Succeed())
 		Expect(
 			multizone.Global.Install(YamlUniversal(fmt.Sprintf(`
@@ -51,8 +51,8 @@ spec:
         allow:
           - spiffeID:
               type: Exact
-              value: spiffe://%[1]s/client-server_kuma-test_svc_80 # this is just something to sync
-`, meshName)),
+              value: spiffe://%[1]s.%[2]s.mesh.local/workload/client-server # this is just something to sync
+`, meshName, multizone.KubeZone1.ZoneName())),
 			)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 

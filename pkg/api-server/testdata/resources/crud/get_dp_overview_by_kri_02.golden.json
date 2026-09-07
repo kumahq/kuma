@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Bad Request",
+ "detail": "bad request: resource type MeshTrafficPermission does not have an overview",
+ "details": "bad request: resource type MeshTrafficPermission does not have an overview"
+}

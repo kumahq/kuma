@@ -32,4 +32,4 @@
   TopLevel:
     kind: Dataplane
     labels:
-      kuma.io/service: backend-dp
+      app: backend-dp

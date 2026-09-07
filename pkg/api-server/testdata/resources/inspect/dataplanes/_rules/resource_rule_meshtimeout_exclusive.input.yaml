@@ -11,7 +11,7 @@ networking:
     - port: 8080
       tags:
         app: backend
-        kuma.io/service: foo
+        kuma.io/display-name: foo
 ---
 type: MeshTimeout
 name: matched-for-rules-mt-1

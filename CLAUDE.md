@@ -108,7 +108,7 @@ Default (no labels) is correct for most code PRs. Reach for `skip-*` only to sav
 ### Multi-zone
 
 - Global CP coordinates Zone CPs via KDS (`pkg/kds/`)
-- Zone Ingress/Egress handle cross-zone traffic
+- Zone ingress/egress proxies (Dataplanes with zone proxy listeners) handle cross-zone traffic
 - Supports Kubernetes and Universal (VM/bare metal)
 
 ### Code generation

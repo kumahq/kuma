@@ -34,6 +34,18 @@ func (c *TLSInspectorConfigurer) Configure(l *envoy_listener.Listener) error {
 	return nil
 }
 
+// EnsureTLSInspector appends the TLS inspector listener filter unless the
+// listener already carries one, so that policies adding it independently don't
+// end up with duplicates.
+func EnsureTLSInspector(l *envoy_listener.Listener, disabledPorts ...uint32) error {
+	for _, lf := range l.ListenerFilters {
+		if lf.Name == TlsInspectorName {
+			return nil
+		}
+	}
+	return (&TLSInspectorConfigurer{DisabledPorts: disabledPorts}).Configure(l)
+}
+
 func (c *TLSInspectorConfigurer) configureFilterDisabled(listenerFilter *envoy_listener.ListenerFilter) {
 	filterDisabled := &envoy_listener.ListenerFilterChainMatchPredicate{}
 	if len(c.DisabledPorts) == 1 {

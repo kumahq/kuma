@@ -131,6 +131,29 @@ var _ = Describe("Stats callbacks", func() {
 			Expect(test_metrics.FindMetric(metrics, "delta_xds_requests_received", "confirmation", "NACK", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
 		})
 
+		It("should track a user-caused NACK under its own error_type", func() {
+			// given a NACK the peer sent because the resource conflicts with one
+			// the user already created locally, which KDS skips on purpose
+			req := &envoy_discovery.DeltaDiscoveryRequest{
+				TypeUrl: resource.RouteType,
+				InitialResourceVersions: map[string]string{
+					"route-1": "123",
+				},
+				ResponseNonce: "1",
+				ErrorDetail: &status.Status{
+					Message: `user error
+resource already exists: type="Secret" name="global-and-zone-secret" mesh="sync"`,
+				},
+			}
+
+			// when
+			err := adaptedCallbacks.OnStreamDeltaRequest(streamId, req)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(test_metrics.FindMetric(metrics, "delta_xds_requests_received", "confirmation", "NACK", "error_type", "user", "type_url", resource.RouteType).GetCounter().GetValue()).To(Equal(1.0))
+		})
+
 		It("should track version", func() {
 			// when
 			version := "1.0.0"

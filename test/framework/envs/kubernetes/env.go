@@ -40,7 +40,6 @@ func SetupAndGetState() []byte {
 
 	state := framework.K8sNetworkingState{
 		KumaCp: Cluster.GetKuma().(*framework.K8sControlPlane).PortFwd(),
-		MADS:   Cluster.GetKuma().(*framework.K8sControlPlane).MadsPortFwd(),
 	}
 
 	bytes, err := json.Marshal(state)
@@ -72,7 +71,7 @@ func RestoreState(bytes []byte) {
 		1,
 		nil, // headers were not configured in setup
 	)
-	Expect(cp.FinalizeAddWithPortFwd(state.KumaCp, state.MADS)).To(Succeed())
+	Expect(cp.FinalizeAddWithPortFwd(state.KumaCp)).To(Succeed())
 	Cluster.SetCP(cp)
 }
 

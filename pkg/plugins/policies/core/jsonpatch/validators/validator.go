@@ -116,11 +116,3 @@ func validatePath(path *string, op string) validators.ValidationError {
 
 	return err
 }
-
-// TopLevelTargetRefDeprecations used to warn about MeshService, MeshServiceSubset,
-// MeshSubset, MeshGateway, and MeshHTTPRoute as top-level targetRef kinds. Those kinds
-// are now rejected outright by top-level targetRef validation, so there is nothing left
-// to deprecate for them.
-func TopLevelTargetRefDeprecations(_ *common_api.TargetRef) []string {
-	return nil
-}

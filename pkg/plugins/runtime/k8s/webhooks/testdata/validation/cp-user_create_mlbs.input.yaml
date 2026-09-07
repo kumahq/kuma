@@ -20,6 +20,6 @@ spec:
         type: RingHash
         ringHash:
           hashPolicies:
-          - type: SourceIP
+          - type: Connection
             connection:
               sourceIP: true

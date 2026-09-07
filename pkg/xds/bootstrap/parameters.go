@@ -7,7 +7,6 @@ import (
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
-	"github.com/kumahq/kuma/v3/pkg/xds/bootstrap/types"
 )
 
 type KumaDpBootstrap struct {
@@ -80,7 +79,6 @@ type configParameters struct {
 	DNSPort                       uint32
 	ProxyType                     string
 	Features                      xds_types.Features
-	Resources                     types.ProxyResources
 	SystemCaPath                  string
 	TransparentProxy              *tproxy_config.DataplaneConfig
 	IPv6Enabled                   bool

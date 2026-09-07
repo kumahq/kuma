@@ -15,13 +15,20 @@ import (
 
 func ExcludeOutboundPort() {
 	meshName := "exclude-outbound-port"
+	identityName := "exclude-outbound-port-identity"
 
 	namespace := "exclude-outbound-port"
 	namespaceExternal := "exclude-outbound-port-external"
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
+			Install(MeshUniversal(meshName)).
+			Install(MeshIdentityBundled(meshName, identityName)).
+			// Traffic never leaves KubeZone2, so its own trust domain is enough.
+			Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+				meshName,
+				MeshIdentityTrustDomain(meshName, multizone.KubeZone2),
+			)).
 			Setup(multizone.Global)).To(Succeed())
 
 		Expect(NewClusterSetup().

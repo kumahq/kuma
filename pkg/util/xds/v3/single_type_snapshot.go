@@ -34,22 +34,6 @@ func NewSingleTypeSnapshot(version string, typeURL string, resources []types.Res
 	}
 }
 
-// NewSingleTypeSnapshotWithNamedResources creates a snapshot from response types and a version.
-// The resources map is keyed off the type URL of a resource, followed by the slice of resource objects.
-func NewSingleTypeSnapshotWithNamedResources(version string, typeURL string, resources map[string]types.Resource) *SingleTypeSnapshot {
-	resourcesByName := make(map[string]types.ResourceWithTTL, len(resources))
-	for n, item := range resources {
-		resourcesByName[n] = types.ResourceWithTTL{Resource: item}
-	}
-	return &SingleTypeSnapshot{
-		TypeUrl: typeURL,
-		Resources: envoy_cache.Resources{
-			Version: version,
-			Items:   resourcesByName,
-		},
-	}
-}
-
 // GetResources selects snapshot resources by type, returning the map of resources.
 func (s *SingleTypeSnapshot) GetResources(typeURL resource.Type) map[string]types.Resource {
 	resources := s.GetResourcesAndTTL(typeURL)

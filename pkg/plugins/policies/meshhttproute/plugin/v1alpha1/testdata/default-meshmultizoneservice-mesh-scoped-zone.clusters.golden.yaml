@@ -18,7 +18,7 @@ resources:
             defaultValidationContext:
               matchTypedSubjectAltNames:
               - matcher:
-                  exact: backend
+                  exact: spiffe://default/backend
                 sanType: URI
             validationContextSdsSecretConfig:
               name: system_trust_bundle

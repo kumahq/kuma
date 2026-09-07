@@ -6,14 +6,14 @@
  "invalid_parameters": [
   {
    "field": "/meshes/{mesh}/dataplanes.filter[labelds.k8s.kuma.io/namespace]",
-   "reason": "filters are only supported on labels"
+   "reason": "filters are only supported on labels and status"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "/meshes/{mesh}/dataplanes.filter[labelds.k8s.kuma.io/namespace]",
-   "message": "filters are only supported on labels"
+   "message": "filters are only supported on labels and status"
   }
  ]
 }

@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/jsonpatch/validators"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
@@ -23,7 +22,7 @@ func (t *MeshRateLimitResource) Deprecations() []string {
 			}
 		}
 	}
-	return append(deprecations, validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)...)
+	return deprecations
 }
 
 func isStatusInvalid(local Local) bool {

@@ -94,8 +94,8 @@ func startStreamingRequests(c api.GreeterClient, streamCounter int) error {
 }
 
 func startUnaryRequests(c api.GreeterClient, streamCounter int) error {
+	requestCounter := 0
 	for {
-		requestCounter := 0
 		resp, err := c.SayHello(context.Background(), &api.HelloRequest{
 			Name: fmt.Sprintf("Request #%d.%d", streamCounter, requestCounter),
 		})

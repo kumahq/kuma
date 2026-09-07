@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
 )
@@ -79,10 +78,5 @@ func (h *httpInspectEnvoyProxyClient) buildURL(rk core_model.ResourceKey, inspec
 	if h.resDesc.Scope == core_model.ScopeMesh {
 		prefix = fmt.Sprintf("/meshes/%s", rk.Mesh)
 	}
-	plural := h.resDesc.WsPath
-	// todo(lobkovilya): rename mesh.ZoneIngressResourceTypeDescriptor.WsPath to "zoneingresses" and use it here
-	if h.resDesc.Name == mesh.ZoneIngressType {
-		plural = "zoneingresses"
-	}
-	return url.Parse(fmt.Sprintf("%s/%s/%s/%s", prefix, plural, rk.Name, inspectionPath))
+	return url.Parse(fmt.Sprintf("%s/%s/%s/%s", prefix, h.resDesc.WsPath, rk.Name, inspectionPath))
 }

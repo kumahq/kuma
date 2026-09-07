@@ -18,5 +18,11 @@ tls:
     subjectAltNames:
       - type: Regex
         value: .*.example.com
+    caCert:
+      type: File
+      file:
+        path: /etc/certs/ca.pem
     clientCert:
-      secret: "123"
+      type: Secret
+      secretRef:
+        kind: Secret

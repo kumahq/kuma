@@ -51,7 +51,6 @@ func MatchedPolicies(
 	var warnings []string
 
 	matchedPoliciesByInbound := map[core_rules.InboundListener]core_model.ResourceList{}
-	matchedPoliciesByGatewayListener := map[core_rules.InboundListenerHostname]core_model.ResourceList{}
 	dpPolicies, err := registry.Global().NewList(rType)
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
@@ -109,18 +108,9 @@ func MatchedPolicies(
 		warnings = append(warnings, fmt.Sprintf("couldn't create To rules: %s", err.Error()))
 	}
 
-	gr, err := core_rules.BuildGatewayRules(
-		matchedPoliciesByInbound,
-		matchedPoliciesByGatewayListener,
-		resources,
-	)
+	pc, err := core_rules.BuildProxyConf(dpPolicies.GetItems())
 	if err != nil {
-		warnings = append(warnings, fmt.Sprintf("couldn't create Gateway rules: %s", err.Error()))
-	}
-
-	sr, err := core_rules.BuildSingleItemRules(dpPolicies.GetItems())
-	if err != nil {
-		warnings = append(warnings, fmt.Sprintf("couldn't create top level rules: %s", err.Error()))
+		warnings = append(warnings, fmt.Sprintf("couldn't create proxy-wide config: %s", err.Error()))
 	}
 
 	result := core_xds.TypedMatchingPolicies{
@@ -128,8 +118,7 @@ func MatchedPolicies(
 		DataplanePolicies: dpPolicies.GetItems(),
 		FromRules:         fr,
 		ToRules:           tr,
-		GatewayRules:      gr,
-		SingleItemRules:   sr,
+		ProxyConf:         pc,
 		Warnings:          warnings,
 	}
 	if mpOpts.Cache != nil {
@@ -156,7 +145,7 @@ func DppSelectedByPolicy(
 	case common_api.Mesh:
 		inbounds := allInboundListeners(dpp)
 		inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
-		return inbounds, dpp.Spec.IsDelegatedGateway(), nil
+		return inbounds, dpp.IsDelegatedGateway(), nil
 	case common_api.Dataplane:
 		if allDataplanesSelected(ref) || isSelectedByLabels(dpp, ref) {
 			inboundInterfaces := dpp.Spec.GetNetworking().InboundsSelectedBySectionName(pointer.Deref(ref.SectionName))
@@ -174,7 +163,7 @@ func DppSelectedByPolicy(
 				}
 				inbounds = append(inbounds, core_rules.InboundListener{Address: addr, Port: l.GetPort()})
 			}
-			return inbounds, dpp.Spec.IsDelegatedGateway(), nil
+			return inbounds, dpp.IsDelegatedGateway(), nil
 		}
 		return []core_rules.InboundListener{}, false, nil
 	case common_api.MeshHTTPRoute:
@@ -189,7 +178,7 @@ func DppSelectedByPolicy(
 		for _, mhr := range mhrs {
 			selectedInbounds, delegatedGateway, err := DppSelectedByPolicy(
 				mhr.Meta,
-				pointer.DerefOr(mhr.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}),
+				mhr.Spec.TargetRef.ToTargetRef(),
 				dpp,
 				referencableResources,
 			)

@@ -1,0 +1,20 @@
+Patches: null
+allowed: false
+status:
+  code: 422
+  details:
+    causes:
+    - field: metadata.ownerReferences[0].name
+      message: must be the same as the mesh of the resource "other", got "default".
+        A resource cannot be moved between meshes, delete it and apply it again in
+        the new mesh
+      reason: FieldValueInvalid
+    kind: MeshTimeout
+    name: backend-v3
+  message: 'metadata.ownerReferences[0].name: must be the same as the mesh of the
+    resource "other", got "default". A resource cannot be moved between meshes, delete
+    it and apply it again in the new mesh'
+  metadata: {}
+  reason: Invalid
+  status: Failure
+uid: "12345"

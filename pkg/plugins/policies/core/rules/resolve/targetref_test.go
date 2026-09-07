@@ -215,6 +215,26 @@ var _ = Describe("Resolve TargetRef", func() {
 		Expect(resolved[0].Identifier().String()).To(Equal("kri_mzsvc_mesh-1__kuma-demo_backend-mzsvc_tcp-port"))
 	})
 
+	DescribeTable("should not resolve a stored targetRef of a removed kind", func(kind string) {
+		policyMeta := &test_model.ResourceMeta{
+			Name: "policy-1",
+			Mesh: "mesh-1",
+		}
+		targetRef := common_api.TargetRef{
+			Kind:   common_api.TargetRefKind(kind),
+			Labels: targetLabels("backend"),
+		}
+
+		var resolved []*resolve.ResourceSection
+		Expect(func() {
+			resolved = resolve.TargetRef(targetRef, policyMeta, resources)
+		}).ToNot(Panic())
+		Expect(resolved).To(BeEmpty())
+	},
+		Entry("MeshSubset", "MeshSubset"),
+		Entry("MeshServiceSubset", "MeshServiceSubset"),
+	)
+
 	It("should resolve MeshExternalService targetRef by labels", func() {
 		policyMeta := &test_model.ResourceMeta{
 			Name: "policy-1",
