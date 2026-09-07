@@ -14,10 +14,8 @@ import (
 )
 
 var _ = Describe("K8sControlPlane", func() {
-	// controlPlaneWithToken returns a control plane pointed at srv. A non-empty
-	// token is seeded into the cache; an empty one leaves the cache cold and
-	// lets retrieveAdminToken answer from the cluster options, so nothing here
-	// reads a secret either way.
+	// An empty token leaves the cache cold, and the authn type below makes
+	// retrieveAdminToken answer without reading anything.
 	controlPlaneWithToken := func(srv *httptest.Server, token string, apiHeaders ...string) *K8sControlPlane {
 		return &K8sControlPlane{
 			portFwd:    portforward.Tunnel{Endpoint: srv.Listener.Addr().String()},
@@ -29,9 +27,8 @@ var _ = Describe("K8sControlPlane", func() {
 		}
 	}
 
-	// universalControlPlane deploys the Helm universal path, where the token is
-	// read over HTTP rather than from a Secret. env overrides the deployment
-	// options that decide whether that read is even attempted.
+	// The Helm universal path reads the token over HTTP rather than from a
+	// Secret, so a server stands in for the control plane.
 	universalControlPlane := func(srv *httptest.Server, env map[string]string) *K8sControlPlane {
 		if env == nil {
 			env = map[string]string{}
@@ -63,8 +60,7 @@ var _ = Describe("K8sControlPlane", func() {
 
 				Expect(cp.retrieveAdminToken()).To(BeEmpty())
 			},
-			// The control plane parses this with strconv.ParseBool, so the guard
-			// has to answer to every spelling that turns the bootstrap off.
+			// Every spelling ParseBool reads as off.
 			Entry("false", "false"),
 			Entry("False", "False"),
 			Entry("0", "0"),

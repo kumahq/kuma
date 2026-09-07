@@ -43,8 +43,8 @@ type K8sControlPlane struct {
 	apiHeaders []string
 	refreshMu  sync.Mutex
 
-	// Both inspect callers poll inside an Eventually, so the secret read is
-	// done once per control plane instead of once per request.
+	// Both inspect callers poll inside an Eventually, so this is read once per
+	// control plane rather than once per request.
 	adminTokenMu sync.Mutex
 	adminToken   string
 }
@@ -171,9 +171,8 @@ func (c *K8sControlPlane) VerifyKumaCtl() error {
 	return c.kumactl.RunKumactl("get", "meshes")
 }
 
-// parseAPIHeaders turns `name=value` entries into a header map. The value is
-// everything after the first `=`, so a bearer token carrying base64 padding
-// survives, and an entry without one is skipped rather than panicking.
+// parseAPIHeaders splits `name=value` entries on the first `=`, so a bearer
+// token carrying base64 padding survives, and skips an entry without one.
 func parseAPIHeaders(apiHeaders []string) map[string]string {
 	headers := map[string]string{}
 	for _, header := range apiHeaders {
@@ -252,21 +251,19 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 	if authnType, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TYPE"]; exist && authnType != "tokens" {
 		return "", nil
 	}
-	// Nothing writes the secret when the bootstrap is off, so without this the
-	// read below burns the whole retry budget before returning an error. The
-	// control plane parses this with strconv.ParseBool, so "0" and "False"
-	// disable it too. A deployment that turns it off through WithYamlConfig
-	// instead is not visible here.
+	// Nothing writes the secret when the bootstrap is off, so the read below
+	// would spend the whole retry budget. ParseBool because the control plane
+	// does; a deployment that disables it through WithYamlConfig is invisible
+	// here.
 	if bootstrap, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN"]; exist {
 		if enabled, err := strconv.ParseBool(bootstrap); err == nil && !enabled {
 			return "", nil
 		}
 	}
 	if c.cluster.opts.helmOpts["controlPlane.environment"] == "universal" {
-		// Reading the bootstrapped token is itself an admin request, and the
-		// chart pins localhostIsAdmin false on this path, so there is nothing to
-		// read unless the deployment put loopback admin back. Saying so costs
-		// nothing; asking anyway costs the whole retry budget and then fails.
+		// Reading the token is itself an admin request, and the chart pins
+		// localhostIsAdmin false here, so it can only succeed if the deployment
+		// put loopback admin back.
 		if loopbackAdmin, _ := strconv.ParseBool(c.cluster.opts.env["KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN"]); !loopbackAdmin {
 			return "", nil
 		}
@@ -291,12 +288,9 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 	})
 }
 
-// cachedAdminToken returns the bootstrapped admin token, reading the secret
-// once. An empty string means there is no token to attach, which is the answer
-// on a control plane that does not authenticate with tokens or does not
-// bootstrap one; both answer without reading anything, so they cost nothing to
-// repeat. A failure is not cached, or one blip would outlive the Eventually
-// the callers poll inside.
+// cachedAdminToken returns the bootstrapped admin token, or an empty string
+// when there is none to attach. A failure is not cached: one blip would
+// otherwise outlive the Eventually the callers poll inside.
 func (c *K8sControlPlane) cachedAdminToken() (string, error) {
 	c.adminTokenMu.Lock()
 	defer c.adminTokenMu.Unlock()
@@ -401,9 +395,8 @@ func (c *K8sControlPlane) InspectEnvoyProxy(inspectPath string, query url.Values
 		reqURL += "?" + encoded
 	}
 
-	// Read before the deadline is armed. A cold read retries for longer than
-	// the deadline allows, and spending it here would fail the request itself
-	// with a timeout that blames the control plane.
+	// Before the deadline is armed: a cold read retries for longer than the
+	// deadline allows, and would spend it.
 	token, err := c.cachedAdminToken()
 	if err != nil {
 		return nil, err
