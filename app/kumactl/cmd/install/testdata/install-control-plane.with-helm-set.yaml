@@ -4307,6 +4307,7 @@ spec:
                     enum:
                     - Ready
                     - NotReady
+                    - Pending
                     type: string
                 type: object
               vips:
