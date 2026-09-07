@@ -45,9 +45,8 @@ type K8sControlPlane struct {
 
 	// Both inspect callers poll inside an Eventually, so the secret read is
 	// done once per control plane instead of once per request.
-	adminTokenOnce sync.Once
-	adminToken     string
-	adminTokenErr  error
+	adminTokenMu sync.Mutex
+	adminToken   string
 }
 
 func NewK8sControlPlane(
@@ -172,12 +171,21 @@ func (c *K8sControlPlane) VerifyKumaCtl() error {
 	return c.kumactl.RunKumactl("get", "meshes")
 }
 
-func (c *K8sControlPlane) VerifyKumaREST() error {
+// parseAPIHeaders turns `name=value` entries into a header map. The value is
+// everything after the first `=`, so a bearer token carrying base64 padding
+// survives, and an entry without one is skipped rather than panicking.
+func parseAPIHeaders(apiHeaders []string) map[string]string {
 	headers := map[string]string{}
-	for _, header := range c.apiHeaders {
-		res := strings.Split(header, "=")
-		headers[res[0]] = res[1]
+	for _, header := range apiHeaders {
+		if kv := strings.SplitN(header, "=", 2); len(kv) == 2 {
+			headers[kv[0]] = kv[1]
+		}
 	}
+	return headers
+}
+
+func (c *K8sControlPlane) VerifyKumaREST() error {
+	headers := parseAPIHeaders(c.apiHeaders)
 	_, err := http_helper.HTTPDoWithRetryContextE(
 		c.t,
 		context.Background(),
@@ -271,15 +279,25 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 	})
 }
 
-// cachedAdminToken returns the bootstrapped admin token, reading it at most
+// cachedAdminToken returns the bootstrapped admin token, reading the secret
 // once. An empty string means there is no token to attach, which is the answer
 // on a control plane that does not authenticate with tokens or does not
-// bootstrap one.
+// bootstrap one; both answer without reading anything, so they cost nothing to
+// repeat. A failure is not cached, or one blip would outlive the Eventually
+// the callers poll inside.
 func (c *K8sControlPlane) cachedAdminToken() (string, error) {
-	c.adminTokenOnce.Do(func() {
-		c.adminToken, c.adminTokenErr = c.retrieveAdminToken()
-	})
-	return c.adminToken, c.adminTokenErr
+	c.adminTokenMu.Lock()
+	defer c.adminTokenMu.Unlock()
+
+	if c.adminToken != "" {
+		return c.adminToken, nil
+	}
+	token, err := c.retrieveAdminToken()
+	if err != nil {
+		return "", err
+	}
+	c.adminToken = token
+	return token, nil
 }
 
 func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
@@ -386,10 +404,8 @@ func (c *K8sControlPlane) InspectEnvoyProxy(inspectPath string, query url.Values
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 	// Set after the token so an explicit Authorization in apiHeaders wins.
-	for _, header := range c.apiHeaders {
-		if kv := strings.SplitN(header, "=", 2); len(kv) == 2 {
-			req.Header.Set(kv[0], kv[1])
-		}
+	for name, value := range parseAPIHeaders(c.apiHeaders) {
+		req.Header.Set(name, value)
 	}
 
 	client := &http.Client{Timeout: inspectEnvoyProxyTimeout}
