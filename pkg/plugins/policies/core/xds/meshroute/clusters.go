@@ -65,21 +65,24 @@ func GenerateClusters(
 						// Zone proxies key the SNI by port name, a backendRef may use the number.
 						kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
 						sni := core_sni.FromKRI(kriID)
-						// we only want to route when are mesh-scoped zone egresses
-						if len(meshCtx.ZoneEgresses) == 0 {
-							continue
-						}
 						egressSANs := meshCtx.ZoneEgressSANs()
-						if len(egressSANs) == 0 {
-							continue
+						if len(meshCtx.ZoneEgresses) == 0 || len(egressSANs) == 0 {
+							// A MeshExternalService is only reachable through a zone egress.
+							// Without one the destination has no endpoints either, so keep the
+							// cluster plaintext rather than dropping it: GenerateEndpoints still
+							// emits the load assignment, and a load assignment without its
+							// cluster makes the whole snapshot inconsistent, which costs the
+							// proxy its entire configuration.
+							edsClusterBuilder.Configure(envoy_clusters.EdsCluster())
+						} else {
+							upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
+							if err != nil {
+								return nil, err
+							}
+							edsClusterBuilder.
+								Configure(envoy_clusters.EdsCluster()).
+								Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 						}
-						upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
-						if err != nil {
-							return nil, err
-						}
-						edsClusterBuilder.
-							Configure(envoy_clusters.EdsCluster()).
-							Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 					} else {
 						sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
 						edsClusterBuilder.
