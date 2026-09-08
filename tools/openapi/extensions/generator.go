@@ -40,10 +40,10 @@ const version = "v1alpha1"
 type Options struct {
 	// Spec is the OpenAPI document to patch in place.
 	Spec string
-	// WorkDir is a directory, relative to the module root, that the generator
-	// writes a throwaway Go package into and removes afterwards. controller-gen
-	// reads Go source, so the wrapper types it needs have to live inside the
-	// module being generated.
+	// WorkDir is the parent of the scratch directory the generator writes a
+	// throwaway Go package into. It has to be inside the module being generated,
+	// because controller-gen reads Go source. Nothing in it is touched other than
+	// the one directory the generator creates and removes.
 	WorkDir string
 	// ControllerGenBin is the path to a controller-gen binary.
 	ControllerGenBin string
@@ -86,17 +86,30 @@ func Generate(ctx context.Context, opts Options) error {
 		}
 	}
 
-	pkgDir := filepath.Join(opts.WorkDir, version)
+	if opts.WorkDir == "" {
+		return fmt.Errorf("work dir must not be empty")
+	}
+	if err := os.MkdirAll(opts.WorkDir, 0o755); err != nil {
+		return err
+	}
+	// Generate its own directory rather than taking one on trust: the cleanup
+	// below is then a directory this process created under a name nothing else
+	// holds, so no work dir a caller passes can turn it into a destructive one.
+	scratch, err := os.MkdirTemp(opts.WorkDir, "gen-")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.RemoveAll(scratch) }()
+
+	pkgDir := filepath.Join(scratch, version)
 	if err := os.MkdirAll(pkgDir, 0o755); err != nil {
 		return err
 	}
-	defer func() { _ = os.RemoveAll(opts.WorkDir) }()
-
 	if err := writePackage(pkgDir, wrappers); err != nil {
 		return err
 	}
 
-	crdDir := filepath.Join(opts.WorkDir, "crd")
+	crdDir := filepath.Join(scratch, "crd")
 	if err := runControllerGen(ctx, opts, pkgDir, crdDir); err != nil {
 		return err
 	}

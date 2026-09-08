@@ -23,7 +23,7 @@ func newExtensions(_ *args) *cobra.Command {
 
 	cmd.Flags().StringVar(&opts.Spec, "spec", "", "path to the OpenAPI document to patch in place")
 	cmd.Flags().StringVar(&opts.WorkDir, "work-dir", "build/openapi-extensions",
-		"directory, relative to the module root, for the throwaway package controller-gen reads")
+		"directory inside the module to create the throwaway package controller-gen reads under")
 	cmd.Flags().StringVar(&opts.ControllerGenBin, "controller-gen-bin", "controller-gen", "path to a controller-gen binary")
 	cmd.Flags().StringVar(&opts.YqBin, "yq-bin", "yq", "path to a yq binary")
 	_ = cmd.MarkFlagRequired("spec")
