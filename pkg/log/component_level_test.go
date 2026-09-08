@@ -210,6 +210,8 @@ var _ = Describe("ApplyComponentLevels", func() {
 			"dnsproxy": kuma_log.DebugLevel,
 		}),
 		Entry("nothing at all", "", map[string]kuma_log.LogLevel{}),
+		Entry("only separators", ",,", map[string]kuma_log.LogLevel{}),
+		Entry("only whitespace", " ", map[string]kuma_log.LogLevel{}),
 	)
 
 	DescribeTable("rejected specs",
@@ -222,6 +224,8 @@ var _ = Describe("ApplyComponentLevels", func() {
 		Entry("a valid pair followed by an unknown level", "dnsproxy:debug,xds:verbose"),
 		Entry("unknown level", "dnsproxy:verbose"),
 		Entry("empty component", ":debug"),
+		Entry("empty component and level", ":"),
+		Entry("empty level", "dnsproxy:"),
 		Entry("invalid component name", "dns proxy:debug"),
 	)
 })
