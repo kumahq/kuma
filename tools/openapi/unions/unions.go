@@ -1,4 +1,11 @@
-package cmd
+// Package unions finds the discriminated unions in a controller-gen schema and
+// renders them as yq assignments.
+//
+// Kuma models a union as a `type` discriminator plus one optional property per
+// variant. controller-gen emits those variants as unrelated siblings, so nothing
+// in the spec says which property a given `type` selects and consumers have to
+// hardcode the mapping. Describing them with a oneOf removes the guesswork.
+package unions
 
 import (
 	"encoding/json"
@@ -11,36 +18,34 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-// unionSite is a schema node that models a discriminated union: an object with a
+// Site is a schema node that models a discriminated union: an object with a
 // `type` enum where every value has a matching sibling property holding that
 // variant's configuration.
-type unionSite struct {
-	// path is the sequence of map keys leading to the node, for a yq assignment.
-	path []string
-	// oneOf pairs each discriminator value with the property it selects.
-	oneOf []any
+type Site struct {
+	// Path is the sequence of map keys leading to the node, for a yq assignment.
+	Path []string
+	// OneOf pairs each discriminator value with the property it selects.
+	OneOf []any
 }
 
-// findUnionSites walks a generated schema and reports every discriminated union.
+// Find walks a schema and reports every discriminated union, prefixing each
+// reported path with base.
 //
-// Kuma models unions as a `type` discriminator plus one optional property per
-// variant. controller-gen emits those variants as unrelated siblings, so nothing
-// in the spec says which property a given `type` selects and consumers have to
-// hardcode the mapping. A node qualifies only when *every* enum value resolves to
-// a sibling property, which is a tight enough fingerprint to avoid dragging in
-// plain enums that happen to sit next to similarly named fields.
-func findUnionSites(node any, path []string) []unionSite {
+// A node qualifies only when *every* enum value resolves to a sibling property,
+// which is a tight enough fingerprint to avoid dragging in plain enums that happen
+// to sit next to similarly named fields.
+func Find(node any, base []string) []Site {
 	obj, ok := node.(map[string]any)
 	if !ok {
 		return nil
 	}
 
-	var sites []unionSite
+	var sites []Site
 	if oneOf, ok := unionOneOf(obj); ok {
-		sites = append(sites, unionSite{path: append([]string{}, path...), oneOf: oneOf})
+		sites = append(sites, Site{Path: append([]string{}, base...), OneOf: oneOf})
 	}
 	for key, child := range obj {
-		sites = append(sites, findUnionSites(child, append(path, key))...)
+		sites = append(sites, Find(child, append(base, key))...)
 	}
 	return sites
 }
@@ -123,17 +128,11 @@ func lowerAcronym(s string) string {
 	return strings.ToLower(string(r[:i])) + string(r[i:])
 }
 
-// unionAssignments reads the CRD and renders a yq expression adding a oneOf to
-// every discriminated union it declares.
-//
-// The unions are found in the CRD rather than in the enriched schema so the
-// assignments can be appended to the yq call that does the enrichment: that keeps
-// the generated file's key order intact, which marshaling the whole document
-// through Go would not.
-func unionAssignments(crdPath string) (string, error) {
+// CRDProperties reads the top-level `properties` of a controller-gen CRD.
+func CRDProperties(crdPath string) (map[string]any, error) {
 	raw, err := os.ReadFile(crdPath)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	var crd struct {
 		Spec struct {
@@ -147,34 +146,43 @@ func unionAssignments(crdPath string) (string, error) {
 		} `json:"spec"`
 	}
 	if err := yaml.Unmarshal(raw, &crd); err != nil {
-		return "", err
+		return nil, err
 	}
 	if len(crd.Spec.Versions) == 0 {
-		return "", nil
+		return nil, nil
 	}
+	return crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties, nil
+}
 
-	// The enrichment merges the CRD properties into `.properties`, so a union at
-	// `spec.foo` in the CRD lands at `.properties.spec.foo` in the schema.
-	sites := findUnionSites(crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties, []string{"properties"})
+// Assignments renders a yq expression adding a oneOf to every discriminated union
+// in the schema, with each path prefixed by base.
+//
+// The unions are found in the parsed schema rather than in the file being edited
+// so the assignments can be appended to the yq call that writes it: that keeps the
+// generated file's key order intact, which marshaling the whole document through
+// Go would not.
+func Assignments(schema any, base []string) (string, error) {
+	sites := Find(schema, base)
 	if len(sites) == 0 {
 		return "", nil
 	}
 	sort.Slice(sites, func(i, j int) bool {
-		return strings.Join(sites[i].path, ".") < strings.Join(sites[j].path, ".")
+		return strings.Join(sites[i].Path, ".") < strings.Join(sites[j].Path, ".")
 	})
 
 	assignments := make([]string, 0, len(sites))
 	for _, site := range sites {
-		encoded, err := json.Marshal(site.oneOf)
+		encoded, err := json.Marshal(site.OneOf)
 		if err != nil {
 			return "", err
 		}
-		assignments = append(assignments, fmt.Sprintf("%s.oneOf = %s", yqPath(site.path), encoded))
+		assignments = append(assignments, fmt.Sprintf("%s.oneOf = %s", YQPath(site.Path), encoded))
 	}
 	return strings.Join(assignments, "\n  | "), nil
 }
 
-func yqPath(path []string) string {
+// YQPath renders map keys as a yq path expression.
+func YQPath(path []string) string {
 	var sb strings.Builder
 	for _, key := range path {
 		fmt.Fprintf(&sb, ".%q", key)

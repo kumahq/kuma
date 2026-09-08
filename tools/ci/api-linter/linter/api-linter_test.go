@@ -10,5 +10,6 @@ import (
 
 func TestAnalyzer(t *testing.T) {
 	testdata := analysistest.TestData()
-	analysistest.Run(t, testdata, linter.Analyzer, "valid", "invalid_mergeable", "invalid_nonmergeable")
+	analysistest.Run(t, testdata, linter.Analyzer,
+		"valid", "invalid_mergeable", "invalid_nonmergeable", "valid_rawjson", "invalid_rawjson")
 }
