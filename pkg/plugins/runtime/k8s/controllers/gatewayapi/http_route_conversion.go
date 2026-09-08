@@ -332,8 +332,13 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRoute
 	}
 
 	for _, gapiHeader := range gapiMatch.Headers {
+		headerType := gatewayapi_v1.HeaderMatchExact
+		if gapiHeader.Type != nil {
+			headerType = *gapiHeader.Type
+		}
+
 		header := common_api.HeaderMatch{
-			Type: pointer.To(common_api.HeaderMatchType(*gapiHeader.Type)),
+			Type: pointer.To(common_api.HeaderMatchType(headerType)),
 			// note that our resources disallow uppercase letters in header names
 			Name:  common_api.HeaderName(strings.ToLower(string(gapiHeader.Name))),
 			Value: pointer.To(common_api.HeaderValue(gapiHeader.Value)),
