@@ -266,7 +266,7 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	if r.identityGate != nil {
 		ready, err := r.identityGate.Ready(req.Context())
 		if err != nil {
-			logger.Info("identity certificate not ready", "err", err)
+			logger.V(1).Info("identity certificate not ready", "err", err)
 		}
 		if !ready {
 			r.writeState(writer, req, stateNotReady, http.StatusServiceUnavailable)
