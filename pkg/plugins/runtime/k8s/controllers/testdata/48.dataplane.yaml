@@ -5,8 +5,7 @@ metadata:
     k8s.kuma.io/namespace: demo
     kuma.io/display-name: example
     kuma.io/mesh: default
-    kuma.io/sidecar-injection: enabled
-    version: "0.1"
+    rollouts-pod-template-hash: green
   name: example
 spec:
   networking:
@@ -14,5 +13,6 @@ spec:
     inbound:
     - health:
         ready: true
+      name: main
       port: 8080
-      protocol: http
+      protocol: tcp

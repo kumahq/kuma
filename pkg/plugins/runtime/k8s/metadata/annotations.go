@@ -70,6 +70,11 @@ const (
 	KumaEnvoyLogLevel          = "kuma.io/envoy-log-level"
 	KumaEnvoyComponentLogLevel = "kuma.io/envoy-component-log-level"
 
+	// KumaComponentLogLevel raises the log level of individual kuma-dp
+	// components without raising it for the whole sidecar. Comma separated
+	// component:level pairs, for example "dnsproxy:debug".
+	KumaComponentLogLevel = "kuma.io/component-log-level"
+
 	// KumaInitFirst allows to specify whether the init container should be prepended or appended to the existing
 	// list of init containers
 	KumaInitFirst = "kuma.io/init-first"
