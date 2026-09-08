@@ -383,6 +383,23 @@
     },
     {
       "description": [
+        " Disable digest updates for k8s.io/kube-openapi. The module is untagged and tracks",
+        " kubernetes master, so digest bumps pull in changes made for the next unreleased k8s",
+        " minor. Those routinely break the build against the released k8s.io/api* stack: the",
+        " c4db2bd digest switched schemaconv to sigs.k8s.io/structured-merge-diff/v7, which no",
+        " longer type-checks against apimachinery v0.37.0 (still on v6).",
+        "",
+        " Kuma only uses kube-openapi's pkg/validation/{strfmt,validate}, so there is nothing to",
+        " gain from moving ahead of the stack. Leaving this to MVS keeps the direct require in",
+        " sync with whatever k8s.io/apimachinery pins, and it advances with the k8s.io/* bumps"
+      ],
+      "matchManagers": ["gomod"],
+      "matchDepNames": ["k8s.io/kube-openapi"],
+      "matchUpdateTypes": ["digest"],
+      "enabled": false
+    },
+    {
+      "description": [
         " Catch-all rule that applies the standard commit message format for all dependencies",
         "",
         " This rule extends the shared baseline preset to ensure consistent commit message",
