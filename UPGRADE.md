@@ -10,11 +10,10 @@ does not have any particular instructions.
 
 ### Fields that the API linter had skipped were brought in line
 
-A linter bug hid a set of API fields from the shape checks the rest of the API follows. Fixing the fields changes three schemas:
+A linter bug hid a set of API fields from the shape checks the rest of the API follows. Fixing the fields changes two schemas, both by dropping a declared default:
 
 - `MeshHTTPRoute` and `MeshRetry` header matches no longer declare a schema default of `Exact` for `type`. An omitted `type` is still matched as `Exact`, it is just no longer materialized into the stored resource.
 - `MeshHTTPRoute` and `MeshTCPRoute` backend refs no longer declare a schema default of `1` for `weight`. An omitted `weight` still counts as `1` when the route is resolved, it is just no longer materialized into the stored resource.
-- `HostnameGenerator` now requires `selector`. Validation already rejected a generator without exactly one selector, so no policy that was accepted before becomes invalid.
 
 **Action required**
 
