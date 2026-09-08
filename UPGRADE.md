@@ -95,15 +95,19 @@ Dynamic clients should use `readOnly` as the capability of the current control p
 
 Upgrade `kumactl` together with the control plane. Update scripts that depend on legacy attachment details to consume the dataplane metadata response instead. The first page contains at most 100 dataplanes unless `--size` is set.
 
-### The ServiceInsight REST endpoints are removed
+### The `ServiceInsight` resource is removed
 
-`GET /meshes/{mesh}/service-insights` and `GET /meshes/{mesh}/service-insights/{name}` are removed and answer `404`.
+`GET /meshes/{mesh}/service-insights` and `GET /meshes/{mesh}/service-insights/{name}` are removed and answer `404`, and the resource type itself is gone. The control plane no longer registers it, the `serviceinsights` CRD is no longer installed, and control plane RBAC no longer grants access to it.
 
-The control plane stopped writing `ServiceInsight` when services became computed from `MeshService` and `MeshExternalService`; it deletes the ones left behind by older control planes. The endpoints had therefore been reading a resource that is never present, and returned an empty result for every mesh.
+The control plane stopped writing `ServiceInsight` when services became computed from `MeshService` and `MeshExternalService`. The endpoints had therefore been reading a resource that is never present, and returned an empty result for every mesh.
+
+Earlier control planes deleted rows left behind by older versions on every full resync. That cleanup is gone with the type, so any remaining rows now stay in place. They are inert: nothing reads them, they are not served over the API and they are not synced between zones. A stored row carrying a value removed in 3.0 no longer breaks the insight resyncer, which is what issue #18330 reported.
 
 **Action required**
 
 None if you were reading these endpoints, since they no longer returned data. To list services in a mesh, use `MeshService` and `MeshExternalService` instead.
+
+To reclaim the space, delete the leftover data after upgrading. On Kubernetes, `kubectl delete crd serviceinsights.kuma.io` removes the custom resources along with the definition, which Helm leaves in place on upgrade. On universal, delete the rows whose resource type is `ServiceInsight` from the `resources` table. Do this only once you are sure you will not roll back, since neither is reversible.
 
 
 ### The legacy overview paths `dataplanes+insights` and `zones+insights` are removed
