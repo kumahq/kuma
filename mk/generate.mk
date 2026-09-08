@@ -1,6 +1,7 @@
 ENVOY_IMPORTS := ./pkg/xds/envoy/imports.go
 RESOURCE_GEN := ./build/tools-${GOOS}-${GOARCH}/resource-gen
 OAPI_GEN := ./build/tools-${GOOS}-${GOARCH}/oapi-gen
+EXTENSIONS_GEN := ./build/tools-${GOOS}-${GOARCH}/extensions-gen
 POLICY_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/policy-gen/generator
 
 PROTO_DIRS ?= ./pkg/config ./api ./pkg/plugins ./test/server/grpc/api
@@ -40,6 +41,22 @@ $(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(K
 
 $(OAPI_GEN): $(wildcard $(KUMA_DIR)/tools/openapi/**/*) $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/oapi-gen ./tools/openapi/generator/main.go
+
+# Built from this repo rather than from $(KUMA_DIR), because which extensions end
+# up in the spec is decided by the packages its main imports.
+$(EXTENSIONS_GEN): $(wildcard $(KUMA_DIR)/tools/openapi/**/*) $(wildcard $(TOP)/tools/openapi/extensions-gen/*)
+	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/extensions-gen ./tools/openapi/extensions-gen
+
+# Replace the opaque `config` of every extension registered with
+# pkg/core/resources/extensions by its real schema, in the OpenAPI document named
+# by OAS_EXTENSIONS_SPEC. A build that registers none leaves the document alone.
+#
+# Point it at an input of the docs bundle rather than at the bundle itself: yq
+# rewrites the whole file it edits, so patching the merged document would churn
+# every folded description in it.
+.PHONY: generate/oas/extensions
+generate/oas/extensions: $(EXTENSIONS_GEN)
+	$(EXTENSIONS_GEN) --spec $(OAS_EXTENSIONS_SPEC) --controller-gen-bin $(CONTROLLER_GEN) --yq-bin $(YQ) --work-dir $(BUILD_DIR)/openapi-extensions
 
 .PHONY: resources/type
 resources/type: $(RESOURCE_GEN)

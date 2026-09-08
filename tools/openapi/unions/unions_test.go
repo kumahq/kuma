@@ -1,11 +1,11 @@
-package cmd
+package unions
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("findUnionSites", func() {
+var _ = Describe("Find", func() {
 	loadBalancer := func(variants ...string) map[string]any {
 		properties := map[string]any{
 			"type": map[string]any{"enum": []any{"RoundRobin", "URLRewrite"}},
@@ -17,10 +17,10 @@ var _ = Describe("findUnionSites", func() {
 	}
 
 	It("should pair every discriminator value with the property it selects", func() {
-		sites := findUnionSites(loadBalancer("roundRobin", "urlRewrite"), nil)
+		sites := Find(loadBalancer("roundRobin", "urlRewrite"), nil)
 
 		Expect(sites).To(HaveLen(1))
-		Expect(sites[0].oneOf).To(Equal([]any{
+		Expect(sites[0].OneOf).To(Equal([]any{
 			map[string]any{"properties": map[string]any{
 				"type":       map[string]any{"enum": []any{"RoundRobin"}},
 				"roundRobin": map[string]any{},
@@ -34,7 +34,7 @@ var _ = Describe("findUnionSites", func() {
 
 	It("should ignore an enum whose values do not all name a sibling property", func() {
 		// A plain status/mode enum must not be mistaken for a union.
-		Expect(findUnionSites(loadBalancer("roundRobin"), nil)).To(BeEmpty())
+		Expect(Find(loadBalancer("roundRobin"), nil)).To(BeEmpty())
 	})
 
 	It("should find nested unions and report their path", func() {
@@ -44,10 +44,39 @@ var _ = Describe("findUnionSites", func() {
 			},
 		}
 
-		sites := findUnionSites(schema, []string{"properties"})
+		sites := Find(schema, []string{"properties"})
 
 		Expect(sites).To(HaveLen(1))
-		Expect(sites[0].path).To(Equal([]string{"properties", "properties", "spec"}))
+		Expect(sites[0].Path).To(Equal([]string{"properties", "properties", "spec"}))
+	})
+})
+
+var _ = Describe("Assignments", func() {
+	It("should render nothing when the schema has no union", func() {
+		expr, err := Assignments(map[string]any{"properties": map[string]any{"name": map[string]any{"type": "string"}}}, nil)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(expr).To(BeEmpty())
+	})
+
+	It("should render a yq assignment rooted at the base path", func() {
+		schema := map[string]any{
+			"properties": map[string]any{
+				"type":  map[string]any{"enum": []any{"Server", "Agent"}},
+				"agent": map[string]any{"type": "object"},
+				"server": map[string]any{
+					"type": "object",
+				},
+			},
+		}
+
+		expr, err := Assignments(schema, []string{"components", "schemas", "VaultConfig"})
+
+		Expect(err).ToNot(HaveOccurred())
+		// The branches follow the order of the discriminator's enum, not the order
+		// the variant properties happen to be in.
+		Expect(expr).To(Equal(`."components"."schemas"."VaultConfig".oneOf = ` +
+			`[{"properties":{"server":{},"type":{"enum":["Server"]}}},{"properties":{"agent":{},"type":{"enum":["Agent"]}}}]`))
 	})
 })
 
