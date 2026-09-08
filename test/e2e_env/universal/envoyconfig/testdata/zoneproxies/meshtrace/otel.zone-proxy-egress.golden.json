@@ -83,6 +83,51 @@
         },
         "spawnUpstreamSpan": false
       }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/system_dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
+      "value": {
+        "directResponse": {
+          "body": {
+            "inlineString": "{\"backends\":[{\"name\":\"mt-otel-backend\",\"socketPath\":\"/tmp/kuma-otel-mt-otel-backend.sock\",\"endpoint\":\"otel-collector.observability:4317\",\"useHTTP\":false,\"traces\":{\"enabled\":true}}]}"
+          },
+          "status": 200
+        },
+        "match": {
+          "path": "/otel"
+        },
+        "name": "system_dynamicconfig_otel",
+        "responseHeadersToAdd": [
+          {
+            "header": {
+              "key": "Etag",
+              "value": "f6c360f6a3de7ef7b6d57536168ddc8f033f7b46e147ad472ba97d0ce69ad5fd"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/system_dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
+      "value": {
+        "directResponse": {
+          "status": 304
+        },
+        "match": {
+          "headers": [
+            {
+              "name": "If-None-Match",
+              "stringMatch": {
+                "exact": "f6c360f6a3de7ef7b6d57536168ddc8f033f7b46e147ad472ba97d0ce69ad5fd"
+              }
+            }
+          ],
+          "path": "/otel"
+        },
+        "name": "system_dynamicconfig_otel_not_modified"
+      }
     }
   ],
   "xds": {
@@ -663,6 +708,83 @@
         ],
         "name": "system_envoy_admin",
         "trafficDirection": "INBOUND"
+      },
+      "system_identity_readiness": {
+        "address": {
+          "pipe": {
+            "path": "/tmp/kuma-identity-readiness.sock"
+          }
+        },
+        "filterChains": [
+          {
+            "filters": [
+              {
+                "name": "envoy.filters.network.http_connection_manager",
+                "typedConfig": {
+                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
+                  "httpFilters": [
+                    {
+                      "name": "envoy.filters.http.router",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
+                      }
+                    }
+                  ],
+                  "internalAddressConfig": {
+                    "cidrRanges": [
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 32
+                      }
+                    ]
+                  },
+                  "routeConfig": {
+                    "virtualHosts": [
+                      {
+                        "domains": [
+                          "*"
+                        ],
+                        "name": "system_identity_readiness",
+                        "routes": [
+                          {
+                            "directResponse": {
+                              "body": {
+                                "inlineString": "ready"
+                              },
+                              "status": 200
+                            },
+                            "match": {
+                              "prefix": "/ready"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "statPrefix": "STAT_PREFIX_REDACTED"
+                }
+              }
+            ],
+            "transportSocket": {
+              "name": "envoy.transport_sockets.tls",
+              "typedConfig": {
+                "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext",
+                "commonTlsContext": {
+                  "tlsCertificateSdsSecretConfigs": [
+                    {
+                      "name": "kri_mid_envoyconfig-zoneproxies_kuma-3__identity_",
+                      "sdsConfig": {
+                        "ads": {},
+                        "resourceApiVersion": "V3"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "name": "system_identity_readiness"
       }
     },
     "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret": {
