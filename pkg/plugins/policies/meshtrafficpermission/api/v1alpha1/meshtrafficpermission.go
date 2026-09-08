@@ -30,6 +30,7 @@ type RuleConf struct {
 	Allow *[]common_api.Match `json:"allow,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=Allow;Deny;AllowWithShadowDeny
 type Action string
 
 // Allow action lets the requests pass
@@ -44,6 +45,5 @@ var AllowWithShadowDeny Action = "AllowWithShadowDeny"
 
 type Conf struct {
 	// Action defines a behavior for the specified group of clients:
-	// +kubebuilder:validation:Enum=Allow;Deny;AllowWithShadowDeny
 	Action *Action `json:"action,omitempty"`
 }

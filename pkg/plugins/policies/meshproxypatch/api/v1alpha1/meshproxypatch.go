@@ -38,7 +38,9 @@ type Modification struct {
 	VirtualHost *VirtualHostMod `json:"virtualHost,omitempty"`
 }
 
-// ModOperation is modification operation on Envoy's resource.
+// ModOperation is modification operation on Envoy's resource. It carries no
+// enum of its own: the operations a modification accepts depend on the Envoy
+// resource it targets, so each field declares the subset it allows.
 type ModOperation string
 
 const (

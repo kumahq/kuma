@@ -8,6 +8,7 @@ type HeaderName string
 
 type HeaderValue string
 
+// +kubebuilder:validation:Enum=Exact;Present;RegularExpression;Absent;Prefix
 type HeaderMatchType string
 
 // HeaderMatchType constants.
@@ -24,7 +25,6 @@ const (
 type HeaderMatch struct {
 	// Type specifies how to match against the value of the header.
 	// +optional
-	// +kubebuilder:validation:Enum=Exact;Present;RegularExpression;Absent;Prefix
 	Type *HeaderMatchType `json:"type,omitempty"`
 
 	// Name is the name of the HTTP Header to be matched. Name MUST be lower case
