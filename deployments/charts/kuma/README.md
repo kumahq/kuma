@@ -249,6 +249,7 @@ A Helm chart for the Kuma Control Plane
 | meshZoneProxyDefaults.ingress.service.type | string | `"LoadBalancer"` | Default Service type for zone ingress. |
 | meshZoneProxyDefaults.ingress.service.port | int | `10001` | Default port for zone ingress Service. |
 | meshZoneProxyDefaults.ingress.service.targetPort | int | `10001` | Container port the zone ingress listens on. Do not change unless the zone proxy binary is reconfigured. |
+| meshZoneProxyDefaults.egress.preStopSleepSeconds | int | `15` | Seconds a terminating zone egress keeps serving before shutdown, applied as a preStop sleep hook. Clients reach a zone egress by pod IP from EDS, so a pod that goes away before the control plane has pushed new endpoints takes requests down with it. The hook has to outlast that propagation, which costs roughly KUMA_STORE_CACHE_EXPIRATION_TIME (default 1s) plus KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL (default 1s) plus the time to push and ack the update, so raise this if you have raised either interval. Keep it below terminationGracePeriodSeconds. Set to 0 to drop the hook. |
 | meshZoneProxyDefaults.egress.service.type | string | `"ClusterIP"` | Default Service type for zone egress. |
 | meshZoneProxyDefaults.egress.service.port | int | `10002` | Default port for zone egress Service. |
 | meshZoneProxyDefaults.egress.service.targetPort | int | `10002` | Container port the zone egress listens on. Do not change unless the zone proxy binary is reconfigured. |
@@ -269,6 +270,7 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].ingress.hpa | object | `{"enabled":false,"maxReplicas":5,"minReplicas":2,"targetCPUUtilizationPercentage":80}` | Horizontal Pod Autoscaler settings. |
 | meshes[0].ingress.pdb | object | `{"enabled":false,"maxUnavailable":1}` | Pod Disruption Budget settings. |
 | meshes[0].egress.enabled | bool | `false` | Deploy a zone egress for this mesh. |
+| meshes[0].egress.preStopSleepSeconds | int | `nil` | Per-mesh override for the preStop sleep duration. Falls back to meshZoneProxyDefaults.egress.preStopSleepSeconds when unset. Set to 0 to drop the hook. |
 | meshes[0].egress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
 | meshes[0].egress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-egress (where <name> is the chart name or nameOverride) |
 | meshes[0].egress.service.type | string | `nil` | Per-mesh override for Service type. Falls back to meshZoneProxyDefaults.egress.service.type when unset. |

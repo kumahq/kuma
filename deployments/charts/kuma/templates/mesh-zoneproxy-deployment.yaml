@@ -119,6 +119,25 @@ spec:
             limits:
               memory: 16Mi
           {{- end }}
+          {{- if eq $role "egress" }}
+          {{- /* Clients reach a zone egress by pod IP straight out of EDS, so a
+                 terminating pod keeps receiving requests until the control plane
+                 recomputes endpoints and pushes them. Outlive that propagation:
+                 it costs the store cache TTL plus the xDS refresh interval plus
+                 the push itself, so this has to be raised alongside those.
+                 A zone ingress needs no such hook: it is addressed through its
+                 Service, which drops terminating pods from the backend set. */}}
+          {{- $preStopSleep := $.Values.meshZoneProxyDefaults.egress.preStopSleepSeconds }}
+          {{- if not (kindIs "invalid" $cfg.preStopSleepSeconds) }}
+          {{- $preStopSleep = $cfg.preStopSleepSeconds }}
+          {{- end }}
+          {{- if gt (int $preStopSleep) 0 }}
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: {{ int $preStopSleep }}
+          {{- end }}
+          {{- end }}
 {{- end }}
 
 {{- end }}
