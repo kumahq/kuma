@@ -84,11 +84,6 @@ func (ic *InboundConverter) inboundForService(zone string, pod *kube_core.Pod, s
 			health.Ready = false
 		}
 
-		if !kube_labels.SelectorFromSet(service.Spec.Selector).Matches(kube_labels.Set(pod.Labels)) {
-			state = mesh_proto.Dataplane_Networking_Inbound_Ignored
-			health.Ready = false
-		}
-
 		ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
 			Port:     uint32(containerPort),
 			Name:     portName,
@@ -182,7 +177,7 @@ func (ic *InboundConverter) inboundInterfacesFor(ctx context.Context, zone strin
 		}
 	}
 
-	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
+	var selecting, ignoredLabelsOnly []*kube_core.Service
 	for _, svc := range services {
 		// Services of ExternalName type should not have any selectors.
 		// Kubernetes does not validate this, so in rare cases, a service of
@@ -190,9 +185,22 @@ func (ic *InboundConverter) inboundInterfacesFor(ctx context.Context, zone strin
 		// happens, we would incorrectly generate inbounds including
 		// ExternalName service. We do not currently support ExternalName
 		// services, so we can safely skip them from processing.
-		if svc.Spec.Type != kube_core.ServiceTypeExternalName {
-			ifaces = append(ifaces, ic.inboundForService(zone, pod, svc, nodeLabels)...)
+		if svc.Spec.Type == kube_core.ServiceTypeExternalName {
+			continue
 		}
+		if kube_labels.SelectorFromSet(svc.Spec.Selector).Matches(kube_labels.Set(pod.Labels)) {
+			selecting = append(selecting, svc)
+		} else {
+			ignoredLabelsOnly = append(ignoredLabelsOnly, svc)
+		}
+	}
+
+	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
+	// Services reaching this Pod only because of IgnoredServiceSelectorLabels go last:
+	// deduplicateInboundsByAddressAndPort keeps the first inbound on a port, so the protocol
+	// stays the one of the Service that currently selects the Pod.
+	for _, svc := range append(selecting, ignoredLabelsOnly...) {
+		ifaces = append(ifaces, ic.inboundForService(zone, pod, svc, nodeLabels)...)
 	}
 
 	if len(ifaces) == 0 {

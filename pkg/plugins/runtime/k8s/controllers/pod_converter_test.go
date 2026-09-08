@@ -454,6 +454,22 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:        "44.dataplane.yaml",
 			meshServicesMode: pointer.To(mesh_proto.Mesh_MeshServices_Everywhere),
 		}),
+		// the Pod reaches the converter through ignoredServiceSelectorLabels, so its inbound must be
+		// ready before the selector moves onto it. MeshService selectors decide who gets traffic.
+		Entry("47. Pod that the Service selector does not fully match gets a ready inbound", testCase{
+			pod:                 "47.pod.yaml",
+			servicesForPod:      "47.services-for-pod.yaml",
+			dataplane:           "47.dataplane.yaml",
+			inboundTagsDisabled: true,
+		}),
+		// only b-preview selects the Pod, so its protocol has to win over the alphabetically
+		// earlier a-active, which reaches the Pod through ignoredServiceSelectorLabels
+		Entry("48. Two Services on one port, one matching only on the ignored label", testCase{
+			pod:                 "48.pod.yaml",
+			servicesForPod:      "48.services-for-pod.yaml",
+			dataplane:           "48.dataplane.yaml",
+			inboundTagsDisabled: true,
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
