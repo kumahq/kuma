@@ -226,6 +226,15 @@ var _ = Describe("ApplyComponentLevels", func() {
 		Entry("empty component", ":debug"),
 		Entry("empty component and level", ":"),
 		Entry("empty level", "dnsproxy:"),
+		Entry("more overrides than the registry allows", tooManyOverrides()),
 		Entry("invalid component name", "dns proxy:debug"),
 	)
 })
+
+func tooManyOverrides() string {
+	pairs := make([]string, 0, kuma_log.MaxOverrides+1)
+	for i := range kuma_log.MaxOverrides + 1 {
+		pairs = append(pairs, fmt.Sprintf("c%d:debug", i))
+	}
+	return strings.Join(pairs, ",")
+}

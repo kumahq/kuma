@@ -80,6 +80,26 @@ func (r *ComponentLevelRegistry) SetLevel(component string, level LogLevel) erro
 	return nil
 }
 
+// SetLevels applies several overrides as one unit. Either every level is set or,
+// if the batch would exceed MaxOverrides, none of them is and the registry is
+// left as it was.
+func (r *ComponentLevelRegistry) SetLevels(levels map[string]LogLevel) error {
+	if len(levels) == 0 {
+		return nil
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	current := *r.snapshot.Load()
+	next := make(map[string]LogLevel, len(current)+len(levels))
+	maps.Copy(next, current)
+	maps.Copy(next, levels)
+	if len(next) > MaxOverrides {
+		return fmt.Errorf("maximum number of component overrides (%d) reached", MaxOverrides)
+	}
+	r.snapshot.Store(&next)
+	return nil
+}
+
 // ResetLevel removes the log level override for the given component.
 func (r *ComponentLevelRegistry) ResetLevel(component string) {
 	current := *r.snapshot.Load()
@@ -157,14 +177,10 @@ func SplitHierarchy(name string) []string {
 // ApplyComponentLevels sets the overrides described by a comma separated list
 // of component:level pairs, for example "dnsproxy:debug,xds.server:debug".
 func ApplyComponentLevels(r *ComponentLevelRegistry, spec string) error {
-	type componentLevel struct {
-		component string
-		level     LogLevel
-	}
-	// The spec is parsed in full before anything is applied, so one that is
-	// rejected halfway through does not leave the registry holding the
-	// overrides that preceded the bad entry.
-	var parsed []componentLevel
+	// The spec is parsed in full and applied as one unit, so a spec that is
+	// rejected -- whether by a malformed entry or by exceeding MaxOverrides --
+	// never leaves the registry holding the entries that preceded the failure.
+	parsed := map[string]LogLevel{}
 	for pair := range strings.SplitSeq(spec, ",") {
 		pair = strings.TrimSpace(pair)
 		if pair == "" {
@@ -182,12 +198,7 @@ func ApplyComponentLevels(r *ComponentLevelRegistry, spec string) error {
 		if err != nil {
 			return err
 		}
-		parsed = append(parsed, componentLevel{component: component, level: level})
+		parsed[component] = level
 	}
-	for _, cl := range parsed {
-		if err := r.SetLevel(cl.component, cl.level); err != nil {
-			return err
-		}
-	}
-	return nil
+	return r.SetLevels(parsed)
 }
