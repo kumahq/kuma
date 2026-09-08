@@ -155,6 +155,7 @@ A Helm chart for the Kuma Control Plane
 | meshZoneProxyDefaults.egress.replicas | int | `1` | Default number of replicas for zone egress. Ignored when hpa.enabled is true. |
 | meshZoneProxyDefaults.egress.restartPolicy | string | `"Always"` | Default pod restart policy for zone egress. |
 | meshZoneProxyDefaults.egress.terminationGracePeriodSeconds | int | `40` | Default number of seconds to wait before force killing the zone egress pod. |
+| meshZoneProxyDefaults.egress.preStopSleepSeconds | int | `15` | Seconds a terminating zone egress keeps serving before shutdown, applied as a preStop sleep hook. Clients reach a zone egress by pod IP from EDS, so a pod that goes away before the control plane has pushed new endpoints takes requests down with it. The hook has to outlast that propagation, which costs roughly KUMA_STORE_CACHE_EXPIRATION_TIME (default 1s) plus KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL (default 1s) plus the time to push and ack the update, so raise this if you have raised either interval. Keep it below terminationGracePeriodSeconds. Set to 0 to drop the hook. |
 | meshZoneProxyDefaults.egress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for zone egress. Optionally set to false |
 | meshZoneProxyDefaults.egress.imagePullPolicy | string | `"IfNotPresent"` | Default image pull policy for the zone egress pause container. |
 | meshZoneProxyDefaults.egress.service.type | string | `"ClusterIP"` | Default Service type for zone egress. |
@@ -185,6 +186,7 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].egress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
 | meshes[0].egress.restartPolicy | string | `nil` | Per-mesh override for pod restart policy. Falls back to meshZoneProxyDefaults.egress.restartPolicy when unset. |
 | meshes[0].egress.terminationGracePeriodSeconds | int | `nil` | Per-mesh override for the pod termination grace period. Falls back to meshZoneProxyDefaults.egress.terminationGracePeriodSeconds when unset. |
+| meshes[0].egress.preStopSleepSeconds | int | `nil` | Per-mesh override for the preStop sleep duration. Falls back to meshZoneProxyDefaults.egress.preStopSleepSeconds when unset. Set to 0 to drop the hook. |
 | meshes[0].egress.automountServiceAccountToken | bool | `nil` | Per-mesh override for automountServiceAccountToken. Falls back to meshZoneProxyDefaults.egress.automountServiceAccountToken when unset. |
 | meshes[0].egress.imagePullPolicy | string | `nil` | Per-mesh override for the pause container image pull policy. Falls back to meshZoneProxyDefaults.egress.imagePullPolicy when unset. |
 | meshes[0].egress.serviceAccountAnnotations | object | `{}` | Annotations to add to the zone egress Service Account. |
