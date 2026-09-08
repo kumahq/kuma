@@ -38,7 +38,13 @@ $(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 $(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
 
-$(OAPI_GEN): $(wildcard $(KUMA_DIR)/tools/openapi/**/*) $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
+# Always rebuilt, because oapi-gen embeds the extension registrations of whatever
+# module builds it: its real inputs are this repo's own main and every package
+# that main reaches, which no wildcard over $(KUMA_DIR)/tools describes. Without
+# this, editing a Register call regenerates the spec from a stale binary. The Go
+# build cache makes the rebuild a no-op when nothing changed.
+.PHONY: $(OAPI_GEN)
+$(OAPI_GEN):
 	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/oapi-gen ./tools/openapi/generator/main.go
 
 # Replace the opaque `config` of every extension registered with
