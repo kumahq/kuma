@@ -148,12 +148,12 @@ func validateHeaders(headers []common_api.HeaderMatch) validators.ValidationErro
 		switch matchType {
 		case common_api.HeaderMatchExact:
 		case common_api.HeaderMatchPresent:
-			if pointer.Deref(header.Value) != "" {
+			if header.Value != nil {
 				errs.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
 			}
 		case common_api.HeaderMatchRegularExpression:
 		case common_api.HeaderMatchAbsent:
-			if pointer.Deref(header.Value) != "" {
+			if header.Value != nil {
 				errs.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
 			}
 		case common_api.HeaderMatchPrefix:
