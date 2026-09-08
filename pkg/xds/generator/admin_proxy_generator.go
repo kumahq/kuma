@@ -204,7 +204,7 @@ func (g AdminProxyGenerator) generateIdentityReadiness(resources *core_xds.Resou
 	config := core_xds.IdentityReadinessConfig{Required: proxy.WorkloadIdentityRequired}
 	if proxy.WorkloadIdentity != nil {
 		config.ExpirationTime = proxy.WorkloadIdentity.ExpirationTime
-		if proxy.WorkloadIdentity.ManagementMode == core_xds.KumaManagementMode {
+		if proxy.WorkloadIdentity.ManagementMode == core_xds.KumaManagementMode && proxy.WorkloadIdentity.AdditionalResources != nil {
 			certificateHash, err := bundledIdentityCertificateHash(proxy.WorkloadIdentity)
 			if err != nil {
 				return err

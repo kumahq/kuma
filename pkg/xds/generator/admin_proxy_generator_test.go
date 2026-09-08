@@ -314,5 +314,24 @@ var _ = Describe("AdminProxyGenerator", func() {
 			Expect(actual).To(ContainSubstring("name: system_identity_readiness\n"))
 			Expect(actual).ToNot(ContainSubstring("certificateHash"))
 		})
+
+		It("supports inspected managed identities without certificate resources", func() {
+			proxy := newProxy()
+			proxy.WorkloadIdentityRequired = true
+			proxy.WorkloadIdentity = &xds.WorkloadIdentity{
+				ManagementMode: xds.KumaManagementMode,
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"identity",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			}
+
+			_, actual := generateYAML(proxy)
+			Expect(actual).To(ContainSubstring("name: system_identity_readiness\n"))
+			Expect(actual).To(ContainSubstring("name: identity"))
+			Expect(actual).ToNot(ContainSubstring("certificateHash"))
+		})
 	})
 })
