@@ -14,7 +14,7 @@ type FakeResourceRoute53 struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec *ext0.fakeConfig `json:"spec,omitempty"`
+	Spec *ext0.FakeConfig `json:"spec,omitempty"`
 }
 
 // FakeResourceVault wraps the "vault" extension of FakeResource.
@@ -23,5 +23,5 @@ type FakeResourceVault struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec *ext0.fakeConfig `json:"spec,omitempty"`
+	Spec *ext0.FakeConfig `json:"spec,omitempty"`
 }

@@ -9,7 +9,8 @@ import (
 // have their configuration documented in the OpenAPI spec instead of showing up
 // as an opaque `config`. See extensions.Register.
 var ExtensionPoint = extensions.Point{
-	ResourceType:  MeshIdentityType,
-	SchemaPath:    []string{"spec", "provider", "extension"},
-	Discriminator: "name",
+	ResourceType:   MeshIdentityType,
+	SchemaPath:     []string{"spec", "provider", "extension"},
+	Discriminator:  "name",
+	ConfigProperty: "config",
 }

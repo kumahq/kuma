@@ -56,8 +56,14 @@ $(OAPI_GEN):
 # Point it at an input of the docs bundle rather than at the bundle itself: yq
 # rewrites the whole file it edits, so patching the merged document would churn
 # every folded description in it.
+#
+# The guard is not decoration: unset, --spec swallows the next flag as its value,
+# the required-flag check passes, and --controller-gen-bin silently falls back to
+# PATH.
+OAS_EXTENSIONS_SPEC ?=
 .PHONY: generate/oas/extensions
 generate/oas/extensions: $(OAPI_GEN)
+	@test -n "$(OAS_EXTENSIONS_SPEC)" || { echo "generate/oas/extensions: OAS_EXTENSIONS_SPEC must name the OpenAPI document to patch"; exit 1; }
 	$(OAPI_GEN) extensions --spec $(OAS_EXTENSIONS_SPEC) --controller-gen-bin $(CONTROLLER_GEN) --yq-bin $(YQ) --work-dir $(BUILD_DIR)/openapi-extensions
 
 .PHONY: resources/type

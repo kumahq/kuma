@@ -17,6 +17,8 @@ import (
 	"reflect"
 	"sort"
 	"sync"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
@@ -31,10 +33,16 @@ type Point struct {
 	// Discriminator names the property of the extension object whose value picks
 	// the configuration, for example "type" or "name".
 	Discriminator string
+	// ConfigProperty names the property holding the configuration the
+	// discriminator selects, for example "config".
+	ConfigProperty string
 }
 
 func (p Point) equal(other Point) bool {
 	if p.ResourceType != other.ResourceType || p.Discriminator != other.Discriminator {
+		return false
+	}
+	if p.ConfigProperty != other.ConfigProperty {
 		return false
 	}
 	if len(p.SchemaPath) != len(other.SchemaPath) {
@@ -107,6 +115,8 @@ func validate(ext Extension) error {
 		return fmt.Errorf("point schema path must not be empty")
 	case ext.Point.Discriminator == "":
 		return fmt.Errorf("point discriminator must not be empty")
+	case ext.Point.ConfigProperty == "":
+		return fmt.Errorf("point config property must not be empty")
 	case ext.Value == "":
 		return fmt.Errorf("value must not be empty")
 	case ext.Config == nil:
@@ -116,8 +126,16 @@ func validate(ext Extension) error {
 	if t.Kind() != reflect.Pointer || t.Elem().Kind() != reflect.Struct {
 		return fmt.Errorf("config must be a pointer to a struct, got %s", t)
 	}
-	if t.Elem().Name() == "" {
+	name := t.Elem().Name()
+	if name == "" {
 		return fmt.Errorf("config must be a named struct type")
+	}
+	// The generator names this type from another package, so an unexported one
+	// would produce a wrapper that does not compile, and controller-gen would then
+	// fail without saying which registration caused it.
+	first, _ := utf8.DecodeRuneInString(name)
+	if !unicode.IsUpper(first) {
+		return fmt.Errorf("config must be an exported struct type, got %s", t.Elem())
 	}
 	return nil
 }

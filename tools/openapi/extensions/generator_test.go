@@ -9,18 +9,33 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
+	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	core_extensions "github.com/kumahq/kuma/v3/pkg/core/resources/extensions"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 )
 
-type fakeConfig struct {
+type FakeConfig struct {
 	Field string `json:"field,omitempty"`
 }
 
 var fakePoint = core_extensions.Point{
-	ResourceType:  "FakeResource",
-	SchemaPath:    []string{"spec", "extension"},
-	Discriminator: "type",
+	ResourceType:   "FakeResource",
+	SchemaPath:     []string{"spec", "extension"},
+	Discriminator:  "type",
+	ConfigProperty: "config",
+}
+
+// registerFake stubs the registry for one spec. Populating the real one would
+// leave every spec depending on the order the suite happened to run in.
+func registerFake(values ...string) {
+	registered := make([]core_extensions.Extension, 0, len(values))
+	for _, v := range values {
+		registered = append(registered, core_extensions.Extension{Point: fakePoint, Value: v, Config: &FakeConfig{}})
+	}
+	previous := registeredExtensions
+	registeredExtensions = func() []core_extensions.Extension { return registered }
+	DeferCleanup(func() { registeredExtensions = previous })
 }
 
 // specYAML is the shape the generator expects to find in the document: an item
@@ -50,7 +65,7 @@ func specWithExtensionPoint() map[string]any {
 func fakeWrappers(values ...string) []wrapper {
 	registered := make([]core_extensions.Extension, 0, len(values))
 	for _, v := range values {
-		registered = append(registered, core_extensions.Extension{Point: fakePoint, Value: v, Config: &fakeConfig{}})
+		registered = append(registered, core_extensions.Extension{Point: fakePoint, Value: v, Config: &FakeConfig{}})
 	}
 	wrappers, err := newWrappers(registered)
 	Expect(err).ToNot(HaveOccurred())
@@ -79,8 +94,8 @@ var _ = Describe("newWrappers", func() {
 
 	It("should reject two values that collapse to the same name", func() {
 		registered := []core_extensions.Extension{
-			{Point: fakePoint, Value: "vault", Config: &fakeConfig{}},
-			{Point: fakePoint, Value: "Vault", Config: &fakeConfig{}},
+			{Point: fakePoint, Value: "vault", Config: &FakeConfig{}},
+			{Point: fakePoint, Value: "Vault", Config: &FakeConfig{}},
 		}
 
 		_, err := newWrappers(registered)
@@ -90,7 +105,7 @@ var _ = Describe("newWrappers", func() {
 
 	It("should reject a registration with no character usable in a name", func() {
 		unusable := core_extensions.Point{ResourceType: "123", SchemaPath: []string{"spec"}, Discriminator: "type"}
-		registered := []core_extensions.Extension{{Point: unusable, Value: "---", Config: &fakeConfig{}}}
+		registered := []core_extensions.Extension{{Point: unusable, Value: "---", Config: &FakeConfig{}}}
 
 		_, err := newWrappers(registered)
 
@@ -131,6 +146,33 @@ var _ = Describe("checkExtensionPoint", func() {
 
 		Expect(err).To(MatchError(ContainSubstring(`has no "name" property to discriminate on`)))
 	})
+
+	It("should reject a config property the extension object does not have", func() {
+		moved := fakePoint
+		moved.ConfigProperty = "settings"
+
+		err := checkExtensionPoint(specWithExtensionPoint(), moved)
+
+		Expect(err).To(MatchError(ContainSubstring(`has no "settings" property to hold the configuration`)))
+	})
+
+	// The points are declared next to the resources but referenced only by a
+	// downstream generate run, so without this nothing here notices them drifting
+	// from the spec policy-gen produces.
+	DescribeTable("should match the generated rest.yaml of the resource that declares it",
+		func(point core_extensions.Point, restYAML string) {
+			raw, err := os.ReadFile(restYAML)
+			Expect(err).ToNot(HaveOccurred())
+			var spec map[string]any
+			Expect(yaml.Unmarshal(raw, &spec)).To(Succeed())
+
+			Expect(checkExtensionPoint(spec, point)).To(Succeed())
+		},
+		Entry("HostnameGenerator", hostnamegenerator_api.ExtensionPoint,
+			"../../../pkg/core/resources/apis/hostnamegenerator/api/v1alpha1/rest.yaml"),
+		Entry("MeshIdentity", meshidentity_api.ExtensionPoint,
+			"../../../pkg/core/resources/apis/meshidentity/api/v1alpha1/rest.yaml"),
+	)
 })
 
 var _ = Describe("propertyPath", func() {
@@ -154,7 +196,7 @@ var _ = Describe("branches", func() {
 		other := fakePoint
 		other.ResourceType = "OtherResource"
 		mixed := append(fakeWrappers("vault"), wrapper{
-			ext:        core_extensions.Extension{Point: other, Value: "elsewhere", Config: &fakeConfig{}},
+			ext:        core_extensions.Extension{Point: other, Value: "elsewhere", Config: &FakeConfig{}},
 			kind:       "OtherResourceElsewhere",
 			schemaName: "OtherResourceElsewhereExtensionConfig",
 		})
@@ -208,49 +250,68 @@ var _ = Describe("writePackage", func() {
 })
 
 var _ = Describe("Generate", func() {
+	var (
+		dir      string
+		specPath string
+		exprPath string
+		opts     Options
+	)
+
+	BeforeEach(func() {
+		dir = GinkgoT().TempDir()
+		specPath = filepath.Join(dir, "openapi.yaml")
+		exprPath = filepath.Join(dir, "expression.yq")
+
+		Expect(os.WriteFile(specPath, []byte(specYAML), 0o600)).To(Succeed())
+
+		opts = Options{
+			Spec:             specPath,
+			WorkDir:          filepath.Join(dir, "work"),
+			ControllerGenBin: stubControllerGen(dir),
+			YqBin:            stubYq(dir, exprPath),
+			Stderr:           GinkgoWriter,
+		}
+	})
+
+	// This is the property that keeps a downstream product's extensions out of
+	// Kuma's spec, so it is asserted rather than left to the empty registry.
 	It("should leave the document alone when nothing is registered", func() {
-		// Runs before the end-to-end spec below registers anything, which is the
-		// property that keeps a downstream product's extensions out of Kuma's spec.
-		Expect(core_extensions.Registered()).To(BeEmpty())
+		registerFake()
 
-		spec := filepath.Join(GinkgoT().TempDir(), "openapi.yaml")
-		Expect(os.WriteFile(spec, []byte("openapi: 3.1.0\n"), 0o600)).To(Succeed())
+		Expect(Generate(context.Background(), opts)).To(Succeed())
 
-		Expect(Generate(context.Background(), Options{Spec: spec})).To(Succeed())
+		Expect(os.ReadFile(specPath)).To(Equal([]byte(specYAML)))
+		Expect(exprPath).ToNot(BeAnExistingFile())
+	})
 
-		Expect(os.ReadFile(spec)).To(Equal([]byte("openapi: 3.1.0\n")))
+	It("should fail when the document it was told to patch is not there", func() {
+		registerFake("fake")
+		opts.Spec = filepath.Join(dir, "--controller-gen-bin")
+
+		Expect(Generate(context.Background(), opts)).To(MatchError(ContainSubstring("no such file or directory")))
 	})
 
 	Context("with a registered extension", func() {
-		var (
-			dir      string
-			specPath string
-			exprPath string
-			opts     Options
-		)
-
-		BeforeEach(func() {
-			dir = GinkgoT().TempDir()
-			specPath = filepath.Join(dir, "openapi.yaml")
-			exprPath = filepath.Join(dir, "expression.yq")
-
-			Expect(os.WriteFile(specPath, []byte(specYAML), 0o600)).To(Succeed())
-
-			opts = Options{
-				Spec:             specPath,
-				WorkDir:          filepath.Join(dir, "work"),
-				ControllerGenBin: stubControllerGen(dir),
-				YqBin:            stubYq(dir, exprPath),
-				Stderr:           GinkgoWriter,
-			}
-		})
+		BeforeEach(func() { registerFake("fake") })
 
 		It("should patch the document with the schema controller-gen produced", func() {
-			core_extensions.Register(core_extensions.Extension{Point: fakePoint, Value: "fake", Config: &fakeConfig{}})
-
 			Expect(Generate(context.Background(), opts)).To(Succeed())
 
 			Expect(os.ReadFile(exprPath)).To(matchers.MatchGoldenEqual(golden("generate.golden.yq")))
+		})
+
+		// Extension points live in one document per resource until they are merged,
+		// so a document that is about something else is not an error.
+		It("should skip a resource this document does not describe", func() {
+			elsewhere := fakePoint
+			elsewhere.ResourceType = "OtherResource"
+			registeredExtensions = func() []core_extensions.Extension {
+				return []core_extensions.Extension{{Point: elsewhere, Value: "fake", Config: &FakeConfig{}}}
+			}
+
+			Expect(Generate(context.Background(), opts)).To(Succeed())
+
+			Expect(exprPath).ToNot(BeAnExistingFile())
 		})
 
 		It("should remove the scratch directory it created and nothing else", func() {
@@ -266,8 +327,11 @@ var _ = Describe("Generate", func() {
 			Expect(entries[0].Name()).To(Equal("keep-me"))
 		})
 
-		It("should fail when the document has no such extension point", func() {
-			Expect(os.WriteFile(specPath, []byte("openapi: 3.1.0\n"), 0o600)).To(Succeed())
+		// A document that describes the resource but not the node underneath it is
+		// drift, not a document about something else, so it has to be loud.
+		It("should fail when the resource is here but the extension point is not", func() {
+			drifted := "components:\n  schemas:\n    FakeResourceItem:\n      properties:\n        spec:\n          properties: {}\n"
+			Expect(os.WriteFile(specPath, []byte(drifted), 0o600)).To(Succeed())
 
 			err := Generate(context.Background(), opts)
 

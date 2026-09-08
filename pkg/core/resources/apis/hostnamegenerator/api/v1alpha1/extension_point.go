@@ -8,7 +8,8 @@ import (
 // into it can have their configuration documented in the OpenAPI spec instead of
 // showing up as an opaque `config`. See extensions.Register.
 var ExtensionPoint = extensions.Point{
-	ResourceType:  HostnameGeneratorType,
-	SchemaPath:    []string{"spec", "extension"},
-	Discriminator: "type",
+	ResourceType:   HostnameGeneratorType,
+	SchemaPath:     []string{"spec", "extension"},
+	Discriminator:  "type",
+	ConfigProperty: "config",
 }

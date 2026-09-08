@@ -36,6 +36,10 @@ const group = "openapi.kuma.io"
 
 const version = "v1alpha1"
 
+// registeredExtensions is a seam: the registry is a process-wide global, and tests
+// that had to populate it could only pass in the order they happened to run in.
+var registeredExtensions = core_extensions.Registered
+
 // Options configures Generate.
 type Options struct {
 	// Spec is the OpenAPI document to patch in place.
@@ -66,24 +70,33 @@ type wrapper struct {
 // nothing is registered, which is what keeps upstream Kuma's spec free of a
 // downstream product's extensions.
 func Generate(ctx context.Context, opts Options) error {
-	registered := core_extensions.Registered()
-	if len(registered) == 0 {
-		return nil
-	}
-
-	wrappers, err := newWrappers(registered)
-	if err != nil {
-		return err
-	}
-
+	// Read the spec before the registry, so that a caller who names a document
+	// that is not there hears about it even when there is nothing to write. That
+	// is what turns a mis-expanded --spec into an error instead of a silent pass.
 	spec, err := loadSpec(opts.Spec)
 	if err != nil {
 		return err
 	}
-	for _, w := range wrappers {
-		if err := checkExtensionPoint(spec, w.ext.Point); err != nil {
-			return err
-		}
+
+	registered := registeredExtensions()
+	if len(registered) == 0 {
+		return nil
+	}
+
+	all, err := newWrappers(registered)
+	if err != nil {
+		return err
+	}
+
+	// Extension points live in whichever document describes their resource, and
+	// that is one file per resource until they are merged. Keep the ones this
+	// document has and leave the rest to the run that patches their file.
+	wrappers, err := forSpec(spec, all)
+	if err != nil {
+		return err
+	}
+	if len(wrappers) == 0 {
+		return nil
 	}
 
 	if opts.WorkDir == "" {
@@ -95,7 +108,9 @@ func Generate(ctx context.Context, opts Options) error {
 	// Generate its own directory rather than taking one on trust: the cleanup
 	// below is then a directory this process created under a name nothing else
 	// holds, so no work dir a caller passes can turn it into a destructive one.
-	scratch, err := os.MkdirTemp(opts.WorkDir, "gen-")
+	// The leading underscore keeps the Go tool from walking it if a cancelled run
+	// leaves it behind, since the work dir is usually inside the module.
+	scratch, err := os.MkdirTemp(opts.WorkDir, "_gen-")
 	if err != nil {
 		return err
 	}
@@ -158,25 +173,54 @@ func loadSpec(path string) (map[string]any, error) {
 	return spec, nil
 }
 
+// forSpec keeps the wrappers whose resource this document describes, and fails on
+// any whose extension point it describes wrongly.
+//
+// Absent and wrong are different: a document with no schema for the resource at
+// all is simply about something else, and the run that patches its own file will
+// pick it up. A document that has the resource but not the node underneath it
+// means the point has drifted from the API.
+func forSpec(spec map[string]any, all []wrapper) ([]wrapper, error) {
+	var kept []wrapper
+	for _, w := range all {
+		if _, ok := dig(spec, []string{"components", "schemas", itemSchema(w.ext.Point)}); !ok {
+			continue
+		}
+		if err := checkExtensionPoint(spec, w.ext.Point); err != nil {
+			return nil, err
+		}
+		kept = append(kept, w)
+	}
+	return kept, nil
+}
+
+func itemSchema(point core_extensions.Point) string {
+	return string(point.ResourceType) + "Item"
+}
+
 // checkExtensionPoint fails when the point does not describe a node that is really
 // in the document. yq creates whatever a path names, so without this a stale
 // SchemaPath would grow a plausible-looking branch nobody asked for instead of
 // reporting that the resource moved.
 func checkExtensionPoint(spec map[string]any, point core_extensions.Point) error {
-	item := string(point.ResourceType) + "Item"
+	item := itemSchema(point)
+	where := item + "." + strings.Join(point.SchemaPath, ".")
 	node, ok := dig(spec, append([]string{"components", "schemas", item}, propertyPath(point.SchemaPath)...))
 	if !ok {
-		return fmt.Errorf("%s does not have a %s.%s schema to document",
-			point.ResourceType, item, strings.Join(point.SchemaPath, "."))
+		return fmt.Errorf("%s does not have a %s schema to document", point.ResourceType, where)
 	}
 	obj, ok := node.(map[string]any)
 	if !ok {
-		return fmt.Errorf("%s.%s is not an object schema", item, strings.Join(point.SchemaPath, "."))
+		return fmt.Errorf("%s is not an object schema", where)
 	}
 	properties, _ := obj["properties"].(map[string]any)
 	if _, ok := properties[point.Discriminator]; !ok {
-		return fmt.Errorf("%s.%s has no %q property to discriminate on",
-			item, strings.Join(point.SchemaPath, "."), point.Discriminator)
+		return fmt.Errorf("%s has no %q property to discriminate on", where, point.Discriminator)
+	}
+	// The branches constrain this property, so a point naming one the schema does
+	// not have would document a payload the control plane never reads.
+	if _, ok := properties[point.ConfigProperty]; !ok {
+		return fmt.Errorf("%s has no %q property to hold the configuration", where, point.ConfigProperty)
 	}
 	return nil
 }
@@ -356,8 +400,7 @@ func patchExpression(wrappers []wrapper, schemas map[string]any) (string, error)
 		if err != nil {
 			return "", err
 		}
-		path := append([]string{"components", "schemas", string(point.ResourceType) + "Item"},
-			propertyPath(point.SchemaPath)...)
+		path := append([]string{"components", "schemas", itemSchema(point)}, propertyPath(point.SchemaPath)...)
 		assignments = append(assignments, fmt.Sprintf("%s.oneOf = %s", unions.YQPath(path), oneOf))
 	}
 
@@ -393,8 +436,8 @@ func branches(point core_extensions.Point, wrappers []wrapper) []any {
 		known = append(known, map[string]any{
 			"title": w.ext.Value,
 			"properties": map[string]any{
-				point.Discriminator: map[string]any{"const": w.ext.Value},
-				"config":            map[string]any{"$ref": "#/components/schemas/" + w.schemaName},
+				point.Discriminator:  map[string]any{"const": w.ext.Value},
+				point.ConfigProperty: map[string]any{"$ref": "#/components/schemas/" + w.schemaName},
 			},
 		})
 	}
