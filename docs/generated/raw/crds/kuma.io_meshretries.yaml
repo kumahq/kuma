@@ -303,7 +303,6 @@ spec:
                                     pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
-                                    default: Exact
                                     description: Type specifies how to match against
                                       the value of the header.
                                     enum:
@@ -340,7 +339,6 @@ spec:
                                     pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
-                                    default: Exact
                                     description: Type specifies how to match against
                                       the value of the header.
                                     enum:
