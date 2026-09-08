@@ -276,6 +276,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 			existingDataplane: "update-dataplane.existing-dataplane.yaml",
 			dataplane:         "update-dataplane.dataplane.yaml",
 		}),
+		Entry("Reserved pod labels and stale Dataplane labels are dropped", testCase{
+			pod:               "reserved-pod-labels.pod.yaml",
+			servicesForPod:    "reserved-pod-labels.services-for-pod.yaml",
+			existingDataplane: "reserved-pod-labels.existing-dataplane.yaml",
+			dataplane:         "reserved-pod-labels.dataplane.yaml",
+		}),
 		Entry("Multiple services selecting a single port deduplicates overlapping inbounds", testCase{
 			pod:            "duplicated-inbounds.pod.yaml",
 			servicesForPod: "duplicated-inbounds.services-for-pod.yaml",
