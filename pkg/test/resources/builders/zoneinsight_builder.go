@@ -4,7 +4,6 @@ import (
 	"context"
 
 	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
-
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"

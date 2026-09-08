@@ -5,14 +5,13 @@ import (
 	"net/http"
 	"strings"
 
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/api"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"

@@ -865,6 +865,8 @@ coreResources:
     - meshtrusts
     - meshzoneaddresses
     - workloads
+    - zones
+    - zoneinsights
 # IP address management configuration
 ipam:
   # MeshService address management

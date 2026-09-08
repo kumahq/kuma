@@ -3,7 +3,6 @@ package delete_test
 import (
 	"bytes"
 	"context"
-	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"

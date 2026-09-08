@@ -3,13 +3,12 @@ package defaults
 import (
 	"context"
 
-	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"

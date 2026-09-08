@@ -2,8 +2,6 @@ package bootstrap
 
 import (
 	"context"
-	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"net"
 	"net/http"
 
@@ -29,6 +27,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"

@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
-
 	"github.com/pkg/errors"
 
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
 )

@@ -9,11 +9,10 @@ import (
 	"regexp"
 	"slices"
 
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
-
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"

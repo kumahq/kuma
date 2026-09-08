@@ -3,9 +3,6 @@ package globalinsight
 import (
 	"context"
 
-	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
-
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -13,6 +10,8 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
