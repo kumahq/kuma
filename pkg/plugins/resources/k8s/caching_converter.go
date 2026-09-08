@@ -7,6 +7,7 @@ import (
 
 	"github.com/patrickmn/go-cache"
 
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
@@ -34,12 +35,14 @@ type cachedEntry struct {
 	labels map[string]string
 }
 
-func NewCachingConverter(expirationTime time.Duration, systemNamespace string) k8s_common.Converter {
+func NewCachingConverter(expirationTime time.Duration, systemNamespace string, mode config_core.CpMode, zoneName string) k8s_common.Converter {
 	return &cachingConverter{
 		KubeFactory: &SimpleKubeFactory{
 			KubeTypes: k8s_registry.Global(),
 		},
 		SystemNamespace: systemNamespace,
+		Mode:            mode,
+		ZoneName:        zoneName,
 		cache:           cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
 	}
 }
@@ -82,7 +85,7 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 	if err := out.SetSpec(spec); err != nil {
 		return err
 	}
-	adapter := newMetaAdapter(obj, c.SystemNamespace, out.Descriptor(), out.GetSpec())
+	adapter := newMetaAdapter(obj, c.SystemNamespace, c.Mode, c.ZoneName, out.Descriptor(), out.GetSpec())
 	out.SetMeta(adapter)
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()

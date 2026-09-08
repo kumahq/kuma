@@ -3,6 +3,7 @@ package k8s
 import (
 	"fmt"
 
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
@@ -14,12 +15,17 @@ var _ k8s_common.Converter = &SimpleConverter{}
 type SimpleConverter struct {
 	KubeFactory     KubeFactory
 	SystemNamespace string
+	// Mode and ZoneName identify the reading CP for labels.EnforcedReadLabels.
+	Mode     config_core.CpMode
+	ZoneName string
 }
 
-func NewSimpleConverter(systemNamespace string) k8s_common.Converter {
+func NewSimpleConverter(systemNamespace string, mode config_core.CpMode, zoneName string) k8s_common.Converter {
 	return &SimpleConverter{
 		KubeFactory:     NewSimpleKubeFactory(),
 		SystemNamespace: systemNamespace,
+		Mode:            mode,
+		ZoneName:        zoneName,
 	}
 }
 
@@ -66,7 +72,7 @@ func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out cor
 	if err := out.SetSpec(spec); err != nil {
 		return err
 	}
-	out.SetMeta(newMetaAdapter(obj, c.SystemNamespace, out.Descriptor(), out.GetSpec()))
+	out.SetMeta(newMetaAdapter(obj, c.SystemNamespace, c.Mode, c.ZoneName, out.Descriptor(), out.GetSpec()))
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()
 		if err != nil {

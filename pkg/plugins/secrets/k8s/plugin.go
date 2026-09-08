@@ -26,7 +26,7 @@ func (p *plugin) NewSecretStore(pc core_plugins.PluginContext, _ core_plugins.Pl
 	if !ok {
 		return nil, errors.Errorf("secret client hasn't been configured")
 	}
-	coreStore, err := NewStore(client, client, mgr.GetScheme(), pc.Config().Store.Kubernetes.SystemNamespace)
+	coreStore, err := NewStore(client, client, mgr.GetScheme(), pc.Config().Store.Kubernetes.SystemNamespace, pc.Config().Mode, pc.Config().Multizone.Zone.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't create k8s secret store")
 	}

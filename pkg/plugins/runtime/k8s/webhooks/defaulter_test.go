@@ -56,7 +56,7 @@ var _ = Describe("Defaulter", func() {
 		func(given testCase) {
 			// given - in production both the converter and the checker read the system
 			// namespace from the same config, so they always agree
-			converter := k8s_resources.NewSimpleConverter(given.checker.SystemNamespace)
+			converter := k8s_resources.NewSimpleConverter(given.checker.SystemNamespace, "", "")
 			handler := DefaultingWebhookFor(scheme, converter, given.checker)
 
 			req := kube_admission.Request{

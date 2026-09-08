@@ -16,6 +16,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	secret_model "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -39,13 +40,13 @@ type KubernetesStore struct {
 	namespace string
 }
 
-func NewStore(reader kube_client.Reader, writer kube_client.Writer, scheme *runtime.Scheme, namespace string) (secret_store.SecretStore, error) {
+func NewStore(reader kube_client.Reader, writer kube_client.Writer, scheme *runtime.Scheme, namespace string, mode config_core.CpMode, zoneName string) (secret_store.SecretStore, error) {
 	return &KubernetesStore{
 		reader:             reader,
 		writer:             writer,
 		scheme:             scheme,
 		secretsConverter:   DefaultConverter(),
-		resourcesConverter: k8s.NewSimpleConverter(namespace),
+		resourcesConverter: k8s.NewSimpleConverter(namespace, mode, zoneName),
 		namespace:          namespace,
 	}, nil
 }

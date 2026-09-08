@@ -8,6 +8,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
 	workload_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/k8s/v1alpha1"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
@@ -25,7 +26,7 @@ var _ = Describe("newMetaAdapter", func() {
 				Spec: &workload_api.Workload{},
 			}
 			out := workload_api.NewWorkloadResource()
-			adapter := newMetaAdapter(obj, systemNamespaceForTest, out.Descriptor(), obj.Spec)
+			adapter := newMetaAdapter(obj, systemNamespaceForTest, "", "", out.Descriptor(), obj.Spec)
 
 			Expect(adapter.GetLabels()).To(HaveKeyWithValue(v1alpha1.KubeNamespaceTag, expected))
 		},
@@ -58,7 +59,7 @@ var _ = Describe("newMetaAdapter", func() {
 		}
 		out := workload_api.NewWorkloadResource()
 
-		Expect(newMetaAdapter(obj, systemNamespaceForTest, out.Descriptor(), obj.Spec).GetLabels()).
+		Expect(newMetaAdapter(obj, systemNamespaceForTest, "", "", out.Descriptor(), obj.Spec).GetLabels()).
 			NotTo(HaveKey(v1alpha1.KubeNamespaceTag))
 	})
 })
@@ -86,8 +87,22 @@ var _ = Describe("enforced label derivation through the converters", func() {
 		return out.GetMeta().GetLabels()
 	}
 
-	simple := func() k8s_common.Converter { return NewSimpleConverter(systemNamespaceForTest) }
-	caching := func() k8s_common.Converter { return NewCachingConverter(5*time.Minute, systemNamespaceForTest) }
+	simple := func() k8s_common.Converter { return NewSimpleConverter(systemNamespaceForTest, "", "") }
+	caching := func() k8s_common.Converter { return NewCachingConverter(5*time.Minute, systemNamespaceForTest, "", "") }
+
+	simpleInZone := func(zone string) k8s_common.Converter {
+		return NewSimpleConverter(systemNamespaceForTest, config_core.Zone, zone)
+	}
+	cachingInZone := func(zone string) k8s_common.Converter {
+		return NewCachingConverter(5*time.Minute, systemNamespaceForTest, config_core.Zone, zone)
+	}
+
+	zoneOriginatedIn := func(zone string) map[string]string {
+		return map[string]string{
+			v1alpha1.ResourceOriginLabel: string(v1alpha1.ZoneResourceOrigin),
+			v1alpha1.ZoneTag:             zone,
+		}
+	}
 
 	stale := map[string]string{
 		v1alpha1.KubeNamespaceTag:    "other-ns",
@@ -131,7 +146,7 @@ var _ = Describe("enforced label derivation through the converters", func() {
 	// On a cache hit the adapter is handed the labels stored on the miss, so the
 	// derivation has to already be baked into the cached entry.
 	It("should return the derived labels on a CachingConverter cache hit", func() {
-		converter := NewCachingConverter(5*time.Minute, systemNamespaceForTest)
+		converter := NewCachingConverter(5*time.Minute, systemNamespaceForTest, "", "")
 		obj := policyIn("app-ns", stale)
 
 		miss := labelsOf(converter, obj)
@@ -141,6 +156,25 @@ var _ = Describe("enforced label derivation through the converters", func() {
 		Expect(miss).To(HaveKeyWithValue(v1alpha1.PolicyRoleLabel, string(v1alpha1.WorkloadOwnerPolicyRole)))
 		Expect(hit).To(Equal(miss))
 	})
+
+	// After a zone rename stored policies keep the old kuma.io/zone; reads must
+	// yield the current one or dppSelectedByZone drops them.
+	DescribeTable("should replace a zone label left behind by a rename",
+		func(newConverter func(zone string) k8s_common.Converter, stored map[string]string, expected string) {
+			Expect(labelsOf(newConverter("kuma-2"), policyIn(systemNamespaceForTest, stored))).
+				To(HaveKeyWithValue(v1alpha1.ZoneTag, expected))
+		},
+		Entry("SimpleConverter", simpleInZone, zoneOriginatedIn("default"), "kuma-2"),
+		Entry("CachingConverter", cachingInZone, zoneOriginatedIn("default"), "kuma-2"),
+		Entry("SimpleConverter leaves an import from global alone", simpleInZone, map[string]string{
+			v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
+			v1alpha1.ZoneTag:             "kuma-3",
+		}, "kuma-3"),
+		Entry("CachingConverter leaves an import from global alone", cachingInZone, map[string]string{
+			v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
+			v1alpha1.ZoneTag:             "kuma-3",
+		}, "kuma-3"),
+	)
 
 	// The same missing webhook that leaves the role label off also leaves the spec
 	// unvalidated, so a stored policy can have no spec at all. GetSpec hands back a

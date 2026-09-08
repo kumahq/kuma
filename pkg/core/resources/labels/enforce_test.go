@@ -8,6 +8,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -22,9 +23,10 @@ var _ = Describe("EnforcedReadLabels", func() {
 	}
 
 	type testCase struct {
-		r         core_model.Resource
-		namespace resource_labels.Namespace
-		expected  map[string]string
+		r        core_model.Resource
+		stored   map[string]string
+		opts     []resource_labels.Option
+		expected map[string]string
 	}
 
 	DescribeTable("should recompute the control-plane-owned labels",
@@ -32,7 +34,8 @@ var _ = Describe("EnforcedReadLabels", func() {
 			Expect(resource_labels.EnforcedReadLabels(
 				given.r.Descriptor(),
 				given.r.GetSpec(),
-				given.namespace,
+				given.stored,
+				given.opts...,
 			)).To(Equal(given.expected))
 		},
 		Entry("workload-owner policy in an app namespace", testCase{
@@ -40,7 +43,7 @@ var _ = Describe("EnforcedReadLabels", func() {
 				WithTargetRef(builders.TargetRefMesh()).
 				AddTo(builders.TargetRefMesh(), idleTimeout).
 				Build(),
-			namespace: resource_labels.NewNamespace("kuma-demo", false),
+			opts: []resource_labels.Option{resource_labels.WithNamespace(resource_labels.NewNamespace("kuma-demo", false))},
 			expected: map[string]string{
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 				mesh_proto.PolicyRoleLabel:  string(mesh_proto.ConsumerPolicyRole),
@@ -52,7 +55,7 @@ var _ = Describe("EnforcedReadLabels", func() {
 				AddRule(builders.MeshAccessLogConf().
 					AddBackends(make([]meshaccesslog_api.Backend, 0))).
 				Build(),
-			namespace: resource_labels.NewNamespace("kuma-demo", false),
+			opts: []resource_labels.Option{resource_labels.WithNamespace(resource_labels.NewNamespace("kuma-demo", false))},
 			expected: map[string]string{
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 				mesh_proto.PolicyRoleLabel:  string(mesh_proto.WorkloadOwnerPolicyRole),
@@ -66,7 +69,7 @@ var _ = Describe("EnforcedReadLabels", func() {
 					mesh_proto.KubeNamespaceTag: "kuma-demo",
 				}, ""), idleTimeout).
 				Build(),
-			namespace: resource_labels.NewNamespace("kuma-demo", false),
+			opts: []resource_labels.Option{resource_labels.WithNamespace(resource_labels.NewNamespace("kuma-demo", false))},
 			expected: map[string]string{
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 				mesh_proto.PolicyRoleLabel:  string(mesh_proto.ProducerPolicyRole),
@@ -87,7 +90,7 @@ var _ = Describe("EnforcedReadLabels", func() {
 					mesh_proto.KubeNamespaceTag: "other-ns",
 				}, ""), idleTimeout).
 				Build(),
-			namespace: resource_labels.NewNamespace("kuma-demo", false),
+			opts: []resource_labels.Option{resource_labels.WithNamespace(resource_labels.NewNamespace("kuma-demo", false))},
 			expected: map[string]string{
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 				mesh_proto.PolicyRoleLabel:  string(mesh_proto.WorkloadOwnerPolicyRole),
@@ -98,20 +101,109 @@ var _ = Describe("EnforcedReadLabels", func() {
 				WithTargetRef(builders.TargetRefMesh()).
 				AddTo(builders.TargetRefMesh(), idleTimeout).
 				Build(),
-			namespace: resource_labels.NewNamespace("kuma-system", true),
-			expected:  nil,
+			opts:     []resource_labels.Option{resource_labels.WithNamespace(resource_labels.NewNamespace("kuma-system", true))},
+			expected: nil,
+		}),
+		Entry("a stale zone on a zone-originated policy is replaced", testCase{
+			r: builders.MeshTimeout().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMesh(), idleTimeout).
+				Build(),
+			stored: map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+				mesh_proto.ZoneTag:             "default",
+			},
+			opts: []resource_labels.Option{
+				resource_labels.WithNamespace(resource_labels.NewNamespace("kuma-system", true)),
+				resource_labels.WithMode(config_core.Zone),
+				resource_labels.WithZone("kuma-2"),
+			},
+			expected: map[string]string{
+				mesh_proto.ZoneTag: "kuma-2",
+			},
+		}),
+		Entry("the zone is enforced alongside the namespace and role", testCase{
+			r: builders.MeshTimeout().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMesh(), idleTimeout).
+				Build(),
+			stored: map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+				mesh_proto.ZoneTag:             "default",
+			},
+			opts: []resource_labels.Option{
+				resource_labels.WithNamespace(resource_labels.NewNamespace("kuma-demo", false)),
+				resource_labels.WithMode(config_core.Zone),
+				resource_labels.WithZone("kuma-2"),
+			},
+			expected: map[string]string{
+				mesh_proto.ZoneTag:          "kuma-2",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+				mesh_proto.PolicyRoleLabel:  string(mesh_proto.ConsumerPolicyRole),
+			},
+		}),
+		// Global relays another zone's producer policy with its kuma.io/zone intact
+		// but origin rewritten to global; it must not be claimed by the reader.
+		Entry("a resource synced from global keeps its zone", testCase{
+			r: builders.MeshTimeout().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMesh(), idleTimeout).
+				Build(),
+			stored: map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+				mesh_proto.ZoneTag:             "kuma-3",
+			},
+			opts: []resource_labels.Option{
+				resource_labels.WithNamespace(resource_labels.NewNamespace("kuma-system", true)),
+				resource_labels.WithMode(config_core.Zone),
+				resource_labels.WithZone("kuma-2"),
+			},
+			expected: nil,
+		}),
+		Entry("a global CP does not rewrite the zone of a synced resource", testCase{
+			r: builders.MeshTimeout().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMesh(), idleTimeout).
+				Build(),
+			stored: map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+				mesh_proto.ZoneTag:             "kuma-2",
+			},
+			opts: []resource_labels.Option{
+				resource_labels.WithNamespace(resource_labels.NewNamespace("kuma-system", true)),
+				resource_labels.WithMode(config_core.Global),
+				resource_labels.WithZone("default"),
+			},
+			expected: nil,
+		}),
+		// Pre-2.6 objects carry no origin; nothing verified them, and matching does
+		// not consult the zone label without an origin anyway.
+		Entry("an object with no origin is not claimed", testCase{
+			r: builders.MeshTimeout().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMesh(), idleTimeout).
+				Build(),
+			stored: map[string]string{
+				mesh_proto.ZoneTag: "default",
+			},
+			opts: []resource_labels.Option{
+				resource_labels.WithNamespace(resource_labels.NewNamespace("kuma-system", true)),
+				resource_labels.WithMode(config_core.Zone),
+				resource_labels.WithZone("kuma-2"),
+			},
+			expected: nil,
 		}),
 		Entry("nothing is enforced on Universal", testCase{
 			r: builders.MeshTimeout().
 				WithTargetRef(builders.TargetRefMesh()).
 				AddTo(builders.TargetRefMesh(), idleTimeout).
 				Build(),
-			namespace: resource_labels.UnsetNamespace,
-			expected:  nil,
+			opts:     []resource_labels.Option{resource_labels.WithNamespace(resource_labels.UnsetNamespace)},
+			expected: nil,
 		}),
 		Entry("a non-policy resource gets no role", testCase{
-			r:         meshservice_api.NewMeshServiceResource(),
-			namespace: resource_labels.NewNamespace("kuma-demo", false),
+			r:    meshservice_api.NewMeshServiceResource(),
+			opts: []resource_labels.Option{resource_labels.WithNamespace(resource_labels.NewNamespace("kuma-demo", false))},
 			expected: map[string]string{
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 			},

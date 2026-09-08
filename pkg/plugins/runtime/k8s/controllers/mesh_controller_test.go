@@ -41,14 +41,14 @@ var _ = Describe("MeshReconciler", func() {
 					return []string{string(secret.Type)}
 				}).
 			Build()
-		store, err := k8s.NewStore(kubeClient, k8sClientScheme, k8s.NewSimpleConverter("kuma-system"))
+		store, err := k8s.NewStore(kubeClient, k8sClientScheme, k8s.NewSimpleConverter("kuma-system", "", ""))
 		Expect(err).ToNot(HaveOccurred())
 
 		// we need to bring in the actual scheme we're using so that the Mesh CRD can be hooked up as owner,
 		// otherwise we will get "no kind is registered for the type v1alpha1.Mesh in scheme"
 		scheme, err := bootstrap_k8s.NewScheme()
 		Expect(err).ToNot(HaveOccurred())
-		secretStore, err := secrets_k8s.NewStore(kubeClient, kubeClient, scheme, "default")
+		secretStore, err := secrets_k8s.NewStore(kubeClient, kubeClient, scheme, "default", "", "")
 		Expect(err).ToNot(HaveOccurred())
 
 		resourceManager = resources_manager.NewResourceManager(store)

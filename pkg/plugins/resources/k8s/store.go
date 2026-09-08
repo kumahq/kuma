@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -293,13 +294,15 @@ type KubernetesMetaAdapter struct {
 }
 
 // newMetaAdapter is the only place an adapter's labels are computed from a Kubernetes
-// object. Taking rd and spec forces every conversion path to supply what
-// labels.EnforcedReadLabels needs, so a new converter cannot silently skip the
-// read-side recomputation. newMetaAdapterWithLabels is not a second computation: it
-// only re-wraps a set this function already produced.
+// object. Taking rd, spec and the local CP's mode and zone forces every conversion path
+// to supply what labels.EnforcedReadLabels needs, so a new converter cannot silently
+// skip the read-side recomputation. newMetaAdapterWithLabels is not a second
+// computation: it only re-wraps a set this function already produced.
 func newMetaAdapter(
 	obj k8s_model.KubernetesObject,
 	systemNamespace string,
+	mode config_core.CpMode,
+	zone string,
 	rd core_model.ResourceTypeDescriptor,
 	spec core_model.ResourceSpec,
 ) *KubernetesMetaAdapter {
@@ -321,7 +324,11 @@ func newMetaAdapter(
 		computed[metadata.KumaWorkload] = workload
 	}
 	ns := labels.NewNamespace(objMeta.GetNamespace(), objMeta.GetNamespace() == systemNamespace)
-	maps.Copy(computed, labels.EnforcedReadLabels(rd, spec, ns))
+	maps.Copy(computed, labels.EnforcedReadLabels(rd, spec, computed,
+		labels.WithNamespace(ns),
+		labels.WithMode(mode),
+		labels.WithZone(zone),
+	))
 
 	return &KubernetesMetaAdapter{
 		ObjectMeta: *objMeta,
