@@ -13,7 +13,6 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
-	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
@@ -239,7 +238,7 @@ func (g AdminProxyGenerator) generateIdentityReadiness(resources *core_xds.Resou
 		return err
 	}
 
-	name := core_system_names.MustBeSystemName("identity_readiness")
+	name := system_names.SystemResourceNameIdentityReadiness
 	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 		Configure(envoy_listeners.DirectResponse(name, []envoy_listeners_v3.DirectResponseEndpoints{{
 			Path:       "/ready",
