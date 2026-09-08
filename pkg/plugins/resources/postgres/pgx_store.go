@@ -19,7 +19,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sethvargo/go-retry"
 
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	config "github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
@@ -33,6 +35,10 @@ type pgxResourceStore struct {
 	roRatio                         uint
 	maxListQueryElements            uint32
 	listQueryThresholdExceededTotal prometheus.Counter
+	// labelOpts (mode, zone) drive labels.EnforcedReadLabels on every read; mode is
+	// the same value, kept separately for the local-vs-import decision.
+	labelOpts []resource_labels.Option
+	mode      config_core.CpMode
 }
 
 type ResourceNamesByMesh map[string][]string
@@ -47,7 +53,12 @@ type TransactionableResourceStore interface {
 	store.Transactions
 }
 
-func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig, customizer pgx_config.PgxConfigCustomization) (TransactionableResourceStore, error) {
+func NewPgxStore(
+	metrics core_metrics.Metrics,
+	config config.PostgresStoreConfig,
+	customizer pgx_config.PgxConfigCustomization,
+	labelOpts ...resource_labels.Option,
+) (TransactionableResourceStore, error) {
 	pool, err := postgres.ConnectToDbPgx(config, customizer)
 	if err != nil {
 		return nil, err
@@ -84,6 +95,8 @@ func NewPgxStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig
 		maxListQueryElements:            config.MaxListQueryElements,
 		roRatio:                         config.ReadReplica.Ratio,
 		listQueryThresholdExceededTotal: listQueryThresholdExceededTotal,
+		labelOpts:                       labelOpts,
+		mode:                            resource_labels.NewOptions(labelOpts...).Mode,
 	}, nil
 }
 
@@ -288,18 +301,10 @@ func (r *pgxResourceStore) Get(ctx context.Context, resource core_model.Resource
 		}
 	}
 
-	meta := &resourceMetaObject{
-		Name:             opts.Name,
-		Mesh:             opts.Mesh,
-		Version:          strconv.Itoa(version),
-		CreationTime:     creationTime.Local(),
-		ModificationTime: modificationTime.Local(),
-		Labels:           map[string]string{},
+	meta, err := r.newMeta(resource, opts.Name, opts.Mesh, version, creationTime, modificationTime, labels)
+	if err != nil {
+		return err
 	}
-	if err := json.Unmarshal([]byte(labels), &meta.Labels); err != nil {
-		return errors.Wrap(err, "failed to convert json to labels")
-	}
-
 	resource.SetMeta(meta)
 
 	if opts.Version != "" && resource.GetMeta().GetVersion() != opts.Version {
@@ -411,7 +416,7 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 
 	total := 0
 	for rows.Next() {
-		item, err := rowToItem(resources, rows)
+		item, err := r.rowToItem(resources, rows)
 		if err != nil {
 			return err
 		}
@@ -437,7 +442,7 @@ func resourceNamesByMesh(resourceKeys map[core_model.ResourceKey]struct{}) Resou
 	return resourceNamesByMesh
 }
 
-func rowToItem(resources core_model.ResourceList, rows pgx.Rows) (core_model.Resource, error) {
+func (r *pgxResourceStore) rowToItem(resources core_model.ResourceList, rows pgx.Rows) (core_model.Resource, error) {
 	var name, mesh, spec string
 	var version int
 	var creationTime, modificationTime time.Time
@@ -458,20 +463,47 @@ func rowToItem(resources core_model.ResourceList, rows pgx.Rows) (core_model.Res
 		}
 	}
 
-	meta := &resourceMetaObject{
+	meta, err := r.newMeta(item, name, mesh, version, creationTime, modificationTime, labels)
+	if err != nil {
+		return nil, err
+	}
+	item.SetMeta(meta)
+
+	return item, nil
+}
+
+// newMeta builds the meta of a resource read from a row. The spec must already be
+// set on the resource: the enforced labels are derived from it.
+//
+// Universal has no namespace to tell a KDS import from a local resource, so the
+// stored origin is the only signal and it is trusted: the API server recomputes it
+// on every write and the CP is the only other writer.
+func (r *pgxResourceStore) newMeta(
+	resource core_model.Resource,
+	name, mesh string,
+	version int,
+	creationTime, modificationTime time.Time,
+	labels string,
+) (*resourceMetaObject, error) {
+	stored := map[string]string{}
+	if err := json.Unmarshal([]byte(labels), &stored); err != nil {
+		return nil, errors.Wrap(err, "failed to convert json to labels")
+	}
+	isLocal := core_model.IsLocallyOriginated(r.mode, stored)
+	if enforced := resource_labels.EnforcedReadLabels(resource.Descriptor(), resource.GetSpec(), isLocal, r.labelOpts...); len(enforced) > 0 {
+		if stored == nil {
+			stored = map[string]string{}
+		}
+		maps.Copy(stored, enforced)
+	}
+	return &resourceMetaObject{
 		Name:             name,
 		Mesh:             mesh,
 		Version:          strconv.Itoa(version),
 		CreationTime:     creationTime.Local(),
 		ModificationTime: modificationTime.Local(),
-		Labels:           map[string]string{},
-	}
-	if err := json.Unmarshal([]byte(labels), &meta.Labels); err != nil {
-		return nil, errors.Wrap(err, "failed to convert json to labels")
-	}
-	item.SetMeta(meta)
-
-	return item, nil
+		Labels:           stored,
+	}, nil
 }
 
 func (r *pgxResourceStore) Close() error {

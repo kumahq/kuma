@@ -6,6 +6,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/v3/pkg/events"
@@ -34,7 +35,13 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plu
 	}
 	switch cfg.DriverName {
 	case postgres.DriverNamePgx:
-		store, err := NewPgxStore(pc.Metrics(), *cfg, pc.PgxConfigCustomizationFn())
+		store, err := NewPgxStore(
+			pc.Metrics(),
+			*cfg,
+			pc.PgxConfigCustomizationFn(),
+			resource_labels.WithMode(pc.Config().Mode),
+			resource_labels.WithZone(pc.Config().Multizone.Zone.Name),
+		)
 		if err != nil {
 			return nil, nil, err
 		}

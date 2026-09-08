@@ -3,6 +3,7 @@ package k8s
 import (
 	"fmt"
 
+	"github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
@@ -14,13 +15,38 @@ var _ k8s_common.Converter = &SimpleConverter{}
 type SimpleConverter struct {
 	KubeFactory     KubeFactory
 	SystemNamespace string
+	// LabelOptions are the control-plane-wide options (mode, zone) handed to
+	// labels.EnforcedReadLabels on every conversion. Leave them empty for converters
+	// that must not normalize user-supplied labels, like the admission webhooks'.
+	LabelOptions []labels.Option
 }
 
-func NewSimpleConverter(systemNamespace string) k8s_common.Converter {
+func NewSimpleConverter(systemNamespace string, labelOpts ...labels.Option) k8s_common.Converter {
 	return &SimpleConverter{
 		KubeFactory:     NewSimpleKubeFactory(),
 		SystemNamespace: systemNamespace,
+		LabelOptions:    labelOpts,
 	}
+}
+
+// readLabelArgs derives what labels.EnforcedReadLabels needs for obj: whether it is
+// locally originated, and the per-object options on top of the CP-wide ones. The
+// options are a fresh slice per call, so concurrent conversions never share the
+// backing array of LabelOptions.
+//
+// KDS only ever writes into the system namespace, so an object anywhere else is
+// local by construction. Inside the system namespace the stored origin is the only
+// signal, and it is trusted: only the CP and admission-validated writes land there.
+func (c *SimpleConverter) readLabelArgs(obj k8s_model.KubernetesObject) (bool, []labels.Option) {
+	ns := obj.GetNamespace()
+	opts := make([]labels.Option, 0, len(c.LabelOptions)+2)
+	opts = append(opts, labels.WithK8s(true))
+	opts = append(opts, c.LabelOptions...)
+	opts = append(opts, labels.WithNamespace(labels.NewNamespace(ns, ns == c.SystemNamespace)))
+
+	isLocal := (ns != "" && ns != c.SystemNamespace) ||
+		core_model.IsLocallyOriginated(labels.NewOptions(c.LabelOptions...).Mode, obj.GetLabels())
+	return isLocal, opts
 }
 
 func NewSimpleKubeFactory() KubeFactory {
@@ -66,7 +92,8 @@ func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out cor
 	if err := out.SetSpec(spec); err != nil {
 		return err
 	}
-	out.SetMeta(newMetaAdapter(obj, c.SystemNamespace, out.Descriptor(), out.GetSpec()))
+	isLocal, opts := c.readLabelArgs(obj)
+	out.SetMeta(newMetaAdapter(obj, out.Descriptor(), out.GetSpec(), isLocal, opts...))
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()
 		if err != nil {
