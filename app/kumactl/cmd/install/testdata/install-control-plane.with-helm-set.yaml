@@ -3138,6 +3138,7 @@ spec:
                                 add or patch.
                               type: string
                           required:
+                          - match
                           - operation
                           type: object
                       type: object
