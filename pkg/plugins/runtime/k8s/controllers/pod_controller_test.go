@@ -1050,3 +1050,48 @@ var _ = Describe("PodReconciler", func() {
 		Expect(event).To(ContainSubstring("ZoneProxyListenersSkipped"))
 	})
 })
+
+var _ = Describe("ServiceToPodsMapper", func() {
+	newPod := func(name, color string) *kube_core.Pod {
+		return &kube_core.Pod{
+			Namespace: "demo",
+			Name:      name,
+			Labels: map[string]string{
+				"app":   "test-server",
+				"color": color,
+			},
+		}
+	}
+
+	svc := &kube_core.Service{
+		Namespace: "demo",
+		Name:      "test-server",
+		Spec: kube_core.ServiceSpec{
+			Selector: map[string]string{
+				"app":   "test-server",
+				"color": "blue",
+			},
+		},
+	}
+
+	enqueued := func(ignoredLabels []string) []string {
+		client := kube_client_fake.NewClientBuilder().
+			WithScheme(k8sClientScheme).
+			WithObjects(newPod("blue", "blue"), newPod("green", "green")).
+			Build()
+
+		var names []string
+		for _, req := range ServiceToPodsMapper(core.Log, client, ignoredLabels)(context.Background(), svc) {
+			names = append(names, req.Name)
+		}
+		return names
+	}
+
+	It("should enqueue only the Pods the selector matches", func() {
+		Expect(enqueued(nil)).To(ConsistOf("blue"))
+	})
+
+	It("should enqueue Pods that match once ignored labels are stripped", func() {
+		Expect(enqueued([]string{"color"})).To(ConsistOf("blue", "green"))
+	})
+})

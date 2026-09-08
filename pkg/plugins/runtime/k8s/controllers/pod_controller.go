@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"maps"
 	"sync"
 	"time"
 
@@ -498,13 +499,19 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentRec
 		WithOptions(controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}).
 		For(&kube_core.Pod{}).
 		// on Service update reconcile affected Pods (all Pods selected by this service)
-		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient()))).
+		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient(), r.IgnoredServiceSelectorLabels))).
 		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToPodsMapper(r.Log, mgr.GetClient()))).
 		Watches(&mesh_k8s.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(MeshServiceExclusivePredicate{})).
 		Complete(r)
 }
 
-func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+// ServiceToPodsMapper enqueues the Pods a Service change can affect. Ignored
+// selector labels are stripped before listing, mirroring what the reconciler
+// itself matches on: a Pod that only matches once those labels are dropped
+// still owns an inbound for this Service, an Ignored one, and has to be
+// reconciled to gain or lose it. Listing on the full selector would skip the
+// Pods a selector change moves traffic away from or towards.
+func ServiceToPodsMapper(l logr.Logger, client kube_client.Client, ignoredSelectorLabels []string) kube_handler.MapFunc {
 	l = l.WithName("service-to-pods-mapper")
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		svc := obj.(*kube_core.Service)
@@ -541,7 +548,12 @@ func ServiceToPodsMapper(l logr.Logger, client kube_client.Client) kube_handler.
 			return req
 		}
 
-		if err := client.List(ctx, pods, kube_client.InNamespace(obj.GetNamespace()), kube_client.MatchingLabels(svc.Spec.Selector)); err != nil {
+		selector := maps.Clone(svc.Spec.Selector)
+		for _, ignored := range ignoredSelectorLabels {
+			delete(selector, ignored)
+		}
+
+		if err := client.List(ctx, pods, kube_client.InNamespace(obj.GetNamespace()), kube_client.MatchingLabels(selector)); err != nil {
 			l.Error(err, "failed to fetch Pods matching selector")
 			return nil
 		}
