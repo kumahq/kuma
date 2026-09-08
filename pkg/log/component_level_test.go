@@ -182,3 +182,44 @@ var _ = Describe("SplitHierarchy", func() {
 		Entry("four segments", "a.b.c.d", []string{"a.b.c.d", "a.b.c", "a.b", "a"}),
 	)
 })
+
+var _ = Describe("ApplyComponentLevels", func() {
+	var registry *kuma_log.ComponentLevelRegistry
+
+	BeforeEach(func() {
+		registry = kuma_log.NewComponentLevelRegistry()
+	})
+
+	DescribeTable("valid specs",
+		func(spec string, expected map[string]kuma_log.LogLevel) {
+			Expect(kuma_log.ApplyComponentLevels(registry, spec)).To(Succeed())
+			Expect(registry.ListOverrides()).To(Equal(expected))
+		},
+		Entry("a single pair", "dnsproxy:debug", map[string]kuma_log.LogLevel{
+			"dnsproxy": kuma_log.DebugLevel,
+		}),
+		Entry("several pairs", "dnsproxy:debug,xds.server:info", map[string]kuma_log.LogLevel{
+			"dnsproxy":   kuma_log.DebugLevel,
+			"xds.server": kuma_log.InfoLevel,
+		}),
+		Entry("surrounding whitespace", " dnsproxy : debug , xds:info ", map[string]kuma_log.LogLevel{
+			"dnsproxy": kuma_log.DebugLevel,
+			"xds":      kuma_log.InfoLevel,
+		}),
+		Entry("empty entries", "dnsproxy:debug,,", map[string]kuma_log.LogLevel{
+			"dnsproxy": kuma_log.DebugLevel,
+		}),
+		Entry("nothing at all", "", map[string]kuma_log.LogLevel{}),
+	)
+
+	DescribeTable("rejected specs",
+		func(spec string) {
+			Expect(kuma_log.ApplyComponentLevels(registry, spec)).To(HaveOccurred())
+			Expect(registry.ListOverrides()).To(BeEmpty())
+		},
+		Entry("no separator", "dnsproxy"),
+		Entry("unknown level", "dnsproxy:verbose"),
+		Entry("empty component", ":debug"),
+		Entry("invalid component name", "dns proxy:debug"),
+	)
+})

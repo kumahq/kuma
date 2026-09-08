@@ -153,3 +153,30 @@ func SplitHierarchy(name string) []string {
 	}
 	return names
 }
+
+// ApplyComponentLevels sets the overrides described by a comma separated list
+// of component:level pairs, for example "dnsproxy:debug,xds.server:debug".
+func ApplyComponentLevels(r *ComponentLevelRegistry, spec string) error {
+	for pair := range strings.SplitSeq(spec, ",") {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		component, levelName, found := strings.Cut(pair, ":")
+		if !found {
+			return fmt.Errorf("%q is not a component:level pair", pair)
+		}
+		component = strings.TrimSpace(component)
+		if err := ValidateComponentName(component); err != nil {
+			return err
+		}
+		level, err := ParseLogLevel(strings.TrimSpace(levelName))
+		if err != nil {
+			return err
+		}
+		if err := r.SetLevel(component, level); err != nil {
+			return err
+		}
+	}
+	return nil
+}
