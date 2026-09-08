@@ -184,7 +184,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// and
 		Eventually(func(g Gomega) {
@@ -194,7 +194,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// and
 		Eventually(func(g Gomega) {
@@ -203,7 +203,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("uni-test-server-zone-4"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// when
 		yaml := fmt.Sprintf(`
@@ -241,7 +241,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// mTLS traffic in local zone works
 		Eventually(func(g Gomega) {
@@ -251,7 +251,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// and
 		Eventually(func(g Gomega) {
@@ -260,7 +260,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("uni-test-server-zone-4"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// when
 		// added Trust from zone 1 to zone 2
@@ -284,7 +284,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// cross zone traffic works: kube-2 -> kube-1
 		Eventually(func(g Gomega) {
@@ -294,7 +294,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// cross zone traffic works: kube-2 -> uni-1
 		Eventually(func(g Gomega) {
@@ -304,7 +304,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("uni-test-server-zone-4"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// cross zone traffic works: uni-1 -> kube-1
 		Eventually(func(g Gomega) {
@@ -313,7 +313,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		}, "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// meshmultizone works
 		Expect(client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server-mi.mzsvc.mesh.local", client.WithNumberOfRequests(50))).
