@@ -219,9 +219,6 @@ var _ = Describe("AdminProxyGenerator", func() {
 					AdminAddress:  "127.0.0.1",
 					ReadinessPort: 9902,
 					WorkDir:       "/tmp/kuma-dp",
-					Features: xds_types.Features{
-						xds_types.FeatureIdentityReadiness: true,
-					},
 				},
 				Dataplane:  dataplane,
 				APIVersion: envoy_common.APIV3,

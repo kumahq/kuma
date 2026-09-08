@@ -217,10 +217,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.DataplaneRuntime.IPv6Enabled = false
 			}
 
-			rootCtx.Features = []string{
-				xds_types.FeatureTCPAccessLogViaNamedPipe,
-				xds_types.FeatureIdentityReadiness,
-			}
+			rootCtx.Features = nil
 			if cfg.DataplaneRuntime.OtelPipeEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureOtelViaKumaDp)
 			}
