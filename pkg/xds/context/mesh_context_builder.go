@@ -684,6 +684,8 @@ func resolveZoneEgresses(
 			// ZoneProxyListenerGenerator skips the egress listener without a WorkloadIdentity, so
 			// advertising this instance would point every proxy in the mesh at a port nothing serves.
 			// Leaving it out keeps the legacy zone egresses in the pool until identity is enabled.
+			logger.V(1).Info("zone egress is not advertised: no initialized MeshIdentity matches it",
+				"dataplane", dp.GetMeta().GetName(), "mesh", dp.GetMeta().GetMesh())
 			continue
 		}
 		for _, l := range listeners {

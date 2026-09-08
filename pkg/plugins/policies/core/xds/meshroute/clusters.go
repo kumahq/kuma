@@ -61,41 +61,29 @@ func GenerateClusters(
 					if !ok {
 						continue
 					}
-					if proxy.WorkloadIdentity != nil {
+					edsClusterBuilder.Configure(envoy_clusters.EdsCluster())
+					// The egress terminates this connection, so the pool decides which identity
+					// is verified. The cluster is emitted either way: GenerateEndpoints emits a
+					// load assignment for this destination, and an orphaned one makes the whole
+					// snapshot inconsistent.
+					if egressSANs := meshCtx.ZoneEgressSANs(); len(egressSANs) > 0 && proxy.WorkloadIdentity != nil {
 						// Zone proxies key the SNI by port name, a backendRef may use the number.
-						kriID := kri.WithSectionName(realResourceRef.Resource, port.GetName())
-						sni := core_sni.FromKRI(kriID)
-						egressSANs := meshCtx.ZoneEgressSANs()
-						if len(meshCtx.ZoneEgresses) == 0 || len(egressSANs) == 0 {
-							// A MeshExternalService is only reachable through a zone egress.
-							// Without one the destination has no endpoints either, so keep the
-							// cluster plaintext rather than dropping it: GenerateEndpoints still
-							// emits the load assignment, and a load assignment without its
-							// cluster makes the whole snapshot inconsistent, which costs the
-							// proxy its entire configuration.
-							edsClusterBuilder.Configure(envoy_clusters.EdsCluster())
-						} else {
-							upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
-							if err != nil {
-								return nil, err
-							}
-							edsClusterBuilder.
-								Configure(envoy_clusters.EdsCluster()).
-								Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
+						sni := core_sni.FromKRI(kri.WithSectionName(realResourceRef.Resource, port.GetName()))
+						upstreamCtx, err := UpstreamTLSContext(proxy, sni, egressSANs)
+						if err != nil {
+							return nil, err
 						}
+						edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContext(upstreamCtx))
 					} else {
-						sni := SniForBackendRef(realResourceRef, dest, port, systemNamespace)
-						edsClusterBuilder.
-							Configure(envoy_clusters.EdsCluster()).
-							Configure(envoy_clusters.ClientSideMTLSCustomSNI(
-								proxy.SecretsTracker,
-								unifiedNaming,
-								meshCtx.Resource,
-								mesh_proto.ZoneEgressServiceName,
-								true,
-								sni,
-								false,
-							))
+						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLSCustomSNI(
+							proxy.SecretsTracker,
+							unifiedNaming,
+							meshCtx.Resource,
+							mesh_proto.ZoneEgressServiceName,
+							true,
+							SniForBackendRef(realResourceRef, dest, port, systemNamespace),
+							false,
+						))
 					}
 				case meshCtx.Resource.ZoneEgressEnabled():
 					// path for old ExternalService
