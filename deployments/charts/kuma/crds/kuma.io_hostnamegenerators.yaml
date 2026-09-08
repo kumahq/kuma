@@ -86,6 +86,7 @@ spec:
               template:
                 type: string
             required:
+            - selector
             - template
             type: object
         type: object

@@ -593,7 +593,6 @@ components:
                             description: Value of xDS resource in YAML format to add or patch.
                             type: string
                         required:
-                          - match
                           - operation
                         type: object
                     type: object

@@ -447,7 +447,6 @@ components:
                                   pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                   type: string
                                 type:
-                                  default: Exact
                                   description: Type specifies how to match against the value of the header.
                                   enum:
                                     - Exact
@@ -482,7 +481,6 @@ components:
                                   pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                   type: string
                                 type:
-                                  default: Exact
                                   description: Type specifies how to match against the value of the header.
                                   enum:
                                     - Exact

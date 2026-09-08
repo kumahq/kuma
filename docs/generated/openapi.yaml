@@ -9905,7 +9905,6 @@ components:
                                                     MeshService.ports[] by its name.
                                                   type: string
                                                 weight:
-                                                  default: 1
                                                   maximum: 4294967295
                                                   minimum: 0
                                                   type: integer
@@ -10182,7 +10181,6 @@ components:
                                       MeshService.ports[] by its name.
                                     type: string
                                   weight:
-                                    default: 1
                                     maximum: 4294967295
                                     minimum: 0
                                     type: integer
@@ -10284,7 +10282,6 @@ components:
                                               MeshService.ports[] by its name.
                                             type: string
                                           weight:
-                                            default: 1
                                             maximum: 4294967295
                                             minimum: 0
                                             type: integer
@@ -10562,7 +10559,6 @@ components:
                                       pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                       type: string
                                     type:
-                                      default: Exact
                                       description: >-
                                         Type specifies how to match against the
                                         value of the header.
@@ -12900,7 +12896,6 @@ components:
                               patch.
                             type: string
                         required:
-                          - match
                           - operation
                         type: object
                     type: object
@@ -13836,7 +13831,6 @@ components:
                                   pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                   type: string
                                 type:
-                                  default: Exact
                                   description: >-
                                     Type specifies how to match against the
                                     value of the header.
@@ -13885,7 +13879,6 @@ components:
                                   pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                   type: string
                                 type:
-                                  default: Exact
                                   description: >-
                                     Type specifies how to match against the
                                     value of the header.
@@ -14167,7 +14160,6 @@ components:
                                       MeshService.ports[] by its name.
                                     type: string
                                   weight:
-                                    default: 1
                                     maximum: 4294967295
                                     minimum: 0
                                     type: integer
@@ -17331,6 +17323,7 @@ components:
             template:
               type: string
           required:
+            - selector
             - template
           type: object
         creationTime:

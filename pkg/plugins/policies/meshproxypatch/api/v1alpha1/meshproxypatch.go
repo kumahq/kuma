@@ -223,8 +223,7 @@ type HTTPFilterMatch struct {
 // referenced in HTTP Connection Manager in a Listener resource.
 type VirtualHostMod struct {
 	// Match is a set of conditions that have to be matched for modification operation to happen.
-	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
-	Match *VirtualHostMatch `json:"match"`
+	Match *VirtualHostMatch `json:"match,omitempty"`
 	// Operation to execute on matched listener.
 	// +kubebuilder:validation:Enum=Add;Remove;Patch
 	Operation ModOperation `json:"operation"`
