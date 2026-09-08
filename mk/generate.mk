@@ -38,8 +38,33 @@ $(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 $(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
 
-$(OAPI_GEN): $(wildcard $(KUMA_DIR)/tools/openapi/**/*) $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
+# Always rebuilt, because oapi-gen embeds the extension registrations of whatever
+# module builds it: its real inputs are this repo's own main and every package
+# that main reaches, which no wildcard over $(KUMA_DIR)/tools describes. Without
+# this, editing a Register call regenerates the spec from a stale binary. The Go
+# build cache makes the rebuild a no-op when nothing changed.
+.PHONY: $(OAPI_GEN)
+$(OAPI_GEN):
 	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/oapi-gen ./tools/openapi/generator/main.go
+
+# Replace the opaque `config` of every extension registered with
+# pkg/core/resources/extensions by its real schema, in the OpenAPI document named
+# by OAS_EXTENSIONS_SPEC. What is registered depends on what $(OAPI_GEN) imports,
+# and that binary is built from this repo; a build that registers none leaves the
+# document alone.
+#
+# Point it at an input of the docs bundle rather than at the bundle itself: yq
+# rewrites the whole file it edits, so patching the merged document would churn
+# every folded description in it.
+#
+# The guard is not decoration: unset, --spec swallows the next flag as its value,
+# the required-flag check passes, and --controller-gen-bin silently falls back to
+# PATH.
+OAS_EXTENSIONS_SPEC ?=
+.PHONY: generate/oas/extensions
+generate/oas/extensions: $(OAPI_GEN)
+	@test -n "$(OAS_EXTENSIONS_SPEC)" || { echo "generate/oas/extensions: OAS_EXTENSIONS_SPEC must name the OpenAPI document to patch"; exit 1; }
+	$(OAPI_GEN) extensions --spec $(OAS_EXTENSIONS_SPEC) --controller-gen-bin $(CONTROLLER_GEN) --yq-bin $(YQ) --work-dir $(BUILD_DIR)/openapi-extensions
 
 .PHONY: resources/type
 resources/type: $(RESOURCE_GEN)

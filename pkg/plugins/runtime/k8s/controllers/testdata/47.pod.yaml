@@ -3,12 +3,15 @@ metadata:
   name: example
   labels:
     app: example
-    kuma.io/zone: zone-uni
-    kuma.io/env: universal
-    kuma.io/kds-sync: disabled
+    rollouts-pod-template-hash: green
+    kuma.io/sidecar-injection: enabled
 spec:
   containers:
     - ports:
         - containerPort: 8080
+          name: main
 status:
   podIP: 192.168.0.1
+  containerStatuses:
+    - ready: true
+      started: true

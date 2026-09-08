@@ -1,5 +1,3 @@
-apiVersion: kuma.io/v1alpha1
-kind: Dataplane
 mesh: default
 metadata:
   labels:
@@ -7,13 +5,15 @@ metadata:
     k8s.kuma.io/namespace: demo
     kuma.io/display-name: example
     kuma.io/mesh: default
+    kuma.io/sidecar-injection: enabled
+    rollouts-pod-template-hash: green
   name: example
-  namespace: demo
 spec:
   networking:
     address: 192.168.0.1
     inbound:
     - health:
         ready: true
+      name: main
       port: 8080
       protocol: tcp

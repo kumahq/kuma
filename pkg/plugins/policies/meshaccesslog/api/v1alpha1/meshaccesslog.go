@@ -82,6 +82,7 @@ type OtelBackend struct {
 	// It can contain placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 	// +kubebuilder:example={kvlistValue: {values: {{key: "mesh", value: {stringValue: "%KUMA_MESH%"}}}}}
+	// +kuma:opaque-payload // the log body is the user's own value, not a configuration we can describe
 	Body *apiextensionsv1.JSON `json:"body,omitempty"`
 	// BackendRef is a reference to a MeshOpenTelemetryBackend resource that
 	// defines the collector endpoint.
