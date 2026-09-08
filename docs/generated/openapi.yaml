@@ -17330,7 +17330,6 @@ components:
             template:
               type: string
           required:
-            - selector
             - template
           type: object
         creationTime:

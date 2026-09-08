@@ -19,7 +19,8 @@ type Selector struct {
 // +kuma:policy:scope=Global
 // +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
 type HostnameGenerator struct {
-	Selector Selector `json:"selector"`
+	// +kuma:nolint // validateSelectors already requires exactly one selector; adding it to the schema required list would reject a generator synced from an older zone whose CRD did not
+	Selector Selector `json:"selector,omitempty"`
 	Template string   `json:"template"`
 	// Extension struct for a plugin configuration
 	Extension *Extension `json:"extension,omitempty"`
