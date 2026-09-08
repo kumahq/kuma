@@ -39,7 +39,7 @@ func (rm ResourceMap) listOrEmpty(resourceType core_model.ResourceType) core_mod
 func (rm ResourceMap) Hash() []byte {
 	hasher := fnv.New128a()
 	for _, k := range maps.SortedKeys(rm) {
-		hasher.Write(core_model.ResourceListHash(rm[k]))
+		hasher.Write(resourceListXDSHash(rm[k]))
 	}
 	return hasher.Sum(nil)
 }
