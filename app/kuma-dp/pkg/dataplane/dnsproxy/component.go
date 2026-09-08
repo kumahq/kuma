@@ -161,14 +161,16 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 		m.QueriesTotal.WithLabelValues(qtype, source).Inc()
 		m.ResponseCodesTotal.WithLabelValues(rcodeLabel(response.Rcode)).Inc()
 	}
-	log.V(1).Info("resolved query",
-		"name", name,
-		"type", qtype,
-		"rcode", rcodeLabel(response.Rcode),
-		"source", source,
-		"answers", answers(response.Answer),
-		"duration", time.Since(start),
-	)
+	if queryLog := log.V(1); queryLog.Enabled() {
+		queryLog.Info("resolved query",
+			"name", name,
+			"type", qtype,
+			"rcode", rcodeLabel(response.Rcode),
+			"source", source,
+			"answers", answers(response.Answer),
+			"duration", time.Since(start),
+		)
+	}
 	err := res.WriteMsg(response)
 	if err != nil {
 		log.Error(err, "failed to write upstreamResponse")

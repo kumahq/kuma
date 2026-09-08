@@ -218,6 +218,8 @@ var _ = Describe("ApplyComponentLevels", func() {
 			Expect(registry.ListOverrides()).To(BeEmpty())
 		},
 		Entry("no separator", "dnsproxy"),
+		Entry("a valid pair followed by an invalid one", "dnsproxy:debug,invalid"),
+		Entry("a valid pair followed by an unknown level", "dnsproxy:debug,xds:verbose"),
 		Entry("unknown level", "dnsproxy:verbose"),
 		Entry("empty component", ":debug"),
 		Entry("invalid component name", "dns proxy:debug"),

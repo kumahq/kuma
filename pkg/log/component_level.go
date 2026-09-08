@@ -157,6 +157,14 @@ func SplitHierarchy(name string) []string {
 // ApplyComponentLevels sets the overrides described by a comma separated list
 // of component:level pairs, for example "dnsproxy:debug,xds.server:debug".
 func ApplyComponentLevels(r *ComponentLevelRegistry, spec string) error {
+	type componentLevel struct {
+		component string
+		level     LogLevel
+	}
+	// The spec is parsed in full before anything is applied, so one that is
+	// rejected halfway through does not leave the registry holding the
+	// overrides that preceded the bad entry.
+	var parsed []componentLevel
 	for pair := range strings.SplitSeq(spec, ",") {
 		pair = strings.TrimSpace(pair)
 		if pair == "" {
@@ -174,7 +182,10 @@ func ApplyComponentLevels(r *ComponentLevelRegistry, spec string) error {
 		if err != nil {
 			return err
 		}
-		if err := r.SetLevel(component, level); err != nil {
+		parsed = append(parsed, componentLevel{component: component, level: level})
+	}
+	for _, cl := range parsed {
+		if err := r.SetLevel(cl.component, cl.level); err != nil {
 			return err
 		}
 	}
