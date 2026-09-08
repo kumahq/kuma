@@ -238,9 +238,10 @@ type Injector struct {
 	CaCertFile string     `json:"caCertFile" envconfig:"kuma_runtime_kubernetes_injector_ca_cert_file"`
 	BuiltinDNS BuiltinDNS `json:"builtinDNS"`
 	// IgnoredServiceSelectorLabels defines a list ignored labels in Service selector.
-	// A Pod that matches a Service on every other label gets the Service's inbounds upfront, so its
-	// sidecar is already listening when the selector moves onto it. Which Pods actually receive traffic
-	// is decided by the MeshService selector, which still matches the full set of labels.
+	// A Pod that matches a Service on every other label gets that Service's inbounds in a ready
+	// state, so it is already an eligible endpoint when the selector moves onto it. Which Pods
+	// actually receive traffic is decided by the MeshService selector, which still matches the
+	// full set of labels.
 	// It is useful when you change Service selector and expect traffic to be sent immediately.
 	// An example of this is ArgoCD's BlueGreen deployment and "rollouts-pod-template-hash" selector.
 	IgnoredServiceSelectorLabels []string `json:"ignoredServiceSelectorLabels" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS"`

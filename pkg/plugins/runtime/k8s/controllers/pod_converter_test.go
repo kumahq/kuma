@@ -385,6 +385,13 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "47.services-for-pod.yaml",
 			dataplane:      "47.dataplane.yaml",
 		}),
+		// only b-preview selects the Pod, so its protocol has to win over the alphabetically
+		// earlier a-active, which reaches the Pod through ignoredServiceSelectorLabels
+		Entry("48. Two Services on one port, one matching only on the ignored label", testCase{
+			pod:            "48.pod.yaml",
+			servicesForPod: "48.services-for-pod.yaml",
+			dataplane:      "48.dataplane.yaml",
+		}),
 	)
 })
 
