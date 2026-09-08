@@ -174,36 +174,27 @@ spec:
 		}
 	}
 
+	expectTraffic := func(from Cluster, destination string, instance string, opts ...client.CollectResponsesOptsFn) {
+		GinkgoHelper()
+		reachable := func(g Gomega) {
+			resp, err := client.CollectEchoResponse(from, "demo-client", destination, opts...)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.Instance).To(Equal(instance))
+		}
+		Eventually(reachable, "30s", "1s").Should(Succeed())
+		Consistently(reachable, "5s", "1s").Should(Succeed())
+	}
+
 	It("should access the service in the same zone using mTLS", func() {
 		// given
 		// traffic in local zones works
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.KubeZone1, "demo-client", "test-server",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		expectTraffic(multizone.KubeZone1, "test-server", "kube-test-server-zone-1", client.FromKubernetesPod(namespace, "demo-client"))
 
 		// and
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.KubeZone2, "demo-client", "test-server",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		expectTraffic(multizone.KubeZone2, "test-server", "kube-test-server-zone-2", client.FromKubernetesPod(namespace, "demo-client"))
 
 		// and
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.UniZone1, "demo-client", "test-server.svc.mesh.local",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("uni-test-server-zone-4"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		expectTraffic(multizone.UniZone1, "test-server.svc.mesh.local", "uni-test-server-zone-4")
 
 		// when
 		yaml := fmt.Sprintf(`
@@ -234,33 +225,13 @@ spec:
 
 		// then
 		// mTLS traffic in local zone works
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.KubeZone1, "demo-client", "test-server",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		expectTraffic(multizone.KubeZone1, "test-server", "kube-test-server-zone-1", client.FromKubernetesPod(namespace, "demo-client"))
 
 		// mTLS traffic in local zone works
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.KubeZone2, "demo-client", "test-server",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		expectTraffic(multizone.KubeZone2, "test-server", "kube-test-server-zone-2", client.FromKubernetesPod(namespace, "demo-client"))
 
 		// and
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.UniZone1, "demo-client", "test-server.svc.mesh.local",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("uni-test-server-zone-4"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		expectTraffic(multizone.UniZone1, "test-server.svc.mesh.local", "uni-test-server-zone-4")
 
 		// when
 		// added Trust from zone 1 to zone 2
@@ -277,43 +248,16 @@ spec:
 		Expect(installTrustToZone(trustZone4, multizone.UniZone1.Name(), multizone.KubeZone2, true)).To(Succeed())
 
 		// cross zone traffic works: kube-1 -> kube-2
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.KubeZone1, "demo-client", "test-server.meshidentity.svc.kuma-2.mesh.local",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-2"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		expectTraffic(multizone.KubeZone1, "test-server.meshidentity.svc.kuma-2.mesh.local", "kube-test-server-zone-2", client.FromKubernetesPod(namespace, "demo-client"))
 
 		// cross zone traffic works: kube-2 -> kube-1
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.KubeZone2, "demo-client", "test-server.meshidentity.svc.kuma-1.mesh.local",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		expectTraffic(multizone.KubeZone2, "test-server.meshidentity.svc.kuma-1.mesh.local", "kube-test-server-zone-1", client.FromKubernetesPod(namespace, "demo-client"))
 
 		// cross zone traffic works: kube-2 -> uni-1
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.KubeZone2, "demo-client", "test-server.svc.kuma-4.mesh.local",
-				client.FromKubernetesPod(namespace, "demo-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("uni-test-server-zone-4"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		expectTraffic(multizone.KubeZone2, "test-server.svc.kuma-4.mesh.local", "uni-test-server-zone-4", client.FromKubernetesPod(namespace, "demo-client"))
 
 		// cross zone traffic works: uni-1 -> kube-1
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				multizone.UniZone1, "demo-client", "test-server.meshidentity.svc.kuma-1.mesh.local",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("kube-test-server-zone-1"))
-		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		expectTraffic(multizone.UniZone1, "test-server.meshidentity.svc.kuma-1.mesh.local", "kube-test-server-zone-1")
 
 		// meshmultizone works
 		Expect(client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server-mi.mzsvc.mesh.local", client.WithNumberOfRequests(50))).
