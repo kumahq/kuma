@@ -177,8 +177,11 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 	}
 }
 
-// answers renders the addresses a query resolved to, so the log line shows the
-// result and not just that a lookup happened.
+// answers renders what a query resolved to, so the log line shows the result
+// and not just that a lookup happened. Every query is logged, not only the A
+// and AAAA ones answered from the local map, so records of any type reach this.
+// Only the record data is kept: the presentation format a record renders itself
+// in repeats the name, TTL and class already on the log line.
 func answers(rrs []dns.RR) []string {
 	var out []string
 	for _, rr := range rrs {
@@ -188,7 +191,7 @@ func answers(rrs []dns.RR) []string {
 		case *dns.AAAA:
 			out = append(out, record.AAAA.String())
 		default:
-			out = append(out, rr.String())
+			out = append(out, strings.TrimPrefix(rr.String(), rr.Header().String()))
 		}
 	}
 	return out
