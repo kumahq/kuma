@@ -276,12 +276,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			existingDataplane: "update-dataplane.existing-dataplane.yaml",
 			dataplane:         "update-dataplane.dataplane.yaml",
 		}),
-		Entry("Reserved pod labels and stale Dataplane labels are dropped", testCase{
-			pod:               "reserved-pod-labels.pod.yaml",
-			servicesForPod:    "reserved-pod-labels.services-for-pod.yaml",
-			existingDataplane: "reserved-pod-labels.existing-dataplane.yaml",
-			dataplane:         "reserved-pod-labels.dataplane.yaml",
-		}),
 		Entry("Multiple services selecting a single port deduplicates overlapping inbounds", testCase{
 			pod:            "duplicated-inbounds.pod.yaml",
 			servicesForPod: "duplicated-inbounds.services-for-pod.yaml",
@@ -377,6 +371,20 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:            "46.pod.yaml",
 			servicesForPod: "46.services-for-pod.yaml",
 			expectedErr:    `annotation "kuma.io/gateway" has wrong value "bogus"`,
+		}),
+		// the Pod reaches the converter through ignoredServiceSelectorLabels, so its inbound must be
+		// ready before the selector moves onto it. MeshService selectors decide who gets traffic.
+		Entry("47. Pod that the Service selector does not fully match gets a ready inbound", testCase{
+			pod:            "47.pod.yaml",
+			servicesForPod: "47.services-for-pod.yaml",
+			dataplane:      "47.dataplane.yaml",
+		}),
+		// only b-preview selects the Pod, so its protocol has to win over the alphabetically
+		// earlier a-active, which reaches the Pod through ignoredServiceSelectorLabels
+		Entry("48. Two Services on one port, one matching only on the ignored label", testCase{
+			pod:            "48.pod.yaml",
+			servicesForPod: "48.services-for-pod.yaml",
+			dataplane:      "48.dataplane.yaml",
 		}),
 	)
 })

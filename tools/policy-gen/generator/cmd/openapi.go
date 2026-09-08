@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/v3/tools/common/template"
+	"github.com/kumahq/kuma/v3/tools/openapi/unions"
 	"github.com/kumahq/kuma/v3/tools/policy-gen/generator/pkg/parse"
 )
 
@@ -62,12 +63,18 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 			// cannot express, so consumers do not have to infer which property a
 			// given `type` selects. Appended to the enrichment expression so the
 			// generated file keeps its key order.
-			unions, err := unionAssignments(crdPath)
+			crdProperties, err := unions.CRDProperties(crdPath)
 			if err != nil {
 				return err
 			}
-			if unions != "" {
-				unions = "\n  | " + unions
+			// The enrichment merges the CRD properties into `.properties`, so a
+			// union at `spec.foo` in the CRD lands at `.properties.spec.foo`.
+			unionAssignments, err := unions.Assignments(crdProperties, []string{"properties"})
+			if err != nil {
+				return err
+			}
+			if unionAssignments != "" {
+				unionAssignments = "\n  | " + unionAssignments
 			}
 
 			// Enrich schema with CRD information
@@ -79,7 +86,7 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
       | del(.apiVersion, .metadata, .kind)
     ) * {"type": {"enum": [$crd.spec.names.kind]}}
   | .description = $crd.spec.versions[0].schema.openAPIV3Schema.description
-  | (.properties | select(has("status")).status) |= . + {"readOnly": true}%s`, crdPath, unions),
+  | (.properties | select(has("status")).status) |= . + {"readOnly": true}%s`, crdPath, unionAssignments),
 				tmpSchemaPath,
 			)
 			yqEnrichSchema.Stderr = cmd.ErrOrStderr()

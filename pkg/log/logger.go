@@ -82,10 +82,9 @@ func NewLoggerTo(destWriter io.Writer, level LogLevel) logr.Logger {
 // NewLoggerToWithRegistry creates a logger writing to destWriter using the
 // given registry for per-component level overrides. The inner zap logger is
 // created at max verbosity — all level filtering is done by the sink.
+// A level of OffLevel still returns a real logger rather than a discarding one,
+// so that a per-component override can raise a single component back above it.
 func NewLoggerToWithRegistry(destWriter io.Writer, level LogLevel, registry *ComponentLevelRegistry) logr.Logger {
-	if level == OffLevel {
-		return logr.Discard()
-	}
 	baseLevel := newAtomicLogLevel(level)
 	// Inner logger at max verbosity so Info() never filters
 	innerZap := buildZapLogger(destWriter, zap.NewAtomicLevelAt(maxVerbosity), level == DebugLevel)
