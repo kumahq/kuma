@@ -6,7 +6,6 @@ package v1alpha1
 import (
 	"errors"
 	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	policy "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
@@ -58,7 +57,6 @@ func (cb *MeshZoneAddress) SetMesh(mesh string) {
 	}
 	cb.Labels[metadata.KumaMeshLabel] = mesh
 }
-
 func (cb *MeshZoneAddress) GetSpec() (core_model.ResourceSpec, error) {
 	return cb.Spec, nil
 }

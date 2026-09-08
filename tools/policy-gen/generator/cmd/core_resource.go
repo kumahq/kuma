@@ -63,6 +63,9 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+{{- if .HasInsights }}
+	insight_api "{{.InsightPackage}}"
+{{- end }}
 {{- if .IsDestination }}
     "github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 {{- end }}
@@ -265,16 +268,17 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		Scope: model.Scope{{.Scope}},
 		KDSFlags: {{.KDSFlags}},
 		WsPath: "{{.Path}}",
-		KumactlArg: "{{.NameLower}}",
-		KumactlListArg: "{{.Path}}",
+		KumactlArg: "{{ if .SkipKumactl }}{{ else }}{{.NameLower}}{{ end }}",
+		KumactlListArg: "{{ if .SkipKumactl }}{{ else }}{{.Path}}{{ end }}",
 		AllowToInspect: {{.IsPolicy}},
 		IsPolicy: {{.IsPolicy}},
         IsDestination: {{.IsDestination}},
 		IsExperimental: false,
 		SingularDisplayName: "{{.SingularDisplayName}}",
 		PluralDisplayName: "{{.PluralDisplayName}}",
-		IsPluginOriginated: true,
-		AffectsPolicyMatching: true,
+		IsPluginOriginated: {{.PluginOriginated}},
+		AffectsPolicyMatching: {{.AffectsPolicyMatching}},
+		ReadOnly: {{.ReadOnly}},
 		IsTargetRefBased: {{.IsPolicy}},
 		HasToTargetRef: {{.HasTo}},
         HasRulesTargetRef: {{.HasRules}},
@@ -282,5 +286,9 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		AllowedOnSystemNamespaceOnly: {{.AllowedOnSystemNamespaceOnly}},
 		ShortName: "{{.ShortName}}",
 		Order: {{.Order}},
+{{- if .HasInsights }}
+		Insight: insight_api.New{{.Name}}InsightResource(),
+		Overview: New{{.Name}}OverviewResource(),
+{{- end }}
 	}
 `))

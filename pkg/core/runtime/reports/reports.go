@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
+
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
@@ -20,7 +22,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
@@ -65,8 +66,8 @@ func fetchMeshes(ctx context.Context, rt core_runtime.Runtime) (*mesh.MeshResour
 	return &meshes, nil
 }
 
-func fetchZones(ctx context.Context, rt core_runtime.Runtime) (*system.ZoneResourceList, error) {
-	zones := system.ZoneResourceList{}
+func fetchZones(ctx context.Context, rt core_runtime.Runtime) (*zone_api.ZoneResourceList, error) {
+	zones := zone_api.ZoneResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(ctx, &zones); err != nil {
 		return nil, errors.Wrap(err, "could not fetch zones")
 	}

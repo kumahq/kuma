@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
+
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -13,7 +15,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	meshtimeout "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/api"
@@ -188,12 +189,12 @@ spec:
 
 			By("wait for upgraded zone CP to connect to global")
 			Eventually(func(g Gomega) {
-				result := &system.ZoneInsightResource{}
+				result := &zoneinsight_api.ZoneInsightResource{}
 				api.FetchResource(g, global, result, "", "kuma-2")
 				g.Expect(len(result.Spec.Subscriptions)).To(BeNumerically(">", 1))
 				newZoneConnected := false
 				for _, sub := range result.Spec.Subscriptions {
-					if sub.Version.KumaCp.Version != version {
+					if sub.Version.KumaCP.Version != version {
 						newZoneConnected = true
 						break
 					}

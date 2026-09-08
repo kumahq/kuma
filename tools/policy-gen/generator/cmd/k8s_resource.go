@@ -101,7 +101,13 @@ import (
 	"errors"
 {{- end }}
 	"fmt"
+{{- if .OpaqueK8sSpec }}
+	"encoding/json"
+{{- end }}
 
+{{- if .OpaqueK8sSpec }}
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+{{- end }}
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -119,7 +125,7 @@ import (
 // {{ .Description }}
 {{- end }}
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName={{ .ShortName }}
+// +kubebuilder:resource:categories=kuma,scope={{ if .ClusterScopedK8s }}Cluster{{ else }}Namespaced{{ end }},shortName={{ .ShortName }}
 {{- range $marker := .KubebuilderMarkers }}
 {{ $marker }}
 {{- end }}
@@ -132,7 +138,12 @@ type {{.Name}} struct {
 
 	// Spec is the specification of the Kuma {{ .Name }} resource.
     // +kubebuilder:validation:Optional
+{{- if .OpaqueK8sSpec }}
+    // +kubebuilder:pruning:PreserveUnknownFields
+	Spec   *apiextensionsv1.JSON {{ $tk }}json:"spec,omitempty"{{ $tk }}
+{{- else }}
 	Spec   *policy.{{.Name}} {{ $tk }}json:"spec,omitempty"{{ $tk }}
+{{- end }}
 
 {{- if .HasStatus }}
 	// Status is the current status of the Kuma {{ .Name }} resource.
@@ -142,7 +153,7 @@ type {{.Name}} struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:scope=Namespaced
+// +kubebuilder:resource:scope={{ if .ClusterScopedK8s }}Cluster{{ else }}Namespaced{{ end }}
 type {{.Name}}List struct {
 	metav1.TypeMeta {{ $tk }}json:",inline"{{ $tk }}
 	metav1.ListMeta {{ $tk }}json:"metadata,omitempty"{{ $tk }}
@@ -181,6 +192,36 @@ func (cb *{{.Name}}) SetMesh(mesh string) {
 {{- end }}
 }
 
+{{- if .OpaqueK8sSpec }}
+func (cb *{{.Name}}) GetSpec() (core_model.ResourceSpec, error) {
+	spec := cb.Spec
+	if spec == nil || len(spec.Raw) == 0 {
+		return &policy.{{.Name}}{}, nil
+	}
+	out := &policy.{{.Name}}{}
+	if err := json.Unmarshal(spec.Raw, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (cb *{{.Name}}) SetSpec(spec core_model.ResourceSpec) {
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*policy.{{.Name}}); !ok {
+		panic(fmt.Sprintf("unexpected type %T", spec))
+	}
+
+	raw, err := json.Marshal(spec)
+	if err != nil {
+		panic(err)
+	}
+	cb.Spec = &apiextensionsv1.JSON{Raw: raw}
+}
+{{- else }}
 func (cb *{{.Name}}) GetSpec() (core_model.ResourceSpec, error) {
 	return cb.Spec, nil
 }
@@ -197,6 +238,7 @@ func (cb *{{.Name}}) SetSpec(spec core_model.ResourceSpec) {
 
 	cb.Spec = spec.(*policy.{{.Name}})
 }
+{{- end }}
 
 {{ if .HasStatus }}
 func (cb *{{.Name}}) GetStatus() (core_model.ResourceStatus, error) {
@@ -227,7 +269,11 @@ func (cb *{{.Name}}) SetStatus(status core_model.ResourceStatus) error {
 {{ end }}
 
 func (cb *{{.Name}}) Scope() model.Scope {
+{{- if .ClusterScopedK8s }}
+	return model.ScopeCluster
+{{- else }}
 	return model.ScopeNamespace
+{{- end }}
 }
 
 func (l *{{.Name}}List) GetItems() []model.KubernetesObject {

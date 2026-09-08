@@ -49,6 +49,14 @@ type PolicyConfig struct {
 	RegisterGenerator            bool
 	Description                  string
 	Order                        int
+	WsName                       string
+	HasInsights                  bool
+	PluginOriginated             bool
+	SkipKumactl                  bool
+	ClusterScopedK8s             bool
+	InsightPackage               string
+	AffectsPolicyMatching        bool
+	OpaqueK8sSpec                bool
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -175,19 +183,21 @@ func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map
 		return PolicyConfig{}, err
 	}
 	res := PolicyConfig{
-		Package:             pkg,
-		Name:                name,
-		NameLower:           strings.ToLower(name),
-		SingularDisplayName: core_model.DisplayName(name),
-		PluralDisplayName:   core_model.PluralType(core_model.DisplayName(name)),
-		HasTo:               fields["To"],
-		HasRules:            fields["Rules"],
-		RuleHasMatches:      ruleFields["Matches"],
-		KubebuilderMarkers:  kubebuilderMarkers,
-		Description:         description,
-		IsPolicy:            true,
-		IsDestination:       false,
-		KDSFlags:            "model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag",
+		Package:               pkg,
+		Name:                  name,
+		NameLower:             strings.ToLower(name),
+		SingularDisplayName:   core_model.DisplayName(name),
+		PluralDisplayName:     core_model.PluralType(core_model.DisplayName(name)),
+		HasTo:                 fields["To"],
+		HasRules:              fields["Rules"],
+		RuleHasMatches:        ruleFields["Matches"],
+		KubebuilderMarkers:    kubebuilderMarkers,
+		Description:           description,
+		IsPolicy:              true,
+		IsDestination:         false,
+		AffectsPolicyMatching: true,
+		PluginOriginated:      true,
+		KDSFlags:              "model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag",
 	}
 
 	if v, ok := parseBool(markers, "kuma:policy:skip_registration"); ok {
@@ -210,6 +220,41 @@ func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map
 	}
 	if v, ok := parseBool(markers, "kuma:policy:register_generator"); ok {
 		res.RegisterGenerator = v
+	}
+	if v, ok := parseBool(markers, "kuma:policy:read_only"); ok {
+		res.ReadOnly = v
+	}
+	if v, ok := parseBool(markers, "kuma:policy:has_insights"); ok {
+		res.HasInsights = v
+	}
+	// Plugin originated resources nest their spec under "spec" in the REST API, core
+	// resources inline it. A resource converted from protobuf keeps the shape its
+	// clients already parse.
+	if v, ok := parseBool(markers, "kuma:policy:plugin_originated"); ok {
+		res.PluginOriginated = v
+	}
+	// Read only resources the control plane owns are not exposed as kumactl commands.
+	if v, ok := parseBool(markers, "kuma:policy:skip_kumactl"); ok {
+		res.SkipKumactl = v
+	}
+	// Independent of the core scope: a resource can be global in the core model and
+	// still live in a namespace on Kubernetes, which is how HostnameGenerator works.
+	if v, ok := parseBool(markers, "kuma:policy:cluster_scoped_k8s"); ok {
+		res.ClusterScopedK8s = v
+	}
+	// The insight lives in its own generated package, the overview is hand written
+	// alongside this resource, so only the insight needs importing.
+	if v, ok := markers["kuma:policy:insight_package"]; ok {
+		res.InsightPackage = v
+	}
+	if v, ok := parseBool(markers, "kuma:policy:policy_matching_exempt"); ok {
+		res.AffectsPolicyMatching = !v
+	}
+	// Keeps the Kubernetes spec an opaque object instead of a typed schema, so the
+	// API server neither prunes nor validates it. Required for resources converted
+	// from protobuf, whose stored objects predate any schema.
+	if v, ok := parseBool(markers, "kuma:policy:opaque_k8s_spec"); ok {
+		res.OpaqueK8sSpec = v
 	}
 	if v, ok := markers["kuma:policy:kds_flags"]; ok {
 		res.KDSFlags = v
@@ -237,6 +282,9 @@ func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map
 	} else {
 		res.Plural = core_model.PluralType(res.Name)
 	}
+	if v, ok := markers["kuma:policy:ws_name"]; ok {
+		res.WsName = v
+	}
 
 	if v, ok := markers["kuma:policy:short_name"]; ok {
 		res.ShortName = v
@@ -250,6 +298,9 @@ func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map
 		res.ShortName = string(result)
 	}
 	res.Path = strings.ToLower(res.Plural)
+	if res.WsName != "" {
+		res.Path = core_model.PluralType(res.WsName)
+	}
 
 	if v, ok := markers["kuma:policy:order"]; ok {
 		n, err := strconv.Atoi(v)

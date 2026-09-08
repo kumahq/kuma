@@ -3,10 +3,11 @@ package zoneinsight
 import (
 	"context"
 
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
+
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -33,9 +34,9 @@ func (m *zoneInsightManager) Create(ctx context.Context, resource core_model.Res
 	}
 	opts := core_store.NewCreateOptions(fs...)
 
-	m.limitSubscription(resource.(*system.ZoneInsightResource))
+	m.limitSubscription(resource.(*zoneinsight_api.ZoneInsightResource))
 
-	zone := system.NewZoneResource()
+	zone := zone_api.NewZoneResource()
 	if err := m.store.Get(ctx, zone, core_store.GetByKey(opts.Name, core_model.NoMesh)); err != nil {
 		return err
 	}
@@ -43,13 +44,13 @@ func (m *zoneInsightManager) Create(ctx context.Context, resource core_model.Res
 }
 
 func (m *zoneInsightManager) Update(ctx context.Context, resource core_model.Resource, fs ...core_store.UpdateOptionsFunc) error {
-	m.limitSubscription(resource.(*system.ZoneInsightResource))
+	m.limitSubscription(resource.(*zoneinsight_api.ZoneInsightResource))
 	return m.ResourceManager.Update(ctx, resource, fs...)
 }
 
-func (m *zoneInsightManager) limitSubscription(zoneInsight *system.ZoneInsightResource) {
+func (m *zoneInsightManager) limitSubscription(zoneInsight *zoneinsight_api.ZoneInsightResource) {
 	if m.config.SubscriptionLimit == 0 {
-		zoneInsight.Spec.Subscriptions = []*system_proto.KDSSubscription{}
+		zoneInsight.Spec.Subscriptions = []*zoneinsight_api.KDSSubscription{}
 		return
 	}
 	if len(zoneInsight.Spec.Subscriptions) <= m.config.SubscriptionLimit {

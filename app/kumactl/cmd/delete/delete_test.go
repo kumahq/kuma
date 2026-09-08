@@ -3,6 +3,7 @@ package delete_test
 import (
 	"bytes"
 	"context"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -203,7 +204,7 @@ var _ = Describe("kumactl delete ", func() {
 				Entry("zones", testCase{
 					typ:             "zone",
 					name:            "eu-north",
-					resource:        func() core_model.Resource { return system.NewZoneResource() },
+					resource:        func() core_model.Resource { return zone_api.NewZoneResource() },
 					expectedMessage: "deleted Zone \"eu-north\"\n",
 				}),
 			)

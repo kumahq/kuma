@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -315,7 +316,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager) kds_reconcile.ResourceFilt
 				return false
 			}
 
-			zone := system.NewZoneResource()
+			zone := zone_api.NewZoneResource()
 			if err := rm.Get(ctx, zone, store.GetByKey(zoneTag, core_model.NoMesh)); err != nil {
 				if !errors.Is(err, context.Canceled) {
 					log.Error(err, "failed to get zone", "zone", zoneTag)

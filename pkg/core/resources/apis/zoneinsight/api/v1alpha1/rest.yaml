@@ -1,0 +1,144 @@
+openapi: 3.1.0
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+paths:
+  /zone-insights/{name}:
+    get:
+      operationId: getZoneInsight
+      summary: Returns ZoneInsight entity
+      tags: ["ZoneInsight"]
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the ZoneInsight
+      responses:
+        '200':
+          $ref: "#/components/responses/ZoneInsightItem"
+        '404':
+          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+  /zone-insights:
+    get:
+      operationId: getZoneInsightList
+      summary: Returns a list of ZoneInsight.
+      tags: ["ZoneInsight"]
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+      responses:
+        '200':
+          $ref: "#/components/responses/ZoneInsightList"
+components:
+  schemas:
+    ZoneInsightItem:
+      type: object
+      description: "ZoneInsight defines the observed state of a Zone Kuma CP.\nEnvoyAdminStreams is deprecated, KDSStreams replaces it."
+      required: [type, name]
+      properties:
+        type:
+          description: 'the type of the resource'
+          type: string
+          enum:
+            - ZoneInsight
+        name:
+          description: 'Name of the Kuma resource'
+          type: string
+          # keep in sync with core_mesh.NamePattern / MaxNameLength
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+          maxLength: 253
+        labels:
+          additionalProperties:
+            type: string
+          description: 'The labels to help identity resources'
+          type: object
+        creationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was created'
+          format: date-time
+          example: '1901-01-01T00:00:00.000Z'
+        modificationTime:
+          readOnly: true
+          type: string
+          description: 'Time at which the resource was updated'
+          format: date-time
+          example: '1901-01-01T00:00:00.000Z'
+        spec:
+          description: Spec is the specification of the Kuma ZoneInsight resource.
+          x-kubernetes-preserve-unknown-fields: true
+  responses:
+    ZoneInsightItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneInsightItem'
+    ZoneInsightList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ZoneInsightItem"
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    ZoneInsightCreateOrUpdateSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              warnings:
+                type: array
+                readOnly: true
+                description: |
+                  warnings is a list of warning messages to return to the requesting Kuma API clients.
+                  Warning messages describe a problem the client making the API request should correct or be aware of.
+                items:
+                  type: string
+    ZoneInsightDeleteSuccessResponse:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            type: object

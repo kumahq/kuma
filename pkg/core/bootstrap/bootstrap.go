@@ -2,6 +2,8 @@ package bootstrap
 
 import (
 	"context"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"net"
 	"net/http"
 
@@ -420,12 +422,12 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	)
 
 	customizableManager.Customize(
-		system.ZoneType,
+		zone_api.ZoneType,
 		zone.NewZoneManager(builder.ResourceStore(), zone.Validator{Store: builder.ResourceStore()}, builder.Config().Store.UnsafeDelete),
 	)
 
 	customizableManager.Customize(
-		system.ZoneInsightType,
+		zoneinsight_api.ZoneInsightType,
 		zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone),
 	)
 

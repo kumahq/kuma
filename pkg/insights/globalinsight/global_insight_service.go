@@ -3,9 +3,11 @@ package globalinsight
 import (
 	"context"
 
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
+
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -144,7 +146,7 @@ func globalResourceDescriptors() []core_model.ResourceTypeDescriptor {
 		core_model.Not(core_model.IsInsight()),
 		core_model.Not(core_model.Named(
 			mesh.MeshType,
-			system.ZoneType,
+			zone_api.ZoneType,
 			system.ConfigType,
 		)),
 	)
@@ -270,14 +272,14 @@ func (gis *defaultGlobalInsightService) aggregateZoneControlPlanes(
 	ctx context.Context,
 	globalInsight *api_types.GlobalInsightBase,
 ) error {
-	zoneInsights := &system.ZoneInsightResourceList{}
+	zoneInsights := &zoneinsight_api.ZoneInsightResourceList{}
 	if err := gis.resourceStore.List(ctx, zoneInsights); err != nil {
 		return err
 	}
 
 	for _, zoneInsight := range zoneInsights.GetItems() {
 		globalInsight.Zones.ControlPlanes.Total += 1
-		if zoneInsight.GetSpec().(*system_proto.ZoneInsight).IsOnline() {
+		if zoneInsight.GetSpec().(*zoneinsight_api.ZoneInsight).IsOnline() {
 			globalInsight.Zones.ControlPlanes.Online += 1
 		}
 	}

@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"time"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -8,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
@@ -144,7 +144,7 @@ var _ = Describe("DataplaneHelpers", func() {
 				}
 
 				// when
-				err := dataplaneInsight.UpdateSubscription(&system_proto.KDSSubscription{})
+				err := dataplaneInsight.UpdateSubscription(&zoneinsight_api.KDSSubscription{})
 
 				// then
 				Expect(err).To(HaveOccurred())
