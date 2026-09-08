@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	core_extensions "github.com/kumahq/kuma/v3/pkg/core/resources/extensions"
+	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 )
 
 type fakeConfig struct {
@@ -22,6 +23,30 @@ var fakePoint = core_extensions.Point{
 	Discriminator: "type",
 }
 
+// specYAML is the shape the generator expects to find in the document: an item
+// schema with an extension object carrying a discriminator.
+const specYAML = `
+components:
+  schemas:
+    FakeResourceItem:
+      properties:
+        spec:
+          properties:
+            extension:
+              type: object
+              properties:
+                type:
+                  type: string
+                config:
+                  x-kubernetes-preserve-unknown-fields: true
+`
+
+func specWithExtensionPoint() map[string]any {
+	var spec map[string]any
+	Expect(yaml.Unmarshal([]byte(specYAML), &spec)).To(Succeed())
+	return spec
+}
+
 func fakeWrappers(values ...string) []wrapper {
 	registered := make([]core_extensions.Extension, 0, len(values))
 	for _, v := range values {
@@ -32,30 +57,8 @@ func fakeWrappers(values ...string) []wrapper {
 	return wrappers
 }
 
-// specWithExtensionPoint is the shape the generator expects to find in the
-// document: an item schema with an extension object carrying a discriminator.
-func specWithExtensionPoint() map[string]any {
-	return map[string]any{
-		"components": map[string]any{
-			"schemas": map[string]any{
-				"FakeResourceItem": map[string]any{
-					"properties": map[string]any{
-						"spec": map[string]any{
-							"properties": map[string]any{
-								"extension": map[string]any{
-									"type": "object",
-									"properties": map[string]any{
-										"type":   map[string]any{"type": "string"},
-										"config": map[string]any{"x-kubernetes-preserve-unknown-fields": true},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+func golden(name ...string) string {
+	return filepath.Join(append([]string{"testdata"}, name...)...)
 }
 
 var _ = Describe("newWrappers", func() {
@@ -138,29 +141,13 @@ var _ = Describe("propertyPath", func() {
 })
 
 var _ = Describe("branches", func() {
-	It("should pair each value with the schema it selects", func() {
-		result := branches(fakePoint, fakeWrappers("Route53"))
+	// The catch-all matters: without it the spec would reject extension types the
+	// control plane accepts, including any a third party adds.
+	It("should pair each value with the schema it selects and end with a catch-all", func() {
+		result, err := yaml.Marshal(branches(fakePoint, fakeWrappers("acmpca", "vault")))
 
-		Expect(result[0]).To(Equal(map[string]any{
-			"title": "Route53",
-			"properties": map[string]any{
-				"type":   map[string]any{"const": "Route53"},
-				"config": map[string]any{"$ref": "#/components/schemas/FakeResourceRoute53ExtensionConfig"},
-			},
-		}))
-	})
-
-	// Without the catch-all the spec would reject extension types the control
-	// plane accepts, including any a third party adds.
-	It("should end with a catch-all excluding every known value", func() {
-		result := branches(fakePoint, fakeWrappers("acmpca", "vault"))
-
-		Expect(result).To(HaveLen(3))
-		catchAll := result[2].(map[string]any)
-		Expect(catchAll["title"]).To(Equal("Other"))
-		Expect(catchAll["properties"]).To(Equal(map[string]any{
-			"type": map[string]any{"not": map[string]any{"enum": []any{"acmpca", "vault"}}},
-		}))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).To(matchers.MatchGoldenYAML(golden("branches.golden.yaml")))
 	})
 
 	It("should ignore extensions belonging to another resource", func() {
@@ -181,21 +168,17 @@ var _ = Describe("branches", func() {
 
 var _ = Describe("patchExpression", func() {
 	It("should add the config schema and point the extension node at it", func() {
-		wrappers := fakeWrappers("Route53")
 		schemas := map[string]any{"FakeResourceRoute53": map[string]any{"type": "object"}}
 
-		expr, err := patchExpression(wrappers, schemas)
+		expr, err := patchExpression(fakeWrappers("Route53"), schemas)
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(expr).To(ContainSubstring(`."components"."schemas"."FakeResourceRoute53ExtensionConfig" = {"type":"object"}`))
-		Expect(expr).To(ContainSubstring(
-			`."components"."schemas"."FakeResourceItem"."properties"."spec"."properties"."extension".oneOf = [`))
+		Expect(expr).To(matchers.MatchGoldenEqual(golden("patch-expression.golden.yq")))
 	})
 
 	// The config is a resource spec like any other, so its own discriminated
 	// unions have to be described too.
 	It("should describe a union inside the config", func() {
-		wrappers := fakeWrappers("vault")
 		schemas := map[string]any{"FakeResourceVault": map[string]any{
 			"properties": map[string]any{
 				"type":   map[string]any{"enum": []any{"Server", "Agent"}},
@@ -204,10 +187,10 @@ var _ = Describe("patchExpression", func() {
 			},
 		}}
 
-		expr, err := patchExpression(wrappers, schemas)
+		expr, err := patchExpression(fakeWrappers("vault"), schemas)
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(expr).To(ContainSubstring(`."components"."schemas"."FakeResourceVaultExtensionConfig".oneOf = `))
+		Expect(expr).To(matchers.MatchGoldenEqual(golden("patch-expression-union.golden.yq")))
 	})
 })
 
@@ -215,18 +198,12 @@ var _ = Describe("writePackage", func() {
 	It("should wrap each config in a CRD root type controller-gen will walk", func() {
 		dir := GinkgoT().TempDir()
 
-		Expect(writePackage(dir, fakeWrappers("Route53"))).To(Succeed())
+		Expect(writePackage(dir, fakeWrappers("Route53", "vault"))).To(Succeed())
 
-		doc, err := os.ReadFile(filepath.Join(dir, "doc.go"))
-		Expect(err).ToNot(HaveOccurred())
-		Expect(string(doc)).To(ContainSubstring("+groupName=openapi.kuma.io"))
-
-		types, err := os.ReadFile(filepath.Join(dir, "types.go"))
-		Expect(err).ToNot(HaveOccurred())
-		Expect(string(types)).To(ContainSubstring(`ext0 "github.com/kumahq/kuma/v3/tools/openapi/extensions"`))
-		Expect(string(types)).To(ContainSubstring("+kubebuilder:object:root=true"))
-		Expect(string(types)).To(ContainSubstring("type FakeResourceRoute53 struct {"))
-		Expect(string(types)).To(ContainSubstring("Spec *ext0.fakeConfig `json:\"spec,omitempty\"`"))
+		Expect(os.ReadFile(filepath.Join(dir, "doc.go"))).To(
+			matchers.MatchGoldenEqual(golden("wrapper-package", "doc.go.golden")))
+		Expect(os.ReadFile(filepath.Join(dir, "types.go"))).To(
+			matchers.MatchGoldenEqual(golden("wrapper-package", "types.go.golden")))
 	})
 })
 
@@ -257,9 +234,7 @@ var _ = Describe("Generate", func() {
 			specPath = filepath.Join(dir, "openapi.yaml")
 			exprPath = filepath.Join(dir, "expression.yq")
 
-			raw, err := yaml.Marshal(specWithExtensionPoint())
-			Expect(err).ToNot(HaveOccurred())
-			Expect(os.WriteFile(specPath, raw, 0o600)).To(Succeed())
+			Expect(os.WriteFile(specPath, []byte(specYAML), 0o600)).To(Succeed())
 
 			opts = Options{
 				Spec:             specPath,
@@ -275,14 +250,7 @@ var _ = Describe("Generate", func() {
 
 			Expect(Generate(context.Background(), opts)).To(Succeed())
 
-			expr, err := os.ReadFile(exprPath)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(string(expr)).To(ContainSubstring(
-				`."components"."schemas"."FakeResourceFakeExtensionConfig" = {"description":"Fake config"`))
-			Expect(string(expr)).To(ContainSubstring(
-				`."components"."schemas"."FakeResourceItem"."properties"."spec"."properties"."extension".oneOf = [` +
-					`{"properties":{"config":{"$ref":"#/components/schemas/FakeResourceFakeExtensionConfig"},` +
-					`"type":{"const":"fake"}},"title":"fake"},`))
+			Expect(os.ReadFile(exprPath)).To(matchers.MatchGoldenEqual(golden("generate.golden.yq")))
 		})
 
 		It("should remove the scratch directory it created and nothing else", func() {
