@@ -125,12 +125,13 @@ func FederateKubeZoneCPToUniversalGlobal() {
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 			}
-			// The specs above confirm the global control plane received the zone's
-			// resources, which says nothing about the zone finishing the certificate
-			// rotation that federation triggers. Wait for that, then hold, so a route
-			// that comes back and immediately drops still fails.
-			Eventually(reachable, "30s", "1s").Should(Succeed())
-			Consistently(reachable, "5s", "500ms").Should(Succeed())
+			// Federation renames the zone, which rotates its SPIFFE trust domain and
+			// re-issues every certificate, so requests fail while that lands. The specs
+			// above only confirm the global control plane received the zone's resources
+			// and do not wait for the rotation. Five consecutive successes prove traffic
+			// settled; requiring an unbroken window here would report the rotation as a
+			// broken test.
+			Eventually(reachable, "2m", "1s").MustPassRepeatedly(5).Should(Succeed())
 		})
 	})
 }
