@@ -1,18 +1,24 @@
 package readiness_test
 
 import (
+	"context"
+	"crypto/sha256"
+	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/readiness"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 )
 
 var _ = Describe("Readiness Reporter", func() {
@@ -306,6 +312,89 @@ var _ = Describe("Readiness Reporter", func() {
 			defer resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		})
+	})
+})
+
+var _ = Describe("IdentityGate", func() {
+	var (
+		gate     *readiness.IdentityGate
+		listener net.Listener
+		server   *http.Server
+	)
+
+	BeforeEach(func() {
+		socketPath := filepath.Join(GinkgoT().TempDir(), "identity.sock")
+		certificate, err := tls.LoadX509KeyPair(
+			filepath.Join("..", "..", "..", "..", "..", "test", "certs", "server-cert.pem"),
+			filepath.Join("..", "..", "..", "..", "..", "test", "certs", "server-key.pem"),
+		)
+		Expect(err).ToNot(HaveOccurred())
+		rawListener, err := net.Listen("unix", socketPath)
+		Expect(err).ToNot(HaveOccurred())
+		listener = tls.NewListener(rawListener, &tls.Config{
+			Certificates: []tls.Certificate{certificate},
+			MinVersion:   tls.VersionTLS12,
+		})
+		server = &http.Server{
+			ReadHeaderTimeout: time.Second,
+			Handler: http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+				_, _ = writer.Write([]byte("ready"))
+			}),
+		}
+		go func() { _ = server.Serve(listener) }()
+		gate = readiness.NewIdentityGate(socketPath)
+	})
+
+	AfterEach(func() {
+		Expect(server.Close()).To(Succeed())
+	})
+
+	setConfig := func(config core_xds.IdentityReadinessConfig) {
+		bytes, err := json.Marshal(config)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(gate.OnChange(context.Background(), strings.NewReader(string(bytes)))).To(Succeed())
+	}
+
+	It("fails closed until dynamic configuration arrives", func() {
+		ready, err := gate.Ready(context.Background())
+		Expect(err).ToNot(HaveOccurred())
+		Expect(ready).To(BeFalse())
+	})
+
+	It("is ready when workload identity is not required", func() {
+		setConfig(core_xds.IdentityReadinessConfig{Required: false})
+		ready, err := gate.Ready(context.Background())
+		Expect(err).ToNot(HaveOccurred())
+		Expect(ready).To(BeTrue())
+	})
+
+	It("requires the current identity certificate", func() {
+		certificate, err := tls.LoadX509KeyPair(
+			filepath.Join("..", "..", "..", "..", "..", "test", "certs", "server-cert.pem"),
+			filepath.Join("..", "..", "..", "..", "..", "test", "certs", "server-key.pem"),
+		)
+		Expect(err).ToNot(HaveOccurred())
+		hash := sha256.Sum256(certificate.Certificate[0])
+		setConfig(core_xds.IdentityReadinessConfig{Required: true, CertificateHash: fmt.Sprintf("%x", hash)})
+		ready, err := gate.Ready(context.Background())
+		Expect(err).ToNot(HaveOccurred())
+		Expect(ready).To(BeTrue())
+
+		setConfig(core_xds.IdentityReadinessConfig{Required: true, CertificateHash: "stale"})
+		ready, err = gate.Ready(context.Background())
+		Expect(err).To(MatchError("identity listener presented a stale certificate"))
+		Expect(ready).To(BeFalse())
+	})
+
+	It("rejects an expired identity", func() {
+		expiration := time.Now().Add(-time.Second)
+		setConfig(core_xds.IdentityReadinessConfig{
+			Required:       true,
+			ExpirationTime: &expiration,
+		})
+		ready, err := gate.Ready(context.Background())
+		Expect(err).To(MatchError("identity certificate expired"))
+		Expect(ready).To(BeFalse())
 	})
 })
 

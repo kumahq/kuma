@@ -41,3 +41,6 @@ const FeatureOtelViaKumaDp = "feature-otel-via-kuma-dp"
 // with SO_REUSEPORT enabled. When absent, the CP sets it to false to not break
 // upgrade, as `enable_reuse_port` cannot be changed during runtime.
 const FeatureReusePort = "feature-reuse-port"
+
+// FeatureIdentityReadiness indicates that kuma-dp gates readiness on its identity certificate.
+const FeatureIdentityReadiness = "feature-identity-readiness"
