@@ -4031,6 +4031,9 @@ spec:
                               - "500"
                               - "503"
                               items:
+                                description: |-
+                                  HTTPRetryOn names a condition a request is retried on. Alongside the named
+                                  conditions it also accepts any numeric HTTP status code.
                                 type: string
                               type: array
                           type: object
