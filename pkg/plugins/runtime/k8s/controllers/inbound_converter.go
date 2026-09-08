@@ -7,7 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
-	kube_labels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -67,11 +66,6 @@ func (ic *InboundConverter) inboundForService(pod *kube_core.Pod, service *kube_
 
 		if !podReady(pod, container) {
 			state = mesh_proto.Dataplane_Networking_Inbound_NotReady
-			health.Ready = false
-		}
-
-		if !kube_labels.SelectorFromSet(service.Spec.Selector).Matches(kube_labels.Set(pod.Labels)) {
-			state = mesh_proto.Dataplane_Networking_Inbound_Ignored
 			health.Ready = false
 		}
 

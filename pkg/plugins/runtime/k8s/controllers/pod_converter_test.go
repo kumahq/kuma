@@ -378,6 +378,13 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "46.services-for-pod.yaml",
 			expectedErr:    `annotation "kuma.io/gateway" has wrong value "bogus"`,
 		}),
+		// the Pod reaches the converter through ignoredServiceSelectorLabels, so its inbound must be
+		// ready before the selector moves onto it. MeshService selectors decide who gets traffic.
+		Entry("47. Pod that the Service selector does not fully match gets a ready inbound", testCase{
+			pod:            "47.pod.yaml",
+			servicesForPod: "47.services-for-pod.yaml",
+			dataplane:      "47.dataplane.yaml",
+		}),
 	)
 })
 
