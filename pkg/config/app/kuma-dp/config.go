@@ -201,6 +201,10 @@ type DataplaneRuntime struct {
 	// EnvoyComponentLogLevel configures Envoy's --component-log-level and uses
 	// the exact same syntax: https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-component-log-level
 	EnvoyComponentLogLevel string `json:"envoyComponentLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_envoy_component_log_level"`
+	// ComponentLogLevel raises the log level of individual kuma-dp components
+	// without raising it for the whole process. Comma separated component:level
+	// pairs, for example "dnsproxy:debug".
+	ComponentLogLevel string `json:"componentLogLevel,omitempty" envconfig:"kuma_dataplane_runtime_component_log_level"`
 	// Resources defines the resources for this proxy.
 	Resources DataplaneResources `json:"resources,omitempty"`
 	// Metrics defines properties of metrics

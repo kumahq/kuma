@@ -55,8 +55,7 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 		entry := v.(cachedEntry)
 		// Reuse the labels computed on the miss - enforcement included - as a fresh
 		// clone, so the cached map stays isolated from downstream consumers that
-		// mutate labels in place (e.g. removeDisplayNameLabel in the ServiceInsight
-		// endpoints).
+		// mutate labels in place.
 		out.SetMeta(newMetaAdapterWithLabels(obj, maps.Clone(entry.labels)))
 		if err := out.SetSpec(entry.spec); err != nil {
 			return err

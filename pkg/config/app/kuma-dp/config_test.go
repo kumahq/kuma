@@ -28,6 +28,8 @@ var _ = Describe("Config", func() {
 		// and
 		Expect(cfg.ControlPlane.URL).To(Equal("https://kuma-control-plane.internal:5682"))
 		Expect(cfg.Dataplane.DrainTime.Duration).To(Equal(60 * time.Second))
+		Expect(cfg.DataplaneRuntime.EnvoyLogLevel).To(Equal("trace"))
+		Expect(cfg.DataplaneRuntime.ComponentLogLevel).To(Equal("dnsproxy:debug"))
 	})
 
 	Context("with modified environment variables", func() {
@@ -62,6 +64,7 @@ var _ = Describe("Config", func() {
 				"KUMA_DATAPLANE_RUNTIME_WORK_DIR":                               "/var/run/envoy",
 				"KUMA_DATAPLANE_RUNTIME_TOKEN_PATH":                             "/tmp/token",
 				"KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL":                        "trace",
+				"KUMA_DATAPLANE_RUNTIME_COMPONENT_LOG_LEVEL":                    "dnsproxy:debug",
 				"KUMA_DATAPLANE_RUNTIME_DYNAMIC_CONFIGURATION_REFRESH_INTERVAL": "5s",
 				"KUMA_DNS_ENABLED":                                              "true",
 				"KUMA_DNS_PROXY_PORT":                                           "5300",
@@ -90,6 +93,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg.DataplaneRuntime.WorkDir).To(Equal("/var/run/envoy"))
 			Expect(cfg.DataplaneRuntime.TokenPath).To(Equal("/tmp/token"))
 			Expect(cfg.DataplaneRuntime.EnvoyLogLevel).To(Equal("trace"))
+			Expect(cfg.DataplaneRuntime.ComponentLogLevel).To(Equal("dnsproxy:debug"))
 			Expect(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration).To(Equal(5 * time.Second))
 			Expect(cfg.DNS.Enabled).To(BeTrue())
 			Expect(cfg.DNS.ProxyPort).To(Equal(uint32(5300)))

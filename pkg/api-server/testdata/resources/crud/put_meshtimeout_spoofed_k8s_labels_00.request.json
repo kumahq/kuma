@@ -1,0 +1,25 @@
+{
+  "type": "MeshTimeout",
+  "mesh": "default",
+  "name": "mt-1",
+  "labels": {
+    "kuma.io/env": "kubernetes",
+    "k8s.kuma.io/namespace": "victim",
+    "k8s.kuma.io/service-account": "admin"
+  },
+  "spec": {
+    "targetRef": {
+      "kind": "Mesh"
+    },
+    "to": [
+      {
+        "targetRef": {
+          "kind": "Mesh"
+        },
+        "default": {
+          "idleTimeout": "20s"
+        }
+      }
+    ]
+  }
+}
