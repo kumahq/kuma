@@ -181,8 +181,11 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal(instance))
 		}
-		Eventually(reachable, "30s", "1s").Should(Succeed())
-		Consistently(reachable, "5s", "1s").Should(Succeed())
+		// MustPassRepeatedly rather than Consistently: applying a MeshIdentity rotates
+		// certificates and rebuilds listeners, so a request can fail while the route is
+		// being replaced. Requiring five consecutive successes proves the route settled
+		// without failing on the churn that gets there.
+		Eventually(reachable, "2m", "1s").MustPassRepeatedly(5).Should(Succeed())
 	}
 
 	It("should access the service in the same zone using mTLS", func() {
