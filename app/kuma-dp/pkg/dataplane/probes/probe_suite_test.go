@@ -6,6 +6,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test"
 )
 
-func TestVirtualProbes(t *testing.T) {
+func TestApplicationProbeProxy(t *testing.T) {
 	test.RunSpecs(t, "Application probe proxy suite")
 }

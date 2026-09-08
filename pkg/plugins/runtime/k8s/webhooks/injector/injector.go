@@ -44,33 +44,27 @@ const (
 var (
 	volumeInitTmp = kube_core.Volume{
 		Name: "kuma-init-tmp",
-		VolumeSource: kube_core.VolumeSource{
-			EmptyDir: &kube_core.EmptyDirVolumeSource{
-				SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
-			},
+		EmptyDir: &kube_core.EmptyDirVolumeSource{
+			SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
 		},
 	}
 	volumeSidecarTmp = kube_core.Volume{
 		Name: "kuma-sidecar-tmp",
-		VolumeSource: kube_core.VolumeSource{
-			EmptyDir: &kube_core.EmptyDirVolumeSource{
-				SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
-			},
+		EmptyDir: &kube_core.EmptyDirVolumeSource{
+			SizeLimit: kube_api.NewScaledQuantity(10, kube_api.Mega),
 		},
 	}
 	volumeTPBase = kube_core.Volume{
 		Name: "transparent-proxy-base",
-		VolumeSource: kube_core.VolumeSource{
-			DownwardAPI: &kube_core.DownwardAPIVolumeSource{
-				Items: []kube_core.DownwardAPIVolumeFile{
-					{
-						Path: tproxy_consts.KubernetesConfigMapDataKey,
-						FieldRef: &kube_core.ObjectFieldSelector{
-							FieldPath: fmt.Sprintf(
-								"metadata.annotations['%s']",
-								metadata.KumaTrafficTransparentProxyConfig,
-							),
-						},
+		DownwardAPI: &kube_core.DownwardAPIVolumeSource{
+			Items: []kube_core.DownwardAPIVolumeFile{
+				{
+					Path: tproxy_consts.KubernetesConfigMapDataKey,
+					FieldRef: &kube_core.ObjectFieldSelector{
+						FieldPath: fmt.Sprintf(
+							"metadata.annotations['%s']",
+							metadata.KumaTrafficTransparentProxyConfig,
+						),
 					},
 				},
 			},
@@ -102,10 +96,12 @@ func New(
 	converter k8s_common.Converter,
 	envoyAdminPort uint32,
 	readinessPort uint32,
-	envoyAdminUnixSocket bool,
 	systemNamespace string,
 	metrics core_metrics.Metrics,
 ) (*KumaInjector, error) {
+	if readinessPort == 0 {
+		return nil, errors.New("readinessPort has to be in (0, 65535] range")
+	}
 	var caCert string
 	if cfg.CaCertFile != "" {
 		bytes, err := os.ReadFile(cfg.CaCertFile)
@@ -129,13 +125,12 @@ func New(
 		converter:                converter,
 		defaultAdminPort:         envoyAdminPort,
 		defaultReadinessPort:     readinessPort,
-		envoyAdminUnixSocket:     envoyAdminUnixSocket,
 		proxyFactory: containers.NewDataplaneProxyFactory(
 			controlPlaneURL, caCert, envoyAdminPort, readinessPort,
 			cfg.SidecarContainer.DataplaneContainer,
-			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, envoyAdminUnixSocket,
+			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady,
 			sidecarContainersEnabled,
-			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort, cfg.UnifiedResourceNamingEnabled,
+			cfg.ApplicationProbeProxyPort,
 			cfg.OtelPipeEnabled, cfg.Spire.Enabled,
 		),
 		systemNamespace: systemNamespace,
@@ -151,7 +146,6 @@ type KumaInjector struct {
 	proxyFactory             *containers.DataplaneProxyFactory
 	defaultAdminPort         uint32
 	defaultReadinessPort     uint32
-	envoyAdminUnixSocket     bool
 	systemNamespace          string
 	metrics                  *injectionMetrics
 }
@@ -212,11 +206,9 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 	} else if enabled {
 		pod.Spec.Volumes = append(pod.Spec.Volumes, kube_core.Volume{
 			Name: "kuma-spire-agent-socket",
-			VolumeSource: kube_core.VolumeSource{
-				CSI: &kube_core.CSIVolumeSource{
-					Driver:   "csi.spiffe.io",
-					ReadOnly: pointer.To(true),
-				},
+			CSI: &kube_core.CSIVolumeSource{
+				Driver:   "csi.spiffe.io",
+				ReadOnly: pointer.To(true),
 			},
 		})
 	}
@@ -238,12 +230,25 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 		return err
 	}
 
-	// When admin UDS is enabled, the readiness reporter listens on a
-	// TCP port instead of the Envoy admin port. Exclude it from
-	// inbound interception so K8s probes reach kuma-dp directly.
-	if i.envoyAdminUnixSocket && i.defaultReadinessPort != 0 {
-		if err := tpCfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", i.defaultReadinessPort)); err != nil {
-			return err
+	// K8s probes hit the readiness reporter on the readiness port, so
+	// exclude it from inbound interception to let them reach kuma-dp
+	// directly.
+	if err := tpCfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", i.defaultReadinessPort)); err != nil {
+		return err
+	}
+
+	// When application probe proxying is disabled, K8s probes hit the
+	// application's own ports directly, so exclude those ports from
+	// inbound interception so probes don't need mTLS.
+	if appProbeProxyPort, err := probes.GetApplicationProbeProxyPort(
+		metadata.Annotations(pod.Annotations), i.cfg.ApplicationProbeProxyPort,
+	); err != nil {
+		return err
+	} else if appProbeProxyPort == 0 {
+		for _, port := range probes.RealProbePorts(pod) {
+			if err := tpCfg.Redirect.Inbound.ExcludePorts.Append(fmt.Sprintf("%d", port)); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -254,12 +259,8 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 			pod.Spec.Volumes,
 			kube_core.Volume{
 				Name: volumeNameTPCustom,
-				VolumeSource: kube_core.VolumeSource{
-					ConfigMap: &kube_core.ConfigMapVolumeSource{
-						LocalObjectReference: kube_core.LocalObjectReference{
-							Name: v,
-						},
-					},
+				ConfigMap: &kube_core.ConfigMapVolumeSource{
+					Name: v,
 				},
 			},
 		)
@@ -325,19 +326,8 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 
 	pod.Spec.InitContainers = append(append(prependInitContainers, pod.Spec.InitContainers...), appendInitContainers...)
 
-	disabledAppProbeProxy, err := probes.ApplicationProbeProxyDisabled(pod)
-	if err != nil {
+	if err := probes.SetupAppProbeProxies(pod, log); err != nil {
 		return err
-	}
-
-	if disabledAppProbeProxy {
-		if err := i.overrideHTTPProbes(pod); err != nil {
-			return err
-		}
-	} else {
-		if err := probes.SetupAppProbeProxies(pod, log); err != nil {
-			return err
-		}
 	}
 
 	return nil

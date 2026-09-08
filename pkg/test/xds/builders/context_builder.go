@@ -3,7 +3,6 @@ package builders
 import (
 	. "github.com/onsi/gomega"
 
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -21,15 +20,13 @@ func Context() *ContextBuilder {
 	return &ContextBuilder{
 		res: &xds_context.Context{
 			Mesh: xds_context.MeshContext{
-				Resource:            samples.MeshDefault(),
-				EndpointMap:         map[core_xds.ServiceName][]core_xds.Endpoint{},
-				ServicesInformation: map[string]*xds_context.ServiceInformation{},
-				BaseMeshContext:     &xds_context.BaseMeshContext{},
+				Resource:        samples.MeshDefault(),
+				EndpointMap:     map[core_xds.ServiceName][]core_xds.Endpoint{},
+				BaseMeshContext: &xds_context.BaseMeshContext{},
 			},
 			ControlPlane: &xds_context.ControlPlaneContext{
 				CLACache: &xds.DummyCLACache{OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{}},
 				Zone:     "test-zone",
-				Secrets:  &xds.TestSecrets{},
 			},
 		},
 	}
@@ -90,28 +87,6 @@ func (mc *ContextBuilder) WithMeshLocalResources(rs []model.Resource) *ContextBu
 			mc.res.Mesh.Resources.MeshLocalResources[p.Descriptor().Name] = registry.Global().MustNewList(p.Descriptor().Name)
 		}
 		Expect(mc.res.Mesh.Resources.MeshLocalResources[p.Descriptor().Name].AddItem(p)).To(Succeed())
-	}
-	return mc
-}
-
-func (mc *ContextBuilder) AddServiceProtocol(serviceName string, protocol core_meta.Protocol) *ContextBuilder {
-	if info, found := mc.res.Mesh.ServicesInformation[serviceName]; found {
-		info.Protocol = protocol
-	} else {
-		mc.res.Mesh.ServicesInformation[serviceName] = &xds_context.ServiceInformation{
-			Protocol: protocol,
-		}
-	}
-	return mc
-}
-
-func (mc *ContextBuilder) AddExternalService(serviceName string) *ContextBuilder {
-	if info, found := mc.res.Mesh.ServicesInformation[serviceName]; found {
-		info.IsExternalService = true
-	} else {
-		mc.res.Mesh.ServicesInformation[serviceName] = &xds_context.ServiceInformation{
-			IsExternalService: true,
-		}
 	}
 	return mc
 }

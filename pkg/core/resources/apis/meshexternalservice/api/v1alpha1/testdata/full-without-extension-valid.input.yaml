@@ -20,8 +20,16 @@ tls:
       - type: Prefix
         value: "spiffe://example.local/ns/local"
     caCert:
-      inline: dGVzdA==
+      type: InsecureInline
+      insecureInline:
+        value: test
     clientCert:
-      secret: "123"
+      type: Secret
+      secretRef:
+        kind: Secret
+        name: "123"
     clientKey:
-      secret: "123"
+      type: Secret
+      secretRef:
+        kind: Secret
+        name: "123"

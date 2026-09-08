@@ -20,12 +20,12 @@ var _ = Describe("MultiValueTagSet", func() {
 			},
 			Entry("`service` and `services` tags", testCase{
 				value: MultiValueTagSet{
-					"versions":        map[string]bool{},
-					"version":         map[string]bool{},
-					"services":        map[string]bool{},
-					"kuma.io/service": map[string]bool{},
+					"versions":             map[string]bool{},
+					"version":              map[string]bool{},
+					"services":             map[string]bool{},
+					"kuma.io/display-name": map[string]bool{},
 				},
-				expected: []string{"kuma.io/service", "services", "version", "versions"},
+				expected: []string{"kuma.io/display-name", "services", "version", "versions"},
 			}),
 		)
 	})
@@ -263,15 +263,15 @@ var _ = Describe("Dataplane_Networking", func() {
 })
 
 var _ = Describe("Dataplane_Networking_Inbound", func() {
-	Describe("GetProtocolFallback()", func() {
+	Describe("GetProtocol()", func() {
 		type testCase struct {
 			inbound  *Dataplane_Networking_Inbound
 			expected string
 		}
 
-		DescribeTable("should return protocol from field, falling back to the tag",
+		DescribeTable("should return protocol from field",
 			func(given testCase) {
-				Expect(given.inbound.GetProtocolFallback()).To(Equal(given.expected))
+				Expect(given.inbound.GetProtocol()).To(Equal(given.expected))
 			},
 			Entry("inbound is `nil`", testCase{
 				inbound:  nil,
@@ -287,139 +287,16 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 				},
 				expected: "grpc",
 			}),
-			Entry("legacy inbound carries the protocol only as a tag", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{ProtocolTag: "http"},
-				},
-				expected: "http",
-			}),
-			Entry("protocol field wins over the tag", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Protocol: "grpc",
-					Tags:     map[string]string{ProtocolTag: "http"},
-				},
-				expected: "grpc",
-			}),
-		)
-	})
-
-	Describe("GetServiceFallback()", func() {
-		type testCase struct {
-			inbound  *Dataplane_Networking_Inbound
-			fallback string
-			expected string
-		}
-
-		DescribeTable("should return the legacy inbound tag, falling back to the Dataplane's service",
-			func(given testCase) {
-				Expect(given.inbound.GetServiceFallback(given.fallback)).To(Equal(given.expected))
-			},
-			Entry("inbound is `nil`", testCase{
-				inbound:  nil,
-				fallback: "backend",
-				expected: "backend",
-			}),
-			Entry("inbound carries no tags", testCase{
-				inbound:  &Dataplane_Networking_Inbound{},
-				fallback: "backend",
-				expected: "backend",
-			}),
-			Entry("inbound carries an empty service tag", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{ServiceTag: ""},
-				},
-				fallback: "backend",
-				expected: "backend",
-			}),
-			Entry("legacy inbound declares its own service", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{ServiceTag: "backend-api"},
-				},
-				fallback: "backend",
-				expected: "backend-api",
-			}),
-			Entry("legacy inbound on a Dataplane with no service at all", testCase{
-				inbound: &Dataplane_Networking_Inbound{
-					Tags: map[string]string{ServiceTag: "backend-api"},
-				},
-				fallback: "",
-				expected: "backend-api",
-			}),
 		)
 	})
 })
 
 var _ = Describe("Dataplane classification", func() {
-	Describe("with normal networking", func() {
-		It("should be a dataplane", func() {
-			dp := Dataplane{
-				Networking: &Dataplane_Networking{},
-			}
-			Expect(dp.IsDelegatedGateway()).To(BeFalse())
-			Expect(dp.IsBuiltinGateway()).To(BeFalse())
-		})
-	})
-
-	Describe("with gateway networking", func() {
-		It("should be a gateway", func() {
-			gw := Dataplane{
-				Networking: &Dataplane_Networking{
-					Gateway: &Dataplane_Networking_Gateway{},
-				},
-			}
-			Expect(gw.IsDelegatedGateway()).To(BeTrue())
-			Expect(gw.IsBuiltinGateway()).To(BeFalse())
-		})
-	})
-
-	Describe("with delegated gateway networking", func() {
-		It("should be a gateway", func() {
-			gw := Dataplane{
-				Networking: &Dataplane_Networking{
-					Gateway: &Dataplane_Networking_Gateway{
-						Type: Dataplane_Networking_Gateway_DELEGATED,
-					},
-				},
-			}
-			Expect(gw.IsDelegatedGateway()).To(BeTrue())
-			Expect(gw.IsBuiltinGateway()).To(BeFalse())
-		})
-	})
-
-	Describe("with builtin gateway networking", func() {
-		It("should be a gateway", func() {
-			gw := Dataplane{
-				Networking: &Dataplane_Networking{
-					Gateway: &Dataplane_Networking_Gateway{
-						Type: Dataplane_Networking_Gateway_BUILTIN,
-					},
-				},
-			}
-			Expect(gw.IsDelegatedGateway()).To(BeFalse())
-			Expect(gw.IsBuiltinGateway()).To(BeTrue())
-		})
-	})
-})
-
-var _ = Describe("Dataplane with gateway", func() {
-	d := Dataplane{
-		Networking: &Dataplane_Networking{
-			Gateway: &Dataplane_Networking_Gateway{
-				Tags: map[string]string{
-					"kuma.io/service": "backend",
-					"version":         "v1",
-				},
-			},
-		},
-	}
-
-	Describe("Tags()", func() {
-		It("should provide combined tags", func() {
-			// when
-			tags := d.TagSet()
-
-			// then
-			Expect(tags.Values("kuma.io/service")).To(Equal([]string{"backend"}))
+	Describe("IsDelegatedGateway", func() {
+		It("should read the gateway label", func() {
+			Expect(IsDelegatedGateway(map[string]string{GatewayLabel: GatewayEnabled})).To(BeTrue())
+			Expect(IsDelegatedGateway(map[string]string{GatewayLabel: "false"})).To(BeFalse())
+			Expect(IsDelegatedGateway(nil)).To(BeFalse())
 		})
 	})
 })
@@ -434,8 +311,8 @@ var _ = Describe("TagSelector", func() {
 			func(given testCase) {
 				// given
 				dpTags := map[string]string{
-					"kuma.io/service": "mobile",
-					"version":         "v1",
+					"kuma.io/display-name": "mobile",
+					"version":              "v1",
 				}
 
 				// when
@@ -449,24 +326,24 @@ var _ = Describe("TagSelector", func() {
 				match: true,
 			}),
 			Entry("should match 1 tag", testCase{
-				tags:  map[string]string{"kuma.io/service": "mobile"},
+				tags:  map[string]string{"kuma.io/display-name": "mobile"},
 				match: true,
 			}),
 			Entry("should match all tags", testCase{
 				tags: map[string]string{
-					"kuma.io/service": "mobile",
-					"version":         "v1",
+					"kuma.io/display-name": "mobile",
+					"version":              "v1",
 				},
 				match: true,
 			}),
 			Entry("should match * tag", testCase{
-				tags:  map[string]string{"kuma.io/service": "*"},
+				tags:  map[string]string{"kuma.io/display-name": "*"},
 				match: true,
 			}),
 			Entry("should not match on one mismatch", testCase{
 				tags: map[string]string{
-					"kuma.io/service": "backend",
-					"version":         "v1",
+					"kuma.io/display-name": "backend",
+					"version":              "v1",
 				},
 				match: false,
 			}),
@@ -506,23 +383,23 @@ var _ = Describe("TagSelector", func() {
 				expected: true,
 			}),
 			Entry("equal selectors of 1 tag", testCase{
-				one:      TagSelector{"kuma.io/service": "backend"},
-				another:  TagSelector{"kuma.io/service": "backend"},
+				one:      TagSelector{"kuma.io/display-name": "backend"},
+				another:  TagSelector{"kuma.io/display-name": "backend"},
 				expected: true,
 			}),
 			Entry("equal selectors of 2 tag", testCase{
-				one:      TagSelector{"kuma.io/service": "backend", "version": "v1"},
-				another:  TagSelector{"kuma.io/service": "backend", "version": "v1"},
+				one:      TagSelector{"kuma.io/display-name": "backend", "version": "v1"},
+				another:  TagSelector{"kuma.io/display-name": "backend", "version": "v1"},
 				expected: true,
 			}),
 			Entry("unequal selectors of 1 tag", testCase{
-				one:      TagSelector{"kuma.io/service": "backend"},
-				another:  TagSelector{"kuma.io/service": "redis"},
+				one:      TagSelector{"kuma.io/display-name": "backend"},
+				another:  TagSelector{"kuma.io/display-name": "redis"},
 				expected: false,
 			}),
 			Entry("one 1 tag selector and one 2 tags selector", testCase{
-				one:      TagSelector{"kuma.io/service": "backend"},
-				another:  TagSelector{"kuma.io/service": "redis", "version": "v1"},
+				one:      TagSelector{"kuma.io/display-name": "backend"},
+				another:  TagSelector{"kuma.io/display-name": "redis", "version": "v1"},
 				expected: false,
 			}),
 		)
@@ -533,7 +410,7 @@ var _ = Describe("Tags", func() {
 	It("should print tags", func() {
 		// given
 		tags := map[string]map[string]bool{
-			"kuma.io/service": {
+			"kuma.io/display-name": {
 				"backend-api":   true,
 				"backend-admin": true,
 			},
@@ -546,7 +423,7 @@ var _ = Describe("Tags", func() {
 		result := MultiValueTagSet(tags).String()
 
 		// then
-		Expect(result).To(Equal("kuma.io/service=backend-admin,backend-api version=v1"))
+		Expect(result).To(Equal("kuma.io/display-name=backend-admin,backend-api version=v1"))
 	})
 })
 
@@ -664,7 +541,7 @@ var _ = Describe("IsReservedLabelKey", func() {
 		func(given testCase) {
 			Expect(IsReservedLabelKey(given.key)).To(Equal(given.expected))
 		},
-		Entry("kuma.io/ prefix", testCase{key: "kuma.io/service", expected: true}),
+		Entry("kuma.io/ prefix", testCase{key: "kuma.io/mesh", expected: true}),
 		Entry("k8s.kuma.io/ prefix", testCase{key: "k8s.kuma.io/namespace", expected: true}),
 		Entry("bare kuma.io/", testCase{key: "kuma.io/", expected: true}),
 		Entry("bare k8s.kuma.io/", testCase{key: "k8s.kuma.io/", expected: true}),

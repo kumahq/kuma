@@ -7,7 +7,7 @@ dynamicResources:
     apiType: DELTA_GRPC
     grpcServices:
     - envoyGrpc:
-        clusterName: ads_cluster
+        clusterName: system_ads
       initialMetadata:
       - key: authorization
         value: token
@@ -25,7 +25,7 @@ hdsConfig:
   apiType: GRPC
   grpcServices:
   - envoyGrpc:
-      clusterName: ads_cluster
+      clusterName: system_ads
     initialMetadata:
     - key: authorization
       value: token
@@ -62,14 +62,14 @@ staticResources:
   clusters:
   - connectTimeout: 1s
     loadAssignment:
-      clusterName: access_log_sink
+      clusterName: system_access_log_sink
       endpoints:
       - lbEndpoints:
         - endpoint:
             address:
               pipe:
                 path: /tmp/kuma-al-dp-1.default-default.sock
-    name: access_log_sink
+    name: system_access_log_sink
     type: STATIC
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
@@ -83,7 +83,7 @@ staticResources:
         keepaliveTime: 10
   - connectTimeout: 1s
     loadAssignment:
-      clusterName: ads_cluster
+      clusterName: system_ads
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -91,7 +91,7 @@ staticResources:
               socketAddress:
                 address: localhost
                 portValue: 5678
-    name: ads_cluster
+    name: system_ads
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:

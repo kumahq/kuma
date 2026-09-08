@@ -7,10 +7,17 @@ import (
 )
 
 func RegisterBootstrap(rt core_runtime.Runtime) error {
+	// The same key pair the DP server serves, so that the CA handed to a proxy
+	// and the SANs validated against it describe the certificate that proxy is
+	// about to be presented.
+	dpServerKeyPair, err := rt.CertWatchers().Watch(rt.Config().DpServer.TlsCertFile, rt.Config().DpServer.TlsKeyFile)
+	if err != nil {
+		return err
+	}
 	generator, err := NewDefaultBootstrapGenerator(
 		rt.ResourceManager(),
 		rt.Config().BootstrapServer,
-		rt.Config().DpServer.TlsCertFile,
+		dpServerKeyPair,
 		map[string]bool{
 			string(mesh_proto.DataplaneProxyType): rt.Config().DpServer.Authn.DpProxy.Type != dp_server.DpServerAuthNone,
 		},

@@ -97,22 +97,3 @@ func MatchDestiantionPort(port uint32) FilterChainBuilderOpt {
 		}),
 	)
 }
-
-// MatchSourceAddress appends an exact filter chain match for the given source IP address.
-func MatchSourceAddress(address string) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(
-		v3.FilterChainMustConfigureFunc(func(chain *envoy_listener.FilterChain) {
-			if chain.FilterChainMatch == nil {
-				chain.FilterChainMatch = &envoy_listener.FilterChainMatch{}
-			}
-
-			chain.FilterChainMatch.SourcePrefixRanges = append(
-				chain.FilterChainMatch.SourcePrefixRanges,
-				&envoy_core.CidrRange{
-					AddressPrefix: address,
-					PrefixLen:     util_proto.UInt32(32),
-				},
-			)
-		}),
-	)
-}

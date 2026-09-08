@@ -14,7 +14,7 @@ type MeshAccessLog struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined in-place.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef *common_api.TopLevelTargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
 	To *[]To `json:"to,omitempty"`
 	// Rules defines inbound access log configurations.
@@ -33,7 +33,7 @@ type Rule struct {
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef common_api.OutboundTargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of destinations referenced in
 	// 'targetRef'
 	Default Conf `json:"default"`
@@ -82,6 +82,7 @@ type OtelBackend struct {
 	// It can contain placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 	// +kubebuilder:example={kvlistValue: {values: {{key: "mesh", value: {stringValue: "%KUMA_MESH%"}}}}}
+	// +kuma:opaque-payload // the log body is the user's own value, not a configuration we can describe
 	Body *apiextensionsv1.JSON `json:"body,omitempty"`
 	// BackendRef is a reference to a MeshOpenTelemetryBackend resource that
 	// defines the collector endpoint.

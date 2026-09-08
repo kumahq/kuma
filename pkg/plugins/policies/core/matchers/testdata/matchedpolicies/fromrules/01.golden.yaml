@@ -61,4 +61,3 @@ InboundRules:
         name: mtp-2
         type: MeshTrafficPermission
       RuleIndex: 0
-Rules: {}

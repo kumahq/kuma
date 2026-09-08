@@ -47,4 +47,26 @@ var _ = Describe("EvaluateParentRefAttachment", func() {
 		Expect(res).To(Equal(attachment.Unknown))
 		Expect(refKind).To(Equal(attachment.UnknownKind))
 	})
+
+	It("allows a MeshService parentRef with the kuma.io group", func() {
+		group := gatewayapi.Group("kuma.io")
+		kind := gatewayapi.Kind("MeshService")
+		res, refKind, err := attachment.EvaluateParentRefAttachment(
+			gatewayapi.ParentReference{Group: &group, Kind: &kind, Name: "backend"},
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res).To(Equal(attachment.Allowed))
+		Expect(refKind).To(Equal(attachment.MeshService))
+	})
+
+	It("reports Unknown for a MeshService parentRef with the wrong group", func() {
+		group := gatewayapi.Group(gatewayapi.GroupName)
+		kind := gatewayapi.Kind("MeshService")
+		res, refKind, err := attachment.EvaluateParentRefAttachment(
+			gatewayapi.ParentReference{Group: &group, Kind: &kind, Name: "backend"},
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res).To(Equal(attachment.Unknown))
+		Expect(refKind).To(Equal(attachment.UnknownKind))
+	})
 })

@@ -1,0 +1,21 @@
+{
+  "type": "Dataplane",
+  "mesh": "default",
+  "name": "dp-1",
+  "labels": {
+    "kuma.io/env": "kubernetes",
+    "k8s.kuma.io/namespace": "kube-system",
+    "k8s.kuma.io/service-account": "admin"
+  },
+  "networking": {
+    "address": "10.1.2.1",
+    "inbound": [
+      {
+        "port": 1234,
+        "tags": {
+          "kuma.io/display-name": "my-svc"
+        }
+      }
+    ]
+  }
+}

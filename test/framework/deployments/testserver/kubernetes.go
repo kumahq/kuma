@@ -34,16 +34,12 @@ func (k *k8SDeployment) service() *corev1.Service {
 		servicePort = 443
 	}
 	return &corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Service",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      k.Name(),
-			Namespace: k.opts.Namespace,
-			Labels: map[string]string{
-				"kuma.io/mesh": k.opts.Mesh,
-			},
+		Kind:       "Service",
+		APIVersion: "v1",
+		Name:       k.Name(),
+		Namespace:  k.opts.Namespace,
+		Labels: map[string]string{
+			"kuma.io/mesh": k.opts.Mesh,
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
@@ -75,23 +71,17 @@ func (k *k8SDeployment) headlessService() *corev1.Service {
 
 func (k *k8SDeployment) serviceAccount() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ServiceAccount",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      k.opts.ServiceAccount,
-			Namespace: k.opts.Namespace,
-		},
+		Kind:       "ServiceAccount",
+		APIVersion: "v1",
+		Name:       k.opts.ServiceAccount,
+		Namespace:  k.opts.Namespace,
 	}
 }
 
 func (k *k8SDeployment) deployment() *appsv1.Deployment {
 	return &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Deployment",
-			APIVersion: "apps/v1",
-		},
+		Kind:       "Deployment",
+		APIVersion: "apps/v1",
 		ObjectMeta: meta(k.opts.Namespace, k.Name()),
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &k.opts.Replicas,
@@ -111,10 +101,8 @@ func (k *k8SDeployment) deployment() *appsv1.Deployment {
 
 func (k *k8SDeployment) statefulSet() *appsv1.StatefulSet {
 	return &appsv1.StatefulSet{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "StatefulSet",
-			APIVersion: "apps/v1",
-		},
+		Kind:       "StatefulSet",
+		APIVersion: "apps/v1",
 		ObjectMeta: meta(k.opts.Namespace, k.Name()),
 		Spec: appsv1.StatefulSetSpec{
 			ServiceName: k.Name(),
@@ -159,20 +147,16 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 		})
 		volumes = append(volumes, corev1.Volume{
 			Name: "tls",
-			VolumeSource: corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: k.tlsSecretName(),
-				},
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: k.tlsSecretName(),
 			},
 		})
 	default:
 		args = append([]string{"echo", "--port", "80", "--probes"}, k.opts.echoArgs...)
 		livenessProbe = &corev1.Probe{
-			ProbeHandler: corev1.ProbeHandler{
-				HTTPGet: &corev1.HTTPGetAction{
-					Path: `/probes?type=liveness`,
-					Port: intstr.FromInt32(80),
-				},
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: `/probes?type=liveness`,
+				Port: intstr.FromInt32(80),
 			},
 			InitialDelaySeconds: 3,
 			PeriodSeconds:       5,
@@ -180,11 +164,9 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 			FailureThreshold:    60,
 		}
 		readinessProbe = &corev1.Probe{
-			ProbeHandler: corev1.ProbeHandler{
-				HTTPGet: &corev1.HTTPGetAction{
-					Path: `/probes?type=readiness`,
-					Port: intstr.FromInt32(80),
-				},
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: `/probes?type=readiness`,
+				Port: intstr.FromInt32(80),
 			},
 			InitialDelaySeconds: 3,
 			PeriodSeconds:       5,
@@ -202,10 +184,8 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 		containerPort = 443
 	}
 	spec := corev1.PodTemplateSpec{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels:      k.getLabels(),
-			Annotations: k.getAnnotations(),
-		},
+		Labels:      k.getLabels(),
+		Annotations: k.getAnnotations(),
 		Spec: corev1.PodSpec{
 			NodeSelector:       k.opts.NodeSelector,
 			ServiceAccountName: k.opts.ServiceAccount,
@@ -298,15 +278,11 @@ func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 	if k.opts.tlsKey != "" {
 		funcs = append(funcs, framework.YamlK8sObject(
 			&corev1.Secret{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "Secret",
-					APIVersion: "v1",
-				},
-				Type: corev1.SecretTypeTLS,
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      k.tlsSecretName(),
-					Namespace: k.opts.Namespace,
-				},
+				Kind:       "Secret",
+				APIVersion: "v1",
+				Type:       corev1.SecretTypeTLS,
+				Name:       k.tlsSecretName(),
+				Namespace:  k.opts.Namespace,
 				StringData: map[string]string{
 					"tls.key": k.opts.tlsKey,
 					"tls.crt": k.opts.tlsCrt,

@@ -413,24 +413,6 @@
     Value: '*.example.com'
   Value: ""
 - MatchType: 2
-  Port: 9001
-  Protocol: http
-  Routes:
-  - MatchType: 2
-    Value: otherexample.com
-  - MatchType: 1
-    Value: '*.example.com'
-  Value: ""
-- MatchType: 2
-  Port: 9000
-  Protocol: http
-  Routes:
-  - MatchType: 2
-    Value: otherexample.com
-  - MatchType: 1
-    Value: '*.example.com'
-  Value: ""
-- MatchType: 2
   Port: 8080
   Protocol: http
   Routes:

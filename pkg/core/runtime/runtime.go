@@ -14,7 +14,6 @@ import (
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/access"
-	"github.com/kumahq/kuma/v3/pkg/core/ca"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
@@ -37,12 +36,12 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres/config"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/v3/pkg/tokens/builtin/access"
 	zone_access "github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone/access"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/v3/pkg/xds/runtime"
-	"github.com/kumahq/kuma/v3/pkg/xds/secrets"
 )
 
 // Runtime represents initialized application state.
@@ -71,7 +70,6 @@ type RuntimeContext interface {
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
 	GlobalInsightService() globalinsight.GlobalInsightService
-	CaManagers() ca.Managers
 	Extensions() context.Context
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
@@ -81,12 +79,14 @@ type RuntimeContext interface {
 	EventBus() events.EventBus
 	APIInstaller() api_server.APIInstaller
 	XDS() xds_runtime.XDSRuntimeContext
-	CAProvider() secrets.CaProvider
 	DpServer() *dp_server.DpServer
 	KDSContext() *kds_context.Context
 	APIServerAuthenticator() authn.Authenticator
 	ResourceValidators() ResourceValidators
 	Access() Access
+	// CertWatchers hands out the TLS key pairs that servers serve, reloaded when
+	// they are rotated on disk.
+	CertWatchers() *util_tls.Watchers
 	// AppContext returns a context.Context which tracks the lifetime of the apps, it gets cancelled when the app is starting to shutdown.
 	AppContext() context.Context
 	ExtraReportsFn() ExtraReportsFn
@@ -192,7 +192,6 @@ type runtimeContext struct {
 	cs                       core_store.ResourceStore
 	gis                      globalinsight.GlobalInsightService
 	rom                      core_manager.ReadOnlyResourceManager
-	cam                      ca.Managers
 	dsl                      datasource.Loader
 	ext                      context.Context
 	configm                  config_manager.ConfigManager
@@ -203,12 +202,12 @@ type runtimeContext struct {
 	erf                      events.EventBus
 	apim                     api_server.APIInstaller
 	xds                      xds_runtime.XDSRuntimeContext
-	cap                      secrets.CaProvider
 	dps                      *dp_server.DpServer
 	kdsctx                   *kds_context.Context
 	rv                       ResourceValidators
 	au                       authn.Authenticator
 	acc                      Access
+	certWatchers             *util_tls.Watchers
 	appCtx                   context.Context
 	extraReportsFn           ExtraReportsFn
 	tokenIssuers             builtin.TokenIssuers
@@ -227,10 +226,6 @@ func (rc *runtimeContext) Metrics() metrics.Metrics {
 
 func (rc *runtimeContext) EventBus() events.EventBus {
 	return rc.erf
-}
-
-func (rc *runtimeContext) CaManagers() ca.Managers {
-	return rc.cam
 }
 
 func (rc *runtimeContext) Config() kuma_cp.Config {
@@ -297,10 +292,6 @@ func (rc *runtimeContext) DpServer() *dp_server.DpServer {
 	return rc.dps
 }
 
-func (rc *runtimeContext) CAProvider() secrets.CaProvider {
-	return rc.cap
-}
-
 func (rc *runtimeContext) XDS() xds_runtime.XDSRuntimeContext {
 	return rc.xds
 }
@@ -319,6 +310,10 @@ func (rc *runtimeContext) APIServerAuthenticator() authn.Authenticator {
 
 func (rc *runtimeContext) Access() Access {
 	return rc.acc
+}
+
+func (rc *runtimeContext) CertWatchers() *util_tls.Watchers {
+	return rc.certWatchers
 }
 
 func (rc *runtimeContext) AppContext() context.Context {

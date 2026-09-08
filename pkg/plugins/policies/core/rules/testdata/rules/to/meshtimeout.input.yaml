@@ -21,7 +21,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: foo
+      app: foo
   to:
     - targetRef:
         kind: MeshService

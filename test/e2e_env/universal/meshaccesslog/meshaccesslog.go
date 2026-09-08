@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
@@ -34,7 +35,7 @@ spec:
   selector:
     dataplaneLabels:
       matchLabels:
-        kuma.io/service: test-server
+        kuma.io/display-name: test-server
   ports:
   - port: 80
     targetPort: 80
@@ -50,7 +51,7 @@ spec:
 			Install(MeshIdentityBundled(meshName, identityName)).
 			Install(
 				TestServerUniversal(
-					"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName), WithLabels(map[string]string{"kuma.io/service": "test-server"}),
+					"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName), WithLabels(map[string]string{"kuma.io/display-name": "test-server"}),
 				),
 			).
 			Install(YamlUniversal(uniServiceYAML)).
@@ -96,7 +97,7 @@ spec:
 		Expect(
 			NewClusterSetup().
 				Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
-				Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient}))).
+				Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/display-name": AppModeDemoClient}))).
 				Setup(universal.Cluster),
 		).To(Succeed())
 	})
@@ -108,6 +109,7 @@ spec:
 			err := universal.Cluster.GetKumactlOptions().KumactlDelete("meshaccesslog", item, meshName)
 			Expect(err).ToNot(HaveOccurred())
 		}
+		Expect(DeleteMeshResources(universal.Cluster, meshName, meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor)).To(Succeed())
 
 		Expect(universal.Cluster.DeleteApp(AppModeDemoClient)).To(Succeed())
 		Expect(universal.Cluster.DeleteApp(AppModeTcpSink)).To(Succeed())
@@ -154,7 +156,7 @@ spec:
  targetRef:
    kind: Dataplane
    labels:
-     kuma.io/service: demo-client
+     kuma.io/display-name: demo-client
  to:
    - targetRef:
        kind: MeshService
@@ -368,7 +370,7 @@ spec:
  targetRef:
    kind: Dataplane
    labels:
-     kuma.io/service: demo-client
+     kuma.io/display-name: demo-client
  to:
    - targetRef:
        kind: MeshService
@@ -437,7 +439,7 @@ spec:
  targetRef:
    kind: Dataplane
    labels:
-     kuma.io/service: demo-client
+     kuma.io/display-name: demo-client
  to:
    - targetRef:
        kind: Mesh
@@ -490,7 +492,7 @@ spec:
  targetRef:
    kind: Dataplane
    labels:
-     kuma.io/service: demo-client
+     kuma.io/display-name: demo-client
  to:
    - targetRef:
        kind: MeshExternalService
@@ -531,7 +533,7 @@ spec:
  targetRef:
    kind: Dataplane
    labels:
-     kuma.io/service: test-server
+     kuma.io/display-name: test-server
  rules:
    - default:
        backends:

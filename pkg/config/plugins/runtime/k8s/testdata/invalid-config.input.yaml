@@ -9,7 +9,6 @@ injector:
     redirectPortInbound: 423457
     uid: -1
     gid: -2
-    adminPort: 523456
     drainTime: 0s
   initContainer:
     image:

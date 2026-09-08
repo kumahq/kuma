@@ -62,12 +62,6 @@ spec:
                     description: Kind of the referenced resource
                     enum:
                     - Mesh
-                    - MeshSubset
-                    - MeshService
-                    - MeshExternalService
-                    - MeshMultiZoneService
-                    - MeshServiceSubset
-                    - MeshHTTPRoute
                     - Dataplane
                     type: string
                   labels:
@@ -83,13 +77,6 @@ spec:
                       SectionName is used to target specific section of resource.
                       For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                     type: string
-                  tags:
-                    additionalProperties:
-                      type: string
-                    description: |-
-                      Tags used to select a subset of proxies by tags. Can only be used with kinds
-                      `MeshSubset` and `MeshServiceSubset`
-                    type: object
                 required:
                 - kind
                 type: object
@@ -112,28 +99,21 @@ spec:
                             properties:
                               backendRefs:
                                 items:
-                                  description: BackendRef defines where to forward
-                                    traffic.
+                                  description: BackendRef defines the destination
+                                    traffic is routed to.
                                   properties:
                                     kind:
                                       description: Kind of the referenced resource
                                       enum:
-                                      - Mesh
-                                      - MeshSubset
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshServiceSubset
-                                      - MeshHTTPRoute
-                                      - Dataplane
                                       type: string
                                     labels:
                                       additionalProperties:
                                         type: string
-                                      description: |-
-                                        Labels are used to select referenced real resources and to carry legacy
-                                        service identity when a common TargetRef must still target old
-                                        service-tag based paths.
+                                      description: Labels are used to select the referenced
+                                        real resource.
                                       type: object
                                     port:
                                       description: Port is only supported when this
@@ -142,18 +122,12 @@ spec:
                                       type: integer
                                     sectionName:
                                       description: |-
-                                        SectionName is used to target specific section of resource.
-                                        For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                        SectionName is used to target a specific section of the resource.
+                                        For example, you can target a port from MeshService.ports[] by its name.
                                       type: string
-                                    tags:
-                                      additionalProperties:
-                                        type: string
-                                      description: |-
-                                        Tags used to select a subset of proxies by tags. Can only be used with kinds
-                                        `MeshSubset` and `MeshServiceSubset`
-                                      type: object
                                     weight:
                                       default: 1
+                                      maximum: 4294967295
                                       minimum: 0
                                       type: integer
                                   required:
@@ -175,13 +149,10 @@ spec:
                           description: Kind of the referenced resource
                           enum:
                           - Mesh
-                          - MeshSubset
                           - MeshService
                           - MeshExternalService
                           - MeshMultiZoneService
-                          - MeshServiceSubset
                           - MeshHTTPRoute
-                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -196,13 +167,6 @@ spec:
                             SectionName is used to target specific section of resource.
                             For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
                           type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: |-
-                            Tags used to select a subset of proxies by tags. Can only be used with kinds
-                            `MeshSubset` and `MeshServiceSubset`
-                          type: object
                       required:
                       - kind
                       type: object

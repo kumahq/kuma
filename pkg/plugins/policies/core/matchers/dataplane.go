@@ -51,7 +51,6 @@ func MatchedPolicies(
 	var warnings []string
 
 	matchedPoliciesByInbound := map[core_rules.InboundListener]core_model.ResourceList{}
-	matchedPoliciesByGatewayListener := map[core_rules.InboundListenerHostname]core_model.ResourceList{}
 	dpPolicies, err := registry.Global().NewList(rType)
 	if err != nil {
 		return core_xds.TypedMatchingPolicies{}, err
@@ -109,18 +108,9 @@ func MatchedPolicies(
 		warnings = append(warnings, fmt.Sprintf("couldn't create To rules: %s", err.Error()))
 	}
 
-	gr, err := core_rules.BuildGatewayRules(
-		matchedPoliciesByInbound,
-		matchedPoliciesByGatewayListener,
-		resources,
-	)
+	pc, err := core_rules.BuildProxyConf(dpPolicies.GetItems())
 	if err != nil {
-		warnings = append(warnings, fmt.Sprintf("couldn't create Gateway rules: %s", err.Error()))
-	}
-
-	sr, err := core_rules.BuildSingleItemRules(dpPolicies.GetItems())
-	if err != nil {
-		warnings = append(warnings, fmt.Sprintf("couldn't create top level rules: %s", err.Error()))
+		warnings = append(warnings, fmt.Sprintf("couldn't create proxy-wide config: %s", err.Error()))
 	}
 
 	result := core_xds.TypedMatchingPolicies{
@@ -128,8 +118,7 @@ func MatchedPolicies(
 		DataplanePolicies: dpPolicies.GetItems(),
 		FromRules:         fr,
 		ToRules:           tr,
-		GatewayRules:      gr,
-		SingleItemRules:   sr,
+		ProxyConf:         pc,
 		Warnings:          warnings,
 	}
 	if mpOpts.Cache != nil {
@@ -156,7 +145,7 @@ func DppSelectedByPolicy(
 	case common_api.Mesh:
 		inbounds := allInboundListeners(dpp)
 		inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
-		return inbounds, dpp.Spec.IsDelegatedGateway(), nil
+		return inbounds, dpp.IsDelegatedGateway(), nil
 	case common_api.Dataplane:
 		if allDataplanesSelected(ref) || isSelectedByLabels(dpp, ref) {
 			inboundInterfaces := dpp.Spec.GetNetworking().InboundsSelectedBySectionName(pointer.Deref(ref.SectionName))
@@ -174,7 +163,7 @@ func DppSelectedByPolicy(
 				}
 				inbounds = append(inbounds, core_rules.InboundListener{Address: addr, Port: l.GetPort()})
 			}
-			return inbounds, dpp.Spec.IsDelegatedGateway(), nil
+			return inbounds, dpp.IsDelegatedGateway(), nil
 		}
 		return []core_rules.InboundListener{}, false, nil
 	case common_api.MeshHTTPRoute:
@@ -189,7 +178,7 @@ func DppSelectedByPolicy(
 		for _, mhr := range mhrs {
 			selectedInbounds, delegatedGateway, err := DppSelectedByPolicy(
 				mhr.Meta,
-				pointer.DerefOr(mhr.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}),
+				mhr.Spec.TargetRef.ToTargetRef(),
 				dpp,
 				referencableResources,
 			)
@@ -327,10 +316,26 @@ func allInboundListeners(dpp *core_mesh.DataplaneResource) []core_rules.InboundL
 }
 
 func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
+	type sortableResource struct {
+		resource    core_model.Resource
+		origin      mesh_proto.ResourceOrigin
+		role        mesh_proto.PolicyRole
+		displayName string
+	}
 	rs := rl.GetItems()
-	slices.SortFunc(rs, func(r1, r2 core_model.Resource) int {
-		p1, ok1 := r1.GetSpec().(core_model.Policy)
-		p2, ok2 := r2.GetSpec().(core_model.Policy)
+	sortable := make([]sortableResource, 0, len(rs))
+	for _, r := range rs {
+		origin, _ := core_model.ResourceOrigin(r.GetMeta())
+		sortable = append(sortable, sortableResource{
+			resource:    r,
+			origin:      origin,
+			role:        core_model.PolicyRole(r.GetMeta()),
+			displayName: core_model.GetDisplayName(r.GetMeta()),
+		})
+	}
+	slices.SortFunc(sortable, func(s1, s2 sortableResource) int {
+		p1, ok1 := s1.resource.GetSpec().(core_model.Policy)
+		p2, ok2 := s2.resource.GetSpec().(core_model.Policy)
 		if !ok1 || !ok2 {
 			panic("resource doesn't support TargetRef matching")
 		}
@@ -344,21 +349,19 @@ func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
 			return less
 		}
 
-		o1, _ := core_model.ResourceOrigin(r1.GetMeta())
-		o2, _ := core_model.ResourceOrigin(r2.GetMeta())
-		if less := o1.Compare(o2); less != 0 {
+		if less := s1.origin.Compare(s2.origin); less != 0 {
 			return less
 		}
 
-		if less := core_model.PolicyRole(r1.GetMeta()).Compare(core_model.PolicyRole(r2.GetMeta())); less != 0 {
+		if less := s1.role.Compare(s2.role); less != 0 {
 			return less
 		}
 
-		return cmp.Compare(core_model.GetDisplayName(r2.GetMeta()), core_model.GetDisplayName(r1.GetMeta()))
+		return cmp.Compare(s2.displayName, s1.displayName)
 	})
 	rv := registry.Global().MustNewList(rl.GetItemType())
-	for _, r := range rs {
-		_ = rv.AddItem(r)
+	for _, s := range sortable {
+		_ = rv.AddItem(s.resource)
 	}
 	return rv
 }

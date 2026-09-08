@@ -29,6 +29,20 @@ func MeshTCPRoute(config *Config) func() {
 				v1alpha1.MeshTCPRouteResourceTypeDescriptor,
 				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
 			)).To(Succeed())
+
+			Eventually(func(g Gomega) {
+				responses, err := client.CollectResponses(
+					kubernetes.Cluster,
+					"demo-client",
+					fmt.Sprintf("http://%s/test-server", config.KicIP),
+					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
+					client.WithNumberOfRequests(10),
+					client.WithoutRetries(),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(responses).ToNot(BeEmpty())
+				g.Expect(responses).To(HaveEach(HaveField("Instance", HavePrefix("test-server"))))
+			}, "60s", "1s").Should(Succeed())
 		})
 
 		It("should split traffic between internal and external services "+
@@ -93,31 +107,43 @@ spec:
       kind: MeshService
       labels:
         kuma.io/display-name: test-server
+        k8s.kuma.io/namespace: %[3]s
     rules: 
     - default:
         backendRefs:
         - kind: MeshService
-          name: test-server_%[2]s_svc_80
-        - kind: MeshExternalService
-          name: external-http-service-mtcprd
+          labels:
+            kuma.io/display-name: test-server
+            k8s.kuma.io/namespace: %[3]s
           port: 80
         - kind: MeshExternalService
-          name: external-tcp-service-mtcprd
+          labels:
+            kuma.io/display-name: external-http-service-mtcprd
+            k8s.kuma.io/namespace: %[1]s
           port: 80
-`, config.CpNamespace, config.Mesh))(kubernetes.Cluster)).To(Succeed())
+        - kind: MeshExternalService
+          labels:
+            kuma.io/display-name: external-tcp-service-mtcprd
+            k8s.kuma.io/namespace: %[1]s
+          port: 80
+`, config.CpNamespace, config.Mesh, config.Namespace))(kubernetes.Cluster)).To(Succeed())
 
 			// then
+			// The route turns the gateway outbound into a TCP proxy, so a backend
+			// is picked once per connection. Kong is deployed with upstream
+			// keepalive disabled, so every request opens its own connection and
+			// 30 requests make missing one of the three equally weighted backends
+			// negligible.
 			Eventually(func() ([]types.EchoResponse, error) {
 				return client.CollectResponses(
 					kubernetes.Cluster,
 					"demo-client",
 					fmt.Sprintf("http://%s/test-server", config.KicIP),
 					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
-					client.WithNumberOfRequests(10),
-					client.WithHeader("x-set-response-delay-ms", "2000"),
+					client.WithNumberOfRequests(30),
 					client.WithoutRetries(),
 				)
-			}, "30s", "1s").Should(ContainElements(
+			}, "60s", "5s").Should(ContainElements(
 				HaveField("Instance", HavePrefix("test-server")),
 				HaveField("Instance", HavePrefix("external-service")),
 				HaveField("Instance", HavePrefix("external-tcp-service")),

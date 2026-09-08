@@ -100,7 +100,7 @@ type appDeploymentOptions struct {
 	appLabel              string
 	token                 string
 	transparent           *bool
-	builtindns            *bool // true by default
+	builtinDNS            *bool // true by default
 	protocol              core_meta.Protocol
 	serviceName           string
 	serviceVersion        string
@@ -539,9 +539,9 @@ func WithDpEnvs(envs map[string]string) AppDeploymentOption {
 	})
 }
 
-func WithBuiltinDNS(builtindns bool) AppDeploymentOption {
+func WithBuiltinDNS(builtinDNS bool) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
-		o.builtindns = &builtindns
+		o.builtinDNS = &builtinDNS
 	})
 }
 

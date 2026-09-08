@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -71,11 +70,11 @@ var _ = Describe("KubernetesStore", func() {
 		ns = core.NewUUID()
 
 		err := k8sClient.Create(context.Background(), &kube_core.Namespace{
-			ObjectMeta: metav1.ObjectMeta{Name: ns},
+			Name: ns,
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		s, err = k8s.NewStore(k8sClient, ns, k8sClientScheme, k8s_resources.NewSimpleConverter())
+		s, err = k8s.NewStore(k8sClient, ns, k8sClientScheme, k8s_resources.NewSimpleConverter("kuma-system"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

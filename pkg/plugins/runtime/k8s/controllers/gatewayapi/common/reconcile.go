@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"maps"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -17,9 +18,32 @@ import (
 	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
-const ownerLabel = "gateways.kuma.io/gateway.networking.k8s.io-owner"
+const OwnerLabel = "gateways.kuma.io/gateway.networking.k8s.io-owner"
 
-func hashNamespacedName(name kube_types.NamespacedName) string {
+const ownerLabel = OwnerLabel
+
+// OwnedObject describes an object owned by a gateway-api resource,
+// including the namespace it should live in.
+type OwnedObject struct {
+	Namespace string
+	Spec      core_model.ResourceSpec
+	Labels    map[string]string
+}
+
+func hashNamespacedName(kind string, name kube_types.NamespacedName) string {
+	hash := fnv.New32()
+	hash.Write([]byte(kind))
+	hash.Write([]byte(name.Namespace))
+	hash.Write([]byte(name.Name))
+	// our hash is 8 characters and our label can be 63
+	return fmt.Sprintf("%.54s-%x", fmt.Sprintf("%s_%s_%s", kind, name.Namespace, name.Name), hash.Sum(nil))
+}
+
+func OwnerLabelValue(kind string, name kube_types.NamespacedName) string {
+	return hashNamespacedName(kind, name)
+}
+
+func LegacyOwnerLabelValue(name kube_types.NamespacedName) string {
 	hash := fnv.New32()
 	hash.Write([]byte(name.Namespace))
 	hash.Write([]byte(name.Name))
@@ -41,17 +65,18 @@ func ReconcileLabelledObject(
 	logger logr.Logger,
 	registry k8s_registry.TypeRegistry,
 	client kube_client.Client,
+	ownerKind string,
 	owner kube_types.NamespacedName,
 	ownerMesh string,
 	ownedType k8s_registry.ResourceType,
-	ownedNamespace string,
-	owned map[string]core_model.ResourceSpec,
+	owned map[string]OwnedObject,
+	legacyOwnerLabelValues ...string,
 ) error {
 	log := logger.WithValues("type", ownedType, "name", owner.Name, "namespace", owner.Namespace)
 	// First we list which existing objects are owned by this owner.
 	// We expect either 0 or 1 and depending on whether routeSpec is nil
 	// we either create an object or update or delete the existing one.
-	ownerLabelValue := hashNamespacedName(owner)
+	ownerLabelValue := hashNamespacedName(ownerKind, owner)
 	labels := kube_client.MatchingLabels{
 		ownerLabel: ownerLabelValue,
 	}
@@ -65,20 +90,39 @@ func ReconcileLabelledObject(
 		return err
 	}
 
-	// Delete unneeded objects
-	existingObjs := map[string]k8s_model.KubernetesObject{}
-	for _, existing := range existingList.GetItems() {
-		if _, ok := owned[existing.GetName()]; !ok {
-			err := client.Delete(ctx, existing)
-			switch {
-			case kube_apierrs.IsNotFound(err):
-				log.V(1).Info("object not found. Nothing to delete")
-			case err == nil:
-				log.Info("object deleted")
-			default:
-				return err
+	seenObjects := map[kube_types.NamespacedName]struct{}{}
+	existingItems := existingList.GetItems()
+	for _, existing := range existingItems {
+		seenObjects[kube_types.NamespacedName{Namespace: existing.GetNamespace(), Name: existing.GetName()}] = struct{}{}
+	}
+	for _, legacyOwnerLabelValue := range legacyOwnerLabelValues {
+		if legacyOwnerLabelValue == "" || legacyOwnerLabelValue == ownerLabelValue {
+			continue
+		}
+
+		legacyList, err := registry.NewList(ownedType)
+		if err != nil {
+			return errors.Wrapf(err, "could not create list of owned %T", ownedType)
+		}
+		if err := client.List(ctx, legacyList, kube_client.MatchingLabels{ownerLabel: legacyOwnerLabelValue}); err != nil {
+			return err
+		}
+		for _, legacy := range legacyList.GetItems() {
+			key := kube_types.NamespacedName{Namespace: legacy.GetNamespace(), Name: legacy.GetName()}
+			if _, ok := seenObjects[key]; ok {
+				continue
 			}
-			// We don't care about this anymore
+			seenObjects[key] = struct{}{}
+			existingItems = append(existingItems, legacy)
+		}
+	}
+
+	existingObjs := map[string]k8s_model.KubernetesObject{}
+	var unneededObjs []k8s_model.KubernetesObject
+	for _, existing := range existingItems {
+		desired, ok := owned[existing.GetName()]
+		if !ok || existing.GetNamespace() != desired.Namespace {
+			unneededObjs = append(unneededObjs, existing)
 			continue
 		}
 		existingObjs[existing.GetName()] = existing
@@ -89,18 +133,31 @@ func ReconcileLabelledObject(
 		return fmt.Errorf("could not reconcile object, owner mesh must not be empty")
 	}
 
-	for ownedName, ownedSpec := range owned {
+	for ownedName, ownedObj := range owned {
+		desiredLabels := maps.Clone(ownedObj.Labels)
+		if desiredLabels == nil {
+			desiredLabels = map[string]string{}
+		}
+		desiredLabels[ownerLabel] = ownerLabelValue
+
 		// Update existing
 		if existing, ok := existingObjs[ownedName]; ok {
 			existingSpec, err := existing.GetSpec()
 			if err != nil {
 				return err
 			}
-			if core_model.Equal(existingSpec, ownedSpec) {
+			mergedLabels := maps.Clone(existing.GetLabels())
+			if mergedLabels == nil {
+				mergedLabels = map[string]string{}
+			}
+			maps.Copy(mergedLabels, desiredLabels)
+			labelsChanged := !maps.Equal(existing.GetLabels(), mergedLabels)
+			if core_model.Equal(existingSpec, ownedObj.Spec) && !labelsChanged {
 				log.V(1).Info("object is the same. Nothing to update")
 				continue
 			}
-			existing.SetSpec(ownedSpec)
+			existing.SetLabels(mergedLabels)
+			existing.SetSpec(ownedObj.Spec)
 
 			if err := client.Update(ctx, existing); err != nil {
 				return errors.Wrapf(err, "could not update owned %T", ownedType)
@@ -111,27 +168,39 @@ func ReconcileLabelledObject(
 		}
 
 		// Or create new
-		owned, err := registry.NewObject(ownedType)
+		newObj, err := registry.NewObject(ownedType)
 		if err != nil {
 			return errors.Wrapf(err, "could not get new %T from registry", ownedType)
 		}
 
-		owned.SetObjectMeta(
+		newObj.SetObjectMeta(
 			&kube_meta.ObjectMeta{
 				Name:      ownedName,
-				Namespace: ownedNamespace,
-				Labels: map[string]string{
-					ownerLabel: ownerLabelValue,
-				},
+				Namespace: ownedObj.Namespace,
+				Labels:    desiredLabels,
 			},
 		)
-		owned.SetMesh(ownerMesh)
-		owned.SetSpec(ownedSpec)
+		newObj.SetMesh(ownerMesh)
+		newObj.SetSpec(ownedObj.Spec)
 
-		if err := client.Create(ctx, owned); err != nil {
+		if err := client.Create(ctx, newObj); err != nil {
 			return errors.Wrapf(err, "could not create owned %T", ownedType)
 		}
 		logger.Info("object created")
+	}
+
+	// Delete unneeded objects after desired objects are reconciled. This keeps
+	// existing config serving if a replacement create or update fails.
+	for _, existing := range unneededObjs {
+		err := client.Delete(ctx, existing)
+		switch {
+		case kube_apierrs.IsNotFound(err):
+			log.V(1).Info("object not found. Nothing to delete")
+		case err == nil:
+			log.Info("object deleted")
+		default:
+			return err
+		}
 	}
 
 	return nil

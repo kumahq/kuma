@@ -32,6 +32,7 @@ type PolicyConfig struct {
 	PluralDisplayName            string
 	ShortName                    string
 	Path                         string
+	ReadOnly                     bool
 	AlternativeNames             []string
 	HasTo                        bool
 	HasRules                     bool
@@ -57,7 +58,7 @@ func Policy(path string) (PolicyConfig, error) {
 		return PolicyConfig{}, err
 	}
 
-	policyName := strings.Split(filepath.Base(path), ".")[0]
+	policyName, _, _ := strings.Cut(filepath.Base(path), ".")
 	var mainStruct *ast.TypeSpec
 	var mainComment *ast.CommentGroup
 	var packageName string

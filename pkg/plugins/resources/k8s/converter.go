@@ -12,12 +12,14 @@ import (
 var _ k8s_common.Converter = &SimpleConverter{}
 
 type SimpleConverter struct {
-	KubeFactory KubeFactory
+	KubeFactory     KubeFactory
+	SystemNamespace string
 }
 
-func NewSimpleConverter() k8s_common.Converter {
+func NewSimpleConverter(systemNamespace string) k8s_common.Converter {
 	return &SimpleConverter{
-		KubeFactory: NewSimpleKubeFactory(),
+		KubeFactory:     NewSimpleKubeFactory(),
+		SystemNamespace: systemNamespace,
 	}
 }
 
@@ -54,7 +56,17 @@ func (c *SimpleConverter) ToKubernetesList(rl core_model.ResourceList) (k8s_mode
 }
 
 func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error {
-	out.SetMeta(&KubernetesMetaAdapter{ObjectMeta: *obj.GetObjectMeta(), Mesh: obj.GetMesh()})
+	spec, err := obj.GetSpec()
+	if err != nil {
+		return err
+	}
+	// SetSpec first, then derive labels from out.GetSpec(): a stored object with an
+	// omitted spec yields a typed-nil here, and SetSpec normalizes it to an empty
+	// spec. Deriving from the raw value would call policy methods on a nil pointer.
+	if err := out.SetSpec(spec); err != nil {
+		return err
+	}
+	out.SetMeta(newMetaAdapter(obj, c.SystemNamespace, out.Descriptor(), out.GetSpec()))
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()
 		if err != nil {
@@ -64,11 +76,7 @@ func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out cor
 			return err
 		}
 	}
-	spec, err := obj.GetSpec()
-	if err != nil {
-		return err
-	}
-	return out.SetSpec(spec)
+	return nil
 }
 
 func (c *SimpleConverter) ToCoreList(in k8s_model.KubernetesList, out core_model.ResourceList, predicate k8s_common.ConverterPredicate) error {

@@ -17,7 +17,7 @@ import (
 
 var (
 	allMatchProtocols                = []string{string(TcpProtocol), string(TlsProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol), string(MysqlProtocol)}
-	notAllowedProtocolsOnTheSamePort = []ProtocolType{GrpcProtocol, HttpProtocol, Http2Protocol}
+	notAllowedProtocolsOnTheSamePort = l7Protocols
 	wildcardPartialPrefixPattern     = regexp.MustCompile(`^\*[^.]+`)
 )
 
@@ -29,11 +29,11 @@ func (r *MeshPassthroughResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TopLevelTargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
-	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+	targetRefErr := mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.Dataplane,
@@ -44,7 +44,7 @@ func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TargetRef) v
 
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
-	portAndProtocol := map[uint32]ProtocolType{}
+	conflicts := FindConflicts(conf)
 	type portProtocol struct {
 		port     uint32
 		protocol ProtocolType
@@ -57,12 +57,10 @@ func validateDefault(conf Conf) validators.ValidationError {
 		if match.Port != nil && pointer.Deref[uint32](match.Port) == 0 || pointer.Deref[uint32](match.Port) > math.MaxUint16 {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be a valid (1-65535)")
 		}
+		if conflict, found := conflicts.dropped[i]; found && conflict.field != "" {
+			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field(conflict.field), conflict.message)
+		}
 		if match.Port != nil {
-			if value, found := portAndProtocol[pointer.Deref[uint32](match.Port)]; found && value != match.Protocol && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
-				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort))
-			} else {
-				portAndProtocol[pointer.Deref[uint32](match.Port)] = match.Protocol
-			}
 			key := portProtocol{
 				port:     *match.Port,
 				protocol: match.Protocol,

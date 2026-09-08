@@ -12,7 +12,7 @@ type MeshPassthrough struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined in-place.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef *common_api.TopLevelTargetRef `json:"targetRef,omitempty"`
 	// MeshPassthrough configuration.
 	Default Conf `json:"default,omitempty"`
 }

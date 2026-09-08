@@ -792,7 +792,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		return err
 	}
 
-	converter := resources_k8s.NewSimpleConverter()
+	converter := resources_k8s.NewSimpleConverter(Config.KumaNamespace)
 	for name, updateFuncs := range c.opts.meshUpdateFuncs {
 		for _, f := range updateFuncs {
 			Logf("applying update function to mesh %q", name)
@@ -1614,10 +1614,10 @@ func (c *K8sCluster) CreateNode(name string, label string) error {
 
 func (c *K8sCluster) LoadImages(names ...string) error {
 	// 3 retries with 0 backoff was too tight: a single transient docker
-	// daemon hiccup blew through all attempts before recovery. Bumped to
-	// 5 attempts with 5s backoff so a brief image-import failure does
-	// not fail the whole test suite.
-	_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "load images", 5, 5*time.Second, func() (string, error) {
+	// daemon hiccup blew through all attempts before recovery. 3 attempts
+	// with 5s backoff cover that without burning minutes of wall clock when
+	// the import is slow rather than broken.
+	_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "load images", 2, 5*time.Second, func() (string, error) {
 		err := c.loadImages(names...)
 		return "Loaded images " + strings.Join(names, ", "), err
 	})
@@ -1636,14 +1636,18 @@ func (c *K8sCluster) loadImages(names ...string) error {
 		defaultArgs := []string{"image", "import", "-m", "direct", "-c", c.name}
 		allArgs := append(defaultArgs, fullImageNames...)
 
-		// Put a timeout of 1 minute to this command, because for some reason the command can be stuck with
+		// Bound the command, because for some reason it can get stuck with
 		// ERRO[0004] Failed to copy read stream. write unix @->/run/docker.sock: use of closed network connection
-		ctx, cancelFn := context.WithTimeout(context.Background(), 1*time.Minute)
+		// 5 minutes, because k3d streams every image into every node of the
+		// cluster serially and callers add nodes before loading images.
+		ctx, cancelFn := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancelFn()
 		importCmd := exec.CommandContext(ctx, "k3d", allArgs...)
-		importCmd.Stdout = os.Stdout
-		importCmd.Stderr = os.Stderr
-		return importCmd.Run()
+		out, err := importCmd.CombinedOutput()
+		if err != nil {
+			return errors.Wrapf(err, "k3d image import (images=%v): %s", fullImageNames, strings.TrimSpace(string(out)))
+		}
+		return nil
 	case KindK8sType, AwsK8sType, AzureK8sType:
 		return errors.New("loading new images to a node not available for " + string(Config.K8sType))
 	default:
@@ -1906,19 +1910,11 @@ func (c *K8sCluster) GetOrCreateAdminTunnel(args portforward.Spec) (envoy_admin.
 	}
 	proxyName := fmt.Sprintf("%s.%s", pod.Name, args.Namespace)
 
-	var prefix string
-	switch args.AppName {
-	case Config.ZoneEgressApp:
-		prefix = fmt.Sprintf("/zoneegresses/%s", proxyName)
-	case Config.ZoneIngressApp:
-		prefix = fmt.Sprintf("/zoneingresses/%s", proxyName)
-	default:
-		mesh := pod.Labels["kuma.io/mesh"]
-		if mesh == "" {
-			mesh = "default"
-		}
-		prefix = fmt.Sprintf("/meshes/%s/dataplanes/%s", mesh, proxyName)
+	mesh := pod.Labels["kuma.io/mesh"]
+	if mesh == "" {
+		mesh = "default"
 	}
+	prefix := fmt.Sprintf("/meshes/%s/dataplanes/%s", mesh, proxyName)
 
 	tnl = tunnel.NewCPTunnel(func(inspectionPath string, query url.Values) ([]byte, error) {
 		return c.controlplane.InspectEnvoyProxy(fmt.Sprintf("%s/%s", prefix, inspectionPath), query)

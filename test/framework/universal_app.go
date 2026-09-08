@@ -343,7 +343,7 @@ func (s *UniversalApp) CreateSpireAgent(
 
 func (s *UniversalApp) CreateDP(
 	token, cpAddress, name, mesh, ip, dpyaml string,
-	builtindns bool,
+	builtinDNS bool,
 	concurrency int,
 	envsMap map[string]string,
 	transparent bool,
@@ -390,7 +390,7 @@ cp %s/envoy /usr/bin/envoy
 		extraArgs := []string{
 			"--kuma-dp-user", "kuma-dp",
 		}
-		if builtindns {
+		if builtinDNS {
 			// Default: use --redirect-dns (original behavior)
 			// Override: set KUMA_TP_REDIRECT_ALL_DNS_TRAFFIC=true to use --redirect-all-dns-traffic
 			if envsMap["KUMA_TP_REDIRECT_ALL_DNS_TRAFFIC"] == "true" {
@@ -432,7 +432,7 @@ EOF
 		args = append(args, "--concurrency", strconv.Itoa(concurrency))
 	}
 
-	if builtindns {
+	if builtinDNS {
 		args = append(args, "--dns-enabled")
 	}
 

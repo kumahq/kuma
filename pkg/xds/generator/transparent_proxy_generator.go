@@ -182,11 +182,13 @@ func (TransparentProxyGenerator) generate(
 		return nil, err
 	}
 
+	// mirrors the MeshTLS mode resolution for the cases MeshTLS actually runs in: a
+	// proxy with a workload identity defaults to strict. A proxy without one has no
+	// strict inbound to restrict to.
 	useStrictInboundPorts := proxy.Dataplane != nil &&
 		proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts) &&
 		proxy.Dataplane.Spec.Networking != nil &&
-		ctx.Mesh.Resource.MTLSEnabled() &&
-		ctx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().Mode == mesh_proto.CertificateAuthorityBackend_STRICT
+		proxy.WorkloadIdentity != nil
 
 	inboundListener, err := CreateInboundPassthroughListener(proxy, inboundName, allIP, tpCfg.Redirect.Inbound.Port.Uint32(), useStrictInboundPorts, inboundName)
 	if err != nil {

@@ -143,7 +143,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.HTTPS.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.ApiServer.HTTPS.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 			Expect(cfg.ApiServer.HTTPS.RequireClientCert).To(BeTrue())
-			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
 			Expect(cfg.ApiServer.Authn.LocalhostIsAdmin).To(BeFalse())
 			Expect(cfg.ApiServer.Authn.Type).To(Equal("custom-authn"))
 			Expect(cfg.ApiServer.Authn.Tokens.BootstrapAdminToken).To(BeFalse())
@@ -185,8 +184,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarTraffic.ExcludeOutboundPorts).To(Equal([]uint32{4321, 8765}))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarTraffic.ExcludeInboundIPs).To(Equal([]string{"192.168.0.1", "172.32.16.8/16", "a81b:a033:6399:73c7:72b6:aa8c:6f22:7098", "fe80::/10"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarTraffic.ExcludeOutboundIPs).To(Equal([]string{"10.0.0.1", "172.16.0.0/16", "fe80::1", "fe80::/10"}))
-			Expect(cfg.Runtime.Kubernetes.Injector.VirtualProbesEnabled).To(BeFalse())
-			Expect(cfg.Runtime.Kubernetes.Injector.VirtualProbesPort).To(Equal(uint32(1111)))
 			Expect(cfg.Runtime.Kubernetes.Injector.ApplicationProbeProxyPort).To(Equal(uint32(1112)))
 			Expect(cfg.Runtime.Kubernetes.Injector.CNIEnabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.ContainerPatches).To(Equal([]string{"patch1", "patch2"}))
@@ -202,7 +199,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.UID).To(Equal(int64(100)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.GID).To(Equal(int64(1212)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.Image).To(Equal("image:test"))
-			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort).To(Equal(uint32(1099)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.DrainTime.Duration).To(Equal(33 * time.Second))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.Resources.Requests.Memory).To(Equal("4Gi"))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.Resources.Requests.CPU).To(Equal("123m"))
@@ -227,7 +223,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels).To(Equal([]string{"x", "y"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.NodeLabelsToCopy).To(Equal([]string{"label-1", "label-2"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyConfigMapName).To(Equal("foo"))
-			Expect(cfg.Runtime.Kubernetes.Injector.UnifiedResourceNamingEnabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.OtelPipeEnabled).To(BeFalse())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.MountPath).To(Equal("/run/test"))
@@ -242,7 +237,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.WorkloadLabels).To(Equal([]string{"app.kubernetes.io/name", "app"}))
 
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
-			Expect(cfg.Runtime.Universal.ZoneResourceCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.Spire.SocketPath).To(Equal("/custom/path"))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
@@ -374,10 +368,12 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Users).To(Equal([]string{"cp-admin1", "cp-admin2"}))
 			Expect(cfg.Access.Static.ControlPlaneMetadata.Groups).To(Equal([]string{"cp-group1", "cp-group2"}))
 
-			Expect(cfg.Experimental.IngressTagFilters).To(ContainElements("kuma.io/service"))
-			Expect(cfg.Experimental.KDSEventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
-			Expect(cfg.Experimental.KDSEventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
-			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
+			Expect(cfg.Multizone.Global.KDS.EventBasedWatchdog.FlushInterval.Duration).To(Equal(10 * time.Second))
+			Expect(cfg.Multizone.Global.KDS.EventBasedWatchdog.FullResyncInterval.Duration).To(Equal(15 * time.Second))
+			Expect(cfg.Multizone.Global.KDS.EventBasedWatchdog.DelayFullResync).To(BeTrue())
+			Expect(cfg.Multizone.Zone.KDS.EventBasedWatchdog.FlushInterval.Duration).To(Equal(11 * time.Second))
+			Expect(cfg.Multizone.Zone.KDS.EventBasedWatchdog.FullResyncInterval.Duration).To(Equal(16 * time.Second))
+			Expect(cfg.Multizone.Zone.KDS.EventBasedWatchdog.DelayFullResync).To(BeTrue())
 
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
 
@@ -470,8 +466,6 @@ apiServer:
     tlsMaxVersion: TLSv1_3
     tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
     requireClientCert: true
-  auth:
-    clientCertsDir: "/certs" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
   authn:
     type: custom-authn
     localhostIsAdmin: false
@@ -509,7 +503,6 @@ monitoringAssignmentServer:
 runtime:
   universal:
     dataplaneCleanupAge: 1h
-    zoneResourceCleanupAge: 1h
     spire:
       socketPath: /custom/path	  
     workload:
@@ -535,8 +528,6 @@ runtime:
           openshift.io/deployer-pod-for.name: value2
       cniEnabled: true
       caCertFile: /tmp/ca.crt
-      virtualProbesEnabled: false
-      virtualProbesPort: 1111
       applicationProbeProxyPort: 1112
       containerPatches: ["patch1", "patch2"]
       initContainer:
@@ -555,7 +546,6 @@ runtime:
         redirectPortOutbound: 1010
         uid: 100
         gid: 1212
-        adminPort: 1099
         drainTime: 33s
         resources:
           requests:
@@ -606,7 +596,6 @@ runtime:
       ignoredServiceSelectorLabels: ["x", "y"]
       nodeLabelsToCopy: ["label-1", "label-2"]
       transparentProxyConfigMap: foo
-      unifiedResourceNamingEnabled: true
       otelPipeEnabled: false
       spire:
         enabled: true
@@ -652,6 +641,10 @@ multizone:
       nackBackoff: 11s
       responseBackoff: 1s
       logPayloads: true
+      eventBasedWatchdog:
+        flushInterval: 10s
+        fullResyncInterval: 15s
+        delayFullResync: true
       zoneHealthCheck:
         pollInterval: 11s
         timeout: 110s
@@ -670,11 +663,14 @@ multizone:
       nackBackoff: 21s
       responseBackoff: 2s
       logPayloads: true
+      eventBasedWatchdog:
+        flushInterval: 11s
+        fullResyncInterval: 16s
+        delayFullResync: true
       tlsSkipVerify: true
       labels:
         skipPrefixes: ["argocd.argoproj.io"]
     disableOriginLabelValidation: true
-    ingressUpdateInterval: 2s
 dnsServer:
   domain: test-domain
   serviceVipPort: 9090
@@ -787,11 +783,6 @@ access:
       groups: ["cp-group1", "cp-group2"]
 experimental:
   cniApp: "kuma-cni"
-  ingressTagFilters: ["kuma.io/service"]
-  kdsEventBasedWatchdog:
-    flushInterval: 10s
-    fullResyncInterval: 15s
-    delayFullResync: true
   generateMeshServices: true
   skipPersistedVIPs: true
 eventBus:
@@ -891,7 +882,6 @@ meshService:
 				"KUMA_API_SERVER_HTTPS_TLS_MAX_VERSION":                                                    "TLSv1_3",
 				"KUMA_API_SERVER_HTTPS_TLS_CIPHER_SUITES":                                                  "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
 				"KUMA_API_SERVER_HTTPS_REQUIRE_CLIENT_CERT":                                                "true",
-				"KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR":                                                    "/certs",
 				"KUMA_API_SERVER_AUTHN_TYPE":                                                               "custom-authn",
 				"KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN":                                                 "false",
 				"KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN":                                       "false",
@@ -953,7 +943,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED":                                             "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS":                              "a:b,c:d",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_UID":                                   "100",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ADMIN_PORT":                            "1099",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_DRAIN_TIME":                            "33s",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_GUI":                                   "1212",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE":                                 "image:test",
@@ -976,13 +965,10 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS":                         "x,y",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME":                        "foo",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY":                                     "label-1,label-2",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED":                         "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED":                                       "false",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_ENABLED":                                           "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_MOUNT_PATH":                                        "/run/test",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_SOCKET_FILE_NAME":                                  "my-socket",
-				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED":                                           "false",
-				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT":                                              "1111",
 				"KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT":                                     "1112",
 				"KUMA_RUNTIME_KUBERNETES_EXCEPTIONS_LABELS":                                                "openshift.io/build.name:value1,openshift.io/deployer-pod-for.name:value2",
 				"KUMA_RUNTIME_KUBERNETES_CONTROLLERS_CONCURRENCY_POD_CONTROLLER":                           "10",
@@ -993,7 +979,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_SKIP_MESH_OWNER_REFERENCE":                                        "true",
 				"KUMA_RUNTIME_KUBERNETES_WORKLOAD_LABELS":                                                  "app.kubernetes.io/name,app",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
-				"KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE":                                         "1h",
 				"KUMA_RUNTIME_UNIVERSAL_SPIRE_SOCKET_PATH":                                                 "/custom/path",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
@@ -1038,7 +1023,6 @@ meshService:
 				"KUMA_MULTIZONE_ZONE_KDS_LOG_PAYLOADS":                                                     "true",
 				"KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY":                                                  "true",
 				"KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION":                                      "true",
-				"KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL":                                              "2s",
 				"KUMA_MULTIZONE_ZONE_KDS_LABELS_SKIP_PREFIXES":                                             "argocd.argoproj.io",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
@@ -1060,8 +1044,6 @@ meshService:
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
 				"KUMA_METRICS_ZONE_IDLE_TIMEOUT":                                                           "2m",
 				"KUMA_METRICS_ZONE_COMPACT_FINISHED_SUBSCRIPTIONS":                                         "true",
-				"KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT":                                                     "27s",
-				"KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT":                                                     "35s",
 				"KUMA_METRICS_MESH_MIN_RESYNC_INTERVAL":                                                    "27s",
 				"KUMA_METRICS_MESH_FULL_RESYNC_INTERVAL":                                                   "35s",
 				"KUMA_METRICS_MESH_BUFFER_SIZE":                                                            "23",
@@ -1118,10 +1100,12 @@ meshService:
 				"KUMA_ACCESS_STATIC_VIEW_CLUSTERS_GROUPS":                                                  "zt-group1,zt-group2",
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_USERS":                                          "cp-admin1,cp-admin2",
 				"KUMA_ACCESS_STATIC_CONTROL_PLANE_METADATA_GROUPS":                                         "cp-group1,cp-group2",
-				"KUMA_EXPERIMENTAL_INGRESS_TAG_FILTERS":                                                    "kuma.io/service",
-				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                                "10s",
-				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                          "15s",
-				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
+				"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                            "10s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                      "15s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                         "true",
+				"KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":                              "11s",
+				"KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":                        "16s",
+				"KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                           "true",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ENVOY_ADMIN_UNIX_SOCKET":                                     "true",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",

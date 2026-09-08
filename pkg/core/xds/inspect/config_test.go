@@ -42,7 +42,6 @@ var _ = Describe("ProxyConfigInspector", func() {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			zone,
-			nil,
 		)
 
 		Expect(resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(mesh, model.NoMesh))).To(Succeed())
@@ -51,7 +50,7 @@ var _ = Describe("ProxyConfigInspector", func() {
 	createDPP := func(name string) {
 		dataplane := builders.Dataplane().
 			WithAddress("192.168.0.1").
-			WithInboundOfTags(mesh_proto.ServiceTag, "test", "region", "eu").
+			WithInboundOfTags("kuma.io/display-name", "test", "region", "eu").
 			Build()
 		Expect(resManager.Create(context.Background(), dataplane, core_store.CreateByKey(name, mesh))).To(Succeed())
 	}

@@ -11,15 +11,12 @@ networking:
   - address: 1.1.1.1
     port: 80
     servicePort: 8080
-    tags:
-      env: production
-      kuma.io/service: web
-      service: web
-      version: STRIPPED_VERSION
   outbound:
-  - port: 3000
-    tags:
-      kuma.io/service: postgres
+  - backendRef:
+      kind: MeshService
+      name: postgres
+      port: 5432
+    port: 3000
 type: Dataplane
 
 # Secret

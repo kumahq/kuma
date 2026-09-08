@@ -12,9 +12,9 @@ All the tests require `job-X` label, otherwise they won't be run.
 
 ## Reasons to write the test in this package over `e2e_env`
 
-* You need to restart the CP/ZoneEgress/ZoneIngress in the test.
+* You need to restart the CP or a zone proxy in the test.
 * You need to deploy Kuma in very specific way that could break other tests. Examples:
-  * lack of Zone Egress
+  * lack of a zone egress
   * default VIPs disabled
 
 ## Recommendations

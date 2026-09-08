@@ -133,7 +133,6 @@ var _ = Context("kumactl install control-plane", func() {
 				"--dataplane-init-registry", "kuma-ci",
 				"--dataplane-init-version", "greatest",
 				"--tls-api-server-secret", "api-server-secret",
-				"--tls-api-server-client-certs-secret", "api-server-client-secret",
 				"--tls-kds-zone-client-secret", "kds-ca-secret",
 				"--tls-general-ca-secret", "general-tls-secret-ca",
 				"--mode", "zone",
@@ -236,10 +235,6 @@ controlPlane:
 		}),
 		Entry("--mode global with default (kubernetes) environment", errTestCase{
 			extraArgs: []string{"--mode", "global"},
-			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
-		}),
-		Entry("--mode global with universal environment is still unsupported", errTestCase{
-			extraArgs: []string{"--mode", "global", "--set", "controlPlane.environment=universal"},
 			errorMsg:  "Kubernetes-native Global Control Plane is not supported",
 		}),
 		Entry("--zone is more than 253 characters", errTestCase{

@@ -1,6 +1,19 @@
 {
- "warnings": [
-  "Invalid MeshMultiZoneService resource name: 'this-is-a-very-long-meshmultizoneservice-name-exceeding-sixty-three'. It does not conform to the DNS format (RFC 1035). This is deprecated. Errors: must be no more than 63 characters",
-  "Invalid MeshMultiZoneService SNI (port \"8080\"): name \"this-is-a-very-long-meshmultizoneservice-name-exceeding-sixty-three\" does not conform to RFC 1123: must be no more than 63 characters. This is deprecated."
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Failed to create a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "name",
+   "reason": "must be no more than 63 characters"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "name",
+   "message": "must be no more than 63 characters"
+  }
  ]
 }

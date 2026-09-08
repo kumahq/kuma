@@ -4,7 +4,6 @@ import (
 	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	rules_common "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/common"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
@@ -33,14 +32,6 @@ func ResourceMetaListToMetaList(resType core_model.ResourceType, in []core_model
 		out[i] = ResourceMetaToMeta(resType, o)
 	}
 	return out
-}
-
-func SubsetToRuleMatcher(subset subsetutils.Subset) []api_common.RuleMatcher {
-	matchers := []api_common.RuleMatcher{}
-	for _, m := range subset {
-		matchers = append(matchers, api_common.RuleMatcher{Key: m.Key, Value: m.Value, Not: m.Not})
-	}
-	return matchers
 }
 
 func OriginListToResourceRuleOrigin(resType core_model.ResourceType, origins []rules_common.Origin) []api_common.ResourceRuleOrigin {

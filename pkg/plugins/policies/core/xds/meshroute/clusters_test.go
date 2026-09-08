@@ -26,8 +26,8 @@ import (
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
-var _ = Describe("SniForBackendRef", func() {
-	DescribeTable("returns SNI built from resolved port",
+var _ = Describe("SNIForRealResource", func() {
+	DescribeTable("returns KRI SNI built from the resolved port name",
 		func(sectionName string) {
 			ms := builders.MeshService().
 				WithName("backend").
@@ -41,48 +41,44 @@ var _ = Describe("SniForBackendRef", func() {
 			id := kri.WithSectionName(kri.From(ms), sectionName)
 			ref := &resolve.RealResourceBackendRef{Resource: id}
 
-			sni := meshroute.SniForBackendRef(ref, ms, port, "")
+			sni, ok := meshroute.SNIForRealResource(ref, port)
 
-			Expect(sni).NotTo(BeEmpty())
-			Expect(sni).To(ContainSubstring(".8080."))
+			Expect(ok).To(BeTrue())
+			Expect(sni).To(Equal("sni.msvc.default.backend.http"))
 		},
 		Entry("by port name", "http"),
 		Entry("by port value", "8080"),
 	)
 
-	It("uses SNIName for MeshService destination", func() {
+	It("skips invalid destination KRI SNI", func() {
 		ms := builders.MeshService().
 			WithName("backend").
 			WithMesh("default").
-			AddIntPortWithName(8080, 8080, core_meta.ProtocolHTTP, "http").
+			AddIntPortWithName(8080, 8080, core_meta.ProtocolHTTP, "HTTP").
 			Build()
 
-		port, ok := ms.FindPortByName("http")
+		port, ok := ms.FindPortByName("HTTP")
 		Expect(ok).To(BeTrue())
 
-		id := kri.WithSectionName(kri.From(ms), "http")
-		id.ResourceType = meshservice_api.MeshServiceType
-		ref := &resolve.RealResourceBackendRef{Resource: id}
+		ref := &resolve.RealResourceBackendRef{Resource: kri.WithSectionName(kri.From(ms), "HTTP")}
 
-		sni := meshroute.SniForBackendRef(ref, ms, port, "kuma-system")
-
-		Expect(sni).To(ContainSubstring(ms.SNIName("kuma-system")))
+		_, valid := meshroute.SNIForRealResource(ref, port)
+		Expect(valid).To(BeFalse())
 	})
 })
 
 var _ = Describe("GenerateClusters", func() {
 	// A proxy is given its own identity before the destination reports that it
 	// can terminate TLS, so an outbound cluster must stay on plaintext until the
-	// destination's MeshService is TLS Ready. Both the WorkloadIdentity and the
-	// legacy mTLS path have to agree on that, otherwise switching a mesh to mTLS
-	// drops every request sent in the window between the two pushes.
+	// destination's MeshService is TLS Ready, otherwise every request sent in
+	// the window between the two pushes is dropped.
 	type testCase struct {
-		tlsStatus        meshservice_api.TLSStatus
-		zoneOrigin       bool
-		workloadIdentity bool
-		permissiveMTLS   bool
-		expectMTLS       bool
-		expectedSNI      string
+		tlsStatus    meshservice_api.TLSStatus
+		zoneOrigin   bool
+		noIdentity   bool
+		expectMTLS   bool
+		expectedSNI  string
+		expectedSANs []string
 	}
 
 	buildCluster := func(given testCase) *envoy_cluster.Cluster {
@@ -95,47 +91,35 @@ var _ = Describe("GenerateClusters", func() {
 			WithMesh("default").
 			WithLabels(labels).
 			AddIntPortWithName(80, 8080, core_meta.ProtocolHTTP, "http").
-			AddServiceTagIdentity("backend").
+			AddSpiffeIDIdentity("spiffe://default.zone-1.mesh.local/workload/backend").
 			WithTLSStatus(given.tlsStatus).
 			Build()
 
-		meshBuilder := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1")
-		if given.permissiveMTLS {
-			meshBuilder = meshBuilder.WithPermissiveMTLSBackends()
-		}
 		meshCtx := xds_context.MeshContext{
-			Resource: meshBuilder.Build(),
+			Resource: builders.Mesh().Build(),
 			BaseMeshContext: &xds_context.BaseMeshContext{
 				DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{ms}),
 			},
-			ServicesInformation: map[string]*xds_context.ServiceInformation{},
 		}
 
 		backendRef := resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
 			Resource: kri.WithSectionName(kri.From(ms), "http"),
 			Weight:   100,
 		})
-		services := envoy_common.NewServicesAccumulator(nil)
+		services := envoy_common.NewServicesAccumulator()
 		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("backend").Build())
 
 		proxyBuilder := xds_builders.Proxy().
-			WithSecretsTracker(envoy_common.NewSecretsTracker(core_model.DefaultMesh, nil)).
 			WithDataplane(builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
-				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"))
-		if given.workloadIdentity {
-			proxyBuilder = proxyBuilder.WithWorkloadIdentity(&core_xds.WorkloadIdentity{
-				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
-					return bldrs_tls.SdsSecretConfigSource(
-						"identity_cert:secret:default",
-						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
-					)
-				},
-			})
+				WithInboundOfTags("kuma.io/display-name", "web", mesh_proto.ProtocolTag, "http"))
+		if !given.noIdentity {
+			proxyBuilder = proxyBuilder.WithWorkloadIdentity(xds_builders.WorkloadIdentity())
 		}
+		proxy := proxyBuilder.Build()
 
-		rs, err := meshroute.GenerateClusters(proxyBuilder.Build(), meshCtx, services.Services(), "")
+		rs, err := meshroute.GenerateClusters(proxy, meshCtx, services.Services())
 		Expect(err).ToNot(HaveOccurred())
 
 		clusters := rs.Resources(envoy_resource.ClusterType)
@@ -157,38 +141,151 @@ var _ = Describe("GenerateClusters", func() {
 			Expect(cluster.TransportSocket).ToNot(BeNil())
 			upstreamCtx := &envoy_tls.UpstreamTlsContext{}
 			Expect(util_proto.UnmarshalAnyTo(cluster.TransportSocket.GetTypedConfig(), upstreamCtx)).To(Succeed())
-			if given.expectedSNI != "" {
-				Expect(upstreamCtx.Sni).To(Equal(given.expectedSNI))
+			Expect(upstreamCtx.Sni).To(Equal(given.expectedSNI))
+
+			sans := upstreamCtx.GetCommonTlsContext().GetCombinedValidationContext().GetDefaultValidationContext().GetMatchTypedSubjectAltNames()
+			var exacts []string
+			for _, san := range sans {
+				exacts = append(exacts, san.GetMatcher().GetExact())
 			}
+			Expect(exacts).To(Equal(given.expectedSANs))
 		},
-		Entry("workload identity, local destination not TLS ready", testCase{
-			tlsStatus:        meshservice_api.TLSNotReady,
-			zoneOrigin:       true,
-			workloadIdentity: true,
+		Entry("local destination not TLS ready", testCase{
+			tlsStatus:  meshservice_api.TLSNotReady,
+			zoneOrigin: true,
 		}),
-		Entry("workload identity, local destination TLS ready", testCase{
-			tlsStatus:        meshservice_api.TLSReady,
-			zoneOrigin:       true,
-			workloadIdentity: true,
-			expectMTLS:       true,
-			expectedSNI:      "sni.msvc.default.zone-1.backend.http",
+		Entry("local destination TLS ready", testCase{
+			tlsStatus:    meshservice_api.TLSReady,
+			zoneOrigin:   true,
+			expectMTLS:   true,
+			expectedSNI:  "sni.msvc.default.zone-1.backend.http",
+			expectedSANs: []string{"spiffe://default.zone-1.mesh.local/workload/backend"},
 		}),
-		Entry("workload identity, synced destination is always reachable over TLS", testCase{
-			tlsStatus:        meshservice_api.TLSNotReady,
-			workloadIdentity: true,
-			expectMTLS:       true,
-			expectedSNI:      "sni.msvc.default.zone-1.backend.http",
+		Entry("synced destination is always reachable over TLS", testCase{
+			tlsStatus:    meshservice_api.TLSNotReady,
+			expectMTLS:   true,
+			expectedSNI:  "sni.msvc.default.zone-1.backend.http",
+			expectedSANs: []string{"spiffe://default.zone-1.mesh.local/workload/backend"},
 		}),
-		Entry("permissive mTLS, local destination not TLS ready", testCase{
-			tlsStatus:      meshservice_api.TLSNotReady,
-			zoneOrigin:     true,
-			permissiveMTLS: true,
-		}),
-		Entry("permissive mTLS, local destination TLS ready", testCase{
-			tlsStatus:      meshservice_api.TLSReady,
-			zoneOrigin:     true,
-			permissiveMTLS: true,
-			expectMTLS:     true,
+		Entry("proxy without a workload identity cannot originate mTLS", testCase{
+			tlsStatus:  meshservice_api.TLSReady,
+			zoneOrigin: true,
+			noIdentity: true,
 		}),
 	)
+
+	It("uses KRI SNI for MeshExternalService with WorkloadIdentity", func() {
+		mes := builders.MeshExternalService().
+			WithName("external-backend").
+			WithMesh("default").
+			WithKumaVIP("242.0.0.1").
+			Build()
+
+		meshCtx := xds_context.MeshContext{
+			Resource: builders.Mesh().Build(),
+			BaseMeshContext: &xds_context.BaseMeshContext{
+				DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{mes}),
+			},
+			ZoneEgresses: []core_xds.ZoneEgressInstance{{
+				Address: "10.0.0.1",
+				Port:    10002,
+				SAN:     "spiffe://default/zone-egress",
+			}},
+		}
+
+		mesKRI := kri.WithSectionName(kri.From(mes), "9000")
+		backendRef := resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
+			Resource: mesKRI,
+			Weight:   100,
+		})
+		services := envoy_common.NewServicesAccumulator()
+		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().
+			WithService(mesKRI.String()).
+			WithExternalService(true).
+			Build())
+
+		rs, err := meshroute.GenerateClusters(
+			xds_builders.Proxy().
+				WithDataplane(builders.Dataplane().
+					WithName("web-01").
+					WithAddress("192.168.0.2").
+					WithInboundOfTags("kuma.io/display-name", "web", mesh_proto.ProtocolTag, "http")).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{
+					IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+						return bldrs_tls.SdsSecretConfigSource(
+							"identity_cert:secret:default",
+							bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+						)
+					},
+				}).
+				Build(),
+			meshCtx,
+			services.Services(),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		clusters := rs.Resources(envoy_resource.ClusterType)
+		Expect(clusters).To(HaveLen(1))
+		cluster, ok := clusters[mesKRI.String()].Resource.(*envoy_cluster.Cluster)
+		Expect(ok).To(BeTrue())
+		Expect(cluster.TransportSocket).ToNot(BeNil())
+
+		upstreamCtx := &envoy_tls.UpstreamTlsContext{}
+		Expect(util_proto.UnmarshalAnyTo(cluster.TransportSocket.GetTypedConfig(), upstreamCtx)).To(Succeed())
+		Expect(upstreamCtx.Sni).To(Equal("sni.extsvc.default.external-backend.9000"))
+	})
+
+	It("uses KRI SNI for MeshMultiZoneService with WorkloadIdentity", func() {
+		mzms := builders.MeshMultiZoneService().
+			WithName("backend").
+			WithMesh("default").
+			WithServiceLabelSelector(map[string]string{"app": "backend"}).
+			AddIntPortWithName(8080, core_meta.ProtocolHTTP, "http").
+			Build()
+
+		meshCtx := xds_context.MeshContext{
+			Resource: builders.Mesh().Build(),
+			BaseMeshContext: &xds_context.BaseMeshContext{
+				DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{mzms}),
+			},
+		}
+
+		backendRef := resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
+			Resource: kri.WithSectionName(kri.From(mzms), "8080"),
+			Weight:   100,
+		})
+		services := envoy_common.NewServicesAccumulator()
+		services.AddBackendRef(backendRef, policies_xds.NewClusterBuilder().WithService("backend").Build())
+
+		rs, err := meshroute.GenerateClusters(
+			xds_builders.Proxy().
+				WithDataplane(builders.Dataplane().
+					WithName("web-01").
+					WithAddress("192.168.0.2").
+					WithInboundOfTags("kuma.io/display-name", "web", mesh_proto.ProtocolTag, "http")).
+				WithWorkloadIdentity(&core_xds.WorkloadIdentity{
+					IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+						return bldrs_tls.SdsSecretConfigSource(
+							"identity_cert:secret:default",
+							bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+						)
+					},
+				}).
+				Build(),
+			meshCtx,
+			services.Services(),
+		)
+		Expect(err).ToNot(HaveOccurred())
+
+		clusters := rs.Resources(envoy_resource.ClusterType)
+		Expect(clusters).To(HaveLen(1))
+		cluster, ok := clusters["backend"].Resource.(*envoy_cluster.Cluster)
+		Expect(ok).To(BeTrue())
+		Expect(cluster.TransportSocket).ToNot(BeNil())
+
+		upstreamCtx := &envoy_tls.UpstreamTlsContext{}
+		Expect(util_proto.UnmarshalAnyTo(cluster.TransportSocket.GetTypedConfig(), upstreamCtx)).To(Succeed())
+		Expect(upstreamCtx.Sni).To(Equal("sni.mzsvc.default.backend.http"))
+		Expect(cluster.TransportSocketMatches).To(BeEmpty())
+	})
 })

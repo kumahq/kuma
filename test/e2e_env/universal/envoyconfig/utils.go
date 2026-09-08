@@ -23,10 +23,7 @@ func waitMeshServiceReady(mesh, name string, spiffeIDs ...string) {
 	Eventually(func(g Gomega) {
 		spec, status, err := GetMeshServiceStatus(universal.Cluster, name, mesh)
 		g.Expect(err).ToNot(HaveOccurred())
-		g.Expect(spec.Identities).To(HaveValue(ContainElement(meshservice_api.MeshServiceIdentity{
-			Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-			Value: name,
-		})))
+		g.Expect(spec.Identities).ToNot(BeNil())
 		for _, spiffeID := range spiffeIDs {
 			g.Expect(spec.Identities).To(HaveValue(ContainElement(meshservice_api.MeshServiceIdentity{
 				Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,

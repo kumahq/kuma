@@ -40,6 +40,8 @@ type KdsServerConfig struct {
 	ResponseBackoff config_types.Duration `json:"responseBackoff" envconfig:"kuma_multizone_global_kds_response_backoff"`
 	// If true, Global CP logs full DeltaDiscoveryResponse payloads received from Zone CPs at V(1) instead of compact summaries.
 	LogPayloads bool `json:"logPayloads" envconfig:"kuma_multizone_global_kds_log_payloads"`
+	// EventBasedWatchdog configures KDS event-based snapshot flushing and full resync timing.
+	EventBasedWatchdog GlobalEventBasedWatchdogConfig `json:"eventBasedWatchdog"`
 	// ZoneHealthCheck holds config for ensuring zones are online
 	ZoneHealthCheck ZoneHealthCheckConfig `json:"zoneHealthCheck"`
 	Tracing         KDSServerTracing      `json:"tracing"`
@@ -60,6 +62,9 @@ func (c *KdsServerConfig) Validate() error {
 	}
 	if c.ZoneInsightFlushInterval.Duration <= 0 {
 		errs = multierr.Append(errs, errors.New(".ZoneInsightFlushInterval must be positive"))
+	}
+	if err := c.EventBasedWatchdog.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrap(err, "invalid eventBasedWatchdog config"))
 	}
 	if c.TlsCertFile == "" && c.TlsKeyFile != "" {
 		errs = multierr.Append(errs, errors.New(".TlsCertFile cannot be empty if TlsKeyFile has been set"))
@@ -102,6 +107,8 @@ type KdsClientConfig struct {
 	ResponseBackoff config_types.Duration `json:"responseBackoff" envconfig:"kuma_multizone_zone_kds_response_backoff"`
 	// If true, Zone CP logs full DeltaDiscoveryResponse payloads received from Global CP at V(1) instead of compact summaries.
 	LogPayloads bool `json:"logPayloads" envconfig:"kuma_multizone_zone_kds_log_payloads"`
+	// EventBasedWatchdog configures KDS event-based snapshot flushing and full resync timing.
+	EventBasedWatchdog ZoneEventBasedWatchdogConfig `json:"eventBasedWatchdog"`
 	// Labels allows for customizing label handling
 	Labels ZoneLabels `json:"labels"`
 }
@@ -109,6 +116,75 @@ type KdsClientConfig struct {
 var _ config.Config = &KdsClientConfig{}
 
 var _ config.Config = ZoneHealthCheckConfig{}
+
+func (c *KdsClientConfig) Validate() error {
+	if err := c.EventBasedWatchdog.Validate(); err != nil {
+		return errors.Wrap(err, "invalid eventBasedWatchdog config")
+	}
+	return nil
+}
+
+type EventBasedWatchdogConfig struct {
+	config.BaseConfig
+
+	// How often changed resources are flushed to a KDS snapshot.
+	FlushInterval config_types.Duration `json:"flushInterval"`
+	// How often a full KDS resync is scheduled.
+	FullResyncInterval config_types.Duration `json:"fullResyncInterval"`
+	// If true, the initial full resync is delayed by a random duration up to FullResyncInterval.
+	DelayFullResync bool `json:"delayFullResync"`
+}
+
+func (c EventBasedWatchdogConfig) Validate() error {
+	var errs error
+	if c.FlushInterval.Duration <= 0 {
+		errs = multierr.Append(errs, errors.New(".FlushInterval must be positive"))
+	}
+	if c.FullResyncInterval.Duration <= 0 {
+		errs = multierr.Append(errs, errors.New(".FullResyncInterval must be positive"))
+	}
+	return errs
+}
+
+type GlobalEventBasedWatchdogConfig struct {
+	config.BaseConfig
+
+	FlushInterval      config_types.Duration `json:"flushInterval" envconfig:"kuma_multizone_global_kds_event_based_watchdog_flush_interval"`
+	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"kuma_multizone_global_kds_event_based_watchdog_full_resync_interval"`
+	DelayFullResync    bool                  `json:"delayFullResync" envconfig:"kuma_multizone_global_kds_event_based_watchdog_delay_full_resync"`
+}
+
+func (c GlobalEventBasedWatchdogConfig) Validate() error {
+	return c.AsRuntimeConfig().Validate()
+}
+
+func (c GlobalEventBasedWatchdogConfig) AsRuntimeConfig() EventBasedWatchdogConfig {
+	return EventBasedWatchdogConfig{
+		FlushInterval:      c.FlushInterval,
+		FullResyncInterval: c.FullResyncInterval,
+		DelayFullResync:    c.DelayFullResync,
+	}
+}
+
+type ZoneEventBasedWatchdogConfig struct {
+	config.BaseConfig
+
+	FlushInterval      config_types.Duration `json:"flushInterval" envconfig:"kuma_multizone_zone_kds_event_based_watchdog_flush_interval"`
+	FullResyncInterval config_types.Duration `json:"fullResyncInterval" envconfig:"kuma_multizone_zone_kds_event_based_watchdog_full_resync_interval"`
+	DelayFullResync    bool                  `json:"delayFullResync" envconfig:"kuma_multizone_zone_kds_event_based_watchdog_delay_full_resync"`
+}
+
+func (c ZoneEventBasedWatchdogConfig) Validate() error {
+	return c.AsRuntimeConfig().Validate()
+}
+
+func (c ZoneEventBasedWatchdogConfig) AsRuntimeConfig() EventBasedWatchdogConfig {
+	return EventBasedWatchdogConfig{
+		FlushInterval:      c.FlushInterval,
+		FullResyncInterval: c.FullResyncInterval,
+		DelayFullResync:    c.DelayFullResync,
+	}
+}
 
 type ZoneHealthCheckConfig struct {
 	config.BaseConfig

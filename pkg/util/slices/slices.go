@@ -8,16 +8,6 @@ func FlatMap[A any, B any](input []A, f func(A) []B) []B {
 	return result
 }
 
-func FilterMap[A any, B any](input []A, f func(A) (B, bool)) []B {
-	var output []B
-	for _, a := range input {
-		if b, ok := f(a); ok {
-			output = append(output, b)
-		}
-	}
-	return output
-}
-
 func Filter[A any](input []A, f func(A) bool) []A {
 	output := make([]A, 0, len(input))
 	for _, a := range input {

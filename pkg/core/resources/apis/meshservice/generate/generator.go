@@ -77,10 +77,9 @@ func New(
 	}
 	droppedLabels := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "component_meshservice_generator_dropped_labels_total",
-		Help: "Number of Dataplane label/tag keys dropped during MeshService generation.",
+		Help: "Number of Dataplane label keys dropped during MeshService generation.",
 	}, []string{"reason"})
 	droppedLabels.WithLabelValues("invalid")
-	droppedLabels.WithLabelValues("inbound_conflict")
 	if err := metrics.Register(droppedLabels); err != nil {
 		return nil, err
 	}
@@ -155,7 +154,7 @@ func (g *Generator) workloadMeshServiceForDataplane(dataplane *core_mesh.Datapla
 
 	contributions := map[string]map[string]string{}
 	if g.labelPropagationEnabled {
-		contributions[workloadName] = dpContribution(dataplane, inbounds, g.allowSet, g.droppedLabels, g.logger, workloadName)
+		contributions[workloadName] = dpContribution(dataplane, g.allowSet, g.droppedLabels, g.logger, workloadName)
 	}
 
 	return meshServicesResult{

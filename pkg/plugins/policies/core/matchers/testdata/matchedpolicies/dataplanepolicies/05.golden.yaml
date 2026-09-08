@@ -8,7 +8,7 @@ items:
     targetRef:
       kind: Dataplane
       labels:
-        kuma.io/service: web-api
+        app: web-api
     to:
     - default:
         http:

@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	kumactl_cmd "github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/printers"
@@ -20,8 +19,6 @@ import (
 	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v3/pkg/plugins/ca/provided/config"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 type exportContext struct {
@@ -122,10 +119,6 @@ $ kumactl export --profile federation --format universal > policies.yaml
 						case core_mesh.MeshType:
 							mesh := res.(*core_mesh.MeshResource)
 							mesh.Spec.SkipCreatingInitialPolicies = []string{"*"}
-							err := changeBuiltinBackendsToProvided(mesh)
-							if err != nil {
-								return nil
-							}
 							meshResource = append(meshResource, res)
 							continue
 						case core_system.GlobalSecretType:
@@ -274,36 +267,6 @@ func removeExcludedLabels(excludedLabels map[string]struct{}, obj map[string]any
 			meta["annotations"] = filtered
 		}
 	}
-}
-
-func changeBuiltinBackendsToProvided(res *core_mesh.MeshResource) error {
-	if res.Spec.Mtls != nil {
-		for _, backend := range res.Spec.Mtls.GetBackends() {
-			if backend.Type != "builtin" {
-				continue
-			}
-			cfg := &config.ProvidedCertificateAuthorityConfig{}
-			cfg.Cert = &v1alpha1.DataSource{
-				Type: &v1alpha1.DataSource_Secret{
-					Secret: core_system.BuiltinCertSecretName(res.Meta.GetName(), backend.Name),
-				},
-			}
-			cfg.Key = &v1alpha1.DataSource{
-				Type: &v1alpha1.DataSource_Secret{
-					Secret: core_system.BuiltinKeySecretName(res.Meta.GetName(), backend.Name),
-				},
-			}
-			conf, err := util_proto.ToStruct(cfg)
-			if err != nil {
-				return err
-			}
-			backend.Type = "provided"
-			backend.Conf = conf
-			// we want to create secrets at any time
-			res.Spec.Mtls.SkipValidation = true
-		}
-	}
-	return nil
 }
 
 func resourcesTypesToDump(cmd *cobra.Command, ectx *exportContext) ([]model.ResourceTypeDescriptor, error) {

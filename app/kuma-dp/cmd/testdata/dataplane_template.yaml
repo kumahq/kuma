@@ -7,11 +7,13 @@ networking:
     - port: 11011
       servicePort: 11012
       tags:
-        kuma.io/service: backend
+        kuma.io/display-name: backend
         kuma.io/protocol: http
   outbound:
     - port: 33033
-      tags:
-        kuma.io/service: redis
+      backendRef:
+        kind: MeshService
+        name: redis
+        port: 6379
   admin:
     port: 9901

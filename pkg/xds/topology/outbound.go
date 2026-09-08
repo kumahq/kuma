@@ -9,9 +9,10 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
 
+	datasource_api "github.com/kumahq/kuma/v3/api/common/v1alpha1/datasource"
 	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
@@ -38,7 +39,7 @@ var outboundLog = core.Log.WithName("xds").WithName("outbound")
 //     from the local zone and forwarding it outside the mesh
 //
 // Every destination is backed by a real resource (MeshService, MeshMultiZoneService,
-// MeshExternalService); kuma.io/service is not a source of endpoints.
+// MeshExternalService); tags are not a source of endpoints.
 
 // BuildDataplaneEndpointMap builds the endpoints a regular Dataplane routes to: local and
 // remote MeshServices, MeshMultiZoneServices, and MeshExternalServices reached through a
@@ -52,13 +53,13 @@ func BuildDataplaneEndpointMap(
 	dataplanes []*core_mesh.DataplaneResource,
 	meshZoneAddresses []*meshzoneaddress_api.MeshZoneAddressResource,
 	loader datasource.Loader,
-	mtlsEnabled bool,
+	workloadIdentityEnabled bool,
 	egressAddresses []core_xds.ZoneEgressInstance,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
 	fillLocalMeshServices(outbound, meshServices, dataplanes)
-	fillRemoteMeshServices(outbound, meshServices, meshZoneAddresses, localZone, mtlsEnabled)
+	fillRemoteMeshServices(outbound, meshServices, meshZoneAddresses, localZone, workloadIdentityEnabled)
 	fillMeshExternalServicesOnDataplane(ctx, outbound, meshExternalServices, egressAddresses, loader)
 	// has to be last, it republishes the endpoints the fillers above produced
 	fillMeshMultiZoneServices(outbound, meshServices, meshMultiZoneServices)
@@ -139,9 +140,13 @@ func fillMeshMultiZoneServices(
 				continue
 			}
 			for _, port := range mzSvc.Spec.Ports {
-				serviceName := destinationname.ResolveLegacyFromDestination(mzSvc, port)
+				serviceName := destinationname.MustResolve(mzSvc, port)
+				msPort, ok := ms.FindPortByName(port.GetName())
+				if !ok {
+					continue
+				}
 
-				existingEndpoints := outbound[destinationname.ResolveLegacyFromDestination(ms, port)]
+				existingEndpoints := outbound[destinationname.MustResolve(ms, msPort)]
 				outbound[serviceName] = append(outbound[serviceName], existingEndpoints...)
 			}
 		}
@@ -153,13 +158,12 @@ func fillRemoteMeshServices(
 	services []*meshservice_api.MeshServiceResource,
 	meshZoneAddresses []*meshzoneaddress_api.MeshZoneAddressResource,
 	localZone string,
-	mtlsEnabled bool,
+	workloadIdentityEnabled bool,
 ) {
-	if !mtlsEnabled {
+	if !workloadIdentityEnabled {
 		return
 	}
 
-	// introduction of MeshIdentity doesn't requires mTLS on mesh
 	zoneToEndpoints := map[string][]core_xds.Endpoint{}
 
 	// MeshZoneAddress is the only source of publicly reachable coordinates of a
@@ -206,7 +210,7 @@ func fillRemoteMeshServices(
 			continue
 		}
 		for _, port := range ms.Spec.Ports {
-			serviceName := destinationname.ResolveLegacyFromDestination(ms, port)
+			serviceName := destinationname.MustResolve(ms, port)
 			for _, endpoint := range zoneToEndpoints[msZone] {
 				ep := endpoint
 				ep.Locality = &core_xds.Locality{
@@ -214,8 +218,7 @@ func fillRemoteMeshServices(
 					Priority: priorityRemote,
 				}
 				ep.Tags = map[string]string{
-					mesh_proto.ServiceTag: serviceName,
-					mesh_proto.ZoneTag:    msZone,
+					mesh_proto.ZoneTag: msZone,
 				}
 				outbound[serviceName] = append(outbound[serviceName], ep)
 			}
@@ -225,15 +228,14 @@ func fillRemoteMeshServices(
 
 // endpointIdentity returns the tags that make up an endpoint's load-balancing
 // identity, sourced from the Dataplane's own resource labels. The inbound's
-// protocol is carried alongside them because service-level protocol inference
-// (MeshContext.GetServiceProtocol) reads it off the endpoint, and it is a
-// per-port property that resource labels cannot express.
+// protocol is carried alongside them because it is a per-port property that
+// resource labels cannot express, and it is published as endpoint metadata.
 func endpointIdentity(dataplane *core_mesh.DataplaneResource, inbound *mesh_proto.Dataplane_Networking_Inbound) map[string]string {
 	tags := maps.Clone(dataplane.GetMeta().GetLabels())
 	if tags == nil {
 		tags = map[string]string{}
 	}
-	if protocol := inbound.GetProtocolFallback(); protocol != "" {
+	if protocol := inbound.GetProtocol(); protocol != "" {
 		tags[mesh_proto.ProtocolTag] = protocol
 	}
 	return tags
@@ -261,7 +263,7 @@ func fillLocalMeshServices(
 					}
 
 					inboundTags := endpointIdentity(dpp, inbound)
-					serviceName := destinationname.ResolveLegacyFromDestination(meshSvc, port)
+					serviceName := destinationname.MustResolve(meshSvc, port)
 					inboundInterface := dpNetworking.ToInboundInterface(inbound)
 
 					outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
@@ -301,18 +303,18 @@ func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, 
 	var err error
 	if tls.Verification != nil {
 		if tls.Verification.CaCert != nil {
-			caCert, err = loadBytes(ctx, tls.Verification.CaCert.ConvertToProto(), meshName, loader)
+			caCert, err = loadSecureBytes(ctx, tls.Verification.CaCert, meshName, loader)
 			if err != nil {
 				return errors.Wrap(err, "could not load caCert")
 			}
 			es.CaCert = caCert
 		}
 		if tls.Verification.ClientKey != nil && tls.Verification.ClientCert != nil {
-			clientCert, err = loadBytes(ctx, tls.Verification.ClientCert.ConvertToProto(), meshName, loader)
+			clientCert, err = loadSecureBytes(ctx, tls.Verification.ClientCert, meshName, loader)
 			if err != nil {
 				return errors.Wrap(err, "could not load clientCert")
 			}
-			clientKey, err = loadBytes(ctx, tls.Verification.ClientKey.ConvertToProto(), meshName, loader)
+			clientKey, err = loadSecureBytes(ctx, tls.Verification.ClientKey, meshName, loader)
 			if err != nil {
 				return errors.Wrap(err, "could not load clientKey")
 			}
@@ -365,7 +367,7 @@ func fillMeshExternalServicesOnDataplane(
 	for _, mes := range meshExternalServices {
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
-		serviceName := destinationname.ResolveLegacyFromDestination(mes, mes.Spec.Match)
+		serviceName := destinationname.MustResolve(mes, mes.Spec.Match)
 		locality := GetLocality(nil)
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{
@@ -459,11 +461,32 @@ func fillMeshExternalServicesOnEgress(
 	}
 }
 
-func loadBytes(ctx context.Context, ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) ([]byte, error) {
-	if ds == nil {
+// loadSecureBytes resolves a SecureDataSource on the control plane. Secret references keep going
+// through the mesh-snapshot datasource.Loader so no additional store I/O is introduced; inline
+// values are resolved directly via SecureDataSource.ReadByControlPlane. File and EnvVar would read
+// the control plane's own filesystem and environment, so they are refused here as well as in the
+// validator - a MeshExternalService with an extension, or one synced from another zone, does not
+// necessarily go through validation.
+func loadSecureBytes(ctx context.Context, sds *datasource_api.SecureDataSource, mesh string, loader datasource.Loader) ([]byte, error) {
+	if sds == nil {
 		return nil, nil
 	}
-	return loader.Load(ctx, mesh, ds)
+	switch sds.Type {
+	case datasource_api.SecureDataSourceSecretRef:
+		if sds.SecretRef == nil {
+			return nil, errors.New("secretRef must be defined")
+		}
+		return loader.Load(ctx, mesh, &system_proto.DataSource{
+			Type: &system_proto.DataSource_Secret{Secret: sds.SecretRef.Name},
+		})
+	case datasource_api.SecureDataSourceInline:
+		if sds.InsecureInline == nil {
+			return nil, errors.New("insecureInline must be defined")
+		}
+		return sds.ReadByControlPlane(ctx, nil, mesh)
+	default:
+		return nil, errors.Errorf("datasource type: %s is not supported on MeshExternalService", sds.Type)
+	}
 }
 
 const (

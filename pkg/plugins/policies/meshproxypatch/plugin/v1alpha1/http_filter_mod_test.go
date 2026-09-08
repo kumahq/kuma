@@ -720,7 +720,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                 metadata:
                   filterMetadata:
                     io.kuma.tags:
-                      kuma.io/service: backend
+                      app: backend
                 filterChains:
                 - filters:
                   - name: envoy.filters.network.http_connection_manager
@@ -743,7 +743,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                    match:
                      name: envoy.filters.http.router
                      listenerTags:
-                       kuma.io/service: backend
+                       app: backend
                    value: |
                      typedConfig:
                        '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -762,7 +762,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                 metadata:
                   filterMetadata:
                     io.kuma.tags:
-                      kuma.io/service: backend
+                      app: backend
                 filterChains:
                 - filters:
                   - name: envoy.filters.network.http_connection_manager
@@ -789,7 +789,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                 metadata:
                   filterMetadata:
                     io.kuma.tags:
-                      kuma.io/service: backend
+                      app: backend
                 filterChains:
                 - filters:
                   - name: envoy.filters.network.http_connection_manager
@@ -812,7 +812,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                    match:
                      name: envoy.filters.http.router
                      listenerTags:
-                       kuma.io/service: web
+                       app: web
                    value: |
                      typedConfig:
                        '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -831,7 +831,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                 metadata:
                   filterMetadata:
                     io.kuma.tags:
-                      kuma.io/service: backend
+                      app: backend
                 filterChains:
                 - filters:
                   - name: envoy.filters.network.http_connection_manager

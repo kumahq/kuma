@@ -1,10 +1,12 @@
 package api_server_test
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -62,5 +64,39 @@ var _ = Describe("Index Endpoints", func() {
 		}`, hostname)
 
 		Expect(body).To(MatchJSON(expected))
+	}))
+
+	It("should handle concurrent requests", test.Within(5*time.Second, func() {
+		const requests = 20
+		start := make(chan struct{})
+		errs := make(chan error, requests)
+		var wg sync.WaitGroup
+		for range requests {
+			wg.Go(func() {
+				<-start
+
+				request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+apiServer.Address(), http.NoBody)
+				if err != nil {
+					errs <- err
+					return
+				}
+				response, err := http.DefaultClient.Do(request)
+				if err != nil {
+					errs <- err
+					return
+				}
+				defer response.Body.Close()
+				if response.StatusCode != http.StatusOK {
+					errs <- fmt.Errorf("unexpected status: %s", response.Status)
+				}
+			})
+		}
+
+		close(start)
+		wg.Wait()
+		close(errs)
+		for err := range errs {
+			Expect(err).ToNot(HaveOccurred())
+		}
 	}))
 })

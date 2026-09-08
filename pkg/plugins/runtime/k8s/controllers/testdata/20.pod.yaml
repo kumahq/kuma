@@ -8,7 +8,7 @@ metadata:
     app: example
     version: "0.1"
   annotations:
-    kuma.io/gateway: provided
+    kuma.io/gateway: enabled
 spec:
   containers:
     - ports:

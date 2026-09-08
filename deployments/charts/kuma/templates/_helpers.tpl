@@ -57,6 +57,11 @@ Create chart name and version as used by the chart label.
 {{ printf "%s" (default $defaultSvcName .Values.controlPlane.service.name) }}
 {{- end }}
 
+{{- define "kuma.controlPlane.globalZoneSync.serviceName" -}}
+{{- $defaultSvcName := printf "%s-global-zone-sync" (include "kuma.name" .) -}}
+{{ printf "%s" (default $defaultSvcName .Values.controlPlane.globalZoneSyncService.name) }}
+{{- end }}
+
 {{/*
 Common labels
 */}}
@@ -268,10 +273,6 @@ env:
 - name: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
   value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.key
 {{- end }}
-{{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
-- name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-  value: /var/run/secrets/kuma.io/api-server-client-certs/
-{{- end }}
 {{- if and (eq .Values.controlPlane.mode "zone") (or .Values.controlPlane.tls.kdsZoneClient.secretName .Values.controlPlane.tls.kdsZoneClient.create) }}
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
@@ -296,10 +297,6 @@ env:
 {{- end }}
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
-{{- if .Values.dataPlane.features.unifiedResourceNaming }}
-- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
-  value: "true"
-{{- end }}
 {{- end }}
 
 {{- define "kuma.controlPlane.tls.general.caSecretName" -}}
@@ -308,6 +305,9 @@ env:
 
 {{- define "kuma.universal.defaultEnv" -}}
 env:
+{{ include "kuma.parentEnv" . }}
+- name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
+  value: "false"
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
 - name: KUMA_GENERAL_WORK_DIR
@@ -351,10 +351,6 @@ env:
   value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.crt
 - name: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
   value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.key
-{{- end }}
-{{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
-- name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-  value: /var/run/secrets/kuma.io/api-server-client-certs/
 {{- end }}
 - name: KUMA_STORE_POSTGRES_TLS_MODE
   value: {{ .Values.postgres.tls.mode }}

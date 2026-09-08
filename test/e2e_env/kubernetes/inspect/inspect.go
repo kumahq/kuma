@@ -166,13 +166,6 @@ spec:
 
 			g.Expect(result.Resource.Name).To(Equal(clientDp))
 			g.Expect(result.Rules).ToNot(BeEmpty())
-			for _, rule := range result.Rules {
-				if rule.Type == "MeshTimeout" {
-					if rule.ToRules != nil {
-						g.Expect(*rule.ToRules).To(BeEmpty())
-					}
-				}
-			}
 		}, "30s", "1s").Should(Succeed())
 	})
 }

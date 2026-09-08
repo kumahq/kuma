@@ -115,14 +115,14 @@ staticResources:
   clusters:
   - connectTimeout: 1s
     loadAssignment:
-      clusterName: access_log_sink
+      clusterName: system_access_log_sink
       endpoints:
       - lbEndpoints:
         - endpoint:
             address:
               pipe:
                 path: /tmp/kuma-al-name.namespace-mesh.sock
-    name: access_log_sink
+    name: system_access_log_sink
     type: STATIC
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

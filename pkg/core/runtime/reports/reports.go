@@ -14,12 +14,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
@@ -88,20 +88,16 @@ func fetchNumPolicies(ctx context.Context, rt core_runtime.Runtime) (map[string]
 }
 
 func fetchNumOfServices(ctx context.Context, rt core_runtime.Runtime) (int, int, error) {
-	insights := mesh.ServiceInsightResourceList{}
-	if err := rt.ReadOnlyResourceManager().List(ctx, &insights); err != nil {
-		return 0, 0, errors.Wrap(err, "could not fetch service insights")
-	}
-	internalServices := 0
-	for _, insight := range insights.Items {
-		internalServices += len(insight.Spec.Services)
+	meshServicesList := meshservice_api.MeshServiceResourceList{}
+	if err := rt.ReadOnlyResourceManager().List(ctx, &meshServicesList); err != nil {
+		return 0, 0, errors.Wrap(err, "could not fetch mesh services")
 	}
 
 	externalServicesList := meshexternalservice_api.MeshExternalServiceResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(ctx, &externalServicesList); err != nil {
 		return 0, 0, errors.Wrap(err, "could not fetch mesh external services")
 	}
-	return internalServices, len(externalServicesList.Items), nil
+	return len(meshServicesList.Items), len(externalServicesList.Items), nil
 }
 
 func (b *reportsBuffer) marshall() (string, error) {
@@ -141,20 +137,15 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 	b.mutable["dps_total"] = strconv.Itoa(len(dps.Items))
 
 	ngateways := 0
-	gatewayTypes := map[string]int{}
 	for _, dp := range dps.Items {
-		spec := dp.GetSpec().(*mesh_proto.Dataplane)
-		gateway := spec.GetNetworking().GetGateway()
-		if gateway != nil {
+		if dp.IsDelegatedGateway() {
 			ngateways++
-			gatewayType := strings.ToLower(gateway.GetType().String())
-			gatewayTypes["gateway_dp_type_"+gatewayType] += 1
 		}
 	}
 	b.mutable["gateway_dps"] = strconv.Itoa(ngateways)
-	for gtype, n := range gatewayTypes {
-		b.mutable[gtype] = strconv.Itoa(n)
-	}
+	// Delegated is the only kind of gateway left, so the per-type series is
+	// kept alive with the total rather than dropped from the report.
+	b.mutable["gateway_dp_type_delegated"] = strconv.Itoa(ngateways)
 
 	meshes, err := fetchMeshes(ctx, rt)
 	if err != nil {

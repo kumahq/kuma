@@ -60,15 +60,7 @@ var _ = Describe("printer", func() {
 					ModificationTime: t2,
 				},
 				Spec: &mesh_proto.Mesh{
-					Mtls: &mesh_proto.Mesh_Mtls{
-						EnabledBackend: "builtin-1",
-						Backends: []*mesh_proto.CertificateAuthorityBackend{
-							{
-								Name: "builtin-1",
-								Type: "builtin",
-							},
-						},
-					},
+					SkipCreatingInitialPolicies: []string{"MeshRetry"},
 				},
 			},
 			goldenFile: "mesh.golden.json",

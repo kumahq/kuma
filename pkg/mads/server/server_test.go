@@ -8,6 +8,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/config"
@@ -22,17 +23,19 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 )
 
 type testRuntime struct {
 	runtime.Runtime
-	rm         manager.ResourceManager
-	config     kuma_cp.Config
-	components []component.Component
-	metrics    metrics.Metrics
-	meshCache  *mesh.Cache
+	rm           manager.ResourceManager
+	config       kuma_cp.Config
+	components   []component.Component
+	metrics      metrics.Metrics
+	meshCache    *mesh.Cache
+	certWatchers *util_tls.Watchers
 }
 
 func (t *testRuntime) ReadOnlyResourceManager() manager.ReadOnlyResourceManager {
@@ -56,6 +59,10 @@ func (t *testRuntime) MeshCache() *mesh.Cache {
 	return t.meshCache
 }
 
+func (t *testRuntime) CertWatchers() *util_tls.Watchers {
+	return t.certWatchers
+}
+
 var _ = Describe("MADS Server", func() {
 	var rt *testRuntime
 	var stopCh chan struct{}
@@ -67,9 +74,10 @@ var _ = Describe("MADS Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		rt = &testRuntime{
-			rm:      manager.NewResourceManager(memory.NewStore()),
-			config:  kuma_cp.Config{MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig()},
-			metrics: m,
+			rm:           manager.NewResourceManager(memory.NewStore()),
+			config:       kuma_cp.Config{MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig()},
+			metrics:      m,
+			certWatchers: util_tls.NewWatchers(context.Background(), logr.Discard()),
 		}
 
 		port, err = test.FindFreePort("127.0.0.1")

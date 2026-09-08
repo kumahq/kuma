@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -149,12 +150,21 @@ func (u *unmarshaler) UnmarshalListToCore(b []byte, rs core_model.ResourceList) 
 
 func toValidationError(res *validate.Result) *validators.ValidationError {
 	verr := &validators.ValidationError{}
-	for _, e := range res.Errors {
-		parts := strings.Split(e.Error(), " ")
+	// res.Errors order is not deterministic: the underlying schema validator
+	// walks JSONSchemaProps.Properties, a Go map, so errors for sibling
+	// fields can come back in a different order on every call. Sort by
+	// message so the resulting violations are stable across runs.
+	errs := make([]string, len(res.Errors))
+	for i, e := range res.Errors {
+		errs[i] = e.Error()
+	}
+	sort.Strings(errs)
+	for _, e := range errs {
+		parts := strings.Split(e, " ")
 		if len(parts) > 1 && strings.HasPrefix(parts[0], "spec.") {
 			verr.AddViolation(parts[0], strings.Join(parts[1:], " "))
 		} else {
-			verr.AddViolation("", e.Error())
+			verr.AddViolation("", e)
 		}
 	}
 	return verr

@@ -227,11 +227,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	{{- if .generateTargetRef }}
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
-	{{- end}}
 	api "{{ .package }}"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
@@ -245,13 +241,6 @@ func (p plugin) Order() int { return api.{{.name}}ResourceTypeDescriptor.Order }
 
 func NewPlugin() core_plugins.Plugin {
 	return &plugin{}
-}
-
-func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {	{{- if not .generateTargetRef }}
-	panic("implement me")
-	{{- else }}
-	return matchers.MatchedPolicies(api.{{ .name }}Type, dataplane, resources, opts...), nil
-	{{- end }}
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {

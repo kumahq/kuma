@@ -139,7 +139,9 @@ rules:
   - apiGroups: # Gateway API
       - gateway.networking.k8s.io
     resources:
+      - grpcroutes
       - httproutes
+      - referencegrants
     verbs:
       - get
       - list
@@ -160,12 +162,7 @@ rules:
       - meshes
       - zones
       - zoneinsights
-      - zoneingresses
-      - zoneingressinsights
-      - zoneegresses
-      - zoneegressinsights
       - meshinsights
-      - serviceinsights
       - containerpatches
       - meshaccesslogs
       - meshcircuitbreakers
@@ -235,18 +232,13 @@ rules:
       - create
       - patch
   - apiGroups:
-    # required by MeshGateway
+    # required to resolve the workload name behind a serviceless Pod
       - "apps"
     resources:
-      - deployments
       - replicasets
     verbs:
-      - create
-      - delete
       - get
       - list
-      - patch
-      - update
       - watch
   - apiGroups:
       - "batch"
@@ -257,16 +249,13 @@ rules:
       - list
       - watch
   - apiGroups:
-    # required by MeshGateway
       - ""
     resources:
       - services
     verbs:
       - get
-      - delete
       - list
       - watch
-      - create
       - update
       - patch
   - apiGroups:
@@ -281,6 +270,7 @@ rules:
     # Gateway API
       - gateway.networking.k8s.io
     resources:
+      - grpcroutes
       - httproutes
     verbs:
       - create
@@ -290,6 +280,14 @@ rules:
       - patch
       - update
       - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - grpcroutes/status
+    verbs:
+      - get
+      - patch
+      - update
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
@@ -386,6 +384,7 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
+      - grpcroutes
       - httproutes
     verbs:
       - create
@@ -395,6 +394,14 @@ rules:
       - patch
       - update
       - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - grpcroutes/status
+    verbs:
+      - get
+      - patch
+      - update
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
@@ -485,7 +492,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 345e5805076edc29201056aff714082e531755a43278703503620812d06dd10f
-        checksum/tls-secrets: a61fbd96437b68a94c5f764d22d1bf29d8234865c084f29e3a91e74b22e87957
+        checksum/tls-secrets: e7212923dbf9a5bcf53519b130d72323b7c1304ebf0bf4ab8f8d3a86df45daab
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -529,12 +536,14 @@ spec:
           image: "kuma-ci/kuma-cp:greatest"
           imagePullPolicy: Never
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
-            - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-              value: "/var/run/secrets/kuma.io/api-server-client-certs/"
             - name: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
               value: "/var/run/secrets/kuma.io/api-server-tls-cert/tls.crt"
             - name: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
@@ -607,8 +616,6 @@ spec:
               value: "kuma-ci/kuma-dp:greatest"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
               value: "kuma-transparent-proxy-config"
-            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
-              value: "true"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
               value: "kuma"
             - name: KUMA_STORE_TYPE
@@ -678,9 +685,6 @@ spec:
             - name: api-server-tls-cert
               mountPath: /var/run/secrets/kuma.io/api-server-tls-cert
               readOnly: true
-            - name: api-server-client-certs
-              mountPath: /var/run/secrets/kuma.io/api-server-client-certs
-              readOnly: true
             - name: kds-client-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
               readOnly: true
@@ -696,9 +700,6 @@ spec:
         - name: api-server-tls-cert
           secret:
             secretName: api-server-secret
-        - name: api-server-client-certs
-          secret:
-            secretName: api-server-client-secret
         - name: kds-client-tls-cert
           secret:
             secretName: kds-ca-secret
@@ -747,11 +748,6 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - zoneingresses
-          - zoneingressinsights
-          - zoneegresses
-          - zoneegressinsights
-          - serviceinsights
           - zone
           - zoneinsights
           - meshaccesslogs

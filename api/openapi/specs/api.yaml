@@ -43,6 +43,83 @@ paths:
           $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
           $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /global-insights:
+    get:
+      operationId: get-global-insights
+      description: Returns counts of all global resources
+      summary: Get Global Insights
+      tags: ["GlobalInsight"]
+      responses:
+        '200':
+          $ref: '#/components/responses/GlobalInsightsResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /policies:
+    get:
+      operationId: get-policies
+      summary: A list of all policy types
+      description: Returns metadata about every policy type supported by this control plane
+      tags: ["System"]
+      responses:
+        '200':
+          $ref: '#/components/responses/PoliciesResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /who-am-i:
+    get:
+      operationId: who-am-i
+      summary: Identity of the authenticated user
+      description: Returns the name and groups of the user making the request
+      tags: ["System"]
+      responses:
+        '200':
+          $ref: '#/components/responses/WhoAmIResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /tokens/dataplane:
+    post:
+      operationId: issue-dataplane-token
+      summary: Issue a dataplane token
+      description: Issues a token used to authenticate a data plane proxy to the control plane
+      tags: ["Tokens"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataplaneTokenRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /tokens/zone:
+    post:
+      operationId: issue-zone-token
+      summary: Issue a zone token
+      description: Issues a token used to authenticate zone control plane operations
+      tags: ["Tokens"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneTokenRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/TokenResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
   /meshes/{mesh}/{resourceType}/{resourceName}/_rules:
     get:
       operationId: inspect-dataplanes-rules
@@ -117,6 +194,146 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/GetDataplaneXDSConfigResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /config:
+    get:
+      operationId: get-config
+      summary: Get the control plane configuration
+      description: Returns the configuration of the control plane, with sensitive values redacted.
+      tags: ["System"]
+      responses:
+        '200':
+          $ref: '#/components/responses/ConfigResponse'
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{dataplane}/xds:
+    get:
+      operationId: get-dataplane-xds
+      summary: Get the Envoy config dump of this dataplane
+      description: Proxies the Envoy admin config dump of the DPP.
+      tags: ["Inspect"]
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP.
+          schema:
+            type: string
+        - in: path
+          name: dataplane
+          required: true
+          description: The name of the DPP within the mesh.
+          schema:
+            type: string
+        - in: query
+          name: include_eds
+          required: false
+          description: Include endpoint discovery data in the config dump.
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: The Envoy config dump.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{dataplane}/clusters:
+    get:
+      operationId: get-dataplane-clusters
+      summary: Get the Envoy clusters of this dataplane
+      description: Proxies the Envoy admin clusters output of the DPP. Returns plain text unless `format=json` is requested.
+      tags: ["Inspect"]
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP.
+          schema:
+            type: string
+        - in: path
+          name: dataplane
+          required: true
+          description: The name of the DPP within the mesh.
+          schema:
+            type: string
+        - in: query
+          name: format
+          required: false
+          description: Set to `json` to receive the Envoy admin output as JSON instead of plain text.
+          schema:
+            type: string
+            enum: [json]
+      responses:
+        '200':
+          description: The Envoy clusters output.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: './common/error_schema.yaml#/components/responses/BadRequest'
+        '500':
+          $ref: './common/error_schema.yaml#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{dataplane}/stats:
+    get:
+      operationId: get-dataplane-stats
+      summary: Get the Envoy stats of this dataplane
+      description: Proxies the Envoy admin stats output of the DPP. Returns plain text unless `format=json` is requested.
+      tags: ["Inspect"]
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP.
+          schema:
+            type: string
+        - in: path
+          name: dataplane
+          required: true
+          description: The name of the DPP within the mesh.
+          schema:
+            type: string
+        - in: query
+          name: format
+          required: false
+          description: Set to `json` to receive the Envoy admin output as JSON instead of plain text.
+          schema:
+            type: string
+            enum: [json]
+        - in: query
+          name: usedonly
+          required: false
+          description: Only return stats Envoy has actually updated.
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: The Envoy stats output.
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
         '400':
           $ref: './common/error_schema.yaml#/components/responses/BadRequest'
         '500':
@@ -568,7 +785,6 @@ components:
         - total
         - internal
         - external
-        - gatewayBuiltin
         - gatewayDelegated
       properties:
         internal:
@@ -584,10 +800,6 @@ components:
             total:
               type: integer
               example: 5
-        gatewayBuiltin:
-          description: Builtin Gateway services statistics
-          allOf:
-            - $ref: "#/components/schemas/FullStatus"
         gatewayDelegated:
           description: Delegated Gateway services statistics
           allOf:
@@ -619,15 +831,10 @@ components:
       description: Dataplanes statistics
       required:
         - standard
-        - gatewayBuiltin
         - gatewayDelegated
       properties:
         standard:
           description: Standard dataplane proxy statistics
-          allOf:
-            - $ref: "#/components/schemas/FullStatus"
-        gatewayBuiltin:
-          description: Builtin Gateway dataplane proxy statistics
           allOf:
             - $ref: "#/components/schemas/FullStatus"
         gatewayDelegated:
@@ -779,7 +986,133 @@ components:
         spiffeId:
           type: string
           description: SPIFFE ID of the dataplane's workload identity certificate
+    GlobalInsights:
+      type: object
+      properties:
+        type:
+          type: string
+        creationTime:
+          type: string
+          format: date-time
+        resources:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              total:
+                type: integer
+    PolicyEntry:
+      type: object
+      properties:
+        name:
+          type: string
+        readOnly:
+          type: boolean
+        path:
+          type: string
+        singularDisplayName:
+          type: string
+        pluralDisplayName:
+          type: string
+        isExperimental:
+          type: boolean
+        isTargetRefBased:
+          type: boolean
+        isInbound:
+          type: boolean
+        isOutbound:
+          type: boolean
+    Policies:
+      type: object
+      properties:
+        policies:
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyEntry'
+    WhoAmI:
+      type: object
+      properties:
+        name:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+    DataplaneTokenRequest:
+      type: object
+      required:
+        - mesh
+      properties:
+        name:
+          type: string
+          description: Name of the data plane proxy
+        mesh:
+          type: string
+          description: Mesh of the data plane proxy
+        tags:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Tags of the data plane proxy
+        type:
+          type: string
+          description: Proxy type, only Dataplane is valid
+        workload:
+          type: string
+          description: Workload of the data plane proxy
+        validFor:
+          type: string
+          description: How long the token is valid for, e.g. 24h
+    ZoneTokenRequest:
+      type: object
+      required:
+        - zone
+      properties:
+        zone:
+          type: string
+          description: Name of the zone
+        scope:
+          type: array
+          items:
+            type: string
+          description: Scope of the token. Kuma defines no built-in scopes, distributions may register their own
+        validFor:
+          type: string
+          description: How long the token is valid for, e.g. 24h
   responses:
+    GlobalInsightsResponse:
+      description: A response containing counts of global resources.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GlobalInsights'
+    PoliciesResponse:
+      description: A response containing all policy types.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Policies'
+    WhoAmIResponse:
+      description: A response containing the identity of the authenticated user.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/WhoAmI'
+    TokenResponse:
+      description: A response containing the issued token.
+      content:
+        text/plain:
+          schema:
+            type: string
+    ConfigResponse:
+      description: The control plane configuration.
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: true
     IndexResponse:
       description: A response for the index endpoint
       content:
@@ -885,11 +1218,6 @@ components:
             online: 2
             offline: 1
             partiallyDegraded: 1
-          gatewayBuiltin:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
           internalByStatus:
             total: 4
             online: 2
@@ -907,11 +1235,6 @@ components:
             total: 1
         dataplanes:
           standard:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
-          gatewayBuiltin:
             total: 4
             online: 2
             offline: 1

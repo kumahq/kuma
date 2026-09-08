@@ -77,28 +77,6 @@ func (a *adapterDeltaCallbacks) OnStreamDeltaResponse(streamID int64, request *e
 	a.callbacks.OnStreamDeltaResponse(streamID, &deltaDiscoveryRequest{request}, &deltaDiscoveryResponse{response})
 }
 
-// rest callbacks
-
-type adapterRestCallbacks struct {
-	NoopCallbacks
-	callbacks xds.RestCallbacks
-}
-
-// AdaptRestCallbacks translate Kuma callbacks to real go-control-plane Callbacks
-func AdaptRestCallbacks(callbacks xds.RestCallbacks) envoy_xds.Callbacks {
-	return &adapterRestCallbacks{
-		callbacks: callbacks,
-	}
-}
-
-func (a *adapterRestCallbacks) OnFetchRequest(ctx context.Context, request *envoy_sd.DiscoveryRequest) error {
-	return a.callbacks.OnFetchRequest(ctx, &discoveryRequest{request})
-}
-
-func (a *adapterRestCallbacks) OnFetchResponse(request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
-	a.callbacks.OnFetchResponse(&discoveryRequest{request}, &discoveryResponse{response})
-}
-
 // Both rest and stream
 
 type adapterMultiCallbacks struct {

@@ -17,7 +17,7 @@ type MeshTCPRoute struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined in-place.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef *common_api.TopLevelTargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding
 	// configurations
 	// +kubebuilder:validation:MinItems=1
@@ -44,7 +44,7 @@ type MeshTCPRoute struct {
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef common_api.OutboundTargetRef `json:"targetRef"`
 	// Rules contains the routing rules applies to a combination of top-level
 	// targetRef and the targetRef in this entry.
 	// +kubebuilder:validation:MaxItems=1

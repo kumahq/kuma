@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -42,6 +43,13 @@ func pemEncodeKey(priv crypto.PrivateKey) ([]byte, error) {
 		block = &pem.Block{Type: "EC PRIVATE KEY", Bytes: bytes}
 	case *rsa.PrivateKey:
 		block = &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(k)}
+	case ed25519.PrivateKey:
+		// ED25519 has no SEC1/PKCS1 equivalent, PKCS8 is the only encoding for it.
+		bytes, err := x509.MarshalPKCS8PrivateKey(k)
+		if err != nil {
+			return nil, err
+		}
+		block = &pem.Block{Type: "PRIVATE KEY", Bytes: bytes}
 	default:
 		return nil, errors.Errorf("unsupported private key type %T", priv)
 	}

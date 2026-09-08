@@ -9,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/api"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/auth"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/bindoutbounds"
+	"github.com/kumahq/kuma/v3/test/e2e_env/universal/certs"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/compatibility"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/envoyconfig"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/grpc"
@@ -100,4 +101,5 @@ var (
 	_ = Describe("MeshIdentity - Spire", Label("job-2"), meshidentity.Spire, Ordered)
 	_ = Describe("MeshIdentity - Rotate CA", Label("job-2"), meshidentity.Rotate, Ordered)
 	_ = Describe("Strict Inbound Ports", Label("job-3"), strictinbounds.StrictInboundPorts, Ordered)
+	_ = Describe("Control Plane Certificate Rotation", Label("job-2"), certs.Rotation, Ordered)
 )

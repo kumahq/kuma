@@ -28,6 +28,16 @@ resources:
               - '*'
               name: kri_msvc_default___backend_80
               routes:
+              - directResponse:
+                  body:
+                    inlineString: ""
+                  status: 500
+                match:
+                  prefix: /
+                  runtimeFraction:
+                    defaultValue:
+                      numerator: 10
+                name: kri_mhttpr_default___test-origin_rule_0
               - match:
                   prefix: /
                 name: kri_mhttpr_default___test-origin_rule_0

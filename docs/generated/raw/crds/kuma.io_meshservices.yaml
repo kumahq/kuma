@@ -56,7 +56,6 @@ spec:
                   properties:
                     type:
                       enum:
-                      - ServiceTag
                       - SpiffeID
                       type: string
                     value:
@@ -214,6 +213,7 @@ spec:
                     enum:
                     - Ready
                     - NotReady
+                    - Pending
                     type: string
                 type: object
               vips:

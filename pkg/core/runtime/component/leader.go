@@ -29,7 +29,7 @@ var (
 )
 
 type LeaderInfoComponent struct {
-	leader int32
+	leader atomic.Int32
 }
 
 func (l *LeaderInfoComponent) Start(stop <-chan struct{}) error {
@@ -48,9 +48,9 @@ func (p *LeaderInfoComponent) setLeader(leader bool) {
 	if leader {
 		value = 1
 	}
-	atomic.StoreInt32(&p.leader, value)
+	p.leader.Store(value)
 }
 
 func (p *LeaderInfoComponent) IsLeader() bool {
-	return atomic.LoadInt32(&(p.leader)) == 1
+	return p.leader.Load() == 1
 }

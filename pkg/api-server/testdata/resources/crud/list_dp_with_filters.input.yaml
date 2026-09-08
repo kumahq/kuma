@@ -1,4 +1,4 @@
-#/meshes/default/dataplanes?tag=kuma.io/service:my-svc 200
+#/meshes/default/dataplanes?tag=kuma.io/display-name:my-svc 200
 type: Mesh
 name: default
 ---
@@ -6,28 +6,28 @@ type: Dataplane
 mesh: default
 name: dp-1
 labels:
-  kuma.io/service: my-svc
+  kuma.io/display-name: my-svc
 networking:
   address: 10.1.2.1
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: my-svc
+        kuma.io/display-name: my-svc
 ---
 type: Dataplane
 mesh: default
 name: dp-2
 labels:
-  kuma.io/service: my-svc
+  kuma.io/display-name: my-svc
 networking:
   address: 10.1.2.2
   inbound:
     - port: 1232
       tags:
-        kuma.io/service: other-svc
+        kuma.io/display-name: other-svc
     - port: 1234
       tags:
-        kuma.io/service: my-svc
+        kuma.io/display-name: my-svc
 ---
 type: Dataplane
 mesh: default
@@ -37,4 +37,4 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: other-svc
+        kuma.io/display-name: other-svc

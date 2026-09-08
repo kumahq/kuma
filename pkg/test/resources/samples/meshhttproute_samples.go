@@ -6,7 +6,6 @@ import (
 	meshhttproute_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/xds"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 )
 
@@ -29,22 +28,22 @@ func MeshHttpOutboundWithSeveralRoutes(serviceName string) *meshhttproute_xds.Ht
 		RouteConfigName: envoy_names.GetOutboundRouteName(serviceName),
 		Routes: []meshhttproute_xds.OutboundRoute{
 			{
-				Split: []envoy_common.Split{
+				Split: []meshhttproute_xds.BackendRefSplit{meshhttproute_xds.NewBackendRefSplit(
 					plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),
-				},
+				)},
 				Match: anotherBackendMatch,
 				Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{anotherBackendMatch})),
 			},
 			{
-				Split: []envoy_common.Split{
+				Split: []meshhttproute_xds.BackendRefSplit{meshhttproute_xds.NewBackendRefSplit(
 					plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),
-				},
+				)},
 				Match: rootPrefixMatch,
 				Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{rootPrefixMatch})),
 			},
 		},
 		DpTags: map[string]map[string]bool{
-			"kuma.io/service": {
+			"kuma.io/display-name": {
 				"web": true,
 			},
 		},
@@ -70,22 +69,22 @@ func RealMeshHTTPRouteOutboundRoutes(serviceName string, meshHTTPRoute kri.Ident
 		RouteConfigName: envoy_names.GetOutboundRouteName(serviceName),
 		Routes: []meshhttproute_xds.OutboundRoute{
 			{
-				Split: []envoy_common.Split{
+				Split: []meshhttproute_xds.BackendRefSplit{meshhttproute_xds.NewBackendRefSplit(
 					plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),
-				},
+				)},
 				Match: anotherBackendMatch,
 				Name:  meshHTTPRoute.String(),
 			},
 			{
-				Split: []envoy_common.Split{
+				Split: []meshhttproute_xds.BackendRefSplit{meshhttproute_xds.NewBackendRefSplit(
 					plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),
-				},
+				)},
 				Match: rootPrefixMatch,
 				Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{rootPrefixMatch})),
 			},
 		},
 		DpTags: map[string]map[string]bool{
-			"kuma.io/service": {
+			"kuma.io/display-name": {
 				"web": true,
 			},
 		},
@@ -104,15 +103,15 @@ func MeshHttpOutboudWithSingleRoute(serviceName string) *meshhttproute_xds.HttpO
 		RouteConfigName: envoy_names.GetOutboundRouteName(serviceName),
 		Routes: []meshhttproute_xds.OutboundRoute{
 			{
-				Split: []envoy_common.Split{
+				Split: []meshhttproute_xds.BackendRefSplit{meshhttproute_xds.NewBackendRefSplit(
 					plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),
-				},
+				)},
 				Match: rootPrefixMatch,
 				Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{rootPrefixMatch})),
 			},
 		},
 		DpTags: map[string]map[string]bool{
-			"kuma.io/service": {
+			"kuma.io/display-name": {
 				"web": true,
 			},
 		},

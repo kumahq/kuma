@@ -14,9 +14,8 @@ import (
 )
 
 // CPTunnel reads a dataplane's Envoy admin state through the control plane's
-// inspect API (GET {cp}/meshes/{mesh}/dataplanes/{name}/{stats,xds,clusters},
-// or the /zoneingresses, /zoneegresses variants) instead of reaching the
-// sidecar admin endpoint directly. The CP fetches from the proxy over its
+// inspect API (GET {cp}/meshes/{mesh}/dataplanes/{name}/{stats,xds,clusters})
+// instead of reaching the sidecar admin endpoint directly. The CP fetches from the proxy over its
 // own mTLS admin channel; it may reshape some responses (config dump is
 // sanitized), but the shapes still match what the stats/clusters/config_dump
 // parsers expect.

@@ -21,7 +21,6 @@ import (
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshratelimit/plugin/v1alpha1"
@@ -36,11 +35,15 @@ import (
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
-	envoy_names "github.com/kumahq/kuma/v3/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 )
 
 var _ = Describe("MeshRateLimit", func() {
+	// inbounds are named the way InboundProxyGenerator names them: the
+	// contextual name of the Dataplane section, here the inbound port
+	inboundName17777 := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(17777))
+	inboundName17778 := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(17778))
+
 	type sidecarTestCase struct {
 		resources         []*core_xds.Resource
 		fromRules         core_rules.FromRules
@@ -90,76 +93,32 @@ var _ = Describe("MeshRateLimit", func() {
 		Entry("basic listener: 2 inbounds one http and second tcp", sidecarTestCase{
 			resources: []*core_xds.Resource{
 				{
-					Name:   "inbound:127.0.0.1:17777",
+					Name:   inboundName17777,
 					Origin: metadata.OriginInbound,
-					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+					Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
+						Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+							Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
 							Configure(
 								HttpInboundRoute(
-									envoy_names.GetInboundRouteName("backend"),
-									"backend",
-									plugins_xds.NewClusterBuilder().WithService("backend").Build(),
+									inboundName17777,
+									inboundName17777,
+									plugins_xds.NewClusterBuilder().WithName(inboundName17777).Build(),
 								),
 							),
 						)).MustBuild(),
 				},
 				{
-					Name:   "inbound:127.0.0.1:17778",
+					Name:   inboundName17778,
 					Origin: metadata.OriginInbound,
-					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
+					Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17778).
+						Configure(InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(TcpProxyDeprecated("127.0.0.1:17778", plugins_xds.NewClusterBuilder().WithName("frontend").Build())),
+							Configure(TcpProxyDeprecated(inboundName17778, plugins_xds.NewClusterBuilder().WithName(inboundName17778).Build())),
 						)).MustBuild(),
 				},
 			},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Local: &api.Local{
-								HTTP: &api.LocalHTTP{
-									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
-									OnRateLimit: &api.OnRateLimit{
-										Status: pointer.To(uint32(444)),
-										Headers: &api.HeaderModifier{
-											Add: &[]api.HeaderKeyValue{
-												{
-													Name:  "x-kuma-rate-limit-header",
-													Value: "test-value",
-												},
-												{
-													Name:  "x-kuma-rate-limit",
-													Value: "other-value",
-												},
-											},
-											Set: &[]api.HeaderKeyValue{
-												{
-													Name:  "x-kuma-rate-limit-header-set",
-													Value: "test-value",
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					}},
-					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Local: &api.Local{
-								HTTP: &api.LocalHTTP{
-									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
-								},
-								TCP: &api.LocalTCP{
-									ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
-								},
-							},
-						},
-					}},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Conf: api.Conf{
@@ -209,27 +168,15 @@ var _ = Describe("MeshRateLimit", func() {
 		}),
 		Entry("tcp rate limiter is disabled", sidecarTestCase{
 			resources: []*core_xds.Resource{{
-				Name:   "inbound:127.0.0.1:17778",
+				Name:   inboundName17778,
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
+				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17778).
+					Configure(InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(TcpProxyDeprecated("127.0.0.1:17778", plugins_xds.NewClusterBuilder().WithName("frontend").Build())),
+						Configure(TcpProxyDeprecated(inboundName17778, plugins_xds.NewClusterBuilder().WithName(inboundName17778).Build())),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Local: &api.Local{
-								TCP: &api.LocalTCP{
-									Disabled:       pointer.To(true),
-									ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
-								},
-							},
-						},
-					}},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17778}: {{
 						Conf: api.Conf{
@@ -247,34 +194,22 @@ var _ = Describe("MeshRateLimit", func() {
 		}),
 		Entry("http rate limiter is disabled", sidecarTestCase{
 			resources: []*core_xds.Resource{{
-				Name:   "inbound:127.0.0.1:17777",
+				Name:   inboundName17777,
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+						Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
 						Configure(
 							HttpInboundRoute(
-								envoy_names.GetInboundRouteName("backend"),
-								"backend",
-								plugins_xds.NewClusterBuilder().WithService("backend").Build(),
+								inboundName17777,
+								inboundName17777,
+								plugins_xds.NewClusterBuilder().WithName(inboundName17777).Build(),
 							),
 						),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Local: &api.Local{
-								HTTP: &api.LocalHTTP{
-									Disabled:    pointer.To(true),
-									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
-								},
-							},
-						},
-					}},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Conf: api.Conf{
@@ -292,26 +227,15 @@ var _ = Describe("MeshRateLimit", func() {
 		}),
 		Entry("tcp rate limiter is not configured", sidecarTestCase{
 			resources: []*core_xds.Resource{{
-				Name:   "inbound:127.0.0.1:17778",
+				Name:   inboundName17778,
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true).
+				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17778).
+					Configure(InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(TcpProxyDeprecated("127.0.0.1:17778", plugins_xds.NewClusterBuilder().WithName("frontend").Build())),
+						Configure(TcpProxyDeprecated(inboundName17778, plugins_xds.NewClusterBuilder().WithName(inboundName17778).Build())),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Local: &api.Local{
-								TCP: &api.LocalTCP{
-									ConnectionRate: nil,
-								},
-							},
-						},
-					}},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17778}: {{
 						Conf: api.Conf{
@@ -328,33 +252,22 @@ var _ = Describe("MeshRateLimit", func() {
 		}),
 		Entry("http rate limiter is not configured", sidecarTestCase{
 			resources: []*core_xds.Resource{{
-				Name:   "inbound:127.0.0.1:17777",
+				Name:   inboundName17777,
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+						Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
 						Configure(
 							HttpInboundRoute(
-								envoy_names.GetInboundRouteName("backend"),
-								"backend",
-								plugins_xds.NewClusterBuilder().WithService("backend").Build(),
+								inboundName17777,
+								inboundName17777,
+								plugins_xds.NewClusterBuilder().WithName(inboundName17777).Build(),
 							),
 						),
 					)).MustBuild(),
 			}},
 			fromRules: core_rules.FromRules{
-				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: subsetutils.Subset{},
-						Conf: api.Conf{
-							Local: &api.Local{
-								HTTP: &api.LocalHTTP{
-									RequestRate: nil,
-								},
-							},
-						},
-					}},
-				},
 				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
 					{Address: "127.0.0.1", Port: 17777}: {{
 						Conf: api.Conf{
@@ -371,16 +284,17 @@ var _ = Describe("MeshRateLimit", func() {
 		}),
 		Entry("inbound listener with catch-all and rules[].matches[].spiffeID", sidecarTestCase{
 			resources: []*core_xds.Resource{{
-				Name:   "inbound:127.0.0.1:17777",
+				Name:   inboundName17777,
 				Origin: metadata.OriginInbound,
-				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true).
+				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil, true)).
+						Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
 						Configure(
 							HttpInboundRoute(
-								envoy_names.GetInboundRouteName("backend"),
-								"backend",
-								plugins_xds.NewClusterBuilder().WithService("backend").Build(),
+								inboundName17777,
+								inboundName17777,
+								plugins_xds.NewClusterBuilder().WithName(inboundName17777).Build(),
 							),
 						),
 					)).MustBuild(),
@@ -446,8 +360,8 @@ var _ = Describe("MeshRateLimit", func() {
 			Labels: map[string]string{},
 		})
 		meshRateLimit.Spec = &api.MeshRateLimit{
-			TargetRef: &common_api.TargetRef{
-				Kind:        common_api.Dataplane,
+			TargetRef: &common_api.TopLevelTargetRef{
+				Kind:        common_api.TopLevelTargetRefKindDataplane,
 				SectionName: pointer.To("ze-port"),
 			},
 			Rules: &[]api.Rule{{
@@ -522,8 +436,8 @@ var _ = Describe("MeshRateLimit", func() {
 			Labels: map[string]string{},
 		})
 		meshRateLimit.Spec = &api.MeshRateLimit{
-			TargetRef: &common_api.TargetRef{
-				Kind:        common_api.Dataplane,
+			TargetRef: &common_api.TopLevelTargetRef{
+				Kind:        common_api.TopLevelTargetRefKindDataplane,
 				SectionName: pointer.To("ze-port"),
 			},
 			Rules: &[]api.Rule{

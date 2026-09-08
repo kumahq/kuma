@@ -280,7 +280,32 @@ to:
 		ErrorCases("invalid backendRefs",
 			[]validators.Violation{{
 				Field:   `spec.to[0].rules[0].default.backendRefs[0].labels`,
-				Message: "must be set when kind is MeshServiceSubset",
+				Message: "must be set when kind is MeshService",
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: frontend
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        backendRefs:
+          - kind: MeshService
+
+`),
+		ErrorCases("legacy subset backendRefs",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].default.backendRefs[0].kind`,
+				Message: "value 'MeshServiceSubset' is not supported",
 			}}, `
 type: MeshHTTPRoute
 mesh: mesh-1
@@ -300,8 +325,6 @@ to:
       default:
         backendRefs:
           - kind: MeshServiceSubset
-            tags:
-              version: v1
 
 `),
 		ErrorCases("missing port in backendRefs",
@@ -329,6 +352,84 @@ to:
           - kind: MeshMultiZoneService
             labels:
               kuma.io/display-name: test-server
+`),
+		ErrorCases("backendRef weights above uint32 max",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].default.backendRefs[0].weight`,
+				Message: "must be in inclusive range [0, 4294967295]",
+			}, {
+				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.weight`,
+				Message: "must be in inclusive range [0, 4294967295]",
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: frontend
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        backendRefs:
+          - kind: MeshService
+            labels:
+              kuma.io/display-name: test-server
+            weight: 4294967296
+        filters:
+          - type: RequestMirror
+            requestMirror:
+              backendRef:
+                kind: MeshService
+                labels:
+                  kuma.io/display-name: mirror
+                weight: 4294967296
+`),
+		ErrorCases("invalid backendRef filters",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].default.backendRefs[0].filters[0].type`,
+				Message: "only RequestHeaderModifier is supported on backendRefs",
+			}, {
+				Field:   `spec.to[0].rules[0].default.backendRefs[1].filters[0].requestHeaderModifier`,
+				Message: validators.MustBeDefined,
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: frontend
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        backendRefs:
+          - kind: MeshService
+            labels:
+              kuma.io/display-name: test-server
+            filters:
+              - type: ResponseHeaderModifier
+                responseHeaderModifier:
+                  set:
+                    - name: foo
+                      value: bar
+          - kind: MeshService
+            labels:
+              kuma.io/display-name: other-server
+            filters:
+              - type: RequestHeaderModifier
 `),
 		ErrorCases("hostnames and hostname to backend rewrite not allowed with services",
 			[]validators.Violation{{
@@ -367,8 +468,8 @@ to:
 `),
 		ErrorCases("invalid backendRef in requestMirror",
 			[]validators.Violation{{
-				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.labels`,
-				Message: "must be set when kind is MeshServiceSubset",
+				Field:   `spec.to[0].rules[0].default.filters[0].requestMirror.backendRef.kind`,
+				Message: "value 'MeshServiceSubset' is not supported",
 			}}, `
 type: MeshHTTPRoute
 mesh: mesh-1
@@ -391,8 +492,6 @@ to:
             requestMirror:
               backendRef:
                 kind: MeshServiceSubset
-                tags:
-                  version: v1
 `),
 		ErrorCases("missing port in requestMirror backendRef",
 			[]validators.Violation{{

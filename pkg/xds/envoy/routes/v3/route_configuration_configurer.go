@@ -22,15 +22,3 @@ func (f RouteConfigurationConfigureFunc) Configure(rc *envoy_config_route_v3.Rou
 
 	return nil
 }
-
-// RouteConfigurationMustConfigureFunc adapts a configuration function that
-// never fails to the RouteConfigurationConfigurer interface.
-type RouteConfigurationMustConfigureFunc func(rc *envoy_config_route_v3.RouteConfiguration)
-
-func (f RouteConfigurationMustConfigureFunc) Configure(rc *envoy_config_route_v3.RouteConfiguration) error {
-	if f != nil {
-		f(rc)
-	}
-
-	return nil
-}

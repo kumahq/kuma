@@ -1,4 +1,4 @@
-# 03. policy doesn't selects a union of inbound tags
+# 03. policy does not select a dataplane whose labels are a union of inbound tags
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-1
@@ -6,7 +6,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web
+      app: web
       version: v1
       env: dev
       team: mesh

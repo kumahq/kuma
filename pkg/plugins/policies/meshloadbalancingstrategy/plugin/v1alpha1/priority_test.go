@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	v1alpha1 "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -12,7 +11,7 @@ import (
 
 var _ = Describe("GetLocalityGroups()", func() {
 	Describe("label fallback when inbound tags are absent", func() {
-		It("should build local lb groups from pod labels when inbound tags are absent", func() {
+		It("should build local lb groups from pod labels", func() {
 			// given: configuration with a single affinity tag
 			conf := &api.Conf{
 				LocalityAwareness: &api.LocalityAwareness{
@@ -24,16 +23,13 @@ var _ = Describe("GetLocalityGroups()", func() {
 				},
 			}
 
-			// given: no inbound tags (tag-free mode)
-			var inboundTags mesh_proto.MultiValueTagSet
-
 			// given: pod labels carry the affinity key
 			podLabels := map[string]string{
 				"region": "eu-west",
 			}
 
 			// when
-			localGroups, _ := v1alpha1.GetLocalityGroups(conf, inboundTags, podLabels, "local-zone")
+			localGroups, _ := v1alpha1.GetLocalityGroups(conf, podLabels, "local-zone")
 
 			// then: pod label value is used as the locality group value
 			Expect(localGroups).To(HaveLen(1))
@@ -56,9 +52,6 @@ var _ = Describe("GetLocalityGroups()", func() {
 				},
 			}
 
-			// given: no inbound tags
-			var inboundTags mesh_proto.MultiValueTagSet
-
 			// given: pod labels supply both affinity keys
 			podLabels := map[string]string{
 				"region": "us-east",
@@ -66,7 +59,7 @@ var _ = Describe("GetLocalityGroups()", func() {
 			}
 
 			// when
-			localGroups, _ := v1alpha1.GetLocalityGroups(conf, inboundTags, podLabels, "local-zone")
+			localGroups, _ := v1alpha1.GetLocalityGroups(conf, podLabels, "local-zone")
 
 			// then: both affinity tags are resolved from pod labels
 			Expect(localGroups).To(HaveLen(2))
@@ -91,42 +84,13 @@ var _ = Describe("GetLocalityGroups()", func() {
 			}
 
 			// given: neither inbound tags nor pod labels supply the key
-			var inboundTags mesh_proto.MultiValueTagSet
 			podLabels := map[string]string{}
 
 			// when
-			localGroups, _ := v1alpha1.GetLocalityGroups(conf, inboundTags, podLabels, "local-zone")
+			localGroups, _ := v1alpha1.GetLocalityGroups(conf, podLabels, "local-zone")
 
 			// then: no groups are produced
 			Expect(localGroups).To(BeEmpty())
-		})
-
-		It("should prefer inbound tags over pod labels when both are present", func() {
-			// given
-			conf := &api.Conf{
-				LocalityAwareness: &api.LocalityAwareness{
-					LocalZone: &api.LocalZone{
-						AffinityTags: pointer.To([]api.AffinityTag{
-							{Key: "region"},
-						}),
-					},
-				},
-			}
-
-			// given: inbound tag is present alongside a conflicting pod label
-			inboundTags := mesh_proto.MultiValueTagSet{
-				"region": {"eu-west": true},
-			}
-			podLabels := map[string]string{
-				"region": "us-east",
-			}
-
-			// when
-			localGroups, _ := v1alpha1.GetLocalityGroups(conf, inboundTags, podLabels, "local-zone")
-
-			// then: inbound tag value wins
-			Expect(localGroups).To(HaveLen(1))
-			Expect(localGroups[0].Value).To(Equal("eu-west"))
 		})
 	})
 })

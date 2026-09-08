@@ -6,7 +6,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web
+      app: web
       version: v1
   rules:
     - default:
@@ -22,7 +22,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web
+      app: web
       version: v1
   rules:
     - default:
@@ -64,7 +64,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web
+      app: web
   rules:
     - default:
         allow:
@@ -79,7 +79,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web
+      app: web
   rules:
     - default:
         allow:

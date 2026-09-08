@@ -241,6 +241,244 @@ var _ = Describe("Cluster modifications", func() {
                   enforcingSuccessRate: 100
                 type: ORIGINAL_DST`,
 		}),
+		Entry("should patch circuit breaker threshold instead of appending a duplicate priority entry", testCase{
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    circuitBreakers:
+                      thresholds:
+                      - trackRemaining: true
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: outbound:passthrough:ipv4
+                    type: ORIGINAL_DST
+`,
+				},
+			},
+			modifications: []string{
+				`
+                cluster:
+                   operation: Patch
+                   match:
+                     name: outbound:passthrough:ipv4
+                   value: |
+                     circuitBreakers:
+                       thresholds:
+                       - maxConnections: 8192
+                       - priority: HIGH
+                         maxConnections: 2048`,
+			},
+			expected: `
+            resources:
+            - name: outbound:passthrough:ipv4
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                circuitBreakers:
+                  thresholds:
+                  - maxConnections: 8192
+                    trackRemaining: true
+                  - maxConnections: 2048
+                    priority: HIGH
+                lbPolicy: CLUSTER_PROVIDED
+                name: outbound:passthrough:ipv4
+                type: ORIGINAL_DST`,
+		}),
+		Entry("should patch per host circuit breaker threshold instead of appending a duplicate priority entry", testCase{
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    circuitBreakers:
+                      perHostThresholds:
+                      - trackRemaining: true
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: outbound:passthrough:ipv4
+                    type: ORIGINAL_DST
+`,
+				},
+			},
+			modifications: []string{
+				`
+                cluster:
+                   operation: Patch
+                   match:
+                     name: outbound:passthrough:ipv4
+                   value: |
+                     circuitBreakers:
+                       perHostThresholds:
+                       - maxConnections: 512`,
+			},
+			expected: `
+            resources:
+            - name: outbound:passthrough:ipv4
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                circuitBreakers:
+                  perHostThresholds:
+                  - maxConnections: 512
+                    trackRemaining: true
+                lbPolicy: CLUSTER_PROVIDED
+                name: outbound:passthrough:ipv4
+                type: ORIGINAL_DST`,
+		}),
+		Entry("should patch the circuit breaker threshold matching the patched priority", testCase{
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    circuitBreakers:
+                      thresholds:
+                      - trackRemaining: true
+                      - priority: HIGH
+                        maxRequests: 5
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: outbound:passthrough:ipv4
+                    type: ORIGINAL_DST
+`,
+				},
+			},
+			modifications: []string{
+				`
+                cluster:
+                   operation: Patch
+                   match:
+                     name: outbound:passthrough:ipv4
+                   value: |
+                     circuitBreakers:
+                       thresholds:
+                       - priority: HIGH
+                         maxConnections: 77`,
+			},
+			expected: `
+            resources:
+            - name: outbound:passthrough:ipv4
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                circuitBreakers:
+                  thresholds:
+                  - trackRemaining: true
+                  - maxConnections: 77
+                    maxRequests: 5
+                    priority: HIGH
+                lbPolicy: CLUSTER_PROVIDED
+                name: outbound:passthrough:ipv4
+                type: ORIGINAL_DST`,
+		}),
+		Entry("should patch the generated threshold when the patch states priority DEFAULT explicitly", testCase{
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    circuitBreakers:
+                      thresholds:
+                      - trackRemaining: true
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: outbound:passthrough:ipv4
+                    type: ORIGINAL_DST
+`,
+				},
+			},
+			modifications: []string{
+				`
+                cluster:
+                   operation: Patch
+                   match:
+                     name: outbound:passthrough:ipv4
+                   value: |
+                     circuitBreakers:
+                       thresholds:
+                       - priority: DEFAULT
+                         maxConnections: 8192`,
+			},
+			expected: `
+            resources:
+            - name: outbound:passthrough:ipv4
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                circuitBreakers:
+                  thresholds:
+                  - maxConnections: 8192
+                    trackRemaining: true
+                lbPolicy: CLUSTER_PROVIDED
+                name: outbound:passthrough:ipv4
+                type: ORIGINAL_DST`,
+		}),
+		Entry("should drop a second threshold repeating a priority already patched", testCase{
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    circuitBreakers:
+                      thresholds:
+                      - trackRemaining: true
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: outbound:passthrough:ipv4
+                    type: ORIGINAL_DST
+`,
+				},
+			},
+			modifications: []string{
+				`
+                cluster:
+                   operation: Patch
+                   match:
+                     name: outbound:passthrough:ipv4
+                   value: |
+                     circuitBreakers:
+                       thresholds:
+                       - maxConnections: 1
+                       - maxConnections: 2`,
+			},
+			expected: `
+            resources:
+            - name: outbound:passthrough:ipv4
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                circuitBreakers:
+                  thresholds:
+                  - maxConnections: 1
+                    trackRemaining: true
+                lbPolicy: CLUSTER_PROVIDED
+                name: outbound:passthrough:ipv4
+                type: ORIGINAL_DST`,
+		}),
+		Entry("should keep appending repeated fields that are not keyed", testCase{
+			clusters: []testCaseCluster{
+				{
+					yaml: `
+                    healthChecks:
+                    - timeout: 5s
+                      interval: 10s
+                      tcpHealthCheck: {}
+                    lbPolicy: CLUSTER_PROVIDED
+                    name: outbound:passthrough:ipv4
+                    type: ORIGINAL_DST
+`,
+				},
+			},
+			modifications: []string{
+				`
+                cluster:
+                   operation: Patch
+                   match:
+                     name: outbound:passthrough:ipv4
+                   value: |
+                     healthChecks:
+                     - timeout: 2s
+                       interval: 3s
+                       tcpHealthCheck: {}`,
+			},
+			expected: `
+            resources:
+            - name: outbound:passthrough:ipv4
+              resource:
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+                healthChecks:
+                - interval: 10s
+                  tcpHealthCheck: {}
+                  timeout: 5s
+                - interval: 3s
+                  tcpHealthCheck: {}
+                  timeout: 2s
+                lbPolicy: CLUSTER_PROVIDED
+                name: outbound:passthrough:ipv4
+                type: ORIGINAL_DST`,
+		}),
 		Entry("should patch cluster matching origins with JsonPatch", testCase{
 			clusters: []testCaseCluster{
 				{

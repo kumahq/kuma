@@ -2,7 +2,6 @@ package destinationname
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
@@ -26,24 +25,4 @@ func Resolve(dest core.Destination, port core.Port) (string, error) {
 	default:
 		return kri.WithSectionName(kri.From(dest), port.GetName()).String(), nil
 	}
-}
-
-func ResolveLegacyFromDestination(dest core.Destination, port core.Port) string {
-	return ResolveLegacyFromKRI(
-		kri.From(dest),
-		dest.Descriptor().ShortName,
-		port.GetValue(),
-	)
-}
-
-func ResolveLegacyFromKRI(id kri.Identifier, resourceTypeShortName string, port int32) string {
-	return fmt.Sprintf(
-		"%s_%s_%s_%s_%s_%d",
-		id.Mesh,
-		id.Name,
-		id.Namespace,
-		id.Zone,
-		resourceTypeShortName,
-		port,
-	)
 }

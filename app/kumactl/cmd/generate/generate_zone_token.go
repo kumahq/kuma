@@ -33,13 +33,10 @@ func NewGenerateZoneTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "zone-token",
 		Short: "Generate Zone Token",
-		Long:  `Generate Zone Token that is used to prove identity of zone components (Zone Ingress, Zone Egress).`,
+		Long:  `Generate Zone Token that is used to prove identity of a zone.`,
 		Example: `
 Generate token using a control plane
 $ kumactl generate zone-token --zone zone-1 --valid-for 24h
-$ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope egress
-$ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope ingress
-$ kumactl generate zone-token --zone zone-1 --valid-for 24h --scope ingress --scope egress
 
 Generate token using offline signing key
 $ kumactl generate zone-token --zone zone-1 --valid-for 24h --signing-key-path /keys/key.pem --kid 1`,

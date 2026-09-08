@@ -107,10 +107,6 @@ func ZoneProxy() {
 	const targetedMES = "mfi-target"
 	const untargetedMES = "mfi-other"
 
-	dppEnvs := map[string]string{
-		"KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED": "true",
-	}
-
 	var zoneName, externalServiceDockerName string
 
 	trafficAllowed := func(address string) {
@@ -159,7 +155,6 @@ func ZoneProxy() {
 			Install(zoneproxy.Install(
 				zoneproxy.WithMesh(meshName),
 				zoneproxy.WithEgress(),
-				zoneproxy.WithDpEnvs(dppEnvs),
 			)).
 			Install(TestServerExternalServiceUniversal(
 				externalServiceApp,
@@ -172,7 +167,6 @@ func ZoneProxy() {
 				meshName,
 				WithTransparentProxy(true),
 				WithWorkload(demoClient),
-				WithDpEnvs(dppEnvs),
 			)).
 			Install(YamlUniversal(zoneProxyMeshExternalService(meshName, targetedMES, externalServiceDockerName))).
 			Install(YamlUniversal(zoneProxyMeshExternalService(meshName, untargetedMES, externalServiceDockerName))).

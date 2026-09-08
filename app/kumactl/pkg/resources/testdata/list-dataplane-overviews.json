@@ -10,11 +10,7 @@
                     "inbound": [
                         {
                             "port": 8080,
-                            "servicePort": 80,
-                            "tags": {
-                                "service": "mobile",
-                                "version": "v1"
-                            }
+                            "servicePort": 80
                         }
                     ]
                 }

@@ -89,7 +89,7 @@ func (c *virtualHostModificator) patch(routeCfg *envoy_route.RouteConfiguration,
 				continue
 			}
 
-			util_proto.Merge(vHost, vHostPatch)
+			util_proto.Merge(vHost, vHostPatch, util_proto.ReplaceDurationOptionFn)
 		}
 	}
 

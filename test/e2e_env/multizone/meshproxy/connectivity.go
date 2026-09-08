@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -23,24 +22,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/v3/test/framework/envs/multizone"
 )
-
-const containerPatchName = "enable-unified-resource-naming-meshproxy"
-
-func containerPatch() string {
-	return fmt.Sprintf(`apiVersion: kuma.io/v1alpha1
-kind: ContainerPatch
-metadata:
-  name: %s
-  namespace: %s
-spec:
-  sidecarPatch:
-  - op: add
-    path: /env/-
-    value: '{
-      "name": "KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED",
-      "value": "true"
-    }'`, containerPatchName, Config.KumaNamespace)
-}
 
 func Connectivity() {
 	namespace := "meshproxy"
@@ -68,25 +49,19 @@ func Connectivity() {
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		group := errgroup.Group{}
-		sidecarAnnotations := map[string]string{
-			metadata.KumaContainerPatches: containerPatchName,
-		}
 
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(externalNamespace)).
-			Install(YamlK8s(containerPatch())).
 			Install(Parallel(
 				testserver.Install(
 					testserver.WithNamespace(namespace),
 					testserver.WithMesh(meshName),
 					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
-					testserver.WithPodAnnotations(sidecarAnnotations),
 				),
 				democlient.Install(
 					democlient.WithNamespace(namespace),
 					democlient.WithMesh(meshName),
-					democlient.WithPodAnnotations(sidecarAnnotations),
 				),
 				testserver.Install(
 					testserver.WithNamespace(externalNamespace),
@@ -99,13 +74,11 @@ func Connectivity() {
 
 		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(YamlK8s(containerPatch())).
 			Install(Parallel(
 				testserver.Install(
 					testserver.WithNamespace(namespace),
 					testserver.WithMesh(meshName),
 					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
-					testserver.WithPodAnnotations(sidecarAnnotations),
 				),
 				zoneProxies(zoneproxy.WithNamespace(namespace)),
 			)).
@@ -113,8 +86,8 @@ func Connectivity() {
 
 		NewClusterSetup().
 			Install(Parallel(
-				DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithWorkload("demo-client"), WithDpEnvs(map[string]string{"KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED": "true"})),
-				TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}), WithWorkload("test-server"), WithDpEnvs(map[string]string{"KUMA_DATAPLANE_RUNTIME_UNIFIED_RESOURCE_NAMING_ENABLED": "true"})),
+				DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithWorkload("demo-client")),
+				TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}), WithWorkload("test-server")),
 				TestServerExternalServiceUniversal(fmt.Sprintf("external-service-%s", meshName), 8080, false, WithDockerContainerName("kuma-es-4_external-service-meshproxy")),
 				zoneProxies(),
 			)).

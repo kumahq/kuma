@@ -18,16 +18,15 @@ func (r *MeshLoadBalancingStrategyResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.TopLevelTargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
-	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
+	targetRefErr := mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.Dataplane,
 		},
-		GatewayListenerTagsAllowed: true,
 	})
 	return targetRefErr
 }
@@ -36,7 +35,7 @@ func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		errs := mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
+		errs := mesh.ValidateTargetRef(toItem.TargetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
@@ -55,7 +54,7 @@ func validateConf(conf Conf, to To) validators.ValidationError {
 	var verr validators.ValidationError
 
 	// For MeshHTTPRoute, only hashPolicies is allowed
-	if to.TargetRef.Kind == common_api.MeshHTTPRoute {
+	if to.TargetRef.Kind == common_api.OutboundTargetRefKindMeshHTTPRoute {
 		verr.AddError("hashPolicies", validateHashPolicies(conf.HashPolicies))
 
 		// Add validation errors if other fields are specified
@@ -114,8 +113,9 @@ func validateCrossZone(crossZone *CrossZone, to To) validators.ValidationError {
 	if crossZone == nil {
 		return verr
 	}
-	if to.TargetRef.Kind == common_api.MeshService && (pointer.Deref(to.TargetRef.SectionName) != "" || len(pointer.Deref(to.TargetRef.Labels)) > 0) {
-		verr.AddViolationAt(validators.Root(), fmt.Sprintf("%s: MeshService traffic is local", validators.MustNotBeSet))
+	if to.TargetRef.Kind != common_api.OutboundTargetRefKindMeshMultiZoneService {
+		verr.AddViolationAt(validators.Root(), "crossZone is only supported when targetRef.kind is MeshMultiZoneService")
+		return verr
 	}
 
 	for idx, failover := range pointer.Deref(crossZone.Failover) {
@@ -214,10 +214,12 @@ func validateHashPolicies(conf *[]HashPolicy) validators.ValidationError {
 			if policy.FilterState == nil {
 				verr.AddViolationAt(path.Field("filterState"), validators.MustBeDefined)
 			}
-		case ConnectionType, SourceIPType:
+		case ConnectionType:
 			if policy.Connection == nil {
 				verr.AddViolationAt(path.Field("connection"), validators.MustBeDefined)
 			}
+		default:
+			verr.AddViolationAt(path.Field("type"), "unrecognized type")
 		}
 	}
 	return verr

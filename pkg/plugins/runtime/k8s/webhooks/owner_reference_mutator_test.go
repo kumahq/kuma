@@ -7,7 +7,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	admissionv1 "k8s.io/api/admission/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -44,16 +43,14 @@ var _ = Describe("OwnerReferenceMutator", func() {
 				CpMode:                 given.cpMode,
 			}
 			req := kube_admission.Request{
-				AdmissionRequest: admissionv1.AdmissionRequest{
-					UID: "12345",
-					Object: kube_runtime.RawExtension{
-						Raw: []byte(given.inputObject),
-					},
-					Kind: kube_meta.GroupVersionKind{
-						Group:   k8sGroupVersionKind.Group,
-						Version: k8sGroupVersionKind.Version,
-						Kind:    k8sGroupVersionKind.Kind,
-					},
+				UID: "12345",
+				Object: kube_runtime.RawExtension{
+					Raw: []byte(given.inputObject),
+				},
+				Kind: kube_meta.GroupVersionKind{
+					Group:   k8sGroupVersionKind.Group,
+					Version: k8sGroupVersionKind.Version,
+					Kind:    k8sGroupVersionKind.Kind,
 				},
 			}
 			r := wh.Handle(context.Background(), req)

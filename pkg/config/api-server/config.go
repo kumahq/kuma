@@ -25,8 +25,6 @@ type ApiServerConfig struct {
 	HTTP ApiServerHTTPConfig `json:"http"`
 	// HTTPS configuration of the API Server
 	HTTPS ApiServerHTTPSConfig `json:"https"`
-	// Authentication configuration for administrative endpoints like Dataplane Token or managing Secrets
-	Auth ApiServerAuth `json:"auth"`
 	// Authentication configuration for API Server
 	Authn ApiServerAuthn `json:"authn"`
 	// BasePath the path to serve the API from
@@ -139,15 +137,9 @@ func (a *ApiServerHTTPSConfig) Validate() error {
 	return errs
 }
 
-// ApiServerAuth defines API Server authentication configuration
-type ApiServerAuth struct {
-	// Directory of authorized client certificates (only valid in HTTPS)
-	ClientCertsDir string `json:"clientCertsDir" envconfig:"kuma_api_server_auth_client_certs_dir"`
-}
-
 // ApiServerAuthn defines Api Server Authentication configuration
 type ApiServerAuthn struct {
-	// Type of authentication mechanism (available values: "clientCerts", "tokens")
+	// Type of authentication mechanism ("tokens" is the built-in/default value; plugin-provided authn types may also be available)
 	Type string `json:"type" envconfig:"kuma_api_server_authn_type"`
 	// Localhost is authenticated as a user admin of group admin
 	LocalhostIsAdmin bool `json:"localhostIsAdmin" envconfig:"kuma_api_server_authn_localhost_is_admin"`
@@ -203,17 +195,17 @@ func (t TokensValidator) Validate() error {
 func (a *ApiServerConfig) Validate() error {
 	var errs error
 	if err := a.HTTP.Validate(); err != nil {
-		errs = multierr.Append(err, errors.Wrap(err, ".HTTP not valid"))
+		errs = multierr.Append(errs, errors.Wrap(err, ".HTTP not valid"))
 	}
 	if err := a.HTTPS.Validate(); err != nil {
-		errs = multierr.Append(err, errors.Wrap(err, ".HTTPS not valid"))
+		errs = multierr.Append(errs, errors.Wrap(err, ".HTTPS not valid"))
 	}
 	if err := a.GUI.Validate(); err != nil {
-		errs = multierr.Append(err, errors.Wrap(err, ".GUI not valid"))
+		errs = multierr.Append(errs, errors.Wrap(err, ".GUI not valid"))
 	}
 	if a.RootUrl != "" {
 		if _, err := url.Parse(a.RootUrl); err != nil {
-			errs = multierr.Append(err, errors.New("RootUrl is not a valid URL"))
+			errs = multierr.Append(errs, errors.New("RootUrl is not a valid URL"))
 		}
 	}
 	if a.BasePath != "" {
@@ -223,7 +215,7 @@ func (a *ApiServerConfig) Validate() error {
 		}
 	}
 	if err := a.Authn.Validate(); err != nil {
-		errs = multierr.Append(err, errors.Wrap(err, ".Authn is not valid"))
+		errs = multierr.Append(errs, errors.Wrap(err, ".Authn is not valid"))
 	}
 	if a.ReadHeaderTimeout.Duration < 0 {
 		errs = multierr.Append(errs, errors.New(".ReadHeaderTimeout must be greater or equal 0s"))
@@ -258,9 +250,6 @@ func DefaultApiServerConfig() *ApiServerConfig {
 			TlsKeyFile:      "", // autoconfigured
 			TlsMinVersion:   "TLSv1_2",
 			TlsCipherSuites: []string{},
-		},
-		Auth: ApiServerAuth{
-			ClientCertsDir: "",
 		},
 		Authn: ApiServerAuthn{
 			Type:             "tokens",

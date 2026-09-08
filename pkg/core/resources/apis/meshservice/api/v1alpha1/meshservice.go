@@ -28,8 +28,6 @@ type Port struct {
 	AppProtocol core_meta.Protocol `json:"appProtocol,omitempty"`
 }
 
-const maxNameLength = 63
-
 // MeshService represents a service in the mesh with its connectivity and health information. It defines service endpoints by selecting data plane proxies through labels or direct references, configures service ports and protocols, tracks service availability and health status, and provides automatic VIP assignment and hostname generation for service discovery.
 // +kuma:policy:is_policy=false
 // +kuma:policy:has_status=true
@@ -67,12 +65,19 @@ const (
 	StateUnavailable State = "Unavailable"
 )
 
-// +kubebuilder:validation:Enum=Ready;NotReady
+// +kubebuilder:validation:Enum=Ready;NotReady;Pending
 type TLSStatus string
 
 const (
 	TLSReady    TLSStatus = "Ready"
 	TLSNotReady TLSStatus = "NotReady"
+	// TLSPending means every proxy backing the service is certified, but its
+	// clients are not told to originate mTLS yet. A proxy gets its identity
+	// independently of the destination's, so flipping clients in the same pass
+	// that certifies the destination drops every request sent before the
+	// destination's inbound TLS chain arrives. Holding one status interval here
+	// gives destinations that time; the next pass promotes to Ready.
+	TLSPending TLSStatus = "Pending"
 )
 
 type TLS struct {
@@ -88,12 +93,11 @@ type MeshServiceStatus struct {
 	DataplaneProxies DataplaneProxies `json:"dataplaneProxies,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=ServiceTag;SpiffeID
+// +kubebuilder:validation:Enum=SpiffeID
 type MeshServiceIdentityType string
 
 const (
-	MeshServiceIdentityServiceTagType = "ServiceTag"
-	MeshServiceIdentitySpiffeIDType   = "SpiffeID"
+	MeshServiceIdentitySpiffeIDType = "SpiffeID"
 )
 
 type MeshServiceIdentity struct {

@@ -12,8 +12,6 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
-	secret_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	common_k8s "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -21,18 +19,13 @@ import (
 )
 
 type SecretValidator struct {
-	Decoder      admission.Decoder
-	Client       kube_client.Reader
-	Validator    secret_manager.SecretValidator
-	UnsafeDelete bool
-	CpMode       config_core.CpMode
+	Decoder admission.Decoder
+	Client  kube_client.Reader
 }
 
 func (v *SecretValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	var resp admission.Response
 	switch req.Operation {
-	case admissionv1.Delete:
-		resp = v.handleDelete(ctx, req)
 	case admissionv1.Create, admissionv1.Update:
 		resp = v.handleUpdate(ctx, req)
 	default:
@@ -66,31 +59,6 @@ func (v *SecretValidator) handleUpdate(ctx context.Context, req admission.Reques
 			return convertValidationErrorOf(*verr, secret, secret)
 		}
 		return admission.Denied(err.Error())
-	}
-	return admission.Allowed("")
-}
-
-func (v *SecretValidator) handleDelete(ctx context.Context, req admission.Request) admission.Response {
-	if v.UnsafeDelete {
-		return admission.Allowed("")
-	}
-	secret := &kube_core.Secret{}
-	if err := v.Client.Get(ctx, kube_types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, secret); err != nil {
-		if kube_apierrs.IsNotFound(err) { // let K8S handle case when resource is not found
-			return admission.Allowed("")
-		}
-		return admission.Errored(http.StatusBadRequest, err)
-	}
-	if secret.Type == common_k8s.MeshSecretType {
-		if syncedResource(v.CpMode, secret.GetLabels()) {
-			return admission.Allowed("ignore. It's synced resource.")
-		}
-		if err := v.Validator.ValidateDelete(ctx, req.Name, meshOfSecret(secret)); err != nil {
-			if verr, ok := err.(*validators.ValidationError); ok {
-				return convertValidationErrorOf(*verr, secret, secret)
-			}
-			return admission.Denied(err.Error())
-		}
 	}
 	return admission.Allowed("")
 }

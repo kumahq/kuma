@@ -86,11 +86,9 @@ func (v *PostgresContainer) Start() error {
 	buildArgs["UNIQUEID"] = &uniqueId
 
 	req := testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    resourceDir(),
-			Dockerfile: "postgres.dockerfile",
-			BuildArgs:  buildArgs,
-		},
+		Context:    resourceDir(),
+		Dockerfile: "postgres.dockerfile",
+		BuildArgs:  buildArgs,
 		Env: map[string]string{
 			"POSTGRES_USER":     "kuma",
 			"POSTGRES_PASSWORD": "kuma",

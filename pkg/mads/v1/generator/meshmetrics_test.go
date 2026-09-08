@@ -28,9 +28,6 @@ var _ = Describe("Generate()", func() {
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 					Port:        80,
 					ServicePort: 8080,
-					Tags: map[string]string{
-						"kuma.io/service": "backend",
-					},
 				}},
 			},
 		},

@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
@@ -22,6 +21,9 @@ import (
 func ChangeService() {
 	const namespace = "changesvc"
 	const mesh = "changesvc"
+	const identityName = "changesvc-identity"
+
+	trustDomain := fmt.Sprintf("%s.default.mesh.local", mesh)
 
 	firstTestServerLabels := map[string]string{
 		"app":                  "test-server",
@@ -41,13 +43,12 @@ func ChangeService() {
 
 	newSvc := func(selector map[string]string) *corev1.Service {
 		return &corev1.Service{
-			TypeMeta: kube_meta.TypeMeta{
-				Kind:       "Service",
-				APIVersion: "v1",
-			},
-			ObjectMeta: kube_meta.ObjectMeta{
-				Name:      "test-server",
-				Namespace: namespace,
+			Kind:       "Service",
+			APIVersion: "v1",
+			Name:       "test-server",
+			Namespace:  namespace,
+			Labels: map[string]string{
+				"kuma.io/mesh": mesh,
 			},
 			Spec: corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
@@ -55,7 +56,7 @@ func ChangeService() {
 						Name:        "main",
 						Port:        int32(80),
 						TargetPort:  intstr.FromString("main"),
-						AppProtocol: pointer.To("htt"),
+						AppProtocol: pointer.To("http"),
 					},
 				},
 				Selector: selector,
@@ -65,8 +66,9 @@ func ChangeService() {
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshKubernetes(mesh)).
-			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
+			Install(MeshKubernetes(mesh)).
+			Install(MeshIdentityBundledKubernetes(mesh, identityName)).
+			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity(mesh, trustDomain)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
 				testserver.Install(
@@ -173,7 +175,7 @@ func ChangeService() {
 		Expect(failedErr).ToNot(HaveOccurred())
 	})
 
-	It("should switch to the instance of a service that in not in the mesh", func() {
+	It("should fail fast when the service selects instances outside the mesh", func() {
 		// given
 		Expect(kubernetes.Cluster.Install(YamlK8sObject(newSvc(firstTestServerLabels)))).To(Succeed())
 		Eventually(func(g Gomega) {
@@ -182,15 +184,21 @@ func ChangeService() {
 			g.Expect(instance).To(Equal("test-server-first"))
 		}, "30s", "1s").Should(Succeed())
 
-		// when
+		// when the selector moves onto pods that have sidecar injection disabled
 		err := kubernetes.Cluster.Install(YamlK8sObject(newSvc(thirdTestServerLabels)))
 
-		// then
+		// then the MeshService selects dataplanes, those pods have none, so
+		// requests fail fast instead of hanging
 		Expect(err).To(Succeed())
 		Eventually(func(g Gomega) {
-			instance, err := doRequest()
+			resp, err := client.CollectFailure(
+				kubernetes.Cluster,
+				"demo-client",
+				"test-server:80",
+				client.FromKubernetesPod(namespace, "demo-client"),
+			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(instance).To(Equal("test-server-third"))
+			g.Expect(resp.ResponseCode).To(Equal(503))
 		}, "30s", "1s").Should(Succeed())
 	})
 }

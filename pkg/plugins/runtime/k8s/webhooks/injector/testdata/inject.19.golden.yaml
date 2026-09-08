@@ -6,8 +6,6 @@ metadata:
     kuma.io/application-probe-proxy-port: "0"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/sidecar-injected: "true"
-    kuma.io/virtual-probes: disabled
-    kuma.io/virtual-probes-port: "9000"
     traffic.kuma.io/transparent-proxy-config: |
       ipFamilyMode: dualstack
       kumaDPUser: "5678"
@@ -20,6 +18,10 @@ metadata:
           skipConntrackZoneSplit: false
         inbound:
           enabled: true
+          excludePorts:
+          - 9902
+          - 3001
+          - 8080
           port: 15006
         outbound:
           enabled: true
@@ -142,6 +144,8 @@ spec:
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_ENABLED
       value: "false"
+    - name: KUMA_READINESS_PORT
+      value: "9902"
     - name: POD_NAME
       valueFrom:
         fieldRef:
@@ -165,7 +169,7 @@ spec:
       failureThreshold: 212
       httpGet:
         path: /ready
-        port: 9901
+        port: 9902
       initialDelaySeconds: 260
       periodSeconds: 25
       successThreshold: 1
@@ -175,7 +179,7 @@ spec:
       failureThreshold: 112
       httpGet:
         path: /ready
-        port: 9901
+        port: 9902
       initialDelaySeconds: 11
       periodSeconds: 15
       successThreshold: 11
@@ -201,7 +205,7 @@ spec:
     startupProbe:
       httpGet:
         path: /ready
-        port: 9901
+        port: 9902
       successThreshold: 1
     volumeMounts:
     - mountPath: /tmp

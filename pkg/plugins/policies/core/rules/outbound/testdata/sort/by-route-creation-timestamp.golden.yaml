@@ -1,0 +1,49 @@
+- Entry:
+    default:
+      connectionTimeout: 2s
+    targetRef:
+      kind: Mesh
+  Meta:
+    creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1___matched-for-rules-aaa-second_
+    labels:
+      gateways.kuma.io/gateway.networking.k8s.io-route-creation-timestamp: "200"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: matched-for-rules-aaa-second
+    type: MeshTimeout
+  RuleIndex: 0
+  TopLevel:
+    kind: Mesh
+- Entry:
+    default:
+      connectionTimeout: 1s
+    targetRef:
+      kind: Mesh
+  Meta:
+    creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1___matched-for-rules-zzz-first_
+    labels:
+      gateways.kuma.io/gateway.networking.k8s.io-route-creation-timestamp: "100"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: matched-for-rules-zzz-first
+    type: MeshTimeout
+  RuleIndex: 0
+  TopLevel:
+    kind: Mesh
+- Entry:
+    default:
+      connectionTimeout: 3s
+    targetRef:
+      kind: Mesh
+  Meta:
+    creationTime: "0001-01-01T00:00:00Z"
+    kri: kri_mt_mesh-1___matched-for-rules-mmm-third_
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: matched-for-rules-mmm-third
+    type: MeshTimeout
+  RuleIndex: 0
+  TopLevel:
+    kind: Mesh

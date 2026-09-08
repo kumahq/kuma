@@ -171,7 +171,7 @@ var _ = Describe("genConfig", func() {
 		Expect(result.GetDynamicResources().GetAdsConfig().GetGrpcServices()).To(HaveLen(1))
 		Expect(result.GetDynamicResources().GetAdsConfig().GrpcServices[0].GetEnvoyGrpc()).To(Equal(
 			&envoy_core_v3.GrpcService_EnvoyGrpc{
-				ClusterName: "ads_cluster",
+				ClusterName: "system_ads",
 			},
 		))
 		Expect(result.GetDynamicResources().GetAdsConfig().GrpcServices[0].InitialMetadata[0]).To(Equal(
@@ -179,7 +179,7 @@ var _ = Describe("genConfig", func() {
 		))
 		Expect(result.GetHdsConfig().GrpcServices[0].GetEnvoyGrpc()).To(Equal(
 			&envoy_core_v3.GrpcService_EnvoyGrpc{
-				ClusterName: "ads_cluster",
+				ClusterName: "system_ads",
 			},
 		))
 		Expect(result.HdsConfig.GrpcServices[0].InitialMetadata[0]).To(Equal(
@@ -208,7 +208,7 @@ var _ = Describe("genConfig", func() {
 		Expect(result.GetDynamicResources().GetAdsConfig().GetGrpcServices()).To(HaveLen(1))
 		Expect(result.GetDynamicResources().GetAdsConfig().GrpcServices[0].GetEnvoyGrpc()).To(Equal(
 			&envoy_core_v3.GrpcService_EnvoyGrpc{
-				ClusterName: "ads_cluster",
+				ClusterName: "system_ads",
 			},
 		))
 		Expect(result.GetDynamicResources().GetAdsConfig().GrpcServices[0].InitialMetadata[0]).To(Equal(
@@ -216,7 +216,7 @@ var _ = Describe("genConfig", func() {
 		))
 		Expect(result.GetHdsConfig().GrpcServices[0].GetEnvoyGrpc()).To(Equal(
 			&envoy_core_v3.GrpcService_EnvoyGrpc{
-				ClusterName: "ads_cluster",
+				ClusterName: "system_ads",
 			},
 		))
 		Expect(result.HdsConfig.GrpcServices[0].InitialMetadata[0]).To(Equal(

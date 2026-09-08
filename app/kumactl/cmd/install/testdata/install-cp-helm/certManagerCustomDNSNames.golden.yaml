@@ -139,7 +139,9 @@ rules:
   - apiGroups: # Gateway API
       - gateway.networking.k8s.io
     resources:
+      - grpcroutes
       - httproutes
+      - referencegrants
     verbs:
       - get
       - list
@@ -160,12 +162,7 @@ rules:
       - meshes
       - zones
       - zoneinsights
-      - zoneingresses
-      - zoneingressinsights
-      - zoneegresses
-      - zoneegressinsights
       - meshinsights
-      - serviceinsights
       - containerpatches
       - meshaccesslogs
       - meshcircuitbreakers
@@ -235,18 +232,13 @@ rules:
       - create
       - patch
   - apiGroups:
-    # required by MeshGateway
+    # required to resolve the workload name behind a serviceless Pod
       - "apps"
     resources:
-      - deployments
       - replicasets
     verbs:
-      - create
-      - delete
       - get
       - list
-      - patch
-      - update
       - watch
   - apiGroups:
       - "batch"
@@ -257,16 +249,13 @@ rules:
       - list
       - watch
   - apiGroups:
-    # required by MeshGateway
       - ""
     resources:
       - services
     verbs:
       - get
-      - delete
       - list
       - watch
-      - create
       - update
       - patch
   - apiGroups:
@@ -281,6 +270,7 @@ rules:
     # Gateway API
       - gateway.networking.k8s.io
     resources:
+      - grpcroutes
       - httproutes
     verbs:
       - create
@@ -290,6 +280,14 @@ rules:
       - patch
       - update
       - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - grpcroutes/status
+    verbs:
+      - get
+      - patch
+      - update
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
@@ -386,6 +384,7 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
+      - grpcroutes
       - httproutes
     verbs:
       - create
@@ -395,6 +394,14 @@ rules:
       - patch
       - update
       - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - grpcroutes/status
+    verbs:
+      - get
+      - patch
+      - update
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
@@ -485,7 +492,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 1fa6f39d97a8aad47eff6f6670269d3333a30c2e107b0a9d14b2aa23e0f3bf24
-        checksum/tls-secrets: d9516ca4e1a97842b76f8f94f479b7b6dc1a5efbe021dab6abdc407e6a459d0a
+        checksum/tls-secrets: 70ec950dfed1e939554cf4ecc48fb145391899439a98289d74f3e2f26405802a
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -529,6 +536,10 @@ spec:
           image: "docker.io/kumahq/kuma-cp:0.0.1"
           imagePullPolicy: IfNotPresent
           securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
             readOnlyRootFilesystem: true
           env:
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
@@ -595,8 +606,6 @@ spec:
               value: "docker.io/kumahq/kuma-dp:0.0.1"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
               value: "kuma-transparent-proxy-config"
-            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_UNIFIED_RESOURCE_NAMING_ENABLED
-              value: "true"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
               value: "kuma-system"
             - name: KUMA_STORE_TYPE
@@ -716,11 +725,6 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - zoneingresses
-          - zoneingressinsights
-          - zoneegresses
-          - zoneegressinsights
-          - serviceinsights
           - zone
           - zoneinsights
           - meshaccesslogs

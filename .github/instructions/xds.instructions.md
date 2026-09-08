@@ -157,7 +157,7 @@ type ResourceGenerator interface {
 **Hierarchy:**
 ```
 GlobalContext (zone-scoped)
-  ├── Meshes, ZoneIngress, ZoneEgress
+  ├── Meshes, zone proxy Dataplanes
   └── hash: FNV128a
       ↓
 BaseMeshContext (mesh policies, changes less often)

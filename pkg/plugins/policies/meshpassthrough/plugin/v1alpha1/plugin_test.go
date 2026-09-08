@@ -1,4 +1,3 @@
-//nolint:staticcheck // SA1019 Test file: tests backward compatibility with deprecated core_rules.Rule
 package v1alpha1_test
 
 import (
@@ -34,9 +33,10 @@ var _ = Describe("MeshPassthrough", func() {
 
 	type testCase struct {
 		resources       []*core_xds.Resource
-		singleItemRules core_rules.SingleItemRules
+		proxyConf       *core_rules.ProxyConf
 		listenersGolden string
 		clustersGolden  string
+		warnings        []string
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -63,7 +63,7 @@ var _ = Describe("MeshPassthrough", func() {
 						),
 				).
 				WithPolicies(
-					xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshPassthroughType, given.singleItemRules),
+					xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshPassthroughType, given.proxyConf),
 				).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
@@ -78,6 +78,7 @@ var _ = Describe("MeshPassthrough", func() {
 			resource, err = util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.ClusterType)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.clustersGolden)))
+			Expect(proxy.Policies.Dynamic[api.MeshPassthroughType].Warnings).To(Equal(given.warnings))
 		},
 		Entry("basic listener", testCase{
 			resources: []*core_xds.Resource{
@@ -104,82 +105,80 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("Matched")),
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "api.example.com",
-									Port:     pointer.To[uint32](443),
-									Protocol: api.ProtocolType("tls"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "example.com",
-									Port:     pointer.To[uint32](443),
-									Protocol: api.ProtocolType("tls"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "*.example.com",
-									Port:     pointer.To[uint32](443),
-									Protocol: api.ProtocolType("tls"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "example.com",
-									Port:     pointer.To[uint32](8080),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "other.com",
-									Port:     pointer.To[uint32](8080),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("CIDR"),
-									Value:    "192.168.0.0/16",
-									Protocol: api.ProtocolType("http"),
-									Port:     pointer.To[uint32](8126),
-								},
-								{
-									Type:     api.MatchType("CIDR"),
-									Value:    "240.0.0.0/4",
-									Protocol: api.ProtocolType("http"),
-									Port:     pointer.To[uint32](8126),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "www.google.com",
-									Protocol: api.ProtocolType("http"),
-									Port:     pointer.To[uint32](80),
-								},
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "10.42.0.8",
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6",
-									Protocol: api.ProtocolType("tls"),
-								},
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "9942:9abf:d0e0:f2da:2290:333b:e590:f497",
-									Port:     pointer.To[uint32](9091),
-									Protocol: api.ProtocolType("tcp"),
-								},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("Matched")),
+						AppendMatch: &[]api.Match{
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "api.example.com",
+								Port:     pointer.To[uint32](443),
+								Protocol: api.ProtocolType("tls"),
+							},
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "example.com",
+								Port:     pointer.To[uint32](443),
+								Protocol: api.ProtocolType("tls"),
+							},
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "*.example.com",
+								Port:     pointer.To[uint32](443),
+								Protocol: api.ProtocolType("tls"),
+							},
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "example.com",
+								Port:     pointer.To[uint32](8080),
+								Protocol: api.ProtocolType("http"),
+							},
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "other.com",
+								Port:     pointer.To[uint32](8080),
+								Protocol: api.ProtocolType("http"),
+							},
+							{
+								Type:     api.MatchType("CIDR"),
+								Value:    "192.168.0.0/16",
+								Protocol: api.ProtocolType("http"),
+								Port:     pointer.To[uint32](8126),
+							},
+							{
+								Type:     api.MatchType("CIDR"),
+								Value:    "240.0.0.0/4",
+								Protocol: api.ProtocolType("http"),
+								Port:     pointer.To[uint32](8126),
+							},
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "www.google.com",
+								Protocol: api.ProtocolType("http"),
+								Port:     pointer.To[uint32](80),
+							},
+							{
+								Type:     api.MatchType("IP"),
+								Value:    "10.42.0.8",
+								Protocol: api.ProtocolType("http"),
+							},
+							{
+								Type:     api.MatchType("IP"),
+								Value:    "b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6",
+								Protocol: api.ProtocolType("tls"),
+							},
+							{
+								Type:     api.MatchType("IP"),
+								Value:    "9942:9abf:d0e0:f2da:2290:333b:e590:f497",
+								Port:     pointer.To[uint32](9091),
+								Protocol: api.ProtocolType("tcp"),
 							},
 						},
 					},
 				},
-			},
+			}),
 			listenersGolden: "basic.listener.golden.yaml",
 			clustersGolden:  "basic.clusters.golden.yaml",
 		}),
@@ -208,23 +207,21 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "192.168.0.0",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("tcp"),
-								},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						AppendMatch: &[]api.Match{
+							{
+								Type:     api.MatchType("IP"),
+								Value:    "192.168.0.0",
+								Port:     pointer.To[uint32](80),
+								Protocol: api.ProtocolType("tcp"),
 							},
 						},
 					},
 				},
-			},
+			}),
 			listenersGolden: "only-ipv4-rules.listener.golden.yaml",
 			clustersGolden:  "only-ipv4-rules.clusters.golden.yaml",
 		}),
@@ -253,29 +250,27 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "api.example.com",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "192.168.0.0",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("tcp"),
-								},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						AppendMatch: &[]api.Match{
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "api.example.com",
+								Port:     pointer.To[uint32](80),
+								Protocol: api.ProtocolType("http"),
+							},
+							{
+								Type:     api.MatchType("IP"),
+								Value:    "192.168.0.0",
+								Port:     pointer.To[uint32](80),
+								Protocol: api.ProtocolType("tcp"),
 							},
 						},
 					},
 				},
-			},
+			}),
 			listenersGolden: "simple.listener.golden.yaml",
 			clustersGolden:  "simple.clusters.golden.yaml",
 		}),
@@ -304,34 +299,32 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("CIDR"),
-									Value:    "10.10.0.0/16",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("CIDR"),
-									Value:    "192.168.0.0/24",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "192.168.0.0",
-									Protocol: api.ProtocolType("http"),
-								},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						AppendMatch: &[]api.Match{
+							{
+								Type:     api.MatchType("CIDR"),
+								Value:    "10.10.0.0/16",
+								Port:     pointer.To[uint32](80),
+								Protocol: api.ProtocolType("http"),
+							},
+							{
+								Type:     api.MatchType("CIDR"),
+								Value:    "192.168.0.0/24",
+								Port:     pointer.To[uint32](80),
+								Protocol: api.ProtocolType("http"),
+							},
+							{
+								Type:     api.MatchType("IP"),
+								Value:    "192.168.0.0",
+								Protocol: api.ProtocolType("http"),
 							},
 						},
 					},
 				},
-			},
+			}),
 			listenersGolden: "cidr-http.listener.golden.yaml",
 			clustersGolden:  "cidr-http.clusters.golden.yaml",
 		}),
@@ -360,39 +353,37 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "example1.com",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "anotherexample.com",
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "example2.com",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "*.example.com",
-									Protocol: api.ProtocolType("http"),
-								},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						AppendMatch: &[]api.Match{
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "example1.com",
+								Port:     pointer.To[uint32](80),
+								Protocol: api.ProtocolType("http"),
+							},
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "anotherexample.com",
+								Protocol: api.ProtocolType("http"),
+							},
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "example2.com",
+								Port:     pointer.To[uint32](80),
+								Protocol: api.ProtocolType("http"),
+							},
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "*.example.com",
+								Protocol: api.ProtocolType("http"),
 							},
 						},
 					},
 				},
-			},
+			}),
 			listenersGolden: "http-domains-aggregated.listener.golden.yaml",
 			clustersGolden:  "http-domains-aggregated.clusters.golden.yaml",
 		}),
@@ -421,28 +412,26 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "www.example.com",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "www.anotherexample.com",
-									Protocol: api.ProtocolType("http"),
-								},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						AppendMatch: &[]api.Match{
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "www.example.com",
+								Port:     pointer.To[uint32](80),
+								Protocol: api.ProtocolType("http"),
+							},
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "www.anotherexample.com",
+								Protocol: api.ProtocolType("http"),
 							},
 						},
 					},
 				},
-			},
+			}),
 			listenersGolden: "http-domains.listener.golden.yaml",
 			clustersGolden:  "http-domains.clusters.golden.yaml",
 		}),
@@ -471,30 +460,79 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "www.gmail.com",
-									Port:     pointer.To[uint32](80),
-									Protocol: api.ProtocolType("http"),
-								},
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "10.42.0.8",
-									Protocol: api.ProtocolType("http"),
-								},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						AppendMatch: &[]api.Match{
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "www.gmail.com",
+								Port:     pointer.To[uint32](80),
+								Protocol: api.ProtocolType("http"),
+							},
+							{
+								Type:     api.MatchType("IP"),
+								Value:    "10.42.0.8",
+								Protocol: api.ProtocolType("http"),
 							},
 						},
 					},
 				},
-			},
+			}),
 			listenersGolden: "same-protocol.listener.golden.yaml",
 			clustersGolden:  "same-protocol.clusters.golden.yaml",
+		}),
+		Entry("the same domain with a different L7 protocol on all ports", testCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:   outboundPassthroughIPv4Name,
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   outboundPassthroughIPv6Name,
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv6Name).
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv6Name).WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						AppendMatch: &[]api.Match{
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "datadog.datadog.svc.cluster.local",
+								Port:     pointer.To[uint32](4317),
+								Protocol: api.ProtocolType("grpc"),
+							},
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "datadog.datadog.svc.cluster.local",
+								Protocol: api.ProtocolType("http"),
+							},
+						},
+					},
+				},
+			}),
+			listenersGolden: "conflicting-protocols.listener.golden.yaml",
+			clustersGolden:  "conflicting-protocols.clusters.golden.yaml",
+			warnings: []string{
+				"protocols grpc and http produce the same filter chain for domains on port 4317, matches with protocol http and no port are not applied there",
+			},
 		}),
 		Entry("mysql protocol", testCase{
 			resources: []*core_xds.Resource{
@@ -521,31 +559,133 @@ var _ = Describe("MeshPassthrough", func() {
 						)).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("IP"),
-									Value:    "172.12.2.2",
-									Port:     pointer.To[uint32](3306),
-									Protocol: api.ProtocolType("mysql"),
-								},
-								{
-									Type:     api.MatchType("CIDR"),
-									Value:    "172.12.2.2/24",
-									Port:     pointer.To[uint32](3307),
-									Protocol: api.ProtocolType("mysql"),
-								},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						AppendMatch: &[]api.Match{
+							{
+								Type:     api.MatchType("IP"),
+								Value:    "172.12.2.2",
+								Port:     pointer.To[uint32](3306),
+								Protocol: api.ProtocolType("mysql"),
+							},
+							{
+								Type:     api.MatchType("CIDR"),
+								Value:    "172.12.2.2/24",
+								Port:     pointer.To[uint32](3307),
+								Protocol: api.ProtocolType("mysql"),
 							},
 						},
 					},
 				},
-			},
+			}),
 			listenersGolden: "mysql-protocol.listener.golden.yaml",
 			clustersGolden:  "mysql-protocol.clusters.golden.yaml",
+		}),
+		Entry("mysql and tcp on the same address and port, mysql first", testCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:   outboundPassthroughIPv4Name,
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   outboundPassthroughIPv6Name,
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv6Name).
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv6Name).WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						AppendMatch: &[]api.Match{
+							{
+								Type:     api.MatchType("IP"),
+								Value:    "172.12.2.2",
+								Port:     pointer.To[uint32](3306),
+								Protocol: api.ProtocolType("mysql"),
+							},
+							{
+								Type:     api.MatchType("IP"),
+								Value:    "172.12.2.2",
+								Port:     pointer.To[uint32](3306),
+								Protocol: api.ProtocolType("tcp"),
+							},
+						},
+					},
+				},
+			}),
+			listenersGolden: "mysql-first-conflict.listener.golden.yaml",
+			clustersGolden:  "mysql-first-conflict.clusters.golden.yaml",
+			warnings: []string{
+				`ignoring match "172.12.2.2", protocols mysql and tcp produce the same filter chain for 172.12.2.2/32 on port 3306`,
+			},
+		}),
+		Entry("mysql and tcp on the same address and port, tcp first", testCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:   outboundPassthroughIPv4Name,
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   outboundPassthroughIPv6Name,
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv6Name).
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv6Name).WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						AppendMatch: &[]api.Match{
+							{
+								Type:     api.MatchType("IP"),
+								Value:    "172.12.2.2",
+								Port:     pointer.To[uint32](3306),
+								Protocol: api.ProtocolType("tcp"),
+							},
+							{
+								Type:     api.MatchType("IP"),
+								Value:    "172.12.2.2",
+								Port:     pointer.To[uint32](3306),
+								Protocol: api.ProtocolType("mysql"),
+							},
+						},
+					},
+				},
+			}),
+			listenersGolden: "tcp-first-conflict.listener.golden.yaml",
+			clustersGolden:  "tcp-first-conflict.clusters.golden.yaml",
+			warnings: []string{
+				`ignoring match "172.12.2.2", protocols tcp and mysql produce the same filter chain for 172.12.2.2/32 on port 3306`,
+			},
 		}),
 		Entry("disabled on policy but enabled on mesh", testCase{
 			resources: []*core_xds.Resource{
@@ -566,16 +706,14 @@ var _ = Describe("MeshPassthrough", func() {
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("None")),
-						},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("None")),
 					},
 				},
-			},
+			}),
 			listenersGolden: "disabled_on_policy.listeners.golden.yaml",
 			clustersGolden:  "disabled_on_policy.clusters.golden.yaml",
 		}),
@@ -598,26 +736,31 @@ var _ = Describe("MeshPassthrough", func() {
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).MustBuild(),
 				},
 			},
-			singleItemRules: core_rules.SingleItemRules{
-				Rules: []*core_rules.Rule{
-					{
-						Subset: []subsetutils.Tag{},
-						Conf: api.Conf{
-							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("All")),
-							AppendMatch: &[]api.Match{
-								{
-									Type:     api.MatchType("Domain"),
-									Value:    "api.example.com",
-									Port:     pointer.To[uint32](443),
-									Protocol: api.ProtocolType("tls"),
-								},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("All")),
+						AppendMatch: &[]api.Match{
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "api.example.com",
+								Port:     pointer.To[uint32](443),
+								Protocol: api.ProtocolType("tls"),
 							},
 						},
 					},
 				},
-			},
+			}),
 			listenersGolden: "enabled_on_policy_and_mesh.listeners.golden.yaml",
 			clustersGolden:  "enabled_on_policy_and_mesh.clusters.golden.yaml",
 		}),
 	)
 })
+
+func mergedPolicyConf(rules core_rules.Rules) *core_rules.ProxyConf {
+	if len(rules) == 0 {
+		return nil
+	}
+	return &core_rules.ProxyConf{Conf: rules[0].Conf, Origin: rules[0].Origin}
+}

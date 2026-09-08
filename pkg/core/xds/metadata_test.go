@@ -93,6 +93,28 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				IPv6Enabled:     true,
 			},
 		}),
+		Entry("should ignore a zone proxy resource carried as a dataplane resource", testCase{
+			node: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"dataplane.resource": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: `
+                                {
+                                  "type": "ZoneIngress",
+                                  "name": "ingress-01",
+                                  "networking": {
+                                    "address": "127.0.0.1",
+                                    "port": 10001
+                                  }
+                                }`,
+						},
+					},
+				},
+			},
+			expected: xds.DataplaneMetadata{
+				IPv6Enabled: true,
+			},
+		}),
 		Entry("should parse OTEL env inventory", testCase{
 			node: &structpb.Struct{
 				Fields: map[string]*structpb.Value{

@@ -195,7 +195,7 @@ var _ = Describe("StatusUpdater", func() {
 		mal.Spec = &meshaccesslog_api.MeshAccessLog{
 			To: &[]meshaccesslog_api.To{
 				{
-					TargetRef: common_api.TargetRef{Kind: "Mesh"},
+					TargetRef: common_api.OutboundTargetRef{Kind: "Mesh"},
 					Default: meshaccesslog_api.Conf{
 						Backends: &[]meshaccesslog_api.Backend{
 							{
@@ -414,7 +414,7 @@ var _ = Describe("StatusUpdater", func() {
 		mal.Spec = &meshaccesslog_api.MeshAccessLog{
 			To: &[]meshaccesslog_api.To{
 				{
-					TargetRef: common_api.TargetRef{Kind: "Mesh"},
+					TargetRef: common_api.OutboundTargetRef{Kind: "Mesh"},
 					Default: meshaccesslog_api.Conf{
 						Backends: &[]meshaccesslog_api.Backend{
 							{

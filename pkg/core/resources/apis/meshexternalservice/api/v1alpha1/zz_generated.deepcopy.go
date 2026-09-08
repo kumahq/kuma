@@ -5,7 +5,7 @@
 package v1alpha1
 
 import (
-	commonv1alpha1 "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/api/common/v1alpha1/datasource"
 	"github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	apiv1alpha1 "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -205,17 +205,17 @@ func (in *Verification) DeepCopyInto(out *Verification) {
 	}
 	if in.CaCert != nil {
 		in, out := &in.CaCert, &out.CaCert
-		*out = new(commonv1alpha1.DataSource)
+		*out = new(datasource.SecureDataSource)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.ClientCert != nil {
 		in, out := &in.ClientCert, &out.ClientCert
-		*out = new(commonv1alpha1.DataSource)
+		*out = new(datasource.SecureDataSource)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.ClientKey != nil {
 		in, out := &in.ClientKey, &out.ClientKey
-		*out = new(commonv1alpha1.DataSource)
+		*out = new(datasource.SecureDataSource)
 		(*in).DeepCopyInto(*out)
 	}
 }

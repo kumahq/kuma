@@ -3,6 +3,8 @@ package attachment
 import (
 	kube_core "k8s.io/api/core/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
+
+	meshservice_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
 )
 
 type Attachment int
@@ -19,6 +21,7 @@ type Kind int
 const (
 	UnknownKind Kind = iota
 	Service
+	MeshService
 )
 
 // EvaluateParentRefAttachment reports whether a route in the given namespace can attach
@@ -30,6 +33,9 @@ func EvaluateParentRefAttachment(
 		// Attaching to a Service can only affect requests coming from Services
 		// in the same Namespace or requests going to the Service.
 		return Allowed, Service, nil
+	}
+	if *ref.Kind == "MeshService" && *ref.Group == gatewayapi.Group(meshservice_k8s.GroupVersion.Group) {
+		return Allowed, MeshService, nil
 	}
 	return Unknown, UnknownKind, nil
 }

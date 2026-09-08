@@ -27,7 +27,7 @@ on:
         type: string
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64:
-        value: ${{ jobs.build-binaries.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
+        value: ${{ jobs.publish-binaries.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
       IMAGE_DIGESTS:
         value: ${{ jobs.digest-images.outputs.DIGESTS }}
 permissions:
@@ -43,8 +43,109 @@ env:
   GITHUB_TOKEN: ${{ github.token }}
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
+  # One matrix leg per distribution: cross-compiling all four combos in a
+  # single job serialized on one runner's CPUs, and its go.sum-keyed cache
+  # entry was immutable, so it decayed until the next dependency bump. Each
+  # leg restores its own per-commit build cache by prefix and the envoy
+  # download is cached per combo. Cache writes stay off pull requests: an
+  # entry saved from a merge ref is restorable only by that same PR, yet the
+  # repository cache budget is shared with every branch.
   build-binaries:
     timeout-minutes: 70
+    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linux, darwin]
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # Module contents are a pure function of go.sum, so one immutable entry
+      # serves all four legs and stays valid until the next dependency bump.
+      - name: Cache Go modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/go/pkg/mod
+          key: go-mod-dist-${{ hashFiles('**/go.sum') }}
+      - name: Restore Go build cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/go-build
+          key: go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-${{ hashFiles('**/go.sum') }}-
+            go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.8.14
+      # Resolve through make so per-combo ENVOY_VERSION_<os>_<arch> overrides
+      # in mk/build.mk produce distinct cache keys.
+      - name: Envoy version
+        id: envoy
+        run: |
+          echo "version=$(make -s build/info GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} | grep '^Envoy=' | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+      # A restored directory makes the envoy make target skip its download,
+      # which guards on the binary already existing.
+      - name: Cache envoy binary
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: build/artifacts-${{ matrix.os }}-${{ matrix.arch }}/envoy
+          key: envoy-dist-${{ matrix.os }}-${{ matrix.arch }}-${{ steps.envoy.outputs.version }}
+      # Command-line variables override the FULL_MATRIX assignment in
+      # mk/build.mk, narrowing the job to this leg's combo.
+      - run: |
+          make -j"$(nproc)" build/distributions ENABLED_GOOSES=${{ matrix.os }} ENABLED_GOARCHES=${{ matrix.arch }}
+      # Distributions package only kumactl/kuma-cp/kuma-dp, but image jobs also
+      # consume kuma-cni/install-cni from the prebuilt artifact uploaded below.
+      - if: ${{ matrix.os == 'linux' }}
+        run: |
+          make -j"$(nproc)" ENABLED_GOOSES=linux ENABLED_GOARCHES=${{ matrix.arch }} build/kuma-cni build/install-cni
+      # Pull requests restore by prefix from the newest push-event entry
+      # instead of writing their own short-lived merge-ref entries.
+      - name: Save Go build cache
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/go-build
+          key: go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
+      # Image Dockerfiles COPY from this directory. Envoy ships separately:
+      # only the kuma-dp/kuma-universal image jobs use it, and at
+      # ~100-200MB/arch it would dominate every other job's artifact download.
+      - if: ${{ matrix.os == 'linux' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux_binaries_${{ matrix.arch }}
+          path: |
+            ./build/artifacts-linux-${{ matrix.arch }}
+            !./build/artifacts-linux-${{ matrix.arch }}/envoy
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
+          if-no-files-found: error
+      - if: ${{ matrix.os == 'linux' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: envoy_linux_${{ matrix.arch }}
+          path: ./build/artifacts-linux-${{ matrix.arch }}/envoy
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist-tarballs-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            ./build/distributions/out/*-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+            ./build/distributions/out/*-${{ matrix.os }}-${{ matrix.arch }}.tar.gz.sha256
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
+          if-no-files-found: error
+  # Assembles the per-leg tarballs into the same artifact and digest the
+  # single-job build produced, keeping the release surface (artifact name,
+  # combined sha256 file, provenance digest, pulp publish) unchanged.
+  publish-binaries:
+    needs: [build-binaries]
+    timeout-minutes: 30
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       id-token: write
@@ -56,31 +157,34 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      # `check` and `build_check` run before this job and already saved this key for
-      # this exact go.sum. Restore-only: the publish jobs would otherwise each write
-      # a multi-GB cross-compile cache and evict everyone else from the repo budget.
-      - name: Restore Go cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            go-build-${{ runner.os }}-
-      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
+          version: 2026.8.14
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          version: 2026.7.11
+          pattern: dist-tarballs-*
+          path: ./build/distributions/out
+          merge-multiple: true
       - id: annotate-image-tag
         name: Image tag
         run: |
           echo "::notice title=Image tag::$(make build/info/version)"
-      - run: |
-          make -j"$(nproc)" build/distributions
+      # Replicates the combined sha256 and base64 digest that
+      # mk/distribution.mk derives when all tarballs are built in one job.
+      - name: Bundle checksums and digest
+        run: |
+          version="$(make -s build/info/version)"
+          cd build/distributions/out
+          sha256sum -- *.tar.gz > "kuma-${version}.sha256"
+          base64 -w0 "kuma-${version}.sha256" > ../artifact_digest_file.text
       # Gates publishing, not building: a wrong version must never reach Pulp or
-      # Cloudsmith, but there is no reason to hold the build back for it. Asserting
-      # the binary against the tag also covers this checkout computing the version
-      # wrong, since that is where the binary got stamped from.
+      # Cloudsmith. The assert needs a compiled binary, so pull one linux leg.
+      - name: Download linux amd64 binaries for version assert
+        if: ${{ github.ref_type == 'tag' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: linux_binaries_amd64
+          path: ./build/artifacts-linux-amd64
       - name: Assert built binary reports tag version
         if: ${{ github.ref_type == 'tag' }}
         env:
@@ -116,6 +220,7 @@ jobs:
         run: |
           make publish/pulp
   build-images:
+    needs: [build-binaries] # consumes the linux_binaries artifact
     runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
     permissions:
       id-token: write # Required for image signing
@@ -130,22 +235,56 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Restore Go cache
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      # Built once by build-binaries; PREBUILT_BINARIES=true makes the image
+      # targets verify these exist instead of recompiling them. Each artifact
+      # holds the directory contents at its root (single-directory uploads do
+      # not keep the parent prefix), so each arch lands in its own tree.
+      - name: Download prebuilt linux binaries (amd64)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            go-build-${{ runner.os }}-
+          name: linux_binaries_amd64
+          path: ./build/artifacts-linux-amd64
+      - name: Download prebuilt linux binaries (arm64)
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: linux_binaries_arm64
+          path: ./build/artifacts-linux-arm64
+      # Only images built FROM kumahq/envoy need the envoy binary; it is the
+      # bulk of the per-arch artifact size, so other jobs skip the download.
+      - name: Download envoy binary (amd64)
+        if: ${{ matrix.image == 'kuma-dp' || matrix.image == 'kuma-universal' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: envoy_linux_amd64
+          path: ./build/artifacts-linux-amd64/envoy
+      - name: Download envoy binary (arm64)
+        if: ${{ matrix.image == 'kuma-dp' || matrix.image == 'kuma-universal' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: envoy_linux_arm64
+          path: ./build/artifacts-linux-arm64/envoy
+      # download-artifact does not restore the executable bit, so binaries
+      # land as 0644 and COPY would propagate that into the images.
+      - name: Restore executable bit on downloaded binaries
+        run: chmod -R +x ./build/artifacts-linux-*
       - name: Install dependencies for cross builds
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
+      # Registry layer cache (DOCKER_BUILDX_OPTS in mk/docker.mk) needs the
+      # container driver; the default docker driver cannot export cache.
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.7.11
+          version: 2026.8.14
+      # Login must precede the build for the cache push; anonymous pulls of the
+      # public cache tags work without it (PR runs).
+      - name: Docker login for buildx cache push
+        if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
+        env:
+          DOCKER_API_KEY: ${{ secrets.DOCKER_API_KEY }}
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+        run: make docker/login
       - id: image_meta
         env:
           REGISTRY: ${{ inputs.REGISTRY }}
@@ -155,7 +294,7 @@ jobs:
           echo "Extracting image meta for $IMAGE_NAME"
           printf 'image=%s/%s:%s\n' "$REGISTRY" "$IMAGE_NAME" "$VERSION_NAME" >> "$GITHUB_OUTPUT"
       - run: |
-          make images/${{ matrix.image }}
+          make images/${{ matrix.image }} PREBUILT_BINARIES=true DOCKER_BUILDX_CACHE=true
       - run: |
           make docker/save/${{ matrix.image }}
       - name: Run container structure test
@@ -181,18 +320,19 @@ jobs:
           skip_cis_scan: false
         # TODO in the future we may want to have prerelease images and use `regctl image copy` to move them to their final location
       # Gates the push, not the build: a wrong version must never reach the registry.
-      # kuma-cni has no version subcommand (a CNI plugin binary, not a CLI), so
-      # there's nothing to assert for it.
+      # `docker/info/binary` returns empty for images that ship no versioned CLI
+      # (kuma-cni is a plugin binary), and lets distributions that rename images
+      # map their own names without patching this workflow.
       - name: Assert built binary reports tag version
-        if: ${{ github.ref_type == 'tag' && matrix.image != 'kuma-cni' }}
+        if: ${{ github.ref_type == 'tag' }}
         env:
           TAG_NAME: ${{ github.ref_name }}
         run: |
-          case "${{ matrix.image }}" in
-            kuma-init) binary=kumactl ;;
-            kuma-universal) binary=kuma-cp ;;
-            *) binary="${{ matrix.image }}" ;;
-          esac
+          binary=$(make -s docker/info/binary/${{ matrix.image }})
+          if [ -z "${binary}" ]; then
+            echo "${{ matrix.image }} ships no versioned CLI, nothing to assert"
+            exit 0
+          fi
           for arch in $(make -s docker/info/enabled-arches); do
             make check/binary-version \
               BINARY_PATH="build/artifacts-linux-${arch}/${binary}/${binary}" \
@@ -280,9 +420,9 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: jdx/mise-action@7e36c90d9ab29c415a2384db3006f3ec8a8cc654 # v4.2.4
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.7.11
+          version: 2026.8.14
       - name: package-helm-chart
         id: package-helm
         env:

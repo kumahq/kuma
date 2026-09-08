@@ -9,8 +9,9 @@ import (
 func (r *MeshServiceResource) validate() error {
 	var verr validators.ValidationError
 
-	name := model.GetDisplayName(r.GetMeta())
-	verr.Add(validators.ValidateLength(validators.RootedAt("name"), maxNameLength, name))
+	if meta := r.GetMeta(); meta != nil {
+		verr.Add(validators.ValidateRFC1035Name(validators.RootedAt("name"), model.GetDisplayName(meta)))
+	}
 
 	portsPath := validators.RootedAt("spec").Field("ports")
 	for i, port := range r.Spec.Ports {

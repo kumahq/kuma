@@ -1,0 +1,17 @@
+match:
+  type: HostnameGenerator
+  port: 80
+  protocol: http
+extension:
+  type: example
+tls:
+  enabled: true
+  verification:
+    caCert:
+      type: Secret
+    clientCert:
+      type: InsecureInline
+    clientKey:
+      type: InsecureInline
+      insecureInline:
+        value: key

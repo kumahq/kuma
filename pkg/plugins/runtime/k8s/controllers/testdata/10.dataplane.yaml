@@ -23,15 +23,3 @@ spec:
         ready: true
       port: 7070
       protocol: tcp
-  probes:
-    endpoints:
-    - inboundPath: /metrics
-      inboundPort: 8080
-      path: /8080/metrics
-    - inboundPath: /metrics
-      inboundPort: 3001
-      path: /3001/metrics
-    - inboundPath: /metrics
-      inboundPort: 8081
-      path: /8081/metrics
-    port: 19000

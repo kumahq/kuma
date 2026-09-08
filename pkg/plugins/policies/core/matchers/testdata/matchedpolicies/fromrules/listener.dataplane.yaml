@@ -6,8 +6,6 @@ networking:
   inbound:
     - port: 8080
       name: main-port
-      tags:
-        kuma.io/service: web
   listeners:
     - type: ZoneEgress
       address: 1.1.1.1

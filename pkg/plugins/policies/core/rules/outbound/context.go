@@ -57,6 +57,9 @@ func (rc *ResourceContext[T]) WithID(id kri.Identifier) *ResourceContext[T] {
 func (rc *ResourceContext[T]) Conf() T {
 	for _, id := range rc.ids {
 		if rule, ok := rc.rules[id]; ok {
+			if len(rule.Conf) == 0 {
+				continue
+			}
 			return rule.Conf[0].(T)
 		}
 	}
@@ -75,6 +78,10 @@ func (rc *ResourceContext[T]) ResourceRule() *ResourceRule {
 func (rc *ResourceContext[T]) DirectConf() (T, bool) {
 	if len(rc.ids) != 0 {
 		if rule, ok := rc.rules[rc.ids[0]]; ok {
+			if len(rule.Conf) == 0 {
+				var zero T
+				return zero, false
+			}
 			return rule.Conf[0].(T), true
 		}
 	}

@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
@@ -41,7 +40,7 @@ var _ = Describe("DefaultProxyProfile", func() {
 					{
 						Target: "192.168.0.3",
 						Port:   5432,
-						Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
+						Tags:   map[string]string{"kuma.io/display-name": "db", "role": "master"},
 						Weight: 1,
 					},
 				},
@@ -49,7 +48,7 @@ var _ = Describe("DefaultProxyProfile", func() {
 					{
 						Target: "192.168.0.4",
 						Port:   9200,
-						Tags:   map[string]string{"kuma.io/service": "elastic"},
+						Tags:   map[string]string{"kuma.io/display-name": "elastic"},
 						Weight: 1,
 					},
 				},
@@ -58,7 +57,6 @@ var _ = Describe("DefaultProxyProfile", func() {
 			ctx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					CLACache: &test_xds.DummyCLACache{OutboundTargets: outboundTargets},
-					Secrets:  &test_xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{
@@ -68,16 +66,6 @@ var _ = Describe("DefaultProxyProfile", func() {
 						Spec: &mesh_proto.Mesh{},
 					},
 					Resources: resources,
-					ServicesInformation: map[string]*xds_context.ServiceInformation{
-						"db": {
-							TLSReadiness: true,
-							Protocol:     core_meta.ProtocolUnknown,
-						},
-						"elastic": {
-							TLSReadiness: true,
-							Protocol:     core_meta.ProtocolUnknown,
-						},
-					},
 				},
 			}
 
@@ -96,8 +84,7 @@ var _ = Describe("DefaultProxyProfile", func() {
 					},
 					Spec: dataplane,
 				},
-				SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
-				APIVersion:     envoy_common.APIV3,
+				APIVersion: envoy_common.APIV3,
 				Routing: core_xds.Routing{
 					OutboundTargets: outboundTargets,
 				},
@@ -159,14 +146,14 @@ var _ = Describe("DefaultProxyProfile", func() {
                 - port: 80
                   servicePort: 8080
                   tags:
-                    kuma.io/service: backend
+                    kuma.io/display-name: backend
               outbound:
               - port: 54321
                 tags:
-                  kuma.io/service: db
+                  kuma.io/display-name: db
               - port: 59200
                 tags:
-                  kuma.io/service: elastic
+                  kuma.io/display-name: elastic
 `,
 			expected: "1-envoy-config.golden.yaml",
 		}),
@@ -185,14 +172,14 @@ var _ = Describe("DefaultProxyProfile", func() {
                 - port: 80
                   servicePort: 8080
                   tags:
-                    kuma.io/service: backend
+                    kuma.io/display-name: backend
               outbound:
               - port: 54321
                 tags:
-                  kuma.io/service: db
+                  kuma.io/display-name: db
               - port: 59200
                 tags:
-                  kuma.io/service: elastic
+                  kuma.io/display-name: elastic
               transparentProxying:
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006

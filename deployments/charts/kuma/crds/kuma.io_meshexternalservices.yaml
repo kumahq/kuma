@@ -148,47 +148,140 @@ spec:
                       caCert:
                         description: CaCert defines a certificate of CA.
                         properties:
-                          inline:
-                            description: Data source is inline bytes.
-                            format: byte
+                          envVar:
+                            properties:
+                              name:
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          file:
+                            properties:
+                              path:
+                                type: string
+                            required:
+                            - path
+                            type: object
+                          insecureInline:
+                            properties:
+                              value:
+                                type: string
+                            required:
+                            - value
+                            type: object
+                          secretRef:
+                            properties:
+                              kind:
+                                enum:
+                                - Secret
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          type:
+                            enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                             type: string
-                          inlineString:
-                            description: Data source is inline string`
-                            type: string
-                          secret:
-                            description: Data source is a secret with given Secret
-                              key.
-                            type: string
+                        required:
+                        - type
                         type: object
                       clientCert:
                         description: ClientCert defines a certificate of a client.
                         properties:
-                          inline:
-                            description: Data source is inline bytes.
-                            format: byte
+                          envVar:
+                            properties:
+                              name:
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          file:
+                            properties:
+                              path:
+                                type: string
+                            required:
+                            - path
+                            type: object
+                          insecureInline:
+                            properties:
+                              value:
+                                type: string
+                            required:
+                            - value
+                            type: object
+                          secretRef:
+                            properties:
+                              kind:
+                                enum:
+                                - Secret
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          type:
+                            enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                             type: string
-                          inlineString:
-                            description: Data source is inline string`
-                            type: string
-                          secret:
-                            description: Data source is a secret with given Secret
-                              key.
-                            type: string
+                        required:
+                        - type
                         type: object
                       clientKey:
                         description: ClientKey defines a client private key.
                         properties:
-                          inline:
-                            description: Data source is inline bytes.
-                            format: byte
+                          envVar:
+                            properties:
+                              name:
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          file:
+                            properties:
+                              path:
+                                type: string
+                            required:
+                            - path
+                            type: object
+                          insecureInline:
+                            properties:
+                              value:
+                                type: string
+                            required:
+                            - value
+                            type: object
+                          secretRef:
+                            properties:
+                              kind:
+                                enum:
+                                - Secret
+                                type: string
+                              name:
+                                type: string
+                            required:
+                            - kind
+                            - name
+                            type: object
+                          type:
+                            enum:
+                            - File
+                            - Secret
+                            - EnvVar
+                            - InsecureInline
                             type: string
-                          inlineString:
-                            description: Data source is inline string`
-                            type: string
-                          secret:
-                            description: Data source is a secret with given Secret
-                              key.
-                            type: string
+                        required:
+                        - type
                         type: object
                       mode:
                         default: Secured

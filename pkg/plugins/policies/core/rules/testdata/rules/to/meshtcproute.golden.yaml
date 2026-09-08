@@ -30,6 +30,6 @@ Rules:
     type: MeshTCPRoute
   OriginByMatches: {}
   Subset:
-  - Key: kuma.io/service
+  - Key: kuma.io/display-name
     Not: false
     Value: backend_kuma-demo_svc_8080

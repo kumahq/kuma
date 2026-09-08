@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
@@ -16,6 +17,7 @@ import (
 
 	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 )
 
 // panicServiceDesc registers a unary and a stream method that always panic, so
@@ -71,6 +73,7 @@ var _ = Describe("DpServer gRPC recovery wiring", func() {
 		dpServer, err := NewDpServer(
 			*dp_server.DefaultDpServerConfig(),
 			m,
+			util_tls.NewWatchers(context.Background(), logr.Discard()),
 			func(http.ResponseWriter, *http.Request) bool { return true },
 		)
 		Expect(err).ToNot(HaveOccurred())

@@ -1,3 +1,0 @@
-NAME             AGE
-ingress-zone-1   292y
-ingress-zone-2   292y

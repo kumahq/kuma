@@ -1,5 +1,5 @@
 clusterHealthChecks:
-- clusterName: kuma:envoy:admin
+- clusterName: system_envoy_admin
   healthChecks:
   - healthyThreshold: 4
     httpHealthCheck:

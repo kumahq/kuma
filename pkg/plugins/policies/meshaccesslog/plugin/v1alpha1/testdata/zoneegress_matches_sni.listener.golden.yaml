@@ -35,5 +35,5 @@ listenerFilters:
 - name: envoy.filters.listener.tls_inspector
   typedConfig:
     '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-name: inbound:10.20.30.40:10002
+name: self_zoneegress_dp_ze-port
 trafficDirection: INBOUND

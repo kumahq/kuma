@@ -26,7 +26,6 @@ const (
 )
 
 func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
-	var configDump bool
 	var includeEDS bool
 	var inspectionType string
 	var shadow bool
@@ -38,10 +37,6 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
-			if configDump {
-				inspectionType = InspectionTypeConfigDump
-			}
-
 			if shadow && inspectionType != InspectionConfig {
 				return errors.New("flag '--shadow' can be used only when '--type=config'")
 			}
@@ -123,8 +118,6 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 		},
 	}
 	cmd.PersistentFlags().StringVar(&inspectionType, "type", InspectionTypePolicies, kuma_cmd.UsageOptions("inspection type", InspectionTypePolicies, InspectionTypeConfigDump, InspectionTypeStats, InspectionTypeClusters, InspectionConfig))
-	cmd.PersistentFlags().BoolVar(&configDump, "config-dump", false, "if set then the command returns envoy config dump for provided dataplane")
-	_ = cmd.PersistentFlags().MarkDeprecated("config-dump", "use --type=config-dump")
 	cmd.PersistentFlags().BoolVar(&includeEDS, "include-eds", false, "include EDS when dumping envoy config for dataplane")
 	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
 	cmd.PersistentFlags().BoolVar(&shadow, "shadow", false, "when computing XDS config the CP takes into account policies with 'kuma.io/effect: shadow' label")

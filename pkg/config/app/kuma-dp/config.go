@@ -40,11 +40,10 @@ var DefaultConfig = func() Config {
 			DynamicConfiguration: DynamicConfiguration{
 				RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			},
-			IPv6Enabled:                  true,
-			StrictInboundPortsEnabled:    true,
-			OtelPipeEnabled:              true,
-			ReusePortEnabled:             true,
-			UnifiedResourceNamingEnabled: true,
+			IPv6Enabled:               true,
+			StrictInboundPortsEnabled: true,
+			OtelPipeEnabled:           true,
+			ReusePortEnabled:          true,
 		},
 		DNS: DNS{
 			Enabled:   true,
@@ -225,12 +224,6 @@ type DataplaneRuntime struct {
 	TransparentProxy *tproxy_config.DataplaneConfig `json:"transparentProxy,omitempty" envconfig:"kuma_dataplane_runtime_transparent_proxy"`
 	// BindOutbounds configure dataplane to bind to real loopback addresses
 	BindOutbounds bool `json:"bindOutbounds,omitempty" envconfig:"kuma_dataplane_runtime_bind_outbounds"`
-	// UnifiedResourceNamingEnabled enables the new naming format for Envoy resource and stat names.
-	// When set to true, the data plane proxy uses:
-	// - KRI-based format for resources tied to distinct Kuma resources
-	// - System format for internal Kuma resources that users typically don't need to care about unless debugging Kuma
-	// - Contextual format for proxy-scoped resources like inbounds and transparent proxy passthrough
-	UnifiedResourceNamingEnabled bool `json:"unifiedResourceNamingEnabled,omitempty" envconfig:"kuma_dataplane_runtime_unified_resource_naming_enabled"`
 	// IPv6Enabled indicates if IPv6 support is enabled on the machine. By default, dataplane will check if support is enabled
 	// on machine and adjust this config accordingly
 	IPv6Enabled bool `json:"IPv6Enabled" envconfig:"kuma_dataplane_runtime_ipv6_enabled"`

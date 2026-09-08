@@ -308,6 +308,33 @@ spec:
 
 		Expect(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: catch-all-test-server
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default:
+            backendRefs:
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: test-server
+                port: 80
+`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
+
+		Expect(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
 kind: MeshRetry
 metadata:
   name: retry-on-5xx

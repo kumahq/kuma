@@ -206,11 +206,9 @@ var MeshIdentityResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AffectsPolicyMatching:        true,
 	IsTargetRefBased:             false,
 	HasToTargetRef:               false,
-	HasFromTargetRef:             false,
 	HasRulesTargetRef:            false,
 	HasStatus:                    true,
 	AllowedOnSystemNamespaceOnly: true,
 	ShortName:                    "mid",
-	IsFromAsRules:                false,
 	Order:                        0,
 }

@@ -1,4 +1,4 @@
-# 04. policy doesn't select dataplane if at least one tag is not presented
+# 04. policy does not select dataplane if at least one label is not present
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-1
@@ -6,7 +6,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web
+      app: web
       version: v1
       env: dev
       team: mesh

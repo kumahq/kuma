@@ -70,9 +70,6 @@ func gatherAllListeners(listeners Listeners) []*envoy_listener.Listener {
 	for _, listener := range listeners.ZoneEgress {
 		add(listener)
 	}
-	for _, listener := range listeners.Gateway {
-		add(listener)
-	}
 	add(listeners.Ipv4Passthrough)
 	add(listeners.Ipv6Passthrough)
 	for _, listener := range listeners.DirectAccess {
@@ -103,9 +100,6 @@ func gatherAllClusters(clusters Clusters) map[string]*envoy_cluster.Cluster {
 		for _, cluster := range splitClusters {
 			add(cluster)
 		}
-	}
-	for _, cluster := range clusters.Gateway {
-		add(cluster)
 	}
 	for _, cluster := range clusters.Egress {
 		add(cluster)

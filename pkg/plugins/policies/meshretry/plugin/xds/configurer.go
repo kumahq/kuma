@@ -19,8 +19,6 @@ import (
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/defaults/mesh"
-	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -35,65 +33,6 @@ const (
 	GrpcRetryOnDefault              = "cancelled,connect-failure," +
 		"gateway-error,refused-stream,reset,resource-exhausted,unavailable"
 )
-
-// DeprecatedConfigurer should be only used for configuring old MeshService outbounds.
-// It should be removed after we stop using kuma.io/service tag, and move fully to new MeshService
-// Deprecated
-type DeprecatedConfigurer struct {
-	Element  subsetutils.Element
-	Rules    core_rules.Rules
-	Protocol core_meta.Protocol
-}
-
-func (c *DeprecatedConfigurer) ConfigureListener(ln *envoy_listener.Listener) error {
-	conf := c.getConf(c.Element)
-
-	for _, fc := range ln.FilterChains {
-		if c.Protocol == core_meta.ProtocolTCP && conf != nil && conf.TCP != nil && conf.TCP.MaxConnectAttempt != nil {
-			return v3.UpdateTCPProxy(fc, func(proxy *envoy_tcp.TcpProxy) error {
-				proxy.MaxConnectAttempts = util_proto.UInt32(*conf.TCP.MaxConnectAttempt)
-				return nil
-			})
-		} else {
-			return v3.UpdateHTTPConnectionManager(fc, func(manager *envoy_hcm.HttpConnectionManager) error {
-				return c.ConfigureRoute(manager.GetRouteConfig())
-			})
-		}
-	}
-
-	return nil
-}
-
-func (c *DeprecatedConfigurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error {
-	if route == nil {
-		return nil
-	}
-
-	defaultPolicy, err := GetRouteRetryConfig(c.getConf(c.Element), c.Protocol)
-	if err != nil {
-		return err
-	}
-	for _, virtualHost := range route.VirtualHosts {
-		for _, route := range virtualHost.Routes {
-			routeConfig := c.getConf(c.Element.WithKeyValue(core_rules.RuleMatchesHashTag, route.Name))
-			policy, err := GetRouteRetryConfig(routeConfig, c.Protocol)
-			if err != nil {
-				return err
-			}
-			if policy == nil {
-				if defaultPolicy == nil {
-					continue
-				}
-				policy = defaultPolicy
-			}
-			if a, ok := route.GetAction().(*envoy_route.Route_Route); ok {
-				a.Route.RetryPolicy = policy
-			}
-		}
-	}
-
-	return nil
-}
 
 func GetRouteRetryConfig(conf *api.Conf, protocol core_meta.Protocol) (*envoy_route.RetryPolicy, error) {
 	if conf == nil {
@@ -416,13 +355,6 @@ func ensureRetriableStatusCodes(policyRetryOn string) string {
 	}
 	policyRetryOn = strings.Join(policyRetrySplit, ",")
 	return policyRetryOn
-}
-
-func (c *DeprecatedConfigurer) getConf(element subsetutils.Element) *api.Conf {
-	if c.Rules == nil {
-		return nil
-	}
-	return core_rules.ComputeConf[api.Conf](c.Rules, element)
 }
 
 type Configurer struct {

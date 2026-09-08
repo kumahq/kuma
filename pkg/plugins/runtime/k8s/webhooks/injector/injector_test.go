@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -42,14 +41,14 @@ var _ = Describe("Injector", func() {
 	}
 
 	BeforeAll(func() {
-		err := k8sClient.Create(context.Background(), &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: systemNamespace}})
+		err := k8sClient.Create(context.Background(), &kube_core.Namespace{Name: systemNamespace})
 		Expect(err).ToNot(HaveOccurred())
 
 		// The transparent proxy ConfigMap is the single source of the base
 		// transparent proxy config. It mirrors the config shipped by the Helm
 		// chart in the kuma-system namespace.
 		err = k8sClient.Create(context.Background(), &kube_core.ConfigMap{
-			ObjectMeta: kube_meta.ObjectMeta{Name: tproxyConfigMapName, Namespace: systemNamespace},
+			Name: tproxyConfigMapName, Namespace: systemNamespace,
 			Data: map[string]string{
 				"config.yaml": `
 kumaDPUser: "5678"
@@ -114,7 +113,7 @@ spec:
 				Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 				cfg.CaCertFile = caCertPath
 				cfg.TransparentProxyConfigMapName = tproxyConfigMapName
-				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil)
+				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, systemNamespace, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				// and create mesh
@@ -409,7 +408,7 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
-		Entry("15. application probe proxy: config - enabled, pod - disabled; fallback to virtual probe", testCase{
+		Entry("15. application probe proxy: config - enabled, pod - disabled", testCase{
 			num: "15",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -477,7 +476,7 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config-ports.yaml",
 		}),
-		Entry("19. application probe proxy - disabled, virtual probes - disabled, pod - empty", testCase{
+		Entry("19. application probe proxy - disabled, pod - empty", testCase{
 			num: "19",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -492,9 +491,9 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.vp-disabled.config.yaml",
+			cfgFile: "inject.probe-proxy-disabled.config.yaml",
 		}),
-		Entry("20. virtual probes: config - disabled, pod - enabled", testCase{
+		Entry("20. application probe proxy: config - disabled, pod - startup probe", testCase{
 			num: "20",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -509,7 +508,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.vp-disabled.config.yaml",
+			cfgFile: "inject.probe-proxy-disabled.config.yaml",
 		}),
 		Entry("21. application probe proxy: named port", testCase{
 			num: "21",
@@ -558,7 +557,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.builtindns.config.yaml",
+			cfgFile: "inject.builtin-dns.config.yaml",
 		}),
 		Entry("24. sidecar with high concurrency", testCase{
 			num: "24",
@@ -574,7 +573,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.builtindns.config.yaml",
+			cfgFile: "inject.builtin-dns.config.yaml",
 		}),
 		Entry("25. sidecar with high resource limit", testCase{
 			num: "25",
@@ -654,7 +653,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.builtindns.config.yaml",
+			cfgFile: "inject.builtin-dns.config.yaml",
 		}),
 		Entry("31. with duplicate container/sidecar uid", testCase{
 			num: "31",
@@ -822,7 +821,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.vp-disabled.config.yaml",
+			cfgFile: "inject.probe-proxy-disabled.config.yaml",
 		}),
 		Entry("41. gateway provided with cni enabled", testCase{
 			num: "41",
@@ -857,6 +856,38 @@ spec:
                     kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.spire.config.yaml",
 		}),
+		Entry(`44. Pod with kuma.io/gateway annotation set to "true"`, testCase{
+			num: "44",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
+		Entry("45. Pod with probes and kuma.io/gateway annotation set to disabled", testCase{
+			num: "45",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
 	)
 
 	It("falls back to init-container sidecar injection when native sidecars are unavailable", func() {
@@ -869,10 +900,9 @@ spec:
 			"http://kuma-control-plane.kuma-system:5681",
 			k8sClient,
 			false,
-			k8s.NewSimpleConverter(),
+			k8s.NewSimpleConverter("kuma-system"),
 			9901,
 			9902,
-			false,
 			systemNamespace,
 			nil,
 		)
@@ -927,7 +957,7 @@ metadata:
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
 			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, systemNamespace, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1034,7 +1064,7 @@ metadata:
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
 			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter(), 9901, 9902, false, systemNamespace, nil)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, systemNamespace, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1118,10 +1148,9 @@ metadata:
 				"http://kuma-control-plane.kuma-system:5681",
 				k8sClient,
 				true,
-				k8s.NewSimpleConverter(),
+				k8s.NewSimpleConverter("kuma-system"),
 				9901,
 				9902,
-				false,
 				systemNamespace,
 				nil,
 			)
@@ -1142,11 +1171,9 @@ metadata:
 			}
 
 			return &kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "zone-proxy",
-					Namespace: "default",
-					Labels:    labels,
-				},
+				Name:      "zone-proxy",
+				Namespace: "default",
+				Labels:    labels,
 				Spec: kube_core.PodSpec{
 					Containers: []kube_core.Container{
 						{Name: "pause", Image: "registry.k8s.io/pause:3.10"},
@@ -1157,12 +1184,10 @@ metadata:
 
 		createZoneProxyService := func(namespace string) {
 			svc := &kube_core.Service{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "zone-proxy-svc",
-					Namespace: namespace,
-					Labels: map[string]string{
-						metadata.KumaZoneProxyTypeLabel: "ingress",
-					},
+				Name:      "zone-proxy-svc",
+				Namespace: namespace,
+				Labels: map[string]string{
+					metadata.KumaZoneProxyTypeLabel: "ingress",
 				},
 				Spec: kube_core.ServiceSpec{
 					Selector: map[string]string{
