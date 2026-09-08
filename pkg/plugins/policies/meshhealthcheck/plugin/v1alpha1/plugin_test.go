@@ -167,32 +167,33 @@ var _ = Describe("MeshHealthCheck", func() {
 												UnhealthyInterval:            test.ParseDuration("17s"),
 												InitialJitter:                test.ParseDuration("13s"),
 												IntervalJitter:              test.ParseDuration("15s"),
-								IntervalJitterPercent:        pointer.To[int32](10),
-								FailTrafficOnPanic:           pointer.To(true),
-								EventLogPath:                 pointer.To("/tmp/log.txt"),
-								AlwaysLogHealthCheckFailures: pointer.To(false),
-								NoTrafficInterval:            test.ParseDuration("16s"),
-								Http: &api.HttpHealthCheck{
-									Disabled: pointer.To(false),
-									Path:     pointer.To("/health"),
-									RequestHeadersToAdd: &api.HeaderModifier{
-										Add: &[]api.HeaderKeyValue{
-											{
-												Name:  "x-some-header",
-												Value: "value",
+											IntervalJitterPercent:        pointer.To[int32](10),
+											FailTrafficOnPanic:           pointer.To(true),
+											EventLogPath:                 pointer.To("/tmp/log.txt"),
+											AlwaysLogHealthCheckFailures: pointer.To(false),
+											NoTrafficInterval:            test.ParseDuration("16s"),
+											Http: &api.HttpHealthCheck{
+												Disabled: pointer.To(false),
+												Path:     pointer.To("/health"),
+												RequestHeadersToAdd: &api.HeaderModifier{
+													Add: &[]api.HeaderKeyValue{
+														{
+															Name:  "x-some-header",
+															Value: "value",
+														},
+													},
+													Set: &[]api.HeaderKeyValue{
+														{
+															Name:  "x-some-other-header",
+															Value: "value",
+														},
+													},
+												},
+												ExpectedStatuses: &[]int32{200, 201},
 											},
-										},
-										Set: &[]api.HeaderKeyValue{
-											{
-												Name:  "x-some-other-header",
-												Value: "value",
+												ReuseConnection: pointer.To(true),
+												
 											},
-										},
-									},
-									ExpectedStatuses: &[]int32{200, 201},
-								},
-								ReuseConnection: pointer.To(true),
-							},
 						},
 					},
 				},
