@@ -307,6 +307,12 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: complogLevel,
 		}
 	}
+	if dpCompLogLevel, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaComponentLogLevel); exist {
+		envVars["KUMA_DATAPLANE_RUNTIME_COMPONENT_LOG_LEVEL"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_COMPONENT_LOG_LEVEL",
+			Value: dpCompLogLevel,
+		}
+	}
 
 	if i.otelPipeEnabled {
 		envVars["HOST_IP"] = kube_core.EnvVar{

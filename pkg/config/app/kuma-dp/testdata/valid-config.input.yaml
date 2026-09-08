@@ -12,3 +12,4 @@ dataplane:
 dataplaneRuntime:
   binaryPath: envoy.sh
   envoyLogLevel: trace
+  componentLogLevel: dnsproxy:debug
