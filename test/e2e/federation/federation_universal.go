@@ -119,12 +119,18 @@ func FederateKubeZoneCPToUniversalGlobal() {
 		})
 
 		It("should not break the traffic", func() {
-			Consistently(func(g Gomega) {
+			reachable := func(g Gomega) {
 				_, err := client.CollectEchoResponse(zone, "demo-client", "test-server",
 					client.FromKubernetesPod(TestNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-			}, "3s", "100s").Should(Succeed())
+			}
+			// The specs above confirm the global control plane received the zone's
+			// resources, which says nothing about the zone finishing the certificate
+			// rotation that federation triggers. Wait for that, then hold, so a route
+			// that comes back and immediately drops still fails.
+			Eventually(reachable, "30s", "1s").Should(Succeed())
+			Consistently(reachable, "5s", "500ms").Should(Succeed())
 		})
 	})
 }
