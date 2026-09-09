@@ -291,7 +291,12 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 			if identity.Status == nil || (!identity.Status.IsInitialized() && !identity.Status.IsPartiallyReady()) {
 				continue
 			}
-			td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
+			// The trust domain belongs to the MeshIdentity that mints the
+			// certificate, not to the workload that presents it: the issuer renders
+			// it from its own metadata. Rendering it from the proxy instead makes
+			// consumers expect an identity nobody issues while a zone is renamed and
+			// both MeshIdentities are still around.
+			td, err := identity.Spec.GetTrustDomain(identity.GetMeta(), s.localZone)
 			if err != nil {
 				s.logger.Error(err, "cannot resolve trust domain")
 				continue
