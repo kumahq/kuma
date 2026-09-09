@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -98,11 +97,11 @@ var _ = Describe("ZoneInsight across a definition upgrade", Ordered, func() {
 		raw, err := json.Marshal(spec)
 		Expect(err).ToNot(HaveOccurred())
 
+		obj := &zoneinsight_k8s.ZoneInsight{Spec: &apiextensionsv1.JSON{Raw: raw}}
+		obj.SetName(stored)
+
 		Eventually(func() error {
-			return cl.Create(context.Background(), &zoneinsight_k8s.ZoneInsight{
-				ObjectMeta: metav1.ObjectMeta{Name: stored},
-				Spec:       &apiextensionsv1.JSON{Raw: raw},
-			})
+			return cl.Create(context.Background(), obj)
 		}, "30s", "500ms").Should(Succeed())
 	})
 
