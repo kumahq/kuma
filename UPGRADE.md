@@ -8,6 +8,17 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Fields that the API linter had skipped were brought in line
+
+A linter bug hid a set of API fields from the shape checks the rest of the API follows. Fixing the fields changes two schemas, both by dropping a declared default:
+
+- `MeshHTTPRoute` and `MeshRetry` header matches no longer declare a schema default of `Exact` for `type`. An omitted `type` is still matched as `Exact`, it is just no longer materialized into the stored resource.
+- `MeshHTTPRoute` and `MeshTCPRoute` backend refs no longer declare a schema default of `1` for `weight`. An omitted `weight` still counts as `1` when the route is resolved, it is just no longer materialized into the stored resource.
+
+**Action required**
+
+None. Existing resources keep working. The only visible difference is that a resource that omits `type` or `weight` no longer comes back from the API with the value filled in.
+
 ### `Zone` and `ZoneInsight` are validated by the admission webhooks
 
 The `Zone` and `ZoneInsight` custom resources moved to the same generator every other Kuma resource already uses. Control plane RBAC and the admission webhooks now list them the same way, which fixes a rule that named `zone` where the custom resource is `zones` and therefore never matched. Both resources stay cluster scoped and their stored specs are unchanged.

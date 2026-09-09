@@ -105,12 +105,12 @@ func validateValueOpAddReplace(value json.RawMessage) validators.ValidationError
 	return validators.OK()
 }
 
-func validatePath(path *string, op string) validators.ValidationError {
+func validatePath(path string, op string) validators.ValidationError {
 	var err validators.ValidationError
 
-	if path == nil {
-		err.AddViolationAt(validators.Root(), validators.MustBeDefined)
-	} else if (*path == "" || *path == "/") && op == "remove" {
+	if path == "" {
+		err.AddViolationAt(validators.Root(), validators.MustNotBeEmpty)
+	} else if path == "/" && op == "remove" {
 		err.AddViolationAt(validators.Root(), "root path cannot be removed")
 	}
 

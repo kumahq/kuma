@@ -2,19 +2,28 @@ package generator
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
+	"github.com/kumahq/kuma/v3/pkg/xds/dynconf"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	envoy_listeners_v3 "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners/v3"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/metadata"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/system_names"
 )
@@ -50,9 +59,16 @@ var adminAddressAllowedValues = map[string]struct{}{
 }
 
 func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+	resources := core_xds.NewResourceSet()
+	if err := g.generateIdentityReadiness(resources, proxy); err != nil {
+		return nil, err
+	}
 	if proxy.Metadata.GetAdminPort() == 0 {
 		// It's not possible to export Admin endpoints if Envoy Admin API has not been enabled on that dataplane.
-		return nil, nil
+		if resources.Empty() {
+			return nil, nil
+		}
+		return resources, nil
 	}
 
 	adminPort := proxy.Metadata.GetAdminPort()
@@ -114,7 +130,6 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		}
 	}
 
-	resources := core_xds.NewResourceSet()
 	// We bind admin to 127.0.0.1 by default, creating another listener with same address and port will result in error.
 	if g.getAddress(proxy) != adminAddress {
 		envoyAdminListenerName := system_names.SystemResourceNameEnvoyAdmin
@@ -180,6 +195,87 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	})
 
 	return resources, nil
+}
+
+func (g AdminProxyGenerator) generateIdentityReadiness(resources *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+	config := core_xds.IdentityReadinessConfig{Required: proxy.WorkloadIdentityRequired}
+	if proxy.WorkloadIdentity != nil {
+		config.ExpirationTime = proxy.WorkloadIdentity.ExpirationTime
+		if proxy.WorkloadIdentity.ManagementMode == core_xds.KumaManagementMode && proxy.WorkloadIdentity.AdditionalResources != nil {
+			certificateHash, err := bundledIdentityCertificateHash(proxy.WorkloadIdentity)
+			if err != nil {
+				return err
+			}
+			config.CertificateHash = certificateHash
+		}
+	}
+	bytes, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	if err := dynconf.AddConfigRoute(proxy, resources, "identity-readiness", core_xds.IdentityReadinessPath, bytes); err != nil {
+		return err
+	}
+	if proxy.WorkloadIdentity == nil {
+		return nil
+	}
+
+	secretSource := proxy.WorkloadIdentity.IdentitySourceConfigurer
+	if secretSource == nil {
+		return errors.New("workload identity secret source is missing")
+	}
+	dtls, err := bldrs_tls.NewDownstreamTLSContext().
+		Configure(bldrs_tls.DownstreamCommonTlsContext(
+			bldrs_tls.NewCommonTlsContext().Configure(
+				bldrs_tls.TlsCertificateSdsSecretConfigs([]*bldrs_common.Builder[envoy_tls.SdsSecretConfig]{
+					bldrs_tls.NewTlsCertificateSdsSecretConfigs().Configure(secretSource()),
+				}),
+			),
+		)).Build()
+	if err != nil {
+		return err
+	}
+
+	name := system_names.SystemResourceNameIdentityReadiness
+	filterChain := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
+		Configure(envoy_listeners.DirectResponse(name, []envoy_listeners_v3.DirectResponseEndpoints{{
+			Path:       "/ready",
+			StatusCode: 200,
+			Response:   "ready",
+		}}, core_xds.LocalHostAddresses, proxy.Metadata.GetIPv6Enabled())).
+		Configure(envoy_listeners.DownstreamTlsContext(dtls))
+	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion, name).
+		Configure(envoy_listeners.PipeListener(core_xds.IdentityReadinessSocketName(proxy.Metadata.WorkDir))).
+		Configure(envoy_listeners.FilterChain(filterChain)).
+		Build()
+	if err != nil {
+		return err
+	}
+	resources.Add(&core_xds.Resource{Name: listener.GetName(), Origin: metadata.OriginAdmin, Resource: listener})
+	return nil
+}
+
+func bundledIdentityCertificateHash(identity *core_xds.WorkloadIdentity) (string, error) {
+	if identity.AdditionalResources == nil {
+		return "", errors.New("workload identity resources are missing")
+	}
+	for _, resource := range identity.AdditionalResources.Resources(envoy_resource.SecretType) {
+		secret, ok := resource.Resource.(*envoy_tls.Secret)
+		if ok && secret.GetTlsCertificate() != nil {
+			dataSource := secret.GetTlsCertificate().GetCertificateChain()
+			certificatePEM := dataSource.GetInlineBytes()
+			if len(certificatePEM) == 0 {
+				certificatePEM = []byte(dataSource.GetInlineString())
+			}
+			block, _ := pem.Decode(certificatePEM)
+			if block == nil || block.Type != "CERTIFICATE" {
+				return "", errors.New("workload identity certificate is not valid PEM")
+			}
+			hash := sha256.Sum256(block.Bytes)
+			return fmt.Sprintf("%x", hash), nil
+		}
+	}
+	return "", errors.New("workload identity certificate secret is missing")
 }
 
 func (g AdminProxyGenerator) getAddress(proxy *core_xds.Proxy) string {
