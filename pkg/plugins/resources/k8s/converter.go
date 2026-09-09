@@ -26,11 +26,6 @@ func NewSimpleConverter(systemNamespace string, cp labels.ControlPlane) k8s_comm
 	}
 }
 
-func (c *SimpleConverter) storedResource(obj k8s_model.KubernetesObject, out core_model.Resource) labels.StoredResource {
-	ns := labels.NewNamespace(obj.GetNamespace(), obj.GetNamespace() == c.SystemNamespace)
-	return labels.NewStoredResource(out, ns, obj.GetLabels(), c.ControlPlane)
-}
-
 func NewSimpleKubeFactory() KubeFactory {
 	return &SimpleKubeFactory{
 		KubeTypes: registry.Global(),
@@ -74,7 +69,7 @@ func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out cor
 	if err := out.SetSpec(spec); err != nil {
 		return err
 	}
-	out.SetMeta(newMetaAdapter(obj, c.storedResource(obj, out), c.ControlPlane))
+	out.SetMeta(newMetaAdapter(obj, out, c.SystemNamespace, c.ControlPlane))
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()
 		if err != nil {

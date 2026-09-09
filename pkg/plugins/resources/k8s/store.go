@@ -292,10 +292,12 @@ type KubernetesMetaAdapter struct {
 	labels map[string]string
 }
 
-// newMetaAdapter takes the enforcement inputs explicitly so that no conversion path
-// can silently skip labels.EnforcedReadLabels.
-func newMetaAdapter(obj k8s_model.KubernetesObject, r labels.StoredResource, cp labels.ControlPlane) *KubernetesMetaAdapter {
+// newMetaAdapter is the only place labels are computed from a Kubernetes object, so
+// no conversion path can silently skip labels.EnforcedReadLabels.
+func newMetaAdapter(obj k8s_model.KubernetesObject, out core_model.Resource, systemNamespace string, cp labels.ControlPlane) *KubernetesMetaAdapter {
 	objMeta := obj.GetObjectMeta()
+	ns := labels.NewNamespace(objMeta.GetNamespace(), objMeta.GetNamespace() == systemNamespace)
+	r := labels.NewStoredResource(out, ns, objMeta.GetLabels(), cp)
 
 	computed := maps.Clone(objMeta.GetLabels())
 	if computed == nil {

@@ -84,7 +84,7 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 	if err := out.SetSpec(spec); err != nil {
 		return err
 	}
-	adapter := newMetaAdapter(obj, c.storedResource(obj, out), c.ControlPlane)
+	adapter := newMetaAdapter(obj, out, c.SystemNamespace, c.ControlPlane)
 	out.SetMeta(adapter)
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()

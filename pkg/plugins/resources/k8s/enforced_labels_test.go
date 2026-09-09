@@ -12,11 +12,9 @@ import (
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
 	workload_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/k8s/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/labels"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	meshtimeout_k8s "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/k8s/v1alpha1"
-	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
 const systemNamespaceForTest = "kuma-system"
@@ -31,7 +29,9 @@ var _ = Describe("newMetaAdapter", func() {
 			out := workload_api.NewWorkloadResource()
 			Expect(out.SetSpec(obj.Spec)).To(Succeed())
 
-			Expect(newMetaAdapterForTest(obj, out).GetLabels()).To(HaveKeyWithValue(v1alpha1.KubeNamespaceTag, expected))
+			adapter := newMetaAdapter(obj, out, systemNamespaceForTest, labels.ControlPlane{})
+
+			Expect(adapter.GetLabels()).To(HaveKeyWithValue(v1alpha1.KubeNamespaceTag, expected))
 		},
 		Entry("overwrites a stored label that disagrees with the namespace",
 			"app-ns",
@@ -63,15 +63,11 @@ var _ = Describe("newMetaAdapter", func() {
 		out := workload_api.NewWorkloadResource()
 		Expect(out.SetSpec(obj.Spec)).To(Succeed())
 
-		Expect(newMetaAdapterForTest(obj, out).GetLabels()).NotTo(HaveKey(v1alpha1.KubeNamespaceTag))
+		adapter := newMetaAdapter(obj, out, systemNamespaceForTest, labels.ControlPlane{})
+
+		Expect(adapter.GetLabels()).NotTo(HaveKey(v1alpha1.KubeNamespaceTag))
 	})
 })
-
-func newMetaAdapterForTest(obj k8s_model.KubernetesObject, out core_model.Resource) *KubernetesMetaAdapter {
-	ns := labels.NewNamespace(obj.GetNamespace(), obj.GetNamespace() == systemNamespaceForTest)
-	r := labels.NewStoredResource(out, ns, obj.GetLabels(), labels.ControlPlane{})
-	return newMetaAdapter(obj, r, labels.ControlPlane{})
-}
 
 var _ = Describe("enforced label derivation through the converters", func() {
 	// A policy stored in a namespace the admission webhooks never covered, so
