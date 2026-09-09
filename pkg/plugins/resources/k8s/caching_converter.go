@@ -36,13 +36,11 @@ type cachedEntry struct {
 
 func NewCachingConverter(expirationTime time.Duration, systemNamespace string, opts ...ConverterOption) k8s_common.Converter {
 	c := &cachingConverter{
-		SimpleConverter: SimpleConverter{
-			KubeFactory: &SimpleKubeFactory{
-				KubeTypes: k8s_registry.Global(),
-			},
-			SystemNamespace: systemNamespace,
+		KubeFactory: &SimpleKubeFactory{
+			KubeTypes: k8s_registry.Global(),
 		},
-		cache: cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
+		SystemNamespace: systemNamespace,
+		cache:           cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
 	}
 	for _, opt := range opts {
 		opt(&c.SimpleConverter)
