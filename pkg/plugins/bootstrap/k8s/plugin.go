@@ -22,6 +22,7 @@ import (
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
@@ -110,10 +111,11 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 	b.WithComponentManager(&kubeComponentManager{Manager: mgr})
 
 	b.WithExtensions(k8s_extensions.NewSecretClientContext(b.Extensions(), secretClient))
+	cp := resource_labels.ControlPlaneFromConfig(b.Config())
 	if expTime := b.Config().Runtime.Kubernetes.MarshalingCacheExpirationTime.Duration; expTime > 0 {
-		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewCachingConverter(expTime, systemNamespace)))
+		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewCachingConverter(expTime, systemNamespace, cp)))
 	} else {
-		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewSimpleConverter(systemNamespace)))
+		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewSimpleConverter(systemNamespace, cp)))
 	}
 	b.WithExtensions(k8s_extensions.NewCompositeValidatorContext(b.Extensions(), &k8s_common.CompositeValidator{}))
 	zoneName := core_metrics.ZoneNameOrMode(b.Config().Mode, b.Config().Multizone.Zone.Name)

@@ -8,8 +8,10 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
 	workload_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/k8s/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	meshtimeout_k8s "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/k8s/v1alpha1"
@@ -25,7 +27,9 @@ var _ = Describe("newMetaAdapter", func() {
 				Spec: &workload_api.Workload{},
 			}
 			out := workload_api.NewWorkloadResource()
-			adapter := newMetaAdapter(obj, systemNamespaceForTest, out.Descriptor(), obj.Spec)
+			Expect(out.SetSpec(obj.Spec)).To(Succeed())
+
+			adapter := newMetaAdapter(obj, out, systemNamespaceForTest, labels.ControlPlane{})
 
 			Expect(adapter.GetLabels()).To(HaveKeyWithValue(v1alpha1.KubeNamespaceTag, expected))
 		},
@@ -57,9 +61,11 @@ var _ = Describe("newMetaAdapter", func() {
 			Spec: &workload_api.Workload{},
 		}
 		out := workload_api.NewWorkloadResource()
+		Expect(out.SetSpec(obj.Spec)).To(Succeed())
 
-		Expect(newMetaAdapter(obj, systemNamespaceForTest, out.Descriptor(), obj.Spec).GetLabels()).
-			NotTo(HaveKey(v1alpha1.KubeNamespaceTag))
+		adapter := newMetaAdapter(obj, out, systemNamespaceForTest, labels.ControlPlane{})
+
+		Expect(adapter.GetLabels()).NotTo(HaveKey(v1alpha1.KubeNamespaceTag))
 	})
 })
 
@@ -86,8 +92,10 @@ var _ = Describe("enforced label derivation through the converters", func() {
 		return out.GetMeta().GetLabels()
 	}
 
-	simple := func() k8s_common.Converter { return NewSimpleConverter(systemNamespaceForTest) }
-	caching := func() k8s_common.Converter { return NewCachingConverter(5*time.Minute, systemNamespaceForTest) }
+	simple := func() k8s_common.Converter { return NewSimpleConverter(systemNamespaceForTest, labels.ControlPlane{}) }
+	caching := func() k8s_common.Converter {
+		return NewCachingConverter(5*time.Minute, systemNamespaceForTest, labels.ControlPlane{})
+	}
 
 	stale := map[string]string{
 		v1alpha1.KubeNamespaceTag:    "other-ns",
@@ -131,7 +139,7 @@ var _ = Describe("enforced label derivation through the converters", func() {
 	// On a cache hit the adapter is handed the labels stored on the miss, so the
 	// derivation has to already be baked into the cached entry.
 	It("should return the derived labels on a CachingConverter cache hit", func() {
-		converter := NewCachingConverter(5*time.Minute, systemNamespaceForTest)
+		converter := NewCachingConverter(5*time.Minute, systemNamespaceForTest, labels.ControlPlane{})
 		obj := policyIn("app-ns", stale)
 
 		miss := labelsOf(converter, obj)
@@ -142,10 +150,58 @@ var _ = Describe("enforced label derivation through the converters", func() {
 		Expect(hit).To(Equal(miss))
 	})
 
-	// The same missing webhook that leaves the role label off also leaves the spec
-	// unvalidated, so a stored policy can have no spec at all. GetSpec hands back a
-	// typed nil for it, and deriving a role from that would dereference a nil policy
-	// on every read, panicking every conversion of that type.
+	zoneCP := labels.ControlPlane{Mode: config_core.Zone, Zone: "zone-1"}
+	simpleOnZone := func() k8s_common.Converter { return NewSimpleConverter(systemNamespaceForTest, zoneCP) }
+	cachingOnZone := func() k8s_common.Converter {
+		return NewCachingConverter(5*time.Minute, systemNamespaceForTest, zoneCP)
+	}
+	importedFromGlobal := map[string]string{
+		v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
+		v1alpha1.ZoneTag:             "other-zone",
+	}
+	local := map[string]string{
+		v1alpha1.ResourceOriginLabel: string(v1alpha1.ZoneResourceOrigin),
+		v1alpha1.ZoneTag:             "zone-1",
+	}
+
+	DescribeTable("should enforce origin and zone from the CP mode",
+		func(newConverter func() k8s_common.Converter, namespace string, stored map[string]string, expected map[string]string) {
+			got := labelsOf(newConverter(), policyIn(namespace, stored))
+			for _, key := range []string{v1alpha1.ResourceOriginLabel, v1alpha1.ZoneTag} {
+				if value, ok := expected[key]; ok {
+					Expect(got).To(HaveKeyWithValue(key, value))
+				} else {
+					Expect(got).NotTo(HaveKey(key))
+				}
+			}
+		},
+		Entry("SimpleConverter overrides a claimed import in an app namespace", simpleOnZone, "app-ns", importedFromGlobal, local),
+		Entry("CachingConverter overrides a claimed import in an app namespace", cachingOnZone, "app-ns", importedFromGlobal, local),
+		Entry("SimpleConverter keeps an import in the system namespace", simpleOnZone, systemNamespaceForTest, importedFromGlobal, importedFromGlobal),
+		Entry("CachingConverter keeps an import in the system namespace", cachingOnZone, systemNamespaceForTest, importedFromGlobal, importedFromGlobal),
+		Entry("SimpleConverter fills in absent labels in the system namespace", simpleOnZone, systemNamespaceForTest, nil, local),
+		Entry("CachingConverter fills in absent labels in the system namespace", cachingOnZone, systemNamespaceForTest, nil, local),
+		// The admission webhooks' converter has no mode, so the labels it hands to
+		// validation are the ones the user supplied.
+		Entry("SimpleConverter without a mode leaves both labels alone", simple, "app-ns", nil, nil),
+		Entry("CachingConverter without a mode leaves both labels alone", caching, "app-ns", nil, nil),
+	)
+
+	It("should return the enforced origin and zone on a CachingConverter cache hit", func() {
+		converter := cachingOnZone()
+		obj := policyIn("app-ns", importedFromGlobal)
+
+		miss := labelsOf(converter, obj)
+		hit := labelsOf(converter, obj)
+
+		Expect(miss).To(HaveKeyWithValue(v1alpha1.ResourceOriginLabel, string(v1alpha1.ZoneResourceOrigin)))
+		Expect(miss).To(HaveKeyWithValue(v1alpha1.ZoneTag, "zone-1"))
+		Expect(hit).To(Equal(miss))
+	})
+
+	// A policy the webhook never validated can have no spec at all; GetSpec then hands
+	// back a typed nil, and deriving a role from it would dereference a nil policy on
+	// every read, panicking every conversion of that type.
 	DescribeTable("should not panic on a stored policy with no spec",
 		func(newConverter func() k8s_common.Converter) {
 			obj := policyIn("app-ns", nil)
