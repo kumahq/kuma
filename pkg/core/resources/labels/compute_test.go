@@ -13,6 +13,7 @@ import (
 	resource_labels "github.com/kumahq/kuma/v2/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	meshtimeout_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v2/pkg/test/resources/model"
@@ -301,6 +302,103 @@ var _ = Describe("Compute", func() {
 				"kuma.io/origin":        "zone",
 				"kuma.io/zone":          "zone-1",
 				"kuma.io/env":           "kubernetes",
+			},
+		}),
+		Entry("spoofed env, namespace and service-account labels are cleaned on universal zone", testCase{
+			mode:      core.Zone,
+			isK8s:     false,
+			localZone: "zone-1",
+			r: func() core_model.Resource {
+				r := builders.MeshTimeout().
+					WithMesh("mesh-1").
+					WithName("idle-timeout").
+					WithTargetRef(builders.TargetRefMesh()).
+					AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+						IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+					}).
+					Build()
+				r.GetMeta().GetLabels()[mesh_proto.EnvTag] = "kubernetes"
+				r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag] = "victim"
+				r.GetMeta().GetLabels()[metadata.KumaServiceAccount] = "admin"
+				return r
+			}(),
+			expectedLabels: map[string]string{
+				"kuma.io/display-name": "idle-timeout",
+				"kuma.io/env":          "universal",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+			},
+		}),
+		Entry("spoofed env label is overwritten on k8s zone", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: func() core_model.Resource {
+				r := builders.MeshTimeout().
+					WithMesh("mesh-1").
+					WithName("idle-timeout").
+					WithTargetRef(builders.TargetRefMesh()).
+					AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+						IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+					}).
+					Build()
+				r.GetMeta().GetLabels()[mesh_proto.EnvTag] = "universal"
+				return r
+			}(),
+			expectedLabels: map[string]string{
+				"kuma.io/display-name": "idle-timeout",
+				"kuma.io/env":          "kubernetes",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+			},
+		}),
+		Entry("spoofed zone label is overwritten with the local zone", testCase{
+			mode:      core.Zone,
+			isK8s:     false,
+			localZone: "zone-1",
+			r: builders.Dataplane().
+				WithName("backend-1").
+				WithServices("backend").
+				WithMesh("mesh-1").
+				WithLabels(map[string]string{mesh_proto.ZoneTag: "other-zone"}).
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/display-name": "backend-1",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/zone":         "zone-1",
+				"kuma.io/env":          "universal",
+				"kuma.io/proxy-type":   "sidecar",
+			},
+		}),
+		Entry("namespace and service-account labels are kept on k8s zone", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: func() core_model.Resource {
+				r := builders.MeshTimeout().
+					WithMesh("mesh-1").
+					WithName("idle-timeout").
+					WithNamespace("app-ns").
+					WithTargetRef(builders.TargetRefMesh()).
+					AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+						IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+					}).
+					Build()
+				r.GetMeta().GetLabels()[metadata.KumaServiceAccount] = "sa-1"
+				return r
+			}(),
+			expectedLabels: map[string]string{
+				"k8s.kuma.io/namespace":       "app-ns",
+				"k8s.kuma.io/service-account": "sa-1",
+				"kuma.io/display-name":        "idle-timeout",
+				"kuma.io/policy-role":         "consumer",
+				"kuma.io/mesh":                "mesh-1",
+				"kuma.io/origin":              "zone",
+				"kuma.io/zone":                "zone-1",
+				"kuma.io/env":                 "kubernetes",
 			},
 		}),
 		Entry("gateway dataplane proxy", testCase{
