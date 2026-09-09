@@ -606,12 +606,12 @@ func ComputeLabels(
 		// If resource can't be created on Zone (like Mesh), there is no point in adding
 		// 'kuma.io/zone' and 'kuma.io/env' labels even if the zone is non-federated
 		if rd.KDSFlags.Has(ProvidedByZoneFlag) {
-			setIfNotExist(mesh_proto.ZoneTag, localZone)
+			set(mesh_proto.ZoneTag, localZone)
 			env := mesh_proto.UniversalEnvironment
 			if isK8s {
 				env = mesh_proto.KubernetesEnvironment
 			}
-			setIfNotExist(mesh_proto.EnvTag, env)
+			set(mesh_proto.EnvTag, env)
 		}
 	}
 
@@ -621,6 +621,9 @@ func ComputeLabels(
 	// the object really lives in. Set them, overwriting whatever the object carried.
 	if ns.value != "" && isK8s && IsLocallyOriginated(mode, labels) {
 		set(mesh_proto.KubeNamespaceTag, ns.value)
+	}
+	if !isK8s && IsLocallyOriginated(mode, labels) {
+		delete(labels, mesh_proto.KubeNamespaceTag)
 	}
 
 	if ns.value != "" && rd.IsPolicy && rd.IsPluginOriginated && IsLocallyOriginated(mode, labels) {
