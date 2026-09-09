@@ -6371,6 +6371,8 @@ components:
         - pluralDisplayName
         - includeInFederation
         - shortName
+        - isInsight
+        - adminOnly
       properties:
         name:
           description: the name of the resource type
@@ -6400,6 +6402,14 @@ components:
             federetion-with-policies export profile (especially useful for
             moving from non-federated to federated or migrating to a new
             global).
+          type: boolean
+        isInsight:
+          description: >-
+            whether this resource type holds state computed by the control plane
+            rather than user configuration.
+          type: boolean
+        adminOnly:
+          description: whether accessing resources of this type requires admin credentials.
           type: boolean
         policy:
           $ref: '#/components/schemas/PolicyDescription'

@@ -22,6 +22,7 @@ import (
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
@@ -109,6 +110,10 @@ func DefaultContext(
 		kds_reconcile.If(
 			kds_reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
+		kds_reconcile.If(
+			// MeshTrust status contains zone-local provenance.
+			kds_reconcile.TypeIs(meshtrust_api.MeshTrustType),
+			RemoveStatus()),
 		HashSuffixMapper(false, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag),
 	}
 	ctx = metadata.AppendToOutgoingContext(ctx, VersionHeader, version.Build.Version)
