@@ -22,6 +22,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
@@ -412,13 +413,13 @@ var _ = Describe("PodReconciler", func() {
 			Scheme:        k8sClientScheme,
 			Log:           core.Log.WithName("test"),
 			PodConverter: PodConverter{
-				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}),
 				Mode:              config_core.Zone,
 				Zone:              "zone-1",
 				SystemNamespace:   "kuma-system",
 			},
 			SystemNamespace:   "kuma-system",
-			ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
+			ResourceConverter: k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}),
 		}
 	})
 

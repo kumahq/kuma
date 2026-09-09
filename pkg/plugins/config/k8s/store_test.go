@@ -15,6 +15,7 @@ import (
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	system_model "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/config/k8s"
 	k8s_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
@@ -74,7 +75,7 @@ var _ = Describe("KubernetesStore", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		s, err = k8s.NewStore(k8sClient, ns, k8sClientScheme, k8s_resources.NewSimpleConverter("kuma-system"))
+		s, err = k8s.NewStore(k8sClient, ns, k8sClientScheme, k8s_resources.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
