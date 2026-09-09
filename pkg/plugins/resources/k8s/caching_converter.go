@@ -35,13 +35,13 @@ type cachedEntry struct {
 	labels map[string]string
 }
 
-func NewCachingConverter(expirationTime time.Duration, systemNamespace string, labelOpts ...labels.Option) k8s_common.Converter {
+func NewCachingConverter(expirationTime time.Duration, systemNamespace string, cp labels.ControlPlane) k8s_common.Converter {
 	return &cachingConverter{
 		KubeFactory: &SimpleKubeFactory{
 			KubeTypes: k8s_registry.Global(),
 		},
 		SystemNamespace: systemNamespace,
-		LabelOptions:    labelOpts,
+		ControlPlane:    cp,
 		cache:           cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
 	}
 }
@@ -84,8 +84,7 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 	if err := out.SetSpec(spec); err != nil {
 		return err
 	}
-	isLocal, opts := c.readLabelArgs(obj)
-	adapter := newMetaAdapter(obj, out.Descriptor(), out.GetSpec(), isLocal, opts...)
+	adapter := newMetaAdapter(obj, c.storedResource(obj, out), c.ControlPlane)
 	out.SetMeta(adapter)
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()

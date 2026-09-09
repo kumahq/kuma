@@ -29,9 +29,9 @@ var _ = Describe("newMetaAdapter", func() {
 				Spec: &workload_api.Workload{},
 			}
 			out := workload_api.NewWorkloadResource()
-			adapter := newMetaAdapterForTest(obj, out.Descriptor(), obj.Spec)
+			Expect(out.SetSpec(obj.Spec)).To(Succeed())
 
-			Expect(adapter.GetLabels()).To(HaveKeyWithValue(v1alpha1.KubeNamespaceTag, expected))
+			Expect(newMetaAdapterForTest(obj, out).GetLabels()).To(HaveKeyWithValue(v1alpha1.KubeNamespaceTag, expected))
 		},
 		Entry("overwrites a stored label that disagrees with the namespace",
 			"app-ns",
@@ -61,15 +61,16 @@ var _ = Describe("newMetaAdapter", func() {
 			Spec: &workload_api.Workload{},
 		}
 		out := workload_api.NewWorkloadResource()
+		Expect(out.SetSpec(obj.Spec)).To(Succeed())
 
-		Expect(newMetaAdapterForTest(obj, out.Descriptor(), obj.Spec).GetLabels()).
-			NotTo(HaveKey(v1alpha1.KubeNamespaceTag))
+		Expect(newMetaAdapterForTest(obj, out).GetLabels()).NotTo(HaveKey(v1alpha1.KubeNamespaceTag))
 	})
 })
 
-func newMetaAdapterForTest(obj k8s_model.KubernetesObject, rd core_model.ResourceTypeDescriptor, spec core_model.ResourceSpec) *KubernetesMetaAdapter {
-	isLocal, opts := (&SimpleConverter{SystemNamespace: systemNamespaceForTest}).readLabelArgs(obj)
-	return newMetaAdapter(obj, rd, spec, isLocal, opts...)
+func newMetaAdapterForTest(obj k8s_model.KubernetesObject, out core_model.Resource) *KubernetesMetaAdapter {
+	ns := labels.NewNamespace(obj.GetNamespace(), obj.GetNamespace() == systemNamespaceForTest)
+	r := labels.NewStoredResource(out, ns, obj.GetLabels(), labels.ControlPlane{})
+	return newMetaAdapter(obj, r, labels.ControlPlane{})
 }
 
 var _ = Describe("enforced label derivation through the converters", func() {
@@ -95,8 +96,10 @@ var _ = Describe("enforced label derivation through the converters", func() {
 		return out.GetMeta().GetLabels()
 	}
 
-	simple := func() k8s_common.Converter { return NewSimpleConverter(systemNamespaceForTest) }
-	caching := func() k8s_common.Converter { return NewCachingConverter(5*time.Minute, systemNamespaceForTest) }
+	simple := func() k8s_common.Converter { return NewSimpleConverter(systemNamespaceForTest, labels.ControlPlane{}) }
+	caching := func() k8s_common.Converter {
+		return NewCachingConverter(5*time.Minute, systemNamespaceForTest, labels.ControlPlane{})
+	}
 
 	stale := map[string]string{
 		v1alpha1.KubeNamespaceTag:    "other-ns",
@@ -140,7 +143,7 @@ var _ = Describe("enforced label derivation through the converters", func() {
 	// On a cache hit the adapter is handed the labels stored on the miss, so the
 	// derivation has to already be baked into the cached entry.
 	It("should return the derived labels on a CachingConverter cache hit", func() {
-		converter := NewCachingConverter(5*time.Minute, systemNamespaceForTest)
+		converter := NewCachingConverter(5*time.Minute, systemNamespaceForTest, labels.ControlPlane{})
 		obj := policyIn("app-ns", stale)
 
 		miss := labelsOf(converter, obj)
@@ -151,10 +154,10 @@ var _ = Describe("enforced label derivation through the converters", func() {
 		Expect(hit).To(Equal(miss))
 	})
 
-	zoneCP := []labels.Option{labels.WithMode(config_core.Zone), labels.WithZone("zone-1")}
-	simpleOnZone := func() k8s_common.Converter { return NewSimpleConverter(systemNamespaceForTest, zoneCP...) }
+	zoneCP := labels.ControlPlane{Mode: config_core.Zone, Zone: "zone-1"}
+	simpleOnZone := func() k8s_common.Converter { return NewSimpleConverter(systemNamespaceForTest, zoneCP) }
 	cachingOnZone := func() k8s_common.Converter {
-		return NewCachingConverter(5*time.Minute, systemNamespaceForTest, zoneCP...)
+		return NewCachingConverter(5*time.Minute, systemNamespaceForTest, zoneCP)
 	}
 	importedFromGlobal := map[string]string{
 		v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),

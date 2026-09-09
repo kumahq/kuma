@@ -39,8 +39,7 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plu
 			pc.Metrics(),
 			*cfg,
 			pc.PgxConfigCustomizationFn(),
-			resource_labels.WithMode(pc.Config().Mode),
-			resource_labels.WithZone(pc.Config().Multizone.Zone.Name),
+			resource_labels.ControlPlaneFromConfig(pc.Config()),
 		)
 		if err != nil {
 			return nil, nil, err

@@ -35,6 +35,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	resources_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	kuma_version "github.com/kumahq/kuma/v3/pkg/version"
@@ -792,7 +793,7 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 		return err
 	}
 
-	converter := resources_k8s.NewSimpleConverter(Config.KumaNamespace)
+	converter := resources_k8s.NewSimpleConverter(Config.KumaNamespace, resource_labels.ControlPlane{})
 	for name, updateFuncs := range c.opts.meshUpdateFuncs {
 		for _, f := range updateFuncs {
 			Logf("applying update function to mesh %q", name)

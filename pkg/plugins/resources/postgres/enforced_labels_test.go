@@ -20,7 +20,7 @@ import (
 )
 
 var _ = Describe("PgxStore enforced read labels", func() {
-	newStore := func(labelOpts ...resource_labels.Option) store.ResourceStore {
+	newStore := func(cp resource_labels.ControlPlane) store.ResourceStore {
 		dbCfg, err := c.Config()
 		Expect(err).ToNot(HaveOccurred())
 		dbCfg.MaxOpenConnections = 2
@@ -32,7 +32,7 @@ var _ = Describe("PgxStore enforced read labels", func() {
 		_, err = postgres.MigrateDb(dbCfg)
 		Expect(err).ToNot(HaveOccurred())
 
-		pStore, err := postgres.NewPgxStore(metrics, dbCfg, config.NoopPgxConfigCustomizationFn, labelOpts...)
+		pStore, err := postgres.NewPgxStore(metrics, dbCfg, config.NoopPgxConfigCustomizationFn, cp)
 		Expect(err).ToNot(HaveOccurred())
 		return pStore
 	}
@@ -73,7 +73,7 @@ var _ = Describe("PgxStore enforced read labels", func() {
 
 	DescribeTable("on a zone should hand out origin and zone recomputed on Get and List",
 		func(name string, stored map[string]string, expected map[string]string) {
-			s := newStore(resource_labels.WithMode(config_core.Zone), resource_labels.WithZone("zone-1"))
+			s := newStore(resource_labels.ControlPlane{Mode: config_core.Zone, Zone: "zone-1"})
 			input := maps.Clone(stored)
 
 			Expect(s.Create(context.Background(), newResource(), store.CreateByKey(name, "default"), store.CreateWithLabels(input))).To(Succeed())
@@ -104,7 +104,7 @@ var _ = Describe("PgxStore enforced read labels", func() {
 	)
 
 	It("should hand out the stored labels as-is without a mode", func() {
-		s := newStore()
+		s := newStore(resource_labels.ControlPlane{})
 
 		Expect(s.Create(context.Background(), newResource(), store.CreateByKey("mes-no-mode", "default"), store.CreateWithLabels(map[string]string{"app": "backend"}))).To(Succeed())
 

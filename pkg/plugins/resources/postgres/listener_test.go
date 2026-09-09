@@ -13,6 +13,7 @@ import (
 	config_postgres "github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
@@ -131,7 +132,7 @@ func setupStore(cfg config_postgres.PostgresStoreConfig, driverName string) stor
 	var pStore store.ResourceStore
 	if driverName == "pgx" {
 		cfg.DriverName = config_postgres.DriverNamePgx
-		pStore, err = postgres.NewPgxStore(metrics, cfg, config.NoopPgxConfigCustomizationFn)
+		pStore, err = postgres.NewPgxStore(metrics, cfg, config.NoopPgxConfigCustomizationFn, resource_labels.ControlPlane{})
 	}
 	Expect(err).ToNot(HaveOccurred())
 	return pStore

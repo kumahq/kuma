@@ -19,7 +19,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sethvargo/go-retry"
 
-	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	config "github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -35,8 +34,7 @@ type pgxResourceStore struct {
 	roRatio                         uint
 	maxListQueryElements            uint32
 	listQueryThresholdExceededTotal prometheus.Counter
-	labelOpts                       []resource_labels.Option
-	mode                            config_core.CpMode
+	cp                              resource_labels.ControlPlane
 }
 
 type ResourceNamesByMesh map[string][]string
@@ -55,7 +53,7 @@ func NewPgxStore(
 	metrics core_metrics.Metrics,
 	config config.PostgresStoreConfig,
 	customizer pgx_config.PgxConfigCustomization,
-	labelOpts ...resource_labels.Option,
+	cp resource_labels.ControlPlane,
 ) (TransactionableResourceStore, error) {
 	pool, err := postgres.ConnectToDbPgx(config, customizer)
 	if err != nil {
@@ -93,8 +91,7 @@ func NewPgxStore(
 		maxListQueryElements:            config.MaxListQueryElements,
 		roRatio:                         config.ReadReplica.Ratio,
 		listQueryThresholdExceededTotal: listQueryThresholdExceededTotal,
-		labelOpts:                       labelOpts,
-		mode:                            resource_labels.NewOptions(labelOpts...).Mode,
+		cp:                              cp,
 	}, nil
 }
 
@@ -481,11 +478,8 @@ func (r *pgxResourceStore) newMeta(
 	if err := json.Unmarshal([]byte(labels), &stored); err != nil {
 		return nil, errors.Wrap(err, "failed to convert json to labels")
 	}
-	// Universal has no namespace to tell a KDS import from a local resource, so the
-	// stored origin is the only signal; it is trusted because the API server recomputes
-	// it on every write and the CP is the only other writer.
-	isLocal := core_model.IsLocallyOriginated(r.mode, stored)
-	if enforced := resource_labels.EnforcedReadLabels(resource.Descriptor(), resource.GetSpec(), isLocal, r.labelOpts...); len(enforced) > 0 {
+	sr := resource_labels.NewStoredResource(resource, resource_labels.UnsetNamespace, stored, r.cp)
+	if enforced := resource_labels.EnforcedReadLabels(sr, r.cp); len(enforced) > 0 {
 		if stored == nil {
 			stored = map[string]string{}
 		}

@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"fmt"
-	"slices"
 
 	"github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -16,28 +15,20 @@ var _ k8s_common.Converter = &SimpleConverter{}
 type SimpleConverter struct {
 	KubeFactory     KubeFactory
 	SystemNamespace string
-	LabelOptions    []labels.Option
+	ControlPlane    labels.ControlPlane
 }
 
-func NewSimpleConverter(systemNamespace string, labelOpts ...labels.Option) k8s_common.Converter {
+func NewSimpleConverter(systemNamespace string, cp labels.ControlPlane) k8s_common.Converter {
 	return &SimpleConverter{
 		KubeFactory:     NewSimpleKubeFactory(),
 		SystemNamespace: systemNamespace,
-		LabelOptions:    labelOpts,
+		ControlPlane:    cp,
 	}
 }
 
-func (c *SimpleConverter) readLabelArgs(obj k8s_model.KubernetesObject) (bool, []labels.Option) {
-	ns := obj.GetNamespace()
-	opts := append(slices.Clone(c.LabelOptions),
-		labels.WithK8s(true),
-		labels.WithNamespace(labels.NewNamespace(ns, ns == c.SystemNamespace)),
-	)
-	// KDS only writes into the system namespace, so anything outside it is local by
-	// construction; inside it the stored origin is the only signal and is trusted.
-	isLocal := (ns != "" && ns != c.SystemNamespace) ||
-		core_model.IsLocallyOriginated(labels.NewOptions(c.LabelOptions...).Mode, obj.GetLabels())
-	return isLocal, opts
+func (c *SimpleConverter) storedResource(obj k8s_model.KubernetesObject, out core_model.Resource) labels.StoredResource {
+	ns := labels.NewNamespace(obj.GetNamespace(), obj.GetNamespace() == c.SystemNamespace)
+	return labels.NewStoredResource(out, ns, obj.GetLabels(), c.ControlPlane)
 }
 
 func NewSimpleKubeFactory() KubeFactory {
@@ -83,8 +74,7 @@ func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out cor
 	if err := out.SetSpec(spec); err != nil {
 		return err
 	}
-	isLocal, opts := c.readLabelArgs(obj)
-	out.SetMeta(newMetaAdapter(obj, out.Descriptor(), out.GetSpec(), isLocal, opts...))
+	out.SetMeta(newMetaAdapter(obj, c.storedResource(obj, out), c.ControlPlane))
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()
 		if err != nil {

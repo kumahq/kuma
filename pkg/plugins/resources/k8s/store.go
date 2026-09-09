@@ -295,13 +295,7 @@ type KubernetesMetaAdapter struct {
 // newMetaAdapter is the only place an adapter's labels are computed from a Kubernetes
 // object; its parameters force every conversion path to supply what
 // labels.EnforcedReadLabels needs, so a new converter cannot silently skip it.
-func newMetaAdapter(
-	obj k8s_model.KubernetesObject,
-	rd core_model.ResourceTypeDescriptor,
-	spec core_model.ResourceSpec,
-	isLocal bool,
-	opts ...labels.Option,
-) *KubernetesMetaAdapter {
+func newMetaAdapter(obj k8s_model.KubernetesObject, r labels.StoredResource, cp labels.ControlPlane) *KubernetesMetaAdapter {
 	objMeta := obj.GetObjectMeta()
 
 	computed := maps.Clone(objMeta.GetLabels())
@@ -319,7 +313,7 @@ func newMetaAdapter(
 	if workload, ok := objMeta.GetAnnotations()[metadata.KumaWorkload]; ok {
 		computed[metadata.KumaWorkload] = workload
 	}
-	maps.Copy(computed, labels.EnforcedReadLabels(rd, spec, isLocal, opts...))
+	maps.Copy(computed, labels.EnforcedReadLabels(r, cp))
 
 	return &KubernetesMetaAdapter{
 		ObjectMeta: *objMeta,
