@@ -292,9 +292,8 @@ type KubernetesMetaAdapter struct {
 	labels map[string]string
 }
 
-// newMetaAdapter is the only place an adapter's labels are computed from a Kubernetes
-// object; its parameters force every conversion path to supply what
-// labels.EnforcedReadLabels needs, so a new converter cannot silently skip it.
+// Takes the enforcement inputs explicitly so that no conversion path can silently
+// skip labels.EnforcedReadLabels.
 func newMetaAdapter(obj k8s_model.KubernetesObject, r labels.StoredResource, cp labels.ControlPlane) *KubernetesMetaAdapter {
 	objMeta := obj.GetObjectMeta()
 

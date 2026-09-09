@@ -203,10 +203,9 @@ var _ = Describe("enforced label derivation through the converters", func() {
 		Expect(hit).To(Equal(miss))
 	})
 
-	// The same missing webhook that leaves the role label off also leaves the spec
-	// unvalidated, so a stored policy can have no spec at all. GetSpec hands back a
-	// typed nil for it, and deriving a role from that would dereference a nil policy
-	// on every read, panicking every conversion of that type.
+	// A policy the webhook never validated can have no spec at all; GetSpec then hands
+	// back a typed nil, and deriving a role from it would dereference a nil policy on
+	// every read, panicking every conversion of that type.
 	DescribeTable("should not panic on a stored policy with no spec",
 		func(newConverter func() k8s_common.Converter) {
 			obj := policyIn("app-ns", nil)
