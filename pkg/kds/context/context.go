@@ -70,7 +70,7 @@ var KDSSyncedConfigs = map[string]struct{}{
 
 func DefaultContext(
 	ctx context.Context,
-	manager manager.ResourceManager,
+	manager manager.ReadOnlyResourceManager,
 	cfg kuma_cp.Config,
 ) *Context {
 	globalMappers := []kds_reconcile.ResourceMapper{
@@ -262,7 +262,7 @@ func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) kds_reconcile.ResourceM
 	}
 }
 
-func GlobalProvidedFilter(rm manager.ResourceManager) kds_reconcile.ResourceFilter {
+func GlobalProvidedFilter(rm manager.ReadOnlyResourceManager) kds_reconcile.ResourceFilter {
 	return func(ctx context.Context, zoneName string, features kds.Features, r core_model.Resource) bool {
 		// There's explicit flag to disable KDS for a resource
 		if r.Descriptor().HasKDSDisabled(zoneName, r.GetMeta().GetLabels()) {
