@@ -139,6 +139,9 @@ components:
           format: date-time
           example: '1901-01-01T00:00:00.000Z'
         enabled:
+          description: |-
+            Enabled allows to turn the zone on and off, and to exclude the whole zone from
+            balancing traffic on it.
           type: boolean
   responses:
     ZoneItem:

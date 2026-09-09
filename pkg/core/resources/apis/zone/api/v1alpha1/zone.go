@@ -17,6 +17,8 @@ package v1alpha1
 // +kuma:policy:insight_package=github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1
 // +kuma:policy:kds_flags=model.ProvidedByGlobalFlag | model.ProvidedByZoneFlag
 type Zone struct {
+	// Enabled allows to turn the zone on and off, and to exclude the whole zone from
+	// balancing traffic on it.
 	Enabled *bool `json:"enabled,omitempty"`
 }
 

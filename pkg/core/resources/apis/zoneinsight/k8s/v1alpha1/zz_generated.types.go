@@ -17,7 +17,6 @@ import (
 )
 
 // ZoneInsight defines the observed state of a Zone Kuma CP.
-// EnvoyAdminStreams is deprecated, KDSStreams replaces it.
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Cluster,shortName=
 type ZoneInsight struct {
