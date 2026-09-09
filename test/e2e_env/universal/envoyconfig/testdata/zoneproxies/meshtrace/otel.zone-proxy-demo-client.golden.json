@@ -128,7 +128,7 @@
     },
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/system_dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/system_dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/4",
       "value": {
         "directResponse": {
           "body": {
@@ -152,7 +152,7 @@
     },
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/system_dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/2",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/system_dynamicconfig/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/4",
       "value": {
         "directResponse": {
           "status": 304
@@ -1645,6 +1645,83 @@
         ],
         "name": "system_envoy_admin",
         "trafficDirection": "INBOUND"
+      },
+      "system_identity_readiness": {
+        "address": {
+          "pipe": {
+            "path": "/tmp/kuma-identity-readiness.sock"
+          }
+        },
+        "filterChains": [
+          {
+            "filters": [
+              {
+                "name": "envoy.filters.network.http_connection_manager",
+                "typedConfig": {
+                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
+                  "httpFilters": [
+                    {
+                      "name": "envoy.filters.http.router",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
+                      }
+                    }
+                  ],
+                  "internalAddressConfig": {
+                    "cidrRanges": [
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 32
+                      }
+                    ]
+                  },
+                  "routeConfig": {
+                    "virtualHosts": [
+                      {
+                        "domains": [
+                          "*"
+                        ],
+                        "name": "system_identity_readiness",
+                        "routes": [
+                          {
+                            "directResponse": {
+                              "body": {
+                                "inlineString": "ready"
+                              },
+                              "status": 200
+                            },
+                            "match": {
+                              "prefix": "/ready"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "statPrefix": "STAT_PREFIX_REDACTED"
+                }
+              }
+            ],
+            "transportSocket": {
+              "name": "envoy.transport_sockets.tls",
+              "typedConfig": {
+                "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext",
+                "commonTlsContext": {
+                  "tlsCertificateSdsSecretConfigs": [
+                    {
+                      "name": "kri_mid_envoyconfig-zoneproxies_kuma-3__identity_",
+                      "sdsConfig": {
+                        "ads": {},
+                        "resourceApiVersion": "V3"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "name": "system_identity_readiness"
       }
     },
     "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret": {

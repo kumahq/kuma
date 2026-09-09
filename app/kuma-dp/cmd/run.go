@@ -217,9 +217,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.DataplaneRuntime.IPv6Enabled = false
 			}
 
-			rootCtx.Features = []string{
-				xds_types.FeatureTCPAccessLogViaNamedPipe,
-			}
+			rootCtx.Features = nil
 			if cfg.DataplaneRuntime.OtelPipeEnabled {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureOtelViaKumaDp)
 			}
@@ -306,6 +304,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
 				cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration,
 			)
+			identityGate := readiness.NewIdentityGate(core_xds.IdentityReadinessSocketName(cfg.DataplaneRuntime.WorkDir))
+			if err := confFetcher.AddHandler(core_xds.IdentityReadinessPath, identityGate.OnChange); err != nil {
+				return err
+			}
 			// Add external dynamic config handlers
 			for path, handler := range rootCtx.DynamicConfigHandlers {
 				if err := confFetcher.AddHandler(path, handler); err != nil {
@@ -364,6 +366,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					Port:       adminPort,
 				},
 				dnsConfigReady)
+			readinessReporter.SetIdentityGate(identityGate)
 			components = append(components, readinessReporter)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
