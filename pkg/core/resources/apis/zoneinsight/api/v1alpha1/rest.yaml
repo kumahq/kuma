@@ -223,15 +223,15 @@ components:
                         responsesAcknowledged:
                           description: Number of xDS responses ACKed by the Dataplane.
                           format: int64
-                          type: integer
+                          type: string
                         responsesRejected:
                           description: Number of xDS responses NACKed by the Dataplane.
                           format: int64
-                          type: integer
+                          type: string
                         responsesSent:
                           description: Number of xDS responses sent to the Dataplane.
                           format: int64
-                          type: integer
+                          type: string
                       type: object
                     description: Stat holds the KDS stats per resource type.
                     type: object
@@ -241,15 +241,15 @@ components:
                       responsesAcknowledged:
                         description: Number of xDS responses ACKed by the Dataplane.
                         format: int64
-                        type: integer
+                        type: string
                       responsesRejected:
                         description: Number of xDS responses NACKed by the Dataplane.
                         format: int64
-                        type: integer
+                        type: string
                       responsesSent:
                         description: Number of xDS responses sent to the Dataplane.
                         format: int64
-                        type: integer
+                        type: string
                     type: object
                 type: object
               version:

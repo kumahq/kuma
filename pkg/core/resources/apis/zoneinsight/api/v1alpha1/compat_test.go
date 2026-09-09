@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 )
 
 // These fixtures are the bytes a 2.14 control plane wrote, captured from its store rather
@@ -45,6 +46,24 @@ var _ = Describe("ZoneInsight storage compatibility", func() {
 			Expect(is).To(Equal(was))
 		})
 	}
+
+	It("accepts its own wire format through the schema the REST layer validates against, which a counter declared as an integer would reject", func() {
+		payload := `{
+			"type": "ZoneInsight",
+			"name": "zone-1",
+			"subscriptions": [{
+				"id": "sub-1",
+				"connectTime": "2026-03-14T09:05:30.100Z",
+				"status": {"stat": {"Mesh": {"responsesSent": "42", "responsesAcknowledged": "41"}}}
+			}]
+		}`
+
+		res, err := rest.JSON.UnmarshalCore([]byte(payload))
+		Expect(err).ToNot(HaveOccurred())
+
+		insight := res.GetSpec().(*zoneinsight_api.ZoneInsight)
+		Expect(insight.Subscriptions[0].Status.Stat["Mesh"].ResponsesSent).To(Equal(uint64(42)))
+	})
 
 	It("writes 64 bit counters as strings, the way protobuf did", func() {
 		out, err := json.Marshal(&zoneinsight_api.ZoneInsight{

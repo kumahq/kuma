@@ -101,10 +101,13 @@ type KDSSubscriptionStatus struct {
 // control plane rejects them when written as numbers.
 type KDSServiceStats struct {
 	// Number of xDS responses sent to the Dataplane.
+	// +kubebuilder:validation:Type=string
 	ResponsesSent uint64 `json:"responsesSent,omitempty,string"`
 	// Number of xDS responses ACKed by the Dataplane.
+	// +kubebuilder:validation:Type=string
 	ResponsesAcknowledged uint64 `json:"responsesAcknowledged,omitempty,string"`
 	// Number of xDS responses NACKed by the Dataplane.
+	// +kubebuilder:validation:Type=string
 	ResponsesRejected uint64 `json:"responsesRejected,omitempty,string"`
 }
 
