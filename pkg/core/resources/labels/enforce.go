@@ -7,8 +7,9 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
-// The zero value is for callers that must not enforce origin and zone, such as the
-// admission webhooks, which validate the user-supplied labels instead.
+// ControlPlane is the configuration fixed for the whole deployment. Its zero value is
+// for callers that must not enforce origin and zone, such as the admission webhooks,
+// which validate the user-supplied labels instead.
 type ControlPlane struct {
 	Mode config_core.CpMode
 	Zone string
@@ -18,8 +19,8 @@ func ControlPlaneFromConfig(cfg kuma_cp.Config) ControlPlane {
 	return ControlPlane{Mode: cfg.Mode, Zone: cfg.Multizone.Zone.Name}
 }
 
-// Descriptor and Spec are taken apart from core_model.Resource because its Meta is
-// not set yet when this runs.
+// StoredResource is the object whose labels are recomputed. It takes Descriptor and
+// Spec apart from core_model.Resource because the resource's Meta is not set yet.
 type StoredResource struct {
 	Descriptor core_model.ResourceTypeDescriptor
 	Spec       core_model.ResourceSpec
@@ -27,9 +28,9 @@ type StoredResource struct {
 	IsLocal    bool
 }
 
-// KDS only writes into the system namespace, so anything outside it is local by
-// construction. Inside it, and on Universal, the stored origin is trusted because the
-// API server recomputes it on every write and the CP is the only other writer.
+// NewStoredResource derives IsLocal: KDS only writes into the system namespace, so
+// anything outside it is local; inside it, and on Universal, the stored origin is trusted
+// because the API server recomputes it on every write and the CP is the only other writer.
 func NewStoredResource(res core_model.Resource, ns Namespace, storedLabels map[string]string, cp ControlPlane) StoredResource {
 	return StoredResource{
 		Descriptor: res.Descriptor(),

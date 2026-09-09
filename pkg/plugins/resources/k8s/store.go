@@ -292,8 +292,8 @@ type KubernetesMetaAdapter struct {
 	labels map[string]string
 }
 
-// Takes the enforcement inputs explicitly so that no conversion path can silently
-// skip labels.EnforcedReadLabels.
+// newMetaAdapter takes the enforcement inputs explicitly so that no conversion path
+// can silently skip labels.EnforcedReadLabels.
 func newMetaAdapter(obj k8s_model.KubernetesObject, r labels.StoredResource, cp labels.ControlPlane) *KubernetesMetaAdapter {
 	objMeta := obj.GetObjectMeta()
 
