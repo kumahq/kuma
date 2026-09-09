@@ -60,6 +60,18 @@ func newK8sResource(rootArgs *args) *cobra.Command {
 				return err
 			}
 
+			// A resource whose Kubernetes spec is opaque produces a definition with no
+			// properties, and the OpenAPI document is enriched from that definition, so
+			// the REST API reference would describe none of the spec. Render the typed
+			// variant into a throwaway package, keep the schema controller-gen derives
+			// from it for the reference, and delete the package: leaving it behind would
+			// compile as unreachable code.
+			if pconfig.OpaqueK8sSpec {
+				if err := generateSchemaForDocs(cmd, localArgs.controllerGenBin, rootArgs, pconfig); err != nil {
+					return err
+				}
+			}
+
 			controllerGenGeneratedTypeExec := exec.CommandContext(cmd.Context(), //nolint:gosec
 				localArgs.controllerGenBin,
 				"object",
@@ -333,3 +345,35 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 
 var knownTypes []runtime.Object
 `))
+
+// generateSchemaForDocs writes the schema the REST API reference is built from for a
+// resource that ships an opaque Kubernetes definition.
+func generateSchemaForDocs(cmd *cobra.Command, controllerGenBin string, rootArgs *args, pconfig parse.PolicyConfig) error {
+	typedDir := filepath.Join(rootArgs.pluginDir, "k8s", "schemaonly")
+	if err := os.MkdirAll(typedDir, 0o755); err != nil {
+		return err
+	}
+	defer func() { _ = os.RemoveAll(typedDir) }()
+
+	typed := pconfig
+	typed.OpaqueK8sSpec = false
+	if err := commontemplate.GoTemplate(customResourceTemplate, typed, filepath.Join(typedDir, "zz_generated.types.go")); err != nil {
+		return err
+	}
+	if err := commontemplate.GoTemplate(groupVersionInfoTemplate, typed, filepath.Join(typedDir, "groupversion_info.go")); err != nil {
+		return err
+	}
+
+	schemaDir := filepath.Join(rootArgs.pluginDir, "k8s", "schema")
+	if err := os.MkdirAll(schemaDir, 0o755); err != nil {
+		return err
+	}
+	gen := exec.CommandContext(cmd.Context(), //nolint:gosec
+		controllerGenBin,
+		"crd:crdVersions=v1,ignoreUnexportedFields=true",
+		"paths=./"+filepath.Join("./", typedDir),
+		"output:crd:artifacts:config="+schemaDir,
+	)
+	gen.Stderr = cmd.ErrOrStderr()
+	return gen.Run()
+}

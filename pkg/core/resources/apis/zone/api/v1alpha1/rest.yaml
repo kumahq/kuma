@@ -138,9 +138,8 @@ components:
           description: 'Time at which the resource was updated'
           format: date-time
           example: '1901-01-01T00:00:00.000Z'
-        spec:
-          description: Spec is the specification of the Kuma Zone resource.
-          x-kubernetes-preserve-unknown-fields: true
+        enabled:
+          type: boolean
   responses:
     ZoneItem:
       description: Successful response
