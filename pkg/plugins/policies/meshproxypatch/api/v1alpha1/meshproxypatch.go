@@ -38,7 +38,9 @@ type Modification struct {
 	VirtualHost *VirtualHostMod `json:"virtualHost,omitempty"`
 }
 
-// ModOperation is modification operation on Envoy's resource.
+// ModOperation is modification operation on Envoy's resource. It carries no
+// enum of its own: the operations a modification accepts depend on the Envoy
+// resource it targets, so each field declares the subset it allows.
 type ModOperation string
 
 const (
@@ -223,8 +225,7 @@ type HTTPFilterMatch struct {
 // referenced in HTTP Connection Manager in a Listener resource.
 type VirtualHostMod struct {
 	// Match is a set of conditions that have to be matched for modification operation to happen.
-	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
-	Match *VirtualHostMatch `json:"match"`
+	Match VirtualHostMatch `json:"match"`
 	// Operation to execute on matched listener.
 	// +kubebuilder:validation:Enum=Add;Remove;Patch
 	Operation ModOperation `json:"operation"`

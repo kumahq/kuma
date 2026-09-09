@@ -329,7 +329,6 @@ components:
                                                     For example, you can target a port from MeshService.ports[] by its name.
                                                   type: string
                                                 weight:
-                                                  default: 1
                                                   maximum: 4294967295
                                                   minimum: 0
                                                   type: integer
@@ -564,7 +563,6 @@ components:
                                       For example, you can target a port from MeshService.ports[] by its name.
                                     type: string
                                   weight:
-                                    default: 1
                                     maximum: 4294967295
                                     minimum: 0
                                     type: integer
@@ -652,7 +650,6 @@ components:
                                               For example, you can target a port from MeshService.ports[] by its name.
                                             type: string
                                           weight:
-                                            default: 1
                                             maximum: 4294967295
                                             minimum: 0
                                             type: integer
@@ -887,7 +884,6 @@ components:
                                       pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                       type: string
                                     type:
-                                      default: Exact
                                       description: Type specifies how to match against the value of the header.
                                       enum:
                                         - Exact

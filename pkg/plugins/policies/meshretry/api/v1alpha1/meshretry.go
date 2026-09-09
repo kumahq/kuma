@@ -43,6 +43,8 @@ type TCP struct {
 	MaxConnectAttempt *uint32 `json:"maxConnectAttempt,omitempty"`
 }
 
+// HTTPRetryOn names a condition a request is retried on. Alongside the named
+// conditions it also accepts any numeric HTTP status code.
 type HTTPRetryOn string
 
 var HttpMethodPrefix HTTPRetryOn = "HttpMethod"
