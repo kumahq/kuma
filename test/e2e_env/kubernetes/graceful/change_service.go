@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/channels"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -135,6 +136,14 @@ func ChangeService() {
 	}
 
 	It("should gracefully switch to other service", func() {
+		// Keep service bootstrap outside the selector transition. A successful
+		// plaintext request does not mean clients have received the mTLS cluster.
+		Eventually(func(g Gomega) {
+			_, status, err := GetMeshServiceStatus(kubernetes.Cluster, "test-server."+namespace, mesh)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(status.TLS.Status).To(Equal(meshservice_api.TLSReady))
+		}, "30s", "1s").Should(Succeed())
+
 		// given traffic to the first server
 		Eventually(func(g Gomega) {
 			instance, err := doRequest()
