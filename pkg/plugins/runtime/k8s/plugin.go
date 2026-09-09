@@ -57,9 +57,8 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	}
 
 	// Mutators and Validators convert resources from Request (not from the Store)
-	// these resources doesn't have ResourceVersion, we can't cache them.
-	// No mode/zone label options on purpose: the webhooks validate the user-supplied
-	// origin and zone labels, so they must see them raw, not normalized on read.
+	// these resources doesn't have ResourceVersion, we can't cache them. No mode/zone
+	// options either: the webhooks must validate the user-supplied origin and zone labels.
 	simpleConverter := k8s.NewSimpleConverter(rt.Config().Store.Kubernetes.SystemNamespace)
 	if err := addValidators(mgr, rt, simpleConverter); err != nil {
 		return err

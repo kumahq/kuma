@@ -35,10 +35,8 @@ type pgxResourceStore struct {
 	roRatio                         uint
 	maxListQueryElements            uint32
 	listQueryThresholdExceededTotal prometheus.Counter
-	// labelOpts (mode, zone) drive labels.EnforcedReadLabels on every read; mode is
-	// the same value, kept separately for the local-vs-import decision.
-	labelOpts []resource_labels.Option
-	mode      config_core.CpMode
+	labelOpts                       []resource_labels.Option
+	mode                            config_core.CpMode
 }
 
 type ResourceNamesByMesh map[string][]string
@@ -472,12 +470,6 @@ func (r *pgxResourceStore) rowToItem(resources core_model.ResourceList, rows pgx
 	return item, nil
 }
 
-// newMeta builds the meta of a resource read from a row. The spec must already be
-// set on the resource: the enforced labels are derived from it.
-//
-// Universal has no namespace to tell a KDS import from a local resource, so the
-// stored origin is the only signal and it is trusted: the API server recomputes it
-// on every write and the CP is the only other writer.
 func (r *pgxResourceStore) newMeta(
 	resource core_model.Resource,
 	name, mesh string,
@@ -489,6 +481,9 @@ func (r *pgxResourceStore) newMeta(
 	if err := json.Unmarshal([]byte(labels), &stored); err != nil {
 		return nil, errors.Wrap(err, "failed to convert json to labels")
 	}
+	// Universal has no namespace to tell a KDS import from a local resource, so the
+	// stored origin is the only signal; it is trusted because the API server recomputes
+	// it on every write and the CP is the only other writer.
 	isLocal := core_model.IsLocallyOriginated(r.mode, stored)
 	if enforced := resource_labels.EnforcedReadLabels(resource.Descriptor(), resource.GetSpec(), isLocal, r.labelOpts...); len(enforced) > 0 {
 		if stored == nil {

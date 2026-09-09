@@ -285,18 +285,16 @@ type KubernetesMetaAdapter struct {
 	Mesh string
 
 	// labels is the materialized label set: the object's stored labels, the entries
-	// derived from annotations, and the control-plane-owned ones (namespace, policy
-	// role, origin, zone) recomputed by labels.EnforcedReadLabels. Callers MUST treat
-	// it as read-only - it is handed out as is, and when the adapter came from
-	// cachingConverter a clone of it also sits in the cache.
+	// derived from annotations, and the control-plane-owned ones recomputed by
+	// labels.EnforcedReadLabels. Callers MUST treat it as read-only - it is handed
+	// out as is, and when the adapter came from cachingConverter a clone of it also
+	// sits in the cache.
 	labels map[string]string
 }
 
 // newMetaAdapter is the only place an adapter's labels are computed from a Kubernetes
-// object. Taking rd, spec, isLocal and the label options forces every conversion path
-// to supply what labels.EnforcedReadLabels needs, so a new converter cannot silently
-// skip the read-side recomputation. newMetaAdapterWithLabels is not a second
-// computation: it only re-wraps a set this function already produced.
+// object; its parameters force every conversion path to supply what
+// labels.EnforcedReadLabels needs, so a new converter cannot silently skip it.
 func newMetaAdapter(
 	obj k8s_model.KubernetesObject,
 	rd core_model.ResourceTypeDescriptor,
@@ -367,9 +365,8 @@ func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
 
 // GetLabels returns the materialized label set built at construction time: the
 // object's stored labels, the annotation-derived entries (display name, Kuma service
-// account, Kuma workload), and the control-plane-owned ones (namespace, policy role,
-// origin, zone) recomputed by labels.EnforcedReadLabels. Callers MUST treat the
-// returned map as read-only.
+// account, Kuma workload), and the control-plane-owned ones recomputed by
+// labels.EnforcedReadLabels. Callers MUST treat the returned map as read-only.
 // Mutating it would corrupt both this adapter and, when the adapter was produced by
 // cachingConverter, the cross-reconcile entry shared via the resourceVersion key.
 func (m *KubernetesMetaAdapter) GetLabels() map[string]string {

@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -15,10 +16,7 @@ var _ k8s_common.Converter = &SimpleConverter{}
 type SimpleConverter struct {
 	KubeFactory     KubeFactory
 	SystemNamespace string
-	// LabelOptions are the control-plane-wide options (mode, zone) handed to
-	// labels.EnforcedReadLabels on every conversion. Leave them empty for converters
-	// that must not normalize user-supplied labels, like the admission webhooks'.
-	LabelOptions []labels.Option
+	LabelOptions    []labels.Option
 }
 
 func NewSimpleConverter(systemNamespace string, labelOpts ...labels.Option) k8s_common.Converter {
@@ -29,21 +27,14 @@ func NewSimpleConverter(systemNamespace string, labelOpts ...labels.Option) k8s_
 	}
 }
 
-// readLabelArgs derives what labels.EnforcedReadLabels needs for obj: whether it is
-// locally originated, and the per-object options on top of the CP-wide ones. The
-// options are a fresh slice per call, so concurrent conversions never share the
-// backing array of LabelOptions.
-//
-// KDS only ever writes into the system namespace, so an object anywhere else is
-// local by construction. Inside the system namespace the stored origin is the only
-// signal, and it is trusted: only the CP and admission-validated writes land there.
 func (c *SimpleConverter) readLabelArgs(obj k8s_model.KubernetesObject) (bool, []labels.Option) {
 	ns := obj.GetNamespace()
-	opts := make([]labels.Option, 0, len(c.LabelOptions)+2)
-	opts = append(opts, labels.WithK8s(true))
-	opts = append(opts, c.LabelOptions...)
-	opts = append(opts, labels.WithNamespace(labels.NewNamespace(ns, ns == c.SystemNamespace)))
-
+	opts := append(slices.Clone(c.LabelOptions),
+		labels.WithK8s(true),
+		labels.WithNamespace(labels.NewNamespace(ns, ns == c.SystemNamespace)),
+	)
+	// KDS only writes into the system namespace, so anything outside it is local by
+	// construction; inside it the stored origin is the only signal and is trusted.
 	isLocal := (ns != "" && ns != c.SystemNamespace) ||
 		core_model.IsLocallyOriginated(labels.NewOptions(c.LabelOptions...).Mode, obj.GetLabels())
 	return isLocal, opts
