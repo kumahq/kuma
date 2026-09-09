@@ -226,7 +226,7 @@ func (b *bundledIdentityProvider) loadCAKeyPair(ctx context.Context, identity *m
 	}, nil
 }
 
-func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, proxy *xds.Proxy) (*xds.WorkloadIdentity, error) {
+func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, proxy *xds.Proxy, trustDomain string) (*xds.WorkloadIdentity, error) {
 	pair, err := b.getCAKeyPair(ctx, identity, proxy.Dataplane.Meta.GetMesh())
 	if err != nil {
 		return nil, err
@@ -244,10 +244,6 @@ func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *
 	}
 	now := time.Now()
 	serialNumber, err := newSerialNumber()
-	if err != nil {
-		return nil, err
-	}
-	trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), b.zone)
 	if err != nil {
 		return nil, err
 	}

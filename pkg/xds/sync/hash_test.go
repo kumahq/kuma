@@ -33,7 +33,7 @@ func TestHashMeshIdentityIgnoresVersionAndNonReadinessStatusChanges(t *testing.T
 		}},
 	}
 
-	if !bytes.Equal(hashMeshIdentity(first), hashMeshIdentity(second)) {
+	if !bytes.Equal(hashMeshIdentity(first, "default.east.mesh.local"), hashMeshIdentity(second, "default.east.mesh.local")) {
 		t.Fatal("expected MeshIdentity watchdog hash to ignore version and status-only changes")
 	}
 }
@@ -57,7 +57,7 @@ func TestHashMeshIdentityChangesWhenInitializationChanges(t *testing.T) {
 		}},
 	}
 
-	if bytes.Equal(hashMeshIdentity(notReady), hashMeshIdentity(ready)) {
+	if bytes.Equal(hashMeshIdentity(notReady, "default.east.mesh.local"), hashMeshIdentity(ready, "default.east.mesh.local")) {
 		t.Fatal("expected MeshIdentity watchdog hash to change when initialization changes")
 	}
 }

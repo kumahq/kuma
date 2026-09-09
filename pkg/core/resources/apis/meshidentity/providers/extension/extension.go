@@ -43,12 +43,12 @@ func (d *Dispatcher) Initialize(ctx context.Context, identity *meshidentity_api.
 	return handler.Initialize(ctx, identity)
 }
 
-func (d *Dispatcher) CreateIdentity(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, proxy *xds.Proxy) (*xds.WorkloadIdentity, error) {
+func (d *Dispatcher) CreateIdentity(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, proxy *xds.Proxy, trustDomain string) (*xds.WorkloadIdentity, error) {
 	handler, err := d.handler(identity)
 	if err != nil {
 		return nil, err
 	}
-	return handler.CreateIdentity(ctx, identity, proxy)
+	return handler.CreateIdentity(ctx, identity, proxy, trustDomain)
 }
 
 func (d *Dispatcher) GetMeshTrustCA(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) ([]byte, error) {

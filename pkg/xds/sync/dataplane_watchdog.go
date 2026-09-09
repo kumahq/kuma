@@ -108,7 +108,14 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 
 	syncForConfig := meshCtx.Hash != d.lastHash // check if we need to regenerate config because Kuma policies has changed.
 	identity := d.EnvoyCpCtx.IdentityManager.SelectedIdentity(dpp, meshCtx.Resources.MeshIdentities().Items)
-	identityHash := base64.StdEncoding.EncodeToString(hashMeshIdentity(identity))
+	var trustDomain string
+	if identity != nil {
+		var err error
+		if trustDomain, err = meshidentity_api.LocalTrustDomain(identity, identity.GetMeta(), d.EnvoyCpCtx.Zone, meshCtx.Resources.MeshTrusts().Items); err != nil {
+			return SyncResult{}, errors.Wrap(err, "could not resolve the trust domain")
+		}
+	}
+	identityHash := base64.StdEncoding.EncodeToString(hashMeshIdentity(identity, trustDomain))
 	syncIdentity := identityHash != d.lastIdentityHash ||
 		// check if is expired
 		(d.workloadIdentity != nil && d.workloadIdentity.ManagementMode == core_xds.KumaManagementMode && d.workloadIdentity.ExpiringSoon()) ||
@@ -140,7 +147,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 	}
 	proxy.WorkloadIdentityRequired = identity != nil
 	if syncIdentity {
-		identity, err := d.EnvoyCpCtx.IdentityManager.GetWorkloadIdentity(ctx, proxy, identity)
+		identity, err := d.EnvoyCpCtx.IdentityManager.GetWorkloadIdentity(ctx, proxy, identity, trustDomain)
 		if err != nil {
 			return SyncResult{}, errors.Wrap(err, "could not get identity")
 		}
@@ -203,12 +210,15 @@ func (d *DataplaneWatchdog) syncOtelStatus(backends *core_xds.OtelPipeBackends) 
 	return true
 }
 
-func hashMeshIdentity(identity *meshidentity_api.MeshIdentityResource) []byte {
+func hashMeshIdentity(identity *meshidentity_api.MeshIdentityResource, trustDomain string) []byte {
 	hasher := fnv.New128a()
 	if identity != nil {
 		// XDSHash covers readiness, so dataplanes resync when a MeshIdentity
 		// becomes initialized and workload identity can finally be issued.
 		_, _ = hasher.Write(identity.XDSHash())
+		// The trust domain moves independently of the MeshIdentity, so hash it too:
+		// once the MeshTrust publishes a new one the proxy has to be re-issued in it.
+		_, _ = hasher.Write([]byte(trustDomain))
 	}
 	return hasher.Sum(nil)
 }

@@ -72,7 +72,7 @@ var _ = Describe("Spire Providers Test", func() {
 				Build()
 
 			// create identity
-			identity, err := spireProvider.CreateIdentity(context.TODO(), meshIdentity, proxy)
+			identity, err := spireProvider.CreateIdentity(context.TODO(), meshIdentity, proxy, "default.my-zone.mesh.local")
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -120,7 +120,7 @@ var _ = Describe("Spire Providers Test", func() {
 				Build()
 
 			// create identity
-			identity, err := spireProvider.CreateIdentity(context.TODO(), meshIdentity, proxy)
+			identity, err := spireProvider.CreateIdentity(context.TODO(), meshIdentity, proxy, "default.my-zone.mesh.local")
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -166,7 +166,7 @@ var _ = Describe("Spire Providers Test", func() {
 				Build()
 
 			// create identity
-			identity, err := spireProvider.CreateIdentity(context.TODO(), meshIdentity, proxy)
+			identity, err := spireProvider.CreateIdentity(context.TODO(), meshIdentity, proxy, "default.my-zone.mesh.local")
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

@@ -2,6 +2,7 @@ package builders
 
 import (
 	"context"
+	"maps"
 	"time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -178,6 +179,14 @@ func (mi *MeshIdentityBuilder) WithPartiallyReadyStatus() *MeshIdentityBuilder {
 			},
 		},
 	}
+	return mi
+}
+
+func (mi *MeshIdentityBuilder) WithLabels(labels map[string]string) *MeshIdentityBuilder {
+	if mi.res.Meta.(*test_model.ResourceMeta).Labels == nil {
+		mi.res.Meta.(*test_model.ResourceMeta).Labels = map[string]string{}
+	}
+	maps.Copy(mi.res.Meta.(*test_model.ResourceMeta).Labels, labels)
 	return mi
 }
 

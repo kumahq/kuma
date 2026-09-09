@@ -166,7 +166,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	loader := datasource.NewStaticLoader(resources.Secrets().Items)
 	mesh := baseMeshContext.Mesh
 	casByTrustDomain := getCAsByTrustDomain(resources.MeshTrusts().Items)
-	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
+	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, resources.MeshTrusts().Items, m.zone)
 	endpointMap := xds_topology.BuildDataplaneEndpointMap(
 		ctx,
 		m.zone,
@@ -407,6 +407,7 @@ func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalCont
 func resolveZoneEgresses(
 	dataplanes []*core_mesh.DataplaneResource,
 	identities []*meshidentity_api.MeshIdentityResource,
+	meshTrusts []*meshtrust_api.MeshTrustResource,
 	zone string,
 ) []xds.ZoneEgressInstance {
 	var dpEgresses []xds.ZoneEgressInstance
@@ -421,7 +422,7 @@ func resolveZoneEgresses(
 			if _, isK8s := dp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; isK8s {
 				env = config_core.KubernetesEnvironment
 			}
-			if trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), zone); err != nil {
+			if trustDomain, err := meshidentity_api.LocalTrustDomain(identity, identity.GetMeta(), zone, meshTrusts); err != nil {
 				logger.Error(err, "failed to compute trust domain for zone egress", "dataplane", dp.GetMeta().GetName())
 			} else if spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, dp.GetMeta(), env); err != nil {
 				logger.Error(err, "failed to compute SPIFFE ID for zone egress", "dataplane", dp.GetMeta().GetName())

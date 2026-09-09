@@ -38,7 +38,7 @@ func (i *IdentityProviderManager) SelectedIdentity(dataplane *core_mesh.Dataplan
 	return identity
 }
 
-func (i *IdentityProviderManager) GetWorkloadIdentity(ctx context.Context, proxy *xds.Proxy, identity *meshidentity_api.MeshIdentityResource) (*xds.WorkloadIdentity, error) {
+func (i *IdentityProviderManager) GetWorkloadIdentity(ctx context.Context, proxy *xds.Proxy, identity *meshidentity_api.MeshIdentityResource, trustDomain string) (*xds.WorkloadIdentity, error) {
 	if identity == nil {
 		i.eventWriter.Send(events.WorkloadIdentityChangedEvent{
 			ResourceKey: model.MetaToResourceKey(proxy.Dataplane.GetMeta()),
@@ -69,7 +69,7 @@ func (i *IdentityProviderManager) GetWorkloadIdentity(ctx context.Context, proxy
 	if ok, retryAfter := i.limiter.Allow(backend, source); !ok {
 		return nil, fmt.Errorf("backing off identity generation for %q after a previous failure (retry after %s)", identity.Meta.GetName(), retryAfter)
 	}
-	workloadIdentity, err := provider.CreateIdentity(ctx, identity, proxy)
+	workloadIdentity, err := provider.CreateIdentity(ctx, identity, proxy, trustDomain)
 	i.limiter.Record(backend, source, err == nil)
 	if err != nil {
 		return nil, err

@@ -56,7 +56,7 @@ func (s *staticIdentityProvider) Initialize(_ context.Context, _ *meshidentity_a
 	return nil
 }
 
-func (s *staticIdentityProvider) CreateIdentity(_ context.Context, _ *meshidentity_api.MeshIdentityResource, _ *core_xds.Proxy) (*core_xds.WorkloadIdentity, error) {
+func (s *staticIdentityProvider) CreateIdentity(_ context.Context, _ *meshidentity_api.MeshIdentityResource, _ *core_xds.Proxy, _ string) (*core_xds.WorkloadIdentity, error) {
 	return nil, nil
 }
 

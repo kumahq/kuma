@@ -237,7 +237,7 @@ var _ = Describe("Bundled Providers Test", func() {
 				Build()
 
 			// create identity
-			identity, err := bundledProvider.CreateIdentity(context.TODO(), meshIdentity, proxy)
+			identity, err := bundledProvider.CreateIdentity(context.TODO(), meshIdentity, proxy, "default.my-zone.mesh.local")
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -298,7 +298,7 @@ var _ = Describe("Bundled Providers Test", func() {
 				Build()
 
 			// create identity
-			identity, err := universalProvider.CreateIdentity(context.TODO(), meshIdentity, proxy)
+			identity, err := universalProvider.CreateIdentity(context.TODO(), meshIdentity, proxy, "default.my-zone.mesh.local")
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -337,7 +337,7 @@ var _ = Describe("Bundled Providers Test", func() {
 					Build()
 
 				// when
-				identity, err := bundledProvider.CreateIdentity(context.TODO(), meshIdentity, proxy)
+				identity, err := bundledProvider.CreateIdentity(context.TODO(), meshIdentity, proxy, "default.my-zone.mesh.local")
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -430,9 +430,9 @@ var _ = Describe("Bundled Providers Test", func() {
 				Build()
 
 			// when - create identities
-			workloadIdentity1, err := bundledProvider.CreateIdentity(context.TODO(), identity1, proxy1)
+			workloadIdentity1, err := bundledProvider.CreateIdentity(context.TODO(), identity1, proxy1, "default.my-zone.mesh.local")
 			Expect(err).ToNot(HaveOccurred())
-			workloadIdentity2, err := bundledProvider.CreateIdentity(context.TODO(), identity2, proxy2)
+			workloadIdentity2, err := bundledProvider.CreateIdentity(context.TODO(), identity2, proxy2, "default.my-zone.mesh.local")
 			Expect(err).ToNot(HaveOccurred())
 
 			// then - verify certificates have different issuers

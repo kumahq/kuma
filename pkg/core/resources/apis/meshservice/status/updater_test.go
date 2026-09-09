@@ -456,25 +456,25 @@ var _ = Describe("buildTLS", func() {
 	dpps := []*core_mesh.DataplaneResource{certifiedDpp}
 
 	It("should hold the first certified pass in Pending", func() {
-		Expect(updater.buildTLS(meshservice_api.TLS{}, dpps, identities, trustDomains).Status).
+		Expect(updater.buildTLS(meshservice_api.TLS{}, dpps, identities, nil, trustDomains).Status).
 			To(Equal(meshservice_api.TLSPending))
 	})
 
 	It("should promote Pending to Ready on the next pass", func() {
 		pending := meshservice_api.TLS{Status: meshservice_api.TLSPending}
-		Expect(updater.buildTLS(pending, dpps, identities, trustDomains).Status).
+		Expect(updater.buildTLS(pending, dpps, identities, nil, trustDomains).Status).
 			To(Equal(meshservice_api.TLSReady))
 	})
 
 	It("should keep Ready latched", func() {
 		ready := meshservice_api.TLS{Status: meshservice_api.TLSReady}
-		Expect(updater.buildTLS(ready, dpps, identities, trustDomains).Status).
+		Expect(updater.buildTLS(ready, dpps, identities, nil, trustDomains).Status).
 			To(Equal(meshservice_api.TLSReady))
 	})
 
 	It("should drop back to NotReady when coverage is lost", func() {
 		pending := meshservice_api.TLS{Status: meshservice_api.TLSPending}
-		Expect(updater.buildTLS(pending, dpps, nil, trustDomains).Status).
+		Expect(updater.buildTLS(pending, dpps, nil, nil, trustDomains).Status).
 			To(Equal(meshservice_api.TLSNotReady))
 	})
 
@@ -482,7 +482,7 @@ var _ = Describe("buildTLS", func() {
 		uncertified := samples.DataplaneBackendBuilder().WithMesh("test").Build()
 		uncertified.Meta = &test_model.ResourceMeta{Name: "dp-2", Mesh: "test"}
 		both := []*core_mesh.DataplaneResource{certifiedDpp, uncertified}
-		Expect(updater.buildTLS(meshservice_api.TLS{}, both, identities, trustDomains).Status).
+		Expect(updater.buildTLS(meshservice_api.TLS{}, both, identities, nil, trustDomains).Status).
 			To(Equal(meshservice_api.TLSNotReady))
 	})
 })

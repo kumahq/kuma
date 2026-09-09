@@ -140,13 +140,13 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			continue
 		}
 		mids := identityByMesh[mesh.Meta.GetName()]
-		identities := s.buildIdentities(dpps, mids)
+		identities := s.buildIdentities(dpps, mids, meshTrusts.Items)
 		if !reflect.DeepEqual(pointer.Deref(ms.Spec.Identities), identities) {
 			changeReasons = append(changeReasons, "identities")
 			ms.Spec.Identities = &identities
 		}
 
-		tls := s.buildTLS(ms.Status.TLS, dpps, mids, trustDomains)
+		tls := s.buildTLS(ms.Status.TLS, dpps, mids, meshTrusts.Items, trustDomains)
 		if !reflect.DeepEqual(ms.Status.TLS, tls) {
 			changeReasons = append(changeReasons, "tls status")
 			ms.Status.TLS = tls
@@ -223,6 +223,7 @@ func (s *StatusUpdater) buildTLS(
 	existing meshservice_api.TLS,
 	dpps []*core_mesh.DataplaneResource,
 	meshIdentities []*meshidentity_api.MeshIdentityResource,
+	meshTrusts []*meshtrust_api.MeshTrustResource,
 	trustDomains map[string]struct{},
 ) meshservice_api.TLS {
 	notReady := meshservice_api.TLS{Status: meshservice_api.TLSNotReady}
@@ -239,7 +240,7 @@ func (s *StatusUpdater) buildTLS(
 
 	tlsReadyDpps := 0
 	for _, dpp := range dpps {
-		if s.hasReadyIdentity(dpp, meshIdentities, trustDomains) {
+		if s.hasReadyIdentity(dpp, meshIdentities, meshTrusts, trustDomains) {
 			tlsReadyDpps++
 		}
 	}
@@ -265,6 +266,7 @@ func (s *StatusUpdater) buildTLS(
 func (s *StatusUpdater) hasReadyIdentity(
 	dpp *core_mesh.DataplaneResource,
 	meshIdentities []*meshidentity_api.MeshIdentityResource,
+	meshTrusts []*meshtrust_api.MeshTrustResource,
 	trustDomains map[string]struct{},
 ) bool {
 	identity, matches := meshidentity_api.BestMatched(dpp.Meta.GetLabels(), meshIdentities)
@@ -275,7 +277,7 @@ func (s *StatusUpdater) hasReadyIdentity(
 	if identity.Spec.Provider != nil && identity.Spec.Provider.Type == meshidentity_api.SpireType {
 		return true
 	}
-	td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
+	td, err := meshidentity_api.LocalTrustDomain(identity, dpp.Meta, s.localZone, meshTrusts)
 	if err != nil {
 		s.logger.Error(err, "cannot resolve trust domain")
 		return false
@@ -284,14 +286,18 @@ func (s *StatusUpdater) hasReadyIdentity(
 	return exists
 }
 
-func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, meshIdentities []*meshidentity_api.MeshIdentityResource) []meshservice_api.MeshServiceIdentity {
+func (s *StatusUpdater) buildIdentities(
+	dpps []*core_mesh.DataplaneResource,
+	meshIdentities []*meshidentity_api.MeshIdentityResource,
+	meshTrusts []*meshtrust_api.MeshTrustResource,
+) []meshservice_api.MeshServiceIdentity {
 	spiffeIDs := map[string]struct{}{}
 	for _, dpp := range dpps {
 		for _, identity := range meshidentity_api.AllMatched(dpp.Meta.GetLabels(), meshIdentities) {
 			if identity.Status == nil || (!identity.Status.IsInitialized() && !identity.Status.IsPartiallyReady()) {
 				continue
 			}
-			td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
+			td, err := meshidentity_api.LocalTrustDomain(identity, dpp.Meta, s.localZone, meshTrusts)
 			if err != nil {
 				s.logger.Error(err, "cannot resolve trust domain")
 				continue

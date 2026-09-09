@@ -35,7 +35,7 @@ func (s *stubHandler) Initialize(_ context.Context, _ *meshidentity_api.MeshIden
 	return nil
 }
 
-func (s *stubHandler) CreateIdentity(_ context.Context, _ *meshidentity_api.MeshIdentityResource, _ *xds.Proxy) (*xds.WorkloadIdentity, error) {
+func (s *stubHandler) CreateIdentity(_ context.Context, _ *meshidentity_api.MeshIdentityResource, _ *xds.Proxy, _ string) (*xds.WorkloadIdentity, error) {
 	s.createCalled = true
 	return nil, nil
 }
@@ -124,7 +124,7 @@ var _ = Describe("Extension Dispatcher", func() {
 		Expect(d.Initialize(ctx, mid)).To(Succeed())
 		Expect(h.initCalled).To(BeTrue())
 
-		_, err := d.CreateIdentity(ctx, mid, &xds.Proxy{})
+		_, err := d.CreateIdentity(ctx, mid, &xds.Proxy{}, "default.my-zone.mesh.local")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(h.createCalled).To(BeTrue())
 

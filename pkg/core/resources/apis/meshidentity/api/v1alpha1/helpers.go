@@ -13,6 +13,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -204,4 +205,49 @@ var (
 func (i *MeshIdentity) UsesWorkloadLabel(env config_core.EnvironmentType) bool {
 	path := i.SpiffeIDPathTemplate(env)
 	return workloadLabelRegex.MatchString(path) || workloadPlaceholderRegex.MatchString(path)
+}
+
+// LocalTrustDomain returns the trust domain the local control plane issues and
+// verifies certificates in for this identity. A MeshTrust managed by the identity
+// reconciler wins over the SpiffeID template, because that resource is what
+// proxies actually hold a CA bundle for. The template re-renders as soon as the
+// zone name changes - federating a standalone zone does exactly that - so reading
+// it directly hands out SPIFFE IDs in a trust domain nothing in the mesh trusts
+// yet, and every mTLS handshake fails until the reconciler catches up.
+//
+// Only workloads the local zone is responsible for follow the local MeshTrust;
+// for a dataplane from another zone the template stays authoritative, since that
+// zone publishes its own MeshTrust and KDS syncs it here.
+func LocalTrustDomain(
+	identity *MeshIdentityResource,
+	meta model.ResourceMeta,
+	localZone string,
+	meshTrusts []*meshtrust_api.MeshTrustResource,
+) (string, error) {
+	if zone := meta.GetLabels()[mesh_proto.ZoneTag]; zone == "" || zone == localZone {
+		if trustDomain, found := managedTrustDomain(identity, meshTrusts); found {
+			return trustDomain, nil
+		}
+	}
+	return identity.Spec.GetTrustDomain(meta, localZone)
+}
+
+// managedTrustDomain finds the MeshTrust the identity reconciler keeps in sync
+// with the given identity. It is addressed by name and mesh, the same way the
+// reconciler creates it, because the KRI recorded in its status embeds the zone
+// and is therefore stale for exactly as long as the trust domain is.
+func managedTrustDomain(identity *MeshIdentityResource, meshTrusts []*meshtrust_api.MeshTrustResource) (string, bool) {
+	for _, trust := range meshTrusts {
+		if trust.GetMeta().GetName() != identity.GetMeta().GetName() ||
+			trust.GetMeta().GetMesh() != identity.GetMeta().GetMesh() {
+			continue
+		}
+		// A user-managed MeshTrust carries no origin, so the identity keeps
+		// rendering its own trust domain.
+		if trust.Status == nil || trust.Status.Origin == nil || trust.Spec.TrustDomain == "" {
+			continue
+		}
+		return trust.Spec.TrustDomain, true
+	}
+	return "", false
 }

@@ -67,16 +67,11 @@ func (s *spireIdentityProvider) GetMeshTrustCA(_ context.Context, _ *meshidentit
 	return nil, nil
 }
 
-func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, proxy *xds.Proxy) (*xds.WorkloadIdentity, error) {
+func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, proxy *xds.Proxy, trustDomain string) (*xds.WorkloadIdentity, error) {
 	if s.environment == config_core.KubernetesEnvironment && !proxy.Metadata.HasFeature(types.FeatureSpire) {
 		s.logger.Info("dataplane doesn't have spire socket mounted, please redeploy your Pod", "dpp", model.MetaToResourceKey(proxy.Dataplane.GetMeta()), "identity", model.MetaToResourceKey(identity.GetMeta()))
 		return nil, nil
 	}
-	trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), s.zone)
-	if err != nil {
-		return nil, err
-	}
-
 	spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, proxy.Dataplane.GetMeta(), s.environment)
 	if err != nil {
 		return nil, err

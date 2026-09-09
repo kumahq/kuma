@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type MeshTrustBuilder struct {
@@ -68,6 +69,11 @@ func (mtr *MeshTrustBuilder) WithName(name string) *MeshTrustBuilder {
 
 func (mtr *MeshTrustBuilder) WithTrustDomain(td string) *MeshTrustBuilder {
 	mtr.res.Spec.TrustDomain = td
+	return mtr
+}
+
+func (mtr *MeshTrustBuilder) WithOrigin(kri string) *MeshTrustBuilder {
+	mtr.res.Status.Origin = &meshtrust_api.Origin{KRI: pointer.To(kri)}
 	return mtr
 }
 
