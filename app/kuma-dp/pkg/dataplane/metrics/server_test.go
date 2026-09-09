@@ -116,7 +116,7 @@ var _ = Describe("Select Content Type", func() {
 		reqHeader.Add("Accept", "application/openmetrics-text;version=1.0.0,application/openmetrics-text;version=0.0.1;q=0.75,text/plain;version=0.0.4;q=0.5,*/*;q=0.1")
 
 		actualContentType := selectContentType(contentTypes, reqHeader)
-		Expect(actualContentType).To(Equal(expfmt.Negotiate(reqHeader)))
+		Expect(actualContentType).To(Equal(expfmt.NegotiateAccept(reqHeader, prometheusNegotiableContentType...)))
 	})
 
 	It("should negotiate content-type based on Accept header", func() {
@@ -126,7 +126,7 @@ var _ = Describe("Select Content Type", func() {
 		reqHeader.Add("Accept", "*/*")
 
 		actualContentType := selectContentType(contentTypes, reqHeader)
-		Expect(actualContentType).To(Equal(expfmt.Negotiate(reqHeader)))
+		Expect(actualContentType).To(Equal(expfmt.NegotiateAccept(reqHeader, prometheusNegotiableContentType...)))
 	})
 })
 

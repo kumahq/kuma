@@ -50,6 +50,15 @@ var (
 		expfmt.NewFormat(expfmt.TypeUnknown),
 	}
 
+	// Formats offered to the scraper when no target application dictates one.
+	// Same set the deprecated expfmt.Negotiate used, so negotiation is unchanged.
+	prometheusNegotiableContentType = []expfmt.Format{
+		expfmt.NewFormat(expfmt.TypeProtoDelim),
+		expfmt.NewFormat(expfmt.TypeProtoText),
+		expfmt.NewFormat(expfmt.TypeProtoCompact),
+		expfmt.NewFormat(expfmt.TypeTextPlain),
+	}
+
 	// Reverse mapping of prometheusPriorityContentType for faster lookup.
 	prometheusPriorityContentTypeLookup = func(expformats []expfmt.Format) map[expfmt.Format]int32 {
 		reverseMapping := map[expfmt.Format]int32{}
@@ -390,7 +399,7 @@ func selectContentType(contentTypes <-chan expfmt.Format, reqHeader http.Header)
 	// If no valid content type is returned by the target applications,
 	// negotitate content type based on Accept header of the scraper.
 	if ct == expfmt.NewFormat(expfmt.TypeUnknown) {
-		ct = expfmt.Negotiate(reqHeader)
+		ct = expfmt.NegotiateAccept(reqHeader, prometheusNegotiableContentType...)
 	}
 
 	return ct
