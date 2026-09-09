@@ -27,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -34,6 +35,7 @@ import (
 	kds_client "github.com/kumahq/kuma/v3/pkg/kds/client"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/v3/pkg/kds/server"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	test_grpc "github.com/kumahq/kuma/v3/pkg/test/grpc"
 	"github.com/kumahq/kuma/v3/pkg/test/kds/setup"
@@ -191,6 +193,8 @@ func TestGlobalKDSScale(t *testing.T) {
 	meshes := envInt("KDS_MESHES", 5)
 	perType := envInt("KDS_POLICIES_PER_TYPE", 10)
 	churn := envInt("KDS_CHURN_PER_SEC", 0)
+	cacheTTL := envDur("KDS_STORE_CACHE_TTL", 0)
+	stagger := envDur("KDS_CONNECT_STAGGER", 0)
 	duration := envDur("KDS_DURATION", 30*time.Second)
 	flush := envDur("KDS_FLUSH", cfgDefaults.Multizone.Global.KDS.EventBasedWatchdog.FlushInterval.Duration)
 	resync := envDur("KDS_RESYNC", cfgDefaults.Multizone.Global.KDS.EventBasedWatchdog.FullResyncInterval.Duration)
@@ -207,6 +211,14 @@ func TestGlobalKDSScale(t *testing.T) {
 	cs := &countingStore{ResourceStore: memStore}
 	rt := setup.NewTestRuntime(ctx, cfg, cs)
 	memStore.(interface{ SetEventWriter(events.Emitter) }).SetEventWriter(rt.EventBus())
+	if cacheTTL > 0 {
+		cached, err := manager.NewCachedManager(rt.ReadOnlyResourceManager(), cacheTTL, rt.Metrics(), multitenant.SingleTenant)
+		if err != nil {
+			t.Fatalf("cached manager: %v", err)
+		}
+		rt.SetReadOnlyResourceManager(cached)
+	}
+
 	kdsCtx := rt.KDSContext()
 	types := kdsCtx.TypesSentByGlobal
 
@@ -246,12 +258,21 @@ func TestGlobalKDSScale(t *testing.T) {
 		names = append(names, zoneName(z))
 	}
 
-	setup.StartDeltaClient(streams, names, types, stop, &kds_client.Callbacks{
+	cb := &kds_client.Callbacks{
 		OnResourcesReceived: func(_ kds_client.UpstreamResponse) (error, error) {
 			responses.Add(1)
 			return nil, nil
 		},
-	})
+	}
+	if stagger > 0 {
+		gap := stagger / time.Duration(zones)
+		for i := range streams {
+			setup.StartDeltaClient(streams[i:i+1], names[i:i+1], types, stop, cb)
+			time.Sleep(gap)
+		}
+	} else {
+		setup.StartDeltaClient(streams, names, types, stop, cb)
+	}
 
 	if churn > 0 {
 		go runChurn(ctx, cs, churn)
@@ -264,8 +285,8 @@ func TestGlobalKDSScale(t *testing.T) {
 	lists := cs.lists.Load()
 	gets := cs.gets.Load()
 
-	t.Logf("=== zones=%d meshes=%d types=%d flush=%s resync=%s over %.0fs ===",
-		zones, meshes, len(types), flush, resync, elapsed)
+	t.Logf("=== zones=%d meshes=%d types=%d flush=%s resync=%s cacheTTL=%s over %.0fs ===",
+		zones, meshes, len(types), flush, resync, cacheTTL, elapsed)
 	t.Logf("store LIST : %7d total %9.1f/s %7.2f/s per zone", lists, float64(lists)/elapsed, float64(lists)/elapsed/float64(zones))
 	t.Logf("store GET  : %7d total %9.1f/s %7.2f/s per zone", gets, float64(gets)/elapsed, float64(gets)/elapsed/float64(zones))
 	t.Logf("KDS responses delivered: %d (%.1f/s)", responses.Load(), float64(responses.Load())/elapsed)

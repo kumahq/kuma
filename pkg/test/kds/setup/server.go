@@ -171,6 +171,10 @@ func (t *testRuntimeContext) ReadOnlyResourceManager() manager.ReadOnlyResourceM
 	return t.rom
 }
 
+func (t *testRuntimeContext) SetReadOnlyResourceManager(rom manager.ReadOnlyResourceManager) {
+	t.rom = rom
+}
+
 func (t *testRuntimeContext) ResourceManager() manager.ResourceManager {
 	return t.rm
 }
