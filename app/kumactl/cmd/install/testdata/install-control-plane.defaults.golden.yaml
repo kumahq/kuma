@@ -445,7 +445,6 @@ spec:
                                                       For example, you can target a port from MeshService.ports[] by its name.
                                                     type: string
                                                   weight:
-                                                    default: 1
                                                     maximum: 4294967295
                                                     minimum: 0
                                                     type: integer
@@ -639,7 +638,6 @@ spec:
                                         For example, you can target a port from MeshService.ports[] by its name.
                                       type: string
                                     weight:
-                                      default: 1
                                       maximum: 4294967295
                                       minimum: 0
                                       type: integer
@@ -732,7 +730,6 @@ spec:
                                                 For example, you can target a port from MeshService.ports[] by its name.
                                               type: string
                                             weight:
-                                              default: 1
                                               maximum: 4294967295
                                               minimum: 0
                                               type: integer
@@ -923,7 +920,6 @@ spec:
                                         pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       type:
-                                        default: Exact
                                         description: Type specifies how to match against
                                           the value of the header.
                                         enum:
@@ -3954,7 +3950,6 @@ spec:
                                     pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
-                                    default: Exact
                                     description: Type specifies how to match against
                                       the value of the header.
                                     enum:
@@ -3991,7 +3986,6 @@ spec:
                                     pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
-                                    default: Exact
                                     description: Type specifies how to match against
                                       the value of the header.
                                     enum:
@@ -4038,6 +4032,9 @@ spec:
                               - "500"
                               - "503"
                               items:
+                                description: |-
+                                  HTTPRetryOn names a condition a request is retried on. Alongside the named
+                                  conditions it also accepts any numeric HTTP status code.
                                 type: string
                               type: array
                           type: object
@@ -4450,7 +4447,6 @@ spec:
                                         For example, you can target a port from MeshService.ports[] by its name.
                                       type: string
                                     weight:
-                                      default: 1
                                       maximum: 4294967295
                                       minimum: 0
                                       type: integer
@@ -8659,7 +8655,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 1fa6f39d97a8aad47eff6f6670269d3333a30c2e107b0a9d14b2aa23e0f3bf24
-        checksum/tls-secrets: 9f2a0399dbf821d32c2693aa10f41cbd0de43d38bdced833d6850a01b44a9ce8
+        checksum/tls-secrets: f6033fcf07311251d42af5ec4d088306bf0aa0300daf9ddcd142032744c4fdbd
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -8890,7 +8886,7 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - zone
+          - zones
           - zoneinsights
           - meshaccesslogs
           - meshcircuitbreakers

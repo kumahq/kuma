@@ -722,7 +722,7 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - zone
+          - zones
           - zoneinsights
           - meshaccesslogs
           - meshcircuitbreakers

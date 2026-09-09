@@ -8,6 +8,25 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `Zone` on Kubernetes reaches the defaulting webhook
+
+The defaulting webhook selected `zone` where the CRD plural is `zones`, so the rule matched nothing and a `Zone` written straight to the Kubernetes API skipped the webhook entirely. It now matches, which means a `Zone` created or updated with `kubectl` gets the same computed labels a `Zone` created through the HTTP API already got: `kuma.io/display-name`, `kuma.io/origin`, and on a zone control plane `kuma.io/zone` and `kuma.io/env`.
+
+**Action required**
+
+None. `Zone` resources that already exist are untouched until something writes to them, and the labels are added, never removed. If you select zones by label, a `Zone` applied with `kubectl` before the upgrade may lack the labels until it is next written.
+
+### Fields that the API linter had skipped were brought in line
+
+A linter bug hid a set of API fields from the shape checks the rest of the API follows. Fixing the fields changes two schemas, both by dropping a declared default:
+
+- `MeshHTTPRoute` and `MeshRetry` header matches no longer declare a schema default of `Exact` for `type`. An omitted `type` is still matched as `Exact`, it is just no longer materialized into the stored resource.
+- `MeshHTTPRoute` and `MeshTCPRoute` backend refs no longer declare a schema default of `1` for `weight`. An omitted `weight` still counts as `1` when the route is resolved, it is just no longer materialized into the stored resource.
+
+**Action required**
+
+None. Existing resources keep working. The only visible difference is that a resource that omits `type` or `weight` no longer comes back from the API with the value filled in.
+
 ### `MeshPassthrough` rejects matches that resolve to the same Envoy filter chain
 
 Create and update validation now rejects a `MeshPassthrough` policy in which two matches resolve to the same filter chain of the generated passthrough listener. Previously such a policy was accepted and Envoy rejected the entire listener, breaking all passthrough traffic for every proxy the policy matched. Two matches collide when they configure the same port (or both configure no port) with:

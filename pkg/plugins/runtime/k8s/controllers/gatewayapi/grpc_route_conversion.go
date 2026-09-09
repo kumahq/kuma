@@ -250,7 +250,7 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaMeshMatch(gapiMatch gatewayapi.GRPCR
 		header := common_api.HeaderMatch{
 			Type:  pointer.To(common_api.HeaderMatchType(headerType)),
 			Name:  common_api.HeaderName(strings.ToLower(string(gapiHeader.Name))),
-			Value: common_api.HeaderValue(gapiHeader.Value),
+			Value: pointer.To(common_api.HeaderValue(gapiHeader.Value)),
 		}
 		match.Headers = pointer.To(append(pointer.Deref(match.Headers), header))
 	}

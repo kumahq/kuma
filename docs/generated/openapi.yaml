@@ -6371,6 +6371,8 @@ components:
         - pluralDisplayName
         - includeInFederation
         - shortName
+        - isInsight
+        - adminOnly
       properties:
         name:
           description: the name of the resource type
@@ -6400,6 +6402,14 @@ components:
             federetion-with-policies export profile (especially useful for
             moving from non-federated to federated or migrating to a new
             global).
+          type: boolean
+        isInsight:
+          description: >-
+            whether this resource type holds state computed by the control plane
+            rather than user configuration.
+          type: boolean
+        adminOnly:
+          description: whether accessing resources of this type requires admin credentials.
           type: boolean
         policy:
           $ref: '#/components/schemas/PolicyDescription'
@@ -9905,7 +9915,6 @@ components:
                                                     MeshService.ports[] by its name.
                                                   type: string
                                                 weight:
-                                                  default: 1
                                                   maximum: 4294967295
                                                   minimum: 0
                                                   type: integer
@@ -10182,7 +10191,6 @@ components:
                                       MeshService.ports[] by its name.
                                     type: string
                                   weight:
-                                    default: 1
                                     maximum: 4294967295
                                     minimum: 0
                                     type: integer
@@ -10284,7 +10292,6 @@ components:
                                               MeshService.ports[] by its name.
                                             type: string
                                           weight:
-                                            default: 1
                                             maximum: 4294967295
                                             minimum: 0
                                             type: integer
@@ -10562,7 +10569,6 @@ components:
                                       pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                       type: string
                                     type:
-                                      default: Exact
                                       description: >-
                                         Type specifies how to match against the
                                         value of the header.
@@ -13836,7 +13842,6 @@ components:
                                   pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                   type: string
                                 type:
-                                  default: Exact
                                   description: >-
                                     Type specifies how to match against the
                                     value of the header.
@@ -13885,7 +13890,6 @@ components:
                                   pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                   type: string
                                 type:
-                                  default: Exact
                                   description: >-
                                     Type specifies how to match against the
                                     value of the header.
@@ -13943,6 +13947,12 @@ components:
                               - '500'
                               - '503'
                             items:
+                              description: >-
+                                HTTPRetryOn names a condition a request is
+                                retried on. Alongside the named
+
+                                conditions it also accepts any numeric HTTP
+                                status code.
                               type: string
                             type: array
                         type: object
@@ -14167,7 +14177,6 @@ components:
                                       MeshService.ports[] by its name.
                                     type: string
                                   weight:
-                                    default: 1
                                     maximum: 4294967295
                                     minimum: 0
                                     type: integer

@@ -62,7 +62,6 @@ publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
 		-e PULP_HOST=$(PULP_HOST) \
 		-e CLOUDSMITH_API_KEY='$(CLOUDSMITH_API_KEY)' \
 		-e CLOUDSMITH_DRY_RUN='' \
-		-e IGNORE_CLOUDSMITH_FAILURES=x \
 		-e USE_CLOUDSMITH=x \
 		-e USE_PULP=x \
 		-v $(TOP)/build/distributions/out:/files:ro \
