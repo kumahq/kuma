@@ -30,6 +30,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/events"
 	kds_client "github.com/kumahq/kuma/v3/pkg/kds/client"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/v3/pkg/kds/server"
@@ -160,6 +161,26 @@ func seed(t *testing.T, st store.ResourceStore, meshes, zones, policiesPerType i
 	t.Logf("seeded %d zones, %d meshes, %d resources across %d types", zones, meshes, created, len(types))
 }
 
+func runChurn(ctx context.Context, st store.ResourceStore, perSec int) {
+	ticker := time.NewTicker(time.Second / time.Duration(perSec))
+	defer ticker.Stop()
+	i := 0
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			res := core_mesh.NewMeshResource()
+			if err := st.Get(ctx, res, store.GetByKey(meshName(0), core_model.NoMesh)); err != nil {
+				i++
+				continue
+			}
+			_ = st.Update(ctx, res, store.UpdateWithLabels(map[string]string{"churn": strconv.Itoa(i)}))
+			i++
+		}
+	}
+}
+
 func TestGlobalKDSScale(t *testing.T) {
 	if os.Getenv("KUMA_KDS_PERF") != "1" {
 		t.Skip("set KUMA_KDS_PERF=1 to run the KDS load harness")
@@ -169,6 +190,7 @@ func TestGlobalKDSScale(t *testing.T) {
 	zones := envInt("KDS_ZONES", 50)
 	meshes := envInt("KDS_MESHES", 5)
 	perType := envInt("KDS_POLICIES_PER_TYPE", 10)
+	churn := envInt("KDS_CHURN_PER_SEC", 0)
 	duration := envDur("KDS_DURATION", 30*time.Second)
 	flush := envDur("KDS_FLUSH", cfgDefaults.Multizone.Global.KDS.EventBasedWatchdog.FlushInterval.Duration)
 	resync := envDur("KDS_RESYNC", cfgDefaults.Multizone.Global.KDS.EventBasedWatchdog.FullResyncInterval.Duration)
@@ -181,8 +203,10 @@ func TestGlobalKDSScale(t *testing.T) {
 	cfg.Multizone.Global.KDS.EventBasedWatchdog.FlushInterval = config_types.Duration{Duration: flush}
 	cfg.Multizone.Global.KDS.EventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: resync}
 
-	cs := &countingStore{ResourceStore: memory.NewStore()}
+	memStore := memory.NewStore()
+	cs := &countingStore{ResourceStore: memStore}
 	rt := setup.NewTestRuntime(ctx, cfg, cs)
+	memStore.(interface{ SetEventWriter(events.Emitter) }).SetEventWriter(rt.EventBus())
 	kdsCtx := rt.KDSContext()
 	types := kdsCtx.TypesSentByGlobal
 
@@ -228,6 +252,10 @@ func TestGlobalKDSScale(t *testing.T) {
 			return nil, nil
 		},
 	})
+
+	if churn > 0 {
+		go runChurn(ctx, cs, churn)
+	}
 
 	start := time.Now()
 	time.Sleep(duration)
