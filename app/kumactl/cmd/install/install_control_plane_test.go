@@ -2,14 +2,18 @@ package install_test
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	k8s_yaml "k8s.io/apimachinery/pkg/util/yaml"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
@@ -68,6 +72,77 @@ var _ = Context("kumactl install control-plane", func() {
 		// and output matches golden files
 		actual := stdout.Bytes()
 		Expect(actual).To(matchers.MatchGoldenEqual(filepath.Join("testdata", "install-control-plane.dump-values.yaml")))
+	})
+
+	It("should only reference existing kuma.io CRDs in admission webhook rules", func() {
+		// given
+		stdout, stderr, rootCmd := test.DefaultTestingRootCmd("install",
+			"control-plane",
+			"--tls-general-secret", "general-tls-secret",
+			"--tls-general-ca-bundle", "XYZ",
+			"--without-kubernetes-connection",
+		)
+
+		// when
+		err := rootCmd.Execute()
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stderr.String()).To(BeEmpty())
+
+		type renderedObject struct {
+			Kind string `json:"kind"`
+			Spec struct {
+				Group string `json:"group"`
+				Names struct {
+					Plural string `json:"plural"`
+				} `json:"names"`
+			} `json:"spec"`
+			Webhooks []struct {
+				Name  string `json:"name"`
+				Rules []struct {
+					APIGroups []string `json:"apiGroups"`
+					Resources []string `json:"resources"`
+				} `json:"rules"`
+			} `json:"webhooks"`
+		}
+
+		plurals := map[string]struct{}{}
+		referenced := map[string][]string{}
+		decoder := k8s_yaml.NewYAMLOrJSONDecoder(bytes.NewReader(stdout.Bytes()), 4096)
+		for {
+			obj := renderedObject{}
+			err := decoder.Decode(&obj)
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			Expect(err).ToNot(HaveOccurred())
+
+			switch obj.Kind {
+			case "CustomResourceDefinition":
+				if obj.Spec.Group == "kuma.io" {
+					plurals[obj.Spec.Names.Plural] = struct{}{}
+				}
+			case "MutatingWebhookConfiguration", "ValidatingWebhookConfiguration":
+				for _, webhook := range obj.Webhooks {
+					for _, rule := range webhook.Rules {
+						if !slices.Contains(rule.APIGroups, "kuma.io") {
+							continue
+						}
+						referenced[webhook.Name] = append(referenced[webhook.Name], rule.Resources...)
+					}
+				}
+			}
+		}
+
+		Expect(plurals).ToNot(BeEmpty())
+		Expect(referenced).ToNot(BeEmpty())
+		for webhook, resources := range referenced {
+			for _, resource := range resources {
+				Expect(plurals).To(HaveKey(resource),
+					fmt.Sprintf("webhook %q selects %q which is not the plural of any kuma.io CRD", webhook, resource))
+			}
+		}
 	})
 
 	type testCase struct {
