@@ -1407,14 +1407,14 @@ func retryKeepingLastError(
 	sleep time.Duration,
 	action func() error,
 ) error {
-	// terratest reads its output as a string without checking, so a context that is
-	// already done panics rather than returning.
+	// This terratest has no context-aware retry, so the loop cannot exit on its own
+	// when the budget goes: each attempt fails fast on the dead context instead.
 	if err := ctx.Err(); err != nil {
 		return errors.Wrap(err, description)
 	}
 
 	var last, lastCause error
-	_, err := retry.DoWithRetryContextE(t, ctx, description, retries, sleep, func() (string, error) {
+	_, err := retry.DoWithRetryE(t, description, retries, sleep, func() (string, error) {
 		last = action()
 		if last != nil && ctx.Err() == nil {
 			lastCause = last
@@ -1434,18 +1434,8 @@ func retryKeepingLastError(
 }
 
 func (c *K8sCluster) LoadImages(names ...string) error {
-<<<<<<< HEAD
-	_, err := retry.DoWithRetryE(c.GetTesting(), "load images", 3, 0, func() (string, error) {
-		err := c.loadImages(names...)
-		return "Loaded images " + strings.Join(names, ", "), err
-=======
-	// 3 retries with 0 backoff was too tight: a single transient docker
-	// daemon hiccup blew through all attempts before recovery. 3 attempts
-	// with 5s backoff cover that without burning minutes of wall clock when
-	// the import is slow rather than broken.
-	return retryKeepingLastError(context.Background(), c.GetTesting(), "load images", 2, 5*time.Second, func() error {
+	return retryKeepingLastError(context.Background(), c.GetTesting(), "load images", 3, 0, func() error {
 		return c.loadImages(names...)
->>>>>>> 5589b358c5 (fix(framework): import images as single-platform archives (#18606))
 	})
 }
 
@@ -1561,11 +1551,6 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 	// hiccup shouldn't fail the whole preload. 5 attempts with 5s backoff.
 	switch Config.K8sType {
 	case K3dK8sType, K3dCalicoK8sType:
-<<<<<<< HEAD
-		_, err := retry.DoWithRetryE(c.GetTesting(), "k3d image import", 5, 5*time.Second, func() (string, error) {
-			args := append([]string{"image", "import", "-m", "direct", "-c", c.name}, importImages...)
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-=======
 		// One deadline over save and import together. Each carries its own retry
 		// budget, and without a ceiling their product is what a wedged daemon
 		// spends before anything reports it.
@@ -1580,7 +1565,6 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 
 		return retryKeepingLastError(budget, c.GetTesting(), "k3d image import", 5, 5*time.Second, func() error {
 			ctx, cancel := context.WithTimeout(budget, 2*time.Minute)
->>>>>>> 5589b358c5 (fix(framework): import images as single-platform archives (#18606))
 			defer cancel()
 			cmd := exec.CommandContext(ctx, "k3d", "image", "import", "-m", "direct", "-c", c.name, archive)
 			out, err := cmd.CombinedOutput()
@@ -1590,10 +1574,6 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 			return nil
 		})
 	case KindK8sType:
-<<<<<<< HEAD
-		_, err := retry.DoWithRetryE(c.GetTesting(), "kind load docker-image", 5, 5*time.Second, func() (string, error) {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-=======
 		budget, cancelBudget := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancelBudget()
 
@@ -1605,7 +1585,6 @@ func (c *K8sCluster) PreloadImages(images ...string) error {
 
 		return retryKeepingLastError(budget, c.GetTesting(), "kind load image-archive", 5, 5*time.Second, func() error {
 			ctx, cancel := context.WithTimeout(budget, 5*time.Minute)
->>>>>>> 5589b358c5 (fix(framework): import images as single-platform archives (#18606))
 			defer cancel()
 			cmd := exec.CommandContext(ctx, "kind", "load", "image-archive", archive, "--name", c.name)
 			out, err := cmd.CombinedOutput()
