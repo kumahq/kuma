@@ -78,7 +78,7 @@ func saveSinglePlatformArchive(ctx context.Context, platform string, images ...s
 		pinned = fmt.Sprintf(" (pinned to %s first: %s)", platform, strings.TrimSpace(string(out)))
 		Logf("docker image save --platform %s failed, retrying unpinned: %s", platform, strings.TrimSpace(string(out)))
 		used = ""
-		out, err = exec.CommandContext(ctx, "docker", dockerSaveArgs(path, "", images)...).CombinedOutput() //nolint:contextcheck // same deadline, second shot
+		out, err = exec.CommandContext(ctx, "docker", dockerSaveArgs(path, "", images)...).CombinedOutput()
 	}
 	if err != nil {
 		cleanup()
