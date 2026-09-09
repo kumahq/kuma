@@ -1777,20 +1777,11 @@ func retryKeepingLastError(
 
 func (c *K8sCluster) LoadImages(names ...string) error {
 	// 3 retries with 0 backoff was too tight: a single transient docker
-<<<<<<< HEAD
 	// daemon hiccup blew through all attempts before recovery. Bumped to
 	// 5 attempts with 5s backoff so a brief image-import failure does
 	// not fail the whole test suite.
-	_, err := retry.DoWithRetryContextE(c.GetTesting(), context.Background(), "load images", 5, 5*time.Second, func() (string, error) {
-		err := c.loadImages(names...)
-		return "Loaded images " + strings.Join(names, ", "), err
-=======
-	// daemon hiccup blew through all attempts before recovery. 3 attempts
-	// with 5s backoff cover that without burning minutes of wall clock when
-	// the import is slow rather than broken.
-	return retryKeepingLastError(context.Background(), c.GetTesting(), "load images", 2, 5*time.Second, func() error {
+	return retryKeepingLastError(context.Background(), c.GetTesting(), "load images", 5, 5*time.Second, func() error {
 		return c.loadImages(names...)
->>>>>>> 5589b358c5 (fix(framework): import images as single-platform archives (#18606))
 	})
 }
 
