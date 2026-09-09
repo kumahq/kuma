@@ -341,7 +341,9 @@ var _ = Describe("IdentityGate", func() {
 				_, _ = writer.Write([]byte("ready"))
 			}),
 		}
-		go func() { _ = server.Serve(listener) }()
+		go func(server *http.Server, listener net.Listener) {
+			_ = server.Serve(listener)
+		}(server, listener)
 		gate = readiness.NewIdentityGate(socketPath)
 	})
 
