@@ -59,6 +59,25 @@ var _ = Describe("ZoneInsight storage compatibility", func() {
 		Expect(string(out)).To(ContainSubstring(`"responsesSent":"42"`))
 	})
 
+	DescribeTable(
+		"writes the fractional second in the digits protobuf used, so a stored timestamp is not rewritten",
+		func(instant time.Time, expected string) {
+			out, err := json.Marshal(zoneinsight_api.NewTime(instant))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(out)).To(Equal(expected))
+		},
+		Entry("no fraction", time.Date(2026, 3, 14, 11, 45, 0, 0, time.UTC),
+			`"2026-03-14T11:45:00Z"`),
+		Entry("trailing zeroes kept to milliseconds", time.Date(2026, 3, 14, 11, 45, 0, 100000000, time.UTC),
+			`"2026-03-14T11:45:00.100Z"`),
+		Entry("microseconds", time.Date(2026, 3, 14, 11, 45, 0, 123456000, time.UTC),
+			`"2026-03-14T11:45:00.123456Z"`),
+		Entry("nanoseconds", time.Date(2026, 3, 14, 11, 45, 0, 123456789, time.UTC),
+			`"2026-03-14T11:45:00.123456789Z"`),
+		Entry("a single nanosecond keeps all nine digits", time.Date(2026, 3, 14, 11, 45, 0, 1, time.UTC),
+			`"2026-03-14T11:45:00.000000001Z"`),
+	)
+
 	It("writes timestamps in UTC whatever zone the control plane runs in", func() {
 		kolkata, err := time.LoadLocation("Asia/Kolkata")
 		Expect(err).ToNot(HaveOccurred())

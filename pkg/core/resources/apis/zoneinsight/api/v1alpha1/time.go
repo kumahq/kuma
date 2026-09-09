@@ -5,16 +5,36 @@ import (
 	"time"
 )
 
-// timeFormat matches what protobuf's JSON mapping emits for a Timestamp: RFC 3339 in
-// UTC, with the fractional part trimmed of trailing zeroes.
-const timeFormat = "2006-01-02T15:04:05.999999999Z"
+// Protobuf's JSON mapping writes the fractional second in zero, three, six or nine
+// digits, never fewer, so a timestamp ending in zeroes keeps them. Go's own ".999"
+// formats trim every trailing zero, which would rewrite a stored timestamp into
+// different bytes for the same instant.
+const (
+	timeFormatSeconds = "2006-01-02T15:04:05Z"
+	timeFormatMillis  = "2006-01-02T15:04:05.000Z"
+	timeFormatMicros  = "2006-01-02T15:04:05.000000Z"
+	timeFormatNanos   = "2006-01-02T15:04:05.000000000Z"
+)
 
 func NewTime(t time.Time) *Time {
 	return &Time{Time: t}
 }
 
 func (t Time) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.Time.UTC().Format(timeFormat))
+	utc := t.Time.UTC()
+
+	format := timeFormatNanos
+
+	switch nanos := utc.Nanosecond(); {
+	case nanos == 0:
+		format = timeFormatSeconds
+	case nanos%1e6 == 0:
+		format = timeFormatMillis
+	case nanos%1e3 == 0:
+		format = timeFormatMicros
+	}
+
+	return json.Marshal(utc.Format(format))
 }
 
 func (t *Time) UnmarshalJSON(data []byte) error {

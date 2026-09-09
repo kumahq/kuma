@@ -8081,9 +8081,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: |-
-          ZoneInsight defines the observed state of a Zone Kuma CP.
-          EnvoyAdminStreams is deprecated, KDSStreams replaces it.
+        description: ZoneInsight defines the observed state of a Zone Kuma CP.
         properties:
           apiVersion:
             description: |-
