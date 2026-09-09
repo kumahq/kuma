@@ -48,9 +48,9 @@ func DefaultGlobalConfig() *GlobalConfig {
 			NackBackoff:              config_types.Duration{Duration: 5 * time.Second},
 			LogPayloads:              false,
 			EventBasedWatchdog: GlobalEventBasedWatchdogConfig{
-				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
-				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
-				DelayFullResync:    false,
+				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+				DelayFullResync:    true,
 			},
 			Tracing: KDSServerTracing{
 				Enabled: true,
@@ -128,9 +128,9 @@ func DefaultZoneConfig() *ZoneConfig {
 			NackBackoff:    config_types.Duration{Duration: 5 * time.Second},
 			LogPayloads:    false,
 			EventBasedWatchdog: ZoneEventBasedWatchdogConfig{
-				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
-				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
-				DelayFullResync:    false,
+				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+				DelayFullResync:    true,
 			},
 		},
 		DisableOriginLabelValidation: false,
