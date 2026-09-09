@@ -16,7 +16,6 @@
         "labels": {
          "kuma.io/display-name": "test-server-1"
         },
-        "weight": 1,
         "port": 80
        }
       ]

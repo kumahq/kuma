@@ -126,7 +126,6 @@ spec:
                                         For example, you can target a port from MeshService.ports[] by its name.
                                       type: string
                                     weight:
-                                      default: 1
                                       maximum: 4294967295
                                       minimum: 0
                                       type: integer
