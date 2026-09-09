@@ -1,10 +1,9 @@
-package v1alpha1_test
+package upgrade_test
 
 import (
 	"context"
 	"encoding/json"
 	"os"
-	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -19,12 +18,7 @@ import (
 
 	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	zoneinsight_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/k8s/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/test"
 )
-
-func TestZoneInsightUpgrade(t *testing.T) {
-	test.RunSpecs(t, "ZoneInsight Kubernetes Upgrade Suite")
-}
 
 // The stored object is written while the 2.14 definition is installed, then the 3.0
 // definition replaces it in place, the way an upgrade does. Nothing may be pruned or
@@ -32,7 +26,7 @@ func TestZoneInsightUpgrade(t *testing.T) {
 // touch a spec it cannot interpret.
 const (
 	crdFrom2_14 = "testdata/zoneinsights.2.14.crd.yaml"
-	crdShipped  = "../../../../../../../deployments/charts/kuma/crds/kuma.io_zoneinsights.yaml"
+	crdShipped  = "../../../../../../deployments/charts/kuma/crds/kuma.io_zoneinsights.yaml"
 )
 
 var _ = Describe("ZoneInsight across a definition upgrade", Ordered, func() {
