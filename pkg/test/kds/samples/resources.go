@@ -51,9 +51,6 @@ var (
 			CertificateRegenerations: 3,
 		},
 	}
-	ServiceInsight = &mesh_proto.ServiceInsight{
-		Services: map[string]*mesh_proto.ServiceInsight_Service{},
-	}
 	Secret2 = &system_proto.Secret{
 		Data: util_proto.Bytes([]byte("secret")),
 	}

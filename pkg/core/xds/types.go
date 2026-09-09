@@ -150,7 +150,8 @@ type Proxy struct {
 	EnvoyAdminMTLSCerts ServerSideMTLSCerts
 
 	// WorkloadIdentity stores information about identity of the proxy.
-	WorkloadIdentity *WorkloadIdentity
+	WorkloadIdentity         *WorkloadIdentity
+	WorkloadIdentityRequired bool
 
 	// Zone the zone the proxy is in
 	Zone string
@@ -190,6 +191,15 @@ type WorkloadIdentity struct {
 	// AdditionalResources contains Envoy resources that can be added to the resource set.
 	// It provides a simple way to create provider-specific Envoy resources and propagate them to Envoy.
 	AdditionalResources *ResourceSet
+}
+
+const IdentityReadinessPath = "/identity-readiness"
+
+// IdentityReadinessConfig tells kuma-dp which identity generation Envoy must have loaded.
+type IdentityReadinessConfig struct {
+	Required        bool       `json:"required"`
+	CertificateHash string     `json:"certificateHash,omitempty"`
+	ExpirationTime  *time.Time `json:"expirationTime,omitempty"`
 }
 
 func (c *WorkloadIdentity) CertLifetime() time.Duration {

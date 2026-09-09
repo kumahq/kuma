@@ -8,6 +8,17 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Fields that the API linter had skipped were brought in line
+
+A linter bug hid a set of API fields from the shape checks the rest of the API follows. Fixing the fields changes two schemas, both by dropping a declared default:
+
+- `MeshHTTPRoute` and `MeshRetry` header matches no longer declare a schema default of `Exact` for `type`. An omitted `type` is still matched as `Exact`, it is just no longer materialized into the stored resource.
+- `MeshHTTPRoute` and `MeshTCPRoute` backend refs no longer declare a schema default of `1` for `weight`. An omitted `weight` still counts as `1` when the route is resolved, it is just no longer materialized into the stored resource.
+
+**Action required**
+
+None. Existing resources keep working. The only visible difference is that a resource that omits `type` or `weight` no longer comes back from the API with the value filled in.
+
 ### `MeshPassthrough` rejects matches that resolve to the same Envoy filter chain
 
 Create and update validation now rejects a `MeshPassthrough` policy in which two matches resolve to the same filter chain of the generated passthrough listener. Previously such a policy was accepted and Envoy rejected the entire listener, breaking all passthrough traffic for every proxy the policy matched. Two matches collide when they configure the same port (or both configure no port) with:
@@ -95,15 +106,19 @@ Dynamic clients should use `readOnly` as the capability of the current control p
 
 Upgrade `kumactl` together with the control plane. Update scripts that depend on legacy attachment details to consume the dataplane metadata response instead. The first page contains at most 100 dataplanes unless `--size` is set.
 
-### The ServiceInsight REST endpoints are removed
+### The `ServiceInsight` resource is removed
 
-`GET /meshes/{mesh}/service-insights` and `GET /meshes/{mesh}/service-insights/{name}` are removed and answer `404`.
+`GET /meshes/{mesh}/service-insights` and `GET /meshes/{mesh}/service-insights/{name}` are removed and answer `404`, and the resource type itself is gone. The control plane no longer registers it, the `serviceinsights` CRD is no longer installed, and control plane RBAC no longer grants access to it.
 
-The control plane stopped writing `ServiceInsight` when services became computed from `MeshService` and `MeshExternalService`; it deletes the ones left behind by older control planes. The endpoints had therefore been reading a resource that is never present, and returned an empty result for every mesh.
+The control plane stopped writing `ServiceInsight` when services became computed from `MeshService` and `MeshExternalService`. The endpoints had therefore been reading a resource that is never present, and returned an empty result for every mesh.
+
+Earlier control planes deleted rows left behind by older versions on every full resync. That cleanup is gone with the type, so any remaining rows now stay in place. They are inert: nothing reads them, they are not served over the API and they are not synced between zones. A stored row carrying a value removed in 3.0 no longer breaks the insight resyncer, which is what issue #18330 reported.
 
 **Action required**
 
 None if you were reading these endpoints, since they no longer returned data. To list services in a mesh, use `MeshService` and `MeshExternalService` instead.
+
+To reclaim the space, delete the leftover data after upgrading. On Kubernetes, `kubectl delete crd serviceinsights.kuma.io` removes the custom resources along with the definition, which Helm leaves in place on upgrade. On universal, delete the rows whose resource type is `ServiceInsight` from the `resources` table. Do this only once you are sure you will not roll back, since neither is reversible.
 
 
 ### The legacy overview paths `dataplanes+insights` and `zones+insights` are removed

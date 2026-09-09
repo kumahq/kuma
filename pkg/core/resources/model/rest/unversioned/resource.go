@@ -3,12 +3,9 @@ package unversioned
 import (
 	"encoding/json"
 
-	"google.golang.org/protobuf/proto"
-
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 type Resource struct {
@@ -73,7 +70,11 @@ func (r *Resource) UnmarshalJSON(data []byte) error {
 		}
 		r.Spec = newR.GetSpec()
 	}
-	if err := util_proto.FromJSON(data, r.Spec.(proto.Message)); err != nil {
+	// The inlined form puts meta and spec fields in one object, so the whole document
+	// is handed to the spec decoder and the meta keys are ignored as unknown fields.
+	// core_model.FromJSON picks the protobuf or the plain JSON decoder, which is what
+	// lets a resource whose spec is a Go struct keep this representation.
+	if err := core_model.FromJSON(data, r.Spec); err != nil {
 		return err
 	}
 	return nil

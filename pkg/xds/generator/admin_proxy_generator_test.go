@@ -2,9 +2,16 @@ package generator_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/pem"
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -12,6 +19,9 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
+	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/tls"
@@ -196,4 +206,129 @@ var _ = Describe("AdminProxyGenerator", func() {
 			readinessPort: 0,
 		}),
 	)
+
+	Describe("identity readiness", func() {
+		newProxy := func() *xds.Proxy {
+			dataplane := core_mesh.NewDataplaneResource()
+			bytes, err := os.ReadFile(filepath.Join("testdata", "admin", "01.dataplane.input.yaml"))
+			Expect(err).ToNot(HaveOccurred())
+			parseResource(bytes, dataplane)
+			return &xds.Proxy{
+				Metadata: &xds.DataplaneMetadata{
+					AdminPort:     9901,
+					AdminAddress:  "127.0.0.1",
+					ReadinessPort: 9902,
+					WorkDir:       "/tmp/kuma-dp",
+				},
+				Dataplane:  dataplane,
+				APIVersion: envoy_common.APIV3,
+			}
+		}
+
+		generateYAML := func(proxy *xds.Proxy) (*xds.ResourceSet, string) {
+			resources, err := generator.Generate(context.Background(), nil, xds_context.Context{}, proxy)
+			Expect(err).ToNot(HaveOccurred())
+			response, err := resources.List().ToDeltaDiscoveryResponse()
+			Expect(err).ToNot(HaveOccurred())
+			actual, err := util_proto.ToYAML(response)
+			Expect(err).ToNot(HaveOccurred())
+			return resources, string(actual)
+		}
+
+		It("does not require identity when no MeshIdentity targets the proxy", func() {
+			_, actual := generateYAML(newProxy())
+			Expect(actual).To(ContainSubstring(`inlineString: '{"required":false}'`))
+			Expect(actual).ToNot(ContainSubstring("name: system_identity_readiness\n"))
+		})
+
+		It("fails closed while a required identity is uninitialized", func() {
+			proxy := newProxy()
+			proxy.WorkloadIdentityRequired = true
+			_, actual := generateYAML(proxy)
+			Expect(actual).To(ContainSubstring(`inlineString: '{"required":true}'`))
+			Expect(actual).ToNot(ContainSubstring("name: system_identity_readiness\n"))
+		})
+
+		It("generates an exact identity certificate sentinel", func() {
+			proxy := newProxy()
+			generatedAt := time.Date(2026, time.September, 8, 10, 0, 0, 0, time.UTC)
+			expiresAt := generatedAt.Add(time.Hour)
+			certificatePEM, err := os.ReadFile(filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"))
+			Expect(err).ToNot(HaveOccurred())
+			identityResources := xds.NewResourceSet().Add(&xds.Resource{
+				Name: "identity",
+				Resource: &envoy_tls.Secret{
+					Name: "identity",
+					Type: &envoy_tls.Secret_TlsCertificate{
+						TlsCertificate: &envoy_tls.TlsCertificate{
+							CertificateChain: &envoy_core.DataSource{
+								Specifier: &envoy_core.DataSource_InlineBytes{InlineBytes: certificatePEM},
+							},
+						},
+					},
+				},
+			})
+			proxy.WorkloadIdentityRequired = true
+			proxy.WorkloadIdentity = &xds.WorkloadIdentity{
+				ManagementMode:      xds.KumaManagementMode,
+				GenerationTime:      &generatedAt,
+				ExpirationTime:      &expiresAt,
+				AdditionalResources: identityResources,
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"identity",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			}
+
+			resources, actual := generateYAML(proxy)
+			Expect(resources.Resources(envoy_resource.SecretType)).To(BeEmpty())
+			block, _ := pem.Decode(certificatePEM)
+			Expect(block).ToNot(BeNil())
+			hash := sha256.Sum256(block.Bytes)
+			Expect(actual).To(ContainSubstring(fmt.Sprintf("%x", hash)))
+			Expect(actual).To(ContainSubstring("2026-09-08T11:00:00Z"))
+			Expect(actual).To(ContainSubstring("name: system_identity_readiness\n"))
+			Expect(actual).To(ContainSubstring("name: identity"))
+		})
+
+		It("uses the external SDS identity and omits a control-plane fingerprint", func() {
+			proxy := newProxy()
+			proxy.WorkloadIdentityRequired = true
+			proxy.WorkloadIdentity = &xds.WorkloadIdentity{
+				ManagementMode: xds.ExternalManagementMode,
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"spiffe://example.org/workload",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			}
+
+			_, actual := generateYAML(proxy)
+			Expect(actual).To(ContainSubstring("spiffe://example.org/workload"))
+			Expect(actual).To(ContainSubstring("name: system_identity_readiness\n"))
+			Expect(actual).ToNot(ContainSubstring("certificateHash"))
+		})
+
+		It("supports inspected managed identities without certificate resources", func() {
+			proxy := newProxy()
+			proxy.WorkloadIdentityRequired = true
+			proxy.WorkloadIdentity = &xds.WorkloadIdentity{
+				ManagementMode: xds.KumaManagementMode,
+				IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+					return bldrs_tls.SdsSecretConfigSource(
+						"identity",
+						bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+					)
+				},
+			}
+
+			_, actual := generateYAML(proxy)
+			Expect(actual).To(ContainSubstring("name: system_identity_readiness\n"))
+			Expect(actual).To(ContainSubstring("name: identity"))
+			Expect(actual).ToNot(ContainSubstring("certificateHash"))
+		})
+	})
 })

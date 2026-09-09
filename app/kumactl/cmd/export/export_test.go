@@ -91,7 +91,6 @@ var _ = Describe("kumactl export", func() {
 				samples.SampleSigningKeySecret(),
 				samples.MeshDefaultBuilder().WithName("another-mesh").Build(),
 				samples.SampleSigningKeySecretBuilder().WithMesh("another-mesh").Build(),
-				samples.ServiceInsight().WithMesh("another-mesh").Build(),
 				samples.SampleGlobalSecretAdminCa(),
 			},
 			goldenFile: "export.golden.yaml",

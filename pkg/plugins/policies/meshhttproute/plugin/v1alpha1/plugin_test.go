@@ -2115,21 +2115,21 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Headers: &[]common_api.HeaderMatch{{
 					Type:  pointer.To(common_api.HeaderMatchExact),
 					Name:  "foo-exact",
-					Value: "bar",
+					Value: pointer.To(common_api.HeaderValue("bar")),
 				}, {
 					Type: pointer.To(common_api.HeaderMatchPresent),
 					Name: "foo-present",
 				}, {
 					Type:  pointer.To(common_api.HeaderMatchRegularExpression),
 					Name:  "foo-regex",
-					Value: "x.*y",
+					Value: pointer.To(common_api.HeaderValue("x.*y")),
 				}, {
 					Type: pointer.To(common_api.HeaderMatchAbsent),
 					Name: "foo-absent",
 				}, {
 					Type:  pointer.To(common_api.HeaderMatchPrefix),
 					Name:  "foo-prefix",
-					Value: "x",
+					Value: pointer.To(common_api.HeaderValue("x")),
 				}},
 			}}
 

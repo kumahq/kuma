@@ -445,7 +445,6 @@ spec:
                                                       For example, you can target a port from MeshService.ports[] by its name.
                                                     type: string
                                                   weight:
-                                                    default: 1
                                                     maximum: 4294967295
                                                     minimum: 0
                                                     type: integer
@@ -639,7 +638,6 @@ spec:
                                         For example, you can target a port from MeshService.ports[] by its name.
                                       type: string
                                     weight:
-                                      default: 1
                                       maximum: 4294967295
                                       minimum: 0
                                       type: integer
@@ -732,7 +730,6 @@ spec:
                                                 For example, you can target a port from MeshService.ports[] by its name.
                                               type: string
                                             weight:
-                                              default: 1
                                               maximum: 4294967295
                                               minimum: 0
                                               type: integer
@@ -923,7 +920,6 @@ spec:
                                         pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       type:
-                                        default: Exact
                                         description: Type specifies how to match against
                                           the value of the header.
                                         enum:
@@ -3954,7 +3950,6 @@ spec:
                                     pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
-                                    default: Exact
                                     description: Type specifies how to match against
                                       the value of the header.
                                     enum:
@@ -3991,7 +3986,6 @@ spec:
                                     pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
-                                    default: Exact
                                     description: Type specifies how to match against
                                       the value of the header.
                                     enum:
@@ -4038,6 +4032,9 @@ spec:
                               - "500"
                               - "503"
                               items:
+                                description: |-
+                                  HTTPRetryOn names a condition a request is retried on. Alongside the named
+                                  conditions it also accepts any numeric HTTP status code.
                                 type: string
                               type: array
                           type: object
@@ -4450,7 +4447,6 @@ spec:
                                         For example, you can target a port from MeshService.ports[] by its name.
                                       type: string
                                     weight:
-                                      default: 1
                                       maximum: 4294967295
                                       minimum: 0
                                       type: integer
@@ -5643,21 +5639,29 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: serviceinsights.kuma.io
+  name: workloads.kuma.io
 spec:
   group: kuma.io
   names:
     categories:
     - kuma
-    kind: ServiceInsight
-    listKind: ServiceInsightList
-    plural: serviceinsights
-    singular: serviceinsight
-  scope: Cluster
+    kind: Workload
+    listKind: WorkloadList
+    plural: workloads
+    shortNames:
+    - wl
+    singular: workload
+  scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: Workload represents a logical grouping of data plane proxies
+          in the mesh, providing visibility into their operational status. It tracks
+          statistics about the data plane proxies that belong to a workload, including
+          the number of connected, healthy, and total proxies, enabling monitoring
+          and health assessment of your workload deployments. Workloads is also the
+          primary way data-planes are grouped together in metrics and traces.
         properties:
           apiVersion:
             description: |-
@@ -5674,16 +5678,39 @@ spec:
               In CamelCase.
               More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
           metadata:
             type: object
           spec:
-            description: Spec is the specification of the Kuma ServiceInsight resource.
-            x-kubernetes-preserve-unknown-fields: true
+            description: Spec is the specification of the Kuma Workload resource.
+            type: object
+          status:
+            description: Status is the current status of the Kuma Workload resource.
+            properties:
+              dataplaneProxies:
+                description: DataplaneProxies defines statistics of data plane proxies
+                  that are part of this workload
+                properties:
+                  connected:
+                    description: Connected defines number of connected data plane
+                      proxies
+                    format: int32
+                    type: integer
+                  healthy:
+                    description: Healthy defines number of healthy data plane proxies
+                      for this workload
+                    format: int32
+                    type: integer
+                  total:
+                    description: Total defines total number of data plane proxies
+                      for this workload
+                    format: int32
+                    type: integer
+                required:
+                - connected
+                - healthy
+                - total
+                type: object
+            type: object
         type: object
     served: true
     storage: true
@@ -5776,87 +5803,6 @@ spec:
                 type: string
             required:
             - template
-            type: object
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
-  name: workloads.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: Workload
-    listKind: WorkloadList
-    plural: workloads
-    shortNames:
-    - wl
-    singular: workload
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: Workload represents a logical grouping of data plane proxies
-          in the mesh, providing visibility into their operational status. It tracks
-          statistics about the data plane proxies that belong to a workload, including
-          the number of connected, healthy, and total proxies, enabling monitoring
-          and health assessment of your workload deployments. Workloads is also the
-          primary way data-planes are grouped together in metrics and traces.
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma Workload resource.
-            type: object
-          status:
-            description: Status is the current status of the Kuma Workload resource.
-            properties:
-              dataplaneProxies:
-                description: DataplaneProxies defines statistics of data plane proxies
-                  that are part of this workload
-                properties:
-                  connected:
-                    description: Connected defines number of connected data plane
-                      proxies
-                    format: int32
-                    type: integer
-                  healthy:
-                    description: Healthy defines number of healthy data plane proxies
-                      for this workload
-                    format: int32
-                    type: integer
-                  total:
-                    description: Total defines total number of data plane proxies
-                      for this workload
-                    format: int32
-                    type: integer
-                required:
-                - connected
-                - healthy
-                - total
-                type: object
             type: object
         type: object
     served: true
@@ -8380,7 +8326,6 @@ rules:
       - zones
       - zoneinsights
       - meshinsights
-      - serviceinsights
       - containerpatches
       - meshaccesslogs
       - meshcircuitbreakers
@@ -8710,7 +8655,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 1fa6f39d97a8aad47eff6f6670269d3333a30c2e107b0a9d14b2aa23e0f3bf24
-        checksum/tls-secrets: 3b2f8accdc8faf6cd4b5f0a3a0798f9e1644fb939d8df10f980068717706c4ff
+        checksum/tls-secrets: 9f2a0399dbf821d32c2693aa10f41cbd0de43d38bdced833d6850a01b44a9ce8
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -8945,7 +8890,6 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - serviceinsights
           - zone
           - zoneinsights
           - meshaccesslogs

@@ -124,7 +124,6 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 			dnsMap := s.dnsMap.Load()
 			dnsEntry = dnsMap.AAAARecords[req.Question[0].Name]
 		}
-		log.V(1).Info("got request", "type", req.Question[0].Qtype, "name", req.Question[0].Name, "entry", dnsEntry)
 	}
 	if dnsEntry != nil {
 		response = new(dns.Msg)
@@ -148,22 +147,54 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 			m.UpstreamRequestDuration.Observe(time.Since(proxyStart).Seconds())
 		}
 	}
-	if m := s.metrics.Load(); m != nil {
-		qtype := "other"
-		source := "upstream"
-		if len(req.Question) > 0 {
-			qtype = qtypeLabel(req.Question[0].Qtype)
-			if dnsEntry != nil {
-				source = "local"
-			}
+	qtype := "other"
+	source := "upstream"
+	var name string
+	if len(req.Question) > 0 {
+		qtype = qtypeLabel(req.Question[0].Qtype)
+		name = req.Question[0].Name
+		if dnsEntry != nil {
+			source = "local"
 		}
+	}
+	if m := s.metrics.Load(); m != nil {
 		m.QueriesTotal.WithLabelValues(qtype, source).Inc()
 		m.ResponseCodesTotal.WithLabelValues(rcodeLabel(response.Rcode)).Inc()
+	}
+	if queryLog := log.V(1); queryLog.Enabled() {
+		queryLog.Info("resolved query",
+			"name", name,
+			"type", qtype,
+			"rcode", rcodeLabel(response.Rcode),
+			"source", source,
+			"answers", answers(response.Answer),
+			"duration", time.Since(start),
+		)
 	}
 	err := res.WriteMsg(response)
 	if err != nil {
 		log.Error(err, "failed to write upstreamResponse")
 	}
+}
+
+// answers renders what a query resolved to, so the log line shows the result
+// and not just that a lookup happened. Every query is logged, not only the A
+// and AAAA ones answered from the local map, so records of any type reach this.
+// Only the record data is kept: the presentation format a record renders itself
+// in repeats the name, TTL and class already on the log line.
+func answers(rrs []dns.RR) []string {
+	var out []string
+	for _, rr := range rrs {
+		switch record := rr.(type) {
+		case *dns.A:
+			out = append(out, record.A.String())
+		case *dns.AAAA:
+			out = append(out, record.AAAA.String())
+		default:
+			out = append(out, strings.TrimPrefix(rr.String(), rr.Header().String()))
+		}
+	}
+	return out
 }
 
 func (s *Server) Start(stop <-chan struct{}) error {

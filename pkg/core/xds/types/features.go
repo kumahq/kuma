@@ -11,10 +11,6 @@ func (f Features) HasFeature(feature string) bool {
 	return false
 }
 
-// FeatureTCPAccessLogViaNamedPipe indicates that the DP implements TCP accesslog
-// across a named pipe. Sotw DP versions may use structured data across GRPC.
-const FeatureTCPAccessLogViaNamedPipe string = "feature-tcp-accesslog-via-named-pipe"
-
 const FeatureTransparentProxyInDataplaneMetadata string = "feature-transparent-proxy-in-dataplane-metadata"
 
 // FeatureBindOutbounds indicates that the DP runs with outbound listeners bound to 127.0.0.0/8 range addresses

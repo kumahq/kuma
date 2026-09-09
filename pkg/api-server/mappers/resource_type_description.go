@@ -22,7 +22,7 @@ func MapResourceTypeDescription(defs []model.ResourceTypeDescriptor, readOnly bo
 			IsInsight:           def.IsInsight(),
 			AdminOnly:           def.AdminOnly,
 			// Things in the federation export should be:
-			//	1. not system managed .i.e: not ReadOnly (ServiceInsight for example is like this)
+			//	1. not system managed .i.e: not ReadOnly
 			//	2. have KDS from global to zone
 			IncludeInFederation: def.KDSFlags.Has(model.GlobalToZonesFlag) && !def.ReadOnly,
 		}

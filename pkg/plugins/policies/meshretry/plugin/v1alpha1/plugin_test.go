@@ -418,19 +418,19 @@ func testFirstHTTPRetryConf() api.Conf {
 				{
 					Type:  pointer.To(common_api.HeaderMatchRegularExpression),
 					Name:  "x-retry-regex",
-					Value: ".*",
+					Value: pointer.To(common_api.HeaderValue(".*")),
 				},
 				{
 					Type:  pointer.To(common_api.HeaderMatchExact),
 					Name:  "x-retry-exact",
-					Value: "exact-value",
+					Value: pointer.To(common_api.HeaderValue("exact-value")),
 				},
 			},
 			RetriableRequestHeaders: &[]common_api.HeaderMatch{
 				{
 					Type:  pointer.To(common_api.HeaderMatchPrefix),
 					Name:  "x-retry-prefix",
-					Value: "prefix-",
+					Value: pointer.To(common_api.HeaderValue("prefix-")),
 				},
 			},
 			HostSelection: &[]api.Predicate{
@@ -478,14 +478,14 @@ func testSecondHTTPRetryConf() api.Conf {
 				{
 					Type:  pointer.To(common_api.HeaderMatchRegularExpression),
 					Name:  "x-retry-regex",
-					Value: ".*",
+					Value: pointer.To(common_api.HeaderValue(".*")),
 				},
 			},
 			RetriableRequestHeaders: &[]common_api.HeaderMatch{
 				{
 					Type:  pointer.To(common_api.HeaderMatchPrefix),
 					Name:  "x-retry-prefix",
-					Value: "prefix-another",
+					Value: pointer.To(common_api.HeaderValue("prefix-another")),
 				},
 			},
 			HostSelection: &[]api.Predicate{

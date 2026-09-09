@@ -90,7 +90,7 @@ var _ = Describe("gapiGRPCToKumaMeshMatch", func() {
 		Expect(*match.Headers).To(ConsistOf(common_api.HeaderMatch{
 			Type:  pointer.To(common_api.HeaderMatchExact),
 			Name:  "x-tenant",
-			Value: "acme",
+			Value: pointer.To(common_api.HeaderValue("acme")),
 		}))
 	})
 })
