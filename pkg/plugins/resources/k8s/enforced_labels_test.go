@@ -8,6 +8,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
 	workload_k8s "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/k8s/v1alpha1"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
@@ -25,7 +26,7 @@ var _ = Describe("newMetaAdapter", func() {
 				Spec: &workload_api.Workload{},
 			}
 			out := workload_api.NewWorkloadResource()
-			adapter := newMetaAdapter(obj, systemNamespaceForTest, out.Descriptor(), obj.Spec)
+			adapter := newMetaAdapter(obj, systemNamespaceForTest, out.Descriptor(), obj.Spec, config_core.Zone, "")
 
 			Expect(adapter.GetLabels()).To(HaveKeyWithValue(v1alpha1.KubeNamespaceTag, expected))
 		},
@@ -58,7 +59,7 @@ var _ = Describe("newMetaAdapter", func() {
 		}
 		out := workload_api.NewWorkloadResource()
 
-		Expect(newMetaAdapter(obj, systemNamespaceForTest, out.Descriptor(), obj.Spec).GetLabels()).
+		Expect(newMetaAdapter(obj, systemNamespaceForTest, out.Descriptor(), obj.Spec, config_core.Zone, "").GetLabels()).
 			NotTo(HaveKey(v1alpha1.KubeNamespaceTag))
 	})
 })

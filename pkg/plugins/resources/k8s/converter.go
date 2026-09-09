@@ -3,6 +3,7 @@ package k8s
 import (
 	"fmt"
 
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
@@ -14,13 +15,33 @@ var _ k8s_common.Converter = &SimpleConverter{}
 type SimpleConverter struct {
 	KubeFactory     KubeFactory
 	SystemNamespace string
+	Mode            config_core.CpMode
+	Zone            string
 }
 
-func NewSimpleConverter(systemNamespace string) k8s_common.Converter {
-	return &SimpleConverter{
+// ConverterOption configures the parts of a converter that only the control plane
+// bootstrap knows, so the constructors stay usable from the webhook and secret
+// paths that have no zone of their own.
+type ConverterOption func(*SimpleConverter)
+
+// WithLocalZone lets the converter enforce kuma.io/zone on read, see
+// labels.EnforcedZoneLabel.
+func WithLocalZone(mode config_core.CpMode, zone string) ConverterOption {
+	return func(c *SimpleConverter) {
+		c.Mode = mode
+		c.Zone = zone
+	}
+}
+
+func NewSimpleConverter(systemNamespace string, opts ...ConverterOption) k8s_common.Converter {
+	c := &SimpleConverter{
 		KubeFactory:     NewSimpleKubeFactory(),
 		SystemNamespace: systemNamespace,
 	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
 }
 
 func NewSimpleKubeFactory() KubeFactory {
@@ -66,7 +87,7 @@ func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out cor
 	if err := out.SetSpec(spec); err != nil {
 		return err
 	}
-	out.SetMeta(newMetaAdapter(obj, c.SystemNamespace, out.Descriptor(), out.GetSpec()))
+	out.SetMeta(newMetaAdapter(obj, c.SystemNamespace, out.Descriptor(), out.GetSpec(), c.Mode, c.Zone))
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()
 		if err != nil {

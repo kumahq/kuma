@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -302,6 +303,8 @@ func newMetaAdapter(
 	systemNamespace string,
 	rd core_model.ResourceTypeDescriptor,
 	spec core_model.ResourceSpec,
+	mode config_core.CpMode,
+	zone string,
 ) *KubernetesMetaAdapter {
 	objMeta := obj.GetObjectMeta()
 
@@ -322,6 +325,9 @@ func newMetaAdapter(
 	}
 	ns := labels.NewNamespace(objMeta.GetNamespace(), objMeta.GetNamespace() == systemNamespace)
 	maps.Copy(computed, labels.EnforcedReadLabels(rd, spec, ns))
+	if enforcedZone := labels.EnforcedZoneLabel(rd, mode, zone, computed); enforcedZone != "" {
+		computed[v1alpha1.ZoneTag] = enforcedZone
+	}
 
 	return &KubernetesMetaAdapter{
 		ObjectMeta: *objMeta,

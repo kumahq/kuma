@@ -34,14 +34,20 @@ type cachedEntry struct {
 	labels map[string]string
 }
 
-func NewCachingConverter(expirationTime time.Duration, systemNamespace string) k8s_common.Converter {
-	return &cachingConverter{
-		KubeFactory: &SimpleKubeFactory{
-			KubeTypes: k8s_registry.Global(),
+func NewCachingConverter(expirationTime time.Duration, systemNamespace string, opts ...ConverterOption) k8s_common.Converter {
+	c := &cachingConverter{
+		SimpleConverter: SimpleConverter{
+			KubeFactory: &SimpleKubeFactory{
+				KubeTypes: k8s_registry.Global(),
+			},
+			SystemNamespace: systemNamespace,
 		},
-		SystemNamespace: systemNamespace,
-		cache:           cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
+		cache: cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
 	}
+	for _, opt := range opts {
+		opt(&c.SimpleConverter)
+	}
+	return c
 }
 
 func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error {
@@ -82,7 +88,7 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 	if err := out.SetSpec(spec); err != nil {
 		return err
 	}
-	adapter := newMetaAdapter(obj, c.SystemNamespace, out.Descriptor(), out.GetSpec())
+	adapter := newMetaAdapter(obj, c.SystemNamespace, out.Descriptor(), out.GetSpec(), c.Mode, c.Zone)
 	out.SetMeta(adapter)
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()

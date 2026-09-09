@@ -110,10 +110,11 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 	b.WithComponentManager(&kubeComponentManager{Manager: mgr})
 
 	b.WithExtensions(k8s_extensions.NewSecretClientContext(b.Extensions(), secretClient))
+	converterZoneOpt := k8s.WithLocalZone(b.Config().Mode, b.Config().Multizone.Zone.Name)
 	if expTime := b.Config().Runtime.Kubernetes.MarshalingCacheExpirationTime.Duration; expTime > 0 {
-		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewCachingConverter(expTime, systemNamespace)))
+		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewCachingConverter(expTime, systemNamespace, converterZoneOpt)))
 	} else {
-		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewSimpleConverter(systemNamespace)))
+		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewSimpleConverter(systemNamespace, converterZoneOpt)))
 	}
 	b.WithExtensions(k8s_extensions.NewCompositeValidatorContext(b.Extensions(), &k8s_common.CompositeValidator{}))
 	zoneName := core_metrics.ZoneNameOrMode(b.Config().Mode, b.Config().Multizone.Zone.Name)

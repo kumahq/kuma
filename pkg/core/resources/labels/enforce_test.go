@@ -8,6 +8,8 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -117,4 +119,72 @@ var _ = Describe("EnforcedReadLabels", func() {
 			},
 		}),
 	)
+})
+
+var _ = Describe("EnforcedZoneLabel", func() {
+	type zoneTestCase struct {
+		mode     config_core.CpMode
+		zone     string
+		stored   map[string]string
+		expected string
+	}
+
+	DescribeTable("should decide whether the control plane owns kuma.io/zone",
+		func(given zoneTestCase) {
+			Expect(resource_labels.EnforcedZoneLabel(
+				meshtimeout_api.NewMeshTimeoutResource().Descriptor(),
+				given.mode,
+				given.zone,
+				given.stored,
+			)).To(Equal(given.expected))
+		},
+		Entry("replaces the name a zone carried before it was renamed", zoneTestCase{
+			mode: config_core.Zone,
+			zone: "east",
+			stored: map[string]string{
+				mesh_proto.ZoneTag:             "default",
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+			},
+			expected: "east",
+		}),
+		Entry("sets the name on a resource that predates the label", zoneTestCase{
+			mode:     config_core.Zone,
+			zone:     "east",
+			stored:   nil,
+			expected: "east",
+		}),
+		Entry("keeps the name of a resource imported over KDS", zoneTestCase{
+			mode: config_core.Zone,
+			zone: "east",
+			stored: map[string]string{
+				mesh_proto.ZoneTag:             "west",
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+			},
+			expected: "",
+		}),
+		Entry("leaves every zone name alone on global", zoneTestCase{
+			mode: config_core.Global,
+			zone: "east",
+			stored: map[string]string{
+				mesh_proto.ZoneTag:             "west",
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+			},
+			expected: "",
+		}),
+		Entry("has no name to enforce on a standalone zone", zoneTestCase{
+			mode:     config_core.Zone,
+			zone:     "",
+			stored:   nil,
+			expected: "",
+		}),
+	)
+
+	It("should not enforce a zone on a type that zones cannot create", func() {
+		Expect(resource_labels.EnforcedZoneLabel(
+			core_mesh.NewMeshResource().Descriptor(),
+			config_core.Zone,
+			"east",
+			nil,
+		)).To(BeEmpty())
+	})
 })

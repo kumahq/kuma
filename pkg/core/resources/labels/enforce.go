@@ -2,6 +2,7 @@ package labels
 
 import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
@@ -42,4 +43,33 @@ func EnforcedReadLabels(
 		}
 	}
 	return enforced
+}
+
+// EnforcedZoneLabel returns the kuma.io/zone value a stored resource must be read
+// with, or "" when the label is not this control plane's to own. Only a zone
+// control plane owns it: on Global the stored value records the producing zone's
+// decision and has to survive the read.
+//
+// kuma.io/zone is written once, at admission time, and never revisited. Renaming a
+// zone - which is what federating a standalone zone does - therefore leaves every
+// resource written beforehand claiming the old name while everything written after
+// claims the new one. Policy matching reads the label back to decide whether a
+// zone-origin policy belongs to the proxy's zone, so the mismatch silently drops
+// every pre-rename policy from every proxy.
+func EnforcedZoneLabel(
+	rd core_model.ResourceTypeDescriptor,
+	mode config_core.CpMode,
+	zone string,
+	stored map[string]string,
+) string {
+	if mode != config_core.Zone || zone == "" {
+		return ""
+	}
+	if !rd.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
+		return ""
+	}
+	if !core_model.IsLocallyOriginated(mode, stored) {
+		return ""
+	}
+	return zone
 }
