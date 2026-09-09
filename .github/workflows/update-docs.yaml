@@ -34,6 +34,11 @@ jobs:
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
           version: 2026.8.14
+          # The repo is checked out under repo/, so mise finds no config at the workspace
+          # root and installs nothing, while the cache key still hashes **/mise.toml. On a
+          # miss this job would save a mise-binary-only entry under the key every other
+          # job shares, and they all reinstall every tool until it gets evicted.
+          cache: false
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: "sync docs" # loop over all the branches and generate the docs
