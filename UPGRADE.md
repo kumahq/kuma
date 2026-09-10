@@ -32,7 +32,7 @@ None unless you set either setting to `false`. The control plane and `kuma-dp` n
 
 Kuma 3.0 removes `redirectPortInbound`, `redirectPortOutbound`, and `ipFamilyMode` from `Dataplane.networking.transparentProxying` and reserves their field numbers. `directAccessServices` and `reachableBackends` stay. The control plane reads redirect ports and the IP family mode only from `kuma-dp`, which sends them when it runs with `--transparent-proxy` or `--transparent-proxy-config`.
 
-On Kubernetes nothing changes for you. The sidecar injector already passes the transparent proxy configuration to `kuma-dp`.
+On Kubernetes, sidecars injected by a 3.0 control plane always pass the transparent proxy configuration to `kuma-dp`. Sidecars injected by 2.14 with `transparentProxy.configMap.enabled` set to `false`, the 2.14 default, do not. After you upgrade the control plane, they get no transparent proxy listeners until they restart.
 
 On Universal this is a breaking change. The control plane ignores the removed fields on input, so a `Dataplane` that still sets them loads without an error but gets no transparent proxy listeners. Envoy then has no listener on the redirect ports, and the traffic iptables sends there fails.
 
@@ -79,6 +79,8 @@ redirect:
 ```
 
 Do this before you upgrade the control plane. `kuma-dp` 2.14 already supports both flags.
+
+On Kubernetes, if your 2.14 control plane runs with `transparentProxy.configMap.enabled` set to `false`, set it to `true` and restart your workloads before you upgrade the control plane.
 
 ### KDS full resync is periodic again, not every second
 
