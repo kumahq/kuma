@@ -65,7 +65,7 @@ docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES) | docs/generated docs
 			mise exec -- redocly bundle $$f -o $(BUILD_DIR)/openapi-bundled/$$f || echo "Skipping $$f"; \
 		done
 	@echo "Merging all bundled specs..."
-	@mise exec -- oas-toolkit merge $$(find $(BUILD_DIR)/openapi-bundled -name '*.yaml' | sort) > $@
+	@mise exec -- oas-toolkit merge $$(find $(BUILD_DIR)/openapi-bundled -name '*.yaml' | LC_ALL=C sort) > $@
 	@$(MAKE) --no-print-directory validate/openapi-generated-docs
 
 # Prepare $(OAPI_TMP_DIR) with a normalized directory layout for the generator

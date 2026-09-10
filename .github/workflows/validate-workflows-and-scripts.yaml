@@ -43,7 +43,15 @@ concurrency:
 jobs:
   workflows:
     name: "Validate Workflows"
-    runs-on: ${{ vars.RUNS_ON_RELEASE_2_13_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_RELEASE_2_13_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
     timeout-minutes: 10
     if: >-
       github.event_name == 'workflow_dispatch' && inputs.run_actionlint ||
@@ -62,6 +70,36 @@ jobs:
             workflows:
               - '.github/workflows/**'
 
+
+      - name: "Check the runner variable slug matches the branch"
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          steps.changes.outputs.workflows == 'true'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -e
+          # The slug is written by hand at every branch cut, and a missed rename silently
+          # falls back to the global variable.
+          ref="${BASE_REF:-$REF_NAME}"
+          # A manual run sits on whatever branch the UI offered, which has no variables.
+          case "${ref}" in
+            master|release-*) ;;
+            *) echo "${ref} is not a maintained branch, nothing to check"; exit 0 ;;
+          esac
+          expected=$(printf '%s' "${ref}" | tr '[:lower:]' '[:upper:]' | tr '.-' '__')
+          found=$(grep -rhoE 'vars\.RUNNERS_[A-Z0-9_]+_(AMD64|ARM64)' \
+            --include='*.yaml' --include='*.yml' .github/workflows \
+            | sed -E 's/^vars\.RUNNERS_(.+)_(AMD64|ARM64)$/\1/' | sort -u)
+          # PR is a tier, not a branch.
+          wrong=$(printf '%s\n' "$found" | grep -vxF "$expected" | grep -vxF PR || true)
+          if [ -n "$wrong" ]; then
+            echo "::error title=Runner variable slug does not match the branch::expected RUNNERS_${expected}_<ARCH>, found $(printf '%s' "$wrong" | tr '\n' ' ')"
+            exit 1
+          fi
+          echo "Runner variables use RUNNERS_${expected}_<ARCH>"
+
       - uses: reviewdog/action-actionlint@83e4ed25b168066ad8f62f5afbb29ebd8641d982 # v1.69.1
         if: >-
           github.event_name == 'workflow_dispatch' ||
@@ -74,7 +112,15 @@ jobs:
 
   shellcheck:
     name: "Validate Shell Scripts"
-    runs-on: ${{ vars.RUNS_ON_RELEASE_2_13_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_RELEASE_2_13_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
     timeout-minutes: 10
     if: >-
       github.event_name == 'workflow_dispatch' && inputs.run_shellcheck ||
