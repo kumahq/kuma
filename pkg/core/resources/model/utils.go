@@ -72,6 +72,10 @@ func FromYAML(src []byte, spec ResourceSpec) error {
 func FromAny(src *anypb.Any, spec ResourceSpec) error {
 	s, ok := spec.(KDSWireSpec)
 	if !ok || src.GetTypeUrl() == "" {
+		// json.Unmarshal merges into what the target already holds, so a field the
+		// sender omitted would keep the value a previous read left behind. The
+		// protobuf side below resets for the same reason.
+		reset(spec)
 		return json.Unmarshal(src.GetValue(), spec)
 	}
 	wire := s.ToKDSWire()
@@ -80,6 +84,16 @@ func FromAny(src *anypb.Any, spec ResourceSpec) error {
 		return err
 	}
 	return s.FromKDSWire(wire)
+}
+
+// reset returns a spec to its zero value, so that reading into it replaces
+// rather than merges.
+func reset(spec ResourceSpec) {
+	v := reflect.ValueOf(spec)
+	if v.Kind() != reflect.Pointer || v.IsNil() {
+		return
+	}
+	v.Elem().Set(reflect.Zero(v.Elem().Type()))
 }
 
 func FullName(spec ResourceSpec) string {
