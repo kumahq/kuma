@@ -8,6 +8,25 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `MeshIdentity.spec.spiffeID` is immutable and its trust domain no longer follows the zone
+
+A trust domain is an identity namespace, so moving one is a migration rather
+than an edit. `spec.spiffeID.trustDomain` and `spec.spiffeID.path` are now
+rejected on update, on Kubernetes by the admission webhook and on Universal by
+the API server. The control plane also renders the trust domain once, when it
+first initializes the identity, and records it in
+`status.trustDomain`. A template such as `{{ .Zone }}` no longer re-renders when
+the zone is renamed, which used to move issuance into a trust domain no
+`MeshTrust` published yet.
+
+**Action required**
+
+To move to a different trust domain or SPIFFE ID path, create a second
+`MeshIdentity` with the new value and delete the old one once every workload
+has been issued a certificate from it. Both identities publish their own
+`MeshTrust` and `MeshService.spec.identities` lists the SPIFFE IDs of every
+matching identity, so peers accept leaves from both for the whole transition.
+
 ### Zones no longer require the `kuma.io/origin` label
 
 A zone control plane used to reject a policy applied without
