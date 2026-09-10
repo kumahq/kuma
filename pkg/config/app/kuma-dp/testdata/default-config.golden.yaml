@@ -21,9 +21,7 @@ dataplaneRuntime:
   metrics: {}
   otelPipeEnabled: true
   resources: {}
-  reusePortEnabled: true
   spire: {}
-  strictInboundPortsEnabled: true
 dns:
   enabled: true
   proxyPort: 15053

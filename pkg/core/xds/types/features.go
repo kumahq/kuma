@@ -20,15 +20,7 @@ const FeatureBindOutbounds string = "feature-bind-outbounds"
 // Currently supported only on Kubernetes.
 const FeatureSpire string = "feature-spire"
 
-// FeatureStrictInboundPorts indicates whether the sidecar should reject any inbound traffic on ports other than those explicitly defined.
-const FeatureStrictInboundPorts = "feature-strict-inbound-ports"
-
 // FeatureOtelViaKumaDp indicates that kuma-dp can act as a gRPC proxy for OTel
 // traces and access logs. When present, the CP routes the OTel cluster to a Unix
 // socket instead of connecting directly to the collector.
 const FeatureOtelViaKumaDp = "feature-otel-via-kuma-dp"
-
-// FeatureReusePort indicates that the DP wants Envoy listeners generated
-// with SO_REUSEPORT enabled. When absent, the CP sets it to false to not break
-// upgrade, as `enable_reuse_port` cannot be changed during runtime.
-const FeatureReusePort = "feature-reuse-port"
