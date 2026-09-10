@@ -1,9 +1,10 @@
 # Choosing runners
 
-Every job picks its runner through two repository variables, so a fork or a downstream
+Almost every job picks its runner through two repository variables, so a fork or a downstream
 repository can move CI onto its own runners without editing any workflow. Nothing here is
-required: with both variables unset, every job runs on the GitHub-hosted default it has
-always used.
+required: with both variables unset, every job keeps the runner it had, which is a
+GitHub-hosted label for most of them and the shared `ubuntu-latest-kong` pool for the e2e
+legs.
 
 ## The variables
 
@@ -33,16 +34,16 @@ requires three distinct pools.
 
 Jobs declare the size they need, not a pool. The rule:
 
-- **sm** — no checkout, or a checkout plus only `gh`, `jq`, `git` or `curl`. Gates,
-  dispatchers, matrix generators, comment posters, and the pollers that spend hours waiting
-  on another workflow.
-- **md** — needs the mise toolchain and does network, artifact or git work, but compiles no
-  Go, builds no container image and starts no cluster. Publishing, SBOM generation,
-  backports, doc generation.
-- **lg** — compiles Go, runs `go test -race` or golangci-lint, builds images with buildx,
-  starts a k3d or kind cluster, or builds a CodeQL database.
+- **sm** for a job with no checkout, or a checkout plus only `gh`, `jq`, `git` or `curl`.
+  Gates, dispatchers, matrix generators, comment posters, and the pollers that spend hours
+  waiting on another workflow.
+- **md** for a job that needs the mise toolchain and does network, artifact or git work, but
+  compiles no Go, builds no container image and starts no cluster. Publishing, SBOM
+  generation, backports, doc generation.
+- **lg** for a job that compiles Go, runs `go test -race` or golangci-lint, builds images
+  with buildx, starts a k3d or kind cluster, or builds a CodeQL database.
 
-When a job's steps change, revisit its size. Overshooting wastes a large slot; undershooting
+When a job's steps change, revisit its size. Overshooting wastes a large slot. Undershooting
 gets the job OOM-killed on a small one.
 
 ## The expression
@@ -55,8 +56,8 @@ Reading it: take the per-branch variable, else the global one, else an empty obj
 the size; if any step yields nothing, fall back to the GitHub-hosted label. Only one
 possibly-missing property is ever dereferenced, because `'{}'` guarantees the object exists.
 
-Workflows that a `pull_request` event can reach — directly, or as a reusable workflow called
-from one — add a fork guard in front, so code from a fork never runs on a self-hosted
+Workflows that a `pull_request` event can reach, directly or as a reusable workflow called
+from one, add a fork guard in front, so code from a fork never runs on a self-hosted
 runner:
 
 ```yaml
@@ -75,9 +76,13 @@ each leg indexes the result by `matrix.arch` and then by size. That path additio
 
 ## Exceptions
 
-- `scorecard.yml` must keep a literal label — `scorecard-action` rejects an
+- `scorecard.yml` must keep a literal label, because `scorecard-action` rejects an
   expression-based `runs-on` during workflow verification.
-- `_provenance.yaml` and `lifecycle.yml` have no `runs-on`; they call reusable workflows
+- `pr-comments.yaml` must stay GitHub-hosted. It checks out the head of the PR a
+  maintainer commented on, which is a fork on most pull requests, and runs `make` against
+  it. `runs-on` cannot read the step that resolves `isCrossRepository`, so the runner is
+  chosen before the workflow knows whose code it is about to run.
+- `_provenance.yaml` and `lifecycle.yml` have no `runs-on`. They call reusable workflows
   that choose their own runner.
 
 ## Cutting a release branch
