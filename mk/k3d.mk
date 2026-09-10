@@ -177,6 +177,9 @@ endif
 .PHONY: k3d/configure/metallb
 k3d/configure/metallb:
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f $(METALLB_MANIFESTS)
+	@# wait --all pods exits at once with "no matching resources found" when the
+	@# apply above has not produced pods yet, so block on the deployments first.
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) rollout status --timeout=120s -n $(METALLB_NAMESPACE) deployment
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=120s --for=condition=Ready -n $(METALLB_NAMESPACE) --all pods
 	@# Construct a valid address space from the docker network and the template IPAddressPool
 	@IFS=. read -ra NETWORK_ADDR_SPACE <<< "$$(docker network inspect kind --format '{{ (index .IPAM.Config 0).Subnet }}')"; \
