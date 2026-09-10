@@ -17,25 +17,26 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/events"
 	kds_client "github.com/kumahq/kuma/v3/pkg/kds/client"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/v3/pkg/kds/server"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	test_grpc "github.com/kumahq/kuma/v3/pkg/test/grpc"
 	"github.com/kumahq/kuma/v3/pkg/test/kds/setup"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 // countingStore counts store operations so a run can be expressed in store
@@ -114,8 +115,8 @@ func seed(t *testing.T, st store.ResourceStore, meshes, zones, policiesPerType i
 	t.Helper()
 	ctx := context.Background()
 	for z := range zones {
-		zone := system.NewZoneResource()
-		zone.Spec = &system_proto.Zone{Enabled: wrapperspb.Bool(true)}
+		zone := zone_api.NewZoneResource()
+		zone.Spec = &zone_api.Zone{Enabled: pointer.To(true)}
 		if err := st.Create(ctx, zone, store.CreateByKey(zoneName(z), core_model.NoMesh)); err != nil {
 			t.Fatalf("seed zone: %v", err)
 		}
@@ -130,7 +131,7 @@ func seed(t *testing.T, st store.ResourceStore, meshes, zones, policiesPerType i
 
 	created := 0
 	for _, typ := range types {
-		if typ == core_mesh.MeshType || typ == system.ZoneType {
+		if typ == core_mesh.MeshType || typ == zone_api.ZoneType {
 			continue
 		}
 		desc, err := registry.Global().DescriptorFor(typ)
@@ -160,6 +161,26 @@ func seed(t *testing.T, st store.ResourceStore, meshes, zones, policiesPerType i
 	t.Logf("seeded %d zones, %d meshes, %d resources across %d types", zones, meshes, created, len(types))
 }
 
+func runChurn(ctx context.Context, st store.ResourceStore, perSec int) {
+	ticker := time.NewTicker(time.Second / time.Duration(perSec))
+	defer ticker.Stop()
+	i := 0
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			res := core_mesh.NewMeshResource()
+			if err := st.Get(ctx, res, store.GetByKey(meshName(0), core_model.NoMesh)); err != nil {
+				i++
+				continue
+			}
+			_ = st.Update(ctx, res, store.UpdateWithLabels(map[string]string{"churn": strconv.Itoa(i)}))
+			i++
+		}
+	}
+}
+
 func TestGlobalKDSScale(t *testing.T) {
 	if os.Getenv("KUMA_KDS_PERF") != "1" {
 		t.Skip("set KUMA_KDS_PERF=1 to run the KDS load harness")
@@ -169,6 +190,9 @@ func TestGlobalKDSScale(t *testing.T) {
 	zones := envInt("KDS_ZONES", 50)
 	meshes := envInt("KDS_MESHES", 5)
 	perType := envInt("KDS_POLICIES_PER_TYPE", 10)
+	churn := envInt("KDS_CHURN_PER_SEC", 0)
+	cacheTTL := envDur("KDS_STORE_CACHE_TTL", 0)
+	stagger := envDur("KDS_CONNECT_STAGGER", 0)
 	duration := envDur("KDS_DURATION", 30*time.Second)
 	flush := envDur("KDS_FLUSH", cfgDefaults.Multizone.Global.KDS.EventBasedWatchdog.FlushInterval.Duration)
 	resync := envDur("KDS_RESYNC", cfgDefaults.Multizone.Global.KDS.EventBasedWatchdog.FullResyncInterval.Duration)
@@ -181,8 +205,18 @@ func TestGlobalKDSScale(t *testing.T) {
 	cfg.Multizone.Global.KDS.EventBasedWatchdog.FlushInterval = config_types.Duration{Duration: flush}
 	cfg.Multizone.Global.KDS.EventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: resync}
 
-	cs := &countingStore{ResourceStore: memory.NewStore()}
+	memStore := memory.NewStore()
+	cs := &countingStore{ResourceStore: memStore}
 	rt := setup.NewTestRuntime(ctx, cfg, cs)
+	memStore.(interface{ SetEventWriter(events.Emitter) }).SetEventWriter(rt.EventBus())
+	if cacheTTL > 0 {
+		cached, err := manager.NewCachedManager(rt.ReadOnlyResourceManager(), cacheTTL, rt.Metrics(), multitenant.SingleTenant)
+		if err != nil {
+			t.Fatalf("cached manager: %v", err)
+		}
+		rt.SetReadOnlyResourceManager(cached)
+	}
+
 	kdsCtx := rt.KDSContext()
 	types := kdsCtx.TypesSentByGlobal
 
@@ -222,12 +256,25 @@ func TestGlobalKDSScale(t *testing.T) {
 		names = append(names, zoneName(z))
 	}
 
-	setup.StartDeltaClient(streams, names, types, stop, &kds_client.Callbacks{
+	cb := &kds_client.Callbacks{
 		OnResourcesReceived: func(_ kds_client.UpstreamResponse) (error, error) {
 			responses.Add(1)
 			return nil, nil
 		},
-	})
+	}
+	if stagger > 0 {
+		gap := stagger / time.Duration(zones)
+		for i := range streams {
+			setup.StartDeltaClient(streams[i:i+1], names[i:i+1], types, stop, cb)
+			time.Sleep(gap)
+		}
+	} else {
+		setup.StartDeltaClient(streams, names, types, stop, cb)
+	}
+
+	if churn > 0 {
+		go runChurn(ctx, cs, churn)
+	}
 
 	start := time.Now()
 	time.Sleep(duration)
@@ -236,8 +283,8 @@ func TestGlobalKDSScale(t *testing.T) {
 	lists := cs.lists.Load()
 	gets := cs.gets.Load()
 
-	t.Logf("=== zones=%d meshes=%d types=%d flush=%s resync=%s over %.0fs ===",
-		zones, meshes, len(types), flush, resync, elapsed)
+	t.Logf("=== zones=%d meshes=%d types=%d flush=%s resync=%s cacheTTL=%s over %.0fs ===",
+		zones, meshes, len(types), flush, resync, cacheTTL, elapsed)
 	t.Logf("store LIST : %7d total %9.1f/s %7.2f/s per zone", lists, float64(lists)/elapsed, float64(lists)/elapsed/float64(zones))
 	t.Logf("store GET  : %7d total %9.1f/s %7.2f/s per zone", gets, float64(gets)/elapsed, float64(gets)/elapsed/float64(zones))
 	t.Logf("KDS responses delivered: %d (%.1f/s)", responses.Load(), float64(responses.Load())/elapsed)
