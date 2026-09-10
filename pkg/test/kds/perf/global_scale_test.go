@@ -246,6 +246,7 @@ func TestGlobalKDSScale(t *testing.T) {
 	streams := make([]*test_grpc.MockDeltaClientStream, 0, zones)
 	names := make([]string, 0, zones)
 	var responses atomic.Int64
+	var nacks atomic.Int64
 
 	for z := range zones {
 		serverStream := test_grpc.NewMockDeltaServerStream()
@@ -260,6 +261,9 @@ func TestGlobalKDSScale(t *testing.T) {
 		OnResourcesReceived: func(_ kds_client.UpstreamResponse) (error, error) {
 			responses.Add(1)
 			return nil, nil
+		},
+		OnNACK: func(_ core_model.ResourceType) {
+			nacks.Add(1)
 		},
 	}
 	if stagger > 0 {
@@ -287,7 +291,7 @@ func TestGlobalKDSScale(t *testing.T) {
 		zones, meshes, len(types), flush, resync, cacheTTL, elapsed)
 	t.Logf("store LIST : %7d total %9.1f/s %7.2f/s per zone", lists, float64(lists)/elapsed, float64(lists)/elapsed/float64(zones))
 	t.Logf("store GET  : %7d total %9.1f/s %7.2f/s per zone", gets, float64(gets)/elapsed, float64(gets)/elapsed/float64(zones))
-	t.Logf("KDS responses delivered: %d (%.1f/s)", responses.Load(), float64(responses.Load())/elapsed)
+	t.Logf("KDS responses delivered: %d (%.1f/s), client NACKs: %d", responses.Load(), float64(responses.Load())/elapsed, nacks.Load())
 
 	cs.getsByType.Range(func(k, v any) bool {
 		if n := v.(*atomic.Int64).Load(); n > 0 {

@@ -14,7 +14,6 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	kds_cache "github.com/kumahq/kuma/v3/pkg/kds/cache"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
-	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/xds"
 )
 
@@ -79,10 +78,10 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 				continue
 			}
 
-			oldRes := old.GetResources(string(resType))
+			oldRes := old.GetResourcesAndTTL(string(resType))
 			if len(oldRes) > 0 {
 				builder = builder.
-					With(resType, util_maps.AllValues(oldRes)).
+					WithIndexedResources(resType, oldRes).
 					WithPrecomputedVersions(resType, old.GetVersionMap(string(resType)))
 			}
 		}
