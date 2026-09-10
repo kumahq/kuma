@@ -57,6 +57,24 @@ jobs:
           restore-keys: |
             go-test-race-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-
             go-test-race-${{ runner.os }}-
+      # /proc/meminfo reports the host, not the cgroup a containerised runner gets,
+      # so without this the GC never pushes back and `go test -race` swaps instead.
+      - name: Set GOMEMLIMIT dynamically based on available memory
+        run: |
+          set -e
+          available=$(($(grep MemTotal /proc/meminfo | awk '{print $2}') * 1024))
+          for f in /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory/memory.limit_in_bytes; do
+            [ -r "$f" ] || continue
+            limit=$(cat "$f")
+            case "$limit" in ''|*[!0-9]*) continue ;; esac
+            if [ "$limit" -lt "$available" ]; then
+              available=$limit
+            fi
+            break
+          done
+          gomemlimit=$((available * 8 / 10))
+          echo "GOMEMLIMIT=${gomemlimit}" >> "$GITHUB_ENV"
+          echo "Setting GOMEMLIMIT to $(numfmt --to=iec "$gomemlimit")"
       - run: |
           make test
       - name: Save Go build cache
