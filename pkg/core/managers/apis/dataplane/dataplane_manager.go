@@ -57,6 +57,9 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 	}
 
 	m.setHealth(dp)
+	if err := dp.Default(); err != nil {
+		return err
+	}
 	labels, err := resource_labels.Compute(
 		resource.Descriptor(),
 		resource.GetSpec(),
@@ -99,6 +102,10 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 	owner := core_mesh.NewMeshResource()
 	if err := m.store.Get(ctx, owner, core_store.GetByKey(resource.GetMeta().GetMesh(), core_model.NoMesh)); err != nil {
 		return core_manager.MeshNotFound(resource.GetMeta().GetMesh())
+	}
+
+	if err := dp.Default(); err != nil {
+		return err
 	}
 
 	opts := core_store.NewUpdateOptions(fs...)

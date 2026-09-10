@@ -100,6 +100,23 @@ Do this before you upgrade the control plane. `kuma-dp` 2.14 already supports bo
 
 On Kubernetes, if your 2.14 control plane runs with `transparentProxy.configMap.enabled` set to `false`, set it to `true` and restart your workloads before you upgrade the control plane.
 
+### `Dataplane` outbounds always carry an address
+
+`Dataplane.networking.outbound[].address` used to be left empty when it was not
+set, and every reader applied `127.0.0.1` on its own. The control plane now
+writes `127.0.0.1` into an outbound that comes in without an address, and the
+OpenAPI schema marks the field as required, so a `Dataplane` read back from the
+API always has one. Data plane behavior is unchanged: an outbound without an
+address was already bound to `127.0.0.1`.
+
+**Action required**
+
+None. Writing an outbound without an address keeps working. A `Dataplane`
+stored before the upgrade keeps its empty address until it is applied again,
+and a global control plane serves whatever a zone sent it, so a client that
+reads from a global control plane federated with zones on an older version
+should still fall back to `127.0.0.1`.
+
 ### KDS full resync is periodic again, not every second
 
 Removing the polling KDS watchdog carried the poll loop's `refreshInterval` of

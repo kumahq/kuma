@@ -16,6 +16,18 @@ import (
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
+// Default fills in the outbound address so that every Dataplane the API serves
+// carries one, which is what the OpenAPI schema promises. It is called by the
+// Kubernetes defaulting webhook and by the Dataplane resource manager.
+func (d *DataplaneResource) Default() error {
+	for _, outbound := range d.Spec.GetNetworking().GetOutbound() {
+		if outbound.GetAddress() == "" {
+			outbound.Address = mesh_proto.DefaultOutboundAddress
+		}
+	}
+	return nil
+}
+
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
 	return d.UsesInboundInterface(address, port) || d.UsesOutboundInterface(address, port)
 }

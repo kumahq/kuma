@@ -33,6 +33,12 @@ ifneq ($(strip $(DOCS_PROTOS)),)
 		--jsonschema_out=$@/protos \
 		--plugin=protoc-gen-jsonschema=$(PROTOC_GEN_JSONSCHEMA) \
 		$(DOCS_PROTOS)
+# `+required` and `+optional` drive schema generation, they are not prose, so
+# they are dropped from the published reference. No `sed -i`: GNU and BSD
+# disagree on its argument.
+	for f in $@/protos/*.json; do \
+		t=$$(mktemp) && sed -E 's/[[:space:]]*\+(required|optional)"/"/g' "$$f" > "$$t" && mv "$$t" "$$f"; \
+	done
 endif
 
 # Built beside the target and moved on success, so a failing generator cannot

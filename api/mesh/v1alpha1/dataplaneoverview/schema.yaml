@@ -199,7 +199,8 @@ components:
                         description: |-
                           IP on which the consumed service will be available to this data plane
                           proxy. On Kubernetes, it's usually ClusterIP of a Service or PodIP of a
-                          Headless Service. Defaults to 127.0.0.1
+                          Headless Service. When left out, the control plane sets it to
+                          127.0.0.1, so a Dataplane read back from the API always carries one.
                         type: string
                       backendRef:
                         description: BackendRef is a way to target MeshService.
@@ -230,6 +231,8 @@ components:
                           proxy. When transparent proxying is not used, Envoy will bind to this
                           port.
                         type: integer
+                    required:
+                    - address
                     type: object
                   type: array
                 transparentProxying:
@@ -257,24 +260,26 @@ components:
                           items:
                             properties:
                               kind:
-                                description: "Type of the backend: MeshService, MeshExternalService
-                                  or MeshMultiZoneService\n\n\t+required"
+                                description: 'Type of the backend: MeshService, MeshExternalService
+                                  or MeshMultiZoneService'
                                 type: string
                               labels:
                                 additionalProperties:
                                   type: string
-                                description: "Labels used to select backends\n\n\t+optional"
+                                description: Labels used to select backends
                                 type: object
                               name:
-                                description: "Name of the backend.\n\n\t+optional"
+                                description: Name of the backend.
                                 type: string
                               namespace:
-                                description: "Namespace of the backend. Might be empty\n\n\t+optional"
+                                description: Namespace of the backend. Might be empty
                                 type: string
                               port:
-                                description: "Port of the backend.\n\n\t+optional"
+                                description: Port of the backend.
                                 format: uint32
                                 type: integer
+                            required:
+                            - kind
                             type: object
                           type: array
                       type: object

@@ -17,6 +17,10 @@ const (
 	K8sKumaIOPrefix = "k8s.kuma.io/"
 )
 
+// DefaultOutboundAddress is the address an outbound listener is bound to when
+// the Dataplane does not set one explicitly.
+const DefaultOutboundAddress = "127.0.0.1"
+
 const (
 	KubeNamespaceTag = "k8s.kuma.io/namespace"
 	// KDSSyncLabel a label that controls properties of the KDS sync.
@@ -241,7 +245,7 @@ func (n *Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networkin
 	if outbound.Address != "" {
 		oface.DataplaneIP = outbound.Address
 	} else {
-		oface.DataplaneIP = "127.0.0.1"
+		oface.DataplaneIP = DefaultOutboundAddress
 	}
 	return oface
 }

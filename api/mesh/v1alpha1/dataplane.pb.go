@@ -488,7 +488,10 @@ type Dataplane_Networking_Outbound struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// IP on which the consumed service will be available to this data plane
 	// proxy. On Kubernetes, it's usually ClusterIP of a Service or PodIP of a
-	// Headless Service. Defaults to 127.0.0.1
+	// Headless Service. When left out, the control plane sets it to
+	// 127.0.0.1, so a Dataplane read back from the API always carries one.
+	//
+	//	+required
 	Address string `protobuf:"bytes,3,opt,name=address,proto3" json:"address,omitempty"`
 	// Port on which the consumed service will be available to this data plane
 	// proxy. When transparent proxying is not used, Envoy will bind to this
