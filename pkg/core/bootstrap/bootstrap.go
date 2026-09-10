@@ -140,7 +140,7 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	}
 	builder.WithDpServer(dpServer)
 	resourceManager := builder.ResourceManager()
-	kdsContext := kds_context.DefaultContext(appCtx, resourceManager, cfg)
+	kdsContext := kds_context.DefaultContext(appCtx, builder.ReadOnlyResourceManager(), cfg)
 	builder.WithKDSContext(kdsContext)
 	builder.WithInterCPClientPool(intercp.DefaultClientPool(int(cfg.Multizone.Global.KDS.MaxMsgSize)))
 

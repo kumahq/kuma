@@ -30,6 +30,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/events"
 	kds_client "github.com/kumahq/kuma/v3/pkg/kds/client"
+	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/v3/pkg/kds/server"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
@@ -130,6 +131,7 @@ func seed(t *testing.T, st store.ResourceStore, meshes, zones, policiesPerType i
 	}
 
 	created := 0
+	zoneOriginated := 0
 	for _, typ := range types {
 		if typ == core_mesh.MeshType || typ == zone_api.ZoneType {
 			continue
@@ -149,7 +151,15 @@ func seed(t *testing.T, st store.ResourceStore, meshes, zones, policiesPerType i
 					meshOf = meshName(m)
 				}
 				key := fmt.Sprintf("%s-%d-%d", typ, m, p)
-				if err := st.Create(ctx, res, store.CreateByKey(key, meshOf)); err == nil {
+				opts := []store.CreateOptionsFunc{store.CreateByKey(key, meshOf)}
+				if desc.KDSFlags.Has(core_model.SyncedAcrossZonesFlag) {
+					opts = append(opts, store.CreateWithLabels(map[string]string{
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+						mesh_proto.ZoneTag:             zoneName(p % zones),
+					}))
+					zoneOriginated++
+				}
+				if err := st.Create(ctx, res, opts...); err == nil {
 					created++
 				}
 			}
@@ -158,7 +168,7 @@ func seed(t *testing.T, st store.ResourceStore, meshes, zones, policiesPerType i
 			}
 		}
 	}
-	t.Logf("seeded %d zones, %d meshes, %d resources across %d types", zones, meshes, created, len(types))
+	t.Logf("seeded %d zones, %d meshes, %d resources across %d types (%d zone-originated)", zones, meshes, created, len(types), zoneOriginated)
 }
 
 func runChurn(ctx context.Context, st store.ResourceStore, perSec int) {
@@ -217,7 +227,7 @@ func TestGlobalKDSScale(t *testing.T) {
 		rt.SetReadOnlyResourceManager(cached)
 	}
 
-	kdsCtx := rt.KDSContext()
+	kdsCtx := kds_context.DefaultContext(ctx, rt.ReadOnlyResourceManager(), cfg)
 	types := kdsCtx.TypesSentByGlobal
 
 	seed(t, cs, meshes, zones, perType, types)
