@@ -1,6 +1,9 @@
 on:
   workflow_call:
     inputs:
+      RUNNERS_BY_ARCH:
+        required: true
+        type: string
       FULL_MATRIX:
         required: true
         type: string
@@ -33,7 +36,7 @@ on:
 permissions:
   contents: read
 env:
-  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+  CI_TOOLS_DIR: ${{ github.workspace }}/.ci_tools
   FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
   ALLOW_PUSH: ${{ inputs.ALLOW_PUSH }}
   GH_OWNER: ${{ github.repository_owner }}
@@ -52,7 +55,14 @@ jobs:
   # repository cache budget is shared with every branch.
   build-binaries:
     timeout-minutes: 40
-    runs-on: ${{ vars.RUNS_ON_RELEASE_2_7_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    # A darwin leg cross-compiles wherever it lands, so it stays on amd64. An arch with no
+    # pool set falls back, which is every arm64 leg today.
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.os == 'linux' && matrix.arch || 'amd64'].lg
+      || 'ubuntu-24.04' }}
     permissions:
       contents: read
     strategy:
@@ -146,7 +156,15 @@ jobs:
   publish-binaries:
     needs: [build-binaries]
     timeout-minutes: 30
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_RELEASE_2_7_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').md
+      || 'ubuntu-24.04' }}
     permissions:
       id-token: write
       contents: read
@@ -222,8 +240,15 @@ jobs:
           make publish/pulp
   build-images:
     needs: [build-binaries] # consumes the linux_binaries artifact
-    # pining to this version since we use older base image for kuma-init and we don't want to change it since it can break users environment
-    runs-on: ${{ vars.RUNS_ON_RELEASE_2_7_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-22.04' }}
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_RELEASE_2_7_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').lg
+      || 'ubuntu-24.04' }}
     permissions:
       id-token: write # Required for image signing
       contents: write # needed to upload SBOM assets to GitHub releases
@@ -387,7 +412,15 @@ jobs:
           registry_password: ${{ secrets.DOCKER_API_KEY }}
   digest-images:
     needs: [build-images]
-    runs-on: ${{ vars.RUNS_ON_RELEASE_2_7_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_RELEASE_2_7_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
     if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
@@ -406,7 +439,15 @@ jobs:
   publish-helm:
     needs: [build-images]
     timeout-minutes: 10
-    runs-on: ${{ vars.RUNS_ON_RELEASE_2_7_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_RELEASE_2_7_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').md
+      || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:

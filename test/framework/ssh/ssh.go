@@ -41,6 +41,9 @@ func NewApp(appName string, logsPath string, verbose bool, port string, envMap m
 		"-q", "-tt",
 		"-o", "StrictHostKeyChecking=no",
 		"-o", "UserKnownHostsFile=/dev/null",
+		// -tt merges the remote stderr into stdout, so a locale the container
+		// does not have makes bash warn there and callers parse the warning.
+		"-o", "SetEnv=LC_ALL=C.UTF-8",
 		"root@localhost", "-p", port,
 	}
 	for k, v := range envMap {
