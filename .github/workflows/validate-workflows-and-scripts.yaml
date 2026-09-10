@@ -83,7 +83,13 @@ jobs:
           set -e
           # The slug is written by hand at every branch cut, and a missed rename silently
           # falls back to the global variable.
-          expected=$(printf '%s' "${BASE_REF:-$REF_NAME}" | tr '[:lower:]' '[:upper:]' | tr '.-' '__')
+          ref="${BASE_REF:-$REF_NAME}"
+          # A manual run sits on whatever branch the UI offered, which has no variables.
+          case "${ref}" in
+            master|release-*) ;;
+            *) echo "${ref} is not a maintained branch, nothing to check"; exit 0 ;;
+          esac
+          expected=$(printf '%s' "${ref}" | tr '[:lower:]' '[:upper:]' | tr '.-' '__')
           found=$(grep -rhoE 'vars\.RUNNERS_[A-Z0-9_]+_(AMD64|ARM64)' \
             --include='*.yaml' --include='*.yml' .github/workflows \
             | sed -E 's/^vars\.RUNNERS_(.+)_(AMD64|ARM64)$/\1/' | sort -u)

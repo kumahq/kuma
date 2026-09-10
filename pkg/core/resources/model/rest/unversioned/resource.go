@@ -79,15 +79,3 @@ func (r *Resource) UnmarshalJSON(data []byte) error {
 	}
 	return nil
 }
-
-func (r *Resource) ToCore() (core_model.Resource, error) {
-	resource, err := registry.Global().NewObject(core_model.ResourceType(r.Meta.Type))
-	if err != nil {
-		return nil, err
-	}
-	resource.SetMeta(&r.Meta)
-	if err := resource.SetSpec(r.Spec); err != nil {
-		return nil, err
-	}
-	return resource, nil
-}

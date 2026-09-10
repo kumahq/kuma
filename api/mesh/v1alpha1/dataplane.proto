@@ -6,7 +6,6 @@ import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/envoy_admin.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
-import "validate/validate.proto";
 
 option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1";
 
@@ -168,25 +167,10 @@ message Dataplane {
 
     // TransparentProxying describes configuration for transparent proxying.
     message TransparentProxying {
-      enum IpFamilyMode {
-        // This value is to support backward compatibility and should not be
-        // used in new data plane objects.
-        UnSpecified = 0;
-        // Enables transparent proxying for both IPv4 and IPv6 traffic, This is
-        // the default.
-        DualStack = 1;
-        // Enables transparent proxying for IPv4 traffic only.
-        IPv4 = 2;
-        // Enables transparent proxying for IPv6 traffic only. This mode is to
-        // be supported in the future.
-        IPv6 = 3;
-      }
-
-      // Port on which all inbound traffic is being transparently redirected.
-      uint32 redirect_port_inbound = 1 [(validate.rules).uint32 = {lte: 65535}];
-
-      // Port on which all outbound traffic is being transparently redirected.
-      uint32 redirect_port_outbound = 2 [(validate.rules).uint32 = {lte: 65535}];
+      // `redirect_port_inbound` and `redirect_port_outbound` have been removed.
+      // kuma-dp sends the redirect ports to the control plane in its metadata.
+      reserved 1, 2;
+      reserved "redirect_port_inbound", "redirect_port_outbound";
 
       // List of services that will be accessed directly via IP:PORT
       // Use `*` to indicate direct access to every service in the Mesh.
@@ -203,8 +187,11 @@ message Dataplane {
       reserved 5;
       reserved "reachable_services";
 
-      // The IP family mode to enable for. Can be "IPv4" or "DualStack".
-      IpFamilyMode ip_family_mode = 6;
+      // `ip_family_mode` has been removed. kuma-dp sends the IP family mode to
+      // the control plane in its metadata.
+      reserved 6;
+      reserved "ip_family_mode";
+
       message ReachableBackendRef {
         // Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService
         //  +required

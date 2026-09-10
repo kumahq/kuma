@@ -117,7 +117,7 @@ var _ = Describe("Remote Bootstrap", func() {
 					},
 				}),
 				expectedBootstrapRequestFile: "bootstrap-request-transparent-proxy.golden.json",
-				features:                     []string{"feature-transparent-proxy-in-dataplane-metadata"},
+				features:                     []string{"feature-spire"},
 			},
 		),
 	)

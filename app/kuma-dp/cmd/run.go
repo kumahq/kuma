@@ -57,13 +57,13 @@ var runLog = dataplaneLog.WithName("run")
 // rather than relying on a single :: socket, because nodes with
 // net.ipv6.bindv6only=1 would silently drop IPv4 traffic. Without VNet,
 // we bind to loopback only since OUTPUT chain REDIRECT sends to 127.0.0.1
-// (IPv4) and ::1 (IPv6).
-func dnsProxyAddresses(tpCfg *tproxy_dp.DataplaneConfig, port string) []string {
+// (IPv4) and ::1 (IPv6). With IPv6 disabled, we bind IPv4 addresses only.
+func dnsProxyAddresses(tpCfg *tproxy_dp.DataplaneConfig, ipv6Enabled bool, port string) []string {
 	if tpCfg == nil {
 		return []string{net.JoinHostPort("0.0.0.0", port)}
 	}
 
-	dualStack := tpCfg.IPFamilyMode != tproxy_config.IPFamilyModeIPv4
+	dualStack := tpCfg.IPFamilyMode != tproxy_config.IPFamilyModeIPv4 && ipv6Enabled
 	vnet := tpCfg.HasVNet()
 
 	switch {
@@ -218,10 +218,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			rootCtx.Features = nil
-			if cfg.DataplaneRuntime.TransparentProxy != nil {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureTransparentProxyInDataplaneMetadata)
-			}
-
 			if cfg.DataplaneRuntime.BindOutbounds {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureBindOutbounds)
 			}
@@ -308,7 +304,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			var dnsConfigReady <-chan struct{}
 			if cfg.DNS.Enabled {
 				portStr := strconv.Itoa(int(cfg.DNS.ProxyPort))
-				addresses := dnsProxyAddresses(cfg.DataplaneRuntime.TransparentProxy, portStr)
+				addresses := dnsProxyAddresses(cfg.DataplaneRuntime.TransparentProxy, cfg.DataplaneRuntime.IPv6Enabled, portStr)
 				runLog.Info("Running with embedded DNS proxy", "port", cfg.DNS.ProxyPort, "addresses", addresses)
 				dnsproxyServer, err := dnsproxy.NewServer(addresses)
 				if err != nil {

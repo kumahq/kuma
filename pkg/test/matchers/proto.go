@@ -29,22 +29,27 @@ func (p *ProtoMatcher) Match(actual any) (bool, error) {
 		return false, errors.New("Actual object is not nil, but Expected object is.")
 	}
 
-	actualProto, ok := actual.(proto.Message)
-	if !ok {
-		return false, errors.New("You can only compare proto with this matcher. Make sure the object passed to MatchProto() implements proto.Message")
-	}
+	actualProto, actualIsProto := actual.(proto.Message)
+	expectedProto, expectedIsProto := p.Expected.(proto.Message)
 
-	expectedProto, ok := p.Expected.(proto.Message)
-	if !ok {
-		return false, errors.New("You can only compare proto with this matcher. Make sure the object passed to Expect() implements proto.Message")
+	switch {
+	case actualIsProto && expectedIsProto:
+		return proto.Equal(actualProto, expectedProto), nil
+	case !actualIsProto && !expectedIsProto:
+		// Resource specs are being converted from protobuf to Go structs, so this
+		// matcher compares whichever of the two it is handed as long as both sides
+		// are the same kind.
+		return cmp.Diff(p.Expected, actual, protocmp.Transform()) == "", nil
+	case actualIsProto:
+		return false, errors.New("Actual object is a proto.Message, but Expected object is not.")
+	default:
+		return false, errors.New("Expected object is a proto.Message, but Actual object is not.")
 	}
-
-	return proto.Equal(actualProto, expectedProto), nil
 }
 
 func (p *ProtoMatcher) FailureMessage(actual any) string {
 	differences := cmp.Diff(p.Expected, actual, protocmp.Transform())
-	return "Expected matching protobuf message:\n" + differences
+	return "Expected matching message:\n" + differences
 }
 
 func (p *ProtoMatcher) NegatedFailureMessage(actual any) string {

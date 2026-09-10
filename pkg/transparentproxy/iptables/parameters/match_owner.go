@@ -68,23 +68,6 @@ func NotUid(id string) *OwnerParameter {
 	return uid(id, true)
 }
 
-func gid(id string, negative bool) *OwnerParameter {
-	return &OwnerParameter{
-		flag:     "--gid-owner",
-		value:    id,
-		negative: negative,
-	}
-}
-
-// Gid Matches if the packet socket's file structure is owned by the given group
-func Gid(id string) *OwnerParameter {
-	return gid(id, false)
-}
-
-func NotGid(id string) *OwnerParameter {
-	return gid(id, true)
-}
-
 // Owner attempts to match various characteristics of the packet creator,for locally generated
 // packets. This match is only valid in the OUTPUT and POSTROUTING chains. Forwarded packets
 // do not have any socket associated with them. Packets from kernel threads do have a socket,

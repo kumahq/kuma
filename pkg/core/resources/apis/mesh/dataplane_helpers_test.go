@@ -13,7 +13,6 @@ import (
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
@@ -424,86 +423,6 @@ var _ = Describe("Dataplane", func() {
 		)
 	})
 
-	Describe("IsUsingTransparentProxy()", func() {
-		type testCase struct {
-			dataplane string
-			expected  bool
-		}
-
-		DescribeTable("should correctly determine if dataplane is using transparent proxy",
-			func(given testCase) {
-				// given
-				var dataplane *DataplaneResource
-				if given.dataplane != "" {
-					dataplane = NewDataplaneResource()
-					Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
-				}
-
-				// expect
-				Expect(tproxy_dp.GetDataplaneConfig(dataplane, nil).Enabled()).To(Equal(given.expected))
-			},
-			Entry("`nil` dataplane", testCase{
-				dataplane: ``,
-				expected:  false,
-			}),
-			Entry("dataplane without transparent proxy", testCase{
-				dataplane: `
-                networking: {}
-`,
-				expected: false,
-			}),
-			Entry("dataplane with empty transparent proxy", testCase{
-				dataplane: `
-                networking:
-                  transparent_proxying: {}
-`,
-				expected: false,
-			}),
-			Entry("dataplane with DualStack transparent proxy configured", testCase{
-				dataplane: `
-                networking:
-                  address: fd00::123
-                  transparent_proxying:
-                    ipFamilyMode: DualStack
-                    redirect_port_inbound: 123
-                    redirect_port_outbound: 1234
-`,
-				expected: true,
-			}),
-			Entry("dataplane with IPv4 transparent proxy configured", testCase{
-				dataplane: `
-                networking:
-                  address: 10.244.16.28
-                  transparent_proxying:
-                    ipFamilyMode: IPv4
-                    redirect_port_inbound: 123
-                    redirect_port_outbound: 1234
-`,
-				expected: true,
-			}),
-			Entry("old dataplane with transparent proxy configured and ipv4 address", testCase{
-				dataplane: `
-                networking:
-                  address: 10.244.16.28
-                  transparent_proxying:
-                    redirect_port_inbound: 123
-                    redirect_port_outbound: 1234
-`,
-				expected: true,
-			}),
-			Entry("old dataplane with transparent proxy configured and ipv6 address", testCase{
-				dataplane: `
-                networking:
-                  address: fd00::123
-                  transparent_proxying:
-                    redirect_port_inbound: 123
-                    redirect_port_outbound: 1234
-`,
-				expected: true,
-			}),
-		)
-	})
-
 	_ = Describe("ParseProtocol()", func() {
 		type testCase struct {
 			tag      string
@@ -686,7 +605,6 @@ func BenchmarkDataplaneHash(b *testing.B) {
 		WithAddress("127.0.0.1").
 		WithServices("backend").
 		WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
-		WithTransparentProxying(15001, 15006, "").
 		Build()
 
 	b.ReportAllocs()

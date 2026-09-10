@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
-	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -85,7 +85,7 @@ func TransparentProxyConfigMap() {
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
-	It("should contain transparent proxy in configmap feature flag in the xds metadata", func() {
+	It("should carry the transparent proxy configuration in the xds metadata", func() {
 		stdout, err := cluster.
 			GetKumactlOptions().
 			RunKumactlAndGetOutput(
@@ -97,7 +97,7 @@ func TransparentProxyConfigMap() {
 			)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(stdout).To(ContainSubstring(core_xds.FeatureTransparentProxyInDataplaneMetadata))
+		Expect(stdout).To(ContainSubstring(fmt.Sprintf("%q", core_xds.FieldTransparentProxy)))
 	})
 
 	It("should not contain transparentProxying configuration in the Dataplane object", func() {

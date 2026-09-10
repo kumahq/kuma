@@ -56,12 +56,12 @@ var _ = Describe("MeshPassthrough", func() {
 			}
 			proxy := xds_builders.Proxy().
 				WithApiVersion(envoy_common.APIV3).
+				WithTransparentProxy(ipFamilyMode).
 				WithDataplane(
 					builders.Dataplane().
 						WithName("test").
 						WithMesh("default").
 						WithAddress(address).
-						WithTransparentProxying(15006, 15001, ipFamilyMode).
 						AddInbound(
 							builders.Inbound().
 								WithAddress("127.0.0.1").

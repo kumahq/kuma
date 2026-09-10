@@ -276,41 +276,12 @@
         },
         "kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying": {
             "properties": {
-                "redirect_port_inbound": {
-                    "type": "integer",
-                    "description": "Port on which all inbound traffic is being transparently redirected."
-                },
-                "redirect_port_outbound": {
-                    "type": "integer",
-                    "description": "Port on which all outbound traffic is being transparently redirected."
-                },
                 "direct_access_services": {
                     "items": {
                         "type": "string"
                     },
                     "type": "array",
                     "description": "List of services that will be accessed directly via IP:PORT Use `*` to indicate direct access to every service in the Mesh. Using `*` to directly access every service is a resource-intensive operation, use it only if needed."
-                },
-                "ip_family_mode": {
-                    "enum": [
-                        "UnSpecified",
-                        0,
-                        "DualStack",
-                        1,
-                        "IPv4",
-                        2,
-                        "IPv6",
-                        3
-                    ],
-                    "oneOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "integer"
-                        }
-                    ],
-                    "title": "Ip Family Mode"
                 },
                 "reachable_backends": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends",
