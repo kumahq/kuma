@@ -9,12 +9,12 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -24,7 +24,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/grpc"
 	kds_setup "github.com/kumahq/kuma/v3/pkg/test/kds/setup"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var _ = Describe("Global Sync", func() {
@@ -196,7 +196,7 @@ var _ = Describe("Global Sync", func() {
 
 			// Create Zone resources for each Kuma CP Zone
 			for i := range numOfZones {
-				zone := &system.ZoneResource{Spec: &system_proto.Zone{Enabled: util_proto.Bool(true)}}
+				zone := &zone_api.ZoneResource{Spec: &zone_api.Zone{Enabled: pointer.To(true)}}
 				err := globalStore.Create(context.Background(), zone, store.CreateByKey(fmt.Sprintf(zoneName, i), model.NoMesh))
 				Expect(err).ToNot(HaveOccurred())
 			}

@@ -1,4 +1,4 @@
-package system_test
+package v1alpha1_test
 
 import (
 	"strings"
@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
@@ -14,7 +14,7 @@ var _ = Describe("Zone", func() {
 	DescribeTable("should validate that name conforms to RFC 1035",
 		func(name string, expectedViolation string) {
 			// given
-			zone := system.NewZoneResource()
+			zone := zone_api.NewZoneResource()
 			zone.SetMeta(&test_model.ResourceMeta{Name: name})
 
 			// when

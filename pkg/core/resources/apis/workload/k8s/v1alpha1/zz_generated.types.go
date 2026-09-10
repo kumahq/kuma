@@ -5,7 +5,6 @@ package v1alpha1
 
 import (
 	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	policy "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
@@ -60,7 +59,6 @@ func (cb *Workload) SetMesh(mesh string) {
 	}
 	cb.Labels[metadata.KumaMeshLabel] = mesh
 }
-
 func (cb *Workload) GetSpec() (core_model.ResourceSpec, error) {
 	return cb.Spec, nil
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -82,11 +82,11 @@ func ExtractResources(ctx context.Context, rs store.ResourceStore) (string, erro
 		}
 
 		for i, resource := range items {
-			if resource.Descriptor().Name == system.ZoneInsightType {
-				zi := resource.(*system.ZoneInsightResource)
+			if resource.Descriptor().Name == zoneinsight_api.ZoneInsightType {
+				zi := resource.(*zoneinsight_api.ZoneInsightResource)
 				zi.Spec.Subscriptions = nil
 				zi.Spec.EnvoyAdminStreams = nil
-				zi.Spec.KdsStreams = nil
+				zi.Spec.KDSStreams = nil
 			}
 			entry := rest.From.Resource(resource)
 			y, err := yaml.Marshal(entry)

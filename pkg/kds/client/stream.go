@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -11,7 +12,7 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/kds"
 	kds_cache "github.com/kumahq/kuma/v3/pkg/kds/cache"
@@ -174,8 +175,10 @@ func (s *stream) recv() (*envoy_sd.DeltaDiscoveryResponse, error) {
 }
 
 func (s *stream) DeltaDiscoveryRequest(resourceType core_model.ResourceType) error {
-	cpVersion, err := util_proto.ToStruct(&system_proto.Version{
-		KumaCp: &system_proto.KumaCpVersion{
+	// The version travels inside Envoy node metadata, which stays protobuf, so it is
+	// routed through JSON to keep the bytes an older control plane already parses.
+	rawVersion, err := json.Marshal(&zoneinsight_api.Version{
+		KumaCP: &zoneinsight_api.KumaCpVersion{
 			Version:   kuma_version.Build.Version,
 			GitTag:    kuma_version.Build.GitTag,
 			GitCommit: kuma_version.Build.GitCommit,
@@ -183,6 +186,10 @@ func (s *stream) DeltaDiscoveryRequest(resourceType core_model.ResourceType) err
 		},
 	})
 	if err != nil {
+		return err
+	}
+	cpVersion := &structpb.Struct{}
+	if err := util_proto.FromJSON(rawVersion, cpVersion); err != nil {
 		return err
 	}
 

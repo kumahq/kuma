@@ -6,7 +6,6 @@ package v1alpha1
 import (
 	"errors"
 	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -59,7 +58,6 @@ func (cb *MeshCircuitBreaker) SetMesh(mesh string) {
 	}
 	cb.Labels[metadata.KumaMeshLabel] = mesh
 }
-
 func (cb *MeshCircuitBreaker) GetSpec() (core_model.ResourceSpec, error) {
 	return cb.Spec, nil
 }

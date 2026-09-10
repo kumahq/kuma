@@ -193,6 +193,7 @@ var MeshPassthroughResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:            "Mesh Passthroughs",
 	IsPluginOriginated:           true,
 	AffectsPolicyMatching:        true,
+	ReadOnly:                     false,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               false,
 	HasRulesTargetRef:            false,
