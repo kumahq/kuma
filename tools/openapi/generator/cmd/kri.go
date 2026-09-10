@@ -33,6 +33,7 @@ type resource struct {
 // rather than protobuf messages. They still publish a rest.yaml at the same path, but
 // gatherProtoResources walks the protobuf registry and no longer sees them.
 var convertedCoreResources = []resource{
+	{ResourceType: "Dataplane", Path: "/specs/protoresources/dataplane/rest.yaml"},
 	{ResourceType: "Mesh", Path: "/specs/protoresources/mesh/rest.yaml"},
 }
 
