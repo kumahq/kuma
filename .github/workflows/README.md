@@ -1,6 +1,6 @@
 # Choosing runners
 
-Almost every job picks its runner through two repository variables, so a fork or a downstream repository can move CI onto its own runners without editing any workflow. Nothing here is required: with both variables unset, every job keeps the runner it had, which is a GitHub-hosted label for most of them and the shared `ubuntu-latest-kong` pool for the e2e legs.
+Almost every job picks its runner through repository variables, so a fork or a downstream repository can move CI onto its own runners without editing any workflow. Three of them apply to one architecture: a pull-request tier, a per-branch one and a global one, each set independently. Nothing here is required: with all three unset, every job keeps the runner it had, which is a GitHub-hosted label for most of them and the shared `ubuntu-latest-kong` pool for the e2e legs.
 
 ## The variables
 
@@ -69,7 +69,7 @@ The `env` context is not available in `runs-on`, which is why the default label 
 
 ### The e2e jobs
 
-`_test.yaml` runs the same job across architectures, so it cannot read `vars` per leg. `build-test-distribute.yaml` splices both variables into its `RUNNERS_BY_ARCH` input, and each leg indexes the result by `matrix.arch` and then by size. That path additionally sends `master` to GitHub-hosted runners; the per-job sites above do not.
+`_test.yaml` runs the same job across architectures, so it cannot read `vars` per leg. `build-test-distribute.yaml` resolves the tiers for both architectures into one `RUNNERS_BY_ARCH` map, and each leg indexes the result by `matrix.arch` and then by size. That path additionally sends `master` to GitHub-hosted runners; the per-job sites above do not.
 
 ## Adding an architecture
 
