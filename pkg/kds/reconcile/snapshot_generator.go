@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/kds"
 	kds_cache "github.com/kumahq/kuma/v3/pkg/kds/cache"
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
 )
 
 type (
@@ -120,25 +121,23 @@ func (s *snapshotGenerator) getResources(ctx context.Context, typ model.Resource
 	}
 
 	features := getFeatures(node)
-	entry := s.mapped.entryFor(typ, features, rlist)
+	tenant, _ := multitenant.TenantFromCtx(ctx)
+	entry := s.mapped.entryFor(typ, tenant, features, rlist)
 
 	resources := make([]envoy_types.Resource, 0, len(rlist.GetItems()))
 	for _, r := range rlist.GetItems() {
 		if !s.resourceFilter(ctx, node.GetId(), features, r) {
 			continue
 		}
-		key := model.MetaToResourceKey(r.GetMeta())
-		res, ok := entry.get(key)
-		if !ok {
+		res, err := entry.loadOrCompute(model.MetaToResourceKey(r.GetMeta()), func() (envoy_types.Resource, error) {
 			mapped, err := s.resourceMapper(features, r)
 			if err != nil {
 				return nil, err
 			}
-			res, err = util.ToEnvoyResource(mapped)
-			if err != nil {
-				return nil, err
-			}
-			entry.put(key, res)
+			return util.ToEnvoyResource(mapped)
+		})
+		if err != nil {
+			return nil, err
 		}
 		resources = append(resources, res)
 	}
