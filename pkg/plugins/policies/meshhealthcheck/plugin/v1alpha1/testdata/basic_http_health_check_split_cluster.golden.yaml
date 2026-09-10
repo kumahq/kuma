@@ -33,5 +33,6 @@ healthChecks:
   noTrafficInterval: 16s
   reuseConnection: true
   timeout: 2s
+  unhealthyInterval: 17s
   unhealthyThreshold: 3
 name: kri_msvc_default___echo-http_80-_0_

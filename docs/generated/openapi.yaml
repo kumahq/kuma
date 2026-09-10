@@ -4189,6 +4189,357 @@ paths:
       summary: Returns a list of Secret across all meshes.
       tags:
         - Secret
+  /zones:
+    get:
+      operationId: getZoneList
+      parameters:
+        - description: offset in the list of entities
+          example: 0
+          in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
+            default: 100
+            maximum: 1000
+            minimum: 1
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
+          name: filter
+          required: false
+          schema:
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+            type: object
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneList'
+      summary: Returns a list of Zone.
+      tags:
+        - Zone
+  /zones/{name}:
+    delete:
+      operationId: deleteZone
+      parameters:
+        - description: name of the Zone
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneDeleteSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Deletes Zone entity
+      tags:
+        - Zone
+    get:
+      operationId: getZone
+      parameters:
+        - description: name of the Zone
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Returns Zone entity
+      tags:
+        - Zone
+    put:
+      operationId: putZone
+      parameters:
+        - description: name of the Zone
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneItem'
+        description: Put request
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
+      summary: Creates or Updates Zone entity
+      tags:
+        - Zone
+  /zoneegresses:
+    get:
+      operationId: getZoneEgressList
+      parameters:
+        - description: offset in the list of entities
+          example: 0
+          in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
+            default: 100
+            maximum: 1000
+            minimum: 1
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
+          name: filter
+          required: false
+          schema:
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+            type: object
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneEgressList'
+      summary: Returns a list of ZoneEgress in the mesh.
+      tags:
+        - ZoneEgress
+  /zoneegresses/{name}:
+    delete:
+      operationId: deleteZoneEgress
+      parameters:
+        - description: name of the ZoneEgress
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneEgressDeleteSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Deletes ZoneEgress entity
+      tags:
+        - ZoneEgress
+    get:
+      operationId: getZoneEgress
+      parameters:
+        - description: name of the ZoneEgress
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneEgressItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Returns ZoneEgress entity
+      tags:
+        - ZoneEgress
+    put:
+      operationId: putZoneEgress
+      parameters:
+        - description: name of the ZoneEgress
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneEgressItem'
+        description: Put request
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneEgressCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/ZoneEgressCreateOrUpdateSuccessResponse'
+      summary: Creates or Updates ZoneEgress entity
+      tags:
+        - ZoneEgress
+  /zoneingresses:
+    get:
+      operationId: getZoneIngressList
+      parameters:
+        - description: offset in the list of entities
+          example: 0
+          in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
+            default: 100
+            maximum: 1000
+            minimum: 1
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
+          name: filter
+          required: false
+          schema:
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+            type: object
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneIngressList'
+      summary: Returns a list of ZoneIngress in the mesh.
+      tags:
+        - ZoneIngress
+  /zoneingresses/{name}:
+    delete:
+      operationId: deleteZoneIngress
+      parameters:
+        - description: name of the ZoneIngress
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneIngressDeleteSuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Deletes ZoneIngress entity
+      tags:
+        - ZoneIngress
+    get:
+      operationId: getZoneIngress
+      parameters:
+        - description: name of the ZoneIngress
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneIngressItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Returns ZoneIngress entity
+      tags:
+        - ZoneIngress
+    put:
+      operationId: putZoneIngress
+      parameters:
+        - description: name of the ZoneIngress
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneIngressItem'
+        description: Put request
+        required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
+        '201':
+          $ref: '#/components/responses/ZoneIngressCreateOrUpdateSuccessResponse'
+      summary: Creates or Updates ZoneIngress entity
+      tags:
+        - ZoneIngress
+  /zone-insights:
+    get:
+      operationId: getZoneInsightList
+      parameters:
+        - description: offset in the list of entities
+          example: 0
+          in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+        - description: the number of items per page
+          in: query
+          name: size
+          required: false
+          schema:
+            default: 100
+            maximum: 1000
+            minimum: 1
+            type: integer
+        - description: filter by labels when multiple filters are present, they are ANDed
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+          in: query
+          name: filter
+          required: false
+          schema:
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+            type: object
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneInsightList'
+      summary: Returns a list of ZoneInsight.
+      tags:
+        - ZoneInsight
+  /zone-insights/{name}:
+    get:
+      operationId: getZoneInsight
+      parameters:
+        - description: name of the ZoneInsight
+          in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ZoneInsightItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+      summary: Returns ZoneInsight entity
+      tags:
+        - ZoneInsight
   /zones/{name}/_overview:
     get:
       operationId: getZoneOverview
@@ -5610,161 +5961,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/WorkloadList'
-  /zones/{name}:
-    get:
-      operationId: getZone
-      summary: Returns Zone entity
-      tags:
-        - Zone
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Zone
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: putZone
-      summary: Creates or Updates Zone entity
-      tags:
-        - Zone
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Zone
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ZoneItem'
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
-    delete:
-      operationId: deleteZone
-      summary: Deletes Zone entity
-      tags:
-        - Zone
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Zone
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneDeleteSuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /zones:
-    get:
-      operationId: getZoneList
-      summary: Returns a list of Zone.
-      tags:
-        - Zone
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-          example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneList'
-  /zone-insights/{name}:
-    get:
-      operationId: getZoneInsight
-      summary: Returns ZoneInsight entity
-      tags:
-        - ZoneInsight
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the ZoneInsight
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneInsightItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /zone-insights:
-    get:
-      operationId: getZoneInsightList
-      summary: Returns a list of ZoneInsight.
-      tags:
-        - ZoneInsight
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-          example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneInsightList'
 components:
   securitySchemes:
     BasicAuth:
@@ -11028,6 +11224,16 @@ components:
                         description: |-
                           Maximum time to wait for a health check response.
                           If not specified then the default value is 15s
+                        type: string
+                      unhealthyInterval:
+                        description: >-
+                          UnhealthyInterval is the time between consecutive
+                          health checks while
+
+                          the endpoint is unhealthy. If not specified, Interval
+                          is used for
+
+                          unhealthy endpoints as well.
                         type: string
                       unhealthyThreshold:
                         description: >-
@@ -16887,6 +17093,453 @@ components:
         - name
         - mesh
       type: object
+    ZoneItem:
+      properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+          example: '1901-01-01T00:00:00.000Z'
+        enabled:
+          description: >-
+            Enabled allows to turn the zone on and off, and to exclude the whole
+            zone from
+
+            balancing traffic on it.
+          type: boolean
+        kri:
+          description: >-
+            A unique identifier for this resource instance used by internal
+            tooling and integrations. Typically derived from resource attributes
+            and may be used for cross-references or indexing
+          readOnly: true
+          type: string
+          example: kri_z___kuma-demo_myresource1_
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+          description: The labels to help identity resources
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
+          example: '1901-01-01T00:00:00.000Z'
+        name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          type: string
+          description: Name of the Kuma resource
+        type:
+          type: string
+          description: the type of the resource
+          enum:
+            - Zone
+      required:
+        - type
+        - name
+      type: object
+      description: >-
+        Zone defines the Zone configuration used at the Global Control Plane
+        within a
+
+        distributed deployment. Enabled is a pointer because an unset value and
+        an explicit
+
+        false mean different things: protobuf omitted an unset wrapper entirely,
+        and an older
+
+        control plane still distinguishes the two.
+    ZoneEgressItem:
+      properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
+        name:
+          type: string
+        networking:
+          description: Networking defines the address and port of the Egress to listen on.
+          properties:
+            address:
+              description: Address on which inbound listener will be exposed
+              type: string
+            admin:
+              description: Admin contains configuration related to Envoy Admin API
+              properties:
+                port:
+                  description: Port on which Envoy Admin API server will be listening
+                  type: integer
+              type: object
+            port:
+              description: >-
+                Port of the inbound interface that will forward requests to the
+                service.
+              type: integer
+          type: object
+        type:
+          type: string
+        zone:
+          description: |-
+            Zone field contains Zone name where egress is serving, field will be
+            automatically set by Global Kuma CP
+          type: string
+      required:
+        - type
+        - name
+      type: object
+    ZoneIngressItem:
+      properties:
+        availableServices:
+          description: |-
+            AvailableService contains tags that represent unique subset of
+            endpoints
+          items:
+            properties:
+              externalService:
+                description: instance of external service available from the zone
+                type: boolean
+              instances:
+                description: number of instances available for given tags
+                type: integer
+              mesh:
+                description: mesh of the instances available for given tags
+                type: string
+              tags:
+                additionalProperties:
+                  type: string
+                description: tags of the service
+                type: object
+            type: object
+          type: array
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+        kri:
+          description: Kuma Resource Identifier (KRI) of the given resource
+          readOnly: true
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
+        name:
+          type: string
+        networking:
+          description: >-
+            Networking defines the address and port of the Ingress to listen on.
+
+            Additionally publicly advertised address and port could be
+            specified.
+          properties:
+            address:
+              description: Address on which inbound listener will be exposed
+              type: string
+            admin:
+              description: Admin contains configuration related to Envoy Admin API
+              properties:
+                port:
+                  description: Port on which Envoy Admin API server will be listening
+                  type: integer
+              type: object
+            advertisedAddress:
+              description: |-
+                AdvertisedAddress defines IP or DNS name on which ZoneIngress is
+                accessible to other Kuma clusters.
+              type: string
+            advertisedPort:
+              description: >-
+                AdvertisedPort defines port on which ZoneIngress is accessible
+                to other
+
+                Kuma clusters.
+              type: integer
+            port:
+              description: >-
+                Port of the inbound interface that will forward requests to the
+                service.
+              type: integer
+          type: object
+        type:
+          type: string
+        zone:
+          description: >-
+            Zone field contains Zone name where ingress is serving, field will
+            be
+
+            automatically set by Global Kuma CP
+          type: string
+      required:
+        - type
+        - name
+      type: object
+    ZoneInsightItem:
+      properties:
+        creationTime:
+          description: Time at which the resource was created
+          format: date-time
+          readOnly: true
+          type: string
+          example: '1901-01-01T00:00:00.000Z'
+        envoyAdminStreams:
+          description: Statistics about Envoy Admin Streams, superseded by KDSStreams.
+          properties:
+            clustersGlobalInstanceId:
+              description: Global instance ID that handles Clusters streams.
+              type: string
+            configDumpGlobalInstanceId:
+              description: Global instance ID that handles XDS Config Dump streams.
+              type: string
+            statsGlobalInstanceId:
+              description: Global instance ID that handles Stats streams.
+              type: string
+          type: object
+        healthCheck:
+          properties:
+            time:
+              description: Time last health check received.
+              format: date-time
+              type: string
+          type: object
+          description: Information about the last received zone health check.
+        kdsStreams:
+          description: >-
+            Information about kds streams that are established between global
+            and zone.
+          properties:
+            clusters:
+              description: Details of stream that handles Clusters stream.
+              properties:
+                connectTime:
+                  description: Time when the stream was open.
+                  format: date-time
+                  type: string
+                globalInstanceId:
+                  description: Global instance ID that handles the stream.
+                  type: string
+              type: object
+            configDump:
+              description: Details of stream that handles XDS Config Dump stream.
+              properties:
+                connectTime:
+                  description: Time when the stream was open.
+                  format: date-time
+                  type: string
+                globalInstanceId:
+                  description: Global instance ID that handles the stream.
+                  type: string
+              type: object
+            globalToZone:
+              description: >-
+                Details of stream that handles global to zone resource sync
+                stream.
+              properties:
+                connectTime:
+                  description: Time when the stream was open.
+                  format: date-time
+                  type: string
+                globalInstanceId:
+                  description: Global instance ID that handles the stream.
+                  type: string
+              type: object
+            stats:
+              description: Details of stream that handles Stats stream.
+              properties:
+                connectTime:
+                  description: Time when the stream was open.
+                  format: date-time
+                  type: string
+                globalInstanceId:
+                  description: Global instance ID that handles the stream.
+                  type: string
+              type: object
+            zoneToGlobal:
+              description: >-
+                Details of stream that handles zone to global resource sync
+                stream.
+              properties:
+                connectTime:
+                  description: Time when the stream was open.
+                  format: date-time
+                  type: string
+                globalInstanceId:
+                  description: Global instance ID that handles the stream.
+                  type: string
+              type: object
+          type: object
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+          description: The labels to help identity resources
+        modificationTime:
+          description: Time at which the resource was updated
+          format: date-time
+          readOnly: true
+          type: string
+          example: '1901-01-01T00:00:00.000Z'
+        name:
+          maxLength: 253
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+          type: string
+          description: Name of the Kuma resource
+        subscriptions:
+          description: List of KDS subscriptions created by a given Zone Kuma CP.
+          items:
+            description: >-
+              KDSSubscription describes a single KDS subscription created by a
+              Zone to the Global.
+
+              Ideally there is one per Zone lifecycle. Several of them indicate
+              a transient loss of
+
+              connectivity, or a restart of either control plane.
+            properties:
+              authTokenProvided:
+                description: Indicates if subscription provided auth token.
+                type: boolean
+              config:
+                description: Config of Zone Kuma CP.
+                type: string
+              connectTime:
+                description: Time when a given Zone connected to the Global.
+                format: date-time
+                type: string
+              disconnectTime:
+                description: Time when a given Zone disconnected from the Global.
+                format: date-time
+                type: string
+              generation:
+                description: >-
+                  Generation is an integer number which is periodically
+                  increased by the status sink.
+                type: integer
+                format: int32
+              globalInstanceId:
+                description: Global CP instance that handled given subscription.
+                type: string
+              id:
+                description: Unique id per KDS subscription.
+                type: string
+              status:
+                description: Status of the KDS subscription.
+                properties:
+                  lastUpdateTime:
+                    description: >-
+                      Time when status of a given KDS subscription was most
+                      recently updated.
+                    format: date-time
+                    type: string
+                  stat:
+                    additionalProperties:
+                      description: >-
+                        KDSServiceStats defines all stats over a single xDS
+                        service. The counters serialize
+
+                        as JSON strings because protobuf writes 64 bit integers
+                        that way, and an older
+
+                        control plane rejects them when written as numbers.
+                      properties:
+                        responsesAcknowledged:
+                          description: Number of xDS responses ACKed by the Dataplane.
+                          type: string
+                          format: int64
+                        responsesRejected:
+                          description: Number of xDS responses NACKed by the Dataplane.
+                          type: string
+                          format: int64
+                        responsesSent:
+                          description: Number of xDS responses sent to the Dataplane.
+                          type: string
+                          format: int64
+                      type: object
+                    type: object
+                    description: Stat holds the KDS stats per resource type.
+                  total:
+                    description: Total defines an aggregate over individual KDS stats.
+                    properties:
+                      responsesAcknowledged:
+                        description: Number of xDS responses ACKed by the Dataplane.
+                        type: string
+                        format: int64
+                      responsesRejected:
+                        description: Number of xDS responses NACKed by the Dataplane.
+                        type: string
+                        format: int64
+                      responsesSent:
+                        description: Number of xDS responses sent to the Dataplane.
+                        type: string
+                        format: int64
+                    type: object
+                type: object
+              version:
+                description: Version of Zone Kuma CP.
+                properties:
+                  kumaCp:
+                    description: Version of Zone Kuma CP.
+                    properties:
+                      buildDate:
+                        description: Build date of Kuma ControlPlane version.
+                        type: string
+                      gitCommit:
+                        description: Git commit of Kuma ControlPlane version.
+                        type: string
+                      gitTag:
+                        description: Git tag of Kuma ControlPlane version.
+                        type: string
+                      kumaCpGlobalCompatible:
+                        description: >-
+                          True iff this Zone CP version is compatible with
+                          Global CP.
+                        type: boolean
+                      version:
+                        description: Version number of Kuma ControlPlane.
+                        type: string
+                    type: object
+                type: object
+              zoneInstanceId:
+                description: >-
+                  Zone CP instance that handled the given subscription, the
+                  leader at the time of
+
+                  connection.
+                type: string
+            type: object
+          type: array
+        type:
+          type: string
+          description: the type of the resource
+          enum:
+            - ZoneInsight
+      required:
+        - type
+        - name
+      type: object
+      description: ZoneInsight defines the observed state of a Zone Kuma CP.
     ZoneOverviewWithMeta:
       allOf:
         - $ref: '#/components/schemas/Meta'
@@ -19117,309 +19770,6 @@ components:
               type: object
           type: object
           readOnly: true
-    ZoneItem:
-      type: object
-      description: >-
-        Zone defines the Zone configuration used at the Global Control Plane
-        within a
-
-        distributed deployment. Enabled is a pointer because an unset value and
-        an explicit
-
-        false mean different things: protobuf omitted an unset wrapper entirely,
-        and an older
-
-        control plane still distinguishes the two.
-      required:
-        - type
-        - name
-      properties:
-        type:
-          description: the type of the resource
-          type: string
-          enum:
-            - Zone
-        kri:
-          description: >-
-            A unique identifier for this resource instance used by internal
-            tooling and integrations. Typically derived from resource attributes
-            and may be used for cross-references or indexing
-          type: string
-          readOnly: true
-          example: kri_z___kuma-demo_myresource1_
-        name:
-          description: Name of the Kuma resource
-          type: string
-          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
-          maxLength: 253
-        labels:
-          additionalProperties:
-            type: string
-          description: The labels to help identity resources
-          type: object
-        creationTime:
-          readOnly: true
-          type: string
-          description: Time at which the resource was created
-          format: date-time
-          example: '1901-01-01T00:00:00.000Z'
-        modificationTime:
-          readOnly: true
-          type: string
-          description: Time at which the resource was updated
-          format: date-time
-          example: '1901-01-01T00:00:00.000Z'
-        enabled:
-          description: >-
-            Enabled allows to turn the zone on and off, and to exclude the whole
-            zone from
-
-            balancing traffic on it.
-          type: boolean
-    ZoneInsightItem:
-      type: object
-      description: ZoneInsight defines the observed state of a Zone Kuma CP.
-      required:
-        - type
-        - name
-      properties:
-        type:
-          description: the type of the resource
-          type: string
-          enum:
-            - ZoneInsight
-        name:
-          description: Name of the Kuma resource
-          type: string
-          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
-          maxLength: 253
-        labels:
-          additionalProperties:
-            type: string
-          description: The labels to help identity resources
-          type: object
-        creationTime:
-          readOnly: true
-          type: string
-          description: Time at which the resource was created
-          format: date-time
-          example: '1901-01-01T00:00:00.000Z'
-        modificationTime:
-          readOnly: true
-          type: string
-          description: Time at which the resource was updated
-          format: date-time
-          example: '1901-01-01T00:00:00.000Z'
-        envoyAdminStreams:
-          description: Statistics about Envoy Admin Streams, superseded by KDSStreams.
-          properties:
-            clustersGlobalInstanceId:
-              description: Global instance ID that handles Clusters streams.
-              type: string
-            configDumpGlobalInstanceId:
-              description: Global instance ID that handles XDS Config Dump streams.
-              type: string
-            statsGlobalInstanceId:
-              description: Global instance ID that handles Stats streams.
-              type: string
-          type: object
-        healthCheck:
-          description: Information about the last received zone health check.
-          properties:
-            time:
-              description: Time last health check received.
-              format: date-time
-              type: string
-          type: object
-        kdsStreams:
-          description: >-
-            Information about kds streams that are established between global
-            and zone.
-          properties:
-            clusters:
-              description: Details of stream that handles Clusters stream.
-              properties:
-                connectTime:
-                  description: Time when the stream was open.
-                  format: date-time
-                  type: string
-                globalInstanceId:
-                  description: Global instance ID that handles the stream.
-                  type: string
-              type: object
-            configDump:
-              description: Details of stream that handles XDS Config Dump stream.
-              properties:
-                connectTime:
-                  description: Time when the stream was open.
-                  format: date-time
-                  type: string
-                globalInstanceId:
-                  description: Global instance ID that handles the stream.
-                  type: string
-              type: object
-            globalToZone:
-              description: >-
-                Details of stream that handles global to zone resource sync
-                stream.
-              properties:
-                connectTime:
-                  description: Time when the stream was open.
-                  format: date-time
-                  type: string
-                globalInstanceId:
-                  description: Global instance ID that handles the stream.
-                  type: string
-              type: object
-            stats:
-              description: Details of stream that handles Stats stream.
-              properties:
-                connectTime:
-                  description: Time when the stream was open.
-                  format: date-time
-                  type: string
-                globalInstanceId:
-                  description: Global instance ID that handles the stream.
-                  type: string
-              type: object
-            zoneToGlobal:
-              description: >-
-                Details of stream that handles zone to global resource sync
-                stream.
-              properties:
-                connectTime:
-                  description: Time when the stream was open.
-                  format: date-time
-                  type: string
-                globalInstanceId:
-                  description: Global instance ID that handles the stream.
-                  type: string
-              type: object
-          type: object
-        subscriptions:
-          description: List of KDS subscriptions created by a given Zone Kuma CP.
-          items:
-            description: >-
-              KDSSubscription describes a single KDS subscription created by a
-              Zone to the Global.
-
-              Ideally there is one per Zone lifecycle. Several of them indicate
-              a transient loss of
-
-              connectivity, or a restart of either control plane.
-            properties:
-              authTokenProvided:
-                description: Indicates if subscription provided auth token.
-                type: boolean
-              config:
-                description: Config of Zone Kuma CP.
-                type: string
-              connectTime:
-                description: Time when a given Zone connected to the Global.
-                format: date-time
-                type: string
-              disconnectTime:
-                description: Time when a given Zone disconnected from the Global.
-                format: date-time
-                type: string
-              generation:
-                description: >-
-                  Generation is an integer number which is periodically
-                  increased by the status sink.
-                format: int32
-                type: integer
-              globalInstanceId:
-                description: Global CP instance that handled given subscription.
-                type: string
-              id:
-                description: Unique id per KDS subscription.
-                type: string
-              status:
-                description: Status of the KDS subscription.
-                properties:
-                  lastUpdateTime:
-                    description: >-
-                      Time when status of a given KDS subscription was most
-                      recently updated.
-                    format: date-time
-                    type: string
-                  stat:
-                    additionalProperties:
-                      description: >-
-                        KDSServiceStats defines all stats over a single xDS
-                        service. The counters serialize
-
-                        as JSON strings because protobuf writes 64 bit integers
-                        that way, and an older
-
-                        control plane rejects them when written as numbers.
-                      properties:
-                        responsesAcknowledged:
-                          description: Number of xDS responses ACKed by the Dataplane.
-                          format: int64
-                          type: string
-                        responsesRejected:
-                          description: Number of xDS responses NACKed by the Dataplane.
-                          format: int64
-                          type: string
-                        responsesSent:
-                          description: Number of xDS responses sent to the Dataplane.
-                          format: int64
-                          type: string
-                      type: object
-                    description: Stat holds the KDS stats per resource type.
-                    type: object
-                  total:
-                    description: Total defines an aggregate over individual KDS stats.
-                    properties:
-                      responsesAcknowledged:
-                        description: Number of xDS responses ACKed by the Dataplane.
-                        format: int64
-                        type: string
-                      responsesRejected:
-                        description: Number of xDS responses NACKed by the Dataplane.
-                        format: int64
-                        type: string
-                      responsesSent:
-                        description: Number of xDS responses sent to the Dataplane.
-                        format: int64
-                        type: string
-                    type: object
-                type: object
-              version:
-                description: Version of Zone Kuma CP.
-                properties:
-                  kumaCp:
-                    description: Version of Zone Kuma CP.
-                    properties:
-                      buildDate:
-                        description: Build date of Kuma ControlPlane version.
-                        type: string
-                      gitCommit:
-                        description: Git commit of Kuma ControlPlane version.
-                        type: string
-                      gitTag:
-                        description: Git tag of Kuma ControlPlane version.
-                        type: string
-                      kumaCpGlobalCompatible:
-                        description: >-
-                          True iff this Zone CP version is compatible with
-                          Global CP.
-                        type: boolean
-                      version:
-                        description: Version number of Kuma ControlPlane.
-                        type: string
-                    type: object
-                type: object
-              zoneInstanceId:
-                description: >-
-                  Zone CP instance that handled the given subscription, the
-                  leader at the time of
-
-                  connection.
-                type: string
-            type: object
-          type: array
   responses:
     GlobalInsightsResponse:
       description: A response containing counts of global resources.
@@ -20610,6 +20960,194 @@ components:
                 type: number
             type: object
       description: List
+    ZoneCreateOrUpdateSuccessResponse:
+      content:
+        application/json:
+          schema:
+            properties:
+              warnings:
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+                readOnly: true
+                type: array
+            type: object
+      description: Successful response
+    ZoneDeleteSuccessResponse:
+      content:
+        application/json:
+          schema:
+            type: object
+      description: Successful response
+    ZoneItem:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneItem'
+      description: Successful response
+    ZoneList:
+      content:
+        application/json:
+          schema:
+            properties:
+              items:
+                items:
+                  $ref: '#/components/schemas/ZoneItem'
+                type: array
+              next:
+                description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
+    ZoneEgressCreateOrUpdateSuccessResponse:
+      content:
+        application/json:
+          schema:
+            properties:
+              warnings:
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+                readOnly: true
+                type: array
+            type: object
+      description: Successful response
+    ZoneEgressDeleteSuccessResponse:
+      content:
+        application/json:
+          schema:
+            type: object
+      description: Successful response
+    ZoneEgressItem:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneEgressItem'
+      description: Successful response
+    ZoneEgressList:
+      content:
+        application/json:
+          schema:
+            properties:
+              items:
+                items:
+                  $ref: '#/components/schemas/ZoneEgressItem'
+                type: array
+              next:
+                description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
+    ZoneIngressCreateOrUpdateSuccessResponse:
+      content:
+        application/json:
+          schema:
+            properties:
+              warnings:
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+                readOnly: true
+                type: array
+            type: object
+      description: Successful response
+    ZoneIngressDeleteSuccessResponse:
+      content:
+        application/json:
+          schema:
+            type: object
+      description: Successful response
+    ZoneIngressItem:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneIngressItem'
+      description: Successful response
+    ZoneIngressList:
+      content:
+        application/json:
+          schema:
+            properties:
+              items:
+                items:
+                  $ref: '#/components/schemas/ZoneIngressItem'
+                type: array
+              next:
+                description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
+    ZoneInsightCreateOrUpdateSuccessResponse:
+      content:
+        application/json:
+          schema:
+            properties:
+              warnings:
+                description: >
+                  warnings is a list of warning messages to return to the
+                  requesting Kuma API clients.
+
+                  Warning messages describe a problem the client making the API
+                  request should correct or be aware of.
+                items:
+                  type: string
+                readOnly: true
+                type: array
+            type: object
+      description: Successful response
+    ZoneInsightDeleteSuccessResponse:
+      content:
+        application/json:
+          schema:
+            type: object
+      description: Successful response
+    ZoneInsightItem:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ZoneInsightItem'
+      description: Successful response
+    ZoneInsightList:
+      content:
+        application/json:
+          schema:
+            properties:
+              items:
+                items:
+                  $ref: '#/components/schemas/ZoneInsightItem'
+                type: array
+              next:
+                description: URL to the next page
+                type: string
+              total:
+                description: The total number of entities
+                type: number
+            type: object
+      description: List
     GetZoneOverviewResponse:
       description: A response containing the overview of a zone.
       content:
@@ -21050,100 +21588,6 @@ components:
                 items:
                   type: string
     WorkloadDeleteSuccessResponse:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            type: object
-    ZoneItem:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ZoneItem'
-    ZoneList:
-      description: List
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              items:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ZoneItem'
-              total:
-                type: number
-                description: The total number of entities
-              next:
-                type: string
-                description: URL to the next page
-    ZoneCreateOrUpdateSuccessResponse:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              warnings:
-                type: array
-                readOnly: true
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-    ZoneDeleteSuccessResponse:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            type: object
-    ZoneInsightItem:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ZoneInsightItem'
-    ZoneInsightList:
-      description: List
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              items:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ZoneInsightItem'
-              total:
-                type: number
-                description: The total number of entities
-              next:
-                type: string
-                description: URL to the next page
-    ZoneInsightCreateOrUpdateSuccessResponse:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              warnings:
-                type: array
-                readOnly: true
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-    ZoneInsightDeleteSuccessResponse:
       description: Successful response
       content:
         application/json:
