@@ -5,27 +5,19 @@ import (
 	"golang.org/x/exp/constraints"
 
 	core_config "github.com/kumahq/kuma/v3/pkg/config"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type PortLike interface {
 	constraints.Integer | constraints.Float | tproxy_config.Port
 }
 
-type DataplaneConfigGetter interface {
-	GetTransparentProxy() *DataplaneConfig
-}
-
 type DataplaneResourcer interface {
-	DataplaneConfigGetter
 	GetAddress() string
 }
 
 type DataplaneMetadater interface {
-	DataplaneConfigGetter
-	HasFeature(string) bool
+	GetTransparentProxy() *DataplaneConfig
 	GetDNSPort() uint32
 }
 
@@ -109,13 +101,6 @@ func (c *DataplaneConfig) EnabledIPv6() bool {
 	return c.IPFamilyMode != tproxy_config.IPFamilyModeIPv4
 }
 
-func hasFeature(meta DataplaneMetadater, feature string) bool {
-	if meta == nil {
-		return false
-	}
-	return meta.HasFeature(feature)
-}
-
 func getDNSPort(meta DataplaneMetadater) uint32 {
 	if meta == nil {
 		return 0
@@ -130,31 +115,17 @@ func getAddress(dp DataplaneResourcer) string {
 	return dp.GetAddress()
 }
 
-func getConfig(cg DataplaneConfigGetter, fallback DataplaneConfig) *DataplaneConfig {
-	if cg == nil {
-		return pointer.To(fallback)
-	}
-
-	if tp := cg.GetTransparentProxy(); tp != nil {
-		return tp
-	}
-
-	return pointer.To(fallback)
-}
-
 func GetDataplaneConfig(dp DataplaneResourcer, meta DataplaneMetadater) *DataplaneConfig {
-	dnsPort := getDNSPort(meta)
-	address := getAddress(dp)
-
-	if hasFeature(meta, xds_types.FeatureTransparentProxyInDataplaneMetadata) {
-		return getConfig(meta, DefaultDataplaneConfig()).
-			withDNSPort(dnsPort).
-			withAddress(address)
+	cfg := &DataplaneConfig{}
+	if meta != nil {
+		if tp := meta.GetTransparentProxy(); tp != nil {
+			cfg = tp
+		}
 	}
 
-	return getConfig(dp, DataplaneConfig{}).
-		withDNSPort(dnsPort).
-		withAddress(address)
+	return cfg.
+		withDNSPort(getDNSPort(meta)).
+		withAddress(getAddress(dp))
 }
 
 func DefaultDataplaneConfig() DataplaneConfig {

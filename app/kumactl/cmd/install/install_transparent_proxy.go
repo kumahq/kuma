@@ -64,14 +64,8 @@ networking:
   address: {{ address }}
   inbound:
   - port: {{ port }}
-  transparentProxying:
-    redirectPortInbound: 15006
-    redirectPortOutbound: 15001
 
-The values in 'transparentProxying' section are the defaults set by this command and if needed be changed by supplying 
-'--redirect-inbound-port' and '--redirect-outbound-port' respectively.
-
- 4) the kuma-dp command shall be run with the designated user. 
+ 4) the kuma-dp command shall be run with the designated user and the '--transparent-proxy' flag.
     - if using systemd to run add 'User=kuma-dp' in the '[Service]' section of the service file
     - leverage 'runuser' similar to (assuming aforementioned yaml):
 
@@ -83,7 +77,11 @@ runuser -u kuma-dp -- \
     --dataplane-var name=dp-demo \
     --dataplane-var address=172.19.0.4 \
     --dataplane-var port=80  \
+    --transparent-proxy \
     --binary-path /usr/local/bin/envoy
+
+'--transparent-proxy' assumes this command's defaults. If you change the IP family mode, the redirect ports,
+inbound redirection, or virtual networks, pass the same values to kuma-dp with '--transparent-proxy-config'.
 
 `,
 		// Disable automatic flag parsing to ensure that our custom order of precedence
@@ -206,9 +204,9 @@ runuser -u kuma-dp -- \
 	cmd.Flags().BoolVar(&cfg.DryRun, "dry-run", cfg.DryRun, "dry run")
 	cmd.Flags().BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "verbose")
 	cmd.Flags().Var(&cfg.IPFamilyMode, "ip-family-mode", "The IP family mode to enable traffic redirection for. Can be 'dualstack' or 'ipv4'")
-	cmd.Flags().Var(&cfg.Redirect.Outbound.Port, "redirect-outbound-port", `outbound port redirected to Envoy, as specified in dataplane's "networking.transparentProxying.redirectPortOutbound"`)
+	cmd.Flags().Var(&cfg.Redirect.Outbound.Port, "redirect-outbound-port", "outbound port redirected to Envoy")
 	cmd.Flags().BoolVar(&cfg.Redirect.Inbound.Enabled, "redirect-inbound", cfg.Redirect.Inbound.Enabled, "redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.")
-	cmd.Flags().Var(&cfg.Redirect.Inbound.Port, "redirect-inbound-port", `inbound port redirected to Envoy, as specified in dataplane's "networking.transparentProxying.redirectPortInbound"`)
+	cmd.Flags().Var(&cfg.Redirect.Inbound.Port, "redirect-inbound-port", "inbound port redirected to Envoy")
 	cmd.Flags().Var(&cfg.Redirect.Inbound.ExcludePorts, "exclude-inbound-ports", "a comma separated list of inbound ports to exclude from redirect to Envoy")
 	cmd.Flags().Var(&cfg.Redirect.Outbound.ExcludePorts, "exclude-outbound-ports", "a comma separated list of outbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&cfg.KumaDPUser, "kuma-dp-user", cfg.KumaDPUser, fmt.Sprintf("the username or UID of the user that will run kuma-dp. If not provided, the system will search for a user with the default UID ('%s') or the default username ('%s')", consts.OwnerDefaultUID, consts.OwnerDefaultUsername))

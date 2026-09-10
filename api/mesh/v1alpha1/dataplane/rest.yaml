@@ -314,15 +314,6 @@ components:
                   items:
                     type: string
                   type: array
-                ipFamilyMode:
-                  description: The IP family mode to enable for. Can be "IPv4" or
-                    "DualStack".
-                  enum:
-                  - UnSpecified
-                  - DualStack
-                  - IPv4
-                  - IPv6
-                  type: string
                 reachableBackends:
                   description: |-
                     Reachable backend via transparent proxy when running with
@@ -355,14 +346,6 @@ components:
                         type: object
                       type: array
                   type: object
-                redirectPortInbound:
-                  description: Port on which all inbound traffic is being transparently
-                    redirected.
-                  type: integer
-                redirectPortOutbound:
-                  description: Port on which all outbound traffic is being transparently
-                    redirected.
-                  type: integer
               type: object
           type: object
         type:
