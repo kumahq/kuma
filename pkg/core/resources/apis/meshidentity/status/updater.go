@@ -229,6 +229,16 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 	if update {
 		needsUpdate := false
 
+		// The trust domain follows the zone name, which changes when a standalone
+		// zone is federated. Without this the MeshTrust keeps advertising the old
+		// domain while the provider already issues certificates in the new one, so
+		// Envoy has no bundle for the presented SPIFFE ID and every mTLS handshake
+		// fails.
+		if meshTrust.Spec.TrustDomain != trustDomain {
+			meshTrust.Spec.TrustDomain = trustDomain
+			needsUpdate = true
+		}
+
 		// Check if the CA PEM is already present in the MeshTrust resource
 		caBundleExists := false
 		for _, bundle := range meshTrust.Spec.CABundles {
