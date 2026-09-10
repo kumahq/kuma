@@ -554,7 +554,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		It("should allow updating a policy that originated on Global", func() {
 			// given
-			apiServer, store, stop := createServer(false, true)
+			apiServer, store, stop := createServer(false)
 			defer stop()
 			createMesh(store)
 			createGlobalOriginPolicy(store)
@@ -582,7 +582,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 		It("should allow deleting a policy that originated on Global", func() {
 			// given
-			apiServer, store, stop := createServer(false, true)
+			apiServer, store, stop := createServer(false)
 			defer stop()
 			createMesh(store)
 			createGlobalOriginPolicy(store)
@@ -601,7 +601,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 	It("should return 400 when deleting a policy that originated in another zone", func() {
 		// given
-		apiServer, store, stop := createServer(true, true)
+		apiServer, store, stop := createServer(true)
 		defer stop()
 		createMesh(store)
 		mtp := v1alpha1.NewMeshTrafficPermissionResource()

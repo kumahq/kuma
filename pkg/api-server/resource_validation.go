@@ -61,7 +61,7 @@ func (r *resourceCrudHandler) validateOriginForWrite(meta core_model.ResourceMet
 // does not prove ownership; a non-federated zone owns everything in its store.
 func (r *resourceCrudHandler) validateOwnershipForDelete(meta core_model.ResourceMeta) validators.ValidationError {
 	var err validators.ValidationError
-	if r.disableOriginLabelValidation || !r.federatedZone {
+	if !r.federatedZone {
 		return err
 	}
 
@@ -140,7 +140,7 @@ func (r *resourceCrudHandler) validateImmutableLabels(storedLabels, newComputedL
 	}
 	// a non-federated zone owns everything in its store, including leftovers of a
 	// previous federation whose origin gets recomputed to 'zone' on update
-	if !r.disableOriginLabelValidation && (r.mode == config_core.Global || r.federatedZone) {
+	if r.mode == config_core.Global || r.federatedZone {
 		immutableLabels = append(immutableLabels, mesh_proto.ResourceOriginLabel)
 	}
 

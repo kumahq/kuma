@@ -137,7 +137,7 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 // the defaulting webhook recomputes kuma.io/origin to 'zone' for a non-privileged
 // writer, and the Global->Zone KDS stream then wedges on AlreadyExists.
 func (h *validatingHandler) validateOriginNotChanged(req admission.Request, newObj k8s_model.KubernetesObject) (*admission.Response, error) {
-	if req.Operation != v1.Update || h.DisableOriginLabelValidation {
+	if req.Operation != v1.Update {
 		return nil, nil
 	}
 	// a non-federated zone owns everything in its store
