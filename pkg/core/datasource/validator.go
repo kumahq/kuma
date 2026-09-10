@@ -7,19 +7,19 @@ import (
 
 func Validate(source *system_proto.DataSource) validators.ValidationError {
 	verr := validators.ValidationError{}
-	if source == nil || source.Type == nil {
+	if !source.IsSet() {
 		verr.AddViolation("", "data source has to be chosen. Available sources: secret, file, inline")
 	}
-	switch source.GetType().(type) {
-	case *system_proto.DataSource_Secret:
+	switch {
+	case source.HasSecret():
 		if source.GetSecret() == "" {
 			verr.AddViolation("secret", "cannot be empty")
 		}
-	case *system_proto.DataSource_Inline:
+	case source.HasInline():
 		if len(source.GetInline().GetValue()) == 0 {
 			verr.AddViolation("inline", "cannot be empty")
 		}
-	case *system_proto.DataSource_File:
+	case source.HasFile():
 		if source.GetFile() == "" {
 			verr.AddViolation("file", "cannot be empty")
 		}

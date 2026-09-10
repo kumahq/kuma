@@ -1,7 +1,7 @@
 package samples
 
 import (
-	"google.golang.org/protobuf/types/known/wrapperspb"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -25,9 +25,7 @@ func SampleSecretBuilder() *builders.SecretBuilder {
 
 func SampleGlobalSecretAdminCa() *system.GlobalSecretResource {
 	globalSecret := system.NewGlobalSecretResource()
-	globalSecret.Spec.Data = &wrapperspb.BytesValue{
-		Value: []byte{},
-	}
+	globalSecret.Spec.Data = system_proto.Bytes([]byte{})
 	globalSecret.SetMeta(&test_model.ResourceMeta{
 		Name: system.EnvoyAdminCA,
 	})

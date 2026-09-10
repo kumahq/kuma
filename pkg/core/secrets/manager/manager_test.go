@@ -15,7 +15,6 @@ import (
 	secrets_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
 	secrets_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
 	resources_memory "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Secret Manager", func() {
@@ -30,7 +29,7 @@ var _ = Describe("Secret Manager", func() {
 		// given
 		secret := system.NewSecretResource()
 		secret.Spec = &system_proto.Secret{
-			Data: util_proto.Bytes([]byte("secret-value")),
+			Data: system_proto.Bytes([]byte("secret-value")),
 		}
 		Expect(secManager.Create(context.Background(), secret, core_store.CreateByKey("ca-1-cert", model.DefaultMesh))).To(Succeed())
 

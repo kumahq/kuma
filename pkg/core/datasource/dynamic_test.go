@@ -2,6 +2,7 @@ package datasource_test
 
 import (
 	"context"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	"os"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -16,7 +17,6 @@ import (
 	secret_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("DataSource Loader", func() {
@@ -33,7 +33,7 @@ var _ = Describe("DataSource Loader", func() {
 			// given
 			secretResource := system.SecretResource{
 				Spec: &system_proto.Secret{
-					Data: util_proto.Bytes([]byte("abc")),
+					Data: system_proto.Bytes([]byte("abc")),
 				},
 			}
 			err := secretManager.Create(context.Background(), &secretResource, store.CreateByKey("test-secret", "default"))
@@ -41,9 +41,7 @@ var _ = Describe("DataSource Loader", func() {
 
 			// when
 			data, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
-				Type: &system_proto.DataSource_Secret{
-					Secret: "test-secret",
-				},
+				Secret: pointer.To("test-secret"),
 			})
 
 			// then
@@ -54,9 +52,7 @@ var _ = Describe("DataSource Loader", func() {
 		It("should throw an error when secret is not found", func() {
 			// when
 			_, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
-				Type: &system_proto.DataSource_Secret{
-					Secret: "test-secret",
-				},
+				Secret: pointer.To("test-secret"),
 			})
 
 			// then
@@ -74,9 +70,7 @@ var _ = Describe("DataSource Loader", func() {
 
 			// when
 			data, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
-				Type: &system_proto.DataSource_File{
-					File: file.Name(),
-				},
+				File: pointer.To(file.Name()),
 			})
 
 			// then
@@ -87,9 +81,7 @@ var _ = Describe("DataSource Loader", func() {
 		It("should throw an error on problems with loading from file", func() {
 			// when
 			_, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
-				Type: &system_proto.DataSource_File{
-					File: "non-existent-file",
-				},
+				File: pointer.To("non-existent-file"),
 			})
 
 			// then
@@ -101,9 +93,7 @@ var _ = Describe("DataSource Loader", func() {
 		It("should load from inline", func() {
 			// when
 			data, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
-				Type: &system_proto.DataSource_Inline{
-					Inline: util_proto.Bytes([]byte("abc")),
-				},
+				Inline: system_proto.Bytes([]byte("abc")),
 			})
 
 			// then
@@ -116,9 +106,7 @@ var _ = Describe("DataSource Loader", func() {
 		It("should load from inline string", func() {
 			// when
 			data, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
-				Type: &system_proto.DataSource_InlineString{
-					InlineString: "abc",
-				},
+				InlineString: pointer.To("abc"),
 			})
 
 			// then

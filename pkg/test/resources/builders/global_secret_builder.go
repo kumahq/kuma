@@ -3,8 +3,6 @@ package builders
 import (
 	"context"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -24,9 +22,7 @@ func GlobalSecret() *GlobalSecretBuilder {
 				Name: "sec-1",
 			},
 			Spec: &system_proto.Secret{
-				Data: &wrapperspb.BytesValue{
-					Value: []byte("XYZ"),
-				},
+				Data: system_proto.Bytes([]byte("XYZ")),
 			},
 		},
 	}

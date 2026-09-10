@@ -12,7 +12,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
@@ -211,7 +210,7 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resour
 	publicSigningKeyResource.SetMeta(util.CloneResourceMeta(r.GetMeta(), util.WithName(newResName)))
 
 	if err := publicSigningKeyResource.SetSpec(&system_proto.Secret{
-		Data: &wrapperspb.BytesValue{Value: publicKeyBytes},
+		Data: system_proto.Bytes(publicKeyBytes),
 	}); err != nil {
 		return nil, err
 	}

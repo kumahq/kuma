@@ -3,11 +3,11 @@ package tokens
 import (
 	"context"
 	"fmt"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
@@ -78,9 +78,7 @@ func (a *adminTokenBootstrap) generateTokenIfNotExist(ctx context.Context) error
 	}
 
 	log.Info("saving generated Admin User Token", "globalSecretName", globalSecretKey.Name)
-	secret.Spec.Data = &wrapperspb.BytesValue{
-		Value: []byte(token),
-	}
+	secret.Spec.Data = system_proto.Bytes([]byte(token))
 	if err := a.resManager.Create(ctx, secret, core_store.CreateBy(globalSecretKey)); err != nil {
 		return err
 	}
