@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -69,7 +70,7 @@ var _ = Describe("DefaultProxyProfile", func() {
 				},
 			}
 
-			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
+			Expect(yaml.Unmarshal([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
 
 			dataplane := &mesh_proto.Dataplane{}
 			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
