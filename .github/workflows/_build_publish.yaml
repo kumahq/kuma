@@ -203,6 +203,11 @@ jobs:
         with:
           name: linux_binaries_amd64
           path: ./build/artifacts-linux-amd64
+      # download-artifact does not restore the executable bit, so the binary
+      # lands as 0644 and cannot be executed by the version assert.
+      - name: Restore executable bit on downloaded binaries
+        if: ${{ github.ref_type == 'tag' }}
+        run: chmod -R +x ./build/artifacts-linux-amd64
       - name: Assert built binary reports tag version
         if: ${{ github.ref_type == 'tag' }}
         env:
