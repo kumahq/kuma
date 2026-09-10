@@ -367,6 +367,7 @@ var _ = Describe("MeshPassthrough", func() {
 							{
 								Type:     api.MatchType("Domain"),
 								Value:    "anotherexample.com",
+								Port:     pointer.To[uint32](80),
 								Protocol: api.ProtocolType("http"),
 							},
 							{
@@ -426,6 +427,7 @@ var _ = Describe("MeshPassthrough", func() {
 							{
 								Type:     api.MatchType("Domain"),
 								Value:    "www.anotherexample.com",
+								Port:     pointer.To[uint32](8080),
 								Protocol: api.ProtocolType("http"),
 							},
 						},
@@ -483,7 +485,7 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "same-protocol.listener.golden.yaml",
 			clustersGolden:  "same-protocol.clusters.golden.yaml",
 		}),
-		Entry("the same domain with a different L7 protocol on all ports", testCase{
+		Entry("a domain without a port, the sidecar has no port to resolve it on", testCase{
 			resources: []*core_xds.Resource{
 				{
 					Name:   outboundPassthroughIPv4Name,
@@ -528,10 +530,10 @@ var _ = Describe("MeshPassthrough", func() {
 					},
 				},
 			}),
-			listenersGolden: "conflicting-protocols.listener.golden.yaml",
-			clustersGolden:  "conflicting-protocols.clusters.golden.yaml",
+			listenersGolden: "domain-without-port.listener.golden.yaml",
+			clustersGolden:  "domain-without-port.clusters.golden.yaml",
 			warnings: []string{
-				"protocols grpc and http produce the same filter chain for domains on port 4317, matches with protocol http and no port are not applied there",
+				`ignoring match "datadog.datadog.svc.cluster.local", a domain needs a port, the sidecar resolves the domain to pin the destination`,
 			},
 		}),
 		Entry("mysql protocol", testCase{

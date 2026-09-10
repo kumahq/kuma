@@ -4,19 +4,20 @@ resources:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: meshpassthrough_grpc_datadog_datadog_svc_cluster_local_4317
     connectTimeout: 5s
-    lbPolicy: CLUSTER_PROVIDED
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: meshpassthrough_grpc_datadog.datadog.svc.cluster.local_4317
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: datadog.datadog.svc.cluster.local
+                portValue: 4317
     name: meshpassthrough_grpc_datadog.datadog.svc.cluster.local_4317
-    type: ORIGINAL_DST
+    type: STRICT_DNS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
-- name: meshpassthrough_http_datadog.datadog.svc.cluster.local_*
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: meshpassthrough_http_datadog_datadog_svc_cluster_local__
-    connectTimeout: 5s
-    lbPolicy: CLUSTER_PROVIDED
-    name: meshpassthrough_http_datadog.datadog.svc.cluster.local_*
-    type: ORIGINAL_DST

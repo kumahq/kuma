@@ -8,6 +8,34 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `MeshPassthrough` resolves a domain match itself and needs a port for it
+
+A `Domain` match used to build an `ORIGINAL_DST` cluster: the sidecar matched the SNI or the `Host` header of the request and then sent it to the address the client dialed. A workload selected by the policy could therefore dial any address, present an allowed domain, and reach that address through the policy, which is the opposite of what an allowlist in `passthroughMode: Matched` is for.
+
+A `Domain` match now resolves the domain in the sidecar and connects to the resolved address, so the destination no longer depends on the address the client dialed. Resolving needs a port, so a `Domain` that is not a wildcard requires `port`. A policy that has one without a port is rejected on apply. In a policy stored before the upgrade that match stops applying, and when it was the only match in the policy nothing is left to allow, so the sidecar rejects all passthrough traffic until you add the port.
+
+A wildcard `Domain`, for example `*.example.com`, has no address to resolve, so its traffic still goes to the address the client dials and the match only restricts the SNI or `Host`. Keep that in mind when a wildcard entry is part of an allowlist.
+
+**Action required**
+
+- Add `port` to every `Domain` match that is not a wildcard. Duplicate the match if the domain is used on more than one port:
+
+  ```yaml
+  # before
+  appendMatch:
+  - type: Domain
+    value: api.example.com
+    protocol: tls
+  # after
+  appendMatch:
+  - type: Domain
+    value: api.example.com
+    port: 443
+    protocol: tls
+  ```
+
+- Make sure the sidecar can resolve those domains. A domain the sidecar cannot resolve has no endpoint, so its traffic fails instead of following the original destination.
+
 ### Strict inbound ports and `SO_REUSEPORT` can no longer be turned off
 
 `kuma-dp` no longer reads `KUMA_DATAPLANE_RUNTIME_STRICT_INBOUND_PORTS_ENABLED` or `KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED`. Both defaulted to `true`, and the control plane now applies that behavior to every data plane:
