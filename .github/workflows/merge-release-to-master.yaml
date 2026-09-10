@@ -18,7 +18,12 @@ env:
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 jobs:
   release:
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').md
+      || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
