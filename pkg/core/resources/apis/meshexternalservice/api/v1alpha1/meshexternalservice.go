@@ -146,9 +146,6 @@ type MeshExternalServiceStatus struct {
 	HostnameGenerators []hostnamegenerator_api.HostnameGeneratorStatus `json:"hostnameGenerators,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=Kuma
-type StatusType string
-
 type VIP struct {
 	// Value allocated IP for a provided domain with `HostnameGenerator` type in a match section.
 	IP string `json:"ip,omitempty"`

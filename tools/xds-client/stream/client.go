@@ -4,13 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"net/url"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/pkg/errors"
-	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -120,20 +118,6 @@ func (s *Stream) ACK(typ string) error {
 	return s.stream.Send(&envoy_discovery.DeltaDiscoveryRequest{
 		ResponseNonce: latestReceived.Nonce,
 		TypeUrl:       typ,
-	})
-}
-
-func (s *Stream) NACK(typ string, err error) error {
-	latestReceived := s.latestReceived[typ]
-	if latestReceived == nil {
-		return nil
-	}
-	return s.stream.Send(&envoy_discovery.DeltaDiscoveryRequest{
-		ResponseNonce: latestReceived.Nonce,
-		TypeUrl:       typ,
-		ErrorDetail: &status.Status{
-			Message: fmt.Sprintf("%s", err),
-		},
 	})
 }
 

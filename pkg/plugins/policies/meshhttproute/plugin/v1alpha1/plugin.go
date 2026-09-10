@@ -3,12 +3,9 @@ package v1alpha1
 import (
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -16,15 +13,6 @@ import (
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
-
-type ToRouteRule struct {
-	Subset    subsetutils.Subset
-	Rules     []api.Rule
-	Hostnames []string
-
-	Origins          []core_model.ResourceMeta
-	BackendRefOrigin map[common_api.MatchesHash]core_model.ResourceMeta
-}
 
 type plugin struct{}
 

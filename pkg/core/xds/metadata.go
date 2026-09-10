@@ -81,18 +81,6 @@ type DataplaneMetadata struct {
 	OtelEnvInventory     *OtelBootstrapInventory
 }
 
-// GetDataplaneResource returns the underlying DataplaneResource, if present.
-// If the resource is of a different type, it returns nil.
-func (m *DataplaneMetadata) GetDataplaneResource() *core_mesh.DataplaneResource {
-	if m != nil {
-		if d, ok := m.Resource.(*core_mesh.DataplaneResource); ok {
-			return d
-		}
-	}
-
-	return nil
-}
-
 func (m *DataplaneMetadata) GetProxyType() mesh_proto.ProxyType {
 	if m == nil || m.ProxyType == "" {
 		return mesh_proto.DataplaneProxyType
@@ -112,13 +100,6 @@ func (m *DataplaneMetadata) GetReadinessPort() uint32 {
 		return 0
 	}
 	return m.ReadinessPort
-}
-
-func (m *DataplaneMetadata) GetAppProbeProxyEnabled() bool {
-	if m == nil {
-		return false
-	}
-	return m.AppProbeProxyEnabled
 }
 
 func (m *DataplaneMetadata) GetAdminAddress() string {

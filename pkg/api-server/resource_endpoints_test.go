@@ -165,7 +165,7 @@ var _ = Describe("Read-only Resource Endpoints", func() {
 })
 
 var _ = Describe("Resource Endpoints on Zone, label origin", func() {
-	createServer := func(federatedZone, validateOriginLabel bool) (*api_server.ApiServer, core_store.ResourceStore, func()) {
+	createServer := func(federatedZone bool) (*api_server.ApiServer, core_store.ResourceStore, func()) {
 		store := core_store.NewPaginationStore(memory.NewStore())
 		zone := ""
 		if federatedZone {
@@ -174,7 +174,6 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		apiServer, _, stop := StartApiServer(
 			NewTestApiServerConfigurer().
 				WithStore(store).
-				WithDisableOriginLabelValidation(!validateOriginLabel).
 				WithZone(zone),
 		)
 		return apiServer, store, stop
@@ -203,9 +202,9 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	It("should return 400 when origin validation is enabled and origin label is not set", func() {
+	It("should return 400 when origin label is not zone on a federated zone", func() {
 		// given
-		apiServer, store, stop := createServer(true, true)
+		apiServer, store, stop := createServer(true)
 		defer stop()
 		createMesh(store)
 
@@ -214,6 +213,9 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			Name: "mtp-1",
 			Mesh: mesh,
 			Type: string(v1alpha1.MeshTrafficPermissionType),
+			Labels: map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+			},
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
 				AddRule(v1alpha1.Allow).
@@ -221,17 +223,17 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		}
 		resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-1", res)
 
-		// and then
+		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 		bytes, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onNoOriginLabel.golden.json")))
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onWrongOriginLabel.golden.json")))
 	})
 
 	It("should return 400 when mesh label is different from resource mesh", func() {
 		// given
-		apiServer, store, stop := createServer(true, true)
+		apiServer, store, stop := createServer(true)
 		defer stop()
 		createMesh(store)
 
@@ -261,7 +263,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 	It("should not return 400 when mesh label is identical to resource mesh", func() {
 		// given
-		apiServer, store, stop := createServer(true, true)
+		apiServer, store, stop := createServer(true)
 		defer stop()
 		createMesh(store)
 
@@ -287,10 +289,10 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 	})
 
 	DescribeTable(
-		"should set origin label automatically when origin validation is disabled",
+		"should set origin label automatically",
 		func(federatedZone bool) {
 			// given
-			apiServer, store, stop := createServer(federatedZone, false)
+			apiServer, store, stop := createServer(federatedZone)
 			defer stop()
 			createMesh(store)
 			zone := "default"
@@ -330,7 +332,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 	It("should set origin label automatically for DPPs", func() {
 		// given
-		apiServer, store, stop := createServer(false, false)
+		apiServer, store, stop := createServer(false)
 		defer stop()
 		createMesh(store)
 		name := "dpp-1"
@@ -375,8 +377,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		}
 		apiServerWithErr, _, stopErr := StartApiServer(
 			NewTestApiServerConfigurer().
-				WithStore(failingStore).
-				WithDisableOriginLabelValidation(true),
+				WithStore(failingStore),
 		)
 		defer stopErr()
 
@@ -403,7 +404,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 	It("should compute labels on update of the resource", func() {
 		// given
-		apiServer, store, stop := createServer(false, false)
+		apiServer, store, stop := createServer(false)
 		defer stop()
 		createMesh(store)
 		name := "ext-svc"
@@ -475,8 +476,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		}
 		apiServerWithErr, _, stopErr := StartApiServer(
 			NewTestApiServerConfigurer().
-				WithStore(failingStore).
-				WithDisableOriginLabelValidation(true),
+				WithStore(failingStore),
 		)
 		defer stopErr()
 
@@ -499,7 +499,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 	It("should return 400 when a policy carries a non-system policy-role label", func() {
 		// given
-		apiServer, store, stop := createServer(false, false)
+		apiServer, store, stop := createServer(false)
 		defer stop()
 		createMesh(store)
 

@@ -78,10 +78,6 @@ func (r Resources) MeshFaultInjections() *meshfaultinjection_api.MeshFaultInject
 	return r.ListOrEmpty(meshfaultinjection_api.MeshFaultInjectionType).(*meshfaultinjection_api.MeshFaultInjectionResourceList)
 }
 
-func (r Resources) Meshes() *core_mesh.MeshResourceList {
-	return r.ListOrEmpty(core_mesh.MeshType).(*core_mesh.MeshResourceList)
-}
-
 func (r Resources) MeshServices() *meshsvc.MeshServiceResourceList {
 	list, ok := r.MeshLocalResources[meshsvc.MeshServiceType]
 	if !ok {

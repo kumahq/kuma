@@ -157,7 +157,4 @@ const (
 	// * KUMA_DATAPLANE_RUNTIME_METRICS_CERT_PATH
 	// * KUMA_DATAPLANE_RUNTIME_METRICS_KEY_PATH
 	ProvidedTLS TlsMode = "ProvidedTLS"
-	// ActiveMTLSBackend means that control-plane delivers certificates to the prometheus listener.
-	// This should be used when prometheus is running inside the Mesh.
-	ActiveMTLSBackend TlsMode = "ActiveMTLSBackend"
 )

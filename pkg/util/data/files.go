@@ -1,7 +1,6 @@
 package data
 
 import (
-	"io"
 	"io/fs"
 
 	"github.com/pkg/errors"
@@ -44,21 +43,6 @@ func ReadFiles(fileSys fs.FS) (FileList, error) {
 		return nil, err
 	}
 	return files, nil
-}
-
-func ReadFile(fileSys fs.FS, file string) (File, error) {
-	f, err := fileSys.Open(file)
-	if err != nil {
-		return File{}, err
-	}
-	b, err := io.ReadAll(f)
-	if err != nil {
-		return File{}, err
-	}
-	return File{
-		Data: b,
-		Name: file,
-	}, nil
 }
 
 func (l FileList) Filter(predicate func(File) bool) FileList {

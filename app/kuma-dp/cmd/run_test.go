@@ -240,7 +240,6 @@ var _ = Describe("run", func() {
 		Entry("can be launched with env vars", func() testCase {
 			return testCase{
 				envVars: map[string]string{
-					"KUMA_CONTROL_PLANE_API_SERVER_URL":  "http://localhost:1234",
 					"KUMA_DATAPLANE_NAME":                "example",
 					"KUMA_DATAPLANE_MESH":                "default",
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
@@ -253,7 +252,6 @@ var _ = Describe("run", func() {
 		Entry("can be launched with env vars and given work dir", func() testCase {
 			return testCase{
 				envVars: map[string]string{
-					"KUMA_CONTROL_PLANE_API_SERVER_URL":  "http://localhost:1234",
 					"KUMA_DATAPLANE_NAME":                "example",
 					"KUMA_DATAPLANE_MESH":                "default",
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
@@ -319,7 +317,6 @@ var _ = Describe("run", func() {
 		Entry("can be launched without Envoy Admin API (env vars)", func() testCase {
 			return testCase{
 				envVars: map[string]string{
-					"KUMA_CONTROL_PLANE_API_SERVER_URL":  "http://localhost:1234",
 					"KUMA_DATAPLANE_NAME":                "example",
 					"KUMA_DATAPLANE_MESH":                "default",
 					"KUMA_DATAPLANE_RUNTIME_BINARY_PATH": filepath.Join("testdata", "envoy-mock.sleep.sh"),
