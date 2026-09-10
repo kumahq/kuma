@@ -2,10 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"os"
 	"reflect"
-
-	"sigs.k8s.io/yaml"
 )
 
 func ConfigForDisplay(cfg Config) (string, error) {
@@ -33,17 +30,4 @@ func copyConfig(cfg Config) (Config, error) {
 		return nil, err
 	}
 	return newCfg, nil
-}
-
-func DumpToFile(filename string, cfg Config) error {
-	if err := cfg.Validate(); err != nil {
-		return err
-	}
-
-	b, err := yaml.Marshal(cfg)
-	if err != nil {
-		return err
-	}
-
-	return os.WriteFile(filename, b, 0o600)
 }

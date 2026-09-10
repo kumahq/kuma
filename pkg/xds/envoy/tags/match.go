@@ -2,7 +2,6 @@ package tags
 
 import (
 	"fmt"
-	"maps"
 	"regexp"
 	"sort"
 	"strings"
@@ -21,33 +20,6 @@ func ServiceFromClusterName(name string) string {
 		return name
 	}
 	return matchedGroups[1]
-}
-
-func (t Tags) WithoutTags(tags ...string) Tags {
-	if t == nil {
-		return nil
-	}
-	tagSet := map[string]bool{}
-	for _, t := range tags {
-		tagSet[t] = true
-	}
-	result := Tags{}
-	for tagName, tagValue := range t {
-		if !tagSet[tagName] {
-			result[tagName] = tagValue
-		}
-	}
-	return result
-}
-
-func (t Tags) WithTags(keysAndValues ...string) Tags {
-	result := Tags{}
-	maps.Copy(result, t)
-	for i := 0; i+1 < len(keysAndValues); i += 2 {
-		key, value := keysAndValues[i], keysAndValues[i+1]
-		result[key] = value
-	}
-	return result
 }
 
 func (t Tags) Keys() TagKeys {

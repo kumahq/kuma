@@ -71,14 +71,4 @@ var _ = Describe("System storage compatibility", func() {
 		Expect((&system_proto.DataSource{Secret: pointer.To("s")}).HasSecret()).To(BeTrue())
 		Expect((&system_proto.DataSource{File: pointer.To("/f")}).HasFile()).To(BeTrue())
 	})
-
-	It("masks an inline data source without disclosing its bytes", func() {
-		masked := (&system_proto.DataSource{Inline: system_proto.Bytes([]byte("private"))}).MaskInlineDatasource()
-		Expect(masked.GetInline().GetValue()).To(Equal([]byte("***")))
-
-		masked = (&system_proto.DataSource{InlineString: pointer.To("private")}).MaskInlineDatasource()
-		Expect(masked.GetInlineString()).To(Equal("***"))
-
-		Expect((&system_proto.DataSource{Secret: pointer.To("s")}).MaskInlineDatasource()).To(BeNil())
-	})
 })

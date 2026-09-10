@@ -107,29 +107,6 @@ func (t *MeshServiceResource) AllocateVIP(vip string) {
 	})
 }
 
-// todo(jakubdyszkiewicz) strongly consider putting this in MeshService object to avoid problems with computation
-func (t *MeshServiceResource) SNIName(systemNamespace string) string {
-	displayName := t.GetMeta().GetLabels()[mesh_proto.DisplayName]
-	namespace := t.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
-	origin := t.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
-	if origin == string(mesh_proto.GlobalResourceOrigin) {
-		// we need to use original name and namespace for services that were synced from another cluster
-		sniName := displayName
-		if namespace != "" {
-			// when we sync resources from universal to kube, when we retrieve it has KubeNamespaceTag as label value
-			if systemNamespace == "" || systemNamespace != namespace {
-				sniName += "." + namespace
-			}
-		}
-		return sniName
-	}
-	if systemNamespace == "" && origin == string(mesh_proto.ZoneResourceOrigin) && namespace != "" {
-		// when namespace label was added to Universal MeshService to have a copy of Kubernets MeshService
-		return t.GetMeta().GetName() + "." + namespace
-	}
-	return t.GetMeta().GetName()
-}
-
 func (t *MeshServiceResource) AsOutbounds() xds_types.Outbounds {
 	var outbounds xds_types.Outbounds
 	for _, vip := range t.Status.VIPs {
@@ -187,12 +164,4 @@ func (s *MeshService) SNIs() []sni.Section {
 		out = append(out, sni.Section{Port: p.Port, SectionName: p.GetName()})
 	}
 	return out
-}
-
-func (l *MeshServiceResourceList) GetDestinations() []core.Destination {
-	var result []core.Destination
-	for _, item := range l.Items {
-		result = append(result, item)
-	}
-	return result
 }

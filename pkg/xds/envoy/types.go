@@ -43,18 +43,6 @@ func (c *Service) Add(cluster Cluster) {
 	}
 }
 
-func (c *Service) Tags() []tags.Tags {
-	var result []tags.Tags
-	for _, cluster := range c.clusters {
-		result = append(result, cluster.Tags())
-	}
-	return result
-}
-
-func (c *Service) HasExternalService() bool {
-	return c.hasExternalService
-}
-
 func (c *Service) Clusters() []Cluster {
 	return c.clusters
 }
@@ -96,17 +84,6 @@ func NewServicesAccumulator() ServicesAccumulator {
 
 func (sa ServicesAccumulator) Services() Services {
 	return sa.services
-}
-
-func (sa ServicesAccumulator) Add(clusters ...Cluster) {
-	for _, c := range clusters {
-		if sa.services[c.Service()] == nil {
-			sa.services[c.Service()] = &Service{
-				name: c.Service(),
-			}
-		}
-		sa.services[c.Service()].Add(c)
-	}
 }
 
 func (sa ServicesAccumulator) AddBackendRef(backendRef *resolve.ResolvedBackendRef, cluster Cluster) {
