@@ -186,13 +186,27 @@ The injected `kuma-sidecar` container had its liveness, readiness and startup pr
 
 Probes now always use the readiness port, whatever the admin transport, and the readiness port is always excluded from inbound transparent proxy interception. To keep the same meaning on both transports, `/ready` on the readiness port is now proxied to the Envoy admin `/ready` in both cases, so a Pod is marked ready only once Envoy has its configuration. Previously the readiness port answered `READY` as soon as kuma-dp was up when admin ran over TCP; the probes did not use that port in that mode, so no probe changes meaning.
 
-Pods injected before the upgrade keep their existing probes on `9901` and continue to work: the `kuma:envoy:admin` listener still serves `/ready` on that port. They move to the readiness port the next time they are recreated.
+Pods injected before the upgrade keep their existing probes on `9901`. With a `2.14` or later data plane, they continue to work: the `kuma:envoy:admin` listener still serves `/ready` on that port. They move to the readiness port the next time they are recreated.
 
 The sidecar now also receives `KUMA_READINESS_PORT` from `bootstrapServer.params.readinessPort`, so kuma-dp listens on the port the probes use. Previously the injector took the probe port from the control plane setting while kuma-dp took its listen port from its own `KUMA_READINESS_PORT`, and the two agreed only because both default to `9902`. For the same reason `bootstrapServer.params.readinessPort` no longer accepts `0`; a control plane configured that way now fails to start instead of injecting probes for port `0`.
 
 **Action required**
 
 None for most users. If you have a `NetworkPolicy`, a monitoring check, or a `ContainerPatch` that pins the sidecar probe port to `9901`, update it to `9902` (or to `bootstrapServer.params.readinessPort` if you changed it). If you set `bootstrapServer.params.readinessPort` to `0`, or set `KUMA_READINESS_PORT` on the sidecar by hand to a value other than the control plane setting, remove it.
+
+### `2.12` and `2.13` data planes fail `/ready`
+
+Unless started with `KUMA_READINESS_UNIX_SOCKET_DISABLED=true`, `2.12` and `2.13` data planes serve `/ready` on a Unix socket and advertise the `feature-readiness-unix-socket` flag, which tells the control plane to point the Envoy readiness cluster at that socket. The control plane now ignores this flag and points the readiness cluster at the TCP readiness port (`KUMA_READINESS_PORT`, default `9902`), where every data plane has served `/ready` since `2.14`.
+
+Because these data planes listen only on the socket, `/ready` on the Envoy admin port answers `503`. On Kubernetes, the liveness, readiness, and startup probes of `kuma-sidecar` all check that path. The sidecar goes into `CrashLoopBackOff`, and the Pod drops out of `Service` endpoints until you recreate it. On Universal, any health check against `/ready` fails the same way.
+
+**Action required**
+
+Run `2.14` or later on every data plane before you upgrade the control plane to `3.0`. To upgrade from `2.13` or earlier:
+
+1. Upgrade the control plane to `2.14`.
+2. Move every data plane to `2.14`: restart your workloads on Kubernetes, or upgrade `kuma-dp` on Universal.
+3. Upgrade the control plane to `3.0`.
 
 ### The `k8s.kuma.io/service-account` label on a `Dataplane` is managed by the control plane
 
