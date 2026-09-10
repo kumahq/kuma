@@ -8,10 +8,15 @@ legs.
 
 ## The variables
 
-| name | scope |
-| --- | --- |
-| `RUNNERS_<BRANCH_SLUG>_<ARCH>` | one branch, one architecture |
-| `RUNNERS_<ARCH>` | one architecture, every branch |
+| name | scope | wins over |
+| --- | --- | --- |
+| `RUNNERS_PR_<ARCH>` | `pull_request` runs only | everything below |
+| `RUNNERS_<BRANCH_SLUG>_<ARCH>` | one branch, one architecture | the global variable |
+| `RUNNERS_<ARCH>` | one architecture, every branch | the built-in default |
+
+`RUNNERS_PR_<ARCH>` exists so pull requests can run somewhere other than pushes to the same
+branch, on a smaller or cheaper pool, without giving up the per-branch override for pushes.
+Leave it unset and pull requests follow the branch.
 
 `<ARCH>` is `AMD64` or `ARM64`. `<BRANCH_SLUG>` is the branch name uppercased with `-` and
 `.` replaced by `_`, so `master` is `MASTER` and `release-2.14` is `RELEASE_2_14`.
@@ -49,19 +54,20 @@ gets the job OOM-killed on a small one.
 ## The expression
 
 ```yaml
-runs-on: ${{ fromJSON(vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').lg || 'ubuntu-24.04' }}
+runs-on: ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').lg || 'ubuntu-24.04' }}
 ```
 
-Reading it: take the per-branch variable, else the global one, else an empty object; look up
-the size; if any step yields nothing, fall back to the GitHub-hosted label. Only one
-possibly-missing property is ever dereferenced, because `'{}'` guarantees the object exists.
+Reading it: on a pull request take the PR variable, otherwise the per-branch one, otherwise
+the global one, otherwise an empty object. Then look up the size. If any step yields
+nothing, fall back to the GitHub-hosted label. Only one possibly-missing property is ever
+dereferenced, because `'{}'` guarantees the object exists.
 
 Workflows that a `pull_request` event can reach, directly or as a reusable workflow called
 from one, add a fork guard in front, so code from a fork never runs on a self-hosted
 runner:
 
 ```yaml
-runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON(vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').lg || 'ubuntu-24.04' }}
+runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').lg || 'ubuntu-24.04' }}
 ```
 
 The `env` context is not available in `runs-on`, which is why the default label is written
@@ -92,4 +98,5 @@ Variable names cannot contain `-` or `.`, and an inline expression cannot saniti
 `release-X.Y`, replace `RUNNERS_MASTER_` with `RUNNERS_RELEASE_X_Y_` across
 `.github/workflows/` on the new branch, comments included, and set the matching variables.
 A missed rename would silently fall back to the global variable, so `validate-workflows-and-scripts.yaml`
-fails when a slug in the workflows does not match the branch.
+fails when a slug in the workflows does not match the branch. `PR` is exempt, since it names
+a tier rather than a branch.

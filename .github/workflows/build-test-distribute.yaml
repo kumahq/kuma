@@ -24,7 +24,7 @@ concurrency:
 jobs:
   release_sha_gate:
     timeout-minutes: 5
-    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON(vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').sm || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').sm || 'ubuntu-24.04' }}
     permissions:
       actions: read
       contents: read
@@ -111,7 +111,7 @@ jobs:
   meta:
     needs: ["release_sha_gate"]
     timeout-minutes: 5
-    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON(vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').sm || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').sm || 'ubuntu-24.04' }}
     env:
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
     outputs:
@@ -121,7 +121,7 @@ jobs:
   build_check:
     needs: ["release_sha_gate"]
     timeout-minutes: 20
-    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON(vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').lg || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').lg || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -148,7 +148,7 @@ jobs:
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
       pull-requests: read # needed by paths-filter to access PR file list
     timeout-minutes: 40
-    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON(vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').lg || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').lg || 'ubuntu-24.04' }}
     env:
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
@@ -294,9 +294,10 @@ jobs:
       # Per-arch lookup, each side independent. See .github/workflows/README.md.
       #   1. fork PR                            -> free GitHub-hosted runners (security)
       #   2. master (push, or PR targeting it)  -> free GitHub-hosted runners
-      #   3. vars.RUNNERS_MASTER_<ARCH>         -> per-branch + per-arch override
-      #   4. vars.RUNNERS_<ARCH>                -> global per-arch override
-      #   5. default                            -> the standard self-hosted Kong pool
+      #   3. vars.RUNNERS_PR_<ARCH>             -> pull_request runs, per-arch
+      #   4. vars.RUNNERS_MASTER_<ARCH>         -> per-branch + per-arch override
+      #   5. vars.RUNNERS_<ARCH>                -> global per-arch override
+      #   6. default                            -> the standard self-hosted Kong pool
       # Both variables hold a JSON object of size to label array, and the raw strings are
       # spliced in, so _test.yaml receives {"<arch>":{"<size>":[labels]}} and indexes it by
       # arch and by the size that job needs.
@@ -304,7 +305,7 @@ jobs:
       # where `github.ref_name` is the branch/tag ('<number>/merge' on a PR).
       # Branch slug is hardcoded because GitHub var names can't contain '-' or '.',
       # and inline expressions can't sanitize `github.ref_name`.
-      RUNNERS_BY_ARCH: ${{ ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) || (github.base_ref || github.ref_name) == 'master') && '{"amd64":{"lg":["ubuntu-24.04"]},"arm64":{"lg":["ubuntu-24.04-arm"]}}' || format('{{"amd64":{0},"arm64":{1}}}', vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}', vars.RUNNERS_MASTER_ARM64 || vars.RUNNERS_ARM64 || '{}') }}
+      RUNNERS_BY_ARCH: ${{ ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) || (github.base_ref || github.ref_name) == 'master') && '{"amd64":{"lg":["ubuntu-24.04"]},"arm64":{"lg":["ubuntu-24.04-arm"]}}' || format('{{"amd64":{0},"arm64":{1}}}', (github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}', (github.event_name == 'pull_request' && vars.RUNNERS_PR_ARM64) || vars.RUNNERS_MASTER_ARM64 || vars.RUNNERS_ARM64 || '{}') }}
     secrets: inherit
   build_publish:
     permissions:
@@ -345,7 +346,7 @@ jobs:
       id-token: write
     timeout-minutes: 10
     if: ${{ always() }}
-    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON(vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').md || 'ubuntu-24.04' }}
+    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').md || 'ubuntu-24.04' }}
     env:
       SECURITY_ASSETS_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets"
       SECURITY_ASSETS_PACKAGE_NAME: "security-assets" # Cloudsmith package for hosting security assets
