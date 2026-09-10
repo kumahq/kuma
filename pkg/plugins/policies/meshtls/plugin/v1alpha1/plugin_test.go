@@ -2,7 +2,6 @@ package v1alpha1_test
 
 import (
 	"fmt"
-	"maps"
 	"os"
 	"path"
 
@@ -20,7 +19,6 @@ import (
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
 	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
@@ -100,7 +98,6 @@ var _ = Describe("MeshTLS", func() {
 		meshBuilder      *builders.MeshBuilder
 		workloadIdentity *core_xds.WorkloadIdentity
 		casByTrustDomain map[string][]xds_context.PEMBytes
-		features         xds_types.Features
 		// noPolicy exercises a mesh without any MeshTLS policy, where the mode
 		// falls back to Strict
 		noPolicy bool
@@ -156,10 +153,6 @@ var _ = Describe("MeshTLS", func() {
 						),
 				).
 				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, fromRules))
-
-			features := xds_types.Features{}
-			maps.Copy(features, given.features)
-			proxyBuilder.WithMetadata(&core_xds.DataplaneMetadata{Features: features})
 
 			proxy := proxyBuilder.Build()
 			resourceSet.Add(getMeshServiceResources(proxy)...)
@@ -222,14 +215,6 @@ var _ = Describe("MeshTLS", func() {
 			// deliberately out of alphabetical order to verify SANs are sorted
 			casByTrustDomain: trustDomains("domain-c", "domain-a", "domain-b"),
 		}),
-		Entry("strict with strict inbound ports feature = port filtering", testCase{
-			caseName:         "strict-with-strict-inbound-ports",
-			meshBuilder:      samples.MeshDefaultBuilder(),
-			workloadIdentity: workloadIdentity(),
-			features: xds_types.Features{
-				xds_types.FeatureStrictInboundPorts: true,
-			},
-		}),
 		Entry("strict with dualstack tproxy = ipv4 and ipv6 passthrough listeners", testCase{
 			caseName:         "strict-with-dualstack-tproxy",
 			meshBuilder:      samples.MeshDefaultBuilder(),
@@ -270,14 +255,6 @@ var _ = Describe("MeshTLS", func() {
 			workloadIdentity: kumaManagedWorkloadIdentity(),
 			// deliberately out of alphabetical order to verify SANs are sorted
 			casByTrustDomain: trustDomains("domain-c", "domain-a", "domain-b"),
-		}),
-		Entry("permissive with strict inbound ports feature = no port filtering", testCase{
-			caseName:         "permissive-with-strict-inbound-ports",
-			meshBuilder:      samples.MeshDefaultBuilder(),
-			workloadIdentity: workloadIdentity(),
-			features: xds_types.Features{
-				xds_types.FeatureStrictInboundPorts: true,
-			},
 		}),
 		Entry("permissive with dualstack tproxy = ipv4 and ipv6 passthrough listeners", testCase{
 			caseName:         "permissive-with-dualstack-tproxy",
@@ -322,7 +299,7 @@ func getMeshServiceResources(proxy *core_xds.Proxy) []*core_xds.Resource {
 			Name:   inboundName17777,
 			Origin: metadata.OriginInbound,
 			Resource: listeners.NewListenerBuilder(envoy_common.APIV3, inboundName17777).
-				Configure(listeners.InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
+				Configure(listeners.InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(listeners.HttpConnectionManager(inboundName17777, false, nil, true)).
 					Configure(
@@ -338,7 +315,7 @@ func getMeshServiceResources(proxy *core_xds.Proxy) []*core_xds.Resource {
 			Name:   inboundName17778,
 			Origin: metadata.OriginInbound,
 			Resource: listeners.NewListenerBuilder(envoy_common.APIV3, inboundName17778).
-				Configure(listeners.InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true)).
+				Configure(listeners.InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP)).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(listeners.TcpProxyDeprecated(inboundName17778, plugins_xds.NewClusterBuilder().WithName(inboundName17778).Build())),
 				)).MustBuild(),

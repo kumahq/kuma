@@ -53,6 +53,9 @@ type countingStore struct {
 
 	listsByType sync.Map
 	getsByType  sync.Map
+
+	getNanos  atomic.Int64
+	listNanos atomic.Int64
 }
 
 func (c *countingStore) bump(m *sync.Map, t core_model.ResourceType) {
@@ -63,13 +66,19 @@ func (c *countingStore) bump(m *sync.Map, t core_model.ResourceType) {
 func (c *countingStore) Get(ctx context.Context, r core_model.Resource, fs ...store.GetOptionsFunc) error {
 	c.gets.Add(1)
 	c.bump(&c.getsByType, r.Descriptor().Name)
-	return c.ResourceStore.Get(ctx, r, fs...)
+	start := time.Now()
+	err := c.ResourceStore.Get(ctx, r, fs...)
+	c.getNanos.Add(int64(time.Since(start)))
+	return err
 }
 
 func (c *countingStore) List(ctx context.Context, l core_model.ResourceList, fs ...store.ListOptionsFunc) error {
 	c.lists.Add(1)
 	c.bump(&c.listsByType, l.GetItemType())
-	return c.ResourceStore.List(ctx, l, fs...)
+	start := time.Now()
+	err := c.ResourceStore.List(ctx, l, fs...)
+	c.listNanos.Add(int64(time.Since(start)))
+	return err
 }
 
 func (c *countingStore) Create(ctx context.Context, r core_model.Resource, fs ...store.CreateOptionsFunc) error {
@@ -202,6 +211,7 @@ func TestGlobalKDSScale(t *testing.T) {
 	perType := envInt("KDS_POLICIES_PER_TYPE", 10)
 	churn := envInt("KDS_CHURN_PER_SEC", 0)
 	cacheTTL := envDur("KDS_STORE_CACHE_TTL", 0)
+	pgDSN := os.Getenv("KDS_POSTGRES")
 	stagger := envDur("KDS_CONNECT_STAGGER", 0)
 	duration := envDur("KDS_DURATION", 30*time.Second)
 	flush := envDur("KDS_FLUSH", cfgDefaults.Multizone.Global.KDS.EventBasedWatchdog.FlushInterval.Duration)
@@ -215,10 +225,17 @@ func TestGlobalKDSScale(t *testing.T) {
 	cfg.Multizone.Global.KDS.EventBasedWatchdog.FlushInterval = config_types.Duration{Duration: flush}
 	cfg.Multizone.Global.KDS.EventBasedWatchdog.FullResyncInterval = config_types.Duration{Duration: resync}
 
-	memStore := memory.NewStore()
-	cs := &countingStore{ResourceStore: memStore}
+	var backing store.ResourceStore
+	if pgDSN != "" {
+		backing = newPostgresStore(t, pgDSN)
+	} else {
+		backing = memory.NewStore()
+	}
+	cs := &countingStore{ResourceStore: backing}
 	rt := setup.NewTestRuntime(ctx, cfg, cs)
-	memStore.(interface{ SetEventWriter(events.Emitter) }).SetEventWriter(rt.EventBus())
+	if ew, ok := backing.(interface{ SetEventWriter(events.Emitter) }); ok {
+		ew.SetEventWriter(rt.EventBus())
+	}
 	if cacheTTL > 0 {
 		cached, err := manager.NewCachedManager(rt.ReadOnlyResourceManager(), cacheTTL, rt.Metrics(), multitenant.SingleTenant)
 		if err != nil {
@@ -301,6 +318,15 @@ func TestGlobalKDSScale(t *testing.T) {
 		zones, meshes, len(types), flush, resync, cacheTTL, elapsed)
 	t.Logf("store LIST : %7d total %9.1f/s %7.2f/s per zone", lists, float64(lists)/elapsed, float64(lists)/elapsed/float64(zones))
 	t.Logf("store GET  : %7d total %9.1f/s %7.2f/s per zone", gets, float64(gets)/elapsed, float64(gets)/elapsed/float64(zones))
+	avgMs := func(nanos int64, n int64) float64 {
+		if n == 0 {
+			return 0
+		}
+		return float64(nanos) / float64(n) / 1e6
+	}
+	t.Logf("store time: list=%.1fs (avg %.2fms) get=%.1fs (avg %.2fms)",
+		float64(cs.listNanos.Load())/1e9, avgMs(cs.listNanos.Load(), lists),
+		float64(cs.getNanos.Load())/1e9, avgMs(cs.getNanos.Load(), gets))
 	t.Logf("KDS responses delivered: %d (%.1f/s), client NACKs: %d", responses.Load(), float64(responses.Load())/elapsed, nacks.Load())
 
 	cs.getsByType.Range(func(k, v any) bool {

@@ -16,7 +16,7 @@ on:
 permissions:
   contents: read
 env:
-  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+  CI_TOOLS_DIR: ${{ github.workspace }}/.ci_tools
   # This is automatically managed by CI
   K8S_MIN_VERSION: v1.34.9-k3s1
   K8S_MAX_VERSION: v1.35.3-k3s1
@@ -25,7 +25,15 @@ jobs:
   test_unit:
     timeout-minutes: 30
     if: ${{ !(contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || inputs.IS_RELEASE_TAG) }}
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').lg
+      || 'ubuntu-24.04' }}
     env:
       UNIT_CLEAN_TESTCACHE: ${{ inputs.IS_PULL_REQUEST && 'false' || 'true' }}
     steps:
@@ -65,7 +73,15 @@ jobs:
           key: go-test-race-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
   gen_e2e_matrix:
     timeout-minutes: 2
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     steps:
@@ -143,13 +159,14 @@ jobs:
     name: "e2e (default, ${{ matrix.k8sVersion }}, ${{ matrix.arch }})"
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e
     timeout-minutes: 60
-    runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
+    runs-on: >-
+      ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch].lg
+      || (matrix.arch == 'arm64' && 'ubuntu-latest-arm64-kong' || 'ubuntu-latest-kong') }}
     strategy:
       max-parallel: ${{ inputs.IS_PULL_REQUEST && 12 || 5 }}
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e }}
       fail-fast: false
     env:
-      CI_TOOLS_DIR: ${{ contains(fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch], '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
       MISE_DISABLE_TOOLS: "golangci-lint,skaffold,aqua:stackrox/kube-linter"
       DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
     steps:
@@ -170,13 +187,14 @@ jobs:
     name: "e2e (gatewayapi, ${{ matrix.k8sVersion }}, ${{ matrix.arch }})"
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_gatewayapi
     timeout-minutes: 60
-    runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
+    runs-on: >-
+      ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch].lg
+      || (matrix.arch == 'arm64' && 'ubuntu-latest-arm64-kong' || 'ubuntu-latest-kong') }}
     strategy:
       max-parallel: ${{ inputs.IS_PULL_REQUEST && 12 || 5 }}
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_gatewayapi }}
       fail-fast: false
     env:
-      CI_TOOLS_DIR: ${{ contains(fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch], '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
       MISE_DISABLE_TOOLS: "golangci-lint,skaffold,aqua:stackrox/kube-linter"
       DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
     steps:
@@ -197,13 +215,14 @@ jobs:
     name: "e2e (${{ matrix.target }}, ${{ matrix.k8sVersion }}, ${{ matrix.arch }}${{ matrix.cniNetworkPlugin != 'flannel' && format(', {0}', matrix.cniNetworkPlugin) || '' }})"
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
     timeout-minutes: 60
-    runs-on: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
+    runs-on: >-
+      ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch].lg
+      || (matrix.arch == 'arm64' && 'ubuntu-latest-arm64-kong' || 'ubuntu-latest-kong') }}
     strategy:
       max-parallel: ${{ inputs.IS_PULL_REQUEST && 12 || 5 }}
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env }}
       fail-fast: false
     env:
-      CI_TOOLS_DIR: ${{ contains(fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch], '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
       MISE_DISABLE_TOOLS: "golangci-lint,skaffold,aqua:stackrox/kube-linter"
       DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
     steps:

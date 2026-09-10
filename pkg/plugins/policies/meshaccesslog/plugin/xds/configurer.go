@@ -13,7 +13,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
@@ -97,9 +96,7 @@ func BaseAccessLogBuilder(
 // endpoints and accumulate pipe backends during access log configuration.
 type OtelPipeResolver struct {
 	Resources        xds_context.Resources
-	NodeHostIP       string
 	OtelEnvInventory *xds.OtelBootstrapInventory
-	Enabled          bool
 	WorkDir          string
 	backends         map[string]xds.OtelPipeBackend
 }
@@ -152,23 +149,15 @@ func resolveOtelLoggingEndpoint(otelBackend *api.OtelBackend, acc *EndpointAccum
 		return nil
 	}
 
-	if otelBackend.BackendRef != nil && pipe.Enabled {
-		if pipe.backends == nil {
-			pipe.backends = map[string]xds.OtelPipeBackend{}
-		}
-		base := policies_xds.BuildResolvedPipeBackend(pipe.WorkDir, resolved)
-		pipe.backends[resolved.Name] = base
-		return &LoggingEndpoint{
-			SocketPath:  base.SocketPath,
-			BackendName: resolved.Name,
-			UseHTTP2:    true, // Envoy→kuma-dp leg is always gRPC
-		}
+	if pipe.backends == nil {
+		pipe.backends = map[string]xds.OtelPipeBackend{}
 	}
-
+	base := policies_xds.BuildResolvedPipeBackend(pipe.WorkDir, resolved)
+	pipe.backends[resolved.Name] = base
 	return &LoggingEndpoint{
-		Address:  policies_xds.ResolveAddressForDirectExport(resolved.Endpoint.Target, pipe.NodeHostIP),
-		Port:     resolved.Endpoint.Port,
-		UseHTTP2: resolved.Protocol != motb_api.ProtocolHTTP,
+		SocketPath:  base.SocketPath,
+		BackendName: resolved.Name,
+		UseHTTP2:    true, // Envoy->kuma-dp leg is always gRPC
 	}
 }
 
