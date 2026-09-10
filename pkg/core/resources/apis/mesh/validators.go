@@ -2,7 +2,6 @@ package mesh
 
 import (
 	"fmt"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"slices"
 	"strings"
 
@@ -12,6 +11,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
