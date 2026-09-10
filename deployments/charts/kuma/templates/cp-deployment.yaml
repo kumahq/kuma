@@ -66,10 +66,21 @@ spec:
   replicas: {{ .Values.controlPlane.replicas }}
   {{- end }}
   minReadySeconds: {{ .Values.controlPlane.minReadySeconds }}
+  {{- $strategy := .Values.controlPlane.deploymentStrategy }}
+  {{- if not (kindIs "map" $strategy) }}
+  {{- $strategy = dict }}
+  {{- end }}
+  {{- $strategyType := toString ($strategy.type | default "RollingUpdate") }}
+  {{- if and (hasKey $strategy "type") (not (has (toString $strategy.type) (list "Recreate" "RollingUpdate"))) }}
+  {{- fail (printf "controlPlane.deploymentStrategy.type must be Recreate or RollingUpdate, got %q" (toString $strategy.type)) }}
+  {{- end }}
+  {{- if eq $strategyType "Recreate" }}
   strategy:
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+    type: Recreate
+  {{- else if $strategy }}
+  strategy:
+    {{- toYaml $strategy | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "kuma.selectorLabels" . | nindent 6 }}
