@@ -6,10 +6,9 @@ import (
 	"sync/atomic"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"google.golang.org/protobuf/types/known/structpb"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -43,7 +42,7 @@ var _ = Describe("SnapshotGenerator mapped resource sharing", func() {
 	var generator reconcile.SnapshotGenerator
 	var types map[core_model.ResourceType]struct{}
 
-	countingMapper := func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
+	var countingMapper reconcile.ResourceMapper = func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		mapperCalls.Add(1)
 		return r, nil
 	}
@@ -59,7 +58,7 @@ var _ = Describe("SnapshotGenerator mapped resource sharing", func() {
 		store = memory.NewStore()
 		mapperCalls = &atomic.Int64{}
 		types = map[core_model.ResourceType]struct{}{core_mesh.MeshType: {}}
-		for i := 0; i < 3; i++ {
+		for i := range 3 {
 			Expect(store.Create(context.Background(), samples.MeshDefault(),
 				core_store.CreateByKey(fmt.Sprintf("mesh-%d", i), core_model.NoMesh))).To(Succeed())
 		}
