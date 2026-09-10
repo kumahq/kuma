@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -60,9 +59,7 @@ func (s *Secret) GetSpec() (core_model.ResourceSpec, error) {
 		return nil, nil
 	}
 	return &system_proto.Secret{
-		Data: &wrapperspb.BytesValue{
-			Value: bytes,
-		},
+		Data: system_proto.Bytes(bytes),
 	}, nil
 }
 

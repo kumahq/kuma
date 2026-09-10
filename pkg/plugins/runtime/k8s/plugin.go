@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zone"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
@@ -57,8 +58,9 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	}
 
 	// Mutators and Validators convert resources from Request (not from the Store)
-	// these resources doesn't have ResourceVersion, we can't cache them
-	simpleConverter := k8s.NewSimpleConverter(rt.Config().Store.Kubernetes.SystemNamespace)
+	// these resources doesn't have ResourceVersion, we can't cache them. A zero ControlPlane
+	// on purpose: the webhooks must validate the user-supplied origin and zone labels.
+	simpleConverter := k8s.NewSimpleConverter(rt.Config().Store.Kubernetes.SystemNamespace, resource_labels.ControlPlane{})
 	if err := addValidators(mgr, rt, simpleConverter); err != nil {
 		return err
 	}

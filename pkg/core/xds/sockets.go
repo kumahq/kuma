@@ -20,6 +20,11 @@ func MeshMetricsDynamicConfigurationSocketName(workdir string) string {
 	return socketName(filepath.Join(workdir, "kuma-mesh-metric-config"))
 }
 
+// IdentityReadinessSocketName returns the Envoy identity sentinel socket path.
+func IdentityReadinessSocketName(workdir string) string {
+	return socketName(filepath.Join(workdir, "kuma-identity-readiness"))
+}
+
 func OpenTelemetrySocketName(workdir string, backendName string) string {
 	return socketName(filepath.Join(workdir, "kuma-otel-"+backendName))
 }

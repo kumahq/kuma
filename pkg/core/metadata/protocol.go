@@ -10,6 +10,10 @@ import (
 // Protocol identifies a protocol supported by a service.
 type Protocol string
 
+// Deliberately not a schema enum: the set spans values a mesh only observes
+// (<unknown>, raw_buffer) as well as the ones a user sets, and it reaches a
+// global control plane over KDS from zones that may be older, where an enum
+// would reject the sync.
 const (
 	ProtocolUnknown   Protocol = "<unknown>"
 	ProtocolTCP       Protocol = "tcp"

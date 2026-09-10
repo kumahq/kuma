@@ -78,8 +78,8 @@ var _ = Describe("Event Based Watchdog", func() {
 			},
 			Metrics: kdsMetrics,
 			Log:     logr.Discard(),
-			NewFlushTicker: func() *time.Ticker {
-				return &time.Ticker{C: flushCh}
+			NewFlushTicker: func() (*time.Ticker, context.CancelFunc) {
+				return &time.Ticker{C: flushCh}, func() {}
 			},
 			NewFullResyncTicker: func() (*time.Ticker, context.CancelFunc) {
 				return &time.Ticker{C: fullResyncCh}, func() {}
@@ -149,7 +149,7 @@ var _ = Describe("Event Based Watchdog", func() {
 	})
 
 	It("should not re-arm a delayed full resync ticker after shutdown", func() {
-		ticker, cleanup := newDelayedFullResyncTicker(20*time.Millisecond, 40*time.Millisecond)
+		ticker, cleanup := newDelayedTicker(20*time.Millisecond, 40*time.Millisecond)
 		defer cleanup()
 
 		ticker.Stop()

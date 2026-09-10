@@ -63,15 +63,7 @@ func patch(
 		return fmt.Errorf("failed to patch: parse proto resource to json: %w", err)
 	}
 
-	jsonPatch, err := common_api.ToJsonPatch(patchBlock)
-	if err != nil {
-		return fmt.Errorf(
-			"failed to patch: convert block to json patch: %w",
-			err,
-		)
-	}
-
-	patched, err := jsonPatch.ApplyWithOptions(resource, patchApplyOptions)
+	patched, err := common_api.ToJsonPatch(patchBlock).ApplyWithOptions(resource, patchApplyOptions)
 	if err != nil {
 		return fmt.Errorf("failed to patch: apply json patches: %w", err)
 	}

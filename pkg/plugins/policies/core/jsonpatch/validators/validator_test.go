@@ -178,7 +178,7 @@ var _ = Describe("JsonPatchBlock Validator", func() {
 			patchBlocks: []string{
 				`
                 op: unsupported_operation
-                path: ""
+                path: /a/b/c
                 `,
 				`
                 op: another_one
@@ -191,6 +191,26 @@ var _ = Describe("JsonPatchBlock Validator", func() {
                 message: '"op" must be one of ["add", "remove", "replace", "move", "copy"]'
               - field: jsonPatches[1].op
                 message: '"op" must be one of ["add", "remove", "replace", "move", "copy"]'
+            `,
+		}),
+		Entry("empty path", testCase{
+			patchBlocks: []string{
+				`
+                op: add
+                value: 1
+                `,
+				`
+                op: replace
+                path: ""
+                value: 1
+                `,
+			},
+			expected: `
+            violations:
+              - field: jsonPatches[0].path
+                message: must not be empty
+              - field: jsonPatches[1].path
+                message: must not be empty
             `,
 		}),
 		Entry("value field provided for unsupported operations", testCase{
@@ -235,7 +255,7 @@ var _ = Describe("JsonPatchBlock Validator", func() {
                 `,
 				`
                 op: replace
-                path: ""
+                path: /a/b/c
                 `,
 			},
 			expected: `
@@ -286,7 +306,7 @@ var _ = Describe("JsonPatchBlock Validator", func() {
                 `,
 				`
                 op: move
-                path: ""
+                path: /a/b/c
                 `,
 			},
 			expected: `
@@ -301,18 +321,12 @@ var _ = Describe("JsonPatchBlock Validator", func() {
 			patchBlocks: []string{
 				`
                 op: remove
-                path: ""
-                `,
-				`
-                op: remove
                 path: "/"
                 `,
 			},
 			expected: `
             violations:
               - field: jsonPatches[0].path
-                message: root path cannot be removed
-              - field: jsonPatches[1].path
                 message: root path cannot be removed
             `,
 		}),

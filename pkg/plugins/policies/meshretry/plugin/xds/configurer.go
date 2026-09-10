@@ -288,7 +288,7 @@ func headerMatcher(header common_api.HeaderMatch) *envoy_route.HeaderMatcher {
 			StringMatch: &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
 					SafeRegex: &envoy_type_matcher.RegexMatcher{
-						Regex: string(header.Value),
+						Regex: string(pointer.Deref(header.Value)),
 					},
 				},
 			},
@@ -297,7 +297,7 @@ func headerMatcher(header common_api.HeaderMatch) *envoy_route.HeaderMatcher {
 		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
 			StringMatch: &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
-					Prefix: string(header.Value),
+					Prefix: string(pointer.Deref(header.Value)),
 				},
 			},
 		}
@@ -305,7 +305,7 @@ func headerMatcher(header common_api.HeaderMatch) *envoy_route.HeaderMatcher {
 		matcher.HeaderMatchSpecifier = &envoy_route.HeaderMatcher_StringMatch{
 			StringMatch: &envoy_type_matcher.StringMatcher{
 				MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-					Exact: string(header.Value),
+					Exact: string(pointer.Deref(header.Value)),
 				},
 			},
 		}

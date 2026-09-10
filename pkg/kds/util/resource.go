@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	kds_cache "github.com/kumahq/kuma/v3/pkg/kds/cache"
@@ -136,13 +136,13 @@ func toResources(resourceType core_model.ResourceType, krs []*mesh_proto.KumaRes
 	return list, nil
 }
 
-func StatsOf(status *system_proto.KDSSubscriptionStatus, resourceType core_model.ResourceType) *system_proto.KDSServiceStats {
+func StatsOf(status *zoneinsight_api.KDSSubscriptionStatus, resourceType core_model.ResourceType) *zoneinsight_api.KDSServiceStats {
 	if status == nil {
-		return &system_proto.KDSServiceStats{}
+		return &zoneinsight_api.KDSServiceStats{}
 	}
 	stat, ok := status.Stat[string(resourceType)]
 	if !ok {
-		stat = &system_proto.KDSServiceStats{}
+		stat = &zoneinsight_api.KDSServiceStats{}
 		status.Stat[string(resourceType)] = stat
 	}
 	return stat

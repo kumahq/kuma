@@ -63,8 +63,6 @@ rules:
       - dataplanes
       - dataplaneinsights
       - meshes
-      - zones
-      - zoneinsights
       - meshinsights
       - containerpatches
       - meshaccesslogs
@@ -92,6 +90,8 @@ rules:
       - meshtrusts
       - meshzoneaddresses
       - workloads
+      - zoneinsights
+      - zones
     verbs:
       - get
       - list
