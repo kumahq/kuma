@@ -44,6 +44,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 			Install(Kuma(core.Zone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
+				WithHelmOpt("controlPlane.zone", zone.ZoneName()),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(MTLSMeshKubernetes("default")).
