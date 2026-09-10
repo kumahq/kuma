@@ -171,14 +171,23 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
           fetch-depth: 0
-      - name: Cache Go build
+      # Module contents are a pure function of go.sum, so one immutable entry
+      # is shared with every other job and branch.
+      - name: Cache Go modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          path: ~/go/pkg/mod
+          key: go-mod-dist-${{ hashFiles('**/go.sum') }}
+      # Pull requests restore by prefix from the newest push-event entry instead
+      # of writing their own short-lived merge-ref entries. A save took 13 minutes
+      # when seven runners shared one host's disk.
+      - name: Restore Go build cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/go-build
+          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
           restore-keys: |
+            go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-
             go-build-${{ runner.os }}-
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
@@ -198,6 +207,12 @@ jobs:
       - if: ${{ github.ref_type != 'tag' }}
         run: |
           make check
+      - name: Save Go build cache
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/go-build
+          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
       - id: sca-project
         uses: Kong/public-shared-actions/security-actions/sca@28d20a1f492927f35b00b317acd78f669c45f88b # v2.7.3
         with:
