@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/channels"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	. "github.com/kumahq/kuma/v3/test/framework"
@@ -107,13 +106,6 @@ func ChangeService() {
 			Install(YamlK8sObject(newSvc(firstTestServerLabels))).
 			Setup(kubernetes.Cluster)
 		Expect(err).To(Succeed())
-
-		// remove retries to avoid covering failed request
-		Expect(DeleteMeshPolicyOrError(
-			kubernetes.Cluster,
-			v1alpha1.MeshRetryResourceTypeDescriptor,
-			fmt.Sprintf("mesh-retry-all-%s", mesh),
-		)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

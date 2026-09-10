@@ -46,8 +46,7 @@ func ProducerPolicyFlow() {
 			Install(
 				Yaml(
 					builders.Mesh().
-						WithName(mesh).
-						WithoutInitialPolicies(),
+						WithName(mesh),
 				),
 			).
 			Install(MeshIdentityBundled(mesh, identityName)).

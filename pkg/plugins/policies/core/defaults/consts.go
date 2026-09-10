@@ -14,3 +14,8 @@ const (
 	DefaultMaxStreamDuration     = 0
 	DefaultMaxConnectionDuration = 0
 )
+
+// Retries
+const (
+	DefaultRetryBaseInterval = 25 * time.Millisecond
+)

@@ -26,13 +26,11 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				"items": [
 				 {
 					"type": "Mesh",
-					"name": "one",
-					"skipCreatingInitialPolicies": ["MeshRetry"]
+					"name": "one"
 				 },
 				 {
 					"type": "Mesh",
-					"name": "two",
-					"skipCreatingInitialPolicies": ["MeshTimeout"]
+					"name": "two"
 				 }
 				],
 				"next": "http://localhost:5681/meshes?offset=1"
@@ -57,16 +55,12 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				Type: "Mesh",
 				Name: "one",
 			}))
-			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{
-				SkipCreatingInitialPolicies: []string{"MeshRetry"},
-			}))
+			Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{}))
 			Expect(rs.Items[1].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
 				Type: "Mesh",
 				Name: "two",
 			}))
-			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{
-				SkipCreatingInitialPolicies: []string{"MeshTimeout"},
-			}))
+			Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{}))
 			Expect(*rs.Next).To(Equal("http://localhost:5681/meshes?offset=1"))
 		})
 	})

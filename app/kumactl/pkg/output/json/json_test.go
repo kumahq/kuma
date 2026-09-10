@@ -59,9 +59,7 @@ var _ = Describe("printer", func() {
 					CreationTime:     t1,
 					ModificationTime: t2,
 				},
-				Spec: &mesh_proto.Mesh{
-					SkipCreatingInitialPolicies: []string{"MeshRetry"},
-				},
+				Spec: &mesh_proto.Mesh{},
 			},
 			goldenFile: "mesh.golden.json",
 		}),

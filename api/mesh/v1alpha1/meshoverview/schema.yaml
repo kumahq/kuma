@@ -4,14 +4,7 @@ components:
       description: MeshOverview defines the projected state of a Mesh.
       properties:
         mesh:
-          properties:
-            skipCreatingInitialPolicies:
-              description: |-
-                List of policies to skip creating by default when the mesh is created,
-                for example TrafficPermission or MeshRetry. An '*' skips all policies.
-              items:
-                type: string
-              type: array
+          properties: {}
           type: object
         meshInsight:
           description: MeshInsight carries the observed state of the mesh.

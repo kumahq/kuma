@@ -18,7 +18,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
-	"github.com/kumahq/kuma/v3/pkg/defaults/mesh"
+	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -95,7 +95,7 @@ func genGrpcRetryPolicy(conf *api.GRPC) (*envoy_route.RetryPolicy, error) {
 			policy.RetryBackOff.BaseInterval = util_proto.Duration(conf.BackOff.BaseInterval.Duration)
 		} else {
 			// TODO: this should be handled by "base policy"
-			policy.RetryBackOff.BaseInterval = util_proto.Duration(mesh.DefaultBaseInterval.Duration)
+			policy.RetryBackOff.BaseInterval = util_proto.Duration(policies_defaults.DefaultRetryBaseInterval)
 		}
 		if conf.BackOff.MaxInterval != nil {
 			policy.RetryBackOff.MaxInterval = util_proto.Duration(conf.BackOff.MaxInterval.Duration)

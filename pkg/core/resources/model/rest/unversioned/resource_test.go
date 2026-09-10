@@ -34,9 +34,7 @@ var _ = Describe("Rest Resource", func() {
 						CreationTime:     t1,
 						ModificationTime: t2,
 					},
-					Spec: &mesh_proto.Mesh{
-						SkipCreatingInitialPolicies: []string{"MeshRetry"},
-					},
+					Spec: &mesh_proto.Mesh{},
 				}
 
 				// when
@@ -52,8 +50,7 @@ var _ = Describe("Rest Resource", func() {
   "name": "one",
   "creationTime": "2018-07-17T16:05:36.995Z",
   "modificationTime": "2019-07-17T16:05:36.995Z",
-  "kri": "kri_m____one_",
-  "skipCreatingInitialPolicies": ["MeshRetry"]
+  "kri": "kri_m____one_"
 }`
 				Expect(bytes).To(MatchJSON(expected))
 			})
@@ -91,13 +88,11 @@ var _ = Describe("Rest Resource", func() {
 				"items": [
 				 {
 					"type": "Mesh",
-					"name": "one",
-					"skipCreatingInitialPolicies": ["MeshRetry"]
+					"name": "one"
 				 },
 				 {
 					"type": "Mesh",
-					"name": "two",
-					"skipCreatingInitialPolicies": ["MeshTimeout"]
+					"name": "two"
 				 }
 				],
 				"next": "http://localhost:5681/meshes?offset=1"
@@ -122,16 +117,12 @@ var _ = Describe("Rest Resource", func() {
 					Type: "Mesh",
 					Name: "one",
 				}))
-				Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{
-					SkipCreatingInitialPolicies: []string{"MeshRetry"},
-				}))
+				Expect(rs.Items[0].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{}))
 				Expect(rs.Items[1].GetMeta()).To(Equal(v1alpha1.ResourceMeta{
 					Type: "Mesh",
 					Name: "two",
 				}))
-				Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{
-					SkipCreatingInitialPolicies: []string{"MeshTimeout"},
-				}))
+				Expect(rs.Items[1].GetSpec()).To(matchers.MatchProto(&mesh_proto.Mesh{}))
 				Expect(*rs.Next).To(Equal("http://localhost:5681/meshes?offset=1"))
 			})
 		})

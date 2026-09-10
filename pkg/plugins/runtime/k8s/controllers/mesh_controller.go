@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 
-	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -23,10 +22,6 @@ type MeshReconciler struct {
 	ResourceManager manager.ResourceManager
 	Log             logr.Logger
 	Extensions      context.Context
-	K8sStore        bool
-	SystemNamespace string
-	CpMode          config_core.CpMode
-	CpZone          string
 }
 
 func (r *MeshReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -52,17 +47,7 @@ func (r *MeshReconciler) ensureDefaultResources(ctx context.Context, mesh *core_
 	}
 
 	r.Log.Info("ensuring that default mesh resources exist", "mesh", mesh.GetMeta().GetName())
-	if err := defaults_mesh.EnsureDefaultMeshResources(
-		ctx,
-		r.ResourceManager,
-		mesh,
-		mesh.Spec.GetSkipCreatingInitialPolicies(),
-		r.Extensions,
-		r.K8sStore,
-		r.SystemNamespace,
-		r.CpMode,
-		r.CpZone,
-	); err != nil {
+	if err := defaults_mesh.EnsureDefaultMeshResources(ctx, r.ResourceManager, mesh, r.Extensions); err != nil {
 		return errors.Wrap(err, "could not create default mesh resources")
 	}
 

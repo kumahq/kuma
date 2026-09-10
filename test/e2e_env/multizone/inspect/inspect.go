@@ -54,10 +54,6 @@ spec:
 			)).
 			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
-		// remove default
-		Eventually(func() error {
-			return multizone.Global.GetKumactlOptions().RunKumactl("delete", "meshtimeout", "--mesh", meshName, "mesh-timeout-all-"+meshName)
-		}).Should(Succeed())
 	})
 
 	BeforeEach(func() {

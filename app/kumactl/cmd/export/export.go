@@ -117,8 +117,6 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					for _, res := range list.GetItems() {
 						switch resDesc.Name {
 						case core_mesh.MeshType:
-							mesh := res.(*core_mesh.MeshResource)
-							mesh.Spec.SkipCreatingInitialPolicies = []string{"*"}
 							meshResource = append(meshResource, res)
 							continue
 						case core_system.GlobalSecretType:

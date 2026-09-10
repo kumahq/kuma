@@ -9,9 +9,7 @@ import (
 )
 
 var (
-	Mesh1 = &mesh_proto.Mesh{
-		SkipCreatingInitialPolicies: []string{"*"},
-	}
+	Mesh1     = &mesh_proto.Mesh{}
 	Dataplane = &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
 			Address: "192.168.0.1",

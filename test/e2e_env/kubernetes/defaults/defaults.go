@@ -37,20 +37,20 @@ func Defaults() {
 		}
 	}
 
-	It("should create default policies for default mesh", func() {
+	It("should not create any policy for default mesh", func() {
 		Eventually(policyCreated("trafficpermission", "allow-all-default"), "30s", "1s").MustPassRepeatedly(3).Should(BeFalse())
 		Eventually(policyCreated("trafficroute", "route-all-default"), "30s", "1s").MustPassRepeatedly(3).Should(BeFalse())
-		Eventually(policyCreated("meshtimeout", "mesh-timeout-all-default", Config.KumaNamespace), "30s", "1s").MustPassRepeatedly(3).Should(BeTrue())
-		Eventually(policyCreated("meshcircuitbreaker", "mesh-circuit-breaker-all-default", Config.KumaNamespace), "30s", "1s").MustPassRepeatedly(3).Should(BeTrue())
-		Eventually(policyCreated("meshretry", "mesh-retry-all-default", Config.KumaNamespace), "30s", "1s").MustPassRepeatedly(3).Should(BeTrue())
+		Eventually(policyCreated("meshtimeout", "mesh-timeout-all-default", Config.KumaNamespace), "30s", "1s").MustPassRepeatedly(3).Should(BeFalse())
+		Eventually(policyCreated("meshcircuitbreaker", "mesh-circuit-breaker-all-default", Config.KumaNamespace), "30s", "1s").MustPassRepeatedly(3).Should(BeFalse())
+		Eventually(policyCreated("meshretry", "mesh-retry-all-default", Config.KumaNamespace), "30s", "1s").MustPassRepeatedly(3).Should(BeFalse())
 	})
 
-	It("should create default policies for non-default mesh", func() {
+	It("should not create any policy for non-default mesh", func() {
 		Eventually(policyCreated("trafficpermission", "allow-all-"+meshName), "30s", "1s").Should(BeFalse())
 		Eventually(policyCreated("trafficroute", "route-all-"+meshName), "30s", "1s").Should(BeFalse())
-		Eventually(policyCreated("meshtimeout", "mesh-timeout-all-"+meshName, Config.KumaNamespace), "30s", "1s").Should(BeTrue())
-		Eventually(policyCreated("meshcircuitbreaker", "mesh-circuit-breaker-all-"+meshName, Config.KumaNamespace), "30s", "1s").Should(BeTrue())
-		Eventually(policyCreated("meshretry", "mesh-retry-all-"+meshName, Config.KumaNamespace), "30s", "1s").Should(BeTrue())
+		Eventually(policyCreated("meshtimeout", "mesh-timeout-all-"+meshName, Config.KumaNamespace), "30s", "1s").Should(BeFalse())
+		Eventually(policyCreated("meshcircuitbreaker", "mesh-circuit-breaker-all-"+meshName, Config.KumaNamespace), "30s", "1s").Should(BeFalse())
+		Eventually(policyCreated("meshretry", "mesh-retry-all-"+meshName, Config.KumaNamespace), "30s", "1s").Should(BeFalse())
 	})
 
 	It("should create a zone", func() {

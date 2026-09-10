@@ -109,8 +109,7 @@ func SetupSidecarCluster() {
 		Install(
 			Yaml(
 				builders.Mesh().
-					WithName(meshName).
-					WithoutInitialPolicies(),
+					WithName(meshName),
 			),
 		).
 		Install(MeshIdentityBundled(meshName, identityName)).
