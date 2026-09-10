@@ -191,24 +191,26 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	secrets := &kube_core.SecretList{}
 
 	fields := kube_client.MatchingFields{} // list only Kuma System secrets
-	labels := kube_client.MatchingLabels{}
 	switch rs.GetItemType() {
 	case secret_model.SecretType:
 		fields = kube_client.MatchingFields{ // list only Kuma System secrets
 			"type": common_k8s.MeshSecretType,
-		}
-		if opts.Mesh != "" {
-			labels[metadata.KumaMeshLabel] = opts.Mesh
 		}
 	case secret_model.GlobalSecretType:
 		fields = kube_client.MatchingFields{ // list only Kuma System secrets
 			"type": common_k8s.GlobalSecretType,
 		}
 	}
-	if err := s.reader.List(ctx, secrets, kube_client.InNamespace(s.namespace), labels, fields); err != nil {
+	// Note: the mesh is deliberately not passed as a k8s label selector here. A Secret with no
+	// "kuma.io/mesh" label is implicitly considered part of the default mesh everywhere else in
+	// this store (see KubernetesMetaAdapter.GetMesh() and Secret.GetMesh()), but a k8s label
+	// selector requires the label to be present to match. Filtering server-side on the label
+	// would therefore silently drop unlabeled default-mesh secrets from the result. Instead, the
+	// mesh filter is applied in Go, after conversion, in ToCoreList below.
+	if err := s.reader.List(ctx, secrets, kube_client.InNamespace(s.namespace), fields); err != nil {
 		return errors.Wrap(err, "failed to list k8s Secrets")
 	}
-	if err := s.secretsConverter.ToCoreList(secrets, rs); err != nil {
+	if err := s.secretsConverter.ToCoreList(secrets, rs, opts.Mesh); err != nil {
 		return errors.Wrap(err, "failed to convert k8s Secret into core counterpart")
 	}
 	return nil
@@ -264,7 +266,9 @@ func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
 type Converter interface {
 	ToKubernetesObject(resource core_model.Resource) (*kube_core.Secret, error)
 	ToCoreResource(secret *kube_core.Secret, out core_model.Resource) error
-	ToCoreList(list *kube_core.SecretList, out core_model.ResourceList) error
+	// ToCoreList converts the k8s Secret list into the core resource list. When mesh is non-empty,
+	// only items resolving to that mesh (via ToCoreResource's mesh defaulting) are included.
+	ToCoreList(list *kube_core.SecretList, out core_model.ResourceList, mesh string) error
 }
 
 func DefaultConverter() Converter {
@@ -314,17 +318,20 @@ func (c *SimpleConverter) ToCoreResource(secret *kube_core.Secret, out core_mode
 	return nil
 }
 
-func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out core_model.ResourceList) error {
+func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out core_model.ResourceList, mesh string) error {
 	switch out.GetItemType() {
 	case secret_model.SecretType:
 		secOut := out.(*secret_model.SecretResourceList)
-		secOut.Items = make([]*secret_model.SecretResource, len(in.Items))
+		secOut.Items = make([]*secret_model.SecretResource, 0, len(in.Items))
 		for i := range in.Items {
 			r := secret_model.NewSecretResource()
 			if err := c.ToCoreResource(&in.Items[i], r); err != nil {
 				return err
 			}
-			secOut.Items[i] = r
+			if mesh != "" && r.GetMeta().GetMesh() != mesh {
+				continue
+			}
+			secOut.Items = append(secOut.Items, r)
 		}
 	case secret_model.GlobalSecretType:
 		secOut := out.(*secret_model.GlobalSecretResourceList)
