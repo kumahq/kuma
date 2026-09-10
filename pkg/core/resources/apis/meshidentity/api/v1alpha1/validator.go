@@ -27,8 +27,9 @@ func (r *MeshIdentityResource) validate() error {
 // publishing the CA bundle, MeshService.spec.identities and the SPIFFE ID rules
 // of MeshTrafficPermission all move on their own schedules, leaving already
 // issued leaves unverifiable in between. Users migrate by creating a second
-// MeshIdentity and deleting the old one, which keeps both trust domains
-// published for the whole transition.
+// MeshIdentity under a different name and deleting the old one, which keeps both
+// trust domains published for the whole transition. Reusing the name instead
+// rebuilds the same gap, because the MeshTrust and the CA are keyed by it.
 func (r *MeshIdentityResource) ValidateUpdate(previous core_model.Resource) error {
 	prev, ok := previous.(*MeshIdentityResource)
 	if !ok {
@@ -49,7 +50,7 @@ func (r *MeshIdentityResource) ValidateUpdate(previous core_model.Resource) erro
 
 func immutableFieldMessage(previous string, current string) string {
 	return fmt.Sprintf(
-		"is immutable, cannot be changed from %q to %q. Create a new MeshIdentity with the new value and delete this one once every workload has migrated",
+		"is immutable, cannot be changed from %q to %q. Create a MeshIdentity under a different name with the new value and delete this one once every workload has migrated",
 		previous,
 		current,
 	)

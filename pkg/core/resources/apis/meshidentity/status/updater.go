@@ -245,6 +245,16 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 	if update {
 		needsUpdate := false
 
+		// An identity that already had a MeshTrust when it was first pinned can be
+		// pinned to a domain the MeshTrust never advertised: the zone was renamed
+		// before this control plane ever saw the identity. Converge it, otherwise the
+		// bundle stays keyed under the old domain and no leaf verifies. Once both
+		// agree the pin holds them there.
+		if meshTrust.Spec.TrustDomain != trustDomain {
+			meshTrust.Spec.TrustDomain = trustDomain
+			needsUpdate = true
+		}
+
 		// Check if the CA PEM is already present in the MeshTrust resource
 		caBundleExists := false
 		for _, bundle := range meshTrust.Spec.CABundles {

@@ -22,10 +22,17 @@ the zone is renamed, which used to move issuance into a trust domain no
 **Action required**
 
 To move to a different trust domain or SPIFFE ID path, create a second
-`MeshIdentity` with the new value and delete the old one once every workload
-has been issued a certificate from it. Both identities publish their own
-`MeshTrust` and `MeshService.spec.identities` lists the SPIFFE IDs of every
-matching identity, so peers accept leaves from both for the whole transition.
+`MeshIdentity` **under a different name** with the new value and delete the old
+one once every workload has been issued a certificate from it. Both identities
+publish their own `MeshTrust` and `MeshService.spec.identities` lists the SPIFFE
+IDs of every matching identity, so peers accept leaves from both for the whole
+transition. Use `spec.selector.dataplane.matchLabels` or the name to steer which
+identity a workload picks while both exist.
+
+Deleting the identity and recreating it under the same name is not a migration:
+the `MeshTrust` and the CA are keyed by the identity name, so the recreated
+identity issues in the new trust domain while the surviving `MeshTrust` still
+publishes the old one, which is the outage this change exists to prevent.
 
 ### Zones no longer require the `kuma.io/origin` label
 
