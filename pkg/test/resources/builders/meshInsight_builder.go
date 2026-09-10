@@ -23,7 +23,7 @@ func MeshInsight() *MeshInsightBuilder {
 			},
 			Spec: &mesh_proto.MeshInsight{
 				DataplanesByType: &mesh_proto.MeshInsight_DataplanesByType{
-					Standard:         &mesh_proto.MeshInsight_DataplaneStat{},
+					Standard: &mesh_proto.MeshInsight_DataplaneStat{},
 				},
 				Resources: map[string]*mesh_proto.MeshInsight_ResourceStat{},
 			},

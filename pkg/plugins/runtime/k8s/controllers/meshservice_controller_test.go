@@ -104,15 +104,7 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:  "04.resources.yaml",
 			outputFile: "04.meshservice.yaml",
 		}),
-		Entry("service for kuma gateway", testCase{
-			inputFile:  "05.resources.yaml",
-			outputFile: "05.meshservice.yaml",
-		}),
-		Entry("service for delegated gateway (annotation on Pod)", testCase{
-			inputFile:  "06.resources.yaml",
-			outputFile: "06.meshservice.yaml",
-		}),
-		Entry("service for pod opting out with kuma.io/gateway: disabled", testCase{
+		Entry("service backed by pods", testCase{
 			inputFile:  "07.resources.yaml",
 			outputFile: "07.meshservice.yaml",
 		}),
@@ -124,14 +116,13 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:  "ignore.resources.yaml",
 			outputFile: "ignore.meshservice.yaml",
 		}),
-		Entry("headless gateway service is unaffected by meshServices.mode", testCase{
-			inputFile:  "headless-gateway-disabled.resources.yaml",
-			outputFile: "headless-gateway-disabled.meshservice.yaml",
+		Entry("headless service with pre-existing MeshServices", testCase{
+			inputFile:  "headless-preexisting.resources.yaml",
+			outputFile: "headless-preexisting.meshservice.yaml",
 		}),
 		Entry("with Service selector matching Pod labels", testCase{
 			inputFile:  "skip-inbound-tags.resources.yaml",
 			outputFile: "skip-inbound-tags.meshservice.yaml",
 		}),
 	)
-
 })
