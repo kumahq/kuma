@@ -80,8 +80,8 @@ runuser -u kuma-dp -- \
     --transparent-proxy \
     --binary-path /usr/local/bin/envoy
 
-'--transparent-proxy' uses the redirect ports this command sets by default. If you change them with
-'--redirect-inbound-port' or '--redirect-outbound-port', pass the same ports to kuma-dp with '--transparent-proxy-config'.
+'--transparent-proxy' assumes this command's defaults. If you change the IP family mode, the redirect ports,
+inbound redirection, or virtual networks, pass the same values to kuma-dp with '--transparent-proxy-config'.
 
 `,
 		// Disable automatic flag parsing to ensure that our custom order of precedence

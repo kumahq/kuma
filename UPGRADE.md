@@ -67,7 +67,7 @@ kuma-dp run --dataplane-file=backend.yaml --transparent-proxy
 
 **Action required**
 
-On Universal, drop `redirectPortInbound`, `redirectPortOutbound`, and `ipFamilyMode` from your `Dataplane` manifests and `kuma-dp` dataplane files, and start `kuma-dp` with `--transparent-proxy`. If you installed the transparent proxy with non-default redirect ports or IP family mode, pass the same values to `kuma-dp` in a file with `--transparent-proxy-config` instead:
+On Universal, drop `redirectPortInbound`, `redirectPortOutbound`, and `ipFamilyMode` from your `Dataplane` manifests and `kuma-dp` dataplane files, and start `kuma-dp` with `--transparent-proxy`. If you installed the transparent proxy with a non-default IP family mode, redirect ports, inbound redirection, or virtual networks, pass the same values to `kuma-dp` in a file with `--transparent-proxy-config` instead:
 
 ```yaml
 ipFamilyMode: ipv4
