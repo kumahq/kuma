@@ -34,22 +34,20 @@ var _ = Describe("Defaulter", func() {
 
 	globalChecker := func() ResourceAdmissionChecker {
 		return ResourceAdmissionChecker{
-			AllowedUsers:                 allowedUsers,
-			Mode:                         core.Global,
-			FederatedZone:                false,
-			DisableOriginLabelValidation: false,
-			SystemNamespace:              "kuma-system",
+			AllowedUsers:    allowedUsers,
+			Mode:            core.Global,
+			FederatedZone:   false,
+			SystemNamespace: "kuma-system",
 		}
 	}
 
-	zoneChecker := func(federatedZone, originValidation bool) ResourceAdmissionChecker {
+	zoneChecker := func() ResourceAdmissionChecker {
 		return ResourceAdmissionChecker{
-			AllowedUsers:                 allowedUsers,
-			Mode:                         core.Zone,
-			FederatedZone:                federatedZone,
-			DisableOriginLabelValidation: !originValidation,
-			SystemNamespace:              "kuma-system",
-			ZoneName:                     "zone-1",
+			AllowedUsers:    allowedUsers,
+			Mode:            core.Zone,
+			FederatedZone:   true,
+			SystemNamespace: "kuma-system",
+			ZoneName:        "zone-1",
 		}
 	}
 
@@ -157,7 +155,7 @@ var _ = Describe("Defaulter", func() {
 `,
 		}),
 		Entry("should set mesh label when apply new policy on Zone", testCase{
-			checker: zoneChecker(true, true),
+			checker: zoneChecker(),
 			kind:    string(v1alpha1.MeshTrafficPermissionType),
 			inputObject: `
             {
@@ -204,54 +202,8 @@ var _ = Describe("Defaulter", func() {
             }
 `,
 		}),
-		Entry("should set mesh and origin label when origin validation is disabled, federated zone", testCase{
-			checker: zoneChecker(true, false),
-			kind:    string(v1alpha1.MeshTrafficPermissionType),
-			inputObject: `
-            {
-              "apiVersion": "kuma.io/v1alpha1",
-              "kind": "MeshTrafficPermission",
-              "metadata": {
-                "namespace": "example",
-                "name": "empty",
-                "creationTimestamp": null
-              },
-              "spec": {
-                "targetRef": {
-                  "kind": "Mesh"
-                }
-              }
-            }
-`,
-			expected: `
-            {
-              "apiVersion": "kuma.io/v1alpha1",
-              "kind": "MeshTrafficPermission",
-              "metadata": {
-                "namespace": "example",
-                "name": "empty",
-                "labels": {
-                  "k8s.kuma.io/namespace": "example",
-                  "kuma.io/mesh": "default",
-                  "kuma.io/env": "kubernetes",
-                  "kuma.io/origin": "zone",
-                  "kuma.io/zone": "zone-1",
-                  "kuma.io/policy-role": "workload-owner"
-                },
-                "annotations": {
-                  "kuma.io/display-name": "empty"
-                }
-              },
-              "spec": {
-                "targetRef": {
-                  "kind": "Mesh"
-                }
-              }
-            }
-`,
-		}),
-		Entry("should set mesh and origin label when origin validation is disabled, non-federated zone", testCase{
-			checker: zoneChecker(false, false),
+		Entry("should set mesh and origin label when origin label is missing", testCase{
+			checker: zoneChecker(),
 			kind:    string(v1alpha1.MeshTrafficPermissionType),
 			inputObject: `
             {
@@ -297,7 +249,7 @@ var _ = Describe("Defaulter", func() {
 `,
 		}),
 		Entry("should set mesh and origin label on DPP", testCase{
-			checker: zoneChecker(true, true),
+			checker: zoneChecker(),
 			kind:    string(mesh.DataplaneType),
 			inputObject: `
             {
