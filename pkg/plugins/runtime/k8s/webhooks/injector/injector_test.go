@@ -16,6 +16,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/config"
 	conf "github.com/kumahq/kuma/v3/pkg/config/plugins/runtime/k8s"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
@@ -113,7 +114,7 @@ spec:
 				Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 				cfg.CaCertFile = caCertPath
 				cfg.TransparentProxyConfigMapName = tproxyConfigMapName
-				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, systemNamespace, nil)
+				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}), 9901, 9902, systemNamespace, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				// and create mesh
@@ -900,7 +901,7 @@ spec:
 			"http://kuma-control-plane.kuma-system:5681",
 			k8sClient,
 			false,
-			k8s.NewSimpleConverter("kuma-system"),
+			k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}),
 			9901,
 			9902,
 			systemNamespace,
@@ -957,7 +958,7 @@ metadata:
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
 			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, systemNamespace, nil)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}), 9901, 9902, systemNamespace, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1064,7 +1065,7 @@ metadata:
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
 			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, systemNamespace, nil)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}), 9901, 9902, systemNamespace, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1148,7 +1149,7 @@ metadata:
 				"http://kuma-control-plane.kuma-system:5681",
 				k8sClient,
 				true,
-				k8s.NewSimpleConverter("kuma-system"),
+				k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}),
 				9901,
 				9902,
 				systemNamespace,

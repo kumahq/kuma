@@ -12,7 +12,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
@@ -24,6 +23,7 @@ import (
 	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -70,7 +70,7 @@ var KDSSyncedConfigs = map[string]struct{}{
 
 func DefaultContext(
 	ctx context.Context,
-	manager manager.ResourceManager,
+	manager manager.ReadOnlyResourceManager,
 	cfg kuma_cp.Config,
 ) *Context {
 	globalMappers := []kds_reconcile.ResourceMapper{
@@ -210,7 +210,7 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resour
 	publicSigningKeyResource.SetMeta(util.CloneResourceMeta(r.GetMeta(), util.WithName(newResName)))
 
 	if err := publicSigningKeyResource.SetSpec(&system_proto.Secret{
-		Data: &wrapperspb.BytesValue{Value: publicKeyBytes},
+		Data: system_proto.Bytes(publicKeyBytes),
 	}); err != nil {
 		return nil, err
 	}
@@ -262,7 +262,7 @@ func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) kds_reconcile.ResourceM
 	}
 }
 
-func GlobalProvidedFilter(rm manager.ResourceManager) kds_reconcile.ResourceFilter {
+func GlobalProvidedFilter(rm manager.ReadOnlyResourceManager) kds_reconcile.ResourceFilter {
 	return func(ctx context.Context, zoneName string, features kds.Features, r core_model.Resource) bool {
 		// There's explicit flag to disable KDS for a resource
 		if r.Descriptor().HasKDSDisabled(zoneName, r.GetMeta().GetLabels()) {
@@ -320,7 +320,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager) kds_reconcile.ResourceFilt
 				return false
 			}
 
-			zone := system.NewZoneResource()
+			zone := zone_api.NewZoneResource()
 			if err := rm.Get(ctx, zone, store.GetByKey(zoneTag, core_model.NoMesh)); err != nil {
 				if !errors.Is(err, context.Canceled) {
 					log.Error(err, "failed to get zone", "zone", zoneTag)

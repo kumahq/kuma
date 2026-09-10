@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v3/pkg/config/core"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	k8s_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -82,7 +83,7 @@ func newValidatingWebhook(mode core.CpMode, federatedZone bool) *kube_admission.
 		SystemNamespace:              "kuma-system",
 		ZoneName:                     "zone-1",
 	}
-	handler := webhooks.NewValidatingWebhook(k8s_resources.NewSimpleConverter("kuma-system"), core_registry.Global(), k8s_registry.Global(), checker)
+	handler := webhooks.NewValidatingWebhook(k8s_resources.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}), core_registry.Global(), k8s_registry.Global(), checker)
 	handler.InjectDecoder(kube_admission.NewDecoder(scheme))
 	return &kube_admission.Webhook{
 		Handler: handler,

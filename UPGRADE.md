@@ -8,6 +8,41 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### KDS full resync is periodic again, not every second
+
+Removing the polling KDS watchdog carried the poll loop's `refreshInterval` of
+`1s` onto the event-based watchdog that replaced it. The two intervals do not
+mean the same thing: polling had no events, so `1s` was how quickly a change
+reached a zone, while the event-based watchdog already delivers changes as they
+happen and schedules a full resync only to recover events it may have missed.
+At `1s` every connected zone rebuilt and re-hashed its entire snapshot every
+second and shipped an identical one, so the defaults return to the values the
+event-based watchdog shipped with:
+
+- `flushInterval` `1s` -> `5s`
+- `fullResyncInterval` `1s` -> `1m`
+- `delayFullResync` `false` -> `true`
+
+on both `multizone.global.kds.eventBasedWatchdog` and
+`multizone.zone.kds.eventBasedWatchdog`.
+
+**Action required**
+
+None. Changes still reach zones on the event path, now coalesced over
+`flushInterval` instead of `1s`. A change that is missed on the event path is
+now repaired by the next full resync within `fullResyncInterval` rather than
+within a second. Set the intervals explicitly if you depend on the previous
+timing.
+
+
+### `Zone` on Kubernetes reaches the defaulting webhook
+
+The defaulting webhook selected `zone` where the CRD plural is `zones`, so the rule matched nothing and a `Zone` written straight to the Kubernetes API skipped the webhook entirely. It now matches, which means a `Zone` created or updated with `kubectl` gets the same computed labels a `Zone` created through the HTTP API already got: `kuma.io/display-name`, `kuma.io/origin`, and on a zone control plane `kuma.io/zone` and `kuma.io/env`.
+
+**Action required**
+
+None. `Zone` resources that already exist are untouched until something writes to them, and the labels are added, never removed. If you select zones by label, a `Zone` applied with `kubectl` before the upgrade may lack the labels until it is next written.
+
 ### Fields that the API linter had skipped were brought in line
 
 A linter bug hid a set of API fields from the shape checks the rest of the API follows. Fixing the fields changes two schemas, both by dropping a declared default:
@@ -18,6 +53,17 @@ A linter bug hid a set of API fields from the shape checks the rest of the API f
 **Action required**
 
 None. Existing resources keep working. The only visible difference is that a resource that omits `type` or `weight` no longer comes back from the API with the value filled in.
+
+### `Zone` and `ZoneInsight` are validated by the admission webhooks
+
+The `Zone` and `ZoneInsight` custom resources moved to the same generator every other Kuma resource already uses. Control plane RBAC and the admission webhooks now list them the same way, which fixes a rule that named `zone` where the custom resource is `zones` and therefore never matched. Both resources stay cluster scoped and their stored specs are unchanged.
+
+The `mesh` field is gone from both custom resource definitions. It only ever applied to namespaced resources and was always empty on these two.
+
+**Action required**
+
+None. The permissions granted are the same set as before, and a stored `Zone` or `ZoneInsight` is read and rewritten byte for byte.
+
 
 ### `MeshPassthrough` rejects matches that resolve to the same Envoy filter chain
 

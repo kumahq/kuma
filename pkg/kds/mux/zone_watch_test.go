@@ -6,14 +6,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/timestamppb"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/multizone"
 	"github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -22,18 +20,19 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func sendHealthCheckPing(rm manager.ResourceManager, name string) {
-	zoneInsight := system.NewZoneInsightResource()
+	zoneInsight := zoneinsight_api.NewZoneInsightResource()
 	Expect(rm.Get(
 		context.Background(),
 		zoneInsight,
 		store.GetByKey(name, core_model.NoMesh),
 	)).To(Succeed())
 
-	zoneInsight.Spec.HealthCheck = &system_proto.HealthCheck{
-		Time: timestamppb.New(time.Now()),
+	zoneInsight.Spec.HealthCheck = &zoneinsight_api.HealthCheck{
+		Time: zoneinsight_api.NewTime(time.Now()),
 	}
 	Expect(rm.Update(
 		context.Background(),
@@ -68,16 +67,16 @@ var _ = Describe("ZoneWatch", func() {
 		}
 
 		rm = manager.NewResourceManager(memory.NewStore())
-		zoneRes := system.NewZoneResource()
-		zoneRes.Spec.Enabled = wrapperspb.Bool(true)
+		zoneRes := zone_api.NewZoneResource()
+		zoneRes.Spec.Enabled = pointer.To(true)
 		Expect(rm.Create(
 			context.Background(),
 			zoneRes,
 			store.CreateByKey(zone, core_model.NoMesh),
 		)).To(Succeed())
-		zoneInsight := system.NewZoneInsightResource()
-		zoneInsight.Spec.HealthCheck = &system_proto.HealthCheck{
-			Time: timestamppb.New(time.Now()),
+		zoneInsight := zoneinsight_api.NewZoneInsightResource()
+		zoneInsight.Spec.HealthCheck = &zoneinsight_api.HealthCheck{
+			Time: zoneinsight_api.NewTime(time.Now()),
 		}
 		Expect(rm.Create(
 			context.Background(),
@@ -154,14 +153,14 @@ var _ = Describe("ZoneWatch", func() {
 		Consistently(timeouts.Recv(), zoneWentOfflineCheckTimeout).ShouldNot(Receive())
 	})
 	It("shouldn't timeout immediately if zoneinsight time is old", func() {
-		zoneInsight := system.NewZoneInsightResource()
+		zoneInsight := zoneinsight_api.NewZoneInsightResource()
 		Expect(rm.Get(
 			context.Background(),
 			zoneInsight,
 			store.GetByKey(zone, core_model.NoMesh),
 		)).To(Succeed())
-		zoneInsight.Spec.HealthCheck = &system_proto.HealthCheck{
-			Time: timestamppb.New(time.Now().AddDate(0, 0, -1)),
+		zoneInsight.Spec.HealthCheck = &zoneinsight_api.HealthCheck{
+			Time: zoneinsight_api.NewTime(time.Now().AddDate(0, 0, -1)),
 		}
 		Expect(rm.Update(
 			context.Background(),
@@ -222,7 +221,7 @@ var _ = Describe("ZoneWatch", func() {
 		sendHealthCheckPing(rm, zone)
 		Expect(rm.Delete(
 			context.Background(),
-			system.NewZoneInsightResource(),
+			zoneinsight_api.NewZoneInsightResource(),
 			store.DeleteByKey(zone, core_model.NoMesh),
 		)).To(Succeed())
 
@@ -232,14 +231,14 @@ var _ = Describe("ZoneWatch", func() {
 		})))
 	})
 	It("should disconnect current stream when the same zone connects", func() {
-		zoneInsight := system.NewZoneInsightResource()
+		zoneInsight := zoneinsight_api.NewZoneInsightResource()
 		Expect(rm.Get(
 			context.Background(),
 			zoneInsight,
 			store.GetByKey(zone, core_model.NoMesh),
 		)).To(Succeed())
-		zoneInsight.Spec.HealthCheck = &system_proto.HealthCheck{
-			Time: timestamppb.New(time.Now()),
+		zoneInsight.Spec.HealthCheck = &zoneinsight_api.HealthCheck{
+			Time: zoneinsight_api.NewTime(time.Now()),
 		}
 		Expect(rm.Update(
 			context.Background(),
@@ -281,19 +280,19 @@ var _ = Describe("ZoneWatch", func() {
 	It("should disconnect current stream when newer connection exists", func() {
 		stopPing := make(chan struct{})
 		oldConnection := time.Now()
-		zoneInsight := system.NewZoneInsightResource()
+		zoneInsight := zoneinsight_api.NewZoneInsightResource()
 		Expect(rm.Get(
 			context.Background(),
 			zoneInsight,
 			store.GetByKey(zone, core_model.NoMesh),
 		)).To(Succeed())
-		zoneInsight.Spec.HealthCheck = &system_proto.HealthCheck{
-			Time: timestamppb.New(time.Now()),
+		zoneInsight.Spec.HealthCheck = &zoneinsight_api.HealthCheck{
+			Time: zoneinsight_api.NewTime(time.Now()),
 		}
-		zoneInsight.Spec.KdsStreams = &system_proto.KDSStreams{
-			GlobalToZone: &system_proto.KDSStream{
-				GlobalInstanceId: "1",
-				ConnectTime:      timestamppb.New(time.Now()),
+		zoneInsight.Spec.KDSStreams = &zoneinsight_api.KDSStreams{
+			GlobalToZone: &zoneinsight_api.KDSStream{
+				GlobalInstanceID: "1",
+				ConnectTime:      zoneinsight_api.NewTime(time.Now()),
 			},
 		}
 		Expect(rm.Update(

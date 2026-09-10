@@ -13,4 +13,6 @@ var DefaultEnabled = []string{
 	"meshtrusts",
 	"meshzoneaddresses",
 	"workloads",
+	"zones",
+	"zoneinsights",
 }

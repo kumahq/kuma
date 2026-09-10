@@ -292,18 +292,12 @@ type KubernetesMetaAdapter struct {
 	labels map[string]string
 }
 
-// newMetaAdapter is the only place an adapter's labels are computed from a Kubernetes
-// object. Taking rd and spec forces every conversion path to supply what
-// labels.EnforcedReadLabels needs, so a new converter cannot silently skip the
-// read-side recomputation. newMetaAdapterWithLabels is not a second computation: it
-// only re-wraps a set this function already produced.
-func newMetaAdapter(
-	obj k8s_model.KubernetesObject,
-	systemNamespace string,
-	rd core_model.ResourceTypeDescriptor,
-	spec core_model.ResourceSpec,
-) *KubernetesMetaAdapter {
+// newMetaAdapter is the only place labels are computed from a Kubernetes object, so
+// no conversion path can silently skip labels.EnforcedReadLabels.
+func newMetaAdapter(obj k8s_model.KubernetesObject, out core_model.Resource, systemNamespace string, cp labels.ControlPlane) *KubernetesMetaAdapter {
 	objMeta := obj.GetObjectMeta()
+	ns := labels.NewNamespace(objMeta.GetNamespace(), objMeta.GetNamespace() == systemNamespace)
+	r := labels.NewStoredResource(out, ns, objMeta.GetLabels(), cp)
 
 	computed := maps.Clone(objMeta.GetLabels())
 	if computed == nil {
@@ -320,8 +314,7 @@ func newMetaAdapter(
 	if workload, ok := objMeta.GetAnnotations()[metadata.KumaWorkload]; ok {
 		computed[metadata.KumaWorkload] = workload
 	}
-	ns := labels.NewNamespace(objMeta.GetNamespace(), objMeta.GetNamespace() == systemNamespace)
-	maps.Copy(computed, labels.EnforcedReadLabels(rd, spec, ns))
+	maps.Copy(computed, labels.EnforcedReadLabels(r, cp))
 
 	return &KubernetesMetaAdapter{
 		ObjectMeta: *objMeta,

@@ -2,8 +2,6 @@ package generic
 
 import (
 	"time"
-
-	"google.golang.org/protobuf/proto"
 )
 
 func AllSubscriptions[S Subscription, T interface{ GetSubscriptions() []S }](t T) []Subscription {
@@ -24,7 +22,6 @@ func GetSubscription[S Subscription, T interface{ GetSubscriptions() []S }](t T,
 }
 
 type Insight interface {
-	proto.Message
 	IsOnline() bool
 	GetLastSubscription() Subscription
 	GetSubscription(id string) Subscription
@@ -33,7 +30,6 @@ type Insight interface {
 }
 
 type Subscription interface {
-	proto.Message
 	GetId() string
 	GetGeneration() uint32
 	IsOnline() bool

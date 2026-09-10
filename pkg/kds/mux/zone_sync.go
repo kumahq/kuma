@@ -13,10 +13,10 @@ import (
 	"google.golang.org/grpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -33,7 +33,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/log"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var clientLog = core.Log.WithName("kds-delta-client")
@@ -97,7 +97,7 @@ var _ mesh_proto.KDSSyncServiceServer = &KDSSyncServiceServer{}
 func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resManager core_manager.ResourceManager) error {
 	ctx = user.Ctx(ctx, user.ControlPlane)
 
-	err := resManager.Get(ctx, system.NewZoneResource(), core_store.GetByKey(name, core_model.NoMesh))
+	err := resManager.Get(ctx, zone_api.NewZoneResource(), core_store.GetByKey(name, core_model.NoMesh))
 	if err != nil && !core_store.IsNotFound(err) {
 		return err
 	}
@@ -106,9 +106,9 @@ func createZoneIfAbsent(ctx context.Context, log logr.Logger, name string, resMa
 		return nil
 	}
 
-	zone := &system.ZoneResource{
-		Spec: &system_proto.Zone{
-			Enabled: util_proto.Bool(true),
+	zone := &zone_api.ZoneResource{
+		Spec: &zone_api.Zone{
+			Enabled: pointer.To(true),
 		},
 	}
 	err = resManager.Create(ctx, zone, core_store.CreateByKey(name, core_model.NoMesh))
@@ -312,7 +312,7 @@ func (g *KDSSyncServiceServer) storeStreamConnection(ctx context.Context, zone s
 		ctx,
 		retry.WithMaxRetries(30, retry.NewConstant(1*time.Second)),
 		func(ctx context.Context) error {
-			return retry.RetryableError(g.resManager.Get(ctx, system.NewZoneResource(), core_store.GetBy(key)))
+			return retry.RetryableError(g.resManager.Get(ctx, zone_api.NewZoneResource(), core_store.GetBy(key)))
 		},
 	)
 	if err != nil {
@@ -326,24 +326,24 @@ func (g *KDSSyncServiceServer) storeStreamConnection(ctx context.Context, zone s
 	// #nosec G404 - math rand is enough
 	time.Sleep(time.Duration(rand.Int31n(10000)) * time.Millisecond)
 
-	zoneInsight := system.NewZoneInsightResource()
+	zoneInsight := zoneinsight_api.NewZoneInsightResource()
 	return core_manager.Upsert(ctx, g.resManager, key, zoneInsight, func(resource core_model.Resource) error {
-		if zoneInsight.Spec.KdsStreams == nil {
-			zoneInsight.Spec.KdsStreams = &system_proto.KDSStreams{}
+		if zoneInsight.Spec.KDSStreams == nil {
+			zoneInsight.Spec.KDSStreams = &zoneinsight_api.KDSStreams{}
 		}
 		stream := zoneInsight.Spec.GetKDSStream(string(typ))
 		if stream == nil {
-			stream = &system_proto.KDSStream{}
+			stream = &zoneinsight_api.KDSStream{}
 		}
-		if stream.GetConnectTime() == nil || util_proto.MustTimestampFromProto(stream.ConnectTime).Before(connectTime) {
-			stream.GlobalInstanceId = g.instanceID
-			stream.ConnectTime = util_proto.MustTimestampProto(connectTime)
+		if stream.GetConnectTime() == nil || stream.ConnectTime.Time.Before(connectTime) {
+			stream.GlobalInstanceID = g.instanceID
+			stream.ConnectTime = zoneinsight_api.NewTime(connectTime)
 		}
 		switch typ {
 		case service.GlobalToZone:
-			zoneInsight.Spec.KdsStreams.GlobalToZone = stream
+			zoneInsight.Spec.KDSStreams.GlobalToZone = stream
 		case service.ZoneToGlobal:
-			zoneInsight.Spec.KdsStreams.ZoneToGlobal = stream
+			zoneInsight.Spec.KDSStreams.ZoneToGlobal = stream
 		}
 		return nil
 	}, core_manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)) // we need retry because zone sink or other RPC may also update the insight.

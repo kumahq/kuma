@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	config_postgres "github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/postgres"
@@ -34,7 +35,7 @@ var _ = Describe("PostgresStore template", func() {
 			var pStore store.ResourceStore
 			if storeName == "pgx" {
 				dbCfg.DriverName = config_postgres.DriverNamePgx
-				pStore, err = postgres.NewPgxStore(pgxMetrics, dbCfg, config.NoopPgxConfigCustomizationFn)
+				pStore, err = postgres.NewPgxStore(pgxMetrics, dbCfg, config.NoopPgxConfigCustomizationFn, resource_labels.ControlPlane{})
 			}
 			if err != nil {
 				logger.Default.Logf(GinkgoT(), "error connecting to database: db name: %s, host: %s, port: %d, error: %v",

@@ -13,8 +13,8 @@ import (
 	"github.com/go-logr/logr"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/multizone"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/events"
@@ -96,8 +96,8 @@ func newSyncTracker(
 			ProvidedTypes: changedTypes,
 			Metrics:       kdsMetrics,
 			Log:           log,
-			NewFlushTicker: func() *time.Ticker {
-				return time.NewTicker(eventBasedWatchdogCfg.FlushInterval.Duration)
+			NewFlushTicker: func() (*time.Ticker, context.CancelFunc) {
+				return newAlignedFlushTicker(eventBasedWatchdogCfg.FlushInterval.Duration)
 			},
 			NewFullResyncTicker: func() (*time.Ticker, context.CancelFunc) {
 				return newFullResyncTicker(eventBasedWatchdogCfg)
@@ -116,12 +116,27 @@ func newFullResyncTicker(cfg multizone.EventBasedWatchdogConfig) (*time.Ticker, 
 	// and spreads them evenly across the entire interval. After the initial trigger, we reset
 	// the ticker, returning it to its full resync interval.
 	// #nosec G404 - math rand is enough
-	delay := time.Duration(cfg.FullResyncInterval.Seconds()*rand.Float64()) * time.Second
+	delay := time.Duration(rand.Int63n(int64(cfg.FullResyncInterval.Duration)))
 
-	return newDelayedFullResyncTicker(cfg.FullResyncInterval.Duration, delay)
+	return newDelayedTicker(cfg.FullResyncInterval.Duration, delay)
 }
 
-func newDelayedFullResyncTicker(interval, delay time.Duration) (*time.Ticker, context.CancelFunc) {
+// newAlignedFlushTicker returns a ticker whose ticks land on absolute multiples
+// of the interval. Every zone then flushes in the same window regardless of when
+// it connected, so the identical store reads they issue collapse onto a single
+// entry of the resource cache instead of each missing it in turn.
+// The first tick lands on the boundary after next, which keeps the reset that
+// establishes the period clear of the first tick.
+func newAlignedFlushTicker(interval time.Duration) (*time.Ticker, context.CancelFunc) {
+	now := time.Now()
+	delay := now.Truncate(interval).Add(interval).Sub(now)
+	if delay <= 0 || delay > interval {
+		delay = interval
+	}
+	return newDelayedTicker(interval, delay)
+}
+
+func newDelayedTicker(interval, delay time.Duration) (*time.Ticker, context.CancelFunc) {
 	ticker := time.NewTicker(interval + delay)
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -147,7 +162,7 @@ func newDelayedFullResyncTicker(interval, delay time.Duration) (*time.Ticker, co
 }
 
 func kdsVersionExtractor(metadata *structpb.Struct) string {
-	version := system_proto.NewVersion()
+	version := zoneinsight_api.NewVersion()
 	if err := status.ReadVersion(metadata, version); err != nil {
 		return "unknown"
 	}

@@ -13,6 +13,7 @@ import (
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/kumahq/kuma/v3/pkg/core"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
@@ -163,7 +164,7 @@ var _ = Describe("PodStatusReconciler", func() {
 			EventRecorder:     kube_events.NewFakeRecorder(10),
 			Scheme:            k8sClientScheme,
 			Log:               core.Log.WithName("test"),
-			ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
+			ResourceConverter: k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}),
 			EnvoyAdminClient: &runtime.DummyEnvoyAdminClient{
 				PostQuitCalled: &postQuitCalled,
 			},

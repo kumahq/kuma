@@ -87,7 +87,6 @@ var _ = Describe("Remote Bootstrap", func() {
 				optsBuilder:                  newOptsBuilder().metrics("/tmp/cert.pem", "/tmp/key.pem"),
 				metadata:                     map[string]string{"test": "value"},
 				expectedBootstrapRequestFile: "bootstrap-request-metrics-metadata.golden.json",
-				features:                     []string{"feature-tcp-accesslog-via-named-pipe"},
 			},
 		),
 
@@ -95,7 +94,6 @@ var _ = Describe("Remote Bootstrap", func() {
 			testCase{
 				optsBuilder:                  newOptsBuilder().tokenPath("testdata/token"),
 				expectedBootstrapRequestFile: "bootstrap-request-token-path.golden.json",
-				features:                     []string{"feature-tcp-accesslog-via-named-pipe"},
 			},
 		),
 
@@ -119,7 +117,7 @@ var _ = Describe("Remote Bootstrap", func() {
 					},
 				}),
 				expectedBootstrapRequestFile: "bootstrap-request-transparent-proxy.golden.json",
-				features:                     []string{"feature-tcp-accesslog-via-named-pipe", "feature-transparent-proxy-in-dataplane-metadata"},
+				features:                     []string{"feature-transparent-proxy-in-dataplane-metadata"},
 			},
 		),
 	)

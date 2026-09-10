@@ -16,7 +16,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -255,7 +255,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse kds_c
 		}
 	}
 
-	zone := system.NewZoneResource()
+	zone := zone_api.NewZoneResource()
 	if opts.Zone != "" && len(onCreate) > 0 {
 		if err := s.resourceStore.Get(ctx, zone, store.GetByKey(opts.Zone, core_model.NoMesh)); err != nil {
 			return err, nil

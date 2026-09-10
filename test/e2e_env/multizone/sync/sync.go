@@ -11,7 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/api"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
@@ -99,20 +99,20 @@ spec:
 	It("should have insights in global and in zone", func() {
 		// Ensure each side of KDS has the respective values for Global and Zone instance info
 		Eventually(func(g Gomega) {
-			result := &system.ZoneInsightResource{}
+			result := &zoneinsight_api.ZoneInsightResource{}
 			api.FetchResource(g, multizone.Global, result, "", multizone.KubeZone1.ZoneName())
 			g.Expect(result.Spec.Subscriptions).ToNot(BeEmpty())
 			globalSub := result.Spec.Subscriptions[0]
-			g.Expect(globalSub.GlobalInstanceId).ToNot(BeEmpty())
-			g.Expect(globalSub.ZoneInstanceId).ToNot(BeEmpty())
+			g.Expect(globalSub.GlobalInstanceID).ToNot(BeEmpty())
+			g.Expect(globalSub.ZoneInstanceID).ToNot(BeEmpty())
 
-			zoneResult := &system.ZoneInsightResource{}
+			zoneResult := &zoneinsight_api.ZoneInsightResource{}
 			api.FetchResource(g, multizone.KubeZone1, zoneResult, "", multizone.KubeZone1.ZoneName())
 			g.Expect(zoneResult.Spec.Subscriptions).ToNot(BeEmpty())
 			zoneSub := zoneResult.Spec.Subscriptions[0]
 			// Check that this is the other side of the connection
-			g.Expect(zoneSub.GlobalInstanceId).To(Equal(globalSub.GlobalInstanceId))
-			g.Expect(zoneSub.ZoneInstanceId).To(Equal(globalSub.ZoneInstanceId))
+			g.Expect(zoneSub.GlobalInstanceID).To(Equal(globalSub.GlobalInstanceID))
+			g.Expect(zoneSub.ZoneInstanceID).To(Equal(globalSub.ZoneInstanceID))
 		}, "1m", "1s").Should(Succeed())
 	})
 

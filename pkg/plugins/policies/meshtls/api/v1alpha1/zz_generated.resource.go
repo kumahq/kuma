@@ -193,6 +193,7 @@ var MeshTLSResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:            "Mesh TLSes",
 	IsPluginOriginated:           true,
 	AffectsPolicyMatching:        true,
+	ReadOnly:                     false,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               false,
 	HasRulesTargetRef:            true,

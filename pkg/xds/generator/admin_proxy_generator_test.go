@@ -18,7 +18,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
 	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
 	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
@@ -40,7 +39,6 @@ var _ = Describe("AdminProxyGenerator", func() {
 		adminAddress    string
 		adminSocketPath string
 		readinessPort   uint32
-		features        xds_types.Features
 	}
 
 	DescribeTable("should generate envoy config",
@@ -71,7 +69,6 @@ var _ = Describe("AdminProxyGenerator", func() {
 					AdminAddress:    given.adminAddress,
 					AdminSocketPath: given.adminSocketPath,
 					ReadinessPort:   given.readinessPort,
-					Features:        given.features,
 					IPv6Enabled:     true,
 				},
 				EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
@@ -135,15 +132,6 @@ var _ = Describe("AdminProxyGenerator", func() {
 			adminAddress:  "::1",
 			readinessPort: 9400,
 		}),
-		Entry("should generate admin resources, legacy DP advertising readiness Unix socket", testCase{
-			dataplaneFile: "08.dataplane.input.yaml",
-			expected:      "08.envoy-config.golden.yaml",
-			adminAddress:  "127.0.0.1",
-			readinessPort: 9902,
-			features: map[string]bool{
-				xds_types.FeatureReadinessUnixSocket: true,
-			},
-		}),
 		Entry("should generate admin resources, admin with Unix socket", testCase{
 			dataplaneFile:   "09.dataplane.input.yaml",
 			expected:        "09.envoy-config.golden.yaml",
@@ -170,7 +158,6 @@ var _ = Describe("AdminProxyGenerator", func() {
 					AdminPort:     9901,
 					AdminAddress:  given.adminAddress,
 					ReadinessPort: given.readinessPort,
-					Features:      given.features,
 				},
 				EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
