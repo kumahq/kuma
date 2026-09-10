@@ -77,11 +77,10 @@ func newValidatingWebhook(mode core.CpMode, federatedZone bool) *kube_admission.
 			webhooks.StorageVersionMigratorUser,
 			"system:serviceaccount:kuma-system:kuma-control-plane",
 		},
-		Mode:                         mode,
-		FederatedZone:                federatedZone,
-		DisableOriginLabelValidation: false,
-		SystemNamespace:              "kuma-system",
-		ZoneName:                     "zone-1",
+		Mode:            mode,
+		FederatedZone:   federatedZone,
+		SystemNamespace: "kuma-system",
+		ZoneName:        "zone-1",
 	}
 	handler := webhooks.NewValidatingWebhook(k8s_resources.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}), core_registry.Global(), k8s_registry.Global(), checker)
 	handler.InjectDecoder(kube_admission.NewDecoder(scheme))

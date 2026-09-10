@@ -8,6 +8,24 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Zones no longer require the `kuma.io/origin` label
+
+A zone control plane used to reject a policy applied without
+`kuma.io/origin: zone` on the system namespace on Kubernetes, or on any
+federated zone on Universal, unless `multizone.zone.disableOriginLabelValidation`
+was set. The origin of a resource applied on a zone is obvious, so a missing
+label is now accepted and the zone sets it itself. A label with any value
+other than `zone` is still rejected, which is what keeps resources synced from
+the global control plane read-only on the zone. The
+`disableOriginLabelValidation` setting
+(`KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION`) is removed with it.
+
+**Action required**
+
+Remove `multizone.zone.disableOriginLabelValidation` from your configuration.
+A control plane started with the setting still present fails to load its
+configuration.
+
 ### Strict inbound ports and `SO_REUSEPORT` can no longer be turned off
 
 `kuma-dp` no longer reads `KUMA_DATAPLANE_RUNTIME_STRICT_INBOUND_PORTS_ENABLED` or `KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED`. Both defaulted to `true`, and the control plane now applies that behavior to every data plane:

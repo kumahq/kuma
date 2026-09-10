@@ -28,8 +28,6 @@ type resourceCrudHandler struct {
 	filter          func(request *restful.Request) (store.ListFilterFunc, error)
 	systemNamespace string
 	isK8s           bool
-
-	disableOriginLabelValidation bool
 }
 
 // overviewForResource merges a resource with its insight. A missing insight is

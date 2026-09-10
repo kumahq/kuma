@@ -1,15 +1,16 @@
 Patches: null
 allowed: false
 status:
-  code: 403
+  code: 422
   details:
     causes:
-    - field: metadata.labels[kuma.io/origin]
-      message: cannot be empty
+    - field: spec.targetRef.kind
+      message: value 'MeshService' is not supported
       reason: FieldValueInvalid
-  message: Operation not allowed. Applying policies on Zone CP on a system namespace
-    requires 'kuma.io/origin' label to be set to 'zone'.
+    kind: MeshLoadBalancingStrategy
+    name: mlbs-deprecated
+  message: 'spec.targetRef.kind: value ''MeshService'' is not supported'
   metadata: {}
-  reason: Forbidden
+  reason: Invalid
   status: Failure
 uid: "12345"

@@ -183,7 +183,6 @@ func TestDeleteResourcePrecedence(t *testing.T) {
 		resManager := &recordingResourceManager{events: &events, existing: mesh}
 		handler := newContractCrudHandler(resManager, &recordingResourceAccess{events: &events, deleteErr: accessErr})
 		handler.mode = config_core.Global
-		handler.disableOriginLabelValidation = false
 
 		_, err := handler.deleteResource(newCrudRequest(http.MethodDelete, "/meshes/mesh-1", "mesh-1", ""))
 
@@ -351,11 +350,10 @@ func (r *recordingResourceAccess) ValidateGet(context.Context, core_model.Resour
 
 func newContractCrudHandler(resManager *recordingResourceManager, resourceAccess *recordingResourceAccess) *resourceCrudHandler {
 	return &resourceCrudHandler{
-		mode:                         config_core.Zone,
-		resManager:                   resManager,
-		descriptor:                   core_mesh.MeshResourceTypeDescriptor,
-		resourceAccess:               resourceAccess,
-		disableOriginLabelValidation: true,
+		mode:           config_core.Zone,
+		resManager:     resManager,
+		descriptor:     core_mesh.MeshResourceTypeDescriptor,
+		resourceAccess: resourceAccess,
 		filter: func(*restful.Request) (store.ListFilterFunc, error) {
 			*resManager.events = append(*resManager.events, "filter")
 			return nil, nil
