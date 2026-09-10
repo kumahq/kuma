@@ -36,7 +36,7 @@ func NewTime(t time.Time) *Time {
 }
 
 func (t Time) MarshalJSON() ([]byte, error) {
-	utc := t.Time.UTC()
+	utc := t.UTC()
 
 	format := timeFormatNanos
 
@@ -75,7 +75,7 @@ func (t *Time) CheckValid() error {
 	if t == nil {
 		return fmt.Errorf("invalid nil Timestamp")
 	}
-	seconds := t.Time.Unix()
+	seconds := t.Unix()
 	if seconds < minTimestampSeconds || seconds >= maxTimestampSeconds {
 		return fmt.Errorf("timestamp (%v) is out of range", t.Time)
 	}

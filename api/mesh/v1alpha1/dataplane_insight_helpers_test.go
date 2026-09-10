@@ -3,15 +3,13 @@ package v1alpha1_test
 import (
 	"time"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 var _ = Describe("DataplaneHelpers", func() {
@@ -108,12 +106,12 @@ var _ = Describe("DataplaneHelpers", func() {
 					Subscriptions: []*DiscoverySubscription{
 						{
 							Id:             "1",
-							ConnectTime:    mesh_proto.NewTime(t1),
-							DisconnectTime: mesh_proto.NewTime(t1.Add(1 * time.Hour)),
+							ConnectTime:    NewTime(t1),
+							DisconnectTime: NewTime(t1.Add(1 * time.Hour)),
 						},
 						{
 							Id:          "2",
-							ConnectTime: mesh_proto.NewTime(t1.Add(2 * time.Hour)),
+							ConnectTime: NewTime(t1.Add(2 * time.Hour)),
 						},
 					},
 				}
@@ -121,7 +119,7 @@ var _ = Describe("DataplaneHelpers", func() {
 				// when
 				Expect(dataplaneInsight.UpdateSubscription(&DiscoverySubscription{
 					Id:          "3",
-					ConnectTime: mesh_proto.NewTime(t1.Add(3 * time.Hour)),
+					ConnectTime: NewTime(t1.Add(3 * time.Hour)),
 				})).To(Succeed())
 
 				// then
@@ -135,12 +133,12 @@ var _ = Describe("DataplaneHelpers", func() {
 					Subscriptions: []*DiscoverySubscription{
 						{
 							Id:             "1",
-							ConnectTime:    mesh_proto.NewTime(t1),
-							DisconnectTime: mesh_proto.NewTime(t1.Add(1 * time.Hour)),
+							ConnectTime:    NewTime(t1),
+							DisconnectTime: NewTime(t1.Add(1 * time.Hour)),
 						},
 						{
 							Id:          "2",
-							ConnectTime: mesh_proto.NewTime(t1.Add(2 * time.Hour)),
+							ConnectTime: NewTime(t1.Add(2 * time.Hour)),
 						},
 					},
 				}
@@ -171,15 +169,15 @@ var _ = Describe("DataplaneHelpers", func() {
 				status.Subscriptions = []*DiscoverySubscription{
 					{
 						Id:          "1",
-						ConnectTime: mesh_proto.NewTime(t1),
+						ConnectTime: NewTime(t1),
 					},
 					{
 						Id:          "3",
-						ConnectTime: mesh_proto.NewTime(t3),
+						ConnectTime: NewTime(t3),
 					},
 					{
 						Id:          "2",
-						ConnectTime: mesh_proto.NewTime(t2),
+						ConnectTime: NewTime(t2),
 					},
 				}
 

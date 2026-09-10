@@ -5,13 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"

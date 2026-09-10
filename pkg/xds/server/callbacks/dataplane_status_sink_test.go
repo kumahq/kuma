@@ -491,7 +491,7 @@ type SubscriptionStatusHolder struct {
 }
 
 func (h *SubscriptionStatusHolder) GetStatus() (core_model.ResourceKey, *mesh_proto.DiscoverySubscription) {
-	return h.ResourceKey, h.DiscoverySubscription.DeepCopy()
+	return h.ResourceKey, h.DeepCopy()
 }
 
 var _ manager.ResourceManager = &DataplaneInsightStoreRecorder{}

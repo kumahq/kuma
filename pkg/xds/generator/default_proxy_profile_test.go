@@ -2,7 +2,6 @@ package generator_test
 
 import (
 	"context"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -11,6 +10,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"

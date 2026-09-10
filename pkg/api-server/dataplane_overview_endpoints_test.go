@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"time"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -55,7 +53,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 					{
 						Id:                     "stream-id-1",
 						ControlPlaneInstanceId: "cp-1",
-						ConnectTime:            mesh_proto.NewTime(sampleTime),
+						ConnectTime:            v1alpha1.NewTime(sampleTime),
 						Status:                 v1alpha1.NewSubscriptionStatus(sampleTime),
 					},
 				},
@@ -289,7 +287,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 					{
 						Id:                     "stream-id-test",
 						ControlPlaneInstanceId: "cp-test",
-						ConnectTime:            mesh_proto.NewTime(sampleTime),
+						ConnectTime:            v1alpha1.NewTime(sampleTime),
 						Status:                 v1alpha1.NewSubscriptionStatus(sampleTime),
 					},
 				},

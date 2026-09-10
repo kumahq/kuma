@@ -106,16 +106,12 @@ func (l *DataplaneList) GetItems() []model.KubernetesObject {
 
 func init() {
 	registry.RegisterObjectType(&mesh_proto.Dataplane{}, &Dataplane{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: GroupVersion.String(),
-			Kind:       "Dataplane",
-		},
+		APIVersion: GroupVersion.String(),
+		Kind:       "Dataplane",
 	})
 	registry.RegisterListType(&mesh_proto.Dataplane{}, &DataplaneList{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: GroupVersion.String(),
-			Kind:       "DataplaneList",
-		},
+		APIVersion: GroupVersion.String(),
+		Kind:       "DataplaneList",
 	})
 }
 
@@ -211,15 +207,11 @@ func (l *DataplaneInsightList) GetItems() []model.KubernetesObject {
 
 func init() {
 	registry.RegisterObjectType(&mesh_proto.DataplaneInsight{}, &DataplaneInsight{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: GroupVersion.String(),
-			Kind:       "DataplaneInsight",
-		},
+		APIVersion: GroupVersion.String(),
+		Kind:       "DataplaneInsight",
 	})
 	registry.RegisterListType(&mesh_proto.DataplaneInsight{}, &DataplaneInsightList{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: GroupVersion.String(),
-			Kind:       "DataplaneInsightList",
-		},
+		APIVersion: GroupVersion.String(),
+		Kind:       "DataplaneInsightList",
 	})
 }

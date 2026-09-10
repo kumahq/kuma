@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
 var _ = Describe("Dataplane", func() {

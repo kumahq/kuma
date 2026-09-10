@@ -1,13 +1,13 @@
 package mesh_test
 
 import (
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
