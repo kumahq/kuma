@@ -2,14 +2,13 @@ package status
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	"github.com/go-logr/logr"
-	"google.golang.org/protobuf/proto"
 
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -23,7 +22,7 @@ type ZoneInsightSink interface {
 }
 
 type ZoneInsightStore interface {
-	Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error
+	Upsert(ctx context.Context, zone string, subscription *zoneinsight_api.KDSSubscription) error
 }
 
 func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracker {
@@ -88,7 +87,7 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 	generationTicker := s.generationTicker()
 	defer generationTicker.Stop()
 
-	var lastStoredState *system_proto.KDSSubscription
+	var lastStoredState *zoneinsight_api.KDSSubscription
 	var generation uint32
 
 	gracefulCtx, cancel := context.WithCancel(context.WithoutCancel(ctx))
@@ -104,7 +103,7 @@ func (s *zoneInsightSink) Start(ctx context.Context, stop <-chan struct{}) {
 		default:
 		}
 		currentState.Generation = generation
-		if proto.Equal(currentState, lastStoredState) {
+		if reflect.DeepEqual(currentState, lastStoredState) {
 			return
 		}
 
@@ -154,13 +153,13 @@ type zoneInsightStore struct {
 	transactions    store.Transactions
 }
 
-func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription *system_proto.KDSSubscription) error {
+func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription *zoneinsight_api.KDSSubscription) error {
 	ctx = user.Ctx(ctx, user.ControlPlane)
 
 	key := core_model.ResourceKey{
 		Name: zone,
 	}
-	zoneInsight := system.NewZoneInsightResource()
+	zoneInsight := zoneinsight_api.NewZoneInsightResource()
 	return manager.Upsert(ctx, s.resManager, key, zoneInsight, func(resource core_model.Resource) error {
 		if err := zoneInsight.Spec.UpdateSubscription(subscription); err != nil {
 			return err

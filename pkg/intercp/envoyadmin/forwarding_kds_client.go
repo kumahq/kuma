@@ -10,7 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -163,7 +163,7 @@ func (f *forwardingKdsEnvoyAdminClient) logIntendedAction(proxy core_model.Resou
 }
 
 func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zone string, rpcName string) (string, error) {
-	zoneInsightRes := core_system.NewZoneInsightResource()
+	zoneInsightRes := zoneinsight_api.NewZoneInsightResource()
 	if err := f.resManager.Get(ctx, zoneInsightRes, core_store.GetByKey(zone, core_model.NoMesh)); err != nil {
 		return "", err
 	}
@@ -175,21 +175,21 @@ func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zo
 	switch rpcName {
 	case service.ConfigDumpRPC:
 		if streams.GetConfigDump() != nil {
-			globalInstanceID = streams.GetConfigDump().GetGlobalInstanceId()
+			globalInstanceID = streams.GetConfigDump().GetGlobalInstanceID()
 		} else {
-			globalInstanceID = zoneInsightRes.Spec.GetEnvoyAdminStreams().GetConfigDumpGlobalInstanceId()
+			globalInstanceID = zoneInsightRes.Spec.GetEnvoyAdminStreams().GetConfigDumpGlobalInstanceID()
 		}
 	case service.StatsRPC:
 		if streams.GetStats() != nil {
-			globalInstanceID = streams.GetStats().GetGlobalInstanceId()
+			globalInstanceID = streams.GetStats().GetGlobalInstanceID()
 		} else {
-			globalInstanceID = zoneInsightRes.Spec.GetEnvoyAdminStreams().GetStatsGlobalInstanceId()
+			globalInstanceID = zoneInsightRes.Spec.GetEnvoyAdminStreams().GetStatsGlobalInstanceID()
 		}
 	case service.ClustersRPC:
 		if streams.GetClusters() != nil {
-			globalInstanceID = streams.GetClusters().GetGlobalInstanceId()
+			globalInstanceID = streams.GetClusters().GetGlobalInstanceID()
 		} else {
-			globalInstanceID = zoneInsightRes.Spec.GetEnvoyAdminStreams().GetClustersGlobalInstanceId()
+			globalInstanceID = zoneInsightRes.Spec.GetEnvoyAdminStreams().GetClustersGlobalInstanceID()
 		}
 	default:
 		return "", errors.Errorf("invalid operation %s", rpcName)

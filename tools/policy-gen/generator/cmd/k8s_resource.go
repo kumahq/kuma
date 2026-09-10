@@ -60,6 +60,18 @@ func newK8sResource(rootArgs *args) *cobra.Command {
 				return err
 			}
 
+			// A resource whose Kubernetes spec is opaque produces a definition with no
+			// properties, and the OpenAPI document is enriched from that definition, so
+			// the REST API reference would describe none of the spec. Render the typed
+			// variant into a throwaway package, keep the schema controller-gen derives
+			// from it for the reference, and delete the package: leaving it behind would
+			// compile as unreachable code.
+			if pconfig.OpaqueK8sSpec {
+				if err := generateSchemaForDocs(cmd, localArgs.controllerGenBin, rootArgs, pconfig); err != nil {
+					return err
+				}
+			}
+
 			controllerGenGeneratedTypeExec := exec.CommandContext(cmd.Context(), //nolint:gosec
 				localArgs.controllerGenBin,
 				"object",
@@ -101,7 +113,13 @@ import (
 	"errors"
 {{- end }}
 	"fmt"
+{{- if .OpaqueK8sSpec }}
+	"encoding/json"
+{{- end }}
 
+{{- if .OpaqueK8sSpec }}
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+{{- end }}
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -119,7 +137,7 @@ import (
 // {{ .Description }}
 {{- end }}
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName={{ .ShortName }}
+// +kubebuilder:resource:categories=kuma,scope={{ if .ClusterScopedK8s }}Cluster{{ else }}Namespaced{{ end }},shortName={{ .ShortName }}
 {{- range $marker := .KubebuilderMarkers }}
 {{ $marker }}
 {{- end }}
@@ -132,7 +150,12 @@ type {{.Name}} struct {
 
 	// Spec is the specification of the Kuma {{ .Name }} resource.
     // +kubebuilder:validation:Optional
+{{- if .OpaqueK8sSpec }}
+    // +kubebuilder:pruning:PreserveUnknownFields
+	Spec   *apiextensionsv1.JSON {{ $tk }}json:"spec,omitempty"{{ $tk }}
+{{- else }}
 	Spec   *policy.{{.Name}} {{ $tk }}json:"spec,omitempty"{{ $tk }}
+{{- end }}
 
 {{- if .HasStatus }}
 	// Status is the current status of the Kuma {{ .Name }} resource.
@@ -142,7 +165,7 @@ type {{.Name}} struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:scope=Namespaced
+// +kubebuilder:resource:scope={{ if .ClusterScopedK8s }}Cluster{{ else }}Namespaced{{ end }}
 type {{.Name}}List struct {
 	metav1.TypeMeta {{ $tk }}json:",inline"{{ $tk }}
 	metav1.ListMeta {{ $tk }}json:"metadata,omitempty"{{ $tk }}
@@ -181,6 +204,36 @@ func (cb *{{.Name}}) SetMesh(mesh string) {
 {{- end }}
 }
 
+{{- if .OpaqueK8sSpec }}
+func (cb *{{.Name}}) GetSpec() (core_model.ResourceSpec, error) {
+	spec := cb.Spec
+	if spec == nil || len(spec.Raw) == 0 {
+		return &policy.{{.Name}}{}, nil
+	}
+	out := &policy.{{.Name}}{}
+	if err := json.Unmarshal(spec.Raw, out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (cb *{{.Name}}) SetSpec(spec core_model.ResourceSpec) {
+	if spec == nil {
+		cb.Spec = nil
+		return
+	}
+
+	if _, ok := spec.(*policy.{{.Name}}); !ok {
+		panic(fmt.Sprintf("unexpected type %T", spec))
+	}
+
+	raw, err := json.Marshal(spec)
+	if err != nil {
+		panic(err)
+	}
+	cb.Spec = &apiextensionsv1.JSON{Raw: raw}
+}
+{{- else }}
 func (cb *{{.Name}}) GetSpec() (core_model.ResourceSpec, error) {
 	return cb.Spec, nil
 }
@@ -197,6 +250,7 @@ func (cb *{{.Name}}) SetSpec(spec core_model.ResourceSpec) {
 
 	cb.Spec = spec.(*policy.{{.Name}})
 }
+{{- end }}
 
 {{ if .HasStatus }}
 func (cb *{{.Name}}) GetStatus() (core_model.ResourceStatus, error) {
@@ -227,7 +281,11 @@ func (cb *{{.Name}}) SetStatus(status core_model.ResourceStatus) error {
 {{ end }}
 
 func (cb *{{.Name}}) Scope() model.Scope {
+{{- if .ClusterScopedK8s }}
+	return model.ScopeCluster
+{{- else }}
 	return model.ScopeNamespace
+{{- end }}
 }
 
 func (l *{{.Name}}List) GetItems() []model.KubernetesObject {
@@ -287,3 +345,35 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 
 var knownTypes []runtime.Object
 `))
+
+// generateSchemaForDocs writes the schema the REST API reference is built from for a
+// resource that ships an opaque Kubernetes definition.
+func generateSchemaForDocs(cmd *cobra.Command, controllerGenBin string, rootArgs *args, pconfig parse.PolicyConfig) error {
+	typedDir := filepath.Join(rootArgs.pluginDir, "k8s", "schemaonly")
+	if err := os.MkdirAll(typedDir, 0o755); err != nil {
+		return err
+	}
+	defer func() { _ = os.RemoveAll(typedDir) }()
+
+	typed := pconfig
+	typed.OpaqueK8sSpec = false
+	if err := commontemplate.GoTemplate(customResourceTemplate, typed, filepath.Join(typedDir, "zz_generated.types.go")); err != nil {
+		return err
+	}
+	if err := commontemplate.GoTemplate(groupVersionInfoTemplate, typed, filepath.Join(typedDir, "groupversion_info.go")); err != nil {
+		return err
+	}
+
+	schemaDir := filepath.Join(rootArgs.pluginDir, "k8s", "schema")
+	if err := os.MkdirAll(schemaDir, 0o755); err != nil {
+		return err
+	}
+	gen := exec.CommandContext(cmd.Context(), //nolint:gosec
+		controllerGenBin,
+		"crd:crdVersions=v1,ignoreUnexportedFields=true",
+		"paths=./"+filepath.Join("./", typedDir),
+		"output:crd:artifacts:config="+schemaDir,
+	)
+	gen.Stderr = cmd.ErrOrStderr()
+	return gen.Run()
+}
