@@ -132,6 +132,10 @@ spec:
           {{- $preStopSleep = $cfg.preStopSleepSeconds }}
           {{- end }}
           {{- if gt (int $preStopSleep) 0 }}
+          {{- $grace := int (default 40 $cfg.terminationGracePeriodSeconds) }}
+          {{- if ge (int $preStopSleep) $grace }}
+          {{- fail (printf "meshes[%s].egress: preStopSleepSeconds (%d) must be lower than terminationGracePeriodSeconds (%d), otherwise the pod is killed before the hook completes" $meshName (int $preStopSleep) $grace) }}
+          {{- end }}
           lifecycle:
             preStop:
               sleep:

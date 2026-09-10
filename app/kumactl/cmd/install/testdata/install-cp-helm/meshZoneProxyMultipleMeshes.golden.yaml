@@ -915,7 +915,7 @@ spec:
           lifecycle:
             preStop:
               sleep:
-                seconds: 15
+                seconds: 10
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -1036,10 +1036,6 @@ spec:
               memory: 16Mi
             limits:
               memory: 16Mi
-          lifecycle:
-            preStop:
-              sleep:
-                seconds: 15
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
