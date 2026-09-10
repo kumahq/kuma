@@ -116,7 +116,7 @@ func newFullResyncTicker(cfg multizone.EventBasedWatchdogConfig) (*time.Ticker, 
 	// and spreads them evenly across the entire interval. After the initial trigger, we reset
 	// the ticker, returning it to its full resync interval.
 	// #nosec G404 - math rand is enough
-	delay := time.Duration(cfg.FullResyncInterval.Seconds()*rand.Float64()) * time.Second
+	delay := time.Duration(rand.Int63n(int64(cfg.FullResyncInterval.Duration)))
 
 	return newDelayedFullResyncTicker(cfg.FullResyncInterval.Duration, delay)
 }

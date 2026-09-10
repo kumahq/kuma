@@ -8,6 +8,33 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### KDS full resync is periodic again, not every second
+
+Removing the polling KDS watchdog carried the poll loop's `refreshInterval` of
+`1s` onto the event-based watchdog that replaced it. The two intervals do not
+mean the same thing: polling had no events, so `1s` was how quickly a change
+reached a zone, while the event-based watchdog already delivers changes as they
+happen and schedules a full resync only to recover events it may have missed.
+At `1s` every connected zone rebuilt and re-hashed its entire snapshot every
+second and shipped an identical one, so the defaults return to the values the
+event-based watchdog shipped with:
+
+- `flushInterval` `1s` -> `5s`
+- `fullResyncInterval` `1s` -> `1m`
+- `delayFullResync` `false` -> `true`
+
+on both `multizone.global.kds.eventBasedWatchdog` and
+`multizone.zone.kds.eventBasedWatchdog`.
+
+**Action required**
+
+None. Changes still reach zones on the event path, now coalesced over
+`flushInterval` instead of `1s`. A change that is missed on the event path is
+now repaired by the next full resync within `fullResyncInterval` rather than
+within a second. Set the intervals explicitly if you depend on the previous
+timing.
+
+
 ### `Zone` on Kubernetes reaches the defaulting webhook
 
 The defaulting webhook selected `zone` where the CRD plural is `zones`, so the rule matched nothing and a `Zone` written straight to the Kubernetes API skipped the webhook entirely. It now matches, which means a `Zone` created or updated with `kubectl` gets the same computed labels a `Zone` created through the HTTP API already got: `kuma.io/display-name`, `kuma.io/origin`, and on a zone control plane `kuma.io/zone` and `kuma.io/env`.
