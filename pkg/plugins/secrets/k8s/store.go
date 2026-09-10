@@ -24,7 +24,6 @@ import (
 	common_k8s "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ secret_store.SecretStore = &KubernetesStore{}
@@ -309,7 +308,7 @@ func (c *SimpleConverter) ToCoreResource(secret *kube_core.Secret, out core_mode
 	})
 	if secret.Data != nil {
 		_ = out.SetSpec(&system_proto.Secret{
-			Data: util_proto.Bytes(secret.Data["value"]),
+			Data: system_proto.Bytes(secret.Data["value"]),
 		})
 	}
 	return nil

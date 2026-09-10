@@ -69,7 +69,6 @@ generate/oas/extensions: $(OAPI_GEN)
 .PHONY: resources/type
 resources/type: $(RESOURCE_GEN)
 	$(RESOURCE_GEN) -package mesh -generator type > pkg/core/resources/apis/mesh/zz_generated.resources.go
-	$(RESOURCE_GEN) -package system -generator type > pkg/core/resources/apis/system/zz_generated.resources.go
 
 .PHONY: clean/legacy-resources
 clean/legacy-resources:
@@ -198,7 +197,6 @@ $(foreach s,$(OAS_SPECS),$(eval $(call OAS_RULE,$(s))))
 .PHONY: generate/oas
 generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN) $(OAPI_GEN) $(OAS_TYPES)
 	@$(RESOURCE_GEN) -package mesh   -generator openapi -readDir $(KUMA_DIR) -writeDir .
-	@$(RESOURCE_GEN) -package system -generator openapi -readDir $(KUMA_DIR) -writeDir .
 	@$(OAPI_GEN) kri
 
 .PHONY: validate/openapi-generated-docs

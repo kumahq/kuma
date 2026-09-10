@@ -8,8 +8,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -44,9 +43,7 @@ func LoadCA(ctx context.Context, resManager manager.ReadOnlyResourceManager) (tl
 func CreateCA(ctx context.Context, keyPair util_tls.KeyPair, resManager manager.ResourceManager) error {
 	bytes := append(keyPair.CertPEM, keyPair.KeyPEM...)
 	globalSecret := system.NewGlobalSecretResource()
-	globalSecret.Spec.Data = &wrapperspb.BytesValue{
-		Value: bytes,
-	}
+	globalSecret.Spec.Data = system_proto.Bytes(bytes)
 	return resManager.Create(ctx, globalSecret, store.CreateBy(globalSecretKey))
 }
 

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
@@ -95,9 +94,7 @@ func (s *signingKeyManager) CreateSigningKey(ctx context.Context, keyID KeyID) e
 
 	secret := system.NewGlobalSecretResource()
 	secret.Spec = &system_proto.Secret{
-		Data: &wrapperspb.BytesValue{
-			Value: key,
-		},
+		Data: system_proto.Bytes(key),
 	}
 	return s.manager.Create(ctx, secret, store.CreateBy(SigningKeyResourceKey(s.signingKeyPrefix, keyID, model.NoMesh)))
 }
