@@ -10,7 +10,7 @@ on:
 permissions:
   contents: read
 env:
-  CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
+  CI_TOOLS_DIR: ${{ github.workspace }}/.ci_tools
   E2E_PARAM_K8S_VERSION: ${{ fromJSON(inputs.matrix).k8sVersion }}
   E2E_PARAM_CNI_NETWORK_PLUGIN: ${{ fromJSON(inputs.matrix).cniNetworkPlugin }}
   E2E_PARAM_ARCH: ${{ fromJSON(inputs.matrix).arch }}
@@ -20,7 +20,7 @@ env:
 jobs:
   e2e:
     timeout-minutes: 60
-    runs-on: ${{ inputs.runner }}
+    runs-on: ${{ fromJSON(inputs.runner) }}
     if: ${{ inputs.runner != '' }}
     strategy:
       fail-fast: false
