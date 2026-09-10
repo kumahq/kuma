@@ -71,7 +71,7 @@ var _ = Describe("run", func() {
 
 	Describe("dnsProxyAddresses", func() {
 		It("should fall back to 0.0.0.0 when transparent proxy is nil", func() {
-			Expect(dnsProxyAddresses(nil, "15053")).To(Equal([]string{
+			Expect(dnsProxyAddresses(nil, true, "15053")).To(Equal([]string{
 				net.JoinHostPort("0.0.0.0", "15053"),
 			}))
 		})
@@ -80,7 +80,7 @@ var _ = Describe("run", func() {
 			cfg := &tproxy_dp.DataplaneConfig{
 				IPFamilyMode: tproxy_config.IPFamilyModeIPv4,
 			}
-			Expect(dnsProxyAddresses(cfg, "15053")).To(Equal([]string{
+			Expect(dnsProxyAddresses(cfg, true, "15053")).To(Equal([]string{
 				net.JoinHostPort("127.0.0.1", "15053"),
 			}))
 		})
@@ -89,7 +89,7 @@ var _ = Describe("run", func() {
 			cfg := &tproxy_dp.DataplaneConfig{
 				IPFamilyMode: tproxy_config.IPFamilyModeDualStack,
 			}
-			Expect(dnsProxyAddresses(cfg, "15053")).To(Equal([]string{
+			Expect(dnsProxyAddresses(cfg, true, "15053")).To(Equal([]string{
 				net.JoinHostPort("127.0.0.1", "15053"),
 				net.JoinHostPort("::1", "15053"),
 			}))
@@ -104,7 +104,7 @@ var _ = Describe("run", func() {
 					},
 				},
 			}
-			Expect(dnsProxyAddresses(cfg, "15053")).To(Equal([]string{
+			Expect(dnsProxyAddresses(cfg, true, "15053")).To(Equal([]string{
 				net.JoinHostPort("0.0.0.0", "15053"),
 			}))
 		})
@@ -118,9 +118,32 @@ var _ = Describe("run", func() {
 					},
 				},
 			}
-			Expect(dnsProxyAddresses(cfg, "15053")).To(Equal([]string{
+			Expect(dnsProxyAddresses(cfg, true, "15053")).To(Equal([]string{
 				net.JoinHostPort("0.0.0.0", "15053"),
 				net.JoinHostPort("::", "15053"),
+			}))
+		})
+
+		It("should bind to IPv4 loopback only for dual-stack with IPv6 disabled", func() {
+			cfg := &tproxy_dp.DataplaneConfig{
+				IPFamilyMode: tproxy_config.IPFamilyModeDualStack,
+			}
+			Expect(dnsProxyAddresses(cfg, false, "15053")).To(Equal([]string{
+				net.JoinHostPort("127.0.0.1", "15053"),
+			}))
+		})
+
+		It("should bind to 0.0.0.0 only for dual-stack VNet with IPv6 disabled", func() {
+			cfg := &tproxy_dp.DataplaneConfig{
+				IPFamilyMode: tproxy_config.IPFamilyModeDualStack,
+				Redirect: tproxy_dp.DataplaneRedirect{
+					VNet: tproxy_dp.DataplaneVNet{
+						Networks: []string{"docker0:172.17.0.0/16"},
+					},
+				},
+			}
+			Expect(dnsProxyAddresses(cfg, false, "15053")).To(Equal([]string{
+				net.JoinHostPort("0.0.0.0", "15053"),
 			}))
 		})
 	})

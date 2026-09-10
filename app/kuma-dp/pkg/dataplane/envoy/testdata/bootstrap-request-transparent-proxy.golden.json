@@ -23,7 +23,7 @@
  "readinessPort": 9902,
  "operatingSystem": "linux",
  "features": [
-  "feature-transparent-proxy-in-dataplane-metadata"
+  "feature-spire"
  ],
  "resources": {
   "maxHeapSizeBytes": 0

@@ -13,6 +13,4 @@ networking:
       tags:
         kuma.io/display-name: redis
   transparentProxying:
-    redirectPortOutbound: 15001
-    redirectPortInbound: 15006
     directAccessServices: ["*"]

@@ -15,6 +15,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/v3/pkg/util/yaml"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -38,10 +40,11 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 	generator := generator.DirectAccessProxyGenerator{}
 
 	type testCase struct {
-		dataplaneFile  string
-		dataplanesFile string
-		meshFile       string
-		expected       string
+		dataplaneFile    string
+		dataplanesFile   string
+		meshFile         string
+		transparentProxy *tproxy_dp.DataplaneConfig
+		expected         string
 	}
 
 	DescribeTable("should generate envoy config",
@@ -88,7 +91,7 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			proxy := &xds.Proxy{
 				Dataplane:  dataplane,
 				APIVersion: envoy_common.APIV3,
-				Metadata:   &xds.DataplaneMetadata{IPv6Enabled: true},
+				Metadata:   &xds.DataplaneMetadata{IPv6Enabled: true, TransparentProxy: given.transparentProxy},
 			}
 
 			// when
@@ -118,22 +121,25 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			expected:       "02.envoy-config.golden.yaml",
 		}),
 		Entry("should generate direct access for all services except taken endpoints by outbound", testCase{
-			dataplaneFile:  "03.dataplane.input.yaml",
-			dataplanesFile: "03.dataplanes.input.yaml",
-			meshFile:       "03.mesh.input.yaml",
-			expected:       "03.envoy-config.golden.yaml",
+			dataplaneFile:    "03.dataplane.input.yaml",
+			dataplanesFile:   "03.dataplanes.input.yaml",
+			meshFile:         "03.mesh.input.yaml",
+			transparentProxy: xds_builders.TransparentProxy("dualstack"),
+			expected:         "03.envoy-config.golden.yaml",
 		}),
 		Entry("should generate direct access for given services", testCase{
-			dataplaneFile:  "04.dataplane.input.yaml",
-			dataplanesFile: "04.dataplanes.input.yaml",
-			meshFile:       "04.mesh.input.yaml",
-			expected:       "04.envoy-config.golden.yaml",
+			dataplaneFile:    "04.dataplane.input.yaml",
+			dataplanesFile:   "04.dataplanes.input.yaml",
+			meshFile:         "04.mesh.input.yaml",
+			transparentProxy: xds_builders.TransparentProxy("dualstack"),
+			expected:         "04.envoy-config.golden.yaml",
 		}),
 		Entry("should not leak inbounds of other services declared by a legacy dataplane", testCase{
-			dataplaneFile:  "05.dataplane.input.yaml",
-			dataplanesFile: "05.dataplanes.input.yaml",
-			meshFile:       "05.mesh.input.yaml",
-			expected:       "05.envoy-config.golden.yaml",
+			dataplaneFile:    "05.dataplane.input.yaml",
+			dataplanesFile:   "05.dataplanes.input.yaml",
+			meshFile:         "05.mesh.input.yaml",
+			transparentProxy: xds_builders.TransparentProxy("dualstack"),
+			expected:         "05.envoy-config.golden.yaml",
 		}),
 	)
 })

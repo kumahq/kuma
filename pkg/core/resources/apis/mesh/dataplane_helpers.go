@@ -14,8 +14,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
-	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
-	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 )
 
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
@@ -83,24 +81,6 @@ func (d *DataplaneResource) GetAddress() string {
 	}
 
 	return d.Spec.GetNetworking().GetAddress()
-}
-
-func (d *DataplaneResource) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
-	if d == nil {
-		return &tproxy_dp.DataplaneConfig{}
-	}
-
-	if tp := d.Spec.GetNetworking().GetTransparentProxying(); tp != nil {
-		return &tproxy_dp.DataplaneConfig{
-			IPFamilyMode: tproxy_config.IPFamilyModeFromStringer(tp.GetIpFamilyMode()),
-			Redirect: tproxy_dp.DataplaneRedirect{
-				Inbound:  tproxy_dp.DataplaneTrafficFlowFromPortLike(tp.GetRedirectPortInbound()),
-				Outbound: tproxy_dp.DataplaneTrafficFlowFromPortLike(tp.GetRedirectPortOutbound()),
-			},
-		}
-	}
-
-	return &tproxy_dp.DataplaneConfig{}
 }
 
 func (d *DataplaneResource) AdminAddress(defaultAdminPort uint32) string {

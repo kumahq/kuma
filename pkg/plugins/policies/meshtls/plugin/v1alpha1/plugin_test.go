@@ -132,7 +132,6 @@ var _ = Describe("MeshTLS", func() {
 						WithName("test").
 						WithMesh("default").
 						WithAddress("127.0.0.1").
-						WithTransparentProxying(15006, 15001, ipFamilyMode).
 						AddOutbound(
 							builders.Outbound().
 								WithAddress("127.0.0.1").
@@ -154,7 +153,7 @@ var _ = Describe("MeshTLS", func() {
 				).
 				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, fromRules))
 
-			proxy := proxyBuilder.Build()
+			proxy := proxyBuilder.WithTransparentProxy(ipFamilyMode).Build()
 			resourceSet.Add(getMeshServiceResources(proxy)...)
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
@@ -379,12 +378,12 @@ var _ = Describe("MeshTLS on a proxy without inbounds", func() {
 		proxy := xds_builders.Proxy().
 			WithWorkloadIdentity(workloadIdentity()).
 			WithApiVersion(envoy_common.APIV3).
+			WithTransparentProxy("ipv4").
 			WithDataplane(
 				builders.Dataplane().
 					WithName("gateway").
 					WithMesh("default").
 					WithAddress("127.0.0.1").
-					WithTransparentProxying(15006, 15001, "ipv4").
 					AddOutbound(
 						builders.Outbound().
 							WithAddress("127.0.0.1").
