@@ -22,7 +22,12 @@ env:
   GH_REPO: ${{ github.repository }}
 jobs:
   pr-info:
-    runs-on: ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').sm || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
     outputs:
       pr_title: ${{ steps.get-pr-info.outputs.pr_title }}
       pr_change_log: ${{ steps.get-pr-info.outputs.pr_change_log }}
@@ -109,7 +114,12 @@ jobs:
       branches: ${{ inputs.branches }}
   open-prs:
     needs: [pr-info, active-branches]
-    runs-on: ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').md || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').md
+      || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:

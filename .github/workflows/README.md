@@ -54,8 +54,17 @@ gets the job OOM-killed on a small one.
 ## The expression
 
 ```yaml
-runs-on: ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').lg || 'ubuntu-24.04' }}
+runs-on: >-
+  ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+  || vars.RUNNERS_MASTER_AMD64
+  || vars.RUNNERS_AMD64
+  || '{}').lg
+  || 'ubuntu-24.04' }}
 ```
+
+`>-` folds the newlines into single spaces, so the expression GitHub evaluates is the same
+one-line string. Every continuation line has to sit at the same indentation, or YAML keeps
+the newline instead of folding it.
 
 Reading it: on a pull request take the PR variable, otherwise the per-branch one, otherwise
 the global one, otherwise an empty object. Then look up the size. If any step yields
@@ -67,7 +76,15 @@ from one, add a fork guard in front, so code from a fork never runs on a self-ho
 runner:
 
 ```yaml
-runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-24.04' || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').lg || 'ubuntu-24.04' }}
+runs-on: >-
+  ${{ (github.event_name == 'pull_request'
+  && github.event.pull_request.head.repo.full_name != github.repository)
+  && 'ubuntu-24.04'
+  || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+  || vars.RUNNERS_MASTER_AMD64
+  || vars.RUNNERS_AMD64
+  || '{}').lg
+  || 'ubuntu-24.04' }}
 ```
 
 The `env` context is not available in `runs-on`, which is why the default label is written

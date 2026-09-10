@@ -65,7 +65,12 @@ jobs:
         !startsWith(github.event.workflow_run.head_branch, 'release-')
       )
     timeout-minutes: 5
-    runs-on: ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').sm || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
     permissions:
       contents: read # to confirm the ref is really a tag, via the git refs API
     outputs:
@@ -135,7 +140,12 @@ jobs:
       needs.guard.outputs.should_dispatch == 'true' &&
       (github.event_name != 'workflow_dispatch' || inputs.run_smoke)
     timeout-minutes: 5
-    runs-on: ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').sm || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
     permissions: {}
     steps:
       - name: "Trigger downstream smoke test"
@@ -182,7 +192,12 @@ jobs:
       needs.guard.outputs.should_dispatch == 'true' &&
       (github.event_name != 'workflow_dispatch' || inputs.run_verify)
     timeout-minutes: 5
-    runs-on: ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').sm || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
     permissions:
       # same-repo dispatch needs no cross-org token, unlike smoke; the default
       # GITHUB_TOKEN only gains workflow_dispatch rights with actions:write.
@@ -214,7 +229,12 @@ jobs:
       needs.guard.outputs.should_dispatch == 'true' &&
       (github.event_name != 'workflow_dispatch' || inputs.run_installer)
     timeout-minutes: 5
-    runs-on: ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64) || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}').sm || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
     permissions: {}
     steps:
       - name: "Run installer.sh for the released version"
