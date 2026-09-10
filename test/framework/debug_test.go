@@ -95,3 +95,10 @@ xds_requests_received{confirmation="NACK",error_type="other",type_url="type.goog
 `, []string{`xds_requests_received{confirmation="NACK",error_type="other",type_url="type.googleapis.com/envoy.config.listener.v3.Listener"} = 3 (tolerated 2)`}),
 	)
 })
+
+var _ = Describe("DumpState", func() {
+	It("has kumactl options to skip when the control plane never started", func() {
+		Expect((&UniversalCluster{}).GetKumactlOptions()).To(BeNil())
+		Expect((&K8sCluster{}).GetKumactlOptions()).To(BeNil())
+	})
+})

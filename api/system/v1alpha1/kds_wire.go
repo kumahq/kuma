@@ -14,8 +14,8 @@ import (
 // what a global control plane of this one sends. See kdswire/kds_wire.proto.
 func (s *Secret) ToKDSWire() proto.Message {
 	wire := &kdswire.Secret{}
-	if s.Data != nil {
-		wire.Data = wrapperspb.Bytes(s.Data.Value)
+	if s.GetData() != nil {
+		wire.Data = wrapperspb.Bytes(s.GetData().GetValue())
 	}
 	return wire
 }
@@ -34,7 +34,7 @@ func (s *Secret) FromKDSWire(msg proto.Message) error {
 }
 
 func (c *Config) ToKDSWire() proto.Message {
-	return &kdswire.Config{Config: c.Config}
+	return &kdswire.Config{Config: c.GetConfig()}
 }
 
 func (c *Config) FromKDSWire(msg proto.Message) error {

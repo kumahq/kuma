@@ -63,6 +63,18 @@ var _ = Describe("KDS wire compatibility", func() {
 		Expect(read.Data).To(BeNil())
 	})
 
+	It("tolerates a nil spec the way the protobuf marshaller did", func() {
+		any, err := core_model.ToAny((*system_proto.Secret)(nil))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(any.GetTypeUrl()).To(Equal("type.googleapis.com/kuma.system.v1alpha1.Secret"))
+		Expect(any.GetValue()).To(BeEmpty())
+
+		any, err = core_model.ToAny((*system_proto.Config)(nil))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(any.GetTypeUrl()).To(Equal("type.googleapis.com/kuma.system.v1alpha1.Config"))
+		Expect(any.GetValue()).To(BeEmpty())
+	})
+
 	DescribeTable("reads the json a control plane between the rewrite and this fix sent",
 		func(json string, expected []byte) {
 			read := &system_proto.Secret{}
