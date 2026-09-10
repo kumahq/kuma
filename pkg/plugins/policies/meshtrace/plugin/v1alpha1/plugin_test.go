@@ -524,7 +524,7 @@ var _ = Describe("MeshTrace", func() {
 		Expect(strings.TrimSpace(string(clusterResources))).To(Equal("{}"))
 	})
 
-	It("should route opentelemetry via kuma-dp when feature is enabled", func() {
+	DescribeTable("should route opentelemetry via kuma-dp", func(protocol motb_api.Protocol, endpoint *motb_api.Endpoint, expected core_xds.OtelPipeBackend) {
 		const (
 			workDir     = "/tmp"
 			backendName = "otel-backend"
@@ -542,11 +542,8 @@ var _ = Describe("MeshTrace", func() {
 			Name:   backendName,
 			Labels: map[string]string{mesh_proto.DisplayName: backendName},
 		})
-		motb.Spec.Endpoint = &motb_api.Endpoint{
-			Address: pointer.To("collector.mesh"),
-			Port:    pointer.To(int32(4317)),
-		}
-		motb.Spec.Protocol = pointer.To(motb_api.ProtocolGRPC)
+		motb.Spec.Endpoint = endpoint
+		motb.Spec.Protocol = &protocol
 
 		meshResources := xds_context.NewResources()
 		meshResources.MeshLocalResources[motb_api.MeshOpenTelemetryBackendType] = &motb_api.MeshOpenTelemetryBackendResourceList{
@@ -571,9 +568,6 @@ var _ = Describe("MeshTrace", func() {
 			).
 			WithMetadata(&core_xds.DataplaneMetadata{
 				WorkDir: workDir,
-				Features: xds_types.Features{
-					xds_types.FeatureOtelViaKumaDp: true,
-				},
 			}).
 			WithOutbounds(xds_types.Outbounds{
 				{
@@ -608,9 +602,16 @@ var _ = Describe("MeshTrace", func() {
 
 		expectedSocket := core_xds.OpenTelemetrySocketName(workDir, backendName)
 
+		// Envoy speaks gRPC to kuma-dp over the Unix socket whatever the collector protocol is.
+		listenerResources, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ListenerType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(listenerResources)).To(ContainSubstring("grpcService"))
+		Expect(string(listenerResources)).ToNot(ContainSubstring("httpService"))
+
 		clusterResources, err := util_yaml.GetResourcesToYaml(resources, envoy_resource.ClusterType)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(string(clusterResources)).To(ContainSubstring(expectedSocket))
+		Expect(string(clusterResources)).To(ContainSubstring("http2ProtocolOptions"))
 		Expect(string(clusterResources)).ToNot(ContainSubstring("collector.mesh"))
 
 		// Plugin adds to OtelPipeBackends accumulator instead of writing dynconf directly.
@@ -619,11 +620,23 @@ var _ = Describe("MeshTrace", func() {
 		backends := proxy.OtelPipeBackends.All()
 		Expect(backends).To(HaveLen(1))
 		Expect(backends[0].SocketPath).To(Equal(expectedSocket))
-		Expect(backends[0].Endpoint).To(Equal("collector.mesh:4317"))
-		Expect(backends[0].UseHTTP).To(BeFalse())
+		Expect(backends[0].Endpoint).To(Equal(expected.Endpoint))
+		Expect(backends[0].UseHTTP).To(Equal(expected.UseHTTP))
+		Expect(backends[0].UseHTTPS).To(Equal(expected.UseHTTPS))
+		Expect(backends[0].Path).To(Equal(expected.Path))
 		Expect(backends[0].Traces).ToNot(BeNil())
 		Expect(backends[0].Traces.Enabled).To(BeTrue())
-	})
+	},
+		Entry("grpc backend", motb_api.ProtocolGRPC, &motb_api.Endpoint{
+			Address: new("collector.mesh"),
+			Port:    new(int32(4317)),
+		}, core_xds.OtelPipeBackend{Endpoint: "collector.mesh:4317"}),
+		Entry("https backend with a path", motb_api.ProtocolHTTP, &motb_api.Endpoint{
+			Address: new("collector.mesh"),
+			Port:    new(int32(443)),
+			Path:    new("/otlp"),
+		}, core_xds.OtelPipeBackend{Endpoint: "collector.mesh:443", UseHTTP: true, UseHTTPS: true, Path: "/otlp"}),
+	)
 })
 
 func zoneEgressOnlyDataplane() *builders.DataplaneBuilder {

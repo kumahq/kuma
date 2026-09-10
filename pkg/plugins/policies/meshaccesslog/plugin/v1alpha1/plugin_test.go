@@ -964,7 +964,7 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 	)
 
-	It("should route opentelemetry backendRef via kuma-dp when feature is enabled", func() {
+	It("should route opentelemetry backendRef via kuma-dp", func() {
 		const (
 			workDir     = "/tmp"
 			backendName = "otel-backend"
@@ -1005,9 +1005,6 @@ var _ = Describe("MeshAccessLog", func() {
 			WithID(*core_xds.BuildProxyId("default", "backend")).
 			WithMetadata(&core_xds.DataplaneMetadata{
 				WorkDir: workDir,
-				Features: xds_types.Features{
-					xds_types.FeatureOtelViaKumaDp: true,
-				},
 			}).
 			WithDataplane(
 				builders.Dataplane().
@@ -1092,9 +1089,6 @@ var _ = Describe("MeshAccessLog", func() {
 			WithID(*core_xds.BuildProxyId("default", "backend")).
 			WithMetadata(&core_xds.DataplaneMetadata{
 				WorkDir: "/tmp",
-				Features: xds_types.Features{
-					xds_types.FeatureOtelViaKumaDp: true,
-				},
 			}).
 			WithDataplane(
 				builders.Dataplane().
