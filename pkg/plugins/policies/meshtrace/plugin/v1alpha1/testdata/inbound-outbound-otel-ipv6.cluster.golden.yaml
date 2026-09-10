@@ -9,9 +9,8 @@ resources:
       - lbEndpoints:
         - endpoint:
             address:
-              socketAddress:
-                address: 2001:db8::1
-                portValue: 4317
+              pipe:
+                path: kuma-otel-otel-collector-ipv6.sock
     name: system_meshtrace_otel_otel-collector-ipv6
     type: STATIC
     typedExtensionProtocolOptions:

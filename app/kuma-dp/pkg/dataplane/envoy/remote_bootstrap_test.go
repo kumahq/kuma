@@ -195,7 +195,6 @@ var _ = Describe("Remote Bootstrap", func() {
 		defer server.Close()
 
 		inventory := &core_xds.OtelBootstrapInventory{
-			PipeEnabled: true,
 			Shared: &core_xds.OtelSignalEnvInventory{
 				EndpointPresent:   true,
 				HeadersPresent:    true,
@@ -213,7 +212,6 @@ var _ = Describe("Remote Bootstrap", func() {
 			var request types.BootstrapRequest
 			Expect(json.NewDecoder(req.Body).Decode(&request)).To(Succeed())
 			Expect(request.OtelEnv).ToNot(BeNil())
-			Expect(request.OtelEnv.PipeEnabled).To(BeTrue())
 			Expect(request.OtelEnv.Shared).ToNot(BeNil())
 			Expect(request.OtelEnv.Shared.EffectiveProtocol).To(Equal(core_xds.OtelProtocolHTTPProtobuf))
 			Expect(request.OtelEnv.Traces).ToNot(BeNil())

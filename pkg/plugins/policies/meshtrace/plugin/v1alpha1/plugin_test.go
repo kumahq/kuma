@@ -524,7 +524,7 @@ var _ = Describe("MeshTrace", func() {
 		Expect(strings.TrimSpace(string(clusterResources))).To(Equal("{}"))
 	})
 
-	It("should route opentelemetry via kuma-dp when feature is enabled", func() {
+	It("should route opentelemetry via kuma-dp", func() {
 		const (
 			workDir     = "/tmp"
 			backendName = "otel-backend"
@@ -571,9 +571,6 @@ var _ = Describe("MeshTrace", func() {
 			).
 			WithMetadata(&core_xds.DataplaneMetadata{
 				WorkDir: workDir,
-				Features: xds_types.Features{
-					xds_types.FeatureOtelViaKumaDp: true,
-				},
 			}).
 			WithOutbounds(xds_types.Outbounds{
 				{

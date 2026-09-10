@@ -121,7 +121,6 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 					"otelEnvInventory": {
 						Kind: &structpb.Value_StructValue{
 							StructValue: util_proto.MustStructToProtoStruct(&xds.OtelBootstrapInventory{
-								PipeEnabled: true,
 								Shared: &xds.OtelSignalEnvInventory{
 									EndpointPresent:   true,
 									EffectiveProtocol: xds.OtelProtocolHTTPProtobuf,
@@ -134,7 +133,6 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 			expected: xds.DataplaneMetadata{
 				IPv6Enabled: true,
 				OtelEnvInventory: &xds.OtelBootstrapInventory{
-					PipeEnabled: true,
 					Shared: &xds.OtelSignalEnvInventory{
 						EndpointPresent:   true,
 						EffectiveProtocol: xds.OtelProtocolHTTPProtobuf,

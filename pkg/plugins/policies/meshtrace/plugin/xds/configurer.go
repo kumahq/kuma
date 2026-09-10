@@ -3,7 +3,6 @@ package xds
 import (
 	net_url "net/url"
 	"strings"
-	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -12,7 +11,6 @@ import (
 	tracingv3 "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -38,10 +36,6 @@ type Configurer struct {
 	WorkloadKRI      string
 	// ResolvedOtelName is the resolved MeshOpenTelemetryBackend name for OTel, used for naming.
 	ResolvedOtelName string
-	// ResolvedOtelUseHTTP is true when the resolved backend uses HTTP protocol.
-	ResolvedOtelUseHTTP bool
-	// ResolvedOtelURI is the full HTTP URI for the OTel collector (only used when ResolvedOtelUseHTTP is true).
-	ResolvedOtelURI string
 	// SkipOpenTelemetry prevents injecting an OTel tracing provider when backend resolution fails.
 	SkipOpenTelemetry bool
 }
@@ -135,13 +129,7 @@ func (c *Configurer) Configure(filterChain *envoy_listener.FilterChain) error {
 
 		if backend.OpenTelemetry != nil && !c.SkipOpenTelemetry {
 			name := core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(c.ResolvedOtelName)))
-			var tracing *envoy_trace.Tracing_Http
-			var err error
-			if c.ResolvedOtelUseHTTP {
-				tracing, err = openTelemetryHTTPConfig(name, c.Service, c.ResolvedOtelURI)
-			} else {
-				tracing, err = c.opentelemetryConfig(name)
-			}
+			tracing, err := c.opentelemetryConfig(name)
 			if err != nil {
 				return err
 			}
@@ -189,33 +177,6 @@ func (c *Configurer) opentelemetryConfig(clusterName string) (*envoy_trace.Traci
 				EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
 					ClusterName: clusterName,
 				},
-			},
-		},
-	}
-	otelConfigAny, err := proto.MarshalAnyDeterministic(&otelConfig)
-	if err != nil {
-		return nil, err
-	}
-	return &envoy_trace.Tracing_Http{
-		Name: "envoy.tracers.opentelemetry",
-		ConfigType: &envoy_trace.Tracing_Http_TypedConfig{
-			TypedConfig: otelConfigAny,
-		},
-	}, nil
-}
-
-// openTelemetryHTTPConfig builds the Envoy OTel tracer config for an HTTP/HTTPS endpoint.
-// Used when resolving a MeshOpenTelemetryBackend with HTTP protocol.
-func openTelemetryHTTPConfig(clusterName, serviceName, uri string) (*envoy_trace.Tracing_Http, error) {
-	otelConfig := envoy_trace.OpenTelemetryConfig{
-		ServiceName: serviceName,
-		HttpService: &envoy_core.HttpService{
-			HttpUri: &envoy_core.HttpUri{
-				Uri: uri,
-				HttpUpstreamType: &envoy_core.HttpUri_Cluster{
-					Cluster: clusterName,
-				},
-				Timeout: durationpb.New(10 * time.Second),
 			},
 		},
 	}
