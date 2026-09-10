@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -21,7 +20,6 @@ import (
 	memory_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	otelstatus "github.com/kumahq/kuma/v3/pkg/xds/otel/status"
 	"github.com/kumahq/kuma/v3/pkg/xds/server/callbacks"
 )
@@ -59,7 +57,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			subscription := &mesh_proto.DiscoverySubscription{
 				Id:                     "3287995C-7E11-41FB-9479-7D39337F845D",
 				ControlPlaneInstanceId: "control-plane-01",
-				ConnectTime:            util_proto.MustTimestampProto(t0),
+				ConnectTime:            mesh_proto.NewTime(t0),
 				Status:                 mesh_proto.NewSubscriptionStatus(t0),
 			}
 			accessor := &SubscriptionStatusHolder{key, subscription}
@@ -104,7 +102,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			latestOperation = &create
 
 			// and
-			Expect(util_proto.ToYAML(latestOperation.Subscriptions[len(latestOperation.Subscriptions)-1])).To(MatchYAML(`
+			Expect(core_model.ToYAML(latestOperation.Subscriptions[len(latestOperation.Subscriptions)-1])).To(MatchYAML(`
             connectTime: "2019-07-01T00:00:00Z"
             controlPlaneInstanceId: control-plane-01
             id: 3287995C-7E11-41FB-9479-7D39337F845D
@@ -121,7 +119,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			Expect(latestOperation.DataplaneInsight_MTLS).To(BeNil())
 
 			// when - time tick after changes
-			subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(t0.Add(2 * time.Second))
+			subscription.Status.LastUpdateTime = mesh_proto.NewTime(t0.Add(2 * time.Second))
 			subscription.Status.Lds.ResponsesSent += 1
 			subscription.Status.Total.ResponsesSent += 1
 			// and
@@ -137,7 +135,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 				}
 			}, "1s", "1ms").Should(BeTrue())
 			// and
-			Expect(util_proto.ToYAML(latestOperation.Subscriptions[len(latestOperation.Subscriptions)-1])).To(MatchYAML(`
+			Expect(core_model.ToYAML(latestOperation.Subscriptions[len(latestOperation.Subscriptions)-1])).To(MatchYAML(`
             connectTime: "2019-07-01T00:00:00Z"
             controlPlaneInstanceId: control-plane-01
             id: 3287995C-7E11-41FB-9479-7D39337F845D
@@ -171,7 +169,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			subscription := &mesh_proto.DiscoverySubscription{
 				Id:                     "3287995C-7E11-41FB-9479-7D39337F845D",
 				ControlPlaneInstanceId: "control-plane-01",
-				ConnectTime:            util_proto.MustTimestampProto(t0),
+				ConnectTime:            mesh_proto.NewTime(t0),
 				Status:                 mesh_proto.NewSubscriptionStatus(t0),
 			}
 			accessor := &SubscriptionStatusHolder{key, subscription}
@@ -216,7 +214,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			latestOperation = &create
 
 			// and
-			Expect(util_proto.ToYAML(latestOperation.Subscriptions[len(latestOperation.Subscriptions)-1])).To(MatchYAML(`
+			Expect(core_model.ToYAML(latestOperation.Subscriptions[len(latestOperation.Subscriptions)-1])).To(MatchYAML(`
             connectTime: "2019-07-01T00:00:00Z"
             controlPlaneInstanceId: control-plane-01
             id: 3287995C-7E11-41FB-9479-7D39337F845D
@@ -302,7 +300,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			subscription := &mesh_proto.DiscoverySubscription{
 				Id:                     "3287995C-7E11-41FB-9479-7D39337F845D",
 				ControlPlaneInstanceId: "control-plane-01",
-				ConnectTime:            util_proto.MustTimestampProto(t0),
+				ConnectTime:            mesh_proto.NewTime(t0),
 				Status:                 mesh_proto.NewSubscriptionStatus(t0),
 			}
 			accessor := &SubscriptionStatusHolder{key, subscription}
@@ -404,7 +402,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			subscription := &mesh_proto.DiscoverySubscription{
 				Id:                     "3287995C-7E11-41FB-9479-7D39337F845D",
 				ControlPlaneInstanceId: "control-plane-01",
-				ConnectTime:            util_proto.MustTimestampProto(t0),
+				ConnectTime:            mesh_proto.NewTime(t0),
 				Status:                 mesh_proto.NewSubscriptionStatus(t0),
 			}
 			dataplaneType := core_mesh.DataplaneType
@@ -415,7 +413,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			statusStore := callbacks.NewDataplaneInsightStore(manager.NewResourceManager(store))
 
 			// when
-			err := statusStore.Upsert(ctx, nil, dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription), nil, nil)
+			err := statusStore.Upsert(ctx, nil, dataplaneType, key, subscription.DeepCopy(), nil, nil)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -431,7 +429,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 				return true
 			}, "1s", "1ms").Should(BeTrue())
 			// and
-			Expect(util_proto.ToYAML(dataplaneInsight.GetSpec().(proto.Message))).To(MatchYAML(`
+			Expect(core_model.ToYAML(dataplaneInsight.GetSpec())).To(MatchYAML(`
             subscriptions:
             - connectTime: "2019-07-01T00:00:00Z"
               controlPlaneInstanceId: control-plane-01
@@ -446,11 +444,11 @@ var _ = Describe("DataplaneInsightSink", func() {
 `))
 
 			// when
-			subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(t0.Add(2 * time.Second))
+			subscription.Status.LastUpdateTime = mesh_proto.NewTime(t0.Add(2 * time.Second))
 			subscription.Status.Lds.ResponsesSent += 1
 			subscription.Status.Total.ResponsesSent += 1
 			// and
-			err = statusStore.Upsert(ctx, nil, dataplaneType, key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription), nil, nil)
+			err = statusStore.Upsert(ctx, nil, dataplaneType, key, subscription.DeepCopy(), nil, nil)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -466,7 +464,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 				return true
 			}, "1s", "1ms").Should(BeTrue())
 			// and
-			Expect(util_proto.ToYAML(dataplaneInsight.GetSpec().(proto.Message))).To(MatchYAML(`
+			Expect(core_model.ToYAML(dataplaneInsight.GetSpec())).To(MatchYAML(`
             subscriptions:
             - connectTime: "2019-07-01T00:00:00Z"
               controlPlaneInstanceId: control-plane-01
@@ -493,7 +491,7 @@ type SubscriptionStatusHolder struct {
 }
 
 func (h *SubscriptionStatusHolder) GetStatus() (core_model.ResourceKey, *mesh_proto.DiscoverySubscription) {
-	return h.ResourceKey, proto.Clone(h.DiscoverySubscription).(*mesh_proto.DiscoverySubscription)
+	return h.ResourceKey, h.DiscoverySubscription.DeepCopy()
 }
 
 var _ manager.ResourceManager = &DataplaneInsightStoreRecorder{}

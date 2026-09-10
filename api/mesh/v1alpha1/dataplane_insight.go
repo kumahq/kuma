@@ -1,6 +1,10 @@
 package v1alpha1
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"google.golang.org/protobuf/types/known/structpb"
+)
 
 // DataplaneInsight defines the observed state of a Dataplane.
 type DataplaneInsight struct {
@@ -53,11 +57,32 @@ func NewStruct(fields map[string]any) *Struct {
 	return &Struct{Fields: fields}
 }
 
+// StructFromProto keeps a metadata that was never reported absent rather than turning it
+// into an empty object, which is what protobuf did with an unset Struct.
+func StructFromProto(fields *structpb.Struct) *Struct {
+	if fields == nil {
+		return nil
+	}
+	return &Struct{Fields: fields.AsMap()}
+}
+
 func (s *Struct) GetFields() map[string]any {
 	if s == nil {
 		return nil
 	}
 	return s.Fields
+}
+
+// ToProto renders the metadata back as the protobuf Struct the xDS side works in.
+func (s *Struct) ToProto() *structpb.Struct {
+	if s == nil {
+		return nil
+	}
+	out, err := structpb.NewStruct(s.Fields)
+	if err != nil {
+		return nil
+	}
+	return out
 }
 
 func (s Struct) MarshalJSON() ([]byte, error) {

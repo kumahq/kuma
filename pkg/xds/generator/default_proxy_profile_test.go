@@ -2,6 +2,7 @@ package generator_test
 
 import (
 	"context"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -76,7 +77,7 @@ var _ = Describe("DefaultProxyProfile", func() {
 			Expect(yaml.Unmarshal([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
 
 			dataplane := &mesh_proto.Dataplane{}
-			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
+			Expect(core_model.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
 			proxy := &core_xds.Proxy{
 				Id: *core_xds.BuildProxyId("demo", "backend-01"),

@@ -153,9 +153,8 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 		d.Duration = 0
 		return nil
 	}
-	if !strings.HasSuffix(raw, "s") {
-		return fmt.Errorf("duration %q must end in s", raw)
-	}
+	// jsonpb accepted a bare number as well as the seconds suffix, and stored dataplanes
+	// carry both spellings.
 	seconds, err := strconv.ParseFloat(strings.TrimSuffix(raw, "s"), 64)
 	if err != nil {
 		return fmt.Errorf("duration %q: %w", raw, err)

@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"encoding/json"
 	"hash/fnv"
 	"net"
 	"slices"
@@ -125,14 +126,18 @@ func (d *DataplaneResource) hash(includeVersion bool) []byte {
 		_, _ = hasher.Write([]byte(d.GetMeta().GetVersion()))
 	}
 	core_model.WriteSortedLabels(hasher, d.GetMeta().GetLabels())
-	specBytes, err := proto.MarshalOptions{Deterministic: true}.Marshal(d.Spec)
+	// Hashing the KDS wire form rather than the JSON keeps these bytes, and so every
+	// hash built from them, the ones a control plane produced before the spec became
+	// a Go struct.
+	specBytes, err := proto.MarshalOptions{Deterministic: true}.Marshal(d.Spec.ToKDSWire())
 	if err == nil {
 		_, _ = hasher.Write(specBytes)
 	} else {
 		// Deterministic marshaling should never fail for a well-formed Dataplane
 		// spec, but fall back to a value that still changes with the spec
 		// instead of silently treating every Dataplane as identical.
-		_, _ = hasher.Write([]byte(d.Spec.String()))
+		encoded, _ := json.Marshal(d.Spec)
+		_, _ = hasher.Write(encoded)
 	}
 	return hasher.Sum(nil)
 }

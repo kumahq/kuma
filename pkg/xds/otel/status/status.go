@@ -4,8 +4,6 @@ import (
 	"slices"
 	"sync"
 
-	"google.golang.org/protobuf/proto"
-
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -129,5 +127,5 @@ func cloneStatus(status *mesh_proto.DataplaneInsight_OpenTelemetry) *mesh_proto.
 	if status == nil {
 		return nil
 	}
-	return proto.CloneOf(status)
+	return status.DeepCopy()
 }

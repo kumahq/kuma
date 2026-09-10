@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane", func() {
@@ -36,7 +37,7 @@ var _ = Describe("Dataplane", func() {
 `
 		// when
 		dataplane := &Dataplane{}
-		err := util_proto.FromYAML([]byte(input), dataplane)
+		err := core_model.FromYAML([]byte(input), dataplane)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(dataplane.Networking.Address).To(Equal("1.1.1.1"))
@@ -64,12 +65,12 @@ var _ = Describe("Dataplane", func() {
 				dataplane := &Dataplane{}
 
 				// when
-				err := util_proto.FromYAML([]byte(given.input), dataplane)
+				err := core_model.FromYAML([]byte(given.input), dataplane)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				actual, err := util_proto.ToJSON(dataplane)
+				actual, err := core_model.ToJSON(dataplane)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

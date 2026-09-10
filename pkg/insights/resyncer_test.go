@@ -8,7 +8,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -210,15 +209,9 @@ var _ = Describe("Insight Persistence", func() {
 
 		dp2 := core_mesh.NewDataplaneInsightResource()
 		dp2.Spec.Subscriptions = append(dp2.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			Id: strconv.Itoa(2),
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
-			DisconnectTime: &timestamppb.Timestamp{
-				Seconds: 101,
-				Nanos:   202,
-			},
+			Id:             strconv.Itoa(2),
+			ConnectTime:    mesh_proto.NewTime(time.Unix(100, 200).UTC()),
+			DisconnectTime: mesh_proto.NewTime(time.Unix(101, 202).UTC()),
 		})
 		err = rm.Create(context.Background(), dp2, store.CreateByKey("dp2", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
@@ -228,11 +221,8 @@ var _ = Describe("Insight Persistence", func() {
 
 		dp3 := core_mesh.NewDataplaneInsightResource()
 		dp3.Spec.Subscriptions = append(dp3.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			Id: strconv.Itoa(3),
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
+			Id:          strconv.Itoa(3),
+			ConnectTime: mesh_proto.NewTime(time.Unix(100, 200).UTC()),
 		})
 		err = rm.Create(context.Background(), dp3, store.CreateByKey("dp3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
@@ -243,11 +233,8 @@ var _ = Describe("Insight Persistence", func() {
 
 		dp4 := core_mesh.NewDataplaneInsightResource()
 		dp4.Spec.Subscriptions = append(dp4.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			Id: strconv.Itoa(4),
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
+			Id:          strconv.Itoa(4),
+			ConnectTime: mesh_proto.NewTime(time.Unix(100, 200).UTC()),
 		})
 		err = rm.Create(context.Background(), dp4, store.CreateByKey("dp4", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
@@ -305,9 +292,7 @@ var _ = Describe("Insight Persistence", func() {
 			SupportedBackends: []string{"ca-1", "ca-2"},
 		}
 		dp2.Spec.Subscriptions = append(dp2.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-			},
+			ConnectTime: mesh_proto.NewTime(time.Unix(100, 0).UTC()),
 		})
 		err = rm.Create(context.Background(), dp2, store.CreateByKey("dp2", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
@@ -430,10 +415,7 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpi1 := core_mesh.NewDataplaneInsightResource()
 		dpi1.Spec.Subscriptions = append(dpi1.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
+			ConnectTime: mesh_proto.NewTime(time.Unix(100, 200).UTC()),
 		})
 
 		err = rm.Create(context.Background(), dpi1, store.CreateByKey("dp1", "mesh-1"))
@@ -465,10 +447,7 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpi2 := core_mesh.NewDataplaneInsightResource()
 		dpi2.Spec.Subscriptions = append(dpi2.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
+			ConnectTime: mesh_proto.NewTime(time.Unix(100, 200).UTC()),
 		})
 
 		err = rm.Create(context.Background(), dpi2, store.CreateByKey("dp2", "mesh-1"))
@@ -500,10 +479,7 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpi3 := core_mesh.NewDataplaneInsightResource()
 		dpi3.Spec.Subscriptions = append(dpi3.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
+			ConnectTime: mesh_proto.NewTime(time.Unix(100, 200).UTC()),
 		})
 
 		err = rm.Create(context.Background(), dpi3, store.CreateByKey("dp3", "mesh-1"))
@@ -529,14 +505,8 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpi4 := core_mesh.NewDataplaneInsightResource()
 		dpi4.Spec.Subscriptions = append(dpi4.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
-			DisconnectTime: &timestamppb.Timestamp{
-				Seconds: 101,
-				Nanos:   202,
-			},
+			ConnectTime:    mesh_proto.NewTime(time.Unix(100, 200).UTC()),
+			DisconnectTime: mesh_proto.NewTime(time.Unix(101, 202).UTC()),
 		})
 
 		err = rm.Create(context.Background(), dpi4, store.CreateByKey("dp4", "mesh-1"))
@@ -612,10 +582,7 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpOnlineI := core_mesh.NewDataplaneInsightResource()
 		dpOnlineI.Spec.Subscriptions = append(dpOnlineI.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
+			ConnectTime: mesh_proto.NewTime(time.Unix(100, 200).UTC()),
 		})
 		err = rm.Create(context.Background(), dpOnlineI, store.CreateByKey("dpOnline", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
@@ -632,13 +599,8 @@ var _ = Describe("Insight Persistence", func() {
 
 		dpOfflineI := core_mesh.NewDataplaneInsightResource()
 		dpOfflineI.Spec.Subscriptions = append(dpOfflineI.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
-			ConnectTime: &timestamppb.Timestamp{
-				Seconds: 100,
-				Nanos:   200,
-			},
-			DisconnectTime: &timestamppb.Timestamp{
-				Seconds: 101,
-			},
+			ConnectTime:    mesh_proto.NewTime(time.Unix(100, 200).UTC()),
+			DisconnectTime: mesh_proto.NewTime(time.Unix(101, 0).UTC()),
 		})
 		err = rm.Create(context.Background(), dpOfflineI, store.CreateByKey("dpOffline", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())

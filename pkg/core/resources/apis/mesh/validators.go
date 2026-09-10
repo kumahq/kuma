@@ -9,7 +9,6 @@ import (
 
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/durationpb"
 	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
@@ -107,14 +106,10 @@ func Keys(tags map[string]string) []string {
 	return keys
 }
 
-func ValidateDuration(path validators.PathBuilder, duration *durationpb.Duration) validators.ValidationError {
+func ValidateDuration(path validators.PathBuilder, duration *mesh_proto.Duration) validators.ValidationError {
 	var errs validators.ValidationError
 	if duration == nil {
 		errs.AddViolationAt(path, "must have a positive value")
-		return errs
-	}
-	if err := duration.CheckValid(); err != nil {
-		errs.AddViolationAt(path, "must have a valid value")
 		return errs
 	}
 	if duration.AsDuration() == 0 {

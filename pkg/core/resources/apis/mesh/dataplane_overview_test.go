@@ -9,7 +9,6 @@ import (
 	. "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("DataplaneOverview", func() {
@@ -87,7 +86,7 @@ var _ = Describe("DataplaneOverview", func() {
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								ConnectTime: proto.MustTimestampProto(core.Now()),
+								ConnectTime: mesh_proto.NewTime(core.Now()),
 							},
 						},
 					},
@@ -110,7 +109,7 @@ var _ = Describe("DataplaneOverview", func() {
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								ConnectTime: proto.MustTimestampProto(core.Now()),
+								ConnectTime: mesh_proto.NewTime(core.Now()),
 							},
 						},
 					},
@@ -126,7 +125,7 @@ var _ = Describe("DataplaneOverview", func() {
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								ConnectTime: proto.MustTimestampProto(core.Now()),
+								ConnectTime: mesh_proto.NewTime(core.Now()),
 							},
 						},
 					},
@@ -149,8 +148,8 @@ var _ = Describe("DataplaneOverview", func() {
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								ConnectTime:    proto.MustTimestampProto(core.Now()),
-								DisconnectTime: proto.MustTimestampProto(core.Now()),
+								ConnectTime:    mesh_proto.NewTime(core.Now()),
+								DisconnectTime: mesh_proto.NewTime(core.Now()),
 							},
 						},
 					},
@@ -173,7 +172,7 @@ var _ = Describe("DataplaneOverview", func() {
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								ConnectTime: proto.MustTimestampProto(core.Now()),
+								ConnectTime: mesh_proto.NewTime(core.Now()),
 							},
 						},
 					},
@@ -192,8 +191,8 @@ var _ = Describe("DataplaneOverview", func() {
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								ConnectTime:    proto.MustTimestampProto(core.Now()),
-								DisconnectTime: proto.MustTimestampProto(core.Now()),
+								ConnectTime:    mesh_proto.NewTime(core.Now()),
+								DisconnectTime: mesh_proto.NewTime(core.Now()),
 							},
 						},
 					},
@@ -221,7 +220,7 @@ var _ = Describe("DataplaneOverview", func() {
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								ConnectTime: proto.MustTimestampProto(core.Now()),
+								ConnectTime: mesh_proto.NewTime(core.Now()),
 							},
 						},
 					},
@@ -246,7 +245,7 @@ var _ = Describe("DataplaneOverview", func() {
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								ConnectTime: proto.MustTimestampProto(core.Now()),
+								ConnectTime: mesh_proto.NewTime(core.Now()),
 							},
 						},
 					},
@@ -280,7 +279,7 @@ var _ = Describe("DataplaneOverview", func() {
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								ConnectTime: proto.MustTimestampProto(core.Now()),
+								ConnectTime: mesh_proto.NewTime(core.Now()),
 							},
 						},
 					},
@@ -312,7 +311,7 @@ var _ = Describe("DataplaneOverview", func() {
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								ConnectTime: proto.MustTimestampProto(core.Now()),
+								ConnectTime: mesh_proto.NewTime(core.Now()),
 							},
 						},
 					},
@@ -345,7 +344,7 @@ var _ = Describe("DataplaneOverview", func() {
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								ConnectTime: proto.MustTimestampProto(core.Now()),
+								ConnectTime: mesh_proto.NewTime(core.Now()),
 							},
 						},
 					},
@@ -377,7 +376,7 @@ var _ = Describe("DataplaneOverview", func() {
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
 							{
-								ConnectTime: proto.MustTimestampProto(core.Now()),
+								ConnectTime: mesh_proto.NewTime(core.Now()),
 							},
 						},
 					},

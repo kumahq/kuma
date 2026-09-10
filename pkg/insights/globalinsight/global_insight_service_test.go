@@ -19,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Global Insight", func() {
@@ -145,12 +144,12 @@ func createGatewayDataplane(
 	insight := builders.DataplaneInsight().WithName(name).WithMesh(mesh)
 	if online {
 		insight.AddSubscription(&mesh_proto.DiscoverySubscription{
-			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
+			ConnectTime: mesh_proto.NewTime(time.Unix(1694779805, 0)),
 		})
 	} else {
 		insight.AddSubscription(&mesh_proto.DiscoverySubscription{
-			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
-			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
+			ConnectTime:    mesh_proto.NewTime(time.Unix(1694779805, 0)),
+			DisconnectTime: mesh_proto.NewTime(time.Unix(1694779925, 0)),
 		})
 	}
 	return insight.Create(rs)

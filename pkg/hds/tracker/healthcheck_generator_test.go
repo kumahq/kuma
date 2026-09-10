@@ -2,6 +2,7 @@ package tracker
 
 import (
 	"context"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"time"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -49,7 +50,7 @@ var _ = Describe("HDS Snapshot generator", func() {
 		func(given testCase) {
 			// given
 			dp := mesh.NewDataplaneResource()
-			err := util_proto.FromYAML([]byte(given.dataplane), dp.Spec)
+			err := core_model.FromYAML([]byte(given.dataplane), dp.Spec)
 			Expect(err).ToNot(HaveOccurred())
 			if given.deleteMesh {
 				// Create directly on the store, bypassing the resource manager's

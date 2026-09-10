@@ -21,7 +21,6 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var converterLog = core.Log.WithName("discovery").WithName("k8s").WithName("pod-to-dataplane-converter")
@@ -105,7 +104,7 @@ func processReachableBackendRefs(refs ReachableBackendRefs) []*mesh_proto.Datapl
 		}
 
 		if ref.Port != nil {
-			backendRef.Port = util_proto.UInt32(pointer.Deref(ref.Port))
+			backendRef.Port = mesh_proto.NewUInt32(pointer.Deref(ref.Port))
 		}
 
 		result = append(result, backendRef)

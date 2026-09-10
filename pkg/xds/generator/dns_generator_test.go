@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -56,7 +58,7 @@ var _ = Describe("DNSGenerator", func() {
 			dataplane := mesh_proto.Dataplane{}
 			dpBytes, err := os.ReadFile(filepath.Join("testdata", "dns", given.dataplaneFile))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
+			Expect(core_model.FromYAML(dpBytes, &dataplane)).To(Succeed())
 			proxy := &model.Proxy{
 				Id: *model.BuildProxyId("", "side-car"),
 				Dataplane: &core_mesh.DataplaneResource{

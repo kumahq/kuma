@@ -1,5 +1,11 @@
 package v1alpha1
 
+import (
+	"encoding/json"
+
+	"google.golang.org/protobuf/types/known/structpb"
+)
+
 // DiscoverySubscription describes a single ADS subscription created by a Dataplane to the
 // Control Plane. Ideally there is one per Dataplane lifecycle; several indicate a lost
 // connection, a Dataplane restart or a Control Plane restart.
@@ -259,4 +265,26 @@ func (v *EnvoyVersion) GetKumaDpCompatible() bool {
 		return false
 	}
 	return v.KumaDpCompatible
+}
+
+// ToStruct renders the version the way protobuf rendered the message it used to be, for
+// the xDS metadata and the bootstrap template that both carry it as a Struct.
+func (v *Version) ToStruct() (*structpb.Struct, error) {
+	encoded, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	fields := map[string]any{}
+	if err := json.Unmarshal(encoded, &fields); err != nil {
+		return nil, err
+	}
+	return structpb.NewStruct(fields)
+}
+
+func (v *Version) MustToStruct() *structpb.Struct {
+	out, err := v.ToStruct()
+	if err != nil {
+		panic(err)
+	}
+	return out
 }

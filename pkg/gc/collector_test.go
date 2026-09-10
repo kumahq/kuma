@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Collector", func() {
@@ -34,7 +33,7 @@ var _ = Describe("Collector", func() {
 				Spec: &mesh_proto.DataplaneInsight{
 					Subscriptions: []*mesh_proto.DiscoverySubscription{
 						{
-							DisconnectTime: proto.MustTimestampProto(disconnectTime),
+							DisconnectTime: mesh_proto.NewTime(disconnectTime),
 						},
 					},
 				},
