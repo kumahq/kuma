@@ -11,7 +11,9 @@ jobs:
   pr_comments:
     timeout-minutes: 120
     if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '/golden_files_e2e') || contains(github.event.comment.body, '/golden_files_tproxy'))
-    runs-on: ${{ vars.RUNS_ON_RELEASE_2_12_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    # Checks out the PR head, a fork on most PRs, and runs make against it. runs-on cannot
+    # read the step that resolves isCrossRepository, so this stays GitHub-hosted.
+    runs-on: ubuntu-24.04
     steps:
       # Commands are additive: one comment can request multiple actions, and all
       # matching steps below will run in order.
