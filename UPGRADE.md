@@ -78,7 +78,7 @@ redirect:
     port: 15001
 ```
 
-Do this before you upgrade the control plane. `kuma-dp` 2.14 already supports both flags.
+Do this before you upgrade the control plane. `kuma-dp` 2.14 already supports both flags. On hosts with IPv6 disabled, `kuma-dp` 2.14 cannot start its DNS proxy in the default dual-stack mode, so use `--transparent-proxy-config` with `ipFamilyMode: ipv4` there.
 
 On Kubernetes, if your 2.14 control plane runs with `transparentProxy.configMap.enabled` set to `false`, set it to `true` and restart your workloads before you upgrade the control plane.
 
