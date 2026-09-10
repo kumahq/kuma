@@ -1,0 +1,28 @@
+Patches: null
+allowed: false
+status:
+  code: 422
+  details:
+    causes:
+    - field: spec.spiffeID.trustDomain
+      message: is immutable, cannot be changed from "old.mesh.local" to "new.mesh.local".
+        Create a new MeshIdentity with the new value and delete this one once every
+        workload has migrated
+      reason: FieldValueInvalid
+    - field: spec.spiffeID.path
+      message: is immutable, cannot be changed from "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount
+        }}" to "/workload/{{ .Workload }}". Create a new MeshIdentity with the new
+        value and delete this one once every workload has migrated
+      reason: FieldValueInvalid
+    kind: MeshIdentity
+    name: identity-1
+  message: 'spec.spiffeID.trustDomain: is immutable, cannot be changed from "old.mesh.local"
+    to "new.mesh.local". Create a new MeshIdentity with the new value and delete this
+    one once every workload has migrated; spec.spiffeID.path: is immutable, cannot
+    be changed from "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}" to "/workload/{{
+    .Workload }}". Create a new MeshIdentity with the new value and delete this one
+    once every workload has migrated'
+  metadata: {}
+  reason: Invalid
+  status: Failure
+uid: "12345"
