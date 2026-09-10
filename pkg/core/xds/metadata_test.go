@@ -115,17 +115,21 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				IPv6Enabled: true,
 			},
 		}),
-		Entry("should parse OTEL env inventory", testCase{
+		Entry("should parse OTEL env inventory and ignore pipeEnabled sent by 2.14 data planes", testCase{
 			node: &structpb.Struct{
 				Fields: map[string]*structpb.Value{
 					"otelEnvInventory": {
 						Kind: &structpb.Value_StructValue{
-							StructValue: util_proto.MustStructToProtoStruct(&xds.OtelBootstrapInventory{
-								Shared: &xds.OtelSignalEnvInventory{
-									EndpointPresent:   true,
-									EffectiveProtocol: xds.OtelProtocolHTTPProtobuf,
-								},
-							}),
+							StructValue: func() *structpb.Struct {
+								s := util_proto.MustStructToProtoStruct(&xds.OtelBootstrapInventory{
+									Shared: &xds.OtelSignalEnvInventory{
+										EndpointPresent:   true,
+										EffectiveProtocol: xds.OtelProtocolHTTPProtobuf,
+									},
+								})
+								s.Fields["pipeEnabled"] = structpb.NewBoolValue(true)
+								return s
+							}(),
 						},
 					},
 				},
