@@ -38,7 +38,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 
 		return &model.Proxy{
 			Metadata: &model.DataplaneMetadata{TransparentProxy: xds_builders.TransparentProxy("dualstack")},
-			Id: *model.BuildProxyId("", "side-car"),
+			Id:       *model.BuildProxyId("", "side-car"),
 			Dataplane: &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{Version: "v1"},
 				Spec: &mesh_proto.Dataplane{
@@ -161,7 +161,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		Entry("transparent_proxying=true,inbound_filter,workload identity,gateway", testCase{
 			proxy: &model.Proxy{
 				Metadata: &model.DataplaneMetadata{TransparentProxy: xds_builders.TransparentProxy("dualstack")},
-				Id: *model.BuildProxyId("", "side-car"),
+				Id:       *model.BuildProxyId("", "side-car"),
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "v1",
