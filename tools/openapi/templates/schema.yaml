@@ -1,6 +1,6 @@
 type: object
 description: ""
-required: [type, name, spec]
+required: [type, name{{ if .PluginOriginated }}, spec{{ end }}]
 properties:
   type:
     description: 'the type of the resource'
@@ -62,7 +62,9 @@ properties:
       type: string
     description: 'The labels to help identity resources'
     type: object
+{{- if .PluginOriginated }}
   spec: {}
+{{- end }}
   creationTime:
     readOnly: true
     type: string

@@ -13,6 +13,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight"
 )
 
 var NameToModule = map[string]*plugins.PluginInitializer{
@@ -25,4 +27,6 @@ var NameToModule = map[string]*plugins.PluginInitializer{
 	"meshtrusts":                {InitFn: meshtrust.InitPlugin, Initialized: false},
 	"meshzoneaddresses":         {InitFn: meshzoneaddress.InitPlugin, Initialized: false},
 	"workloads":                 {InitFn: workload.InitPlugin, Initialized: false},
+	"zones":                     {InitFn: zone.InitPlugin, Initialized: false},
+	"zoneinsights":              {InitFn: zoneinsight.InitPlugin, Initialized: false},
 }

@@ -13,8 +13,8 @@ import (
 	"github.com/go-logr/logr"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/multizone"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/events"
@@ -147,7 +147,7 @@ func newDelayedFullResyncTicker(interval, delay time.Duration) (*time.Ticker, co
 }
 
 func kdsVersionExtractor(metadata *structpb.Struct) string {
-	version := system_proto.NewVersion()
+	version := zoneinsight_api.NewVersion()
 	if err := status.ReadVersion(metadata, version); err != nil {
 		return "unknown"
 	}
