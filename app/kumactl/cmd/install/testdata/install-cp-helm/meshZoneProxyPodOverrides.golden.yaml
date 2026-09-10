@@ -887,7 +887,7 @@ spec:
           lifecycle:
             preStop:
               sleep:
-                seconds: 15
+                seconds: 10
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration

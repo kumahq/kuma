@@ -131,6 +131,10 @@ spec:
                  Service, which drops terminating pods from the backend set. */}}
           {{- $preStopSleep := int (include "kuma.mesh.zoneproxy.setting" (dict "cfg" $cfg "defaults" $defaults "field" "preStopSleepSeconds")) }}
           {{- if gt $preStopSleep 0 }}
+          {{- $grace := int (include "kuma.mesh.zoneproxy.setting" (dict "cfg" $cfg "defaults" $defaults "field" "terminationGracePeriodSeconds")) }}
+          {{- if ge $preStopSleep $grace }}
+          {{- fail (printf "meshes[%s].egress: preStopSleepSeconds (%d) must be lower than terminationGracePeriodSeconds (%d), otherwise the pod is killed before the hook completes" $meshName $preStopSleep $grace) }}
+          {{- end }}
           lifecycle:
             preStop:
               sleep:
