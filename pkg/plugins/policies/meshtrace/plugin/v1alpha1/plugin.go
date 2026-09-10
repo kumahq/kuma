@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
-	"net"
 	net_url "net/url"
 	"strconv"
 
@@ -18,12 +16,10 @@ import (
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/resolve"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
@@ -69,7 +65,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	if err := applyToRealResources(ctx, policies.ProxyConf, rs, proxy); err != nil {
 		return err
 	}
-	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && proxy.OtelPipeBackends != nil {
+	if proxy.OtelPipeBackends != nil {
 		addToOtelPipeBackends(ctx, policies.ProxyConf, proxy)
 	}
 
@@ -235,19 +231,6 @@ func configureListener(ctx xds_context.Context, policyConf *core_rules.ProxyConf
 	}
 	if resolved != nil {
 		configurer.ResolvedOtelName = resolved.Name
-		// When kuma-dp acts as intermediary for the resolved backend, Envoy
-		// always speaks gRPC to the pipe cluster. Only fall back to HTTP config
-		// when using direct-to-collector mode (FeatureOtelViaKumaDp not enabled).
-		usePipe := hasOtelBackendRef(conf) && proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp)
-		if !usePipe && resolved.Protocol == motb_api.ProtocolHTTP {
-			configurer.ResolvedOtelUseHTTP = true
-			host := net.JoinHostPort(resolved.Endpoint.Target, strconv.Itoa(int(resolved.Endpoint.Port)))
-			scheme := "http"
-			if resolved.UseHTTPS {
-				scheme = "https"
-			}
-			configurer.ResolvedOtelURI = fmt.Sprintf("%s://%s%s", scheme, host, resolved.FullPath(policies_xds.OtelTracesPathSuffix))
-		}
 	}
 
 	for _, chain := range listener.FilterChains {
@@ -318,15 +301,10 @@ func applyToClusters(ctx xds_context.Context, policyConf *core_rules.ProxyConf, 
 			return nil
 		}
 
-		if backend.OpenTelemetry.BackendRef != nil && proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) {
-			// Route through kuma-dp Unix socket; kuma-dp forwards to the real collector.
-			socketPath := xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, resolved.Name)
-			endpoint = &xds.Endpoint{UnixDomainPath: socketPath}
-			useHTTP2 = true // Envoy→kuma-dp leg is always gRPC
-		} else {
-			endpoint = policies_xds.EndpointForDirectOtelExport(resolved, proxy.Metadata.GetDynamicMetadata(xds.FieldDynamicHostIP))
-			useHTTP2 = resolved.Protocol != motb_api.ProtocolHTTP
-		}
+		// Route through kuma-dp Unix socket; kuma-dp forwards to the real collector.
+		socketPath := xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, resolved.Name)
+		endpoint = &xds.Endpoint{UnixDomainPath: socketPath}
+		useHTTP2 = true // Envoy->kuma-dp leg is always gRPC
 
 		name = core_system_names.AsSystemName(core_system_names.JoinSections("meshtrace_otel", core_system_names.CleanName(resolved.Name)))
 	}

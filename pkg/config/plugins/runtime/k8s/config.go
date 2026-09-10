@@ -108,7 +108,6 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.
 			NodeLabelsToCopy:              []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/hostname"},
 			TransparentProxyConfigMapName: "kuma-transparent-proxy-config",
-			OtelPipeEnabled:               true,
 			Spire: Spire{
 				Enabled:        false,
 				MountPath:      "/run/spire/sockets",
@@ -251,9 +250,6 @@ type Injector struct {
 	// transparent proxy configuration. The sidecar injector reads it, merges it with pod annotations and injects the
 	// result. It defaults to "kuma-transparent-proxy-config" and the ConfigMap is expected to exist.
 	TransparentProxyConfigMapName string `json:"transparentProxyConfigMap" envconfig:"kuma_runtime_kubernetes_injector_transparent_proxy_configmap_name"`
-	// OtelPipeEnabled controls whether kuma-dp pipe mode is enabled for OTel backends.
-	// When true (default), kuma-dp proxies OTel traffic through a Unix socket.
-	OtelPipeEnabled bool `json:"otelPipeEnabled" envconfig:"kuma_runtime_kubernetes_injector_otel_pipe_enabled"`
 	// Spire is used to specify spire integration configuration.
 	Spire Spire `json:"spire"`
 }

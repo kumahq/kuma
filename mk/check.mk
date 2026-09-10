@@ -30,8 +30,12 @@ else
 endif
 
 .PHONY: fmt/ci
+# `yq -i` reserializes the document and drops the folded runs-on scalars, so `check` fails
+# on its own diff. No `sed -i`: GNU and BSD disagree on its argument.
 fmt/ci:
-	$(YQ) -i '.env.K8S_MIN_VERSION = "$(K8S_MIN_VERSION)" | .env.K8S_MAX_VERSION = "$(K8S_MAX_VERSION)"' .github/workflows/"$(ACTION_PREFIX)"_test.yaml
+	@f=.github/workflows/"$(ACTION_PREFIX)"_test.yaml; t=$$(mktemp); \
+	sed -E -e 's|^(  K8S_MIN_VERSION: ).*|\1$(K8S_MIN_VERSION)|' \
+	       -e 's|^(  K8S_MAX_VERSION: ).*|\1$(K8S_MAX_VERSION)|' "$$f" > "$$t" && mv "$$t" "$$f"
 
 .PHONY: helm-lint
 helm-lint:

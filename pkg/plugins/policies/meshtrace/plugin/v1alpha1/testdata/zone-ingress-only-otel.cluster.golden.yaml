@@ -3,18 +3,16 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 5s
-    dnsLookupFamily: V4_ONLY
     loadAssignment:
       clusterName: system_meshtrace_otel_otel-collector
       endpoints:
       - lbEndpoints:
         - endpoint:
             address:
-              socketAddress:
-                address: jaeger-collector.mesh-observability
-                portValue: 4317
+              pipe:
+                path: kuma-otel-otel-collector.sock
     name: system_meshtrace_otel_otel-collector
-    type: STRICT_DNS
+    type: STATIC
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions

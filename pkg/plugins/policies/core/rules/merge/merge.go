@@ -533,8 +533,6 @@ func handleMergeByKeyFields(valueResult reflect.Value) error {
 	return nil
 }
 
-type SetConfField func(reflect.Value, []string)
-
 type GroupedConfs struct {
 	Confs []reflect.Value
 }

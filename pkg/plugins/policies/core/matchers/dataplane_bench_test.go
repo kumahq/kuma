@@ -71,7 +71,6 @@ func benchDataplane(b *testing.B) *core_mesh.DataplaneResource {
 		WithAddress("127.0.0.1").
 		WithServices("backend").
 		WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
-		WithTransparentProxying(15001, 15006, "").
 		Build()
 }
 

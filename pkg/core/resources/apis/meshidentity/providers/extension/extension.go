@@ -5,13 +5,10 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/kumahq/kuma/v3/pkg/core"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 )
-
-var log = core.Log.WithName("identity-provider").WithName("extension")
 
 // Dispatcher routes MeshIdentity Extension requests to handlers registered by
 // Extension.Name. It implements providers.IdentityProvider and is registered as
@@ -78,9 +75,4 @@ func (d *Dispatcher) registeredNames() []string {
 	}
 	sort.Strings(names)
 	return names
-}
-
-// LogRegistered logs the list of registered extension names at Info level.
-func (d *Dispatcher) LogRegistered() {
-	log.Info("extension dispatcher initialized", "registeredNames", d.registeredNames())
 }

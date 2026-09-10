@@ -42,14 +42,14 @@ func (r *resourceCrudHandler) validateOriginForWrite(meta core_model.ResourceMet
 	var err validators.ValidationError
 	origin, ok := core_model.ResourceOrigin(meta)
 
-	if !r.disableOriginLabelValidation && r.mode == config_core.Global {
+	if r.mode == config_core.Global {
 		if ok && origin != mesh_proto.GlobalResourceOrigin {
 			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.GlobalResourceOrigin))
 		}
 	}
 
-	if !r.disableOriginLabelValidation && r.federatedZone && r.descriptor.IsPluginOriginated {
-		if !ok || origin != mesh_proto.ZoneResourceOrigin {
+	if r.federatedZone && r.descriptor.IsPluginOriginated {
+		if ok && origin != mesh_proto.ZoneResourceOrigin {
 			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.ZoneResourceOrigin))
 		}
 	}

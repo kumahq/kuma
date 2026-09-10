@@ -278,13 +278,6 @@ func (c componentRunnableAdaptor) NeedLeaderElection() bool {
 	return c.Component.NeedLeaderElection()
 }
 
-func (c componentRunnableAdaptor) Ready() bool {
-	if ready, ok := c.Component.(component.ReadyComponent); ok {
-		return ready.Ready()
-	}
-	return true
-}
-
 var (
 	_ kube_manager.LeaderElectionRunnable = &componentRunnableAdaptor{}
 	_ kube_manager.Runnable               = &componentRunnableAdaptor{}

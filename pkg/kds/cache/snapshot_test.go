@@ -6,7 +6,6 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -16,8 +15,8 @@ import (
 )
 
 var _ = Describe("Snapshot", func() {
-	mustMarshalAny := func(pb proto.Message) *anypb.Any {
-		a, err := anypb.New(pb)
+	mustMarshalAny := func(spec model.ResourceSpec) *anypb.Any {
+		a, err := model.ToAny(spec)
 		if err != nil {
 			panic(err)
 		}

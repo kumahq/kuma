@@ -83,7 +83,7 @@
      }
     },
     "trafficDirection": "INBOUND",
-    "enableReusePort": false
+    "enableReusePort": true
    },
    "system_dynamicconfig": {
     "name": "system_dynamicconfig",

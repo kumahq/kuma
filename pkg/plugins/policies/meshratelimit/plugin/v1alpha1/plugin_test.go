@@ -96,7 +96,7 @@ var _ = Describe("MeshRateLimit", func() {
 					Name:   inboundName17777,
 					Origin: metadata.OriginInbound,
 					Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
-						Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
+						Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
 							Configure(
@@ -112,7 +112,7 @@ var _ = Describe("MeshRateLimit", func() {
 					Name:   inboundName17778,
 					Origin: metadata.OriginInbound,
 					Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17778).
-						Configure(InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true)).
+						Configure(InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP)).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(TcpProxyDeprecated(inboundName17778, plugins_xds.NewClusterBuilder().WithName(inboundName17778).Build())),
 						)).MustBuild(),
@@ -171,7 +171,7 @@ var _ = Describe("MeshRateLimit", func() {
 				Name:   inboundName17778,
 				Origin: metadata.OriginInbound,
 				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17778).
-					Configure(InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true)).
+					Configure(InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated(inboundName17778, plugins_xds.NewClusterBuilder().WithName(inboundName17778).Build())),
 					)).MustBuild(),
@@ -197,7 +197,7 @@ var _ = Describe("MeshRateLimit", func() {
 				Name:   inboundName17777,
 				Origin: metadata.OriginInbound,
 				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
-					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
 						Configure(
@@ -230,7 +230,7 @@ var _ = Describe("MeshRateLimit", func() {
 				Name:   inboundName17778,
 				Origin: metadata.OriginInbound,
 				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17778).
-					Configure(InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true)).
+					Configure(InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(TcpProxyDeprecated(inboundName17778, plugins_xds.NewClusterBuilder().WithName(inboundName17778).Build())),
 					)).MustBuild(),
@@ -255,7 +255,7 @@ var _ = Describe("MeshRateLimit", func() {
 				Name:   inboundName17777,
 				Origin: metadata.OriginInbound,
 				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
-					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
 						Configure(
@@ -287,7 +287,7 @@ var _ = Describe("MeshRateLimit", func() {
 				Name:   inboundName17777,
 				Origin: metadata.OriginInbound,
 				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
-					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
 						Configure(
@@ -343,7 +343,7 @@ var _ = Describe("MeshRateLimit", func() {
 			Name:   name,
 			Origin: metadata.OriginEgress,
 			Resource: NewListenerBuilder(envoy_common.APIV3, name).
-				Configure(InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true)).
+				Configure(InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
 					Configure(MatchTransportProtocol("tls")).
 					Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).
@@ -419,7 +419,7 @@ var _ = Describe("MeshRateLimit", func() {
 			Name:   name,
 			Origin: metadata.OriginEgress,
 			Resource: NewListenerBuilder(envoy_common.APIV3, name).
-				Configure(InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true)).
+				Configure(InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
 					Configure(MatchTransportProtocol("tls")).
 					Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).

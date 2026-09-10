@@ -160,24 +160,6 @@
         "name": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-demo-client_3000",
         "type": "EDS"
       },
-      "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server-no-reusable-ports_80": {
-        "circuitBreakers": {
-          "thresholds": [
-            {
-              "trackRemaining": true
-            }
-          ]
-        },
-        "connectTimeout": "5s",
-        "edsClusterConfig": {
-          "edsConfig": {
-            "ads": {},
-            "resourceApiVersion": "V3"
-          }
-        },
-        "name": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server-no-reusable-ports_80",
-        "type": "EDS"
-      },
       "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server_80": {
         "circuitBreakers": {
           "thresholds": [
@@ -330,59 +312,6 @@
           }
         ]
       },
-      "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server-no-reusable-ports_80": {
-        "clusterName": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server-no-reusable-ports_80",
-        "endpoints": [
-          {
-            "lbEndpoints": [
-              {
-                "endpoint": {
-                  "address": {
-                    "socketAddress": {
-                      "address": "IP_REDACTED",
-                      "portValue": 80
-                    }
-                  }
-                },
-                "loadBalancingWeight": 1,
-                "metadata": {
-                  "filterMetadata": {
-                    "envoy.lb": {
-                      "instance": "1",
-                      "kuma.io/display-name": "zone-proxy-test-server-no-reusable-ports",
-                      "kuma.io/env": "universal",
-                      "kuma.io/mesh": "envoyconfig-zoneproxies",
-                      "kuma.io/origin": "zone",
-                      "kuma.io/protocol": "http",
-                      "kuma.io/workload": "zone-proxy-test-server-no-reusable-ports",
-                      "kuma.io/zone": "kuma-3",
-                      "service": "zone-proxy-test-server-no-reusable-ports",
-                      "team": "server-owners",
-                      "version": "v1"
-                    },
-                    "envoy.transport_socket_match": {
-                      "instance": "1",
-                      "kuma.io/display-name": "zone-proxy-test-server-no-reusable-ports",
-                      "kuma.io/env": "universal",
-                      "kuma.io/mesh": "envoyconfig-zoneproxies",
-                      "kuma.io/origin": "zone",
-                      "kuma.io/protocol": "http",
-                      "kuma.io/workload": "zone-proxy-test-server-no-reusable-ports",
-                      "kuma.io/zone": "kuma-3",
-                      "service": "zone-proxy-test-server-no-reusable-ports",
-                      "team": "server-owners",
-                      "version": "v1"
-                    }
-                  }
-                }
-              }
-            ],
-            "locality": {
-              "zone": "kuma-3"
-            }
-          }
-        ]
-      },
       "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server_80": {
         "clusterName": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server_80",
         "endpoints": [
@@ -460,24 +389,6 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-demo-client_3000",
-                  "statPrefix": "STAT_PREFIX_REDACTED"
-                }
-              }
-            ]
-          },
-          {
-            "filterChainMatch": {
-              "serverNames": [
-                "sni.msvc.envoyconfig-zoneproxies.kuma-3.zone-proxy-test-server-no-reusable-ports.80"
-              ],
-              "transportProtocol": "tls"
-            },
-            "filters": [
-              {
-                "name": "envoy.filters.network.tcp_proxy",
-                "typedConfig": {
-                  "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
-                  "cluster": "kri_msvc_envoyconfig-zoneproxies_kuma-3__zone-proxy-test-server-no-reusable-ports_80",
                   "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }

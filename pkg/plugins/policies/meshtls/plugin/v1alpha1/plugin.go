@@ -254,16 +254,12 @@ func configureInboundPassthroughListener(
 	statPrefix := inboundName
 	switch tlsMode {
 	case api.ModeStrict, api.ModePermissive:
-		// only a sidecar that opted into strict inbound ports may restrict the
-		// passthrough to the declared inbounds, and only in strict mode
-		useStrictInboundPorts := tlsMode == api.ModeStrict &&
-			proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts)
 		return generator.CreateInboundPassthroughListener(
 			proxy,
 			inboundName,
 			address,
 			tpCfg.Redirect.Inbound.Port.Uint32(),
-			useStrictInboundPorts,
+			tlsMode == api.ModeStrict,
 			statPrefix,
 		)
 	}
@@ -280,7 +276,7 @@ func configureListener(
 	inboundContextualID := naming.MustContextualInboundName(proxy.Dataplane, iface.InboundName)
 
 	listener := envoy_listeners.NewListenerBuilder(proxy.APIVersion, inboundContextualID).
-		Configure(envoy_listeners.InboundListener(iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
+		Configure(envoy_listeners.InboundListener(iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.StatPrefix(inboundContextualID)).
 		Configure(envoy_listeners.TransparentProxying(proxy)).
 		Configure(envoy_listeners.TagsMetadata(generator.InboundListenerTags(proxy.Dataplane, inboundContextualID)))

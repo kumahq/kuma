@@ -2,9 +2,7 @@ package mesh
 
 import (
 	"fmt"
-	"regexp"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
@@ -14,33 +12,10 @@ import (
 	"sigs.k8s.io/yaml"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
-
-const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
-
-var (
-	DomainRegexp         = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" + "$")
-	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
-	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9.\-_:]*$`)
-)
-
-type (
-	TagsValidatorFunc     func(path validators.PathBuilder, selector map[string]string) validators.ValidationError
-	TagKeyValidatorFunc   func(path validators.PathBuilder, key string) validators.ValidationError
-	TagValueValidatorFunc func(path validators.PathBuilder, key, value string) validators.ValidationError
-)
-
-type ValidateTagsOpts struct {
-	RequireAtLeastOneTag    bool
-	ExtraTagsValidators     []TagsValidatorFunc
-	ExtraTagKeyValidators   []TagKeyValidatorFunc
-	ExtraTagValueValidators []TagValueValidatorFunc
-}
 
 type ValidateTargetRefOpts struct {
 	SupportedKinds      []common_api.TargetRefKind
@@ -51,60 +26,6 @@ type ValidateTargetRefOpts struct {
 	AllowedInvalidNames []string
 	IsInboundPolicy     bool
 	IsBackendRef        bool
-}
-
-func ValidateTags(path validators.PathBuilder, tags map[string]string, opts ValidateTagsOpts) validators.ValidationError {
-	opts.ExtraTagValueValidators = append([]TagValueValidatorFunc{
-		func(path validators.PathBuilder, key, value string) validators.ValidationError {
-			var err validators.ValidationError
-			if !tagValueCharacterSet.MatchString(value) {
-				err.AddViolationAt(path.Key(key), "tag value must consist of alphanumeric characters, dots, dashes and underscores")
-			}
-			return err
-		},
-	}, opts.ExtraTagValueValidators...)
-
-	return validateTagKeyValues(path, tags, opts)
-}
-
-func validateTagKeyValues(path validators.PathBuilder, keyValues map[string]string, opts ValidateTagsOpts) validators.ValidationError {
-	var err validators.ValidationError
-	if opts.RequireAtLeastOneTag && len(keyValues) == 0 {
-		err.AddViolationAt(path, "must have at least one tag")
-	}
-	for _, validate := range opts.ExtraTagsValidators {
-		err.Add(validate(path, keyValues))
-	}
-	for _, key := range Keys(keyValues) {
-		if key == "" {
-			err.AddViolationAt(path, "tag name must be non-empty")
-		}
-		if !tagNameCharacterSet.MatchString(key) {
-			err.AddViolationAt(path.Key(key), "tag name must consist of alphanumeric characters, dots, dashes, slashes and underscores")
-		}
-		for _, validate := range opts.ExtraTagKeyValidators {
-			err.Add(validate(path, key))
-		}
-
-		value := keyValues[key]
-		if value == "" {
-			err.AddViolationAt(path.Key(key), "tag value must be non-empty")
-		}
-		for _, validate := range opts.ExtraTagValueValidators {
-			err.Add(validate(path, key, value))
-		}
-	}
-	return err
-}
-
-func Keys(tags map[string]string) []string {
-	// sort keys for consistency
-	var keys []string
-	for key := range tags {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
 }
 
 func ValidateDuration(path validators.PathBuilder, duration *durationpb.Duration) validators.ValidationError {
@@ -142,62 +63,12 @@ func ValidatePort(path validators.PathBuilder, port uint32) validators.Validatio
 	return err
 }
 
-// ValidateHostname validates a gateway hostname field. A hostname may be one of
-//   - '*'
-//   - '*.domain.name'
-//   - 'domain.name'
-func ValidateHostname(path validators.PathBuilder, hostname string) validators.ValidationError {
-	if hostname == mesh_proto.WildcardHostname {
-		return validators.ValidationError{}
-	}
-
-	err := validators.ValidationError{}
-
-	if len(hostname) > 253 {
-		err.AddViolationAt(path, "must be at most 253 characters")
-	}
-
-	if after, ok := strings.CutPrefix(hostname, "*."); ok {
-		if !DomainRegexp.MatchString(after) {
-			err.AddViolationAt(path, "invalid wildcard domain")
-		}
-
-		return err
-	}
-
-	if !DomainRegexp.MatchString(hostname) {
-		err.AddViolationAt(path, "invalid hostname")
-	}
-
-	return err
-}
-
 func AllowedValuesHint(values ...string) string {
 	options := strings.Join(values, ", ")
 	if len(values) == 0 {
 		options = "(none)"
 	}
 	return fmt.Sprintf("Allowed values: %s", options)
-}
-
-func ProtocolValidator(protocols core_meta.ProtocolList) TagsValidatorFunc {
-	return func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
-		var err validators.ValidationError
-		v, defined := selector[mesh_proto.ProtocolTag]
-		if !defined {
-			err.AddViolationAt(path, "protocol must be specified")
-			return err
-		}
-
-		if !protocols.Contains(core_meta.ParseProtocol(v)) {
-			err.AddViolationAt(
-				path.Key(mesh_proto.ProtocolTag),
-				fmt.Sprintf("must be one of the [%s]", strings.Join(protocols.Strings(), ", ")),
-			)
-		}
-
-		return err
-	}
 }
 
 // Resource is considered valid if it pass validation of any message
@@ -247,30 +118,6 @@ func ValidateResourceYAMLPatch(msg proto.Message, resYAML string) error {
 		json = []byte(resYAML)
 	}
 	return util_proto.FromJSON(json, msg)
-}
-
-// SelectorKeyNotInSet returns a TagKeyValidatorFunc that checks the tag key
-// is not any one of the given names.
-func SelectorKeyNotInSet(keyName ...string) TagKeyValidatorFunc {
-	set := map[string]struct{}{}
-
-	for _, k := range keyName {
-		set[k] = struct{}{}
-	}
-
-	return TagKeyValidatorFunc(
-		func(path validators.PathBuilder, key string) validators.ValidationError {
-			err := validators.ValidationError{}
-
-			if _, ok := set[key]; ok {
-				err.AddViolationAt(
-					path.Key(key),
-					fmt.Sprintf("tag name must not be %q", key),
-				)
-			}
-
-			return err
-		})
 }
 
 func ValidateTargetRef(

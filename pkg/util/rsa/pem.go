@@ -74,21 +74,6 @@ func IsPrivateKeyPEMBytes(b []byte) bool {
 	return block != nil && block.Type == rsaPrivateBlockType
 }
 
-func IsPublicKeyPEMBytes(b []byte) bool {
-	block, _ := pem.Decode(b)
-
-	if block != nil && block.Type == rsaPublicBlockType {
-		return true
-	}
-
-	if block != nil && block.Type == publicBlockType {
-		_, err := rsaKeyFromPKIX(block.Bytes)
-		return err == nil
-	}
-
-	return false
-}
-
 func rsaKeyFromPKIX(bytes []byte) (*rsa.PublicKey, error) {
 	key, err := x509.ParsePKIXPublicKey(bytes)
 	if err != nil {

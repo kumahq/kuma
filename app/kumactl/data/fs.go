@@ -15,19 +15,3 @@ func InstallDemoFS() fs.FS {
 	}
 	return fsys
 }
-
-func InstallGatewayKongFS() fs.FS {
-	fsys, err := fs.Sub(InstallData, "install/k8s/gateway-kong")
-	if err != nil {
-		panic(err)
-	}
-	return fsys
-}
-
-func InstallGatewayKongEnterpriseFS() fs.FS {
-	fsys, err := fs.Sub(InstallData, "install/k8s/gateway-kong-enterprise")
-	if err != nil {
-		panic(err)
-	}
-	return fsys
-}

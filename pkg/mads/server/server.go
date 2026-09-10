@@ -44,10 +44,6 @@ type muxServer struct {
 	meshCache *mesh.Cache
 }
 
-type HttpService interface {
-	RegisterRoutes(ws *restful.WebService)
-}
-
 var _ component.Component = &muxServer{}
 
 func (s *muxServer) Ready() bool {

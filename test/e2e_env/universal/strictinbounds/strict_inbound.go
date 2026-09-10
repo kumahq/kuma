@@ -47,12 +47,6 @@ spec:
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("demo-client-not-in-mesh", "", WithoutDataplane())).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "test-server"}))).
-			Install(TestServerUniversal("test-server-not-secure", meshName,
-				WithServiceName("test-server-not-secure"),
-				WithDpEnvs(map[string]string{
-					"KUMA_DATAPLANE_RUNTIME_STRICT_INBOUND_PORTS_ENABLED": "false",
-				}),
-				WithArgs([]string{"echo", "--instance", "test-server-not-secure"}))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -126,42 +120,6 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("test-server"))
 		}, "30s", "1s").Should(Succeed())
-
-		// and
-		// not secured DPP can be accessed
-		notSecuredDPPInboundAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-not-secure").GetIP(), "80")
-		notSecuredServiceAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-not-secure").GetIP(), "8080")
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server-not-secure.svc.mesh.local",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
-		}, "30s", "1s").Should(Succeed())
-
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client-not-in-mesh", notSecuredDPPInboundAddress,
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
-		}, "30s", "1s").Should(Succeed())
-
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", notSecuredServiceAddress,
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
-		}, "30s", "1s").Should(Succeed())
-
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client-not-in-mesh", notSecuredServiceAddress,
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
-		}, "30s", "1s").Should(Succeed())
 	})
 
 	It("should allow all traffic when permissive mode", func() {
@@ -205,42 +163,6 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Instance).To(Equal("test-server"))
-		}, "30s", "1s").Should(Succeed())
-
-		// and
-		// not secured DPP can be accessed
-		notSecuredDPPInboundAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-not-secure").GetIP(), "80")
-		notSecuredServiceAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-not-secure").GetIP(), "8080")
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server-not-secure.svc.mesh.local",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
-		}, "30s", "1s").Should(Succeed())
-
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client-not-in-mesh", notSecuredDPPInboundAddress,
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
-		}, "30s", "1s").Should(Succeed())
-
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", notSecuredServiceAddress,
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
-		}, "30s", "1s").Should(Succeed())
-
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client-not-in-mesh", notSecuredServiceAddress,
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
 		}, "30s", "1s").Should(Succeed())
 	})
 
@@ -289,47 +211,6 @@ spec:
 			// 52 = CURLE_GOT_NOTHING (TLS alert, clean close)
 			// 56 = CURLE_RECV_ERROR (TCP RST when no filter chain matches)
 			g.Expect(resp.Exitcode).To(Or(Equal(52), Equal(56)))
-		}, "30s", "1s").Should(Succeed())
-
-		// and
-		// not secured DPP can be accessed
-		notSecuredDPPInboundAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-not-secure").GetIP(), "80")
-		notSecuredServiceAddress := net.JoinHostPort(universal.Cluster.GetApp("test-server-not-secure").GetIP(), "8080")
-
-		// then
-		// communication should works
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server-not-secure.svc.mesh.local",
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
-		}, "30s", "1s").Should(Succeed())
-
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", notSecuredServiceAddress,
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
-		}, "30s", "1s").Should(Succeed())
-
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client-not-in-mesh", notSecuredServiceAddress,
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Instance).To(Equal("test-server-not-secure"))
-		}, "30s", "1s").Should(Succeed())
-
-		// and
-		// the dpp port cannot be accessed outside of the mesh
-		Eventually(func(g Gomega) {
-			resp, err := client.CollectFailure(
-				universal.Cluster, "demo-client-not-in-mesh", notSecuredDPPInboundAddress,
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(resp.Exitcode).To(Or(Equal(52)))
 		}, "30s", "1s").Should(Succeed())
 	})
 }
