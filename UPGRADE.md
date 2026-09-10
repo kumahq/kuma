@@ -29,10 +29,11 @@ IDs of every matching identity, so peers accept leaves from both for the whole
 transition. Use `spec.selector.dataplane.matchLabels` or the name to steer which
 identity a workload picks while both exist.
 
-Deleting the identity and recreating it under the same name is not a migration:
-the `MeshTrust` and the CA are keyed by the identity name, so the recreated
-identity issues in the new trust domain while the surviving `MeshTrust` still
-publishes the old one, which is the outage this change exists to prevent.
+Deleting the identity and recreating it under the same name is accepted, and
+the control plane does converge on the new trust domain, but it is not a
+migration: the `MeshTrust` and the CA are keyed by the identity name, so for as
+long as convergence takes there is a single trust domain in flight and leaves
+issued under the old one no longer verify. Two identities never have that gap.
 
 ### Zones no longer require the `kuma.io/origin` label
 
