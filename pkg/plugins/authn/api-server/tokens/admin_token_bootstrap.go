@@ -3,12 +3,12 @@ package tokens
 import (
 	"context"
 	"fmt"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"

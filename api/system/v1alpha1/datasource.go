@@ -1,13 +1,13 @@
 package v1alpha1
 
-// DataSource defines the source of bytes to use. Protobuf modelled the alternatives as a
+// DataSource defines the source of bytes to use. Protobuf modeled the alternatives as a
 // oneof and wrote the set one as a plain top level key, which is the shape kept here.
 // A DataSource is built to call the loader and is never stored.
 type DataSource struct {
 	// Secret is the name of the secret holding the bytes.
 	Secret *string `json:"secret,omitempty"`
-	// File is the path to read the bytes from.
-	// Deprecated: use another source of data.
+	// File is the path to read the bytes from. It is deprecated, prefer another
+	// source of data.
 	File *string `json:"file,omitempty"`
 	// Inline holds the bytes themselves.
 	Inline *BytesValue `json:"inline,omitempty"`

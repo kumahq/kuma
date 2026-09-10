@@ -2,7 +2,6 @@ package samples
 
 import (
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"

@@ -2,7 +2,6 @@ package datasource_test
 
 import (
 	"context"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	"os"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -17,6 +16,7 @@ import (
 	secret_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var _ = Describe("DataSource Loader", func() {
