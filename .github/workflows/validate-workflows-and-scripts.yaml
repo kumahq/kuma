@@ -64,6 +64,29 @@ jobs:
             workflows:
               - '.github/workflows/**'
 
+      - name: "Check the runner variable slug matches the branch"
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          steps.changes.outputs.workflows == 'true'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -e
+          # Variable names take no '-' or '.', and an inline expression cannot sanitize a
+          # branch name, so the slug is written by hand at every branch cut. Nothing else
+          # catches a missed rename: it silently falls back to the global variable.
+          expected=$(printf '%s' "${BASE_REF:-$REF_NAME}" | tr '[:lower:]' '[:upper:]' | tr '.-' '__')
+          found=$(grep -rhoE 'vars\.RUNNERS_[A-Z0-9_]+_(AMD64|ARM64)' \
+            --include='*.yaml' --include='*.yml' .github/workflows \
+            | sed -E 's/^vars\.RUNNERS_(.+)_(AMD64|ARM64)$/\1/' | sort -u)
+          wrong=$(printf '%s\n' "$found" | grep -vxF "$expected" || true)
+          if [ -n "$wrong" ]; then
+            echo "::error title=Runner variable slug does not match the branch::expected RUNNERS_${expected}_<ARCH>, found $(printf '%s' "$wrong" | tr '\n' ' ')"
+            exit 1
+          fi
+          echo "Runner variables use RUNNERS_${expected}_<ARCH>"
+
       - uses: reviewdog/action-actionlint@d290e336d5a743810aef4404f757dc862276d2ae # v1.73.4
         if: >-
           github.event_name == 'workflow_dispatch' ||

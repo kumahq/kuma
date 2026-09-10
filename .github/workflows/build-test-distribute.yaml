@@ -10,10 +10,11 @@ permissions:
   contents: read
 env:
   KUMA_DIR: "."
-  # To keep CI tools out of the SBOM, we use a `.ci_tools` directory in the parent
-  # of the code checkout path (typically /home/runner/work/<repo-name>/<repo-name>
-  # on the runner).
-  CI_TOOLS_DIR: "/home/runner/work/kuma/.ci_tools"
+  # To keep CI tools out of the SBOM, `.ci_tools` sits in the parent of the code
+  # checkout path. Hardcoding that path assumed a GitHub-hosted runner, where the
+  # checkout is /home/runner/work/<repo>/<repo>; a self-hosted runner puts its work
+  # directory elsewhere.
+  CI_TOOLS_DIR: ${{ github.workspace }}/../.ci_tools
   # renovate: datasource=github-tags depName=golangci-lint packageName=golangci/golangci-lint versioning=semver
   GOLANGCI_LINT_VERSION: "v2.13.2"
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
@@ -203,11 +204,20 @@ jobs:
       - name: Set GOMEMLIMIT dynamically based on available memory
         id: set-gomemlimit
         run: |
-          # Get total memory in bytes
           set -e
-          mem_total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-          mem_total_bytes=$((mem_total_kb * 1024))
-          gomemlimit=$((mem_total_bytes * 8 / 10))
+          # /proc/meminfo reports the host, so inside a container it names memory this job
+          # cannot have. Prefer the cgroup cap when one is set.
+          available=$(($(grep MemTotal /proc/meminfo | awk '{print $2}') * 1024))
+          for f in /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory/memory.limit_in_bytes; do
+            [ -r "$f" ] || continue
+            limit=$(cat "$f")
+            case "$limit" in ''|*[!0-9]*) continue ;; esac
+            if [ "$limit" -lt "$available" ]; then
+              available=$limit
+            fi
+            break
+          done
+          gomemlimit=$((available * 8 / 10))
           echo "GOMEMLIMIT=${gomemlimit}" >> "$GITHUB_ENV"
           echo "Setting GOMEMLIMIT to $(numfmt --to=iec "$gomemlimit")"
       - name: Cache Go build

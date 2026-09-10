@@ -86,4 +86,5 @@ Variable names cannot contain `-` or `.`, and an inline expression cannot saniti
 `github.ref_name`, so the branch slug is written into the workflows by hand. After cutting
 `release-X.Y`, replace `RUNNERS_MASTER_` with `RUNNERS_RELEASE_X_Y_` across
 `.github/workflows/` on the new branch, comments included, and set the matching variables.
-Nothing verifies this, so a missed rename silently falls back to the global variable.
+A missed rename would silently fall back to the global variable, so `validate-workflows-and-scripts.yaml`
+fails when a slug in the workflows does not match the branch.
