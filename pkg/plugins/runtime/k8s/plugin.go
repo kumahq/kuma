@@ -11,7 +11,6 @@ import (
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
-	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zone"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
@@ -183,10 +182,6 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		ResourceManager: rt.ResourceManager(),
 		Log:             core.Log.WithName("controllers").WithName("mesh-defaults"),
 		Extensions:      rt.Extensions(),
-		K8sStore:        rt.Config().Store.Type == store.KubernetesStore,
-		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
-		CpMode:          rt.Config().Mode,
-		CpZone:          rt.Config().Multizone.Zone.Name,
 	}
 	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup mesh defaults reconciller")

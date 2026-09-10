@@ -32,10 +32,9 @@ const (
 )
 
 type Mesh struct {
-	state                       protoimpl.MessageState `protogen:"open.v1"`
-	SkipCreatingInitialPolicies []string               `protobuf:"bytes,8,rep,name=skipCreatingInitialPolicies,proto3" json:"skipCreatingInitialPolicies,omitempty"`
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Mesh) Reset() {
@@ -68,20 +67,12 @@ func (*Mesh) Descriptor() ([]byte, []int) {
 	return file_api_mesh_v1alpha1_kdswire_kds_wire_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Mesh) GetSkipCreatingInitialPolicies() []string {
-	if x != nil {
-		return x.SkipCreatingInitialPolicies
-	}
-	return nil
-}
-
 var File_api_mesh_v1alpha1_kdswire_kds_wire_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_kdswire_kds_wire_proto_rawDesc = "" +
 	"\n" +
-	"(api/mesh/v1alpha1/kdswire/kds_wire.proto\x12\x12kuma.mesh.v1alpha1\"T\n" +
-	"\x04Mesh\x12@\n" +
-	"\x1bskipCreatingInitialPolicies\x18\b \x03(\tR\x1bskipCreatingInitialPoliciesJ\x04\b\x01\x10\bJ\x04\b\t\x10\n" +
+	"(api/mesh/v1alpha1/kdswire/kds_wire.proto\x12\x12kuma.mesh.v1alpha1\"\f\n" +
+	"\x04MeshJ\x04\b\x01\x10\n" +
 	"B5Z3github.com/kumahq/kuma/v3/api/mesh/v1alpha1/kdswireb\x06proto3"
 
 var (

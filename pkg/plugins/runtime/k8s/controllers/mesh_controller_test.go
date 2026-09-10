@@ -63,8 +63,6 @@ var _ = Describe("MeshReconciler", func() {
 			ResourceManager: customizableManager,
 			Log:             logr.Discard(),
 			Extensions:      context.Background(),
-			K8sStore:        true,
-			SystemNamespace: "kuma-system",
 		}
 	})
 
@@ -89,10 +87,10 @@ var _ = Describe("MeshReconciler", func() {
 			reconcile()
 		})
 
-		It("should create a default policy", func() {
+		It("should not create any policy", func() {
 			meshRetries := &v1alpha12.MeshRetryResourceList{}
 			Expect(resourceManager.List(context.Background(), meshRetries, core_store.ListByMesh("default"))).To(Succeed())
-			Expect(meshRetries.Items).To(HaveLen(1))
+			Expect(meshRetries.Items).To(BeEmpty())
 		})
 	})
 }, Ordered)

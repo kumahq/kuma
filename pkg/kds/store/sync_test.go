@@ -28,16 +28,26 @@ import (
 	test_store "github.com/kumahq/kuma/v3/pkg/test/store"
 )
 
+// markerLabel stands in for a spec change: the Mesh spec has no fields, and the
+// syncer treats a label change as an update just the same.
+const markerLabel = "test.kuma.io/marker"
+
 var meshBuilder = func(idx int) *mesh.MeshResource {
 	meshName := fmt.Sprintf("mesh-%d", idx)
 	return &mesh.MeshResource{
 		Meta: &model2.ResourceMeta{
 			Name: meshName,
 		},
-		Spec: &mesh_proto.Mesh{
-			SkipCreatingInitialPolicies: []string{fmt.Sprintf("policy-%d", idx)},
-		},
+		Spec: &mesh_proto.Mesh{},
 	}
+}
+
+// changedMeshBuilder is meshBuilder(idx) the upstream changed, so syncing it
+// against the stored copy is an update rather than a create.
+var changedMeshBuilder = func(idx int) *mesh.MeshResource {
+	m := meshBuilder(idx)
+	m.Meta.(*model2.ResourceMeta).Labels = map[string]string{markerLabel: "changed"}
+	return m
 }
 
 var _ = Describe("SyncResourceStoreDelta", func() {
@@ -207,8 +217,7 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstream := &mesh.MeshResourceList{}
 
 		// try to add resource without the label
-		mesh2 = meshBuilder(2)
-		mesh2.Spec.SkipCreatingInitialPolicies = []string{"modified-policy"}
+		mesh2 = changedMeshBuilder(2)
 		Expect(upstream.AddItem(mesh1)).To(Succeed())
 		Expect(upstream.AddItem(mesh2)).To(Succeed())
 		Expect(upstream.AddItem(mesh3)).To(Succeed())
@@ -228,10 +237,10 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		actual := &mesh.MeshResourceList{}
 		Expect(resourceStore.List(context.Background(), actual)).To(Succeed())
 		Expect(actual.GetItems()).To(HaveLen(3))
-		Expect(actual.GetItems()[0].GetSpec()).To(MatchProto(meshBuilder(2).GetSpec()))
-		Expect(actual.GetItems()[1].GetSpec()).To(MatchProto(mesh1.GetSpec()))
 		// should not update resource since mesh-2 already exists
-		Expect(actual.GetItems()[2].GetSpec()).To(MatchProto(mesh3.GetSpec()))
+		Expect(actual.GetItems()[0].GetMeta().GetLabels()).To(Equal(map[string]string{mesh_proto.ResourceOriginLabel: "zone"}))
+		Expect(actual.GetItems()[1].GetMeta().GetName()).To(Equal(mesh1.GetMeta().GetName()))
+		Expect(actual.GetItems()[2].GetMeta().GetName()).To(Equal(mesh3.GetMeta().GetName()))
 	})
 
 	It("should ignore invalid resource from upstream and add only valid", func() {
@@ -376,8 +385,7 @@ var _ = Describe("SyncResourceStoreDelta rejected resources", func() {
 		Expect(resourceStore.Create(context.Background(), removed, store.CreateBy(model.MetaToResourceKey(removed.GetMeta())))).To(Succeed())
 
 		// when the upstream sends a batch where a single create is rejected
-		changed := meshBuilder(3)
-		changed.Spec.SkipCreatingInitialPolicies = []string{"policy-changed"}
+		changed := changedMeshBuilder(3)
 		upstream := &mesh.MeshResourceList{}
 		Expect(upstream.AddItem(meshBuilder(1))).To(Succeed())
 		Expect(upstream.AddItem(meshBuilder(2))).To(Succeed())
@@ -404,7 +412,7 @@ var _ = Describe("SyncResourceStoreDelta rejected resources", func() {
 		Expect(names).To(ConsistOf("mesh-1", "mesh-3"))
 		updated := mesh.NewMeshResource()
 		Expect(resourceStore.Get(context.Background(), updated, store.GetByKey("mesh-3", model.NoMesh))).To(Succeed())
-		Expect(updated.Spec.SkipCreatingInitialPolicies).To(ConsistOf("policy-changed"))
+		Expect(updated.GetMeta().GetLabels()).To(HaveKeyWithValue(markerLabel, "changed"))
 	})
 })
 
@@ -447,17 +455,9 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 	var syncer kds_sync_store.ResourceSyncer
 	var key model.ResourceKey
 
-	// meshBuilder(1) with a different spec, so syncing it against the stored copy
-	// produces an update rather than a create.
-	changedMesh := func() *mesh.MeshResource {
-		m := meshBuilder(1)
-		m.Spec.SkipCreatingInitialPolicies = []string{"policy-changed"}
-		return m
-	}
-
 	syncChangedMesh := func() (error, error) {
 		upstream := &mesh.MeshResourceList{}
-		Expect(upstream.AddItem(changedMesh())).To(Succeed())
+		Expect(upstream.AddItem(changedMeshBuilder(1))).To(Succeed())
 		return syncer.Sync(context.Background(), kds_client.UpstreamResponse{
 			Type:           upstream.GetItemType(),
 			AddedResources: upstream,
@@ -485,7 +485,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 
 		actual := mesh.NewMeshResource()
 		Expect(resourceStore.Get(context.Background(), actual, store.GetBy(key))).To(Succeed())
-		Expect(actual.Spec.SkipCreatingInitialPolicies).To(Equal([]string{"policy-changed"}))
+		Expect(actual.GetMeta().GetLabels()).To(HaveKeyWithValue(markerLabel, "changed"))
 		Expect(resourceStore.updates).To(Equal(2))
 		// create, then the concurrent writer, then the retried sync: without a
 		// rebase on the fresh copy the retry would carry version 1 and conflict again
@@ -503,7 +503,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 
 		actual := mesh.NewMeshResource()
 		Expect(resourceStore.Get(context.Background(), actual, store.GetBy(key))).To(Succeed())
-		Expect(actual.Spec.SkipCreatingInitialPolicies).To(Equal([]string{"policy-1"}))
+		Expect(actual.GetMeta().GetLabels()).ToNot(HaveKey(markerLabel))
 	})
 
 	It("should apply the rest of the batch when one resource conflicts", func() {
@@ -516,9 +516,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 
 		upstream := &mesh.MeshResourceList{}
 		for i := 1; i <= 3; i++ {
-			m := meshBuilder(i)
-			m.Spec.SkipCreatingInitialPolicies = []string{"policy-changed"}
-			Expect(upstream.AddItem(m)).To(Succeed())
+			Expect(upstream.AddItem(changedMeshBuilder(i))).To(Succeed())
 		}
 		err, nackError := syncer.Sync(context.Background(), kds_client.UpstreamResponse{
 			Type:           upstream.GetItemType(),
@@ -531,7 +529,7 @@ var _ = Describe("SyncResourceStoreDelta write conflicts", func() {
 		Expect(resourceStore.List(context.Background(), actual)).To(Succeed())
 		Expect(actual.Items).To(HaveLen(3))
 		for _, item := range actual.Items {
-			Expect(item.Spec.SkipCreatingInitialPolicies).To(Equal([]string{"policy-changed"}))
+			Expect(item.GetMeta().GetLabels()).To(HaveKeyWithValue(markerLabel, "changed"))
 		}
 		// 3 updates in the transaction, 1 retried after it
 		Expect(resourceStore.updates).To(Equal(4))

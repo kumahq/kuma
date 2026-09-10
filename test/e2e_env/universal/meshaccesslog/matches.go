@@ -31,8 +31,7 @@ func Matches() {
 
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().
-				WithName(meshName).
-				WithoutInitialPolicies())).
+				WithName(meshName))).
 			Install(YamlUniversal(fmt.Sprintf(`
 type: MeshIdentity
 name: identity

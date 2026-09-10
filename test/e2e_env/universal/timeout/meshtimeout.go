@@ -26,11 +26,6 @@ func PluginTest() {
 			).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-
-		// Delete the default meshretry policy
-		Eventually(func() error {
-			return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "meshretry", "--mesh", meshName, "mesh-retry-all-"+meshName)
-		}).Should(Succeed())
 	})
 
 	AfterEachFailure(func() {

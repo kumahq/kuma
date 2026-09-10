@@ -12,14 +12,12 @@ import (
 // that a zone control plane of any released version can read what a global control
 // plane of this one sends. See kdswire/kds_wire.proto.
 func (m *Mesh) ToKDSWire() proto.Message {
-	return &kdswire.Mesh{SkipCreatingInitialPolicies: m.GetSkipCreatingInitialPolicies()}
+	return &kdswire.Mesh{}
 }
 
 func (m *Mesh) FromKDSWire(msg proto.Message) error {
-	wire, ok := msg.(*kdswire.Mesh)
-	if !ok {
+	if _, ok := msg.(*kdswire.Mesh); !ok {
 		return fmt.Errorf("invalid type %T for the Mesh wire form", msg)
 	}
-	m.SkipCreatingInitialPolicies = wire.GetSkipCreatingInitialPolicies()
 	return nil
 }

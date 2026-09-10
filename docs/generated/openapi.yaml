@@ -7430,18 +7430,6 @@ components:
           maxLength: 253
           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
-        skipCreatingInitialPolicies:
-          description: >-
-            List of policies to skip creating by default when the mesh is
-            created.
-
-            e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip
-            all
-
-            policies.
-          items:
-            type: string
-          type: array
         type:
           type: string
       required:
@@ -16120,17 +16108,7 @@ components:
       description: MeshOverview defines the projected state of a Mesh.
       properties:
         mesh:
-          properties:
-            skipCreatingInitialPolicies:
-              description: >-
-                List of policies to skip creating by default when the mesh is
-                created,
-
-                for example TrafficPermission or MeshRetry. An '*' skips all
-                policies.
-              items:
-                type: string
-              type: array
+          properties: {}
           type: object
         meshInsight:
           description: MeshInsight carries the observed state of the mesh.

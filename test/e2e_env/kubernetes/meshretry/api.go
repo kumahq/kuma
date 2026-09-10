@@ -18,8 +18,7 @@ func API() {
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().
-				WithName(meshName).
-				WithoutInitialPolicies())).
+				WithName(meshName))).
 			Setup(kubernetes.Cluster)).To(Succeed())
 	})
 

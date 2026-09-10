@@ -14,7 +14,5 @@ package kuma.mesh.v1alpha1;
 option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1/kdswire";
 
 message Mesh {
-  reserved 1 to 7, 9;
-
-  repeated string skipCreatingInitialPolicies = 8;
+  reserved 1 to 9;
 }

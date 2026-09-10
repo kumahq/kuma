@@ -169,8 +169,7 @@ spec:
 		Install(
 			Yaml(
 				builders.Mesh().
-					WithName(zoneProxyMeshName).
-					WithoutInitialPolicies(),
+					WithName(zoneProxyMeshName),
 			),
 		).
 		Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(

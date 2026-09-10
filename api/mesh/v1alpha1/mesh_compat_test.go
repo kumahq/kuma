@@ -14,21 +14,22 @@ import (
 // insight is recomputed and the overview is assembled for the API, but both are read by
 // clients that parse the names protobuf chose.
 var _ = Describe("Mesh family storage compatibility", func() {
-	DescribeTable("round trips the mesh bytes 2.14 wrote",
-		func(stored string, expected []string) {
+	// The Mesh spec has no fields since 3.0. A mesh a control plane before it stored
+	// still has to load, and the rewrite drops the field it no longer knows: rolling
+	// back to 2.14 after that means the default policies get created again.
+	DescribeTable("reads the mesh bytes 2.14 wrote and rewrites them without the dropped field",
+		func(stored string) {
 			mesh := &mesh_proto.Mesh{}
 			Expect(json.Unmarshal([]byte(stored), mesh)).To(Succeed())
-			Expect(mesh.SkipCreatingInitialPolicies).To(Equal(expected))
 
 			rewritten, err := json.Marshal(mesh)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(string(rewritten)).To(Equal(stored))
+			Expect(string(rewritten)).To(Equal(`{}`))
 		},
-		Entry("no policies skipped", `{}`, []string(nil)),
-		Entry("all policies skipped", `{"skipCreatingInitialPolicies":["*"]}`, []string{"*"}),
+		Entry("no policies skipped", `{}`),
+		Entry("all policies skipped", `{"skipCreatingInitialPolicies":["*"]}`),
 		Entry("some policies skipped",
-			`{"skipCreatingInitialPolicies":["TrafficPermission","MeshRetry"]}`,
-			[]string{"TrafficPermission", "MeshRetry"}),
+			`{"skipCreatingInitialPolicies":["TrafficPermission","MeshRetry"]}`),
 	)
 
 	It("round trips a fully populated insight", func() {
@@ -74,7 +75,7 @@ var _ = Describe("Mesh family storage compatibility", func() {
 
 	It("keeps the getters usable on a nil receiver", func() {
 		var overview *mesh_proto.MeshOverview
-		Expect(overview.GetMesh().GetSkipCreatingInitialPolicies()).To(BeNil())
+		Expect(overview.GetMesh()).To(BeNil())
 		Expect(overview.GetMeshInsight().GetDataplanes().GetTotal()).To(Equal(uint32(0)))
 		Expect(overview.GetMeshInsight().GetMTLS().GetIssuedBackends()).To(BeNil())
 	})
