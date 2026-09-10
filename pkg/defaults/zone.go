@@ -8,7 +8,7 @@ import (
 
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -26,7 +26,7 @@ func EnsureOnlyOneZoneExists(
 	}
 	zoneName := cfg.Multizone.Zone.Name
 	logger.V(1).Info("ensuring Zone resource exists", "name", zoneName)
-	zones := &system.ZoneResourceList{}
+	zones := &zone_api.ZoneResourceList{}
 	if err := resManager.List(ctx, zones); err != nil {
 		return errors.Wrap(err, "cannot list zones")
 	}
@@ -42,7 +42,7 @@ func EnsureOnlyOneZoneExists(
 		}
 	}
 	if !exists {
-		zone := system.NewZoneResource()
+		zone := zone_api.NewZoneResource()
 		if err := resManager.Create(ctx, zone, store.CreateByKey(zoneName, model.NoMesh)); err != nil {
 			return err
 		}

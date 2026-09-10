@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
@@ -16,7 +16,7 @@ type Validator struct {
 }
 
 func (v *Validator) ValidateDelete(ctx context.Context, name string) error {
-	zi := system.NewZoneInsightResource()
+	zi := zoneinsight_api.NewZoneInsightResource()
 	validationErr := &validators.ValidationError{}
 	if err := v.Store.Get(ctx, zi, store.GetByKey(name, model.NoMesh)); err != nil {
 		if store.IsNotFound(err) {

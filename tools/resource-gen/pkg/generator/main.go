@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -462,8 +461,6 @@ var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeFor[v1alpha1.DataplaneOverview](),
 	reflect.TypeFor[v1alpha1.MeshInsight](),
 	reflect.TypeFor[v1alpha1.MeshOverview](),
-	reflect.TypeFor[system_proto.Zone](),
-	reflect.TypeFor[system_proto.ZoneOverview](),
 }
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {

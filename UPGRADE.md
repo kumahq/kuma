@@ -54,6 +54,17 @@ A linter bug hid a set of API fields from the shape checks the rest of the API f
 
 None. Existing resources keep working. The only visible difference is that a resource that omits `type` or `weight` no longer comes back from the API with the value filled in.
 
+### `Zone` and `ZoneInsight` are validated by the admission webhooks
+
+The `Zone` and `ZoneInsight` custom resources moved to the same generator every other Kuma resource already uses. Control plane RBAC and the admission webhooks now list them the same way, which fixes a rule that named `zone` where the custom resource is `zones` and therefore never matched. Both resources stay cluster scoped and their stored specs are unchanged.
+
+The `mesh` field is gone from both custom resource definitions. It only ever applied to namespaced resources and was always empty on these two.
+
+**Action required**
+
+None. The permissions granted are the same set as before, and a stored `Zone` or `ZoneInsight` is read and rewritten byte for byte.
+
+
 ### `MeshPassthrough` rejects matches that resolve to the same Envoy filter chain
 
 Create and update validation now rejects a `MeshPassthrough` policy in which two matches resolve to the same filter chain of the generated passthrough listener. Previously such a policy was accepted and Envoy rejected the entire listener, breaking all passthrough traffic for every proxy the policy matched. Two matches collide when they configure the same port (or both configure no port) with:
