@@ -55,10 +55,8 @@ jobs:
   # repository cache budget is shared with every branch.
   build-binaries:
     timeout-minutes: 70
-    # A linux leg builds for the host it runs on when a pool for that arch exists, so it
-    # asks for matrix.arch. A darwin leg cross-compiles wherever it lands, so it stays on
-    # amd64. An arch with no pool resolves to nothing here and falls back, which is what
-    # every arm64 leg does until RUNNERS_ARM64 is set.
+    # A darwin leg cross-compiles wherever it lands, so it stays on amd64. An arch with no
+    # pool set falls back, which is every arm64 leg today.
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name != github.repository)

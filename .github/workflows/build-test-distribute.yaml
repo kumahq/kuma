@@ -10,10 +10,7 @@ permissions:
   contents: read
 env:
   KUMA_DIR: "."
-  # To keep CI tools out of the SBOM, `.ci_tools` sits in the parent of the code
-  # checkout path. Hardcoding that path assumed a GitHub-hosted runner, where the
-  # checkout is /home/runner/work/<repo>/<repo>; a self-hosted runner puts its work
-  # directory elsewhere.
+  # Parent of the checkout, to keep CI tools out of the SBOM.
   CI_TOOLS_DIR: ${{ github.workspace }}/../.ci_tools
   # renovate: datasource=github-tags depName=golangci-lint packageName=golangci/golangci-lint versioning=semver
   GOLANGCI_LINT_VERSION: "v2.13.2"
@@ -139,15 +136,12 @@ jobs:
       #   4. vars.RUNNERS_MASTER_<ARCH>         -> per-branch + per-arch override
       #   5. vars.RUNNERS_<ARCH>                -> global per-arch override
       #   6. default                            -> the standard self-hosted Kong pool
-      # Both variables hold a JSON object of size to label array, and the raw strings are
-      # spliced in, so a caller receives {"<arch>":{"<size>":[labels]}} and indexes it by
-      # arch and by the size that job needs. An arch nobody has set resolves to an empty
-      # object, and each consumer falls back to its own default, so adding an architecture
-      # is setting a variable rather than editing a workflow.
-      # `github.base_ref` is the PR target branch and is empty outside pull_request,
-      # where `github.ref_name` is the branch/tag ('<number>/merge' on a PR).
-      # Branch slug is hardcoded because GitHub var names can't contain '-' or '.',
-      # and inline expressions can't sanitize `github.ref_name`.
+      # Each variable is a JSON object of size to label array, spliced in raw, so a caller
+      # gets {"<arch>":{"<size>":[labels]}}. An unset arch resolves to {} and the consumer
+      # falls back, so adding an arch is setting a variable.
+      # `github.base_ref` is empty outside pull_request, where `github.ref_name` is
+      # '<number>/merge'. The slug is hardcoded: var names take no '-' or '.', and an
+      # inline expression cannot sanitize `github.ref_name`.
       RUNNERS_BY_ARCH: >-
         ${{ ((github.event_name == 'pull_request'
         && github.event.pull_request.head.repo.full_name != github.repository)
@@ -263,8 +257,7 @@ jobs:
         id: set-gomemlimit
         run: |
           set -e
-          # /proc/meminfo reports the host, so inside a container it names memory this job
-          # cannot have. Prefer the cgroup cap when one is set.
+          # /proc/meminfo reports the host, not the cgroup a containerised runner gets.
           available=$(($(grep MemTotal /proc/meminfo | awk '{print $2}') * 1024))
           for f in /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory/memory.limit_in_bytes; do
             [ -r "$f" ] || continue

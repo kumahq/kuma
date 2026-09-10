@@ -12,10 +12,8 @@ jobs:
   pr_comments:
     timeout-minutes: 120
     if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '/golden_files_e2e') || contains(github.event.comment.body, '/tproxy_golden_files'))
-    # Stays GitHub-hosted. A maintainer's /format or /golden_files checks out the PR head,
-    # which is a fork on most PRs, and runs make against it. runs-on cannot read the step
-    # that resolves isCrossRepository, so the runner is picked before we know whose code
-    # this is. See .github/workflows/README.md.
+    # Checks out the PR head, a fork on most PRs, and runs make against it. runs-on cannot
+    # read the step that resolves isCrossRepository, so this stays GitHub-hosted.
     runs-on: ubuntu-24.04
     steps:
       # Commands are additive: one comment can request multiple actions, and all

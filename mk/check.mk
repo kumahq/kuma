@@ -30,9 +30,8 @@ else
 endif
 
 .PHONY: fmt/ci
-# Two scalars, edited in place. `yq -i` reserializes the whole document, which drops the
-# folded block scalars the runs-on expressions use, and `check` then fails on the diff.
-# No `sed -i`, since GNU and BSD disagree on its argument.
+# `yq -i` reserializes the document and drops the folded runs-on scalars, so `check` fails
+# on its own diff. No `sed -i`: GNU and BSD disagree on its argument.
 fmt/ci:
 	@f=.github/workflows/"$(ACTION_PREFIX)"_test.yaml; t=$$(mktemp); \
 	sed -E -e 's|^(  K8S_MIN_VERSION: ).*|\1$(K8S_MIN_VERSION)|' \

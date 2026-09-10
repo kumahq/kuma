@@ -81,14 +81,13 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
         run: |
           set -e
-          # Variable names take no '-' or '.', and an inline expression cannot sanitize a
-          # branch name, so the slug is written by hand at every branch cut. Nothing else
-          # catches a missed rename: it silently falls back to the global variable.
+          # The slug is written by hand at every branch cut, and a missed rename silently
+          # falls back to the global variable.
           expected=$(printf '%s' "${BASE_REF:-$REF_NAME}" | tr '[:lower:]' '[:upper:]' | tr '.-' '__')
           found=$(grep -rhoE 'vars\.RUNNERS_[A-Z0-9_]+_(AMD64|ARM64)' \
             --include='*.yaml' --include='*.yml' .github/workflows \
             | sed -E 's/^vars\.RUNNERS_(.+)_(AMD64|ARM64)$/\1/' | sort -u)
-          # PR is a tier, not a branch: it names the variable a pull_request run prefers.
+          # PR is a tier, not a branch.
           wrong=$(printf '%s\n' "$found" | grep -vxF "$expected" | grep -vxF PR || true)
           if [ -n "$wrong" ]; then
             echo "::error title=Runner variable slug does not match the branch::expected RUNNERS_${expected}_<ARCH>, found $(printf '%s' "$wrong" | tr '\n' ' ')"
