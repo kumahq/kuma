@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
@@ -203,7 +204,7 @@ var _ = Describe("kumactl delete ", func() {
 				Entry("zones", testCase{
 					typ:             "zone",
 					name:            "eu-north",
-					resource:        func() core_model.Resource { return system.NewZoneResource() },
+					resource:        func() core_model.Resource { return zone_api.NewZoneResource() },
 					expectedMessage: "deleted Zone \"eu-north\"\n",
 				}),
 			)

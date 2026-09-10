@@ -9,12 +9,11 @@ import (
 	"google.golang.org/grpc"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	store_config "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -22,19 +21,18 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("KDS client", func() {
 	zoneInsight := func(storeType store_config.StoreType) model.Resource {
-		zoneInsight := core_system.NewZoneInsightResource()
+		zoneInsight := zoneinsight_api.NewZoneInsightResource()
 		t1, _ := time.Parse(time.RFC3339, "2017-07-17T17:07:47+00:00")
 		cfg := kuma_cp.DefaultConfig()
 		cfg.Store.Type = storeType
 		displayCfg, _ := config.ConfigForDisplay(&cfg)
-		zoneInsight.Spec.Subscriptions = []*v1alpha1.KDSSubscription{
+		zoneInsight.Spec.Subscriptions = []*zoneinsight_api.KDSSubscription{
 			{
-				ConnectTime: util_proto.MustTimestampProto(t1),
+				ConnectTime: zoneinsight_api.NewTime(t1),
 				Config:      displayCfg,
 			},
 		}
