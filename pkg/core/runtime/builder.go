@@ -236,6 +236,12 @@ func (b *Builder) WithAccess(acc Access) *Builder {
 	return b
 }
 
+// WithExtraReportsFn is used by Kong Mesh to attach license reports.
+func (b *Builder) WithExtraReportsFn(fn ExtraReportsFn) *Builder {
+	b.extraReportsFn = fn
+	return b
+}
+
 func (b *Builder) WithTokenIssuers(tokenIssuers builtin.TokenIssuers) *Builder {
 	b.tokenIssuers = tokenIssuers
 	return b
@@ -263,6 +269,15 @@ func (b *Builder) WithPgxConfigCustomizationFn(pgxConfigCustomizationFn config.P
 
 func (b *Builder) WithAPIWebServiceCustomize(customize func(*restful.WebService) error) *Builder {
 	b.apiWebServiceCustomize = append(b.apiWebServiceCustomize, customize)
+	return b
+}
+
+// WithRouteMetadataProvider sets the route-metadata provider; Kong Mesh uses it
+// for Konnect route authorization metadata. Unlike
+// WithAPIWebServiceCustomize it does not compose: a second call replaces the
+// first, as there is intentionally a single metadata authority.
+func (b *Builder) WithRouteMetadataProvider(provider RouteMetadataProvider) *Builder {
+	b.routeMetadataProvider = provider
 	return b
 }
 
@@ -408,6 +423,11 @@ func (b *Builder) ConfigStore() core_store.ResourceStore {
 	return b.cs
 }
 
+// GlobalInsightService is used by Kong Mesh to wrap the service with limits.
+func (b *Builder) GlobalInsightService() globalinsight.GlobalInsightService {
+	return b.gis
+}
+
 func (b *Builder) ResourceManager() core_manager.CustomizableResourceManager {
 	return b.rm
 }
@@ -482,6 +502,11 @@ func (b *Builder) AppCtx() context.Context {
 
 func (b *Builder) TokenIssuers() builtin.TokenIssuers {
 	return b.tokenIssuers
+}
+
+// EnvoyAdminClient is used by Kong Mesh to wrap the client with auditing.
+func (b *Builder) EnvoyAdminClient() admin.EnvoyAdminClient {
+	return b.eac
 }
 
 func (b *Builder) MeshCache() *mesh.Cache {
