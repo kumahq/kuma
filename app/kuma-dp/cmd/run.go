@@ -84,6 +84,14 @@ func dnsProxyAddresses(tpCfg *tproxy_dp.DataplaneConfig, port string) []string {
 	}
 }
 
+// transparentProxyIPFamilyMode skips IPv6 on hosts without a local IPv6 address, like kumactl install transparent-proxy
+func transparentProxyIPFamilyMode(mode tproxy_config.IPFamilyMode, hasLocalIPv6 bool) tproxy_config.IPFamilyMode {
+	if !hasLocalIPv6 {
+		return tproxy_config.IPFamilyModeIPv4
+	}
+	return mode
+}
+
 // PersistentPreRunE in root command sets the logger and initial config
 // PreRunE loads the Kuma DP config
 // PostRunE actually runs all the components with loaded config
@@ -134,12 +142,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				tpCfg.Redirect.DNS.Port = tproxy_config.Port(cfg.DNS.ProxyPort)
 				tpCfg.Redirect.DNS.Enabled = cfg.DNS.Enabled
 
-				// kumactl install transparent-proxy skips IPv6 rules on the same check
-				if tpCfg.IPFamilyMode != tproxy_config.IPFamilyModeIPv4 {
-					if ok, _ := tproxy_config.HasLocalIPv6(); !ok {
-						runLog.Info("no local IPv6 address found, using IPv4 transparent proxy mode")
-						tpCfg.IPFamilyMode = tproxy_config.IPFamilyModeIPv4
-					}
+				hasLocalIPv6, _ := tproxy_config.HasLocalIPv6()
+				if mode := transparentProxyIPFamilyMode(tpCfg.IPFamilyMode, hasLocalIPv6); mode != tpCfg.IPFamilyMode {
+					runLog.Info("no local IPv6 address found, using IPv4 transparent proxy mode")
+					tpCfg.IPFamilyMode = mode
 				}
 			}
 			cfg.DataplaneRuntime.TransparentProxy = tpCfg

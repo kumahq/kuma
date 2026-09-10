@@ -125,6 +125,16 @@ var _ = Describe("run", func() {
 		})
 	})
 
+	DescribeTable("transparentProxyIPFamilyMode",
+		func(mode tproxy_config.IPFamilyMode, hasLocalIPv6 bool, expected tproxy_config.IPFamilyMode) {
+			Expect(transparentProxyIPFamilyMode(mode, hasLocalIPv6)).To(Equal(expected))
+		},
+		Entry("keeps dual-stack with local IPv6", tproxy_config.IPFamilyModeDualStack, true, tproxy_config.IPFamilyModeDualStack),
+		Entry("falls back to IPv4 without local IPv6", tproxy_config.IPFamilyModeDualStack, false, tproxy_config.IPFamilyModeIPv4),
+		Entry("keeps IPv4 with local IPv6", tproxy_config.IPFamilyModeIPv4, true, tproxy_config.IPFamilyModeIPv4),
+		Entry("keeps IPv4 without local IPv6", tproxy_config.IPFamilyModeIPv4, false, tproxy_config.IPFamilyModeIPv4),
+	)
+
 	type testCase struct {
 		envVars      map[string]string
 		args         []string
