@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
 	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
@@ -144,7 +143,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 			Configure(envoy_listeners.ServerSideStaticMTLS(proxy.EnvoyAdminMTLSCerts)),
 		))
 
-		listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, g.getAddress(proxy), adminPort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
+		listener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, g.getAddress(proxy), adminPort, core_xds.SocketAddressProtocolTCP).
 			WithOverwriteName(envoyAdminListenerName).
 			Configure(envoy_listeners.TLSInspector()).
 			Configure(filterChains...).

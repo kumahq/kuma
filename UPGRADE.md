@@ -8,6 +8,18 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Strict inbound ports and `SO_REUSEPORT` can no longer be turned off
+
+`kuma-dp` no longer reads `KUMA_DATAPLANE_RUNTIME_STRICT_INBOUND_PORTS_ENABLED` or `KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED`. Both defaulted to `true`, and the control plane now applies that behavior to every data plane:
+
+- A sidecar with transparent proxy and a workload identity accepts inbound traffic only on the ports of its inbounds, unless a `MeshTLS` policy sets `Permissive` mode for it. Sidecars without a workload identity keep accepting inbound traffic on every port.
+- Every inbound Envoy listener sets `enable_reuse_port: true`.
+
+**Action required**
+
+- If a workload relies on `KUMA_DATAPLANE_RUNTIME_STRICT_INBOUND_PORTS_ENABLED=false` to receive traffic on ports it does not declare, declare those ports as inbounds before you upgrade.
+- Restart data planes that run with `KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED=false` after you upgrade the control plane. Envoy cannot change `enable_reuse_port` on a running listener, so it rejects listener updates until the data plane restarts.
+
 ### KDS full resync is periodic again, not every second
 
 Removing the polling KDS watchdog carried the poll loop's `refreshInterval` of

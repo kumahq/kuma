@@ -248,7 +248,7 @@ trafficDirection: OUTBOUND`,
 
 	It("should set timeouts for inbound TCP listener", func() {
 		// given
-		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP, true).
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 				Configure(TcpProxyDeprecated("localhost:8080", plugins_xds.NewClusterBuilder().WithName("backend").Build())).
 				Configure(Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolTCP)))).
@@ -281,7 +281,7 @@ enableReusePort: true`
 
 	It("should set timeouts for inbound HTTP listener", func() {
 		// given
-		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP, true).
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 				Configure(HttpConnectionManager("localhost:8080", false, nil, true)).
 				Configure(Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolHTTP)))).
