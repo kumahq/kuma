@@ -1120,7 +1120,13 @@ func (c *K8sCluster) DeleteKuma() error {
 	return err
 }
 
+// GetKumactlOptions returns nil when the control plane never started, so that a
+// caller dumping state after a failure can skip the kumactl parts instead of
+// panicking and losing the rest of the dump.
 func (c *K8sCluster) GetKumactlOptions() *kumactl.KumactlOptions {
+	if c.controlplane == nil {
+		return nil
+	}
 	return c.controlplane.kumactl
 }
 

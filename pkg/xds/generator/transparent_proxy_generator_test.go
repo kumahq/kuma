@@ -10,7 +10,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -37,9 +36,6 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		}
 
 		return &model.Proxy{
-			Metadata: &model.DataplaneMetadata{Features: map[string]bool{
-				types.FeatureStrictInboundPorts: true,
-			}},
 			Id: *model.BuildProxyId("", "side-car"),
 			Dataplane: &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{Version: "v1"},
@@ -182,9 +178,6 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		}),
 		Entry("transparent_proxying=true,inbound_filter,workload identity,gateway", testCase{
 			proxy: &model.Proxy{
-				Metadata: &model.DataplaneMetadata{Features: map[string]bool{
-					types.FeatureStrictInboundPorts: true,
-				}},
 				Id: *model.BuildProxyId("", "side-car"),
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
