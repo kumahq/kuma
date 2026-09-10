@@ -16,13 +16,12 @@ import (
 )
 
 // The golden file records the Any type URL every KDS synced type is sent under.
-// A control plane on the other side of an upgrade reads the Any by that URL, so
-// a type that trades a URL for the empty string (the JSON encoding a spec gets
-// once it stops being a protobuf message) stops syncing to it entirely: the
-// peer fails the whole DeltaDiscoveryResponse and restarts its stream forever.
-// Keeping such a spec on the wire is what core_model.KDSWireSpec is for.
+// Every type is now sent as JSON, so every URL is empty, and the file exists to
+// catch a type that grows one back: a peer of this version reads the value as
+// JSON whatever the URL says, so a protobuf payload would fail the whole
+// DeltaDiscoveryResponse and restart its stream forever.
 var _ = Describe("KDS wire encoding", func() {
-	It("sends every synced type under the type URL its peers expect", func() {
+	It("sends every synced type as JSON, under no type URL", func() {
 		reg := registry.Global()
 		urls := map[string]string{}
 		for _, filter := range []core_model.TypeFilter{

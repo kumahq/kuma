@@ -5,11 +5,8 @@ import (
 	"path"
 	"reflect"
 
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 	"sigs.k8s.io/yaml"
-
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 func ToJSON(spec ResourceSpec) ([]byte, error) {
@@ -32,22 +29,9 @@ func ToYAML(spec ResourceSpec) ([]byte, error) {
 	return yaml.Marshal(spec)
 }
 
-// KDSWireSpec is implemented by a spec that a released control plane defines as
-// a protobuf message but this one defines as a plain Go struct. ToAny and
-// FromAny are the KDS wire codec, and such a peer reads the Any by its type URL
-// and then parses protobuf, so the wire form has to stay the message it knows.
-// Dropping an implementation does not degrade gracefully: the peer fails the
-// whole DeltaDiscoveryResponse rather than the one resource, so its sync stream
-// restarts forever and nothing at all reaches it.
-type KDSWireSpec interface {
-	ToKDSWire() proto.Message
-	FromKDSWire(proto.Message) error
-}
-
+// ToAny writes the KDS wire form. Every spec goes as JSON with no type URL,
+// which is the form policies have always been sent in.
 func ToAny(spec ResourceSpec) (*anypb.Any, error) {
-	if s, ok := spec.(KDSWireSpec); ok {
-		return util_proto.MarshalAnyDeterministic(s.ToKDSWire())
-	}
 	bytes, err := json.Marshal(spec)
 	if err != nil {
 		return nil, err
@@ -65,25 +49,12 @@ func FromYAML(src []byte, spec ResourceSpec) error {
 	return yaml.Unmarshal(src, spec)
 }
 
-// FromAny reads a KDSWireSpec from either form: the protobuf message ToAny
-// writes, or the type-URL-less JSON a control plane built between the Go struct
-// rewrite and the wire fix sends. Failing that JSON instead would leave such a
-// peer restarting its stream with nothing synced.
+// FromAny reads what ToAny wrote. json.Unmarshal merges into what the target
+// already holds, so a field the sender omitted would keep the value a previous
+// read left behind, hence the reset.
 func FromAny(src *anypb.Any, spec ResourceSpec) error {
-	s, ok := spec.(KDSWireSpec)
-	if !ok || src.GetTypeUrl() == "" {
-		// json.Unmarshal merges into what the target already holds, so a field the
-		// sender omitted would keep the value a previous read left behind. The
-		// protobuf side below resets for the same reason.
-		reset(spec)
-		return json.Unmarshal(src.GetValue(), spec)
-	}
-	wire := s.ToKDSWire()
-	proto.Reset(wire)
-	if err := util_proto.UnmarshalAnyTo(src, wire); err != nil {
-		return err
-	}
-	return s.FromKDSWire(wire)
+	reset(spec)
+	return json.Unmarshal(src.GetValue(), spec)
 }
 
 // reset returns a spec to its zero value, so that reading into it replaces

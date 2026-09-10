@@ -146,7 +146,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		By("getting Hash for the first time")
 		meshCtx, err := meshCache.GetMeshContext(context.Background(), "mesh-0")
 		Expect(err).ToNot(HaveOccurred())
-		expectedHash := "rE70lvQFUT5xztvcoHYs4g=="
+		expectedHash := "HlqnWOvD9dW4zI2xBqEMmw=="
 		Expect(meshCtx.Hash).To(Equal(expectedHash))
 		Expect(countingManager.getQueries).To(Equal(1)) // one Get to obtain Mesh
 		Expect(countingManager.listQueries).To(MatchAllKeys(Keys{
@@ -175,7 +175,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 
 		meshCtx, err = meshCache.GetMeshContext(context.Background(), "mesh-0")
 		Expect(err).ToNot(HaveOccurred())
-		expectedHash = "ifp8yoL8cp48G/PZohxp/Q=="
+		expectedHash = "mhMBlA+wDSYLCNOlSdiKnw=="
 		Expect(meshCtx.Hash).To(Equal(expectedHash))
 		Expect(countingManager.getQueries).To(Equal(2))
 		Expect(countingManager.listQueries).To(MatchAllKeys(Keys{
@@ -274,7 +274,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		countingManager.reset()
 		meshCtx, err = meshCache.GetMeshContext(context.Background(), "mesh-0")
 		Expect(err).ToNot(HaveOccurred())
-		expectedHash := "rE70lvQFUT5xztvcoHYs4g=="
+		expectedHash := "HlqnWOvD9dW4zI2xBqEMmw=="
 		Expect(meshCtx.Hash).To(Equal(expectedHash))
 		Expect(countingManager.getQueries).To(Equal(1)) // one Get to obtain Mesh
 		Expect(countingManager.listQueries).To(MatchAllKeys(Keys{
