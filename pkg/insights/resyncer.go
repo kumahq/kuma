@@ -1,7 +1,9 @@
 package insights
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -9,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -477,9 +478,9 @@ func (r *resyncer) createOrUpdateMeshInsight(
 	err := manager.Upsert(ctx, r.rm, key, core_mesh.NewMeshInsightResource(), func(resource model.Resource) error {
 		oldInsight := resource.GetSpec().(*mesh_proto.MeshInsight)
 		for k, v := range oldInsight.Resources {
-			insight.Resources[k] = proto.Clone(v).(*mesh_proto.MeshInsight_ResourceStat)
+			insight.Resources[k] = &mesh_proto.MeshInsight_ResourceStat{Total: v.GetTotal()}
 		}
-		if proto.Equal(oldInsight, &mesh_proto.MeshInsight{}) {
+		if sameInsight(oldInsight, &mesh_proto.MeshInsight{}) {
 			// insight was not yet computed, need to update all
 			for _, typ := range r.allResourceTypes {
 				types[typ] = struct{}{}
@@ -520,7 +521,7 @@ func (r *resyncer) createOrUpdateMeshInsight(
 			}
 		}
 
-		if proto.Equal(resource.GetSpec().(proto.Message), insight) {
+		if sameInsight(resource.GetSpec().(*mesh_proto.MeshInsight), insight) {
 			log.V(1).Info("no need to update MeshInsight because the resource is the same")
 			return manager.ErrSkipUpsert
 		}
@@ -602,4 +603,19 @@ func getOrDefault(version string) string {
 
 func (r *resyncer) NeedLeaderElection() bool {
 	return !r.tenantFn.SupportsSharding()
+}
+
+// sameInsight compares the bytes each insight would be stored as. An insight is built
+// with an initialized resources map while one read back from storage leaves it nil, and
+// the two have to keep comparing equal or every resync would write.
+func sameInsight(left, right *mesh_proto.MeshInsight) bool {
+	leftBytes, err := json.Marshal(left)
+	if err != nil {
+		return false
+	}
+	rightBytes, err := json.Marshal(right)
+	if err != nil {
+		return false
+	}
+	return bytes.Equal(leftBytes, rightBytes)
 }
