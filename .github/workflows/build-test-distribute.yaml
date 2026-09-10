@@ -132,6 +132,32 @@ jobs:
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
     outputs:
       FULL_MATRIX: ${{ env.FULL_MATRIX }}
+      # Per-arch lookup, each side independent. See .github/workflows/README.md.
+      #   1. fork PR                            -> free GitHub-hosted runners (security)
+      #   2. master (push, or PR targeting it)  -> free GitHub-hosted runners
+      #   3. vars.RUNNERS_PR_<ARCH>             -> pull_request runs, per-arch
+      #   4. vars.RUNNERS_MASTER_<ARCH>         -> per-branch + per-arch override
+      #   5. vars.RUNNERS_<ARCH>                -> global per-arch override
+      #   6. default                            -> the standard self-hosted Kong pool
+      # Both variables hold a JSON object of size to label array, and the raw strings are
+      # spliced in, so a caller receives {"<arch>":{"<size>":[labels]}} and indexes it by
+      # arch and by the size that job needs. An arch nobody has set resolves to an empty
+      # object, and each consumer falls back to its own default, so adding an architecture
+      # is setting a variable rather than editing a workflow.
+      # `github.base_ref` is the PR target branch and is empty outside pull_request,
+      # where `github.ref_name` is the branch/tag ('<number>/merge' on a PR).
+      # Branch slug is hardcoded because GitHub var names can't contain '-' or '.',
+      # and inline expressions can't sanitize `github.ref_name`.
+      RUNNERS_BY_ARCH: >-
+        ${{ ((github.event_name == 'pull_request'
+        && github.event.pull_request.head.repo.full_name != github.repository)
+        || (github.base_ref || github.ref_name) == 'master')
+        && '{"amd64":{"lg":["ubuntu-24.04"]},"arm64":{"lg":["ubuntu-24.04-arm"]}}'
+        || format('{{"amd64":{0},"arm64":{1}}}',
+        (github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+        || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}',
+        (github.event_name == 'pull_request' && vars.RUNNERS_PR_ARM64)
+        || vars.RUNNERS_MASTER_ARM64 || vars.RUNNERS_ARM64 || '{}') }}
     steps:
       - run: echo "FULL_MATRIX=${{ env.FULL_MATRIX }}"
   build_check:
@@ -323,36 +349,13 @@ jobs:
       FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
       IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
       IS_RELEASE_TAG: ${{ github.ref_type == 'tag' }}
-      # Per-arch lookup, each side independent. See .github/workflows/README.md.
-      #   1. fork PR                            -> free GitHub-hosted runners (security)
-      #   2. master (push, or PR targeting it)  -> free GitHub-hosted runners
-      #   3. vars.RUNNERS_PR_<ARCH>             -> pull_request runs, per-arch
-      #   4. vars.RUNNERS_MASTER_<ARCH>         -> per-branch + per-arch override
-      #   5. vars.RUNNERS_<ARCH>                -> global per-arch override
-      #   6. default                            -> the standard self-hosted Kong pool
-      # Both variables hold a JSON object of size to label array, and the raw strings are
-      # spliced in, so _test.yaml receives {"<arch>":{"<size>":[labels]}} and indexes it by
-      # arch and by the size that job needs.
-      # `github.base_ref` is the PR target branch and is empty outside pull_request,
-      # where `github.ref_name` is the branch/tag ('<number>/merge' on a PR).
-      # Branch slug is hardcoded because GitHub var names can't contain '-' or '.',
-      # and inline expressions can't sanitize `github.ref_name`.
-      RUNNERS_BY_ARCH: >-
-        ${{ ((github.event_name == 'pull_request'
-        && github.event.pull_request.head.repo.full_name != github.repository)
-        || (github.base_ref || github.ref_name) == 'master')
-        && '{"amd64":{"lg":["ubuntu-24.04"]},"arm64":{"lg":["ubuntu-24.04-arm"]}}'
-        || format('{{"amd64":{0},"arm64":{1}}}',
-        (github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
-        || vars.RUNNERS_MASTER_AMD64 || vars.RUNNERS_AMD64 || '{}',
-        (github.event_name == 'pull_request' && vars.RUNNERS_PR_ARM64)
-        || vars.RUNNERS_MASTER_ARM64 || vars.RUNNERS_ARM64 || '{}') }}
+      RUNNERS_BY_ARCH: ${{ needs.meta.outputs.RUNNERS_BY_ARCH }}
     secrets: inherit
   build_publish:
     permissions:
       contents: write # needed to upload SBOM assets to GitHub releases
       id-token: write # Required for image signing
-    needs: ["check", "test"]
+    needs: ["check", "meta", "test"]
     uses: ./.github/workflows/_build_publish.yaml
     if: ${{ fromJSON(needs.check.outputs.BUILD) }}
     with:
@@ -364,6 +367,7 @@ jobs:
       REGISTRY: ${{ needs.check.outputs.REGISTRY }}
       NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
       VERSION_NAME: ${{ needs.check.outputs.VERSION_NAME }}
+      RUNNERS_BY_ARCH: ${{ needs.meta.outputs.RUNNERS_BY_ARCH }}
     secrets: inherit
   provenance:
     needs: ["check", "build_publish"]

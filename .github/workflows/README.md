@@ -97,6 +97,24 @@ inline at every site rather than defined once.
 each leg indexes the result by `matrix.arch` and then by size. That path additionally sends
 `master` to GitHub-hosted runners; the per-job sites above do not.
 
+## Adding an architecture
+
+Set `RUNNERS_ARM64` (or the `PR` or per-branch form) to the same size-to-labels object, with
+labels that name an arm64 pool. Nothing else changes: `build-test-distribute.yaml` resolves
+both architectures into one `RUNNERS_BY_ARCH` map, hands it to every reusable workflow it
+calls, and the jobs with an architecture matrix index it by `matrix.arch`. An architecture
+nobody has set resolves to an empty object, so those jobs keep falling back to the runner
+they use now.
+
+Today that means the arm64 e2e legs in `_test.yaml` and the `linux/arm64` leg of
+`build-binaries`, which cross-compiles on an amd64 host while `RUNNERS_ARM64` is unset and
+builds natively once it is. Binaries are unaffected either way, since `CGO_ENABLED=0` makes
+the two byte-identical. A `darwin` leg cross-compiles wherever it lands, so it always asks
+for amd64.
+
+`build-images` still builds every architecture on one host through qemu, so an arm64 pool
+does not speed it up without splitting that job per architecture first.
+
 ## Exceptions
 
 - `scorecard.yml` must keep a literal label, because `scorecard-action` rejects an
