@@ -50,13 +50,12 @@ func TestWs(t *testing.T) {
 }
 
 type testApiServerConfigurer struct {
-	store                        store.ResourceStore
-	config                       *config_api_server.ApiServerConfig
-	metrics                      func() core_metrics.Metrics
-	zone                         string
-	global                       bool
-	disableOriginLabelValidation bool
-	accessConfigMutator          func(config *config_access.AccessConfig)
+	store               store.ResourceStore
+	config              *config_api_server.ApiServerConfig
+	metrics             func() core_metrics.Metrics
+	zone                string
+	global              bool
+	accessConfigMutator func(config *config_access.AccessConfig)
 }
 
 func NewTestApiServerConfigurer() *testApiServerConfigurer {
@@ -88,11 +87,6 @@ func (t *testApiServerConfigurer) WithGlobal() *testApiServerConfigurer {
 
 func (t *testApiServerConfigurer) WithStore(resourceStore store.ResourceStore) *testApiServerConfigurer {
 	t.store = resourceStore
-	return t
-}
-
-func (t *testApiServerConfigurer) WithDisableOriginLabelValidation(disable bool) *testApiServerConfigurer {
-	t.disableOriginLabelValidation = disable
 	return t
 }
 
@@ -203,8 +197,6 @@ func newTestApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_c
 	if t.accessConfigMutator != nil {
 		t.accessConfigMutator(&cfg.Access)
 	}
-
-	cfg.Multizone.Zone.DisableOriginLabelValidation = t.disableOriginLabelValidation
 
 	resManager := manager.NewResourceManager(t.store)
 	apiServer, err := api_server.NewApiServer(

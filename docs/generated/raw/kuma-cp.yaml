@@ -622,8 +622,6 @@ multizone:
         fullResyncInterval: 1m # ENV: KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
         # If true, the initial full resync is delayed by a random duration up to FullResyncInterval.
         delayFullResync: true # ENV: KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC
-    # disableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
-    disableOriginLabelValidation: false # ENV: KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION
 # Diagnostics configuration
 diagnostics:
   # Port of Diagnostic Server for checking health and readiness of the Control Plane
