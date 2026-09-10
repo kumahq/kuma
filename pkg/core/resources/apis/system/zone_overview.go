@@ -1,7 +1,6 @@
 package system
 
 import (
-	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 )
 
@@ -15,10 +14,7 @@ func NewZoneOverviews(zones ZoneResourceList, insights ZoneInsightResourceList) 
 	for _, zone := range zones.Items {
 		overview := ZoneOverviewResource{
 			Meta: zone.Meta,
-			Spec: &system_proto.ZoneOverview{
-				Zone:        zone.Spec,
-				ZoneInsight: nil,
-			},
+			Spec: newZoneOverviewResourceSpec(zone.Spec),
 		}
 		insight, exists := insightsByKey[model.MetaToResourceKey(overview.Meta)]
 		if exists {
