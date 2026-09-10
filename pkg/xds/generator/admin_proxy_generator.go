@@ -165,23 +165,8 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		Resource: envoyAdminCluster,
 	})
 
-	var xdsEndpoint core_xds.Endpoint
-	if proxy.Metadata.HasFeature(xds_types.FeatureReadinessUnixSocket) {
-		// Legacy: older DPs still advertise the UDS readiness feature.
-		// New DPs no longer set this; they expose readiness via TCP.
-		// TODO: remove when FeatureReadinessUnixSocket is removed.
-		xdsEndpoint = core_xds.Endpoint{
-			UnixDomainPath: core_xds.ReadinessReporterSocketName(proxy.Metadata.WorkDir),
-		}
-	} else {
-		xdsEndpoint = core_xds.Endpoint{
-			Target: adminAddress,
-			Port:   readinessPort,
-		}
-	}
-
 	readinessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, dppReadinessClusterName).
-		Configure(envoy_clusters.ProvidedEndpointCluster(govalidator.IsIPv6(adminAddress), xdsEndpoint)).
+		Configure(envoy_clusters.ProvidedEndpointCluster(govalidator.IsIPv6(adminAddress), core_xds.Endpoint{Target: adminAddress, Port: readinessPort})).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
 	if err != nil {
