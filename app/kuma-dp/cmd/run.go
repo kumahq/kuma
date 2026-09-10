@@ -57,13 +57,13 @@ var runLog = dataplaneLog.WithName("run")
 // rather than relying on a single :: socket, because nodes with
 // net.ipv6.bindv6only=1 would silently drop IPv4 traffic. Without VNet,
 // we bind to loopback only since OUTPUT chain REDIRECT sends to 127.0.0.1
-// (IPv4) and ::1 (IPv6).
-func dnsProxyAddresses(tpCfg *tproxy_dp.DataplaneConfig, port string) []string {
+// (IPv4) and ::1 (IPv6). With IPv6 disabled, we bind IPv4 addresses only.
+func dnsProxyAddresses(tpCfg *tproxy_dp.DataplaneConfig, ipv6Enabled bool, port string) []string {
 	if tpCfg == nil {
 		return []string{net.JoinHostPort("0.0.0.0", port)}
 	}
 
-	dualStack := tpCfg.IPFamilyMode != tproxy_config.IPFamilyModeIPv4
+	dualStack := tpCfg.IPFamilyMode != tproxy_config.IPFamilyModeIPv4 && ipv6Enabled
 	vnet := tpCfg.HasVNet()
 
 	switch {
@@ -82,14 +82,6 @@ func dnsProxyAddresses(tpCfg *tproxy_dp.DataplaneConfig, port string) []string {
 	default:
 		return []string{net.JoinHostPort("127.0.0.1", port)}
 	}
-}
-
-// transparentProxyIPFamilyMode skips IPv6 on hosts without a local IPv6 address, like kumactl install transparent-proxy
-func transparentProxyIPFamilyMode(mode tproxy_config.IPFamilyMode, hasLocalIPv6 bool) tproxy_config.IPFamilyMode {
-	if !hasLocalIPv6 {
-		return tproxy_config.IPFamilyModeIPv4
-	}
-	return mode
 }
 
 // PersistentPreRunE in root command sets the logger and initial config
@@ -141,12 +133,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 				tpCfg.Redirect.DNS.Port = tproxy_config.Port(cfg.DNS.ProxyPort)
 				tpCfg.Redirect.DNS.Enabled = cfg.DNS.Enabled
-
-				hasLocalIPv6, _ := tproxy_config.HasLocalIPv6()
-				if mode := transparentProxyIPFamilyMode(tpCfg.IPFamilyMode, hasLocalIPv6); mode != tpCfg.IPFamilyMode {
-					runLog.Info("no local IPv6 address found, using IPv4 transparent proxy mode")
-					tpCfg.IPFamilyMode = mode
-				}
 			}
 			cfg.DataplaneRuntime.TransparentProxy = tpCfg
 
@@ -318,7 +304,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			var dnsConfigReady <-chan struct{}
 			if cfg.DNS.Enabled {
 				portStr := strconv.Itoa(int(cfg.DNS.ProxyPort))
-				addresses := dnsProxyAddresses(cfg.DataplaneRuntime.TransparentProxy, portStr)
+				addresses := dnsProxyAddresses(cfg.DataplaneRuntime.TransparentProxy, cfg.DataplaneRuntime.IPv6Enabled, portStr)
 				runLog.Info("Running with embedded DNS proxy", "port", cfg.DNS.ProxyPort, "addresses", addresses)
 				dnsproxyServer, err := dnsproxy.NewServer(addresses)
 				if err != nil {
