@@ -8,12 +8,11 @@ import (
 )
 
 type Config struct {
-	PipeEnabled bool
-	Shared      Layer
-	Traces      Layer
-	Logs        Layer
-	Metrics     Layer
-	Inventory   core_xds.OtelBootstrapInventory
+	Shared    Layer
+	Traces    Layer
+	Logs      Layer
+	Metrics   Layer
+	Inventory core_xds.OtelBootstrapInventory
 }
 
 type Layer struct {

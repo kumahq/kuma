@@ -29,8 +29,7 @@ var _ = Describe("DataplaneProxyFactory", func() {
 					DrainTime: config_types.Duration{Duration: 30 * time.Second},
 					EnvVars:   map[string]string{},
 				},
-				BuiltinDNS:      runtime_k8s.BuiltinDNS{},
-				otelPipeEnabled: true,
+				BuiltinDNS: runtime_k8s.BuiltinDNS{},
 			}
 			envVars, err := factory.sidecarEnvVars("default", nil)
 			Expect(err).ToNot(HaveOccurred())

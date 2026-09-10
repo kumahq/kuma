@@ -82,7 +82,7 @@ resources:
         address: 192.168.0.2
         portValue: 443
     bindToPort: false
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy
@@ -106,7 +106,7 @@ resources:
         address: 192.168.0.2
         portValue: 80
     bindToPort: false
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
@@ -161,7 +161,7 @@ resources:
         address: 127.0.0.1
         portValue: 8080
     bindToPort: false
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy
@@ -185,7 +185,7 @@ resources:
         address: ::1
         portValue: 8081
     bindToPort: false
-    enableReusePort: false
+    enableReusePort: true
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy

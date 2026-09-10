@@ -1,16 +1,14 @@
 connectTimeout: 5s
-dnsLookupFamily: V4_ONLY
 loadAssignment:
-  clusterName: system_meshaccesslog_otel-collector-4317
+  clusterName: system_meshaccesslog_otel_otel-collector
   endpoints:
   - lbEndpoints:
     - endpoint:
         address:
-          socketAddress:
-            address: otel-collector
-            portValue: 4317
-name: system_meshaccesslog_otel-collector-4317
-type: STRICT_DNS
+          pipe:
+            path: /tmp/kuma-otel-otel-collector.sock
+name: system_meshaccesslog_otel_otel-collector
+type: STATIC
 typedExtensionProtocolOptions:
   envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
     '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions

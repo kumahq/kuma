@@ -225,15 +225,19 @@ func DumpState(cluster Cluster, mesh string, namespaces ...string) {
 		return
 	default:
 	}
-	kumactlOpts := *cluster.GetKumactlOptions()
-	kumactlOpts.Verbose = false
 	var errs error
 
 	debugCPLogs(cluster)
-	errs = multierr.Combine(
-		debugExport(cluster, &kumactlOpts),
-		inspectDataplane(&kumactlOpts, cluster, mesh),
-	)
+	if opts := cluster.GetKumactlOptions(); opts == nil {
+		errs = errors.Errorf("cluster %q has no control plane, skipping kumactl export and dataplane inspection", cluster.Name())
+	} else {
+		kumactlOpts := *opts
+		kumactlOpts.Verbose = false
+		errs = multierr.Combine(
+			debugExport(cluster, &kumactlOpts),
+			inspectDataplane(&kumactlOpts, cluster, mesh),
+		)
+	}
 	switch cluster.(type) {
 	case *K8sCluster:
 		errs = multierr.Combine(errs, debugKube(cluster, mesh, namespaces...))

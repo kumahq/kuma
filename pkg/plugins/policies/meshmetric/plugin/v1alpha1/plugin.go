@@ -14,7 +14,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/dpapi"
@@ -111,7 +110,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err != nil {
 		return err
 	}
-	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && proxy.OtelPipeBackends != nil {
+	if proxy.OtelPipeBackends != nil {
 		addOtelToAccumulator(proxy, openTelemetryBackends, ctx)
 	}
 	// configureOpenTelemetry creates Envoy-side OTel resources (listener + cluster).
@@ -357,10 +356,10 @@ func filterPrometheusBackends(backends *[]api.Backend) []*api.PrometheusBackend 
 }
 
 // filterOtelBackendsForEnvoy returns backends that need Envoy-side OTel resources.
-// In pipe mode, backendRef backends go through the unified pipe so only inline
-// backends need Envoy config. Without pipe mode, all backends need it.
+// backendRef backends go through the unified pipe so only inline backends need
+// Envoy config. Without a pipe accumulator, all backends need it.
 func filterOtelBackendsForEnvoy(proxy *core_xds.Proxy, backends []*api.OpenTelemetryBackend) []*api.OpenTelemetryBackend {
-	if !proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) || proxy.OtelPipeBackends == nil {
+	if proxy.OtelPipeBackends == nil {
 		return backends
 	}
 

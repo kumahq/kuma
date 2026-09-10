@@ -2,6 +2,8 @@
 
 * Status: accepted
 
+> Note: Kuma 3.0.0 removed `FeatureOtelViaKumaDp`. Pipe mode has no feature gate, so the compatibility path described below for data planes without the feature no longer exists.
+
 Technical Story: none
 
 ## Context and problem statement

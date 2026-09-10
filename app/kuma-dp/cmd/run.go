@@ -218,10 +218,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			rootCtx.Features = nil
-			if cfg.DataplaneRuntime.OtelPipeEnabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureOtelViaKumaDp)
-			}
-
 			if cfg.DataplaneRuntime.TransparentProxy != nil {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureTransparentProxyInDataplaneMetadata)
 			}
@@ -232,17 +228,11 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.Spire.Supported {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureSpire)
 			}
-			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
-			}
-			if cfg.DataplaneRuntime.ReusePortEnabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReusePort)
-			}
 
 			if hostIP := os.Getenv("HOST_IP"); hostIP != "" {
 				rootCtx.BootstrapDynamicMetadata[core_xds.FieldDynamicHostIP] = hostIP
 			}
-			discoveredEnv := otelenv.Discover(cfg.DataplaneRuntime.OtelPipeEnabled)
+			discoveredEnv := otelenv.Discover()
 			rootCtx.DiscoveredOtelEnv = discoveredEnv
 			rootCtx.BootstrapOtelEnv = &discoveredEnv.Inventory
 
