@@ -8,6 +8,137 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Strict inbound ports and `SO_REUSEPORT` can no longer be turned off
+
+`kuma-dp` no longer reads `KUMA_DATAPLANE_RUNTIME_STRICT_INBOUND_PORTS_ENABLED` or `KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED`. Both defaulted to `true`, and the control plane now applies that behavior to every data plane:
+
+- A sidecar with transparent proxy and a workload identity accepts inbound traffic only on the ports of its inbounds, unless a `MeshTLS` policy sets `Permissive` mode for it. Sidecars without a workload identity keep accepting inbound traffic on every port.
+- Every inbound Envoy listener sets `enable_reuse_port: true`.
+
+**Action required**
+
+- If a workload relies on `KUMA_DATAPLANE_RUNTIME_STRICT_INBOUND_PORTS_ENABLED=false` to receive traffic on ports it does not declare, declare those ports as inbounds before you upgrade.
+- Restart data planes that run with `KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED=false` after you upgrade the control plane. Envoy cannot change `enable_reuse_port` on a running listener, so it rejects listener updates until the data plane restarts.
+
+### OpenTelemetry backends referenced by `backendRef` always export through `kuma-dp`
+
+`MeshTrace`, `MeshAccessLog`, and `MeshMetric` send data for a `backendRef` to a `MeshOpenTelemetryBackend` through `kuma-dp`: Envoy exports to a Unix socket and `kuma-dp` forwards to the collector. Setting `runtime.kubernetes.injector.otelPipeEnabled` (`KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED`) or `KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED` to `false` used to make Envoy export to the collector directly. Both settings are removed.
+
+**Action required**
+
+None unless you set either setting to `false`. The control plane and `kuma-dp` now ignore both, so remove them from your control plane configuration and sidecar environment.
+
+### Redirect ports and IP family mode removed from `Dataplane`
+
+Kuma 3.0 removes `redirectPortInbound`, `redirectPortOutbound`, and `ipFamilyMode` from `Dataplane.networking.transparentProxying` and reserves their field numbers. `directAccessServices` and `reachableBackends` stay. The control plane reads redirect ports and the IP family mode only from `kuma-dp`, which sends them when it runs with `--transparent-proxy` or `--transparent-proxy-config`.
+
+On Kubernetes, sidecars injected by a 3.0 control plane always pass the transparent proxy configuration to `kuma-dp`. Sidecars injected by 2.14 with `transparentProxy.configMap.enabled` set to `false`, the 2.14 default, do not. After you upgrade the control plane, they get no transparent proxy listeners until they restart.
+
+On Universal this is a breaking change. The control plane ignores the removed fields on input, so a `Dataplane` that still sets them loads without an error but gets no transparent proxy listeners. Envoy then has no listener on the redirect ports, and the traffic iptables sends there fails.
+
+Before:
+
+```yaml
+networking:
+  address: 192.168.0.1
+  inbound:
+    - port: 8080
+  transparentProxying:
+    redirectPortInbound: 15006
+    redirectPortOutbound: 15001
+```
+
+```sh
+kuma-dp run --dataplane-file=backend.yaml
+```
+
+After:
+
+```yaml
+networking:
+  address: 192.168.0.1
+  inbound:
+    - port: 8080
+```
+
+```sh
+kuma-dp run --dataplane-file=backend.yaml --transparent-proxy
+```
+
+**Action required**
+
+On Universal, drop `redirectPortInbound`, `redirectPortOutbound`, and `ipFamilyMode` from your `Dataplane` manifests and `kuma-dp` dataplane files, and start `kuma-dp` with `--transparent-proxy`. If you installed the transparent proxy with a non-default IP family mode, redirect ports, inbound redirection, or virtual networks, pass the same values to `kuma-dp` in a file with `--transparent-proxy-config` instead:
+
+```yaml
+ipFamilyMode: ipv4
+redirect:
+  inbound:
+    port: 15006
+  outbound:
+    port: 15001
+```
+
+Do this before you upgrade the control plane. `kuma-dp` 2.14 already supports both flags. On hosts with IPv6 disabled, `kuma-dp` 2.14 cannot start its DNS proxy in the default dual-stack mode, so use `--transparent-proxy-config` with `ipFamilyMode: ipv4` there.
+
+On Kubernetes, if your 2.14 control plane runs with `transparentProxy.configMap.enabled` set to `false`, set it to `true` and restart your workloads before you upgrade the control plane.
+
+### KDS full resync is periodic again, not every second
+
+Removing the polling KDS watchdog carried the poll loop's `refreshInterval` of
+`1s` onto the event-based watchdog that replaced it. The two intervals do not
+mean the same thing: polling had no events, so `1s` was how quickly a change
+reached a zone, while the event-based watchdog already delivers changes as they
+happen and schedules a full resync only to recover events it may have missed.
+At `1s` every connected zone rebuilt and re-hashed its entire snapshot every
+second and shipped an identical one, so the defaults return to the values the
+event-based watchdog shipped with:
+
+- `flushInterval` `1s` -> `5s`
+- `fullResyncInterval` `1s` -> `1m`
+- `delayFullResync` `false` -> `true`
+
+on both `multizone.global.kds.eventBasedWatchdog` and
+`multizone.zone.kds.eventBasedWatchdog`.
+
+**Action required**
+
+None. Changes still reach zones on the event path, now coalesced over
+`flushInterval` instead of `1s`. A change that is missed on the event path is
+now repaired by the next full resync within `fullResyncInterval` rather than
+within a second. Set the intervals explicitly if you depend on the previous
+timing.
+
+
+### `Zone` on Kubernetes reaches the defaulting webhook
+
+The defaulting webhook selected `zone` where the CRD plural is `zones`, so the rule matched nothing and a `Zone` written straight to the Kubernetes API skipped the webhook entirely. It now matches, which means a `Zone` created or updated with `kubectl` gets the same computed labels a `Zone` created through the HTTP API already got: `kuma.io/display-name`, `kuma.io/origin`, and on a zone control plane `kuma.io/zone` and `kuma.io/env`.
+
+**Action required**
+
+None. `Zone` resources that already exist are untouched until something writes to them, and the labels are added, never removed. If you select zones by label, a `Zone` applied with `kubectl` before the upgrade may lack the labels until it is next written.
+
+### Fields that the API linter had skipped were brought in line
+
+A linter bug hid a set of API fields from the shape checks the rest of the API follows. Fixing the fields changes two schemas, both by dropping a declared default:
+
+- `MeshHTTPRoute` and `MeshRetry` header matches no longer declare a schema default of `Exact` for `type`. An omitted `type` is still matched as `Exact`, it is just no longer materialized into the stored resource.
+- `MeshHTTPRoute` and `MeshTCPRoute` backend refs no longer declare a schema default of `1` for `weight`. An omitted `weight` still counts as `1` when the route is resolved, it is just no longer materialized into the stored resource.
+
+**Action required**
+
+None. Existing resources keep working. The only visible difference is that a resource that omits `type` or `weight` no longer comes back from the API with the value filled in.
+
+### `Zone` and `ZoneInsight` are validated by the admission webhooks
+
+The `Zone` and `ZoneInsight` custom resources moved to the same generator every other Kuma resource already uses. Control plane RBAC and the admission webhooks now list them the same way, which fixes a rule that named `zone` where the custom resource is `zones` and therefore never matched. Both resources stay cluster scoped and their stored specs are unchanged.
+
+The `mesh` field is gone from both custom resource definitions. It only ever applied to namespaced resources and was always empty on these two.
+
+**Action required**
+
+None. The permissions granted are the same set as before, and a stored `Zone` or `ZoneInsight` is read and rewritten byte for byte.
+
+
 ### `MeshPassthrough` rejects matches that resolve to the same Envoy filter chain
 
 Create and update validation now rejects a `MeshPassthrough` policy in which two matches resolve to the same filter chain of the generated passthrough listener. Previously such a policy was accepted and Envoy rejected the entire listener, breaking all passthrough traffic for every proxy the policy matched. Two matches collide when they configure the same port (or both configure no port) with:

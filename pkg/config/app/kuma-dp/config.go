@@ -40,10 +40,7 @@ var DefaultConfig = func() Config {
 			DynamicConfiguration: DynamicConfiguration{
 				RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			},
-			IPv6Enabled:               true,
-			StrictInboundPortsEnabled: true,
-			OtelPipeEnabled:           true,
-			ReusePortEnabled:          true,
+			IPv6Enabled: true,
 		},
 		DNS: DNS{
 			Enabled:   true,
@@ -233,16 +230,6 @@ type DataplaneRuntime struct {
 	IPv6Enabled bool `json:"IPv6Enabled" envconfig:"kuma_dataplane_runtime_ipv6_enabled"`
 	// Spire defines properties for Spire integration
 	Spire Spire `json:"spire,omitempty"`
-	// StrictInboundPortsEnabled indicates whether the sidecar should reject any inbound traffic on ports other than those explicitly defined.
-	StrictInboundPortsEnabled bool `json:"strictInboundPortsEnabled" envconfig:"kuma_dataplane_runtime_strict_inbound_ports_enabled"`
-	// OtelPipeEnabled controls whether kuma-dp advertises FeatureOtelViaKumaDp to the CP.
-	// When false, observability policy backendRefs (MeshTrace, MeshAccessLog, MeshMetric)
-	// use direct Envoy clusters instead of routing through kuma-dp Unix sockets. Default: true.
-	OtelPipeEnabled bool `json:"otelPipeEnabled" envconfig:"kuma_dataplane_runtime_otel_pipe_enabled"`
-	// ReusePortEnabled controls whether kuma-dp advertises FeatureReusePort to the CP.
-	// When true, the CP generates Envoy listeners with enable_reuse_port=true so each worker
-	// owns its own LISTEN socket. Default: true.
-	ReusePortEnabled bool `json:"reusePortEnabled" envconfig:"kuma_dataplane_runtime_reuse_port_enabled"`
 }
 
 type Spire struct {

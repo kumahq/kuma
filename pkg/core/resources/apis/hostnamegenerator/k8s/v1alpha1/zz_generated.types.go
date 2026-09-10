@@ -6,7 +6,6 @@ package v1alpha1
 import (
 	"errors"
 	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	policy "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
@@ -51,7 +50,6 @@ func (cb *HostnameGenerator) GetMesh() string {
 func (cb *HostnameGenerator) SetMesh(mesh string) {
 	// HostnameGenerator is a Global-scoped resource, the mesh label must not be set.
 }
-
 func (cb *HostnameGenerator) GetSpec() (core_model.ResourceSpec, error) {
 	return cb.Spec, nil
 }

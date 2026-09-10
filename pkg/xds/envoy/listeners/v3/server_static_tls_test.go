@@ -22,7 +22,7 @@ var _ = Describe("ServerSideStaticTLS", func() {
 		cluster := plugins_xds.NewClusterBuilder().WithService("localhost:8080").Build()
 
 		// when
-		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
+		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "").
 				Configure(ServerSideStaticTLS(certs)).
 				Configure(TcpProxyDeprecated("localhost:8080", cluster)))).

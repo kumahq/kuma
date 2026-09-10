@@ -20,6 +20,11 @@ func MeshMetricsDynamicConfigurationSocketName(workdir string) string {
 	return socketName(filepath.Join(workdir, "kuma-mesh-metric-config"))
 }
 
+// IdentityReadinessSocketName returns the Envoy identity sentinel socket path.
+func IdentityReadinessSocketName(workdir string) string {
+	return socketName(filepath.Join(workdir, "kuma-identity-readiness"))
+}
+
 func OpenTelemetrySocketName(workdir string, backendName string) string {
 	return socketName(filepath.Join(workdir, "kuma-otel-"+backendName))
 }
@@ -27,12 +32,6 @@ func OpenTelemetrySocketName(workdir string, backendName string) string {
 // AdminSocketName generates a socket path for the Envoy admin API that will fit the Unix socket path limitation of 104 chars
 func AdminSocketName(workdir string) string {
 	return socketName(filepath.Join(workdir, "kuma-envoy-admin"))
-}
-
-// ReadinessReporterSocketName generates a socket path that will fit the Unix socket path limitation of 104 chars.
-// Kept for backward compatibility with older DPs that still advertise FeatureReadinessUnixSocket; new DPs use TCP.
-func ReadinessReporterSocketName(workdir string) string {
-	return socketName(filepath.Join(workdir, "kuma-readiness-reporter"))
 }
 
 func socketName(s string) string {

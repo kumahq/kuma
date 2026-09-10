@@ -29,7 +29,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV3, inboundName).
-				Configure(InboundListener(given.listenerAddress, given.listenerPort, given.listenerProtocol, true)).
+				Configure(InboundListener(given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(HttpConnectionManager(inboundName, true, nil, true)).
 					Configure(HttpInboundRoute(inboundName, inboundName, given.cluster)))).

@@ -29,6 +29,13 @@ type resource struct {
 	Path         string
 }
 
+// convertedCoreResources lists the resources of the mesh API whose specs are Go structs
+// rather than protobuf messages. They still publish a rest.yaml at the same path, but
+// gatherProtoResources walks the protobuf registry and no longer sees them.
+var convertedCoreResources = []resource{
+	{ResourceType: "Mesh", Path: "/specs/protoresources/mesh/rest.yaml"},
+}
+
 func newKriPolicies(rootArgs *args) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kri",
@@ -41,7 +48,7 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 			}
 
 			if ProcessProtoResources {
-				resources = slices.Concat(resources, gatherProtoResources())
+				resources = slices.Concat(resources, gatherProtoResources(), convertedCoreResources)
 			}
 
 			// sort resources deterministically by ResourceType

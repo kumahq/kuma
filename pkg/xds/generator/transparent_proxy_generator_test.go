@@ -10,9 +10,9 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -37,20 +37,13 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		}
 
 		return &model.Proxy{
-			Metadata: &model.DataplaneMetadata{Features: map[string]bool{
-				types.FeatureStrictInboundPorts: true,
-			}},
-			Id: *model.BuildProxyId("", "side-car"),
+			Metadata: &model.DataplaneMetadata{TransparentProxy: xds_builders.TransparentProxy("dualstack")},
+			Id:       *model.BuildProxyId("", "side-car"),
 			Dataplane: &core_mesh.DataplaneResource{
 				Meta: &test_model.ResourceMeta{Version: "v1"},
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: inbounds,
-						TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-							IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
-							RedirectPortOutbound: 15001,
-							RedirectPortInbound:  15006,
-						},
 					},
 				},
 			},
@@ -108,15 +101,10 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						Version: "v1",
 					},
 					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
-								RedirectPortOutbound: 15001,
-								RedirectPortInbound:  15006,
-							},
-						},
+						Networking: &mesh_proto.Dataplane_Networking{},
 					},
 				},
+				Metadata:          &model.DataplaneMetadata{TransparentProxy: xds_builders.TransparentProxy("dualstack")},
 				APIVersion:        envoy_common.APIV3,
 				InternalAddresses: DummyInternalAddresses,
 			},
@@ -130,15 +118,10 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						Version: "v1",
 					},
 					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
-								RedirectPortOutbound: 15001,
-								RedirectPortInbound:  15006,
-							},
-						},
+						Networking: &mesh_proto.Dataplane_Networking{},
 					},
 				},
+				Metadata:   &model.DataplaneMetadata{TransparentProxy: xds_builders.TransparentProxy("dualstack")},
 				APIVersion: envoy_common.APIV3,
 			},
 			expected: "03.envoy.golden.yaml",
@@ -151,15 +134,10 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						Version: "v1",
 					},
 					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_IPv4,
-								RedirectPortOutbound: 15001,
-								RedirectPortInbound:  15006,
-							},
-						},
+						Networking: &mesh_proto.Dataplane_Networking{},
 					},
 				},
+				Metadata:   &model.DataplaneMetadata{TransparentProxy: xds_builders.TransparentProxy("ipv4")},
 				APIVersion: envoy_common.APIV3,
 			},
 			expected: "04.envoy.golden.yaml",
@@ -182,23 +160,15 @@ var _ = Describe("TransparentProxyGenerator", func() {
 		}),
 		Entry("transparent_proxying=true,inbound_filter,workload identity,gateway", testCase{
 			proxy: &model.Proxy{
-				Metadata: &model.DataplaneMetadata{Features: map[string]bool{
-					types.FeatureStrictInboundPorts: true,
-				}},
-				Id: *model.BuildProxyId("", "side-car"),
+				Metadata: &model.DataplaneMetadata{TransparentProxy: xds_builders.TransparentProxy("dualstack")},
+				Id:       *model.BuildProxyId("", "side-car"),
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "v1",
 						Labels:  map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
 					},
 					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-								IpFamilyMode:         mesh_proto.Dataplane_Networking_TransparentProxying_DualStack,
-								RedirectPortOutbound: 15001,
-								RedirectPortInbound:  15006,
-							},
-						},
+						Networking: &mesh_proto.Dataplane_Networking{},
 					},
 				},
 				APIVersion:        envoy_common.APIV3,

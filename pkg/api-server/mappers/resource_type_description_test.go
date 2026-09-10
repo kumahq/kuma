@@ -125,3 +125,46 @@ func TestMapResourceTypeDescriptionFederationIsIndependentFromReadOnly(t *testin
 	require.True(t, response.Resources[0].ReadOnly)
 	require.True(t, response.Resources[0].IncludeInFederation)
 }
+
+func TestMapResourceTypeDescriptionIsInsightAndAdminOnly(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name              string
+		descriptor        model.ResourceTypeDescriptor
+		expectedIsInsight bool
+		expectedAdminOnly bool
+	}{
+		{
+			name:       "plain resource is neither",
+			descriptor: model.ResourceTypeDescriptor{Name: "Dataplane"},
+		},
+		{
+			name:              "insight is derived from the type name suffix",
+			descriptor:        model.ResourceTypeDescriptor{Name: "MeshInsight"},
+			expectedIsInsight: true,
+		},
+		{
+			name:              "secret is admin only",
+			descriptor:        model.ResourceTypeDescriptor{Name: "Secret", AdminOnly: true},
+			expectedAdminOnly: true,
+		},
+		{
+			name:              "insight stays distinguishable on a federated zone where every type is readOnly",
+			descriptor:        model.ResourceTypeDescriptor{Name: "ZoneInsight"},
+			expectedIsInsight: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			response := MapResourceTypeDescription([]model.ResourceTypeDescriptor{tt.descriptor}, false, false, true)
+
+			require.Len(t, response.Resources, 1)
+			require.Equal(t, tt.expectedIsInsight, response.Resources[0].IsInsight)
+			require.Equal(t, tt.expectedAdminOnly, response.Resources[0].AdminOnly)
+		})
+	}
+}

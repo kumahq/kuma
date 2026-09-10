@@ -178,8 +178,6 @@ rules:
       - dataplanes
       - dataplaneinsights
       - meshes
-      - zones
-      - zoneinsights
       - meshinsights
       - containerpatches
       - meshaccesslogs
@@ -207,6 +205,8 @@ rules:
       - meshtrusts
       - meshzoneaddresses
       - workloads
+      - zoneinsights
+      - zones
     verbs:
       - get
       - list
@@ -517,7 +517,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 29b18f39ff6a91dbd502d8d3e340bdf5466548962e995dfb4fff5b1420888685
-        checksum/tls-secrets: 0d6655c1224ec5c7be9253c883ac1f543537c32d6e75096524c255794fffc0c0
+        checksum/tls-secrets: 55f4bb6672320d0ded80b8ba63ffe874a7172e7df66d4f2c5bbc910b3cccd3e4
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -756,8 +756,6 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - zone
-          - zoneinsights
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections
@@ -783,6 +781,8 @@ webhooks:
           - meshtrusts
           - meshzoneaddresses
           - workloads
+          - zoneinsights
+          - zones
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
@@ -834,6 +834,8 @@ webhooks:
           - meshtrusts
           - meshzoneaddresses
           - workloads
+          - zoneinsights
+          - zones
   
       
     sideEffects: None
@@ -1002,6 +1004,8 @@ webhooks:
           - meshtrusts
           - meshzoneaddresses
           - workloads
+          - zoneinsights
+          - zones
     
       
     sideEffects: None

@@ -483,9 +483,7 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			case transparent:
 				dpp.InboundPort = "3000"
 				dpp.TransparentProxy = &TransparentProxyConfig{
-					RedirectPortInbound:  redirectPortInbound,
-					RedirectPortOutbound: redirectPortOutbound,
-					ReachableBackends:    opts.reachableBackends,
+					ReachableBackends: opts.reachableBackends,
 				}
 			case opts.bindOutbounds:
 				dpp.InboundPort = "13000"
@@ -614,14 +612,7 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			AppendConfig:       opts.appendDataplaneConfig,
 		}
 
-		// Add transparent proxy configuration
 		transparent := opts.transparent == nil || *opts.transparent // default true
-		if transparent {
-			dpp.TransparentProxy = &TransparentProxyConfig{
-				RedirectPortInbound:  redirectPortInbound,
-				RedirectPortOutbound: redirectPortOutbound,
-			}
-		}
 
 		// Build args
 		args := []string{"test-server"}

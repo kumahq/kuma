@@ -138,7 +138,6 @@ const (
 )
 
 // these values are defined for users to specify in configuration:
-// values comes from mesh_proto.Dataplane_Networking_TransparentProxying_IpFamilyMode_name
 const (
 	IpFamilyModeDualStack = "dualstack"
 	IpFamilyModeIPv4      = "ipv4"

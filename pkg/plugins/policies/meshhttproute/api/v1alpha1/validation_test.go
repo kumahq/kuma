@@ -277,6 +277,34 @@ to:
           name: foo
           value: x
 `),
+		ErrorCases("explicitly empty value for header present/absent match",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].matches[0].headers[0].value`,
+				Message: validators.MustNotBeDefined,
+			}, {
+				Field:   `spec.to[0].rules[0].matches[0].headers[1].value`,
+				Message: validators.MustNotBeDefined,
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: frontend
+  rules:
+    - matches:
+      - headers:
+        - type: Present
+          name: foo
+          value: ""
+        - type: Absent
+          name: foo
+          value: ""
+`),
 		ErrorCases("invalid backendRefs",
 			[]validators.Violation{{
 				Field:   `spec.to[0].rules[0].default.backendRefs[0].labels`,

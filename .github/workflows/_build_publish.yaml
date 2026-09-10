@@ -25,6 +25,9 @@ on:
       NOTARY_REPOSITORY:
         required: true
         type: string
+      RUNNERS_BY_ARCH:
+        required: true
+        type: string
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64:
         value: ${{ jobs.publish-binaries.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
@@ -33,7 +36,7 @@ on:
 permissions:
   contents: read
 env:
-  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+  CI_TOOLS_DIR: ${{ github.workspace }}/.ci_tools
   FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
   ALLOW_PUSH: ${{ inputs.ALLOW_PUSH }}
   GH_OWNER: ${{ github.repository_owner }}
@@ -52,7 +55,14 @@ jobs:
   # repository cache budget is shared with every branch.
   build-binaries:
     timeout-minutes: 70
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    # A darwin leg cross-compiles wherever it lands, so it stays on amd64. An arch with no
+    # pool set falls back, which is every arm64 leg today.
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.os == 'linux' && matrix.arch || 'amd64'].lg
+      || 'ubuntu-24.04' }}
     permissions:
       contents: read
     strategy:
@@ -146,7 +156,15 @@ jobs:
   publish-binaries:
     needs: [build-binaries]
     timeout-minutes: 30
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').md
+      || 'ubuntu-24.04' }}
     permissions:
       id-token: write
       contents: read
@@ -206,22 +224,34 @@ jobs:
             ./build/distributions/out/*.sha256
             !./build/distributions/out/*.tar.gz.sha256
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
-      # The cloudsmith CLI bundled in the pulp release image authenticates
-      # lazily via OIDC when it sees CLOUDSMITH_ORG/CLOUDSMITH_SERVICE_SLUG
-      # and the GitHub Actions ID-token env vars, so there is no token to
-      # mint here; mk/distribution.mk forwards them into the container.
+      # The release image runs the cloudsmith CLI in a container with no access
+      # to the GitHub OIDC endpoint, so the CLI's lazy auth never succeeds
+      # there: the token has to be minted on the runner and passed in.
+      - name: Get Cloudsmith OIDC token
+        id: cloudsmith_token
+        uses: cloudsmith-io/cloudsmith-cli-action@ad73fafb92e3e29a5166c529464c2df7658a608e # v3.1.0
+        with:
+          oidc-namespace: kong
+          oidc-service-slug: ${{ contains(inputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}
+          export-auth-token: 'true'
       - name: publish binaries
         env:
           PULP_USERNAME: ${{ vars.PULP_USERNAME }}
           PULP_PASSWORD: ${{ secrets.PULP_PASSWORD }}
-          CLOUDSMITH_ORG: kong
-          CLOUDSMITH_SERVICE_SLUG: ${{ contains(inputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}
-          CLOUDSMITH_OIDC_AUDIENCE: https://github.com/${{ github.repository_owner }}
+          CLOUDSMITH_API_KEY: ${{ steps.cloudsmith_token.outputs.oidc-token }}
         run: |
           make publish/pulp
   build-images:
     needs: [build-binaries] # consumes the linux_binaries artifact
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').lg
+      || 'ubuntu-24.04' }}
     permissions:
       id-token: write # Required for image signing
       contents: write # needed to upload SBOM assets to GitHub releases
@@ -389,7 +419,15 @@ jobs:
           registry_password: ${{ secrets.DOCKER_API_KEY }}
   digest-images:
     needs: [build-images]
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
     if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
@@ -410,7 +448,15 @@ jobs:
   publish-helm:
     needs: [build-images]
     timeout-minutes: 10
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').md
+      || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

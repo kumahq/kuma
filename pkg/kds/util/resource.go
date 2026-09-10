@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	kds_cache "github.com/kumahq/kuma/v3/pkg/kds/cache"
@@ -50,29 +50,37 @@ func ToDeltaCoreResourceList(response *envoy_sd.DeltaDiscoveryResponse) (core_mo
 func ToEnvoyResources(rlist core_model.ResourceList) ([]envoy_types.Resource, error) {
 	rv := make([]envoy_types.Resource, 0, len(rlist.GetItems()))
 	for _, r := range rlist.GetItems() {
-		pbany, err := core_model.ToAny(r.GetSpec())
+		res, err := ToEnvoyResource(r)
 		if err != nil {
 			return nil, err
 		}
-		var pbanyStatus *anypb.Any
-		if r.Descriptor().HasStatus {
-			pbanyStatus, err = core_model.ToAny(r.GetStatus())
-			if err != nil {
-				return nil, err
-			}
-		}
-		rv = append(rv, &mesh_proto.KumaResource{
-			Meta: &mesh_proto.KumaResource_Meta{
-				Name:    r.GetMeta().GetName(),
-				Mesh:    r.GetMeta().GetMesh(),
-				Labels:  maps.Clone(r.GetMeta().GetLabels()),
-				Version: "",
-			},
-			Spec:   pbany,
-			Status: pbanyStatus,
-		})
+		rv = append(rv, res)
 	}
 	return rv, nil
+}
+
+func ToEnvoyResource(r core_model.Resource) (envoy_types.Resource, error) {
+	pbany, err := core_model.ToAny(r.GetSpec())
+	if err != nil {
+		return nil, err
+	}
+	var pbanyStatus *anypb.Any
+	if r.Descriptor().HasStatus {
+		pbanyStatus, err = core_model.ToAny(r.GetStatus())
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &mesh_proto.KumaResource{
+		Meta: &mesh_proto.KumaResource_Meta{
+			Name:    r.GetMeta().GetName(),
+			Mesh:    r.GetMeta().GetMesh(),
+			Labels:  maps.Clone(r.GetMeta().GetLabels()),
+			Version: "",
+		},
+		Spec:   pbany,
+		Status: pbanyStatus,
+	}, nil
 }
 
 func AddPrefixToNames(rs []core_model.Resource, prefix string) {
@@ -147,13 +155,13 @@ func toResources(resourceType core_model.ResourceType, krs []*mesh_proto.KumaRes
 	return list, nil
 }
 
-func StatsOf(status *system_proto.KDSSubscriptionStatus, resourceType core_model.ResourceType) *system_proto.KDSServiceStats {
+func StatsOf(status *zoneinsight_api.KDSSubscriptionStatus, resourceType core_model.ResourceType) *zoneinsight_api.KDSServiceStats {
 	if status == nil {
-		return &system_proto.KDSServiceStats{}
+		return &zoneinsight_api.KDSServiceStats{}
 	}
 	stat, ok := status.Stat[string(resourceType)]
 	if !ok {
-		stat = &system_proto.KDSServiceStats{}
+		stat = &zoneinsight_api.KDSServiceStats{}
 		status.Stat[string(resourceType)] = stat
 	}
 	return stat

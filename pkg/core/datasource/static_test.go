@@ -10,7 +10,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var _ = Describe("DataSource Loader", func() {
@@ -24,7 +24,7 @@ var _ = Describe("DataSource Loader", func() {
 					Name: "test-secret",
 				},
 				Spec: &system_proto.Secret{
-					Data: util_proto.Bytes([]byte("abc")),
+					Data: system_proto.Bytes([]byte("abc")),
 				},
 			},
 		}
@@ -35,9 +35,7 @@ var _ = Describe("DataSource Loader", func() {
 		It("should load secret", func() {
 			// when
 			data, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
-				Type: &system_proto.DataSource_Secret{
-					Secret: "test-secret",
-				},
+				Secret: pointer.To("test-secret"),
 			})
 
 			// then
@@ -48,9 +46,7 @@ var _ = Describe("DataSource Loader", func() {
 		It("should throw an error when secret is not found", func() {
 			// when
 			_, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
-				Type: &system_proto.DataSource_Secret{
-					Secret: "test-secret-2",
-				},
+				Secret: pointer.To("test-secret-2"),
 			})
 
 			// then
@@ -62,9 +58,7 @@ var _ = Describe("DataSource Loader", func() {
 		It("should load from inline", func() {
 			// when
 			data, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
-				Type: &system_proto.DataSource_Inline{
-					Inline: util_proto.Bytes([]byte("abc")),
-				},
+				Inline: system_proto.Bytes([]byte("abc")),
 			})
 
 			// then
@@ -77,9 +71,7 @@ var _ = Describe("DataSource Loader", func() {
 		It("should load from inline string", func() {
 			// when
 			data, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
-				Type: &system_proto.DataSource_InlineString{
-					InlineString: "abc",
-				},
+				InlineString: pointer.To("abc"),
 			})
 
 			// then

@@ -27,14 +27,14 @@ func NewDataSourceLoader(secretManager manager.ReadOnlyResourceManager) Loader {
 func (l *dynamicLoader) Load(ctx context.Context, mesh string, source *system_proto.DataSource) ([]byte, error) {
 	var data []byte
 	var err error
-	switch source.GetType().(type) {
-	case *system_proto.DataSource_Secret:
+	switch {
+	case source.HasSecret():
 		data, err = l.loadSecret(ctx, mesh, source.GetSecret())
-	case *system_proto.DataSource_Inline:
+	case source.HasInline():
 		data, err = source.GetInline().GetValue(), nil
-	case *system_proto.DataSource_InlineString:
+	case source.HasInlineString():
 		data, err = []byte(source.GetInlineString()), nil
-	case *system_proto.DataSource_File:
+	case source.HasFile():
 		data, err = os.ReadFile(source.GetFile())
 	default:
 		return nil, errors.New("unsupported type of the DataSource")

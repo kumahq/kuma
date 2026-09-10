@@ -2,6 +2,9 @@ package readiness
 
 import (
 	"context"
+	"crypto/sha256"
+	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/v3/app/kuma-dp/pkg/dataplane/httpclient"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 )
 
 const (
@@ -26,6 +30,84 @@ const (
 	stateTerminating     = "TERMINATING"
 	dnsConfigGateTimeout = 15 * time.Second
 )
+
+// IdentityGate checks that Envoy loaded the identity certificate selected by the control plane.
+type IdentityGate struct {
+	client http.Client
+	config atomic.Pointer[core_xds.IdentityReadinessConfig]
+}
+
+// NewIdentityGate creates an identity readiness gate backed by an Envoy Unix listener.
+func NewIdentityGate(socketPath string) *IdentityGate {
+	dialer := &net.Dialer{Timeout: 2 * time.Second}
+	return &IdentityGate{client: http.Client{
+		Timeout: 3 * time.Second,
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+				return dialer.DialContext(ctx, "unix", socketPath)
+			},
+			DisableKeepAlives: true,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, // #nosec G402 -- local sentinel; peer certificate is checked below
+				MinVersion:         tls.VersionTLS12,
+			},
+		},
+	}}
+}
+
+// OnChange updates the identity certificate required for readiness.
+func (g *IdentityGate) OnChange(_ context.Context, reader io.Reader) error {
+	config := &core_xds.IdentityReadinessConfig{}
+	decoder := json.NewDecoder(reader)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(config); err != nil {
+		return err
+	}
+	g.config.Store(config)
+	return nil
+}
+
+// Ready reports whether Envoy serves the expected, unexpired identity certificate.
+func (g *IdentityGate) Ready(ctx context.Context) (bool, error) {
+	config := g.config.Load()
+	if config == nil {
+		return false, nil
+	}
+	if !config.Required {
+		return true, nil
+	}
+	if config.ExpirationTime != nil && !time.Now().Before(*config.ExpirationTime) {
+		return false, errors.New("identity certificate expired")
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://localhost/ready", http.NoBody)
+	if err != nil {
+		return false, err
+	}
+	resp, err := g.client.Do(req) // #nosec G704 -- fixed URL over the generated Envoy Unix listener
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("identity listener returned status %d", resp.StatusCode)
+	}
+	if resp.TLS == nil || len(resp.TLS.PeerCertificates) == 0 {
+		return false, errors.New("identity listener did not present a certificate")
+	}
+	certificate := resp.TLS.PeerCertificates[0]
+	now := time.Now()
+	if now.Before(certificate.NotBefore) || !now.Before(certificate.NotAfter) {
+		return false, errors.New("identity listener presented an invalid certificate")
+	}
+	if config.CertificateHash != "" {
+		hash := sha256.Sum256(certificate.Raw)
+		if fmt.Sprintf("%x", hash) != config.CertificateHash {
+			return false, errors.New("identity listener presented a stale certificate")
+		}
+	}
+	return true, nil
+}
 
 // EnvoyAdmin locates the Envoy admin interface. SocketPath is set when admin
 // runs over a Unix domain socket, otherwise Address and Port are.
@@ -64,6 +146,7 @@ type Reporter struct {
 	dnsConfigReady    <-chan struct{}
 	dnsConfigDeadline time.Time
 	dnsBypassed       atomic.Bool
+	identityGate      *IdentityGate
 }
 
 var logger = core.Log.WithName("readiness")
@@ -149,6 +232,11 @@ func (r *Reporter) Terminating() {
 	r.isTerminating.Store(true)
 }
 
+// SetIdentityGate enables identity certificate readiness checks.
+func (r *Reporter) SetIdentityGate(gate *IdentityGate) {
+	r.identityGate = gate
+}
+
 func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request) {
 	if r.isTerminating.Load() {
 		r.writeState(writer, req, stateTerminating, http.StatusServiceUnavailable)
@@ -172,6 +260,17 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 				r.writeState(writer, req, stateNotReady, http.StatusServiceUnavailable)
 				return
 			}
+		}
+	}
+
+	if r.identityGate != nil {
+		ready, err := r.identityGate.Ready(req.Context())
+		if err != nil {
+			logger.V(1).Info("identity certificate not ready", "err", err)
+		}
+		if !ready {
+			r.writeState(writer, req, stateNotReady, http.StatusServiceUnavailable)
+			return
 		}
 	}
 

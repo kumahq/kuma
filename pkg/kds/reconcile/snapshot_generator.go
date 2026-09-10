@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/kds"
 	kds_cache "github.com/kumahq/kuma/v3/pkg/kds/cache"
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
+	"github.com/kumahq/kuma/v3/pkg/multitenant"
 )
 
 type (
@@ -82,6 +83,7 @@ func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, 
 		resourceManager: resourceManager,
 		resourceFilter:  filter,
 		resourceMapper:  mapper,
+		mapped:          newMappedResourcesCache(),
 	}
 }
 
@@ -89,6 +91,7 @@ type snapshotGenerator struct {
 	resourceManager core_manager.ReadOnlyResourceManager
 	resourceFilter  ResourceFilter
 	resourceMapper  ResourceMapper
+	mapped          *mappedResourcesCache
 }
 
 func (s *snapshotGenerator) GenerateSnapshot(
@@ -117,42 +120,29 @@ func (s *snapshotGenerator) getResources(ctx context.Context, typ model.Resource
 		return nil, err
 	}
 
-	resources, err := s.mapper(s.filter(ctx, rlist, node), node)
-	if err != nil {
-		return nil, err
-	}
-
-	return util.ToEnvoyResources(resources)
-}
-
-func (s *snapshotGenerator) filter(ctx context.Context, rs model.ResourceList, node *envoy_core.Node) model.ResourceList {
 	features := getFeatures(node)
+	tenant, _ := multitenant.TenantFromCtx(ctx)
+	entry := s.mapped.entryFor(typ, tenant, features, rlist)
 
-	rv := registry.Global().MustNewList(rs.GetItemType())
-	for _, r := range rs.GetItems() {
-		if s.resourceFilter(ctx, node.GetId(), features, r) {
-			_ = rv.AddItem(r)
+	resources := make([]envoy_types.Resource, 0, len(rlist.GetItems()))
+	for _, r := range rlist.GetItems() {
+		if !s.resourceFilter(ctx, node.GetId(), features, r) {
+			continue
 		}
-	}
-	return rv
-}
-
-func (s *snapshotGenerator) mapper(rs model.ResourceList, node *envoy_core.Node) (model.ResourceList, error) {
-	features := getFeatures(node)
-
-	rv := registry.Global().MustNewList(rs.GetItemType())
-	for _, r := range rs.GetItems() {
-		resource, err := s.resourceMapper(features, r)
+		res, err := entry.loadOrCompute(model.MetaToResourceKey(r.GetMeta()), func() (envoy_types.Resource, error) {
+			mapped, err := s.resourceMapper(features, r)
+			if err != nil {
+				return nil, err
+			}
+			return util.ToEnvoyResource(mapped)
+		})
 		if err != nil {
 			return nil, err
 		}
-
-		if err := rv.AddItem(resource); err != nil {
-			return nil, err
-		}
+		resources = append(resources, res)
 	}
 
-	return rv, nil
+	return resources, nil
 }
 
 func getFeatures(node *envoy_core.Node) kds.Features {

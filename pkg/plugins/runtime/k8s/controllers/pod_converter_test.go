@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
@@ -112,7 +113,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 					NodeLabelsToCopy: given.nodeLabelsToCopy,
 				},
 				Zone:              "zone-1",
-				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}),
 				WorkloadLabels:    given.workloadLabels,
 			}
 
@@ -275,6 +276,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod:    "update-dataplane.services-for-pod.yaml",
 			existingDataplane: "update-dataplane.existing-dataplane.yaml",
 			dataplane:         "update-dataplane.dataplane.yaml",
+		}),
+		Entry("Reserved pod labels and stale Dataplane labels are dropped", testCase{
+			pod:               "reserved-pod-labels.pod.yaml",
+			servicesForPod:    "reserved-pod-labels.services-for-pod.yaml",
+			existingDataplane: "reserved-pod-labels.existing-dataplane.yaml",
+			dataplane:         "reserved-pod-labels.dataplane.yaml",
 		}),
 		Entry("Multiple services selecting a single port deduplicates overlapping inbounds", testCase{
 			pod:            "duplicated-inbounds.pod.yaml",

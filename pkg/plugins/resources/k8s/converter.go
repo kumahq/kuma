@@ -3,6 +3,7 @@ package k8s
 import (
 	"fmt"
 
+	"github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
@@ -14,12 +15,14 @@ var _ k8s_common.Converter = &SimpleConverter{}
 type SimpleConverter struct {
 	KubeFactory     KubeFactory
 	SystemNamespace string
+	ControlPlane    labels.ControlPlane
 }
 
-func NewSimpleConverter(systemNamespace string) k8s_common.Converter {
+func NewSimpleConverter(systemNamespace string, cp labels.ControlPlane) k8s_common.Converter {
 	return &SimpleConverter{
 		KubeFactory:     NewSimpleKubeFactory(),
 		SystemNamespace: systemNamespace,
+		ControlPlane:    cp,
 	}
 }
 
@@ -66,7 +69,7 @@ func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out cor
 	if err := out.SetSpec(spec); err != nil {
 		return err
 	}
-	out.SetMeta(newMetaAdapter(obj, c.SystemNamespace, out.Descriptor(), out.GetSpec()))
+	out.SetMeta(newMetaAdapter(obj, out, c.SystemNamespace, c.ControlPlane))
 	if out.Descriptor().HasStatus {
 		status, err := obj.GetStatus()
 		if err != nil {

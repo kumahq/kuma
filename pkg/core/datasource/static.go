@@ -35,12 +35,12 @@ func NewStaticLoader(secrets []*system.SecretResource) Loader {
 func (s *staticLoader) Load(_ context.Context, mesh string, source *system_proto.DataSource) ([]byte, error) {
 	var data []byte
 	var err error
-	switch source.GetType().(type) {
-	case *system_proto.DataSource_Secret:
+	switch {
+	case source.HasSecret():
 		data, err = s.loadSecret(mesh, source.GetSecret())
-	case *system_proto.DataSource_Inline:
+	case source.HasInline():
 		data, err = source.GetInline().GetValue(), nil
-	case *system_proto.DataSource_InlineString:
+	case source.HasInlineString():
 		data, err = []byte(source.GetInlineString()), nil
 	default:
 		return nil, errors.New("unsupported type of the DataSource")

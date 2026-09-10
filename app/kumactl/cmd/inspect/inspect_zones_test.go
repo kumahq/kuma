@@ -11,25 +11,25 @@ import (
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
 
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/app/kumactl/cmd"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/resources"
 	test_kumactl "github.com/kumahq/kuma/v3/app/kumactl/pkg/test"
-	system_core "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
+	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 type testZoneOverviewClient struct {
 	total     uint32
-	overviews []*system_core.ZoneOverviewResource
+	overviews []*zone_api.ZoneOverviewResource
 }
 
-func (c *testZoneOverviewClient) List(_ context.Context) (*system_core.ZoneOverviewResourceList, error) {
-	return &system_core.ZoneOverviewResourceList{
+func (c *testZoneOverviewClient) List(_ context.Context) (*zone_api.ZoneOverviewResourceList, error) {
+	return &zone_api.ZoneOverviewResourceList{
 		Items: c.overviews,
 		Pagination: model.Pagination{
 			Total: c.total,
@@ -41,34 +41,34 @@ var _ resources.ZoneOverviewClient = &testZoneOverviewClient{}
 
 var _ = Describe("kumactl inspect zones", func() {
 	var now, t1, t2 time.Time
-	var sampleZoneOverview []*system_core.ZoneOverviewResource
+	var sampleZoneOverview []*zone_api.ZoneOverviewResource
 
 	BeforeEach(func() {
 		now, _ = time.ParseInLocation(time.RFC3339, "2019-07-17T18:08:41+00:00", time.UTC)
 		t1, _ = time.ParseInLocation(time.RFC3339, "2018-07-17T16:05:36.995+00:00", time.UTC)
 		t2, _ = time.ParseInLocation(time.RFC3339, "2019-07-17T16:05:36.995+00:00", time.UTC)
 
-		sampleZoneOverview = []*system_core.ZoneOverviewResource{
+		sampleZoneOverview = []*zone_api.ZoneOverviewResource{
 			{
 				Meta: &test_model.ResourceMeta{
 					Name:             "zone-1",
 					CreationTime:     t1,
 					ModificationTime: now,
 				},
-				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{Enabled: util_proto.Bool(true)},
-					ZoneInsight: &system_proto.ZoneInsight{
-						Subscriptions: []*system_proto.KDSSubscription{
+				Spec: &zone_api.ZoneOverview{
+					Zone: &zone_api.Zone{Enabled: pointer.To(true)},
+					ZoneInsight: &zoneinsight_api.ZoneInsight{
+						Subscriptions: []*zoneinsight_api.KDSSubscription{
 							{
-								Id:               "1",
-								GlobalInstanceId: "node-001",
-								ConnectTime:      util_proto.MustTimestampProto(t1),
-								Status: &system_proto.KDSSubscriptionStatus{
-									Total: &system_proto.KDSServiceStats{
+								ID:               "1",
+								GlobalInstanceID: "node-001",
+								ConnectTime:      zoneinsight_api.NewTime(t1),
+								Status: &zoneinsight_api.KDSSubscriptionStatus{
+									Total: &zoneinsight_api.KDSServiceStats{
 										ResponsesSent:     22,
 										ResponsesRejected: 11,
 									},
-									Stat: map[string]*system_proto.KDSServiceStats{
+									Stat: map[string]*zoneinsight_api.KDSServiceStats{
 										"Mesh": {
 											ResponsesSent:     2,
 											ResponsesRejected: 1,
@@ -115,8 +115,8 @@ var _ = Describe("kumactl inspect zones", func() {
 										},
 									},
 								},
-								Version: &system_proto.Version{
-									KumaCp: &system_proto.KumaCpVersion{
+								Version: &zoneinsight_api.Version{
+									KumaCP: &zoneinsight_api.KumaCpVersion{
 										Version:   "1.0.0",
 										GitTag:    "v1.0.0",
 										GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
@@ -125,17 +125,17 @@ var _ = Describe("kumactl inspect zones", func() {
 								},
 							},
 							{
-								Id:               "2",
-								GlobalInstanceId: "node-002",
-								ConnectTime:      util_proto.MustTimestampProto(t2),
-								Status: &system_proto.KDSSubscriptionStatus{
-									Total: &system_proto.KDSServiceStats{
+								ID:               "2",
+								GlobalInstanceID: "node-002",
+								ConnectTime:      zoneinsight_api.NewTime(t2),
+								Status: &zoneinsight_api.KDSSubscriptionStatus{
+									Total: &zoneinsight_api.KDSServiceStats{
 										ResponsesSent:     20,
 										ResponsesRejected: 2,
 									},
 								},
-								Version: &system_proto.Version{
-									KumaCp: &system_proto.KumaCpVersion{
+								Version: &zoneinsight_api.Version{
+									KumaCP: &zoneinsight_api.KumaCpVersion{
 										Version:   "1.0.0",
 										GitTag:    "v1.0.0",
 										GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
@@ -154,21 +154,21 @@ var _ = Describe("kumactl inspect zones", func() {
 					CreationTime:     t1,
 					ModificationTime: now,
 				},
-				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{Enabled: util_proto.Bool(true)},
-					ZoneInsight: &system_proto.ZoneInsight{
-						Subscriptions: []*system_proto.KDSSubscription{
+				Spec: &zone_api.ZoneOverview{
+					Zone: &zone_api.Zone{Enabled: pointer.To(true)},
+					ZoneInsight: &zoneinsight_api.ZoneInsight{
+						Subscriptions: []*zoneinsight_api.KDSSubscription{
 							{
-								Id:               "1",
-								GlobalInstanceId: "node-001",
+								ID:               "1",
+								GlobalInstanceID: "node-001",
 							},
 							{
-								Id:               "2",
-								GlobalInstanceId: "node-002",
+								ID:               "2",
+								GlobalInstanceID: "node-002",
 							},
 							{
-								Id:               "3",
-								GlobalInstanceId: "node-003",
+								ID:               "3",
+								GlobalInstanceID: "node-003",
 							},
 						},
 					},
@@ -180,16 +180,16 @@ var _ = Describe("kumactl inspect zones", func() {
 					CreationTime:     t1,
 					ModificationTime: now,
 				},
-				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{Enabled: util_proto.Bool(false)},
-					ZoneInsight: &system_proto.ZoneInsight{
-						Subscriptions: []*system_proto.KDSSubscription{
+				Spec: &zone_api.ZoneOverview{
+					Zone: &zone_api.Zone{Enabled: pointer.To(false)},
+					ZoneInsight: &zoneinsight_api.ZoneInsight{
+						Subscriptions: []*zoneinsight_api.KDSSubscription{
 							{
-								Id:               "1",
-								GlobalInstanceId: "node-001",
-								ConnectTime:      util_proto.MustTimestampProto(t2),
-								Version: &system_proto.Version{
-									KumaCp: &system_proto.KumaCpVersion{
+								ID:               "1",
+								GlobalInstanceID: "node-001",
+								ConnectTime:      zoneinsight_api.NewTime(t2),
+								Version: &zoneinsight_api.Version{
+									KumaCP: &zoneinsight_api.KumaCpVersion{
 										Version:   "1.0.0",
 										GitTag:    "v1.0.0",
 										GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",

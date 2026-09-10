@@ -40,12 +40,11 @@ func NewInboundListenerBuilder(
 	address string,
 	port uint32,
 	protocol core_xds.SocketAddressProtocol,
-	enableReusedPorts bool,
 ) *ListenerBuilder {
 	listenerName := envoy_names.GetInboundListenerName(address, port)
 
 	return NewListenerBuilder(apiVersion, listenerName).
-		Configure(InboundListener(address, port, protocol, enableReusedPorts))
+		Configure(InboundListener(address, port, protocol))
 }
 
 // NewOutboundListenerBuilder creates an Outbound ListenBuilder

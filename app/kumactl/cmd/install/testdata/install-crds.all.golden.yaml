@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: containerpatches.kuma.io
 spec:
   group: kuma.io
@@ -118,7 +118,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -168,7 +168,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: dataplanes.kuma.io
 spec:
   group: kuma.io
@@ -220,7 +220,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: hostnamegenerators.kuma.io
 spec:
   group: kuma.io
@@ -313,7 +313,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -885,7 +885,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshcircuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -1514,7 +1514,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshes.kuma.io
 spec:
   group: kuma.io
@@ -1566,7 +1566,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshexternalservices.kuma.io
 spec:
   group: kuma.io
@@ -2009,7 +2009,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshfaultinjections.kuma.io
 spec:
   group: kuma.io
@@ -2345,7 +2345,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshhealthchecks.kuma.io
 spec:
   group: kuma.io
@@ -2662,7 +2662,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshhttproutes.kuma.io
 spec:
   group: kuma.io
@@ -2849,7 +2849,6 @@ spec:
                                                       For example, you can target a port from MeshService.ports[] by its name.
                                                     type: string
                                                   weight:
-                                                    default: 1
                                                     maximum: 4294967295
                                                     minimum: 0
                                                     type: integer
@@ -3043,7 +3042,6 @@ spec:
                                         For example, you can target a port from MeshService.ports[] by its name.
                                       type: string
                                     weight:
-                                      default: 1
                                       maximum: 4294967295
                                       minimum: 0
                                       type: integer
@@ -3136,7 +3134,6 @@ spec:
                                                 For example, you can target a port from MeshService.ports[] by its name.
                                               type: string
                                             weight:
-                                              default: 1
                                               maximum: 4294967295
                                               minimum: 0
                                               type: integer
@@ -3327,7 +3324,6 @@ spec:
                                         pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       type:
-                                        default: Exact
                                         description: Type specifies how to match against
                                           the value of the header.
                                         enum:
@@ -3450,7 +3446,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshidentities.kuma.io
 spec:
   group: kuma.io
@@ -3735,7 +3731,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshinsights.kuma.io
 spec:
   group: kuma.io
@@ -3785,7 +3781,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshloadbalancingstrategies.kuma.io
 spec:
   group: kuma.io
@@ -4204,7 +4200,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshmetrics.kuma.io
 spec:
   group: kuma.io
@@ -4518,7 +4514,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshmultizoneservices.kuma.io
 spec:
   group: kuma.io
@@ -4759,7 +4755,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshopentelemetrybackends.kuma.io
 spec:
   group: kuma.io
@@ -4935,7 +4931,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshpassthroughs.kuma.io
 spec:
   group: kuma.io
@@ -5073,7 +5069,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshproxypatches.kuma.io
 spec:
   group: kuma.io
@@ -5592,7 +5588,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshratelimits.kuma.io
 spec:
   group: kuma.io
@@ -6006,7 +6002,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshretries.kuma.io
 spec:
   group: kuma.io
@@ -6306,7 +6302,6 @@ spec:
                                     pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
-                                    default: Exact
                                     description: Type specifies how to match against
                                       the value of the header.
                                     enum:
@@ -6343,7 +6338,6 @@ spec:
                                     pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
-                                    default: Exact
                                     description: Type specifies how to match against
                                       the value of the header.
                                     enum:
@@ -6390,6 +6384,9 @@ spec:
                               - "500"
                               - "503"
                               items:
+                                description: |-
+                                  HTTPRetryOn names a condition a request is retried on. Alongside the named
+                                  conditions it also accepts any numeric HTTP status code.
                                 type: string
                               type: array
                           type: object
@@ -6449,7 +6446,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshservices.kuma.io
 spec:
   group: kuma.io
@@ -6679,7 +6676,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshtcproutes.kuma.io
 spec:
   group: kuma.io
@@ -6802,7 +6799,6 @@ spec:
                                         For example, you can target a port from MeshService.ports[] by its name.
                                       type: string
                                     weight:
-                                      default: 1
                                       maximum: 4294967295
                                       minimum: 0
                                       type: integer
@@ -6862,7 +6858,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshtimeouts.kuma.io
 spec:
   group: kuma.io
@@ -7142,7 +7138,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshtlses.kuma.io
 spec:
   group: kuma.io
@@ -7284,7 +7280,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -7592,7 +7588,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshtrafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -7829,7 +7825,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshtrusts.kuma.io
 spec:
   group: kuma.io
@@ -7930,7 +7926,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshzoneaddresses.kuma.io
 spec:
   group: kuma.io
@@ -7994,7 +7990,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: workloads.kuma.io
 spec:
   group: kuma.io
@@ -8075,7 +8071,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: zoneinsights.kuma.io
 spec:
   group: kuma.io
@@ -8091,6 +8087,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: ZoneInsight defines the observed state of a Zone Kuma CP.
         properties:
           apiVersion:
             description: |-
@@ -8107,11 +8104,6 @@ spec:
               In CamelCase.
               More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
           metadata:
             type: object
           spec:
@@ -8125,7 +8117,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: zones.kuma.io
 spec:
   group: kuma.io
@@ -8143,6 +8135,11 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: |-
+          Zone defines the Zone configuration used at the Global Control Plane within a
+          distributed deployment. Enabled is a pointer because an unset value and an explicit
+          false mean different things: protobuf omitted an unset wrapper entirely, and an older
+          control plane still distinguishes the two.
         properties:
           apiVersion:
             description: |-
@@ -8158,11 +8155,6 @@ spec:
               Cannot be updated.
               In CamelCase.
               More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
             type: string
           metadata:
             type: object
