@@ -15,11 +15,6 @@ const (
 	// sidecar injection on Pods and Namespaces.
 	KumaSidecarInjectionAnnotation = "kuma.io/sidecar-injection"
 
-	// KumaGatewayAnnotation marks a delegated gateway pod. It is parsed as a
-	// boolean, so inbound listeners and inbound redirection are skipped for
-	// "enabled"/"true"/"yes" only.
-	KumaGatewayAnnotation = "kuma.io/gateway"
-
 	// KumaDirectAccess defines a comma-separated list of Services that will be accessed directly
 	KumaDirectAccess = "kuma.io/direct-access-services"
 

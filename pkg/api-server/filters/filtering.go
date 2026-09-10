@@ -133,11 +133,6 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 		}
 		switch resDescriptor.Name {
 		case mesh.DataplaneType:
-			gatewayFilter, err := gatewayModeFilterFromParameter(request)
-			if err != nil {
-				return nil, err
-			}
-
 			tags := parseTags(request.QueryParameters("tag"))
 
 			return func(rs core_model.Resource) bool {
@@ -148,10 +143,6 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 				if !ok { // Sometimes this is going to return insights for example which will not match
 					return true
 				}
-				if !gatewayFilter(dataplane.IsDelegatedGateway()) {
-					return false
-				}
-
 				if !mesh_proto.TagSelector(tags).MatchesFuzzy(dataplane.GetMeta().GetLabels()) {
 					return false
 				}
@@ -161,32 +152,6 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 		default:
 			return genericFilter, nil
 		}
-	}
-}
-
-type DpFilter func(isGateway bool) bool
-
-func gatewayModeFilterFromParameter(request *restful.Request) (DpFilter, error) {
-	mode := strings.ToLower(request.QueryParameter("gateway"))
-	if mode != "" && mode != "true" && mode != "false" && mode != "delegated" {
-		verr := validators.ValidationError{}
-		verr.AddViolationAt(
-			validators.RootedAt(request.SelectedRoutePath()).Field("gateway"),
-			"should use `true`, `false` or `delegated` instead of "+mode)
-		return nil, &verr
-	}
-
-	switch mode {
-	case "true":
-		return func(isGateway bool) bool { return isGateway }, nil
-	case "false":
-		return func(isGateway bool) bool { return !isGateway }, nil
-	case "delegated":
-		// Delegated is the only kind of gateway left, so this matches the
-		// same proxies as `true`.
-		return func(isGateway bool) bool { return isGateway }, nil
-	default:
-		return func(bool) bool { return true }, nil
 	}
 }
 

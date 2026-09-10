@@ -46,14 +46,7 @@ func (p *PodConverter) PodToDataplane(
 	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
 	previousMesh := dataplane.Mesh
 	dataplane.Mesh = mesh.Meta.GetName()
-	// The gateway annotation is the source of truth on Kubernetes: it decides
-	// both that no inbounds are generated and that the Dataplane carries the
-	// gateway label, so a stray pod label can never make a workload a gateway.
-	gwEnabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation)
-	if err != nil {
-		return err
-	}
-	dataplaneProto, err := p.dataplaneFor(pod, services, gwEnabled)
+	dataplaneProto, err := p.dataplaneFor(pod, services)
 	if err != nil {
 		return err
 	}
@@ -71,7 +64,7 @@ func (p *PodConverter) PodToDataplane(
 	labels, err := resource_labels.Compute(
 		core_mesh.DataplaneResourceTypeDescriptor,
 		dataplaneProto,
-		withGatewayLabel(mergeLabels(dataplane.GetLabels(), pod.Labels, nodeLabels), gwEnabled),
+		mergeLabels(dataplane.GetLabels(), pod.Labels, nodeLabels),
 		dataplane.Mesh,
 		dataplane.Name,
 		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
@@ -117,7 +110,6 @@ func processReachableBackendRefs(refs ReachableBackendRefs) []*mesh_proto.Datapl
 func (p *PodConverter) dataplaneFor(
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
-	gwEnabled bool,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{}}
 	annotations := metadata.Annotations(pod.Annotations)
@@ -154,63 +146,58 @@ func (p *PodConverter) dataplaneFor(
 
 	dataplane.Networking.Address = pod.Status.PodIP
 
-	// A gateway proxies inbound traffic Kuma does not see, so it gets no
-	// inbounds; it is marked by the kuma.io/gateway label, set by the caller.
-	if !gwEnabled {
-		var regularServices, zoneProxyServices []*kube_core.Service
-		for _, svc := range services {
-			if _, ok := svc.Labels[metadata.KumaZoneProxyTypeLabel]; ok {
-				zoneProxyServices = append(zoneProxyServices, svc)
-			} else {
-				regularServices = append(regularServices, svc)
-			}
+	var regularServices, zoneProxyServices []*kube_core.Service
+	for _, svc := range services {
+		if _, ok := svc.Labels[metadata.KumaZoneProxyTypeLabel]; ok {
+			zoneProxyServices = append(zoneProxyServices, svc)
+		} else {
+			regularServices = append(regularServices, svc)
 		}
+	}
 
-		// Skip inbound generation entirely when the pod is zone-proxy-only
-		// (has zone proxy services but no regular services) to avoid the
-		// serviceless inbound fallback in InboundInterfacesFor.
-		if len(regularServices) > 0 || len(zoneProxyServices) == 0 {
-			dataplane.Networking.Inbound = p.InboundConverter.InboundInterfacesFor(pod, regularServices)
-		}
+	// Skip inbound generation entirely when the pod is zone-proxy-only
+	// (has zone proxy services but no regular services) to avoid the
+	// serviceless inbound fallback in InboundInterfacesFor.
+	if len(regularServices) > 0 || len(zoneProxyServices) == 0 {
+		dataplane.Networking.Inbound = p.InboundConverter.InboundInterfacesFor(pod, regularServices)
+	}
 
-		// portSvc tracks which service already claimed each address:port to produce
-		// actionable conflict messages instead of generic validator errors.
-		type portEntry struct {
-			svcName string
-			typ     mesh_proto.Dataplane_Networking_Listener_Type
+	// portSvc tracks which service already claimed each address:port to produce
+	// actionable conflict messages instead of generic validator errors.
+	type portEntry struct {
+		svcName string
+		typ     mesh_proto.Dataplane_Networking_Listener_Type
+	}
+	portSvc := map[string]portEntry{}
+	for _, zpSvc := range zoneProxyServices {
+		listeners, lErr := ListenersForService(pod, zpSvc)
+		if lErr != nil {
+			return nil, lErr
 		}
-		portSvc := map[string]portEntry{}
-		for _, zpSvc := range zoneProxyServices {
-			listeners, lErr := ListenersForService(pod, zpSvc)
-			if lErr != nil {
-				return nil, lErr
-			}
-			for _, l := range listeners {
-				key := fmt.Sprintf("%s:%d", l.Address, l.Port)
-				if existing, ok := portSvc[key]; ok {
-					if existing.typ != l.Type {
-						return nil, errors.Errorf("conflicting listener types on port %d: services %q and %q have different %s labels, please remove one of the Services",
-							l.Port, existing.svcName, zpSvc.Name, metadata.KumaZoneProxyTypeLabel)
-					}
-					converterLog.V(1).Info("duplicate zone proxy services on the same port: ignoring the second service",
-						"service", existing.svcName, "ignoredService", zpSvc.Name, "port", l.Port)
-					continue
+		for _, l := range listeners {
+			key := fmt.Sprintf("%s:%d", l.Address, l.Port)
+			if existing, ok := portSvc[key]; ok {
+				if existing.typ != l.Type {
+					return nil, errors.Errorf("conflicting listener types on port %d: services %q and %q have different %s labels, please remove one of the Services",
+						l.Port, existing.svcName, zpSvc.Name, metadata.KumaZoneProxyTypeLabel)
 				}
-				portSvc[key] = portEntry{zpSvc.Name, l.Type}
-				dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, l)
+				converterLog.V(1).Info("duplicate zone proxy services on the same port: ignoring the second service",
+					"service", existing.svcName, "ignoredService", zpSvc.Name, "port", l.Port)
+				continue
 			}
+			portSvc[key] = portEntry{zpSvc.Name, l.Type}
+			dataplane.Networking.Listeners = append(dataplane.Networking.Listeners, l)
 		}
+	}
 
-		// Zone-proxy-only dataplane: no inbounds, but has listeners (this branch
-		// already excludes gateways). Set empty reachable_backends so Envoy
-		// generates no outbound cluster config.
-		if len(dataplane.Networking.Inbound) == 0 && len(dataplane.Networking.Listeners) > 0 {
-			if dataplane.Networking.TransparentProxying == nil {
-				dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
-			}
-			if dataplane.Networking.TransparentProxying.ReachableBackends == nil {
-				dataplane.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
-			}
+	// Zone-proxy-only dataplane: no inbounds, but has listeners. Set empty
+	// reachable_backends so Envoy generates no outbound cluster config.
+	if len(dataplane.Networking.Inbound) == 0 && len(dataplane.Networking.Listeners) > 0 {
+		if dataplane.Networking.TransparentProxying == nil {
+			dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
+		}
+		if dataplane.Networking.TransparentProxying.ReachableBackends == nil {
+			dataplane.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
 		}
 	}
 
@@ -223,18 +210,6 @@ func (p *PodConverter) dataplaneFor(
 	}
 
 	return dataplane, nil
-}
-
-// withGatewayLabel marks or unmarks the Dataplane as a delegated gateway. It
-// runs after the pod labels are merged so that the annotation, not a stray pod
-// label, decides.
-func withGatewayLabel(labels map[string]string, gwEnabled bool) map[string]string {
-	if gwEnabled {
-		labels[mesh_proto.GatewayLabel] = mesh_proto.GatewayEnabled
-	} else {
-		delete(labels, mesh_proto.GatewayLabel)
-	}
-	return labels
 }
 
 func mergeLabels(existingLabels map[string]string, labelSets ...map[string]string) map[string]string {

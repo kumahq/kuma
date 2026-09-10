@@ -362,7 +362,7 @@ var _ = Describe("DppSelectedByPolicy MeshHTTPRoute namespace scoping", func() {
 			},
 		}
 
-		inbounds, _, err := matchers.DppSelectedByPolicy(meta, ref, dpp, resources)
+		inbounds, err := matchers.DppSelectedByPolicy(meta, ref, dpp, resources)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(inbounds).To(BeEmpty())
 	})
@@ -370,7 +370,7 @@ var _ = Describe("DppSelectedByPolicy MeshHTTPRoute namespace scoping", func() {
 	It("selects through any matching route for a namespace-agnostic (system) policy", func() {
 		meta := &test_model.ResourceMeta{Mesh: "mesh-1", Name: "timeout-1"}
 
-		inbounds, _, err := matchers.DppSelectedByPolicy(meta, ref, dpp, resources)
+		inbounds, err := matchers.DppSelectedByPolicy(meta, ref, dpp, resources)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(inbounds).ToNot(BeEmpty())
 	})

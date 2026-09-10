@@ -26,8 +26,8 @@ func PolicyMatches(resource core_model.Resource, dpp *core_mesh.DataplaneResourc
 	if !ok {
 		return false, errors.New("resource is not a targetRef policy")
 	}
-	selectedInbounds, delegatedGateway, err := DppSelectedByPolicy(resource.GetMeta(), refPolicy.GetTargetRef(), dpp, referencableResources)
-	return len(selectedInbounds) != 0 || delegatedGateway, err
+	selectedInbounds, err := DppSelectedByPolicy(resource.GetMeta(), refPolicy.GetTargetRef(), dpp, referencableResources)
+	return len(selectedInbounds) != 0, err
 }
 
 // MatchedPolicies match policies using the standard matchers using targetRef (madr-005)
@@ -62,7 +62,7 @@ func MatchedPolicies(
 		}
 
 		refPolicy := policy.GetSpec().(core_model.Policy)
-		selectedInbounds, delegatedGatewaySelected, err := DppSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp, resources)
+		selectedInbounds, err := DppSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp, resources)
 		if err != nil {
 			warnings = append(warnings,
 				fmt.Sprintf("unable to resolve TargetRef on policy: mesh:%s name:%s error:%q",
@@ -70,7 +70,7 @@ func MatchedPolicies(
 				),
 			)
 		}
-		if len(selectedInbounds) == 0 && !delegatedGatewaySelected {
+		if len(selectedInbounds) == 0 {
 			// DPP is not matched by the policy
 			continue
 		}
@@ -128,24 +128,23 @@ func MatchedPolicies(
 }
 
 // DppSelectedByPolicy returns a list of inbounds of DPP that are selected by the top-level targetRef
-// and whether a delegated gateway is selected
 func DppSelectedByPolicy(
 	meta core_model.ResourceMeta,
 	ref common_api.TargetRef,
 	dpp *core_mesh.DataplaneResource,
 	referencableResources xds_context.Resources,
-) ([]core_rules.InboundListener, bool, error) {
+) ([]core_rules.InboundListener, error) {
 	if !dppSelectedByZone(meta, dpp) {
-		return []core_rules.InboundListener{}, false, nil
+		return []core_rules.InboundListener{}, nil
 	}
 	if !dppSelectedByNamespace(meta, dpp) {
-		return []core_rules.InboundListener{}, false, nil
+		return []core_rules.InboundListener{}, nil
 	}
 	switch ref.Kind {
 	case common_api.Mesh:
 		inbounds := allInboundListeners(dpp)
 		inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
-		return inbounds, dpp.IsDelegatedGateway(), nil
+		return inbounds, nil
 	case common_api.Dataplane:
 		if allDataplanesSelected(ref) || isSelectedByLabels(dpp, ref) {
 			inboundInterfaces := dpp.Spec.GetNetworking().InboundsSelectedBySectionName(pointer.Deref(ref.SectionName))
@@ -163,29 +162,27 @@ func DppSelectedByPolicy(
 				}
 				inbounds = append(inbounds, core_rules.InboundListener{Address: addr, Port: l.GetPort()})
 			}
-			return inbounds, dpp.IsDelegatedGateway(), nil
+			return inbounds, nil
 		}
-		return []core_rules.InboundListener{}, false, nil
+		return []core_rules.InboundListener{}, nil
 	case common_api.MeshHTTPRoute:
 		mhrs := resolveMeshHTTPRouteRef(meta, ref, referencableResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType))
 		if len(mhrs) == 0 {
-			return nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with labels %v", pointer.Deref(ref.Labels))
+			return nil, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with labels %v", pointer.Deref(ref.Labels))
 		}
 
 		var inbounds []core_rules.InboundListener
 		seen := map[core_rules.InboundListener]struct{}{}
-		var delegatedGatewaySelected bool
 		for _, mhr := range mhrs {
-			selectedInbounds, delegatedGateway, err := DppSelectedByPolicy(
+			selectedInbounds, err := DppSelectedByPolicy(
 				mhr.Meta,
 				mhr.Spec.TargetRef.ToTargetRef(),
 				dpp,
 				referencableResources,
 			)
 			if err != nil {
-				return nil, false, err
+				return nil, err
 			}
-			delegatedGatewaySelected = delegatedGatewaySelected || delegatedGateway
 			for _, inbound := range selectedInbounds {
 				if _, ok := seen[inbound]; ok {
 					continue
@@ -195,9 +192,9 @@ func DppSelectedByPolicy(
 			}
 		}
 
-		return inbounds, delegatedGatewaySelected, nil
+		return inbounds, nil
 	default:
-		return nil, false, fmt.Errorf("unsupported targetRef kind '%s'", ref.Kind)
+		return nil, fmt.Errorf("unsupported targetRef kind '%s'", ref.Kind)
 	}
 }
 
