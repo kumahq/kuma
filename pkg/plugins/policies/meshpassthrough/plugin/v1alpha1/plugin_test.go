@@ -49,12 +49,12 @@ var _ = Describe("MeshPassthrough", func() {
 				Build()
 			proxy := xds_builders.Proxy().
 				WithApiVersion(envoy_common.APIV3).
+				WithTransparentProxy("ipv4").
 				WithDataplane(
 					builders.Dataplane().
 						WithName("test").
 						WithMesh("default").
 						WithAddress("127.0.0.1").
-						WithTransparentProxying(15006, 15001, "ipv4").
 						AddInbound(
 							builders.Inbound().
 								WithAddress("127.0.0.1").

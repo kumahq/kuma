@@ -218,10 +218,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			rootCtx.Features = nil
-			if cfg.DataplaneRuntime.TransparentProxy != nil {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureTransparentProxyInDataplaneMetadata)
-			}
-
 			if cfg.DataplaneRuntime.BindOutbounds {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureBindOutbounds)
 			}

@@ -89,7 +89,7 @@ resources:
     address:
       socketAddress:
         address: 0.0.0.0
-        portValue: 15001
+        portValue: 15006
     enableReusePort: true
     filterChains:
     - filterChainMatch:
@@ -118,7 +118,7 @@ resources:
     address:
       socketAddress:
         address: '::'
-        portValue: 15001
+        portValue: 15006
     enableReusePort: true
     filterChains:
     - filterChainMatch:

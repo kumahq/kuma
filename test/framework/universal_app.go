@@ -411,6 +411,10 @@ cp %s/envoy /usr/bin/envoy
 		"--binary-path", "/usr/local/bin/envoy",
 	}
 
+	if transparent {
+		args = append(args, "--transparent-proxy")
+	}
+
 	if dpyaml != "" {
 		dpPath := fmt.Sprintf("/kuma-dp-%s.yaml", name)
 		_, _ = fmt.Fprintf(cmd, `cat > %s << 'EOF'
