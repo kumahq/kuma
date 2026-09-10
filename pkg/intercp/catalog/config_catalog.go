@@ -121,6 +121,7 @@ type ConfigCatalogReader struct {
 
 var _ Reader = &ConfigCatalogReader{}
 
+// NewConfigCatalogReader is used by Kong Mesh to back its tenant catalog.
 func NewConfigCatalogReader(resManager manager.ReadOnlyResourceManager) Reader {
 	return &ConfigCatalogReader{
 		resManager: resManager,

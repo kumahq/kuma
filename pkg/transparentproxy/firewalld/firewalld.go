@@ -32,12 +32,6 @@ type IptablesTranslator struct {
 	ruleParser     *regexp.Regexp
 }
 
-func (t *IptablesTranslator) WithDirectFilePath(filePath string) *IptablesTranslator {
-	t.directFilePath = filePath
-
-	return t
-}
-
 func (t *IptablesTranslator) WithDryRun(dryRun bool) *IptablesTranslator {
 	t.dryRun = dryRun
 

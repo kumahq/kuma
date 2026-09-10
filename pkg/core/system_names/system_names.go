@@ -15,10 +15,6 @@ const (
 
 var cleanNameRegex = regexp.MustCompile(`([a-z0-9-]*_?)+`)
 
-func IsSystem(name string) bool {
-	return strings.HasPrefix(SystemPrefix, name)
-}
-
 func CleanName(name string) string {
 	matches := cleanNameRegex.FindAllString(name, -1)
 	return strings.Join(matches, sectionPartsSeparator)

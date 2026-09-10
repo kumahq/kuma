@@ -9,13 +9,6 @@ import (
 
 type LabelResourceIdentifierResolver func(core_model.ResourceType, map[string]string) kri.Identifier
 
-func BackendRefOrNil(origin kri.Identifier, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) *ResolvedBackendRef {
-	if br, ok := BackendRef(origin, br, resolver); ok {
-		return &br
-	}
-	return nil
-}
-
 func BackendRef(origin kri.Identifier, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) (ResolvedBackendRef, bool) {
 	if !br.ReferencesRealObject() {
 		return ResolvedBackendRef{}, false
