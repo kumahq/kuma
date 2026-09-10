@@ -1231,7 +1231,19 @@ metadata:
     traffic.kuma.io/exclude-inbound-ports: "8000,8443"   # replaces kuma.io/gateway
 ```
 
-List every port the gateway accepts traffic on. The annotation takes a comma-separated list and has no all-ports spelling, so a port left off it is redirected into Envoy, which has no inbound listener for it. Restart the pods so the injector rewrites the transparent proxy configuration.
+List every port the gateway accepts traffic on. The annotation takes a comma-separated list and has no all-ports spelling. A port left off it is redirected into Envoy and served by an inbound listener, so the traffic the gateway terminates becomes mesh inbound traffic, subject to `MeshTrafficPermission` and mTLS — a client outside the mesh is then rejected rather than reaching the gateway. Restart the pods so the injector rewrites the transparent proxy configuration.
+
+An excluded port is not a `Dataplane` inbound. Envoy does not receive traffic on it, so it is not addressable through the mesh, and the workload accepts connections on it directly. This is also true for a workload that is not a gateway: excluding one of its `Service` target ports takes that port out of the mesh.
+
+If the gateway is fronted by a `Service`, annotate that `Service` too:
+
+```yaml
+metadata:
+  annotations:
+    kuma.io/ignore: "true"
+```
+
+The gateway marking used to suppress both the `Dataplane` inbounds and the `MeshService` generated from the gateway's `Service`; `kuma.io/ignore` is what does that now. Without it the `Service` produces a `MeshService`, and in-mesh clients that address the gateway through it get a mesh destination with no endpoints instead of the passthrough traffic they got before.
 
 On Universal, drop `kuma.io/gateway: "true"` from the labels of gateway `Dataplane`s and run `kuma-dp` with `--exclude-inbound-ports` (or `redirect.inbound.excludePorts` in the transparent proxy config) covering the same ports.
 
@@ -1244,9 +1256,10 @@ On Universal, drop `kuma.io/gateway: "true"` from the labels of gateway `Datapla
 - `MeshInsight.dataplanesByType.gateway` and `.gatewayDelegated` are removed, field numbers 2 and 4 reserved. Every proxy is counted under `standard`.
 - `dataplanes.gatewayDelegated` and `services.gatewayDelegated` are removed from the `/global-insight` response.
 - `GET /meshes/{mesh}/dataplanes/_overview?gateway=` is no longer a valid filter and is ignored, and `kumactl inspect dataplanes --gateway` is removed.
-- A `Service` or `Pod` that was skipped for carrying the annotation now gets a `MeshService` like any other workload.
+- A `Service` or `Pod` that was skipped for carrying the annotation now gets a `MeshService` like any other workload, unless the `Service` carries `kuma.io/ignore: "true"`.
 - The injected sidecar of a former gateway pod gets the regular application probe proxy port instead of `0`, so its probes are proxied.
 - The control plane no longer writes `kuma.io/zone` into a gateway's tags, and KDS no longer rewrites a zone tag inside a synced `Dataplane` spec. The `kds_zone_attribution_rewrites_total` metric is removed with it; zone attribution on labels is unaffected.
+- A `kuma.io/gateway` label left on a stored `Dataplane` by an older control plane is deleted the next time that `Dataplane` is written, so a `targetRef` or `MeshLoadBalancingStrategy` affinity key that still selects on it stops matching. Move those to a label the control plane does not manage.
 
 Also move any key you use in a `MeshLoadBalancingStrategy` `localZone.affinityTags` from `networking.gateway.tags` to the `Dataplane`'s labels — an affinity key that exists only as a gateway tag stops matching and its locality group is dropped.
 

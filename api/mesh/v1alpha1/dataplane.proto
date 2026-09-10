@@ -296,7 +296,7 @@ message Dataplane {
     }
 
     // Listeners describes zone proxy listeners embedded in this Dataplane.
-    // Listeners may coexist with inbounds and gateways.
+    // Listeners may coexist with inbounds.
     repeated Listener listeners = 9;
   }
 

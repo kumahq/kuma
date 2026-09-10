@@ -218,7 +218,7 @@ components:
             listeners:
               description: |-
                 Listeners describes zone proxy listeners embedded in this Dataplane.
-                Listeners may coexist with inbounds and gateways.
+                Listeners may coexist with inbounds.
               items:
                 description: Listener describes a zone proxy listener (ZoneIngress
                   or ZoneEgress) embedded in a regular Dataplane.

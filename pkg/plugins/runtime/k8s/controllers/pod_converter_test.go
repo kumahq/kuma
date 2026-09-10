@@ -373,6 +373,14 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "48.services-for-pod.yaml",
 			dataplane:      "48.dataplane.yaml",
 		}),
+		// A port excluded from inbound redirection is not an inbound: Envoy
+		// never receives traffic on it, so advertising it would have clients
+		// open mTLS connections against the workload's own listener.
+		Entry("49. Service port excluded from inbound redirection", testCase{
+			pod:            "49.pod.yaml",
+			servicesForPod: "49.services-for-pod.yaml",
+			dataplane:      "49.dataplane.yaml",
+		}),
 	)
 })
 

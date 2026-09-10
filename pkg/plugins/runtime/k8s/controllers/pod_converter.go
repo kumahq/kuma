@@ -20,6 +20,7 @@ import (
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	tproxy_k8s "github.com/kumahq/kuma/v3/pkg/transparentproxy/kubernetes"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
@@ -159,7 +160,13 @@ func (p *PodConverter) dataplaneFor(
 	// (has zone proxy services but no regular services) to avoid the
 	// serviceless inbound fallback in InboundInterfacesFor.
 	if len(regularServices) > 0 || len(zoneProxyServices) == 0 {
-		dataplane.Networking.Inbound = p.InboundConverter.InboundInterfacesFor(pod, regularServices)
+		inbounds := p.InboundConverter.InboundInterfacesFor(pod, regularServices)
+
+		excluded, err := excludedInboundPorts(annotations)
+		if err != nil {
+			return nil, err
+		}
+		dataplane.Networking.Inbound = dropExcludedInbounds(inbounds, excluded)
 	}
 
 	// portSvc tracks which service already claimed each address:port to produce
@@ -210,6 +217,48 @@ func (p *PodConverter) dataplaneFor(
 	}
 
 	return dataplane, nil
+}
+
+// excludedInboundPorts reports the ports the injector kept out of inbound
+// redirection, read from the transparent proxy configuration it wrote onto the
+// Pod. A Pod injected by an older control plane carries no such annotation, so
+// nothing is excluded and its inbounds are generated as before.
+func excludedInboundPorts(annotations metadata.Annotations) (map[uint32]struct{}, error) {
+	if v, exists := annotations.GetString(metadata.KumaTrafficTransparentProxyConfig); !exists || v == "" {
+		return nil, nil
+	}
+
+	cfg, err := tproxy_k8s.ConfigFromAnnotations(annotations)
+	if err != nil {
+		return nil, err
+	}
+
+	excluded := map[uint32]struct{}{}
+	for _, port := range cfg.Redirect.Inbound.ExcludePorts {
+		excluded[uint32(port)] = struct{}{}
+	}
+	return excluded, nil
+}
+
+// dropExcludedInbounds removes the inbounds Envoy never receives traffic on.
+// An inbound on an excluded port would advertise a port Envoy does not serve,
+// so clients would open mTLS connections against the workload's own listener.
+func dropExcludedInbounds(
+	inbounds []*mesh_proto.Dataplane_Networking_Inbound,
+	excluded map[uint32]struct{},
+) []*mesh_proto.Dataplane_Networking_Inbound {
+	if len(excluded) == 0 {
+		return inbounds
+	}
+
+	var kept []*mesh_proto.Dataplane_Networking_Inbound
+	for _, inbound := range inbounds {
+		if _, ok := excluded[inbound.GetPort()]; ok {
+			continue
+		}
+		kept = append(kept, inbound)
+	}
+	return kept
 }
 
 func mergeLabels(existingLabels map[string]string, labelSets ...map[string]string) map[string]string {

@@ -45,9 +45,10 @@ func (t *DataplaneOverviewResource) Status() (Status, []string) {
 	switch {
 	case !proxyOnline:
 		return Offline, errs
-	// A proxy that declares neither inbounds nor listeners, such as one that
-	// only fronts traffic on ports excluded from inbound redirection, has
-	// nothing to report readiness for and is online once it is connected.
+	// A proxy that declares neither inbounds nor listeners has nothing to
+	// report readiness for and is online once it is connected. That covers an
+	// outbound-only proxy and one whose every port is excluded from inbound
+	// redirection, both of which used to be reported offline while connected.
 	case total == 0:
 		return Online, nil
 	case ready == 0:
