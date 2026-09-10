@@ -25,7 +25,7 @@ type EventBasedWatchdog struct {
 	ProvidedTypes       map[model.ResourceType]struct{}
 	Metrics             *Metrics
 	Log                 logr.Logger
-	NewFlushTicker      func() *time.Ticker
+	NewFlushTicker      func() (*time.Ticker, context.CancelFunc)
 	NewFullResyncTicker func() (*time.Ticker, context.CancelFunc)
 }
 
@@ -41,7 +41,8 @@ func (e *EventBasedWatchdog) Start(ctx context.Context) {
 		}
 		return false
 	})
-	flushTicker := e.NewFlushTicker()
+	flushTicker, cancelFlushTicker := e.NewFlushTicker()
+	defer cancelFlushTicker()
 	defer flushTicker.Stop()
 	fullResyncTicker, cancelFullResyncTicker := e.NewFullResyncTicker()
 	defer cancelFullResyncTicker()
