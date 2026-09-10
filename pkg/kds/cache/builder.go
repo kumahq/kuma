@@ -11,11 +11,13 @@ type ResourceBuilder any
 
 type SnapshotBuilder interface {
 	With(typ core_model.ResourceType, resources []envoy_types.Resource) SnapshotBuilder
+	WithPrecomputedVersions(typ core_model.ResourceType, versions NameToVersion) SnapshotBuilder
 	Build(version string) envoy_cache.ResourceSnapshot
 }
 
 type builder struct {
 	resources      map[core_model.ResourceType][]envoy_types.ResourceWithTTL
+	versions       ResourceVersionMap
 	supportedTypes []core_model.ResourceType
 }
 
@@ -31,8 +33,18 @@ func (b *builder) With(typ core_model.ResourceType, resources []envoy_types.Reso
 	return b
 }
 
+func (b *builder) WithPrecomputedVersions(typ core_model.ResourceType, versions NameToVersion) SnapshotBuilder {
+	if len(versions) > 0 {
+		b.versions[typ] = versions
+	}
+	return b
+}
+
 func (b *builder) Build(version string) envoy_cache.ResourceSnapshot {
 	snapshot := &Snapshot{Resources: map[core_model.ResourceType]envoy_cache.Resources{}}
+	if len(b.versions) > 0 {
+		snapshot.VersionMap = b.versions
+	}
 	for _, typ := range b.supportedTypes {
 		items, exists := b.resources[typ]
 		if exists {
@@ -47,6 +59,7 @@ func (b *builder) Build(version string) envoy_cache.ResourceSnapshot {
 func NewSnapshotBuilder(supportedTypes []core_model.ResourceType) SnapshotBuilder {
 	return &builder{
 		resources:      map[core_model.ResourceType][]envoy_types.ResourceWithTTL{},
+		versions:       ResourceVersionMap{},
 		supportedTypes: supportedTypes,
 	}
 }

@@ -71,6 +71,9 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 	// construct builder with unchanged types from the old snapshot
 	builder := kds_cache.NewSnapshotBuilder(r.providedTypes)
 	if old != nil {
+		if err := old.ConstructVersionMap(); err != nil {
+			return errors.Wrap(err, "could not construct version map"), false
+		}
 		for _, resType := range r.providedTypes {
 			if _, ok := changedTypes[resType]; ok {
 				continue
@@ -78,7 +81,9 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 
 			oldRes := old.GetResources(string(resType))
 			if len(oldRes) > 0 {
-				builder = builder.With(resType, util_maps.AllValues(oldRes))
+				builder = builder.
+					With(resType, util_maps.AllValues(oldRes)).
+					WithPrecomputedVersions(resType, old.GetVersionMap(string(resType)))
 			}
 		}
 	}
@@ -89,13 +94,6 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 	}
 	if n == nil {
 		return errors.New("nil snapshot"), false
-	}
-	// call ConstructVersionMap, so we can override versions if needed and compute what changed
-	if old != nil {
-		// this should already be computed by SetSnapshot, but we call it just to make sure we have versions.
-		if err := old.ConstructVersionMap(); err != nil {
-			return errors.Wrap(err, "could not construct version map"), false
-		}
 	}
 	if err := n.ConstructVersionMap(); err != nil {
 		return errors.Wrap(err, "could not construct version map"), false
