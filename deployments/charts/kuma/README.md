@@ -30,6 +30,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP. Ignored when autoscaling is enabled |
 | controlPlane.restartPolicy | string | `"Always"` | Pod restart policy for the Control Plane. |
 | controlPlane.minReadySeconds | int | `0` | Minimum number of seconds for which a newly created pod should be ready for it to be considered available. |
+| controlPlane.deploymentStrategy | object | `{"rollingUpdate":{"maxSurge":1,"maxUnavailable":0}}` | Update strategy for the `Deployment` resource. Override to e.g. raise `maxUnavailable` above `0` if the default `RollingUpdate` strategy deadlocks your rollout (for example, on a single-replica cluster with tight PodDisruptionBudget or resource constraints). |
 | controlPlane.deploymentAnnotations | object | `{}` | Annotations applied only to the `Deployment` resource |
 | controlPlane.podAnnotations | object | `{}` | Annotations applied only to the `Pod` resource |
 | controlPlane.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
