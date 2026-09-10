@@ -17,16 +17,13 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -36,6 +33,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	test_grpc "github.com/kumahq/kuma/v3/pkg/test/grpc"
 	"github.com/kumahq/kuma/v3/pkg/test/kds/setup"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 // countingStore counts store operations so a run can be expressed in store
@@ -114,8 +112,8 @@ func seed(t *testing.T, st store.ResourceStore, meshes, zones, policiesPerType i
 	t.Helper()
 	ctx := context.Background()
 	for z := range zones {
-		zone := system.NewZoneResource()
-		zone.Spec = &system_proto.Zone{Enabled: wrapperspb.Bool(true)}
+		zone := zone_api.NewZoneResource()
+		zone.Spec.Enabled = pointer.To(true)
 		if err := st.Create(ctx, zone, store.CreateByKey(zoneName(z), core_model.NoMesh)); err != nil {
 			t.Fatalf("seed zone: %v", err)
 		}
@@ -130,7 +128,7 @@ func seed(t *testing.T, st store.ResourceStore, meshes, zones, policiesPerType i
 
 	created := 0
 	for _, typ := range types {
-		if typ == core_mesh.MeshType || typ == system.ZoneType {
+		if typ == core_mesh.MeshType || typ == zone_api.ZoneType {
 			continue
 		}
 		desc, err := registry.Global().DescriptorFor(typ)
