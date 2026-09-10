@@ -214,8 +214,10 @@ type Index struct {
 // InspectDataplanesForPolicy A list of proxies
 type InspectDataplanesForPolicy struct {
 	Items []externalRef0.Meta `json:"items"`
-	Next  *string             `json:"next,omitempty"`
-	Total int                 `json:"total"`
+
+	// Next URL to the next page, or null when this is the last page
+	Next  *string `json:"next"`
+	Total int     `json:"total"`
 }
 
 // InspectHostname An supported hostname along with the zones it exists in

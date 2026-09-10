@@ -5826,12 +5826,16 @@ components:
       required:
         - total
         - items
+        - next
       properties:
         total:
           type: integer
           example: 200
         next:
-          type: string
+          type:
+            - string
+            - 'null'
+          description: URL to the next page, or null when this is the last page
         items:
           type: array
           items:
@@ -19569,6 +19573,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -19578,8 +19586,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshAccessLogCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19616,6 +19626,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -19625,8 +19639,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshCircuitBreakerCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19663,6 +19679,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -19672,8 +19692,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshFaultInjectionCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19710,6 +19732,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -19719,8 +19745,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshHealthCheckCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19757,6 +19785,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -19766,8 +19798,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshHTTPRouteCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19804,6 +19838,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -19813,8 +19851,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19851,6 +19891,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -19860,8 +19904,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshMetricCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19898,6 +19944,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -19907,8 +19957,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshPassthroughCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19945,6 +19997,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -19954,8 +20010,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshProxyPatchCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19992,6 +20050,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20001,8 +20063,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshRateLimitCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20039,6 +20103,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20048,8 +20116,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshRetryCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20086,6 +20156,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20095,8 +20169,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshTCPRouteCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20133,6 +20209,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20142,8 +20222,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshTimeoutCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20180,6 +20262,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20189,8 +20275,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshTLSCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20227,6 +20315,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20236,8 +20328,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshTraceCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20274,6 +20368,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20283,8 +20381,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshTrafficPermissionCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20349,11 +20449,17 @@ components:
                   $ref: '#/components/schemas/DataplaneItem'
                 type: array
               next:
-                description: URL to the next page
-                type: string
+                description: URL to the next page, or null when this is the last page
+                type:
+                  - string
+                  - 'null'
               total:
                 description: The total number of entities
                 type: number
+            required:
+              - total
+              - items
+              - next
             type: object
       description: List
     DataplaneInsightCreateOrUpdateSuccessResponse:
@@ -20396,11 +20502,17 @@ components:
                   $ref: '#/components/schemas/DataplaneInsightItem'
                 type: array
               next:
-                description: URL to the next page
-                type: string
+                description: URL to the next page, or null when this is the last page
+                type:
+                  - string
+                  - 'null'
               total:
                 description: The total number of entities
                 type: number
+            required:
+              - total
+              - items
+              - next
             type: object
       description: List
     GetDataplaneOverviewResponse:
@@ -20415,12 +20527,19 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               total:
                 type: integer
                 example: 200
               next:
-                type: string
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
               items:
                 type: array
                 items:
@@ -20437,6 +20556,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20446,8 +20569,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     GlobalSecretCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20512,11 +20637,17 @@ components:
                   $ref: '#/components/schemas/MeshItem'
                 type: array
               next:
-                description: URL to the next page
-                type: string
+                description: URL to the next page, or null when this is the last page
+                type:
+                  - string
+                  - 'null'
               total:
                 description: The total number of entities
                 type: number
+            required:
+              - total
+              - items
+              - next
             type: object
       description: List
     GetMeshInsightResponse:
@@ -20531,12 +20662,19 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               total:
                 type: integer
                 example: 200
               next:
-                type: string
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
               items:
                 type: array
                 items:
@@ -20553,12 +20691,19 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               total:
                 type: integer
                 example: 200
               next:
-                type: string
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
               items:
                 type: array
                 items:
@@ -20603,11 +20748,17 @@ components:
                   $ref: '#/components/schemas/SecretItem'
                 type: array
               next:
-                description: URL to the next page
-                type: string
+                description: URL to the next page, or null when this is the last page
+                type:
+                  - string
+                  - 'null'
               total:
                 description: The total number of entities
                 type: number
+            required:
+              - total
+              - items
+              - next
             type: object
       description: List
     GetZoneOverviewResponse:
@@ -20622,12 +20773,19 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               total:
                 type: integer
                 example: 200
               next:
-                type: string
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
               items:
                 type: array
                 items:
@@ -20644,6 +20802,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20653,8 +20815,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     HostnameGeneratorCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20691,6 +20855,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20700,8 +20868,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshExternalServiceCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20738,6 +20908,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20747,8 +20921,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshIdentityCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20785,6 +20961,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20794,8 +20974,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshMultiZoneServiceCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20832,6 +21014,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20841,8 +21027,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshOpenTelemetryBackendCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20879,6 +21067,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20888,8 +21080,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshServiceCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20926,6 +21120,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20935,8 +21133,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshTrustCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20973,6 +21173,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -20982,8 +21186,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshZoneAddressCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -21020,6 +21226,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -21029,8 +21239,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     WorkloadCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -21067,6 +21279,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -21076,8 +21292,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     ZoneCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -21114,6 +21332,10 @@ components:
         application/json:
           schema:
             type: object
+            required:
+              - total
+              - items
+              - next
             properties:
               items:
                 type: array
@@ -21123,8 +21345,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     ZoneInsightCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
