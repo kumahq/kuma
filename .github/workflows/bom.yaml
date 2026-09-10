@@ -7,7 +7,12 @@ permissions: read-all
 jobs:
   sbom:
     timeout-minutes: 10
-    runs-on: ${{ vars.RUNS_ON_RELEASE_2_9_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_RELEASE_2_9_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').md
+      || 'ubuntu-24.04' }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
