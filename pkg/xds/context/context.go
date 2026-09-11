@@ -48,8 +48,22 @@ type BaseMeshContext struct {
 	Mesh             *core_mesh.MeshResource
 	ResourceMap      ResourceMap
 	DestinationIndex *DestinationIndex
+	VIPDomains       []xds_types.VIPDomains
+	VIPOutbounds     xds_types.Outbounds
 	hash             []byte
 	typeHashes       []typeHash
+}
+
+// TopologyContext holds what is derived from where workloads run and how to reach them:
+// dataplanes, zone egresses and endpoint maps. It changes with every Dataplane change, far
+// more often than policies, so it is rebuilt on its own and kept when only policies change.
+type TopologyContext struct {
+	DataplanesByName                map[string]*core_mesh.DataplaneResource
+	EndpointMap                     xds.EndpointMap
+	ZoneEgresses                    []xds.ZoneEgressInstance
+	DataplaneZoneIngressEndpointMap xds.EndpointMap
+	DataplaneZoneEgressEndpointMap  xds.EgressEndpointMap
+	hash                            []byte
 }
 
 // Hash base64 version of the hash mostly useed for testing
@@ -71,6 +85,7 @@ type PEMBytes []byte
 // it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
 	globalContext *GlobalContext
+	topology      *TopologyContext
 	Hash          string
 	// PolicyMatchingHash hashes matching-relevant resources (policies, gateways, external services).
 	// Excludes Dataplane roster; stays stable across DP-registration waves.
