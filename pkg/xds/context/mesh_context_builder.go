@@ -445,7 +445,7 @@ func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalCont
 	for _, hashes := range [][]typeHash{globalContext.typeHashes, baseMeshContext.typeHashes, managedTypeHashes} {
 		for _, th := range hashes {
 			if affectsPolicyMatching(th.resourceType) {
-				_, _ = hasher.Write(th.hash)
+				_, _ = hasher.Write(policyMatchingListHash(th))
 			}
 		}
 	}

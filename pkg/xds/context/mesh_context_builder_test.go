@@ -359,6 +359,97 @@ status:
 		Expect(after.PolicyMatchingHash).To(Equal(before.PolicyMatchingHash))
 	})
 
+	It("keeps PolicyMatchingHash stable when MeshService membership-derived fields change", func() {
+		builderWithPolicyMatchingHash := xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			lookupIPFunc,
+			"zone-1",
+			xds_context.WithPolicyMatchingHash(),
+		)
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+---
+type: MeshService
+name: redis
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+  ports:
+  - port: 6739
+    appProtocol: tcp
+status:
+  vips:
+  - ip: 10.0.1.1
+`)).To(Succeed())
+		before, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		meshService := meshservice_api.NewMeshServiceResource()
+		Expect(resourceStore.Get(context.Background(), meshService, store.GetByKey("redis", "mesh-1"))).To(Succeed())
+		meshService.Spec.State = meshservice_api.StateAvailable
+		meshService.Spec.Identities = &[]meshservice_api.MeshServiceIdentity{{
+			Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+			Value: "spiffe://mesh-1.zone-1.mesh.local/ns/default/sa/redis",
+		}}
+		meshService.Status.TLS = meshservice_api.TLS{Status: meshservice_api.TLSReady}
+		Expect(resourceStore.Update(context.Background(), meshService, store.UpdateWithLabels(meshService.GetMeta().GetLabels()))).To(Succeed())
+
+		after, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(after.Hash).ToNot(Equal(before.Hash), "identities, state and TLS readiness change the generated xDS")
+		Expect(after.PolicyMatchingHash).To(Equal(before.PolicyMatchingHash), "they never change which policies match")
+	})
+
+	It("changes PolicyMatchingHash when MeshService ports change", func() {
+		builderWithPolicyMatchingHash := xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			lookupIPFunc,
+			"zone-1",
+			xds_context.WithPolicyMatchingHash(),
+		)
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+---
+type: MeshService
+name: redis
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+  ports:
+  - port: 6739
+    appProtocol: tcp
+`)).To(Succeed())
+		before, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: MeshService
+name: redis
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+  ports:
+  - port: 6739
+    appProtocol: tcp
+  - port: 6740
+    name: admin
+    appProtocol: tcp
+`)).To(Succeed())
+		after, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(after.PolicyMatchingHash).ToNot(Equal(before.PolicyMatchingHash))
+	})
+
 	It("recomputes the mesh context when a remote MeshService and its MeshZoneAddress newly appear", func() {
 		// given a mesh whose proxies get a workload identity, matching the e2e repro
 		Expect(samples.MeshDefaultBuilder().Create(resourceStore)).To(Succeed())
