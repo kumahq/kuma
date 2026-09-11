@@ -39,6 +39,9 @@ to:
         maxPendingRequests: 2
         maxRetries: 1
         maxRequests: 32
+        retryBudget:
+          budgetPercent: "12.5"
+          minRetryConcurrency: 3
       outlierDetection:
         disabled: false
         interval: 5s
@@ -337,7 +340,10 @@ to:
         maxConnectionPools: 0
         maxPendingRequests: 0
         maxRetries: 0
-        maxRequests: 0`,
+        maxRequests: 0
+        retryBudget:
+          budgetPercent: "120"
+          minRetryConcurrency: 0`,
 				expected: `
 violations:
   - field: spec.to[0].default.connectionLimits.maxConnections
@@ -349,6 +355,10 @@ violations:
   - field: spec.to[0].default.connectionLimits.maxRetries
     message: must be greater than 0
   - field: spec.to[0].default.connectionLimits.maxRequests
+    message: must be greater than 0
+  - field: spec.to[0].default.connectionLimits.retryBudget.budgetPercent
+    message: must be in inclusive range [0.0, 100.0]
+  - field: spec.to[0].default.connectionLimits.retryBudget.minRetryConcurrency
     message: must be greater than 0`,
 			}),
 			Entry("any outlierDetection's numeric property except 'healthyPanicThreshold' cannot be be 0 when specified", testCase{
