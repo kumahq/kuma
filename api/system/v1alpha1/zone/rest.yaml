@@ -37,11 +37,17 @@ components:
                   $ref: '#/components/schemas/ZoneItem'
                 type: array
               next:
-                description: URL to the next page
-                type: string
+                description: URL to the next page, or null when this is the last page
+                type:
+                - string
+                - "null"
               total:
                 description: The total number of entities
                 type: number
+            required:
+            - total
+            - items
+            - next
             type: object
       description: List
   schemas:
@@ -140,7 +146,7 @@ paths:
         "200":
           $ref: '#/components/responses/ZoneDeleteSuccessResponse'
         "404":
-          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
+          $ref: ../../<no value>#/components/responses/NotFound
       summary: Deletes Zone entity
       tags:
       - Zone
@@ -157,7 +163,7 @@ paths:
         "200":
           $ref: '#/components/responses/ZoneItem'
         "404":
-          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
+          $ref: ../../<no value>#/components/responses/NotFound
       summary: Returns Zone entity
       tags:
       - Zone
