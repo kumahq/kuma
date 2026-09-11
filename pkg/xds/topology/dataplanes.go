@@ -4,9 +4,7 @@ import (
 	"net"
 
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
@@ -25,7 +23,7 @@ func ResolveDataplaneAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_m
 		return nil, err
 	}
 	if ip != "" { // only if we resolve any address, in most cases this is IP not a hostname
-		dpSpec := proto.Clone(dataplane.Spec).(*mesh_proto.Dataplane)
+		dpSpec := dataplane.Spec.DeepCopy()
 		dpSpec.Networking.Address = ip
 		return &core_mesh.DataplaneResource{
 			Meta: dataplane.Meta,

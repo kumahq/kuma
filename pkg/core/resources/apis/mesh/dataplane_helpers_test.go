@@ -10,10 +10,10 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	. "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Default", func() {
@@ -126,7 +126,7 @@ var _ = Describe("Dataplane", func() {
 				dataplane := NewDataplaneResource()
 
 				// when
-				Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
+				Expect(core_model.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
 				// then
 				Expect(dataplane.UsesInterface(net.ParseIP(given.address), given.port)).To(Equal(given.expected))
 			},
@@ -357,7 +357,7 @@ var _ = Describe("Dataplane", func() {
 				var dataplane *DataplaneResource
 				if given.dataplane != "" {
 					dataplane = NewDataplaneResource()
-					Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
+					Expect(core_model.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
 				}
 
 				// expect
@@ -407,7 +407,7 @@ var _ = Describe("Dataplane", func() {
 				var dataplane *DataplaneResource
 				if given.dataplane != "" {
 					dataplane = NewDataplaneResource()
-					Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
+					Expect(core_model.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
 				}
 
 				// expect

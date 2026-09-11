@@ -12,10 +12,10 @@ KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
 
-ifeq (,$(shell which mise))
+MISE := $(shell which mise)
+ifeq (,$(MISE))
 $(error "mise - https://github.com/jdx/mise - not found. Please install it.")
 endif
-MISE := $(shell which mise)
 
 CI_TOOLS_DIR ?= ${HOME}/.local/share/mise/${PROJECT_NAME}
 ifdef XDG_DATA_HOME
@@ -46,44 +46,55 @@ endef
 # KUBECONFIG_DIR is defined in mk/k8s.mk (included via Makefile).
 # Do not redefine it here.
 
-PROTOS_DEPS_PATH=$(shell $(MISE) where protoc)/include
+# _once(VAR,value): on first expansion replace VAR with the simply-expanded
+# value, so every make invocation does not pay for lookups it never uses.
+_once = $(eval $(1) := $(2))$($(1))
 
-BUF=$(shell $(MISE) which buf)
+PROTOS_DEPS_PATH = $(call _once,PROTOS_DEPS_PATH,$(shell $(MISE) where protoc)/include)
 
-# Proto dependencies via Buf
+BUF = $(call _once,BUF,$(shell $(MISE) which buf))
+
+# Proto dependencies via Buf, exported by dev/protos/deps (network, so not at parse time)
 BUF_CACHE_DIR := $(CI_TOOLS_DIR)/buf/cache
-PROTO_GOOGLE_APIS := $(shell $(BUF) export buf.build/googleapis/googleapis --output $(BUF_CACHE_DIR)/googleapis && echo $(BUF_CACHE_DIR)/googleapis)
-PROTO_PGV := $(shell $(BUF) export buf.build/envoyproxy/protoc-gen-validate --output $(BUF_CACHE_DIR)/pgv && echo $(BUF_CACHE_DIR)/pgv)
+PROTO_GOOGLE_APIS := $(BUF_CACHE_DIR)/googleapis
+PROTO_PGV := $(BUF_CACHE_DIR)/pgv
 # Envoy does not publish a BSR proto snapshot for every patch release, but always does
 # for a minor, so follow ENVOY_VERSION's minor. Override to pick up a later patch's API.
 ENVOY_PROTO_VERSION ?= v$(basename $(ENVOY_VERSION)).0
-PROTO_ENVOY := $(shell $(BUF) export buf.build/envoyproxy/envoy:$(ENVOY_PROTO_VERSION) --output $(BUF_CACHE_DIR)/envoy && echo $(BUF_CACHE_DIR)/envoy)
-PROTO_XDS := $(shell $(BUF) export buf.build/cncf/xds --output $(BUF_CACHE_DIR)/xds && echo $(BUF_CACHE_DIR)/xds)
-YQ=$(shell $(MISE) which yq)
-HELM=$(shell $(MISE) which helm)
+PROTO_ENVOY := $(BUF_CACHE_DIR)/envoy
+PROTO_XDS := $(BUF_CACHE_DIR)/xds
+YQ = $(call _once,YQ,$(shell $(MISE) which yq))
+HELM = $(call _once,HELM,$(shell $(MISE) which helm))
 K3D=$(MISE) exec -- k3d
-KIND=$(shell $(MISE) which kind)
-SETUP_ENVTEST=$(shell $(MISE) which setup-envtest)
-KUBEBUILDER_ASSETS=$(shell $(SETUP_ENVTEST) use $(KUBEBUILDER_ASSETS_VERSION) --bin-dir $(CI_TOOLS_BIN_DIR) -p path)
-CONTROLLER_GEN=$(shell $(MISE) which controller-gen)
-KUBECTL=$(shell $(MISE) which kubectl)
-PROTOC_BIN=$(shell $(MISE) which protoc)
-SHELLCHECK=$(shell $(MISE) which shellcheck)
-ACTIONLINT=$(shell $(MISE) which actionlint)
-CONTAINER_STRUCTURE_TEST=$(shell $(MISE) which container-structure-test)
-PROTOC_GEN_GO=$(shell $(MISE) which protoc-gen-go)
-PROTOC_GEN_GO_GRPC=$(shell $(MISE) which protoc-gen-go-grpc)
-PROTOC_GEN_JSONSCHEMA=$(shell $(MISE) which protoc-gen-jsonschema)
-GINKGO=$(shell $(MISE) which ginkgo)
-GOLANGCI_LINT=$(shell $(MISE) which golangci-lint)
-HELM_DOCS=$(shell $(MISE) which helm-docs)
-KUBE_LINTER=$(shell $(MISE) which kube-linter)
-HADOLINT=$(shell $(MISE) which hadolint)
-DASHBOARD_LINTER=$(shell $(MISE) which dashboard-linter)
+KIND = $(call _once,KIND,$(shell $(MISE) which kind))
+SETUP_ENVTEST = $(call _once,SETUP_ENVTEST,$(shell $(MISE) which setup-envtest))
+KUBEBUILDER_ASSETS = $(call _once,KUBEBUILDER_ASSETS,$(shell $(SETUP_ENVTEST) use $(KUBEBUILDER_ASSETS_VERSION) --bin-dir $(CI_TOOLS_BIN_DIR) -p path))
+CONTROLLER_GEN = $(call _once,CONTROLLER_GEN,$(shell $(MISE) which controller-gen))
+KUBECTL = $(call _once,KUBECTL,$(shell $(MISE) which kubectl))
+PROTOC_BIN = $(call _once,PROTOC_BIN,$(shell $(MISE) which protoc))
+SHELLCHECK = $(call _once,SHELLCHECK,$(shell $(MISE) which shellcheck))
+ACTIONLINT = $(call _once,ACTIONLINT,$(shell $(MISE) which actionlint))
+CONTAINER_STRUCTURE_TEST = $(call _once,CONTAINER_STRUCTURE_TEST,$(shell $(MISE) which container-structure-test))
+PROTOC_GEN_GO = $(call _once,PROTOC_GEN_GO,$(shell $(MISE) which protoc-gen-go))
+PROTOC_GEN_GO_GRPC = $(call _once,PROTOC_GEN_GO_GRPC,$(shell $(MISE) which protoc-gen-go-grpc))
+PROTOC_GEN_JSONSCHEMA = $(call _once,PROTOC_GEN_JSONSCHEMA,$(shell $(MISE) which protoc-gen-jsonschema))
+GINKGO = $(call _once,GINKGO,$(shell $(MISE) which ginkgo))
+GOLANGCI_LINT = $(call _once,GOLANGCI_LINT,$(shell $(MISE) which golangci-lint))
+HELM_DOCS = $(call _once,HELM_DOCS,$(shell $(MISE) which helm-docs))
+KUBE_LINTER = $(call _once,KUBE_LINTER,$(shell $(MISE) which kube-linter))
+HADOLINT = $(call _once,HADOLINT,$(shell $(MISE) which hadolint))
+DASHBOARD_LINTER = $(call _once,DASHBOARD_LINTER,$(shell $(MISE) which dashboard-linter))
 # oapi-codegen: mise go: backend installs to CI_TOOLS_BIN_DIR, mise which doesn't find it
-OAPI_CODEGEN=$(shell test -f $(CI_TOOLS_BIN_DIR)/oapi-codegen && echo $(CI_TOOLS_BIN_DIR)/oapi-codegen || command -v oapi-codegen)
+OAPI_CODEGEN = $(call _once,OAPI_CODEGEN,$(shell test -f $(CI_TOOLS_BIN_DIR)/oapi-codegen && echo $(CI_TOOLS_BIN_DIR)/oapi-codegen || command -v oapi-codegen))
 
-LATEST_RELEASE_BRANCH := $(shell $(YQ) e '.[] | .branch' versions.yml | grep -v dev | sort -V | tail -n 1)
+LATEST_RELEASE_BRANCH = $(call _once,LATEST_RELEASE_BRANCH,$(shell $(YQ) e '.[] | .branch' versions.yml | grep -v dev | sort -V | tail -n 1))
+
+.PHONY: dev/protos/deps
+dev/protos/deps: ## Dev: Export third-party proto dependencies with buf
+	$(BUF) export buf.build/googleapis/googleapis --output $(PROTO_GOOGLE_APIS)
+	$(BUF) export buf.build/envoyproxy/protoc-gen-validate --output $(PROTO_PGV)
+	$(BUF) export buf.build/envoyproxy/envoy:$(ENVOY_PROTO_VERSION) --output $(PROTO_ENVOY)
+	$(BUF) export buf.build/cncf/xds --output $(PROTO_XDS)
 
 .PHONY: cmd/check/%
 cmd/check/%:
@@ -128,7 +139,7 @@ dev/merge-release:
 
 # Generate a .envrc that prepends e2e test suite configs to whatever
 # KUBECONFIG currently has, and stores CI tooling in .tools.
-.PHONY: dev/enrc
+.PHONY: dev/envrc
 dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 	@echo 'export CI_TOOLS_DIR=$$(expand_path .tools)' > .envrc
 	@for c in \

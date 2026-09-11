@@ -49,7 +49,7 @@ var _ = Describe("HDS Snapshot generator", func() {
 		func(given testCase) {
 			// given
 			dp := mesh.NewDataplaneResource()
-			err := util_proto.FromYAML([]byte(given.dataplane), dp.Spec)
+			err := model.FromYAML([]byte(given.dataplane), dp.Spec)
 			Expect(err).ToNot(HaveOccurred())
 			if given.deleteMesh {
 				// Create directly on the store, bypassing the resource manager's

@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"log"
 	"os"
 	"path/filepath"
 	"slices"
@@ -12,14 +11,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
 
 	commontemplate "github.com/kumahq/kuma/v3/tools/common/template"
-	commontypes "github.com/kumahq/kuma/v3/tools/common/types"
 	"github.com/kumahq/kuma/v3/tools/openapi/gotemplates"
 	"github.com/kumahq/kuma/v3/tools/policy-gen/generator/pkg/parse"
-	"github.com/kumahq/kuma/v3/tools/resource-gen/genutils"
 )
 
 var ProcessProtoResources = true
@@ -29,26 +24,31 @@ type resource struct {
 	Path         string
 }
 
-// convertedCoreResources lists the resources of the mesh API whose specs are Go structs
-// rather than protobuf messages. They still publish a rest.yaml at the same path, but
-// gatherProtoResources walks the protobuf registry and no longer sees them.
-var convertedCoreResources = []resource{
+// coreResources lists the resources of the mesh API that publish a rest.yaml outside the
+// policy directories. They were discovered by walking the protobuf registry until their
+// specs became Go structs.
+var coreResources = []resource{
+	{ResourceType: "Dataplane", Path: "/specs/protoresources/dataplane/rest.yaml"},
 	{ResourceType: "Mesh", Path: "/specs/protoresources/mesh/rest.yaml"},
 }
 
 func newKriPolicies(rootArgs *args) *cobra.Command {
+	var errorSchema string
 	cmd := &cobra.Command{
 		Use:   "kri",
 		Short: "Generate KRI OpenAPI fragment",
 		Long:  "Collect all policies and resources to render the KRI endpoint OpenAPI fragment for them.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if errorSchema == "" {
+				return errors.New("--error-schema must not be empty")
+			}
 			resources, err := gatherPlugins(rootArgs)
 			if err != nil {
 				return err
 			}
 
 			if ProcessProtoResources {
-				resources = slices.Concat(resources, gatherProtoResources(), convertedCoreResources)
+				resources = slices.Concat(resources, coreResources)
 			}
 
 			// sort resources deterministically by ResourceType
@@ -57,9 +57,11 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 			})
 
 			data := struct {
-				Resources []resource
+				Resources   []resource
+				ErrorSchema string
 			}{
-				Resources: resources,
+				Resources:   resources,
+				ErrorSchema: errorSchema,
 			}
 
 			// render template
@@ -82,35 +84,9 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVar(&errorSchema, "error-schema", commontemplate.DefaultOpenAPIErrorSchema, "OpenAPI document with the shared error responses, relative to the specs root")
+
 	return cmd
-}
-
-func gatherProtoResources() []resource {
-	var resources []resource
-	var types []protoreflect.MessageType
-	protoregistry.GlobalTypes.RangeMessages(
-		genutils.OnKumaResourceMessage("mesh", func(m protoreflect.MessageType) bool {
-			types = append(types, m)
-			return true
-		}))
-
-	for _, t := range types {
-		resourceInfo := genutils.ToResourceInfo(t.Descriptor())
-		if resourceInfo.ShortName != "" {
-			log.Printf("Skipping %s because it does not have shortName", resourceInfo.ResourceType)
-		}
-		_, exists := commontypes.ProtoTypeToType[resourceInfo.ResourceType]
-		if !exists {
-			log.Printf("Skipping %s because it does not have mapping defined in tools/common/types/proto.go. If you want to have that generated please add it there.", resourceInfo.ResourceType)
-		}
-		if resourceInfo.ShortName != "" {
-			resources = append(resources, resource{
-				ResourceType: resourceInfo.ResourceType,
-				Path:         "/specs/protoresources/" + strings.ToLower(resourceInfo.ResourceType) + "/rest.yaml",
-			})
-		}
-	}
-	return resources
 }
 
 func gatherPlugins(rootArgs *args) ([]resource, error) {
