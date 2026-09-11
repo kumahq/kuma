@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -19,12 +20,16 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 		openAPITemplate    string
 		jsonSchemaTemplate string
 		yqBin              string
+		errorSchema        string
 	}{}
 	cmd := &cobra.Command{
 		Use:   "openapi",
 		Short: "Generate an OpenAPI schema for the policy REST",
 		Long:  "Generate an OpenAPI schema for the policy REST.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if localArgs.errorSchema == "" {
+				return errors.New("--error-schema must not be empty")
+			}
 			pluginDir := filepath.Clean(rootArgs.pluginDir)
 			policyName := filepath.Base(pluginDir)
 			policyPath := filepath.Join(pluginDir, "api", rootArgs.version, policyName+".go")
@@ -56,7 +61,11 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 
 			// Generate temporary files
 			tmpRestPath := filepath.Join(tmpDir, "rest.yaml")
-			if err := template.PlainFileTemplate(localArgs.openAPITemplate, tmpRestPath, pconfig); err != nil {
+			restData := struct {
+				parse.PolicyConfig
+				ErrorSchema string
+			}{PolicyConfig: pconfig, ErrorSchema: localArgs.errorSchema}
+			if err := template.PlainFileTemplate(localArgs.openAPITemplate, tmpRestPath, restData); err != nil {
 				return err
 			}
 			tmpSchemaPath := filepath.Join(tmpDir, "schema.yaml")
@@ -136,6 +145,7 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 	cmd.Flags().StringVar(&localArgs.openAPITemplate, "openapi-template-path", "", "path to the OpenAPI template file")
 	cmd.Flags().StringVar(&localArgs.jsonSchemaTemplate, "jsonschema-template-path", "", "path to the jsonschema template file")
 	cmd.Flags().StringVar(&localArgs.yqBin, "yq-bin", "", "path to a binary of yq")
+	cmd.Flags().StringVar(&localArgs.errorSchema, "error-schema", template.DefaultOpenAPIErrorSchema, "OpenAPI document with the shared error responses, relative to the specs root")
 
 	return cmd
 }

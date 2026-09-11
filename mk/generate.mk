@@ -10,6 +10,9 @@ HELM_CRD_DIR ?= "deployments/charts/kuma/crds/"
 HELM_VALUES_FILE_POLICY_PATH ?= ".plugins.policies"
 
 GENERATE_OAS_PREREQUISITES ?=
+# OpenAPI document the generated REST specs take their error responses from,
+# relative to the prepared specs root (see docs/generated/openapi/prepare/base).
+OAS_ERROR_SCHEMA ?= base/specs/common/error_schema.yaml
 EXTRA_GENERATE_DEPS_TARGETS ?= generate/envoy-imports
 
 .PHONY: clean/generated
@@ -111,7 +114,7 @@ generate/policy/%: $(POLICY_GEN)
 	$(POLICY_GEN) k8s-resource --plugin-dir $(POLICIES_DIR)/$* --controller-gen-bin $(CONTROLLER_GEN) --gomodule $(GO_MODULE) && \
 	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
 	$(POLICY_GEN) helpers --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE)
-	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --yq-bin $(YQ) --openapi-template-path=$(TOOLS_DIR)/openapi/templates/endpoints.yaml --jsonschema-template-path=$(TOOLS_DIR)/openapi/templates/schema.yaml --gomodule $(GO_MODULE)
+	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --yq-bin $(YQ) --openapi-template-path=$(TOOLS_DIR)/openapi/templates/endpoints.yaml --jsonschema-template-path=$(TOOLS_DIR)/openapi/templates/schema.yaml --error-schema=$(OAS_ERROR_SCHEMA) --gomodule $(GO_MODULE)
 	@echo "Policy $* successfully generated"
 
 .PHONY: generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm
@@ -192,7 +195,7 @@ $(foreach s,$(OAS_SPECS),$(eval $(call OAS_RULE,$(s))))
 
 .PHONY: generate/oas
 generate/oas: $(GENERATE_OAS_PREREQUISITES) $(OAPI_GEN) $(OAS_TYPES)
-	@$(OAPI_GEN) kri
+	@$(OAPI_GEN) kri --error-schema=$(OAS_ERROR_SCHEMA)
 
 .PHONY: validate/openapi-generated-docs
 validate/openapi-generated-docs:

@@ -33,11 +33,15 @@ var coreResources = []resource{
 }
 
 func newKriPolicies(rootArgs *args) *cobra.Command {
+	var errorSchema string
 	cmd := &cobra.Command{
 		Use:   "kri",
 		Short: "Generate KRI OpenAPI fragment",
 		Long:  "Collect all policies and resources to render the KRI endpoint OpenAPI fragment for them.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if errorSchema == "" {
+				return errors.New("--error-schema must not be empty")
+			}
 			resources, err := gatherPlugins(rootArgs)
 			if err != nil {
 				return err
@@ -53,9 +57,11 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 			})
 
 			data := struct {
-				Resources []resource
+				Resources   []resource
+				ErrorSchema string
 			}{
-				Resources: resources,
+				Resources:   resources,
+				ErrorSchema: errorSchema,
 			}
 
 			// render template
@@ -77,6 +83,8 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&errorSchema, "error-schema", commontemplate.DefaultOpenAPIErrorSchema, "OpenAPI document with the shared error responses, relative to the specs root")
 
 	return cmd
 }
