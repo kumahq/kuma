@@ -2,6 +2,7 @@ package matchers
 
 import (
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/onsi/gomega/types"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
@@ -38,8 +39,10 @@ func (p *ProtoMatcher) Match(actual any) (bool, error) {
 	case !actualIsProto && !expectedIsProto:
 		// Resource specs are being converted from protobuf to Go structs, so this
 		// matcher compares whichever of the two it is handed as long as both sides
-		// are the same kind.
-		return cmp.Diff(p.Expected, actual, protocmp.Transform()) == "", nil
+		// are the same kind. EquateEmpty keeps proto.Equal's reading of an unset
+		// list or map, which the JSON both forms are stored as cannot tell apart
+		// either.
+		return cmp.Diff(p.Expected, actual, protocmp.Transform(), cmpopts.EquateEmpty()) == "", nil
 	case actualIsProto:
 		return false, errors.New("Actual object is a proto.Message, but Expected object is not.")
 	default:
@@ -48,7 +51,7 @@ func (p *ProtoMatcher) Match(actual any) (bool, error) {
 }
 
 func (p *ProtoMatcher) FailureMessage(actual any) string {
-	differences := cmp.Diff(p.Expected, actual, protocmp.Transform())
+	differences := cmp.Diff(p.Expected, actual, protocmp.Transform(), cmpopts.EquateEmpty())
 	return "Expected matching message:\n" + differences
 }
 

@@ -89,10 +89,6 @@ endif
 E2E_ENV_VARS += KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl
 E2E_ENV_VARS += PATH=$(CI_TOOLS_BIN_DIR):$$PATH
 E2E_ENV_VARS += KUMA_DUMP_DIR=$(abspath $(REPORTS_DIR)/e2e-debug)
-.PHONY: test/e2e/list
-test/e2e/list:
-	@echo $(ALL_TESTS)
-
 .PHONY: test/e2e/k8s/start
 test/e2e/k8s/start:
 	$(Q)for cluster in $(K8SCLUSTERS); do \
@@ -123,7 +119,7 @@ test/e2e/debug: $(E2E_DEPS_TARGETS)
 # and doesn't start Kind clusters
 .PHONY: test/e2e/debug-universal
 test/e2e/debug-universal:
-	@echo "Stop using this target use `make test/e2e-universal DEBUG=1`"
+	@echo 'Stop using this target use `make test/e2e-universal DEBUG=1`'
 	$(MAKE) test/e2e-universal DEBUG=1
 
 .PHONY: test/e2e
@@ -133,7 +129,7 @@ test/e2e: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run slower e2e tests (slowe
 	@# skipinboundtags on job-0) would fail even though that's expected.
 	@# Instead, validate the package list so we don't accidentally run the
 	@# wrong packages (like KUBE_E2E_PKG_LIST) for another year.
-	@echo '$(E2E_PKG_LIST)' | grep -q '\./test/e2e/' || \
+	@grep -q '\./test/e2e/' <<< '$(E2E_PKG_LIST)' || \
 		{ echo "ERROR: E2E_PKG_LIST does not contain ./test/e2e/ packages: $(E2E_PKG_LIST)"; exit 1; }
 	$(MAKE) docker/tag
 	$(MAKE) test/e2e/k8s/start

@@ -19,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
-	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane Overview Endpoints", func() {
@@ -54,7 +53,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 					{
 						Id:                     "stream-id-1",
 						ControlPlaneInstanceId: "cp-1",
-						ConnectTime:            proto.MustTimestampProto(sampleTime),
+						ConnectTime:            v1alpha1.NewTime(sampleTime),
 						Status:                 v1alpha1.NewSubscriptionStatus(sampleTime),
 					},
 				},
@@ -282,7 +281,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 					{
 						Id:                     "stream-id-test",
 						ControlPlaneInstanceId: "cp-test",
-						ConnectTime:            proto.MustTimestampProto(sampleTime),
+						ConnectTime:            v1alpha1.NewTime(sampleTime),
 						Status:                 v1alpha1.NewSubscriptionStatus(sampleTime),
 					},
 				},
