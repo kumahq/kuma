@@ -231,7 +231,7 @@
             "properties": {
                 "address": {
                     "type": "string",
-                    "description": "IP on which the consumed service will be available to this data plane proxy. On Kubernetes, it's usually ClusterIP of a Service or PodIP of a Headless Service. Defaults to 127.0.0.1"
+                    "description": "IP on which the consumed service will be available to this data plane proxy. On Kubernetes, it's usually ClusterIP of a Service or PodIP of a Headless Service. When left out, the control plane sets it to 127.0.0.1, so a Dataplane read back from the API always carries one."
                 },
                 "port": {
                     "type": "integer",
@@ -298,27 +298,27 @@
             "properties": {
                 "kind": {
                     "type": "string",
-                    "description": "Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService  +required"
+                    "description": "Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService"
                 },
                 "name": {
                     "type": "string",
-                    "description": "Name of the backend.  +optional"
+                    "description": "Name of the backend."
                 },
                 "namespace": {
                     "type": "string",
-                    "description": "Namespace of the backend. Might be empty  +optional"
+                    "description": "Namespace of the backend. Might be empty"
                 },
                 "port": {
                     "additionalProperties": true,
                     "type": "integer",
-                    "description": "Port of the backend.  +optional"
+                    "description": "Port of the backend."
                 },
                 "labels": {
                     "additionalProperties": {
                         "type": "string"
                     },
                     "type": "object",
-                    "description": "Labels used to select backends  +optional"
+                    "description": "Labels used to select backends"
                 }
             },
             "additionalProperties": true,

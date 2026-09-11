@@ -135,4 +135,88 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual.Spec.Networking.Inbound[0].State).To(Equal(mesh_proto.Dataplane_Networking_Inbound_NotReady))
 	})
+	It("should default the outbound address on create and keep an explicit one", func() {
+		// setup
+		s := memory.NewStore()
+		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
+		err := s.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// given an outbound without an address and one that picks its own
+		input := core_mesh.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "10.0.0.1",
+					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+						{
+							Port: 10001,
+							BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+								Kind: "MeshService",
+								Name: "backend",
+								Port: 80,
+							},
+						},
+						{
+							Port:    10002,
+							Address: "240.0.0.1",
+							BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+								Kind: "MeshService",
+								Name: "redis",
+								Port: 6379,
+							},
+						},
+					},
+				},
+			},
+		}
+
+		// when
+		err = manager.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		actual := core_mesh.NewDataplaneResource()
+		Expect(s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))).To(Succeed())
+		Expect(actual.Spec.Networking.Outbound[0].Address).To(Equal("127.0.0.1"))
+		Expect(actual.Spec.Networking.Outbound[1].Address).To(Equal("240.0.0.1"))
+	})
+
+	It("should default the outbound address on update", func() {
+		// setup
+		s := memory.NewStore()
+		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
+		err := s.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		input := core_mesh.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "10.0.0.1",
+				},
+			},
+		}
+		Expect(manager.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))).To(Succeed())
+
+		// given an outbound added without an address
+		actual := core_mesh.NewDataplaneResource()
+		Expect(s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))).To(Succeed())
+		actual.Spec.Networking.Outbound = []*mesh_proto.Dataplane_Networking_Outbound{
+			{
+				Port: 10001,
+				BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+					Kind: "MeshService",
+					Name: "backend",
+					Port: 80,
+				},
+			},
+		}
+
+		// when
+		Expect(manager.Update(context.Background(), actual)).To(Succeed())
+
+		// then
+		updated := core_mesh.NewDataplaneResource()
+		Expect(s.Get(context.Background(), updated, store.GetByKey("dp1", "default"))).To(Succeed())
+		Expect(updated.Spec.Networking.Outbound[0].Address).To(Equal("127.0.0.1"))
+	})
 })
