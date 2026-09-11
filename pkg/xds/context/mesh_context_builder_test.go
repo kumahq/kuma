@@ -611,13 +611,15 @@ var _ = Describe("EndpointMap", func() {
 		}
 		Expect(resourceStore.Create(context.Background(), zoneEgress, store.CreateByKey("zone-egress-dp", meshName))).To(Succeed())
 
-		// and a delegated gateway dataplane, which is not a regular service
-		delegatedGatewayBuilder := builders.Dataplane().
+		// and a dataplane with no inbounds, which is not a regular service
+		inboundlessBuilder := builders.Dataplane().
 			WithMesh(meshName).
-			WithName("gateway-delegated-dp").
+			WithName("inboundless-dp").
 			WithAddress("127.0.0.1").
-			WithDelegatedGateway()
-		Expect(delegatedGatewayBuilder.Create(resourceStore)).To(Succeed())
+			With(func(dp *core_mesh.DataplaneResource) {
+				dp.Spec.Networking.Inbound = nil
+			})
+		Expect(inboundlessBuilder.Create(resourceStore)).To(Succeed())
 
 		// when
 		mc, err := meshContextBuilder.Build(context.Background(), meshName)

@@ -66,7 +66,7 @@
                         "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.Listener"
                     },
                     "type": "array",
-                    "description": "Listeners describes zone proxy listeners embedded in this Dataplane. Listeners may coexist with inbounds and gateways."
+                    "description": "Listeners describes zone proxy listeners embedded in this Dataplane. Listeners may coexist with inbounds."
                 }
             },
             "additionalProperties": true,

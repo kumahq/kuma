@@ -71,18 +71,6 @@ func overlap(address1 net.IP, address2 net.IP) bool {
 	return address1.Equal(address2)
 }
 
-// IsDelegatedGateway reports whether this proxy fronts a delegated gateway,
-// which the kuma.io/gateway label marks. A resource whose labels have not been
-// computed yet is not a gateway, so validate a write with the labels it is
-// about to store (see manager.ValidateWithLabels).
-func (d *DataplaneResource) IsDelegatedGateway() bool {
-	var labels map[string]string
-	if meta := d.GetMeta(); meta != nil {
-		labels = meta.GetLabels()
-	}
-	return mesh_proto.IsDelegatedGateway(labels)
-}
-
 func (d *DataplaneResource) IsIPv6() bool {
 	return d != nil && govalidator.IsIPv6(d.Spec.GetNetworking().GetAddress())
 }

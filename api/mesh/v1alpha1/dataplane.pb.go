@@ -258,7 +258,7 @@ type Dataplane_Networking struct {
 	// the control plane.
 	Admin *EnvoyAdmin `protobuf:"bytes,8,opt,name=admin,proto3" json:"admin,omitempty"`
 	// Listeners describes zone proxy listeners embedded in this Dataplane.
-	// Listeners may coexist with inbounds and gateways.
+	// Listeners may coexist with inbounds.
 	Listeners     []*Dataplane_Networking_Listener `protobuf:"bytes,9,rep,name=listeners,proto3" json:"listeners,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

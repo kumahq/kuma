@@ -127,8 +127,8 @@ func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, 
 
 // ValidateWithLabels validates the resource as the store will see it: with the
 // labels this write is about to set rather than the ones the resource still
-// carries. Validation reads labels — a delegated gateway is marked by one — so
-// the labels being replaced would otherwise judge the new spec.
+// carries. Validation reads labels, so the labels being replaced would
+// otherwise judge the new spec.
 func ValidateWithLabels(resource model.Resource, labels map[string]string) error {
 	existingMeta := resource.GetMeta()
 	resource.SetMeta(&metaWithLabels{ResourceMeta: existingMeta, labels: labels})

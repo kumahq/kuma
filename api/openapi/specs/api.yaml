@@ -788,7 +788,6 @@ components:
         - total
         - internal
         - external
-        - gatewayDelegated
       properties:
         internal:
           description: Internal services statistics
@@ -803,10 +802,6 @@ components:
             total:
               type: integer
               example: 5
-        gatewayDelegated:
-          description: Delegated Gateway services statistics
-          allOf:
-            - $ref: "#/components/schemas/FullStatus"
     ZonesStats:
       type: object
       title: Zones Stats
@@ -834,14 +829,9 @@ components:
       description: Dataplanes statistics
       required:
         - standard
-        - gatewayDelegated
       properties:
         standard:
           description: Standard dataplane proxy statistics
-          allOf:
-            - $ref: "#/components/schemas/FullStatus"
-        gatewayDelegated:
-          description: Delegated Gateway dataplane proxy statistics
           allOf:
             - $ref: "#/components/schemas/FullStatus"
     PoliciesStats:
@@ -1216,11 +1206,6 @@ components:
             partiallyDegraded: 1
           external:
             total: 1
-          gatewayDelegated:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
           internalByStatus:
             total: 4
             online: 2
@@ -1238,11 +1223,6 @@ components:
             total: 1
         dataplanes:
           standard:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
-          gatewayDelegated:
             total: 4
             online: 2
             offline: 1
