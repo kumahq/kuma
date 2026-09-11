@@ -35,6 +35,7 @@ type ControlPlaneContext struct {
 type GlobalContext struct {
 	ResourceMap ResourceMap
 	hash        []byte
+	typeHashes  []typeHash
 }
 
 // Hash base64 version of the hash mostly used for testing
@@ -47,7 +48,22 @@ type BaseMeshContext struct {
 	Mesh             *core_mesh.MeshResource
 	ResourceMap      ResourceMap
 	DestinationIndex *DestinationIndex
+	VIPDomains       []xds_types.VIPDomains
+	VIPOutbounds     xds_types.Outbounds
 	hash             []byte
+	typeHashes       []typeHash
+}
+
+// TopologyContext holds what is derived from where workloads run and how to reach them:
+// dataplanes, zone egresses and endpoint maps. It changes with every Dataplane change, far
+// more often than policies, so it is rebuilt on its own and kept when only policies change.
+type TopologyContext struct {
+	DataplanesByName                map[string]*core_mesh.DataplaneResource
+	EndpointMap                     xds.EndpointMap
+	ZoneEgresses                    []xds.ZoneEgressInstance
+	DataplaneZoneIngressEndpointMap xds.EndpointMap
+	DataplaneZoneEgressEndpointMap  xds.EgressEndpointMap
+	hash                            []byte
 }
 
 // Hash base64 version of the hash mostly useed for testing
@@ -68,7 +84,9 @@ type PEMBytes []byte
 // If there is an information that can be precomputed and shared between all data plane proxies
 // it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
-	Hash string
+	globalContext *GlobalContext
+	topology      *TopologyContext
+	Hash          string
 	// PolicyMatchingHash hashes matching-relevant resources (policies, gateways, external services).
 	// Excludes Dataplane roster; stays stable across DP-registration waves.
 	PolicyMatchingHash string
@@ -107,6 +125,28 @@ func (mc *MeshContext) GetServiceByKRI(id kri.Identifier) core_resources.Destina
 
 func (mc *MeshContext) IsXKumaTagsUsed() bool {
 	return len(mc.Resources.MeshFaultInjections().Items) > 0
+}
+
+// RebuiltParts names the parts of mc that were rebuilt since previous, for metrics.
+func (mc *MeshContext) RebuiltParts(previous *MeshContext) string {
+	switch {
+	case previous == nil:
+		return "all"
+	case mc == previous:
+		return "none"
+	}
+	base := mc.BaseMeshContext != previous.BaseMeshContext
+	topology := mc.topology != previous.topology
+	switch {
+	case base && topology:
+		return "base,topology"
+	case base:
+		return "base"
+	case topology:
+		return "topology"
+	default:
+		return "other"
+	}
 }
 
 // ZoneEgressSANs returns the SPIFFE IDs of all zone egress instances that have a SAN set.

@@ -14,12 +14,13 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	config_util "github.com/kumahq/kuma/v3/pkg/config"
 	config_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
+	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -219,7 +220,7 @@ func getZoneStoreType(
 	resManager manager.ReadOnlyResourceManager,
 	zone string,
 ) (store.StoreType, error) {
-	zoneInsightRes := zoneinsight_api.NewZoneInsightResource()
+	zoneInsightRes := core_system.NewZoneInsightResource()
 	if err := resManager.Get(ctx, zoneInsightRes, core_store.GetByKey(zone, core_model.NoMesh)); err != nil {
 		return "", err
 	}
@@ -227,7 +228,7 @@ func getZoneStoreType(
 	if !subscription.IsOnline() {
 		return "", fmt.Errorf("zone is offline")
 	}
-	kdsSubscription, ok := subscription.(*zoneinsight_api.KDSSubscription)
+	kdsSubscription, ok := subscription.(*system_proto.KDSSubscription)
 	if !ok {
 		return "", fmt.Errorf("cannot map subscription")
 	}

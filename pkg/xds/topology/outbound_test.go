@@ -53,6 +53,8 @@ var _ = Describe("TrafficRoute", func() {
 			func(given testCase) {
 				// when
 				endpoints := BuildDataplaneEndpointMap(context.Background(), "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.meshZoneAddresses, dataSourceLoader, given.workloadIdentity, given.zoneEgressAddresses)
+				combined, _ := BuildDataplaneEndpointMaps(context.Background(), "zone-1", given.meshServices, given.meshMultiZoneService, given.meshExternalServices, given.dataplanes, given.meshZoneAddresses, dataSourceLoader, given.workloadIdentity, given.zoneEgressAddresses)
+				Expect(combined).To(Equal(endpoints), "BuildDataplaneEndpointMaps must build the same outbound endpoints")
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},

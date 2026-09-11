@@ -137,7 +137,9 @@ message Dataplane {
     message Outbound {
       // IP on which the consumed service will be available to this data plane
       // proxy. On Kubernetes, it's usually ClusterIP of a Service or PodIP of a
-      // Headless Service. Defaults to 127.0.0.1
+      // Headless Service. When left out, the control plane sets it to
+      // 127.0.0.1, so a Dataplane read back from the API always carries one.
+      //  +required
       string address = 3;
 
       // Port on which the consumed service will be available to this data plane
@@ -220,9 +222,9 @@ message Dataplane {
       ReachableBackends reachable_backends = 7;
     }
 
-    // `gateway = 3` was removed: a delegated gateway is marked by the
-    // `kuma.io/gateway` label on the Dataplane. The ordinal stays reserved so
-    // it is never reused.
+    // `gateway = 3` was removed along with the delegated gateway concept: a
+    // gateway is an ordinary Dataplane that excludes its listen ports from
+    // inbound redirection. The ordinal stays reserved so it is never reused.
     reserved 3;
     reserved "gateway";
 
@@ -296,7 +298,7 @@ message Dataplane {
     }
 
     // Listeners describes zone proxy listeners embedded in this Dataplane.
-    // Listeners may coexist with inbounds and gateways.
+    // Listeners may coexist with inbounds.
     repeated Listener listeners = 9;
   }
 

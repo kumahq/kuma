@@ -73,12 +73,16 @@ components:
         application/json:
           schema:
             type: object
+            required: [total, items, next]
             properties:
               total:
                 type: integer
                 example: 200
               next:
-                type: string
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
               items:
                 type: array
                 items:

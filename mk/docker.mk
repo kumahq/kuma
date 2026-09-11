@@ -1,4 +1,3 @@
-BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images-${GOARCH}
 KUMA_VERSION ?= master
 
 DOCKER_SERVER ?= docker.io
@@ -103,7 +102,7 @@ docker/save/$(1)/$(2):
 	@mkdir -p build/docker
 	docker save --output build/docker/$(1)-$(2).tar $$(call build_image,$(1),$(2))
 
-.PHONY: docker/$(1)/$(2)
+.PHONY: docker/load/$(1)/$(2)
 docker/load/$(1)/$(2):
 	@docker load --quiet --input build/docker/$(1)-$(2).tar
 
@@ -192,19 +191,9 @@ endef
 $(foreach image,$(IMAGES_RELEASE) $(IMAGES_TEST),$(eval $(call IMAGE_INFO_TARGETS_BY_IMAGE,$(image))))
 
 # The awk command is ok because we're passing a list of container image names which won't contain ' ' or '"'
-# This outputs something like: ["docker.io/kumahq/kuma-cp:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-dp:0.0.0-preview.vlocal-build","docker.io/kumahq/kumactl:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-init:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-cni:0.0.0-preview.vlocal-build"]
-.PHONY: manifests/json/release
-manifests/json/release: ## output all release manifests in a json array
-	@echo $(call build_image,$(IMAGES_RELEASE)) | awk 'BEGIN{FS=" "; printf("[")}{for(i=1;i<=NF;i++)  printf("\"%s\"%s", $$i, i!=NF ? "," : "")} END{printf("]")}'
-
 .PHONY: images/info/release/json
 images/info/release/json:
 	@echo $(IMAGES_RELEASE) | awk 'BEGIN{FS=" "; printf("[")}{for(i=1;i<=NF;i++)  printf("\"%s\"%s", $$i, i!=NF ? "," : "")} END{printf("]")}'
-
-.PHONY: docker/purge
-docker/purge: ## Dev: Remove all Docker containers, images, networks and volumes
-	for c in `docker ps -q`; do docker kill $$c; done
-	docker system prune --all --volumes --force
 
 .PHONY: docker/login
 docker/login:

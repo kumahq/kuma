@@ -7,6 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	store_config "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
@@ -177,7 +178,9 @@ var _ = Describe("Token issuer", func() {
 
 			sec := &system.GlobalSecretResource{
 				Spec: &system_proto.Secret{
-					Data: system_proto.Bytes([]byte(c.ID)),
+					Data: &wrapperspb.BytesValue{
+						Value: []byte(c.ID),
+					},
 				},
 			}
 			err = store.Create(ctx, sec, core_store.CreateBy(TokenRevocationsGlobalSecretKey))
@@ -227,7 +230,9 @@ var _ = Describe("Token issuer", func() {
 
 			sec := &system.SecretResource{
 				Spec: &system_proto.Secret{
-					Data: system_proto.Bytes([]byte(c.ID)),
+					Data: &wrapperspb.BytesValue{
+						Value: []byte(c.ID),
+					},
 				},
 			}
 			err = store.Create(context.Background(), sec, core_store.CreateBy(TokenRevocationsSecretKey(core_model.DefaultMesh)))

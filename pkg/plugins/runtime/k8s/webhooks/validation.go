@@ -83,14 +83,6 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
-		resp, err := h.validateOriginNotChanged(req, k8sObj)
-		if err != nil {
-			return admission.Errored(http.StatusBadRequest, err)
-		}
-		if resp != nil {
-			return *resp
-		}
-
 		if !h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) && coreRes.Descriptor().Scope == core_model.ScopeMesh {
 			if err := h.validateMeshOwnerReference(k8sObj); err.HasViolations() {
 				return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
@@ -103,6 +95,26 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 				return convertSpecValidationError(kumaErr, coreRes.Descriptor().IsPluginOriginated, k8sObj)
 			}
 			return admission.Denied(err.Error())
+		}
+
+		// Privileged writers are exempt for the same reason they are exempt from
+		// IsOperationAllowed: a KDS sync replaying a resource the user recreated with a
+		// new value upstream must not be wedged by a guard that exists to protect the
+		// user from an in-place edit.
+		if req.Operation == v1.Update && !h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) {
+			previousRes, previousObj, err := h.decode(req.Kind.Kind, req.OldObject)
+			if err != nil {
+				return admission.Errored(http.StatusBadRequest, err)
+			}
+			if resp := h.validateOriginNotChanged(previousObj, k8sObj); resp != nil {
+				return *resp
+			}
+			if err := validator.ValidateUpdate(previousRes, coreRes); err != nil {
+				if kumaErr, ok := err.(*validators.ValidationError); ok {
+					return convertSpecValidationError(kumaErr, coreRes.Descriptor().IsPluginOriginated, k8sObj)
+				}
+				return admission.Denied(err.Error())
+			}
 		}
 
 		warnings = append(warnings, core_model.Deprecations(coreRes)...)
@@ -131,34 +143,22 @@ func (h *validatingHandler) decode(kind string, raw kube_runtime.RawExtension) (
 // Without this a zone user could take over a Global-synced policy by re-applying it:
 // the defaulting webhook recomputes kuma.io/origin to 'zone' for a non-privileged
 // writer, and the Global->Zone KDS stream then wedges on AlreadyExists.
-func (h *validatingHandler) validateOriginNotChanged(req admission.Request, newObj k8s_model.KubernetesObject) (*admission.Response, error) {
-	if req.Operation != v1.Update {
-		return nil, nil
-	}
+func (h *validatingHandler) validateOriginNotChanged(oldObj, newObj k8s_model.KubernetesObject) *admission.Response {
 	// a non-federated zone owns everything in its store
 	if h.Mode != core.Global && !h.FederatedZone {
-		return nil, nil
-	}
-	// KDS sync and GC write on behalf of the control plane
-	if h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) {
-		return nil, nil
-	}
-
-	_, oldObj, err := h.decode(req.Kind.Kind, req.OldObject)
-	if err != nil {
-		return nil, err
+		return nil
 	}
 	oldOrigin, ok := oldObj.GetLabels()[mesh_proto.ResourceOriginLabel]
 	if !ok {
-		return nil, nil
+		return nil
 	}
 	if newOrigin := newObj.GetLabels()[mesh_proto.ResourceOriginLabel]; newOrigin != oldOrigin {
 		return forbiddenResponse(fmt.Sprintf(
 			"Operation not allowed. '%s' label is immutable, cannot be changed from '%s' to '%s'",
 			mesh_proto.ResourceOriginLabel, oldOrigin, newOrigin,
-		)), nil
+		))
 	}
-	return nil, nil
+	return nil
 }
 
 func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validators.ValidationError {

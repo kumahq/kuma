@@ -2,7 +2,6 @@ package status
 
 import (
 	"context"
-	"encoding/json"
 	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -12,11 +11,12 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/kds"
@@ -32,7 +32,7 @@ type StatusTracker interface {
 }
 
 type StatusAccessor interface {
-	GetStatus() (string, *zoneinsight_api.KDSSubscription)
+	GetStatus() (string, *system_proto.KDSSubscription)
 }
 
 type ZoneInsightSinkFactoryFunc = func(StatusAccessor, logr.Logger) ZoneInsightSink
@@ -61,7 +61,7 @@ type streamState struct {
 	stop         chan struct{} // is used for stopping a goroutine that flushes Dataplane status periodically
 	mu           sync.RWMutex  // protects access to the fields below
 	zone         string
-	subscription *zoneinsight_api.KDSSubscription
+	subscription *system_proto.KDSSubscription
 	ctx          context.Context
 }
 
@@ -76,18 +76,18 @@ func (c *statusTracker) onStreamOpen(ctx context.Context, streamID int64, typ st
 
 	// initialize subscription
 	now := core.Now()
-	subscription := &zoneinsight_api.KDSSubscription{
-		ID:                core.NewUUID(),
-		ConnectTime:       zoneinsight_api.NewTime(now),
-		Status:            zoneinsight_api.NewSubscriptionStatus(now),
-		Version:           zoneinsight_api.NewVersion(),
+	subscription := &system_proto.KDSSubscription{
+		Id:                core.NewUUID(),
+		ConnectTime:       util_proto.MustTimestampProto(now),
+		Status:            system_proto.NewSubscriptionStatus(now),
+		Version:           system_proto.NewVersion(),
 		AuthTokenProvided: len(md.Get("authorization")) == 1,
 	}
 	switch c.runtimeInfo.GetMode() {
 	case config_core.Global:
-		subscription.GlobalInstanceID = c.runtimeInfo.GetInstanceId()
+		subscription.GlobalInstanceId = c.runtimeInfo.GetInstanceId()
 	case config_core.Zone:
-		subscription.ZoneInstanceID = c.runtimeInfo.GetInstanceId()
+		subscription.ZoneInstanceId = c.runtimeInfo.GetInstanceId()
 	}
 	// initialize state per ADS stream
 	state := &streamState{
@@ -129,7 +129,7 @@ func (c *statusTracker) onStreamClosed(streamID int64, _ *envoy_core.Node) {
 	// finilize subscription
 	state.mu.Lock() // write access to the per Dataplane info
 	subscription := state.subscription
-	subscription.DisconnectTime = zoneinsight_api.NewTime(core.Now())
+	subscription.DisconnectTime = util_proto.MustTimestampProto(core.Now())
 	state.mu.Unlock()
 
 	// trigger final flush
@@ -182,7 +182,7 @@ func (c *statusTracker) onStreamRequest(streamID int64, req DiscoveryRequestInfo
 	// update Dataplane status
 	subscription := state.subscription
 	if req.GetResponseNonce() != "" {
-		subscription.Status.LastUpdateTime = zoneinsight_api.NewTime(core.Now())
+		subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(core.Now())
 		if req.GetErrorDetail() != nil {
 			subscription.Status.Total.ResponsesRejected++
 			util.StatsOf(subscription.Status, model.ResourceType(req.GetTypeUrl())).ResponsesRejected++
@@ -202,14 +202,14 @@ func (c *statusTracker) onStreamRequest(streamID int64, req DiscoveryRequestInfo
 	}
 	switch c.runtimeInfo.GetMode() {
 	case config_core.Global:
-		subscription.GlobalInstanceID = c.runtimeInfo.GetInstanceId()
+		subscription.GlobalInstanceId = c.runtimeInfo.GetInstanceId()
 		if remoteInstanceId != "" {
-			subscription.ZoneInstanceID = remoteInstanceId
+			subscription.ZoneInstanceId = remoteInstanceId
 		}
 	case config_core.Zone:
-		subscription.ZoneInstanceID = c.runtimeInfo.GetInstanceId()
+		subscription.ZoneInstanceId = c.runtimeInfo.GetInstanceId()
 		if remoteInstanceId != "" {
-			subscription.GlobalInstanceID = remoteInstanceId
+			subscription.GlobalInstanceId = remoteInstanceId
 		}
 	}
 
@@ -241,7 +241,7 @@ func (c *statusTracker) onStreamResponse(streamID int64, req DiscoveryRequestInf
 
 	// update Dataplane status
 	subscription := state.subscription
-	subscription.Status.LastUpdateTime = zoneinsight_api.NewTime(core.Now())
+	subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(core.Now())
 	subscription.Status.Total.ResponsesSent++
 	util.StatsOf(subscription.Status, model.ResourceType(req.GetTypeUrl())).ResponsesSent++
 
@@ -264,30 +264,27 @@ func (c *statusTracker) GetStatusAccessor(streamID int64) (StatusAccessor, bool)
 
 var _ StatusAccessor = &streamState{}
 
-func (s *streamState) GetStatus() (string, *zoneinsight_api.KDSSubscription) {
+func (s *streamState) GetStatus() (string, *system_proto.KDSSubscription) {
 	s.mu.RLock() // read access to the per Dataplane info
 	defer s.mu.RUnlock()
-	return s.zone, s.subscription.DeepCopy()
+	return s.zone, proto.Clone(s.subscription).(*system_proto.KDSSubscription)
 }
 
 func (s *streamState) Close() {
 	close(s.stop)
 }
 
-func ReadVersion(metadata *structpb.Struct, version *zoneinsight_api.Version) error {
+func ReadVersion(metadata *structpb.Struct, version *system_proto.Version) error {
 	if metadata == nil {
 		return nil
 	}
 	rawVersion := metadata.Fields[kds.MetadataFieldVersion].GetStructValue()
 	if rawVersion != nil {
-		rawJSON, err := util_proto.ToJSON(rawVersion)
+		err := util_proto.ToTyped(rawVersion, version)
 		if err != nil {
 			return err
 		}
-		if err := json.Unmarshal(rawJSON, version); err != nil {
-			return err
-		}
-		version.KumaCP.KumaCpGlobalCompatible = kuma_version.DeploymentVersionCompatible(kuma_version.Build.Version, version.KumaCP.GetVersion())
+		version.KumaCp.KumaCpGlobalCompatible = kuma_version.DeploymentVersionCompatible(kuma_version.Build.Version, version.KumaCp.GetVersion())
 	}
 	return nil
 }

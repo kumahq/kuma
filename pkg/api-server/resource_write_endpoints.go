@@ -14,6 +14,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/validator"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
@@ -150,6 +151,13 @@ func (r *resourceCrudHandler) updateResource(
 	}
 
 	r.applyBeforeWriteHook(newResRest, meshName, currentRes.GetMeta().GetName())
+
+	newRes := r.descriptor.NewObject()
+	_ = newRes.SetSpec(newResRest.GetSpec())
+	newRes.SetMeta(currentRes.GetMeta())
+	if err := validator.ValidateUpdate(currentRes, newRes); err != nil {
+		return nil, withTitle(err, "Could not update a resource")
+	}
 
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 

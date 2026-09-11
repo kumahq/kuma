@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -358,6 +359,97 @@ status:
 		Expect(after.PolicyMatchingHash).To(Equal(before.PolicyMatchingHash))
 	})
 
+	It("keeps PolicyMatchingHash stable when MeshService membership-derived fields change", func() {
+		builderWithPolicyMatchingHash := xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			lookupIPFunc,
+			"zone-1",
+			xds_context.WithPolicyMatchingHash(),
+		)
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+---
+type: MeshService
+name: redis
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+  ports:
+  - port: 6739
+    appProtocol: tcp
+status:
+  vips:
+  - ip: 10.0.1.1
+`)).To(Succeed())
+		before, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		meshService := meshservice_api.NewMeshServiceResource()
+		Expect(resourceStore.Get(context.Background(), meshService, store.GetByKey("redis", "mesh-1"))).To(Succeed())
+		meshService.Spec.State = meshservice_api.StateAvailable
+		meshService.Spec.Identities = &[]meshservice_api.MeshServiceIdentity{{
+			Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+			Value: "spiffe://mesh-1.zone-1.mesh.local/ns/default/sa/redis",
+		}}
+		meshService.Status.TLS = meshservice_api.TLS{Status: meshservice_api.TLSReady}
+		Expect(resourceStore.Update(context.Background(), meshService, store.UpdateWithLabels(meshService.GetMeta().GetLabels()))).To(Succeed())
+
+		after, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(after.Hash).ToNot(Equal(before.Hash), "identities, state and TLS readiness change the generated xDS")
+		Expect(after.PolicyMatchingHash).To(Equal(before.PolicyMatchingHash), "they never change which policies match")
+	})
+
+	It("changes PolicyMatchingHash when MeshService ports change", func() {
+		builderWithPolicyMatchingHash := xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			lookupIPFunc,
+			"zone-1",
+			xds_context.WithPolicyMatchingHash(),
+		)
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+---
+type: MeshService
+name: redis
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+  ports:
+  - port: 6739
+    appProtocol: tcp
+`)).To(Succeed())
+		before, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: MeshService
+name: redis
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: redis
+  ports:
+  - port: 6739
+    appProtocol: tcp
+  - port: 6740
+    name: admin
+    appProtocol: tcp
+`)).To(Succeed())
+		after, err := builderWithPolicyMatchingHash.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(after.PolicyMatchingHash).ToNot(Equal(before.PolicyMatchingHash))
+	})
+
 	It("recomputes the mesh context when a remote MeshService and its MeshZoneAddress newly appear", func() {
 		// given a mesh whose proxies get a workload identity, matching the e2e repro
 		Expect(samples.MeshDefaultBuilder().Create(resourceStore)).To(Succeed())
@@ -528,6 +620,112 @@ spec:
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("failed to build base mesh context"))
 	})
+
+	const meshWithBackend = `
+type: Mesh
+name: mesh-1
+---
+type: MeshService
+name: backend
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneRef:
+      name: dp-1
+  ports:
+  - port: 80
+    targetPort: 8080
+    appProtocol: http
+---
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: 127.0.0.1
+  inbound:
+  - port: 8080
+---
+type: MeshTimeout
+name: timeout
+mesh: mesh-1
+spec:
+  to:
+  - targetRef:
+      kind: Mesh
+    default:
+      connectionTimeout: 1s
+`
+
+	samePointer := func(a, b any) bool {
+		return reflect.ValueOf(a).UnsafePointer() == reflect.ValueOf(b).UnsafePointer()
+	}
+
+	It("keeps the topology when only a policy changes", func() {
+		Expect(test_store.LoadResources(context.Background(), resourceStore, meshWithBackend)).To(Succeed())
+		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(endpointTargets(before)).To(ConsistOf("127.0.0.1"))
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: MeshTimeout
+name: timeout
+mesh: mesh-1
+spec:
+  to:
+  - targetRef:
+      kind: Mesh
+    default:
+      connectionTimeout: 2s
+`)).To(Succeed())
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(after.Hash).ToNot(Equal(before.Hash))
+		Expect(after.BaseMeshContext).ToNot(BeIdenticalTo(before.BaseMeshContext))
+		Expect(samePointer(after.EndpointMap, before.EndpointMap)).To(BeTrue(), "endpoint maps should be reused when only a policy changed")
+		Expect(samePointer(after.DataplanesByName, before.DataplanesByName)).To(BeTrue())
+	})
+
+	It("keeps the base mesh context and rebuilds the topology when only a Dataplane changes", func() {
+		Expect(test_store.LoadResources(context.Background(), resourceStore, meshWithBackend)).To(Succeed())
+		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: 127.0.0.2
+  inbound:
+  - port: 8080
+`)).To(Succeed())
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(after.Hash).ToNot(Equal(before.Hash))
+		Expect(after.BaseMeshContext).To(BeIdenticalTo(before.BaseMeshContext), "policies and destinations did not change")
+		Expect(endpointTargets(after)).To(ConsistOf("127.0.0.2"))
+		Expect(after.DataplanesByName["dp-1"].Spec.GetNetworking().GetAddress()).To(Equal("127.0.0.2"))
+	})
+
+	It("rebuilds the topology when a Secret changes", func() {
+		Expect(test_store.LoadResources(context.Background(), resourceStore, meshWithBackend)).To(Succeed())
+		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Secret
+name: ca
+mesh: mesh-1
+data: dGVzdA==
+`)).To(Succeed())
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(after.Hash).ToNot(Equal(before.Hash))
+		Expect(samePointer(after.EndpointMap, before.EndpointMap)).To(BeFalse(), "MeshExternalService TLS endpoints are built from Secrets")
+	})
 })
 
 // failingListManager delegates Get to a real manager but fails every List, simulating a store error.
@@ -611,13 +809,15 @@ var _ = Describe("EndpointMap", func() {
 		}
 		Expect(resourceStore.Create(context.Background(), zoneEgress, store.CreateByKey("zone-egress-dp", meshName))).To(Succeed())
 
-		// and a delegated gateway dataplane, which is not a regular service
-		delegatedGatewayBuilder := builders.Dataplane().
+		// and a dataplane with no inbounds, which is not a regular service
+		inboundlessBuilder := builders.Dataplane().
 			WithMesh(meshName).
-			WithName("gateway-delegated-dp").
+			WithName("inboundless-dp").
 			WithAddress("127.0.0.1").
-			WithDelegatedGateway()
-		Expect(delegatedGatewayBuilder.Create(resourceStore)).To(Succeed())
+			With(func(dp *core_mesh.DataplaneResource) {
+				dp.Spec.Networking.Inbound = nil
+			})
+		Expect(inboundlessBuilder.Create(resourceStore)).To(Succeed())
 
 		// when
 		mc, err := meshContextBuilder.Build(context.Background(), meshName)

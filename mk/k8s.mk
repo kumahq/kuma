@@ -58,9 +58,6 @@ k8s_cluster_kubeconfig = $(KUBECONFIG_DIR)/$(1)-$(2).yaml
 KIND_CLUSTER_KUBECONFIG := $(call k8s_cluster_kubeconfig,kind,$(CLUSTER_NAME))
 K3D_CLUSTER_KUBECONFIG := $(call k8s_cluster_kubeconfig,k3d,$(CLUSTER_NAME))
 
-# Compatibility alias: kong-mesh and older workflows reference KIND_KUBECONFIG
-KIND_KUBECONFIG = $(KIND_CLUSTER_KUBECONFIG)
-
 # Temp workspace for generated k8s manifests and caches
 TMP_DIR_K8S ?= /tmp/.kuma-dev
 

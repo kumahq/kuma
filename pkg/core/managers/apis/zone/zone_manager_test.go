@@ -7,12 +7,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zone"
-	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Zone Manager", func() {
@@ -26,14 +27,14 @@ var _ = Describe("Zone Manager", func() {
 
 	It("should not delete zone if it's online", func() {
 		// given zone and zoneInsight
-		err := resStore.Create(context.Background(), zone_api.NewZoneResource(), store.CreateByKey("zone-1", model.NoMesh))
+		err := resStore.Create(context.Background(), system.NewZoneResource(), store.CreateByKey("zone-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = resStore.Create(context.Background(), &zoneinsight_api.ZoneInsightResource{
-			Spec: &zoneinsight_api.ZoneInsight{
-				Subscriptions: []*zoneinsight_api.KDSSubscription{
+		err = resStore.Create(context.Background(), &system.ZoneInsightResource{
+			Spec: &v1alpha1.ZoneInsight{
+				Subscriptions: []*v1alpha1.KDSSubscription{
 					{
-						ConnectTime: zoneinsight_api.NewTime(time.Now()),
+						ConnectTime: proto.MustTimestampProto(time.Now()),
 					},
 				},
 			},
@@ -41,7 +42,7 @@ var _ = Describe("Zone Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 		zoneManager := zone.NewZoneManager(resStore, validator, false)
 
-		zone := zone_api.NewZoneResource()
+		zone := system.NewZoneResource()
 		err = resStore.Get(context.Background(), zone, store.GetByKey("zone-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -55,14 +56,14 @@ var _ = Describe("Zone Manager", func() {
 
 	It("should delete if zone is online when unsafe delete is enabled", func() {
 		// given zone and zoneInsight
-		err := resStore.Create(context.Background(), zone_api.NewZoneResource(), store.CreateByKey("zone-1", model.NoMesh))
+		err := resStore.Create(context.Background(), system.NewZoneResource(), store.CreateByKey("zone-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = resStore.Create(context.Background(), &zoneinsight_api.ZoneInsightResource{
-			Spec: &zoneinsight_api.ZoneInsight{
-				Subscriptions: []*zoneinsight_api.KDSSubscription{
+		err = resStore.Create(context.Background(), &system.ZoneInsightResource{
+			Spec: &v1alpha1.ZoneInsight{
+				Subscriptions: []*v1alpha1.KDSSubscription{
 					{
-						ConnectTime: zoneinsight_api.NewTime(time.Now()),
+						ConnectTime: proto.MustTimestampProto(time.Now()),
 					},
 				},
 			},
@@ -70,7 +71,7 @@ var _ = Describe("Zone Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 		zoneManager := zone.NewZoneManager(resStore, validator, true)
 
-		zone := zone_api.NewZoneResource()
+		zone := system.NewZoneResource()
 		err = resStore.Get(context.Background(), zone, store.GetByKey("zone-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 

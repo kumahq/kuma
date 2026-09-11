@@ -852,8 +852,6 @@ plugins:
     meshtrusts: true
     meshzoneaddresses: true
     workloads: true
-    zones: true
-    zoneinsights: true
   policies:
     meshaccesslogs: true
     meshcircuitbreakers: true

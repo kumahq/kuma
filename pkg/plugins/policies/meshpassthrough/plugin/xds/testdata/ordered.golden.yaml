@@ -59,22 +59,7 @@
   Routes: []
   Value: 192.168.19.1
 - MatchType: 2
-  Port: 9091
-  Protocol: tls
-  Routes: []
-  Value: api.example.com
-- MatchType: 2
-  Port: 9001
-  Protocol: tls
-  Routes: []
-  Value: api.example.com
-- MatchType: 2
   Port: 9000
-  Protocol: tls
-  Routes: []
-  Value: api.example.com
-- MatchType: 2
-  Port: 8080
   Protocol: tls
   Routes: []
   Value: api.example.com
@@ -88,11 +73,6 @@
   Protocol: tls
   Routes: []
   Value: example.com
-- MatchType: 2
-  Port: 0
-  Protocol: tls
-  Routes: []
-  Value: api.example.com
 - MatchType: 1
   Port: 9091
   Protocol: tls
@@ -407,8 +387,6 @@
   Port: 9091
   Protocol: http
   Routes:
-  - MatchType: 2
-    Value: otherexample.com
   - MatchType: 1
     Value: '*.example.com'
   Value: ""
@@ -431,8 +409,6 @@
   Port: 443
   Protocol: http
   Routes:
-  - MatchType: 2
-    Value: otherexample.com
   - MatchType: 1
     Value: '*.example.com'
   Value: ""
@@ -440,8 +416,6 @@
   Port: 0
   Protocol: http
   Routes:
-  - MatchType: 2
-    Value: otherexample.com
   - MatchType: 1
     Value: '*.example.com'
   Value: ""

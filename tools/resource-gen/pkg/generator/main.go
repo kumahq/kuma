@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -27,6 +28,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -292,11 +294,21 @@ func (t *{{.ResourceName}}) Descriptor() model.ResourceTypeDescriptor {
 }
 {{- if and (hasSuffix .ResourceType "Overview") (ne $baseType "Service") }}
 
+// new{{.ResourceName}}Spec normalizes a nil spec the way SetSpec does. A nil one would
+// drop the field from the response without any error: the marshaller omits a nil message
+// and then throws the whole spec away once what is left renders as an empty object.
+func new{{.ResourceName}}Spec(spec *{{$pkg}}.{{$baseType}}) *{{$pkg}}.{{.ProtoType}} {
+	if spec == nil {
+		spec = &{{$pkg}}.{{$baseType}}{}
+	}
+	return &{{$pkg}}.{{.ProtoType}}{
+		{{$baseType}}: spec,
+	}
+}
+
 func (t *{{.ResourceName}}) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
-	overview := &{{$pkg}}.{{.ProtoType}}{
-		{{$baseType}}: resource.GetSpec().(*{{$pkg}}.{{$baseType}}),
-	}
+	overview := new{{.ResourceName}}Spec(resource.GetSpec().(*{{$pkg}}.{{$baseType}}))
 	if insight != nil {
 		ins, ok := insight.GetSpec().(*{{$pkg}}.{{$baseType}}Insight)
 		if !ok {
@@ -397,8 +409,9 @@ func init() {
 `))
 
 var (
-	readDir  = "."
-	writeDir = "."
+	readDir     = "."
+	writeDir    = "."
+	errorSchema = commontemplate.DefaultOpenAPIErrorSchema
 )
 
 func Run() {
@@ -409,6 +422,7 @@ func Run() {
 	flag.StringVar(&pkg, "package", "", "the name of the package to generate: (mesh, system)")
 	flag.StringVar(&readDir, "readDir", "", "where to read files from, default: .")
 	flag.StringVar(&writeDir, "writeDir", "", "where to write files to, default: .")
+	flag.StringVar(&errorSchema, "error-schema", commontemplate.DefaultOpenAPIErrorSchema, "OpenAPI document with the shared error responses, relative to the specs root")
 
 	flag.Parse()
 
@@ -461,6 +475,8 @@ var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeFor[v1alpha1.DataplaneOverview](),
 	reflect.TypeFor[v1alpha1.MeshInsight](),
 	reflect.TypeFor[v1alpha1.MeshOverview](),
+	reflect.TypeFor[system_proto.Zone](),
+	reflect.TypeFor[system_proto.ZoneOverview](),
 }
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
@@ -526,6 +542,11 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		if !r.Global {
 			schema.Required = append(schema.Required, "mesh")
 		}
+		for _, required := range s.Required {
+			if !slices.Contains(schema.Required, required) {
+				schema.Required = append(schema.Required, required)
+			}
+		}
 
 		outDir := path.Join(writeDir, "api", pkg, "v1alpha1", strings.ToLower(r.ResourceType))
 
@@ -552,12 +573,13 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			path.Join(readDir, "tools", "openapi", "templates", "endpoints.yaml"),
 			tmpRestPath,
 			map[string]any{
-				"Package":   "v1alpha1",
-				"Name":      r.ResourceType,
-				"ShortName": r.ShortName,
-				"Scope":     scope,
-				"Path":      r.WsPath,
-				"ReadOnly":  r.WsReadOnly,
+				"Package":     "v1alpha1",
+				"Name":        r.ResourceType,
+				"ShortName":   r.ShortName,
+				"Scope":       scope,
+				"Path":        r.WsPath,
+				"ReadOnly":    r.WsReadOnly,
+				"ErrorSchema": errorSchema,
 			},
 		); err != nil {
 			return err
@@ -743,13 +765,61 @@ func (r *reflector) reflectFromType(t reflect.Type) (*jsonschema.Schema, error) 
 	}
 
 	s := rflctr.ReflectFromType(t)
+	applyFieldMarkers(s)
 	return &jsonschema.Schema{
 		Type:        "object",
 		Properties:  s.Properties,
+		Required:    s.Required,
 		OneOf:       s.OneOf,
 		Extras:      s.Extras,
 		Description: s.Description,
 	}, nil
+}
+
+// Field markers carried over from the proto comments. Protobuf makes every
+// field optional on the wire, so `+required` is the only way to tell the
+// generator that a field is always part of the served resource.
+const (
+	requiredMarker = "+required"
+	optionalMarker = "+optional"
+)
+
+// applyFieldMarkers promotes `+required` field markers to JSON Schema `required`
+// entries and drops every marker from the rendered descriptions.
+func applyFieldMarkers(s *jsonschema.Schema) {
+	if s == nil {
+		return
+	}
+	if s.Properties != nil {
+		for pair := s.Properties.Oldest(); pair != nil; pair = pair.Next() {
+			description, required := stripFieldMarkers(pair.Value.Description)
+			pair.Value.Description = description
+			if required && !slices.Contains(s.Required, pair.Key) {
+				s.Required = append(s.Required, pair.Key)
+			}
+			applyFieldMarkers(pair.Value)
+		}
+	}
+	applyFieldMarkers(s.Items)
+	applyFieldMarkers(s.AdditionalProperties)
+	for _, sub := range slices.Concat(s.OneOf, s.AnyOf, s.AllOf) {
+		applyFieldMarkers(sub)
+	}
+}
+
+func stripFieldMarkers(description string) (string, bool) {
+	var required bool
+	var kept []string
+	for line := range strings.SplitSeq(description, "\n") {
+		switch strings.TrimSpace(line) {
+		case requiredMarker:
+			required = true
+		case optionalMarker:
+		default:
+			kept = append(kept, line)
+		}
+	}
+	return strings.TrimSpace(strings.Join(kept, "\n")), required
 }
 
 func lowerFirst(s string) string {
