@@ -1,3 +1,12 @@
+---
+title: Auto-generated MeshService on Universal post-inbound-tag removal
+status: accepted
+date: 2026-05-25
+tags: [universal, meshservice, workload, dataplane, inbound-tags, migration]
+summary: After inbound tags go away, the CP generates one MeshService per `kuma.io/workload` value on Universal; blue/green, aggregation and port carve-out setups author MeshService by hand instead.
+related: [092-workload-identifier, 105-source-listener-tags-from-labels]
+---
+
 # Auto-generated MeshService on Universal post-inbound-tag removal
 
 * Status: accepted

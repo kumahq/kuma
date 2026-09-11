@@ -1,3 +1,12 @@
+---
+title: Standardize Computed Labels for Mesh-Scoped Zone Proxy Listeners
+status: accepted
+date: 2026-04-28
+tags: [zone-proxy, labels, policy-matching, dataplane, inspect-api]
+summary: Adds auto-computed `kuma.io/listener-zoneingress` and `kuma.io/listener-zoneegress` Dataplane labels so policies, Inspect API and GUI can select all zone ingress or egress proxies without parsing listeners.
+related: [095-mesh-scoped-zone-ingress-egress, 103-policy-matching-mesh-scoped-zone-proxy]
+---
+
 # Standardize Computed Labels for Mesh-Scoped Zone Proxy Listeners
 
 * Status: accepted

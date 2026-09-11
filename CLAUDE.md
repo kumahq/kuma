@@ -84,6 +84,20 @@ Default (no labels) is correct for most code PRs. Reach for `skip-*` only to sav
 
 ## Architecture
 
+### Architecture decisions (MADRs)
+
+`docs/madr/decisions/` is the map of why the current design looks the way it does — one decision per file, newest MADRs carrying YAML front matter (`title`, `status`, `date`, `tags`, `summary`, `related`).
+
+There is no maintained index — the front matter IS the map. When building context for a non-trivial change, scan it first and open only the MADRs whose summary or tags match the area you're touching; filenames are descriptive slugs, so older MADRs without front matter are findable by name:
+
+```bash
+rg -N '^(status|tags|summary):' docs/madr/decisions/  # the whole map
+rg -l 'zone-egress' docs/madr/decisions/              # narrow by tag or slug
+./docs/madr/list.sh                                   # same, one line per MADR (human view)
+```
+
+A MADR is the design rationale, not the current state — check the code before trusting it, and mind `status: superseded` and the `related` chain (later MADRs often revise earlier ones). Follow `related` when a MADR you read builds on another.
+
 ### Components
 
 - `kuma-cp`: control plane, serves xDS configs to data planes, manages mTLS certs, coordinates zones

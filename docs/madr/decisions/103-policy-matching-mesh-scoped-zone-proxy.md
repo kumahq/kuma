@@ -1,3 +1,12 @@
+---
+title: Policy Matching on MeshScoped Zone Proxy
+status: accepted
+date: 2026-05-12
+tags: [policy-matching, zone-proxy, zone-egress, meshtrafficpermission, sni, targetref, dataplane]
+summary: Zone proxy Dataplanes are targeted with the standard `targetRef.kind: Dataplane`; zone egress is deny-all by default and MeshTrafficPermission gains an `sni` match, while policies without `matches[]` select destinations through `spec.to[]`.
+related: [095-mesh-scoped-zone-ingress-egress, 101-sni-format-improvements, 102-zone-proxy-listener-computed-labels]
+---
+
 # Policy Matching on MeshScoped Zone Proxy
 
 * Status: accepted

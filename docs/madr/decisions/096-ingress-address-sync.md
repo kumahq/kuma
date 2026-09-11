@@ -1,3 +1,12 @@
+---
+title: Syncing Zone Ingress Address Across Zones
+status: accepted
+date: 2026-03-04
+tags: [zone-ingress, kds, multizone, dataplane, api]
+summary: Dataplanes are not synced across zones, so the zone ingress `advertisedAddress`/`advertisedPort` moves into a new mesh-scoped `MeshZoneAddress` resource synced zone-to-global and back.
+related: [095-mesh-scoped-zone-ingress-egress, 100-zone-egress-endpoint-storage]
+---
+
 # Syncing Zone Ingress Address Across Zones
 
 * Status: accepted

@@ -1,3 +1,12 @@
+---
+title: Observability dashboards redesign
+status: accepted
+date: 2026-02-26
+tags: [observability, grafana, dashboards, metrics, kumactl]
+summary: `kumactl install observability` is dropped in 3.0; five rebuilt Grafana dashboards ship as raw JSON under `dashboards/grafana/` in the release tarball for import into an existing Grafana.
+related: [095-mesh-opentelemetry-backend]
+---
+
 # Observability dashboards redesign
 
 * Status: accepted
