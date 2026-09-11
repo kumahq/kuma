@@ -293,11 +293,21 @@ func (t *{{.ResourceName}}) Descriptor() model.ResourceTypeDescriptor {
 }
 {{- if and (hasSuffix .ResourceType "Overview") (ne $baseType "Service") }}
 
+// new{{.ResourceName}}Spec normalizes a nil spec the way SetSpec does. A nil one would
+// drop the field from the response without any error: the marshaller omits a nil message
+// and then throws the whole spec away once what is left renders as an empty object.
+func new{{.ResourceName}}Spec(spec *{{$pkg}}.{{$baseType}}) *{{$pkg}}.{{.ProtoType}} {
+	if spec == nil {
+		spec = &{{$pkg}}.{{$baseType}}{}
+	}
+	return &{{$pkg}}.{{.ProtoType}}{
+		{{$baseType}}: spec,
+	}
+}
+
 func (t *{{.ResourceName}}) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
-	overview := &{{$pkg}}.{{.ProtoType}}{
-		{{$baseType}}: resource.GetSpec().(*{{$pkg}}.{{$baseType}}),
-	}
+	overview := new{{.ResourceName}}Spec(resource.GetSpec().(*{{$pkg}}.{{$baseType}}))
 	if insight != nil {
 		ins, ok := insight.GetSpec().(*{{$pkg}}.{{$baseType}}Insight)
 		if !ok {

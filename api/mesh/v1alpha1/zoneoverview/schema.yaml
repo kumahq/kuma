@@ -2,6 +2,7 @@ components:
   schemas:
     ZoneOverview:
       description: ZoneOverview defines the projected state of a Zone.
+      required: [zone]
       properties:
         zone:
           properties:

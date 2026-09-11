@@ -306,11 +306,21 @@ func (t *MeshOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshOverviewResourceTypeDescriptor
 }
 
+// newMeshOverviewSpec normalizes a nil spec the way SetSpec does. A nil one would drop
+// the field from the response without any error: the marshaller omits a nil message and
+// then throws the whole spec away once what is left renders as an empty object.
+func newMeshOverviewSpec(spec *mesh_proto.Mesh) *mesh_proto.MeshOverview {
+	if spec == nil {
+		spec = &mesh_proto.Mesh{}
+	}
+	return &mesh_proto.MeshOverview{
+		Mesh: spec,
+	}
+}
+
 func (t *MeshOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
-	overview := &mesh_proto.MeshOverview{
-		Mesh: resource.GetSpec().(*mesh_proto.Mesh),
-	}
+	overview := newMeshOverviewSpec(resource.GetSpec().(*mesh_proto.Mesh))
 	if insight != nil {
 		ins, ok := insight.GetSpec().(*mesh_proto.MeshInsight)
 		if !ok {
