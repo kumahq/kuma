@@ -19,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Updater", func() {
@@ -93,15 +92,15 @@ var _ = Describe("Updater", func() {
 		insightConnected := samples.DataplaneInsightBackendBuilder().
 			WithName("dp-connected").
 			AddSubscription(&mesh_proto.DiscoverySubscription{
-				ConnectTime: proto.MustTimestampProto(time.Now()),
+				ConnectTime: mesh_proto.NewTime(time.Now()),
 			}).Build()
 		Expect(resManager.Create(context.Background(), insightConnected, store.CreateByKey("dp-connected", model.DefaultMesh))).To(Succeed())
 
 		insightDisconnected := samples.DataplaneInsightBackendBuilder().
 			WithName("dp-disconnected").
 			AddSubscription(&mesh_proto.DiscoverySubscription{
-				ConnectTime:    proto.MustTimestampProto(time.Now()),
-				DisconnectTime: proto.MustTimestampProto(time.Now()),
+				ConnectTime:    mesh_proto.NewTime(time.Now()),
+				DisconnectTime: mesh_proto.NewTime(time.Now()),
 			}).Build()
 		Expect(resManager.Create(context.Background(), insightDisconnected, store.CreateByKey("dp-disconnected", model.DefaultMesh))).To(Succeed())
 

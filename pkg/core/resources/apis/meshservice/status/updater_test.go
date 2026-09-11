@@ -28,7 +28,6 @@ import (
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
-	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Updater", func() {
@@ -369,13 +368,13 @@ var _ = Describe("Updater", func() {
 				samples.DataplaneInsightBackendBuilder().
 					WithName("dp-connected").
 					AddSubscription(&mesh_proto.DiscoverySubscription{
-						ConnectTime: proto.MustTimestampProto(time.Now()),
+						ConnectTime: mesh_proto.NewTime(time.Now()),
 					}),
 				samples.DataplaneInsightBackendBuilder().
 					WithName("dp-disconnected").
 					AddSubscription(&mesh_proto.DiscoverySubscription{
-						ConnectTime:    proto.MustTimestampProto(time.Now()),
-						DisconnectTime: proto.MustTimestampProto(time.Now()),
+						ConnectTime:    mesh_proto.NewTime(time.Now()),
+						DisconnectTime: mesh_proto.NewTime(time.Now()),
 					}),
 				samples.DataplaneInsightBackendBuilder().
 					WithName("dp-never-connected"),

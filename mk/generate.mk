@@ -1,5 +1,4 @@
 ENVOY_IMPORTS := ./pkg/xds/envoy/imports.go
-RESOURCE_GEN := ./build/tools-${GOOS}-${GOARCH}/resource-gen
 OAPI_GEN := ./build/tools-${GOOS}-${GOARCH}/oapi-gen
 POLICY_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/policy-gen/generator
 
@@ -30,13 +29,10 @@ clean/protos: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIRS) -name '*.pb.validate.go' -delete
 
 .PHONY: generate
-generate: generate/protos generate/resources $(if $(findstring ./api,$(PROTO_DIRS)),resources/type generate/builtin-crds) generate/policies api-lint generate/oas $(EXTRA_GENERATE_DEPS_TARGETS) ## Dev: Run all code generation
+generate: generate/protos generate/resources $(if $(findstring ./api,$(PROTO_DIRS)),generate/builtin-crds) generate/policies api-lint generate/oas $(EXTRA_GENERATE_DEPS_TARGETS) ## Dev: Run all code generation
 
 $(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	cd $(KUMA_DIR) && $(GO) build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
-
-$(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
-	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
 
 # Always rebuilt, because oapi-gen embeds the extension registrations of whatever
 # module builds it: its real inputs are this repo's own main and every package
@@ -65,10 +61,6 @@ OAS_EXTENSIONS_SPEC ?=
 generate/oas/extensions: $(OAPI_GEN)
 	@test -n "$(OAS_EXTENSIONS_SPEC)" || { echo "generate/oas/extensions: OAS_EXTENSIONS_SPEC must name the OpenAPI document to patch"; exit 1; }
 	$(OAPI_GEN) extensions --spec $(OAS_EXTENSIONS_SPEC) --controller-gen-bin $(CONTROLLER_GEN) --yq-bin $(YQ) --work-dir $(BUILD_DIR)/openapi-extensions
-
-.PHONY: resources/type
-resources/type: $(RESOURCE_GEN)
-	$(RESOURCE_GEN) -package mesh -generator type > pkg/core/resources/apis/mesh/zz_generated.resources.go
 
 .PHONY: clean/legacy-resources
 clean/legacy-resources:
@@ -195,8 +187,7 @@ endef
 $(foreach s,$(OAS_SPECS),$(eval $(call OAS_RULE,$(s))))
 
 .PHONY: generate/oas
-generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN) $(OAPI_GEN) $(OAS_TYPES)
-	@$(RESOURCE_GEN) -package mesh   -generator openapi -readDir $(KUMA_DIR) -writeDir .
+generate/oas: $(GENERATE_OAS_PREREQUISITES) $(OAPI_GEN) $(OAS_TYPES)
 	@$(OAPI_GEN) kri
 
 .PHONY: validate/openapi-generated-docs
@@ -218,8 +209,7 @@ validate/openapi-generated-docs:
 generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate OpenAPI spec from `/api/openapi/specs` ready for typescript type generation
 
 .PHONY: generate/builtin-crds
-generate/builtin-crds: $(RESOURCE_GEN)
-	$(RESOURCE_GEN) -package mesh -generator crd > ./pkg/plugins/resources/k8s/native/api/v1alpha1/zz_generated.mesh.go
+generate/builtin-crds:
 	$(CONTROLLER_GEN) "crd:crdVersions=v1" paths=./pkg/plugins/resources/k8s/native/api/... output:crd:artifacts:config=$(HELM_CRD_DIR)
 	$(CONTROLLER_GEN) object paths=./pkg/plugins/resources/k8s/native/api/...
 
