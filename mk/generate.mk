@@ -17,7 +17,7 @@ EXTRA_GENERATE_DEPS_TARGETS ?= generate/envoy-imports
 clean/generated: clean/protos clean/builtin-crds clean/legacy-resources clean/resources clean/policies clean/tools
 
 .PHONY: generate/protos
-generate/protos:
+generate/protos: dev/protos/deps
 	find $(PROTO_DIRS) -name '*.proto' -exec $(PROTOC_GO) {} \;
 
 .PHONY: clean/tools

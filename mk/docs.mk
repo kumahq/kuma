@@ -19,7 +19,7 @@ helm-docs: ## Dev: Runs helm-docs generator
 	$(HELM_DOCS) -s="file" --chart-search-root=./deployments/charts
 
 .PHONY: docs/generated/raw
-docs/generated/raw: docs/generated/raw/rbac.yaml
+docs/generated/raw: docs/generated/raw/rbac.yaml $(if $(strip $(DOCS_PROTOS)),dev/protos/deps)
 	mkdir -p $@
 	command cp $(DOCS_CP_CONFIG) $@/kuma-cp.yaml
 	command cp $(HELM_VALUES_FILE) $@/helm-values.yaml
