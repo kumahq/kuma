@@ -34,9 +34,6 @@ message KumaResourceOptions {
   // Whether to skip generation of native API helper functions.
   bool skip_kubernetes_wrappers = 12;
 
-  // Whether to generate Inspect API endpoint
-  bool allow_to_inspect = 13;
-
   // If resource has more than one version, then the flag defines which version
   // is used in the storage. All other versions must be convertible to it.
   bool storage_version = 14;
@@ -44,10 +41,6 @@ message KumaResourceOptions {
   // The name of the policy showed as plural to be displayed in the UI and maybe
   // CLI
   string plural_display_name = 15;
-
-  // Is Experimental indicates if a policy is in experimental state (might not
-  // be production ready).
-  bool is_experimental = 16;
 
   // Columns to set using `+kubebuilder::printcolumns`
   repeated string additional_printer_columns = 17;

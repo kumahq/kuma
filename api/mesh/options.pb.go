@@ -42,17 +42,12 @@ type KumaResourceOptions struct {
 	ScopeNamespace bool `protobuf:"varint,11,opt,name=scope_namespace,json=scopeNamespace,proto3" json:"scope_namespace,omitempty"`
 	// Whether to skip generation of native API helper functions.
 	SkipKubernetesWrappers bool `protobuf:"varint,12,opt,name=skip_kubernetes_wrappers,json=skipKubernetesWrappers,proto3" json:"skip_kubernetes_wrappers,omitempty"`
-	// Whether to generate Inspect API endpoint
-	AllowToInspect bool `protobuf:"varint,13,opt,name=allow_to_inspect,json=allowToInspect,proto3" json:"allow_to_inspect,omitempty"`
 	// If resource has more than one version, then the flag defines which version
 	// is used in the storage. All other versions must be convertible to it.
 	StorageVersion bool `protobuf:"varint,14,opt,name=storage_version,json=storageVersion,proto3" json:"storage_version,omitempty"`
 	// The name of the policy showed as plural to be displayed in the UI and maybe
 	// CLI
 	PluralDisplayName string `protobuf:"bytes,15,opt,name=plural_display_name,json=pluralDisplayName,proto3" json:"plural_display_name,omitempty"`
-	// Is Experimental indicates if a policy is in experimental state (might not
-	// be production ready).
-	IsExperimental bool `protobuf:"varint,16,opt,name=is_experimental,json=isExperimental,proto3" json:"is_experimental,omitempty"`
 	// Columns to set using `+kubebuilder::printcolumns`
 	AdditionalPrinterColumns []string `protobuf:"bytes,17,rep,name=additional_printer_columns,json=additionalPrinterColumns,proto3" json:"additional_printer_columns,omitempty"`
 	// Whether the resource has a matching insight type
@@ -162,13 +157,6 @@ func (x *KumaResourceOptions) GetSkipKubernetesWrappers() bool {
 	return false
 }
 
-func (x *KumaResourceOptions) GetAllowToInspect() bool {
-	if x != nil {
-		return x.AllowToInspect
-	}
-	return false
-}
-
 func (x *KumaResourceOptions) GetStorageVersion() bool {
 	if x != nil {
 		return x.StorageVersion
@@ -181,13 +169,6 @@ func (x *KumaResourceOptions) GetPluralDisplayName() string {
 		return x.PluralDisplayName
 	}
 	return ""
-}
-
-func (x *KumaResourceOptions) GetIsExperimental() bool {
-	if x != nil {
-		return x.IsExperimental
-	}
-	return false
 }
 
 func (x *KumaResourceOptions) GetAdditionalPrinterColumns() []string {
@@ -405,7 +386,7 @@ var File_api_mesh_options_proto protoreflect.FileDescriptor
 
 const file_api_mesh_options_proto_rawDesc = "" +
 	"\n" +
-	"\x16api/mesh/options.proto\x12\tkuma.mesh\x1a google/protobuf/descriptor.proto\"\xb8\x05\n" +
+	"\x16api/mesh/options.proto\x12\tkuma.mesh\x1a google/protobuf/descriptor.proto\"\xe5\x04\n" +
 	"\x13KumaResourceOptions\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12\x16\n" +
@@ -416,11 +397,9 @@ const file_api_mesh_options_proto_rawDesc = "" +
 	"\x03kds\x18\n" +
 	" \x01(\tR\x03kds\x12'\n" +
 	"\x0fscope_namespace\x18\v \x01(\bR\x0escopeNamespace\x128\n" +
-	"\x18skip_kubernetes_wrappers\x18\f \x01(\bR\x16skipKubernetesWrappers\x12(\n" +
-	"\x10allow_to_inspect\x18\r \x01(\bR\x0eallowToInspect\x12'\n" +
+	"\x18skip_kubernetes_wrappers\x18\f \x01(\bR\x16skipKubernetesWrappers\x12'\n" +
 	"\x0fstorage_version\x18\x0e \x01(\bR\x0estorageVersion\x12.\n" +
-	"\x13plural_display_name\x18\x0f \x01(\tR\x11pluralDisplayName\x12'\n" +
-	"\x0fis_experimental\x18\x10 \x01(\bR\x0eisExperimental\x12<\n" +
+	"\x13plural_display_name\x18\x0f \x01(\tR\x11pluralDisplayName\x12<\n" +
 	"\x1aadditional_printer_columns\x18\x11 \x03(\tR\x18additionalPrinterColumns\x12!\n" +
 	"\fhas_insights\x18\x12 \x01(\bR\vhasInsights\x12\x1d\n" +
 	"\n" +

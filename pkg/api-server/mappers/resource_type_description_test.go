@@ -16,7 +16,6 @@ func TestMapResourceTypeDescriptionPreservesRulesTargetRefPolicies(t *testing.T)
 			Name:              "MeshCircuitBreaker",
 			WsPath:            "meshcircuitbreakers",
 			IsPolicy:          true,
-			IsTargetRefBased:  true,
 			HasToTargetRef:    true,
 			HasRulesTargetRef: true,
 		},
