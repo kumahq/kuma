@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/ZoneHealthCheckResponse",
+    "definitions": {
+        "ZoneHealthCheckResponse": {
+            "properties": {
+                "interval": {
+                    "pattern": "^([0-9]+\\.?[0-9]*|\\.[0-9]+)s$",
+                    "type": "string",
+                    "description": "The the interval that the global control plane expects between health check pings",
+                    "format": "regex"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Zone Health Check Response"
+        }
+    }
+}
