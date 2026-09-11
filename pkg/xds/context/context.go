@@ -35,6 +35,7 @@ type ControlPlaneContext struct {
 type GlobalContext struct {
 	ResourceMap ResourceMap
 	hash        []byte
+	typeHashes  []typeHash
 }
 
 // Hash base64 version of the hash mostly used for testing
@@ -48,6 +49,7 @@ type BaseMeshContext struct {
 	ResourceMap      ResourceMap
 	DestinationIndex *DestinationIndex
 	hash             []byte
+	typeHashes       []typeHash
 }
 
 // Hash base64 version of the hash mostly useed for testing
@@ -68,7 +70,8 @@ type PEMBytes []byte
 // If there is an information that can be precomputed and shared between all data plane proxies
 // it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
-	Hash string
+	globalContext *GlobalContext
+	Hash          string
 	// PolicyMatchingHash hashes matching-relevant resources (policies, gateways, external services).
 	// Excludes Dataplane roster; stays stable across DP-registration waves.
 	PolicyMatchingHash string
