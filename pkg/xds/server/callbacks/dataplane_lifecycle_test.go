@@ -22,7 +22,6 @@ import (
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/util/proto"
 	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
 	xds_auth "github.com/kumahq/kuma/v3/pkg/xds/auth"
 	. "github.com/kumahq/kuma/v3/pkg/xds/server/callbacks"
@@ -498,7 +497,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		insight.Spec.Subscriptions = append(insight.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
 			Id:                     "",
 			ControlPlaneInstanceId: "not-a" + cpInstanceID,
-			ConnectTime:            proto.MustTimestampProto(time.Now()),
+			ConnectTime:            mesh_proto.NewTime(time.Now()),
 		})
 		Expect(resManager.Create(context.Background(), insight, core_store.CreateBy(key))).To(Succeed())
 

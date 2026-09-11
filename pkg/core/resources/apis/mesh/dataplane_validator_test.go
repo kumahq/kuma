@@ -6,8 +6,8 @@ import (
 	"sigs.k8s.io/yaml"
 
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane", func() {
@@ -17,7 +17,7 @@ var _ = Describe("Dataplane", func() {
 			dataplane := core_mesh.NewDataplaneResource()
 
 			// when
-			err := util_proto.FromYAML([]byte(dpYAML), dataplane.Spec)
+			err := core_model.FromYAML([]byte(dpYAML), dataplane.Spec)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -331,7 +331,7 @@ var _ = Describe("Dataplane", func() {
 			dataplane.Meta = &test_model.ResourceMeta{Name: "dp-1", Mesh: "default"}
 
 			// when
-			err := util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)
+			err := core_model.FromYAML([]byte(given.dataplane), dataplane.Spec)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -1021,7 +1021,7 @@ var _ = Describe("Dataplane", func() {
 			dataplane := core_mesh.NewDataplaneResource()
 
 			// when
-			err := util_proto.FromYAML([]byte(`
+			err := core_model.FromYAML([]byte(`
                 networking:
                   address: 192.168.0.1
                   inbound:
@@ -1040,7 +1040,7 @@ var _ = Describe("Dataplane", func() {
 			dataplane := core_mesh.NewDataplaneResource()
 
 			// when
-			err := util_proto.FromYAML([]byte(`
+			err := core_model.FromYAML([]byte(`
                 networking:
                   address: 192.168.0.1
                   gateway:
