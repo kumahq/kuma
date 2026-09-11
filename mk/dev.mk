@@ -135,7 +135,7 @@ dev/merge-release:
 
 # Generate a .envrc that prepends e2e test suite configs to whatever
 # KUBECONFIG currently has, and stores CI tooling in .tools.
-.PHONY: dev/enrc
+.PHONY: dev/envrc
 dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 	@echo 'export CI_TOOLS_DIR=$$(expand_path .tools)' > .envrc
 	@for c in \

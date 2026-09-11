@@ -96,7 +96,7 @@ endif
 build/distributions/out: $(patsubst %,build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-%.tar.gz,$(ENABLED_DIST_NAMES))
 	cd $@; sha256sum *.tar.gz > $(DISTRIBUTION_TARGET_NAME).sha256
 
-.PHONY: build/info/distribution/repo
+.PHONY: build/info/cloudsmith_repository
 build/info/cloudsmith_repository:
 	@echo $(PULP_PACKAGE_TYPE)-binaries-$(PULP_DIST_VERSION)
 
