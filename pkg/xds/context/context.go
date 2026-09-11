@@ -127,6 +127,28 @@ func (mc *MeshContext) IsXKumaTagsUsed() bool {
 	return len(mc.Resources.MeshFaultInjections().Items) > 0
 }
 
+// RebuiltParts names the parts of mc that were rebuilt since previous, for metrics.
+func (mc *MeshContext) RebuiltParts(previous *MeshContext) string {
+	switch {
+	case previous == nil:
+		return "all"
+	case mc == previous:
+		return "none"
+	}
+	base := mc.BaseMeshContext != previous.BaseMeshContext
+	topology := mc.topology != previous.topology
+	switch {
+	case base && topology:
+		return "base,topology"
+	case base:
+		return "base"
+	case topology:
+		return "topology"
+	default:
+		return "other"
+	}
+}
+
 // ZoneEgressSANs returns the SPIFFE IDs of all zone egress instances that have a SAN set.
 func (mc *MeshContext) ZoneEgressSANs() []string {
 	var sans []string
