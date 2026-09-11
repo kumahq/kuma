@@ -47,8 +47,8 @@ var _ = Describe("MeshPassthrough", func() {
 			Entry("full failing example", testCase{
 				file: "full-invalid",
 			}),
-			Entry("the same domain with a different L7 protocol on all ports", testCase{
-				file: "same-domain-different-protocols",
+			Entry("a domain without a port", testCase{
+				file: "domain-without-port",
 			}),
 			Entry("matches resolving to duplicate filter chains", testCase{
 				file: "duplicate-filter-chains",

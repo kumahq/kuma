@@ -257,6 +257,9 @@ func invalidMatch(match Match) (string, bool) {
 			return "not a valid CIDR", true
 		}
 	case "Domain":
+		if pointer.Deref(match.Port) == 0 && !strings.HasPrefix(match.Value, "*") {
+			return "a domain needs a port, the sidecar resolves the domain to pin the destination", true
+		}
 	default:
 		return fmt.Sprintf("type %q is not supported", match.Type), true
 	}
