@@ -123,7 +123,7 @@ test/e2e/debug: $(E2E_DEPS_TARGETS)
 # and doesn't start Kind clusters
 .PHONY: test/e2e/debug-universal
 test/e2e/debug-universal:
-	@echo "Stop using this target use `make test/e2e-universal DEBUG=1`"
+	@echo 'Stop using this target use `make test/e2e-universal DEBUG=1`'
 	$(MAKE) test/e2e-universal DEBUG=1
 
 .PHONY: test/e2e

@@ -111,7 +111,7 @@ kind/cluster/deploy/kuma: build/kumactl kind/cluster/load
 
 .PHONY: kind/cluster/deploy/helm
 kind/cluster/deploy/helm: kind/cluster/load
-	KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) $(KUBECTL) delete namespace $(KUMA_NAMESPACE) | true
+	KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) $(KUBECTL) delete namespace $(KUMA_NAMESPACE) || true
 	KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) $(KUBECTL) create namespace $(KUMA_NAMESPACE)
 	KUBECONFIG=$(KIND_CLUSTER_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) \
                 --set global.image.registry="$(DOCKER_REGISTRY)" \

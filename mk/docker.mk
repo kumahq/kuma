@@ -103,7 +103,7 @@ docker/save/$(1)/$(2):
 	@mkdir -p build/docker
 	docker save --output build/docker/$(1)-$(2).tar $$(call build_image,$(1),$(2))
 
-.PHONY: docker/$(1)/$(2)
+.PHONY: docker/load/$(1)/$(2)
 docker/load/$(1)/$(2):
 	@docker load --quiet --input build/docker/$(1)-$(2).tar
 

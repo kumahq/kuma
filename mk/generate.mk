@@ -24,7 +24,7 @@ generate/protos:
 clean/tools:
 	rm -rf $(KUMA_DIR)/build/tools-*
 
-.PHONY: clean/proto
+.PHONY: clean/protos
 clean/protos: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIRS) -name '*.pb.go' -delete
 	find $(PROTO_DIRS) -name '*.pb.validate.go' -delete
@@ -89,6 +89,7 @@ clean/resources: POLICIES_DIR=$(RESOURCES_DIR)
 clean/resources:
 	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) clean/policies
 
+.PHONY: generate/resources
 generate/resources: POLICIES_DIR=$(RESOURCES_DIR)
 generate/resources:
 	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) $(addprefix generate/policy/,$(policies))
@@ -96,6 +97,7 @@ generate/resources:
 	POLICIES_DIR=$(RESOURCES_DIR) HELM_VALUES_FILE_POLICY_PATH=".plugins.resources" $(MAKE) generate/policy-helm
 	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) generate/policy-config
 
+.PHONY: generate/policies
 generate/policies: generate/deep-copy/common $(addprefix generate/policy/,$(policies)) generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm ## Generate all policies written as plugins
 
 .PHONY: clean/policies
@@ -106,6 +108,7 @@ clean/policy/%:
 	$(shell find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*'  \) -not -path '*/testdata/*' -type f -delete)
 	@rm -fr $(POLICIES_DIR)/$*/k8s
 
+.PHONY: generate/deep-copy/common
 generate/deep-copy/common:
 	for version in $(foreach dir,$(wildcard $(COMMON_DIR)/*),$(notdir $(dir))); do \
 		$(CONTROLLER_GEN) object paths="./$(COMMON_DIR)/$$version/..."  ; \
@@ -119,6 +122,7 @@ generate/policy/%: $(POLICY_GEN)
 	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --yq-bin $(YQ) --openapi-template-path=$(TOOLS_DIR)/openapi/templates/endpoints.yaml --jsonschema-template-path=$(TOOLS_DIR)/openapi/templates/schema.yaml --gomodule $(GO_MODULE)
 	@echo "Policy $* successfully generated"
 
+.PHONY: generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm
 generate/policy-import:
 	./tools/policy-gen/generate-policy-import.sh $(GO_MODULE) $(POLICIES_DIR) $(policies)
 
