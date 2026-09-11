@@ -10,7 +10,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
@@ -49,7 +48,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 			dataplane := mesh_proto.Dataplane{}
 			dpBytes, err := os.ReadFile(filepath.Join("testdata", "inbound-proxy", given.dataplaneFile))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(core_model.FromYAML(dpBytes, &dataplane)).To(Succeed())
+			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
 			proxy := &model.Proxy{
 				Id: *model.BuildProxyId("", "side-car"),
 				Dataplane: &core_mesh.DataplaneResource{

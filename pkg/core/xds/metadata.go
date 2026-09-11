@@ -1,7 +1,6 @@
 package xds
 
 import (
-	"encoding/json"
 	"strconv"
 	"strings"
 
@@ -234,9 +233,7 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 
 	if value := xdsMetadata.Fields[FieldVersion]; value.GetStructValue() != nil {
 		version := &mesh_proto.Version{}
-		if encoded, err := util_proto.ToJSON(value.GetStructValue()); err != nil {
-			metadataLog.Error(err, "invalid value in dataplane metadata", "field", FieldVersion, "value", value)
-		} else if err := json.Unmarshal(encoded, version); err != nil {
+		if err := util_proto.ToTyped(value.GetStructValue(), version); err != nil {
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", FieldVersion, "value", value)
 		}
 		version.KumaDp.KumaCpCompatible = kuma_version.DeploymentVersionCompatible(kuma_version.Build.Version, version.KumaDp.GetVersion())

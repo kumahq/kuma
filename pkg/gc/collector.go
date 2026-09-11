@@ -99,7 +99,7 @@ func (d *collector) cleanup(ctx context.Context, now time.Time, insightType Insi
 				d.log.Error(err, "unable to parse DisconnectTime", "disconnect time", s.GetDisconnectTime(), "mesh", item.GetMeta().GetMesh(), insightType, item.GetMeta().GetName())
 				continue
 			}
-			age := now.Sub(s.GetDisconnectTime().OrZero())
+			age := now.Sub(s.GetDisconnectTime().AsTime())
 			if age > d.cleanupAge {
 				onDelete[core_model.MetaToResourceKey(item.GetMeta())] = Age(age)
 			}

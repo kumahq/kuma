@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -12,6 +13,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
 )
 
@@ -148,7 +150,7 @@ var _ SubscriptionStatusAccessor = &streamState{}
 func (s *streamState) GetStatus() (core_model.ResourceKey, *mesh_proto.DiscoverySubscription) {
 	s.mu.RLock() // read access to the per Dataplane info
 	defer s.mu.RUnlock()
-	return s.dataplaneId, s.subscription.DeepCopy()
+	return s.dataplaneId, proto.Clone(s.subscription).(*mesh_proto.DiscoverySubscription)
 }
 
 func (s *streamState) Close() {
@@ -222,7 +224,7 @@ func (c *dataplaneStatusTracker) onStreamRequest(
 
 	// update Dataplane status
 	if req.GetResponseNonce() != "" {
-		subscription.Status.LastUpdateTime = mesh_proto.NewTime(core.Now())
+		subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(core.Now())
 		if req.HasErrors() {
 			log.Info("config rejected")
 			subscription.Status.Total.ResponsesRejected++
@@ -259,7 +261,7 @@ func (c *dataplaneStatusTracker) onStreamResponse(
 
 	// update Dataplane status
 	subscription := state.subscription
-	subscription.Status.LastUpdateTime = mesh_proto.NewTime(core.Now())
+	subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(core.Now())
 	subscription.Status.Total.ResponsesSent++
 	subscription.Status.StatsOf(resp.GetTypeUrl()).ResponsesSent++
 
@@ -298,7 +300,7 @@ func (c *dataplaneStatusTracker) onStreamOpen(
 	subscription := &mesh_proto.DiscoverySubscription{
 		Id:                     core.NewUUID(),
 		ControlPlaneInstanceId: c.runtimeInfo.GetInstanceId(),
-		ConnectTime:            mesh_proto.NewTime(now),
+		ConnectTime:            util_proto.MustTimestampProto(now),
 		Status:                 mesh_proto.NewSubscriptionStatus(now),
 		Version:                mesh_proto.NewVersion(),
 	}
@@ -332,7 +334,7 @@ func (c *dataplaneStatusTracker) onStreamClose(
 	// finilize subscription
 	state.mu.Lock() // write access to the per Dataplane info
 	subscription := state.subscription
-	subscription.DisconnectTime = mesh_proto.NewTime(core.Now())
+	subscription.DisconnectTime = util_proto.MustTimestampProto(core.Now())
 	state.mu.Unlock()
 
 	// trigger final flush

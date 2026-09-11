@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -157,12 +158,12 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 
 		otel := s.otelStatusCache.Get(dataplaneID)
 
-		otelChanged := !otel.Equal(lastStoredOtel)
+		otelChanged := !proto.Equal(otel, lastStoredOtel)
 		if otelChanged {
 			sinkLog.V(1).Info("OTel status changed", "dataplaneID", dataplaneID)
 		}
 
-		if currentState.Equal(lastStoredState) && mtlsInfo == lastStoredMTLSInfo && !otelChanged {
+		if proto.Equal(currentState, lastStoredState) && mtlsInfo == lastStoredMTLSInfo && !otelChanged {
 			// We compare mtlsInfo and lastStoredMTLSInfo as pointers. It makes sense to short-circuit if flush() runs
 			// on tick without any workload identity, so both are nil.
 			return
@@ -265,7 +266,7 @@ func (s *dataplaneInsightStore) Upsert(
 				return err
 			}
 
-			insight.Spec.Metadata = mesh_proto.StructFromProto(xdsMetadata)
+			insight.Spec.Metadata = xdsMetadata
 			insight.Spec.OpenTelemetry = otel
 			if mtlsInfo == nil { // it means the proxy has no identity, we need to clear stats
 				insight.Spec.MTLS = nil

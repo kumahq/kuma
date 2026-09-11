@@ -7,11 +7,11 @@ import (
 
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 	k8s_validation "k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/yaml"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -28,10 +28,14 @@ type ValidateTargetRefOpts struct {
 	IsBackendRef        bool
 }
 
-func ValidateDuration(path validators.PathBuilder, duration *mesh_proto.Duration) validators.ValidationError {
+func ValidateDuration(path validators.PathBuilder, duration *durationpb.Duration) validators.ValidationError {
 	var errs validators.ValidationError
 	if duration == nil {
 		errs.AddViolationAt(path, "must have a positive value")
+		return errs
+	}
+	if err := duration.CheckValid(); err != nil {
+		errs.AddViolationAt(path, "must have a valid value")
 		return errs
 	}
 	if duration.AsDuration() == 0 {

@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/app/kumactl/cmd"
@@ -20,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	util_http "github.com/kumahq/kuma/v3/pkg/util/http"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 type testDataplaneOverviewClient struct {
@@ -80,7 +82,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							{
 								Id:                     "1",
 								ControlPlaneInstanceId: "node-001",
-								ConnectTime:            mesh_proto.NewTime(t1),
+								ConnectTime:            util_proto.MustTimestampProto(t1),
 								Status: &mesh_proto.DiscoverySubscriptionStatus{
 									Total: &mesh_proto.DiscoveryServiceStats{
 										ResponsesSent:     10,
@@ -106,7 +108,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							{
 								Id:                     "2",
 								ControlPlaneInstanceId: "node-002",
-								ConnectTime:            mesh_proto.NewTime(t2),
+								ConnectTime:            util_proto.MustTimestampProto(t2),
 								Status: &mesh_proto.DiscoverySubscriptionStatus{
 									Total: &mesh_proto.DiscoveryServiceStats{
 										ResponsesSent:     20,
@@ -131,11 +133,15 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							},
 						},
 						MTLS: &mesh_proto.DataplaneInsight_MTLS{
-							CertificateExpirationTime:   mesh_proto.NewTime(time.Unix(1588926502, 0).UTC()),
-							LastCertificateRegeneration: mesh_proto.NewTime(time.Unix(1563306488, 0).UTC()),
-							CertificateRegenerations:    10,
-							IssuedBackend:               "ca-1",
-							SupportedBackends:           []string{"ca-1", "ca-2"},
+							CertificateExpirationTime: &timestamppb.Timestamp{
+								Seconds: 1588926502,
+							},
+							LastCertificateRegeneration: &timestamppb.Timestamp{
+								Seconds: 1563306488,
+							},
+							CertificateRegenerations: 10,
+							IssuedBackend:            "ca-1",
+							SupportedBackends:        []string{"ca-1", "ca-2"},
 						},
 					},
 				},
@@ -169,7 +175,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							{
 								Id:                     "1",
 								ControlPlaneInstanceId: "node-001",
-								ConnectTime:            mesh_proto.NewTime(t1),
+								ConnectTime:            util_proto.MustTimestampProto(t1),
 								Status: &mesh_proto.DiscoverySubscriptionStatus{
 									Total: &mesh_proto.DiscoveryServiceStats{
 										ResponsesSent:     10,
@@ -195,7 +201,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							{
 								Id:                     "2",
 								ControlPlaneInstanceId: "node-002",
-								ConnectTime:            mesh_proto.NewTime(t2),
+								ConnectTime:            util_proto.MustTimestampProto(t2),
 								Status: &mesh_proto.DiscoverySubscriptionStatus{
 									Total: &mesh_proto.DiscoveryServiceStats{
 										ResponsesSent:     20,
@@ -220,11 +226,15 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							},
 						},
 						MTLS: &mesh_proto.DataplaneInsight_MTLS{
-							CertificateExpirationTime:   mesh_proto.NewTime(time.Unix(1588926502, 0).UTC()),
-							LastCertificateRegeneration: mesh_proto.NewTime(time.Unix(1563306488, 0).UTC()),
-							CertificateRegenerations:    10,
-							IssuedBackend:               "ca-1",
-							SupportedBackends:           []string{"ca-1", "ca-2"},
+							CertificateExpirationTime: &timestamppb.Timestamp{
+								Seconds: 1588926502,
+							},
+							LastCertificateRegeneration: &timestamppb.Timestamp{
+								Seconds: 1563306488,
+							},
+							CertificateRegenerations: 10,
+							IssuedBackend:            "ca-1",
+							SupportedBackends:        []string{"ca-1", "ca-2"},
 						},
 					},
 				},
@@ -259,7 +269,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							{
 								Id:                     "1",
 								ControlPlaneInstanceId: "node-001",
-								ConnectTime:            mesh_proto.NewTime(t1),
+								ConnectTime:            util_proto.MustTimestampProto(t1),
 								Status: &mesh_proto.DiscoverySubscriptionStatus{
 									Total: &mesh_proto.DiscoveryServiceStats{
 										ResponsesSent:     10,
@@ -285,7 +295,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							{
 								Id:                     "2",
 								ControlPlaneInstanceId: "node-002",
-								ConnectTime:            mesh_proto.NewTime(t2),
+								ConnectTime:            util_proto.MustTimestampProto(t2),
 								Status: &mesh_proto.DiscoverySubscriptionStatus{
 									Total: &mesh_proto.DiscoveryServiceStats{
 										ResponsesSent:     20,
@@ -310,11 +320,15 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							},
 						},
 						MTLS: &mesh_proto.DataplaneInsight_MTLS{
-							CertificateExpirationTime:   mesh_proto.NewTime(time.Unix(1588926502, 0).UTC()),
-							LastCertificateRegeneration: mesh_proto.NewTime(time.Unix(1563306488, 0).UTC()),
-							CertificateRegenerations:    10,
-							IssuedBackend:               "ca-1",
-							SupportedBackends:           []string{"ca-1", "ca-2"},
+							CertificateExpirationTime: &timestamppb.Timestamp{
+								Seconds: 1588926502,
+							},
+							LastCertificateRegeneration: &timestamppb.Timestamp{
+								Seconds: 1563306488,
+							},
+							CertificateRegenerations: 10,
+							IssuedBackend:            "ca-1",
+							SupportedBackends:        []string{"ca-1", "ca-2"},
 						},
 					},
 				},

@@ -17,6 +17,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
 	. "github.com/kumahq/kuma/v3/pkg/xds/server/callbacks"
 )
@@ -57,8 +58,8 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		key, subscription := accessor.GetStatus()
 		// then
 		Expect(key).To(Equal(core_model.ResourceKey{}))
-		Expect(subscription.ConnectTime.OrZero()).ToNot(BeZero())
-		Expect(subscription.DisconnectTime.OrZero()).To(BeZero())
+		Expect(subscription.ConnectTime.GetNanos()).ToNot(BeZero())
+		Expect(subscription.DisconnectTime.GetNanos()).To(BeZero())
 
 		By("simulating end of ADS subscription")
 		// when
@@ -215,7 +216,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 							},
 							"version": {
 								Kind: &structpb.Value_StructValue{
-									StructValue: version.MustToStruct(),
+									StructValue: util_proto.MustToStruct(&version),
 								},
 							},
 						},

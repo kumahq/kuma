@@ -10,6 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
@@ -162,26 +164,9 @@ func CompositeResourceMapper(mappers ...kds_reconcile.ResourceMapper) kds_reconc
 	}
 }
 
-// specWithDiscoverySubscriptions no longer asks for ProtoReflect: a spec defined as a Go
-// struct satisfies the rest of it, and requiring the protobuf method would silently stop
-// matching such a spec and leave the generation field syncing on every update.
 type specWithDiscoverySubscriptions interface {
-	core_model.ResourceSpec
 	GetSubscriptions() []*mesh_proto.DiscoverySubscription
-}
-
-// cloneSpec copies a spec through its JSON form, which both a protobuf message and a Go
-// struct round trip through unchanged.
-func cloneSpec(spec specWithDiscoverySubscriptions) (specWithDiscoverySubscriptions, error) {
-	encoded, err := core_model.ToJSON(spec)
-	if err != nil {
-		return nil, err
-	}
-	cloned := reflect.New(reflect.TypeOf(spec).Elem()).Interface().(specWithDiscoverySubscriptions)
-	if err := core_model.FromJSON(encoded, cloned); err != nil {
-		return nil, err
-	}
-	return cloned, nil
+	ProtoReflect() protoreflect.Message
 }
 
 // MapInsightResourcesZeroGeneration zeros "generation" field in resources for which
@@ -189,11 +174,7 @@ func cloneSpec(spec specWithDiscoverySubscriptions) (specWithDiscoverySubscripti
 // deeming the object to have changed.
 func MapInsightResourcesZeroGeneration(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 	if spec, ok := r.GetSpec().(specWithDiscoverySubscriptions); ok {
-		cloned, err := cloneSpec(spec)
-		if err != nil {
-			return nil, err
-		}
-		spec = cloned
+		spec = proto.Clone(spec).(specWithDiscoverySubscriptions)
 		for _, sub := range spec.GetSubscriptions() {
 			sub.Generation = 0
 		}

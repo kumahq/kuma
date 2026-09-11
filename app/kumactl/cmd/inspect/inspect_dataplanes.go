@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/table"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 type inspectDataplanesContext struct {
@@ -89,19 +90,19 @@ func dataplaneOverviewsTable(now time.Time) printers.Table {
 				return s.GetStatus().GetTotal().GetResponsesRejected()
 			})
 			status, errs := dataplaneOverview.Status()
-			lastConnected := lastSubscription.GetConnectTime().AsTime()
-			lastUpdated := lastSubscription.GetStatus().GetLastUpdateTime().AsTime()
+			lastConnected := util_proto.MustTimestampFromProto(lastSubscription.GetConnectTime())
+			lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())
 
 			var certExpiration *time.Time
 			if dataplaneInsight.GetMTLS().GetCertificateExpirationTime() != nil {
-				certExpiration = dataplaneInsight.GetMTLS().GetCertificateExpirationTime().AsTime()
+				certExpiration = util_proto.MustTimestampFromProto(dataplaneInsight.GetMTLS().GetCertificateExpirationTime())
 				// don't use time.Local so we don't have to override it in tests. Instead, use location of current clock (that can be overridden in tests)
 				inLocation := certExpiration.In(now.Location())
 				certExpiration = &inLocation
 			}
 			var lastCertGeneration *time.Time
 			if dataplaneInsight.GetMTLS().GetLastCertificateRegeneration() != nil {
-				lastCertGeneration = dataplaneInsight.GetMTLS().GetLastCertificateRegeneration().AsTime()
+				lastCertGeneration = util_proto.MustTimestampFromProto(dataplaneInsight.GetMTLS().GetLastCertificateRegeneration())
 			}
 			dataplaneInsight.GetMTLS().GetCertificateExpirationTime()
 			certRegenerations := strconv.Itoa(int(dataplaneInsight.GetMTLS().GetCertificateRegenerations()))

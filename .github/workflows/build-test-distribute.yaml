@@ -344,7 +344,7 @@ jobs:
             echo "distribution_repository=$(make build/info/cloudsmith_repository)"
           } >> "$GITHUB_OUTPUT"
       # "make check" puts binaries in ./build/tools (see mk/generate.mk: $(POLICY_GEN)
-      # which are unnecessarily included in the SBOM.
+      # and $(RESOURCE_GEN)), which are unnecessarily included in the SBOM.
       # Running the SCA step before "make check" might seem like a solution, but it
       # generates report files (e.g., sbom.spdx.json, cve-report.json) in the working
       # directory. These files cause "make check" to fail, as it checks if no files
