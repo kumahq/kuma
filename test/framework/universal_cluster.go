@@ -285,13 +285,7 @@ func (c *UniversalCluster) DeleteKuma() error {
 	return nil
 }
 
-// GetKumactlOptions returns nil when the control plane never started, so that a
-// caller dumping state after a failure can skip the kumactl parts instead of
-// panicking and losing the rest of the dump.
 func (c *UniversalCluster) GetKumactlOptions() *kumactl.KumactlOptions {
-	if c.controlplane == nil {
-		return nil
-	}
 	return c.controlplane.kumactl
 }
 

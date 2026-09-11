@@ -89,7 +89,7 @@ func genConfig(parameters configParameters, enableReloadableTokens bool, _ *core
 				Fields: map[string]*structpb.Value{
 					core_xds.FieldVersion: {
 						Kind: &structpb.Value_StructValue{
-							StructValue: parameters.Version.MustToStruct(),
+							StructValue: util_proto.MustToStruct(parameters.Version),
 						},
 					},
 					core_xds.FieldFeatures:        util_proto.MustNewValueForStruct(features),

@@ -8,8 +8,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	store_config "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -17,6 +18,7 @@ import (
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Subscription Finalizer", func() {
@@ -33,7 +35,7 @@ var _ = Describe("Subscription Finalizer", func() {
 		Expect(err).ToNot(HaveOccurred())
 		finalizer, err := gc.NewSubscriptionFinalizer(rm, multitenant.SingleTenant, func() *time.Ticker {
 			return &time.Ticker{C: ticks}
-		}, metrics, context.Background(), store_config.DefaultUpsertConfig(), zoneinsight_api.ZoneInsightType)
+		}, metrics, context.Background(), store_config.DefaultUpsertConfig(), system.ZoneInsightType)
 		Expect(err).ToNot(HaveOccurred())
 		go func() {
 			stopped <- finalizer.Start(stop)
@@ -43,21 +45,21 @@ var _ = Describe("Subscription Finalizer", func() {
 	alreadyOfflineSub := "stream-id-1"
 	onlineSub := "stream-id-2"
 	createZoneInsight := func() {
-		Expect(rm.Create(context.Background(), &zoneinsight_api.ZoneInsightResource{
-			Spec: &zoneinsight_api.ZoneInsight{
-				Subscriptions: []*zoneinsight_api.KDSSubscription{
+		Expect(rm.Create(context.Background(), &system.ZoneInsightResource{
+			Spec: &system_proto.ZoneInsight{
+				Subscriptions: []*system_proto.KDSSubscription{
 					{
-						ID:               alreadyOfflineSub,
-						GlobalInstanceID: "cp-1",
-						ConnectTime:      zoneinsight_api.NewTime(sampleTime),
-						DisconnectTime:   zoneinsight_api.NewTime(sampleTime.Add(1 * time.Hour)),
-						Status:           zoneinsight_api.NewSubscriptionStatus(sampleTime),
+						Id:               alreadyOfflineSub,
+						GlobalInstanceId: "cp-1",
+						ConnectTime:      proto.MustTimestampProto(sampleTime),
+						DisconnectTime:   proto.MustTimestampProto(sampleTime.Add(1 * time.Hour)),
+						Status:           system_proto.NewSubscriptionStatus(sampleTime),
 					},
 					{
-						ID:               onlineSub,
-						GlobalInstanceID: "cp-1",
-						ConnectTime:      zoneinsight_api.NewTime(sampleTime.Add(1 * time.Hour)),
-						Status:           zoneinsight_api.NewSubscriptionStatus(sampleTime.Add(time.Hour)),
+						Id:               onlineSub,
+						GlobalInstanceId: "cp-1",
+						ConnectTime:      proto.MustTimestampProto(sampleTime.Add(1 * time.Hour)),
+						Status:           system_proto.NewSubscriptionStatus(sampleTime.Add(time.Hour)),
 						Generation:       0,
 					},
 				},
@@ -68,28 +70,28 @@ var _ = Describe("Subscription Finalizer", func() {
 	onlineSub1 := "stream-id-2"
 	onlineSub2 := "stream-id-3"
 	createZoneInsightWithMultipleOnlineSubs := func() {
-		Expect(rm.Create(context.Background(), &zoneinsight_api.ZoneInsightResource{
-			Spec: &zoneinsight_api.ZoneInsight{
-				Subscriptions: []*zoneinsight_api.KDSSubscription{
+		Expect(rm.Create(context.Background(), &system.ZoneInsightResource{
+			Spec: &system_proto.ZoneInsight{
+				Subscriptions: []*system_proto.KDSSubscription{
 					{
-						ID:               "stream-id-1",
-						GlobalInstanceID: "cp-1",
-						ConnectTime:      zoneinsight_api.NewTime(sampleTime),
-						DisconnectTime:   zoneinsight_api.NewTime(sampleTime.Add(1 * time.Hour)),
-						Status:           zoneinsight_api.NewSubscriptionStatus(sampleTime),
+						Id:               "stream-id-1",
+						GlobalInstanceId: "cp-1",
+						ConnectTime:      proto.MustTimestampProto(sampleTime),
+						DisconnectTime:   proto.MustTimestampProto(sampleTime.Add(1 * time.Hour)),
+						Status:           system_proto.NewSubscriptionStatus(sampleTime),
 					},
 					{
-						ID:               onlineSub1,
-						GlobalInstanceID: "cp-1",
-						ConnectTime:      zoneinsight_api.NewTime(sampleTime.Add(1 * time.Hour)),
-						Status:           zoneinsight_api.NewSubscriptionStatus(sampleTime.Add(time.Hour)),
+						Id:               onlineSub1,
+						GlobalInstanceId: "cp-1",
+						ConnectTime:      proto.MustTimestampProto(sampleTime.Add(1 * time.Hour)),
+						Status:           system_proto.NewSubscriptionStatus(sampleTime.Add(time.Hour)),
 						Generation:       0,
 					},
 					{
-						ID:               onlineSub2,
-						GlobalInstanceID: "cp-1",
-						ConnectTime:      zoneinsight_api.NewTime(sampleTime.Add(1 * time.Hour)),
-						Status:           zoneinsight_api.NewSubscriptionStatus(sampleTime.Add(time.Hour)),
+						Id:               onlineSub2,
+						GlobalInstanceId: "cp-1",
+						ConnectTime:      proto.MustTimestampProto(sampleTime.Add(1 * time.Hour)),
+						Status:           system_proto.NewSubscriptionStatus(sampleTime.Add(time.Hour)),
 						Generation:       0,
 					},
 				},
@@ -98,7 +100,7 @@ var _ = Describe("Subscription Finalizer", func() {
 	}
 
 	isOnline := func() bool {
-		zoneInsight := zoneinsight_api.NewZoneInsightResource()
+		zoneInsight := system.NewZoneInsightResource()
 		Expect(
 			rm.Get(context.Background(), zoneInsight, store.GetByKey("zone-1", core_model.NoMesh)),
 		).To(Succeed())
@@ -106,24 +108,24 @@ var _ = Describe("Subscription Finalizer", func() {
 	}
 
 	incGeneration := func(id string) {
-		zoneInsight := zoneinsight_api.NewZoneInsightResource()
+		zoneInsight := system.NewZoneInsightResource()
 		key := core_model.ResourceKey{Name: "zone-1"}
 		Expect(core_manager.Upsert(context.Background(), rm, key, zoneInsight, func(r core_model.Resource) error {
-			zoneInsight.Spec.GetSubscription(id).(*zoneinsight_api.KDSSubscription).Generation++
+			zoneInsight.Spec.GetSubscription(id).(*system_proto.KDSSubscription).Generation++
 			return nil
 		}, core_manager.WithConflictRetry(5*time.Millisecond, 5, 10))).To(Succeed())
 	}
 
 	disconnectAndAddNewSubscription := func() {
-		zoneInsight := zoneinsight_api.NewZoneInsightResource()
+		zoneInsight := system.NewZoneInsightResource()
 		key := core_model.ResourceKey{Name: "zone-1"}
 		Expect(core_manager.Upsert(context.Background(), rm, key, zoneInsight, func(r core_model.Resource) error {
 			zoneInsight.Spec.GetSubscription(onlineSub).SetDisconnectTime(sampleTime.Add(2 * time.Hour))
-			zoneInsight.Spec.Subscriptions = append(zoneInsight.Spec.Subscriptions, &zoneinsight_api.KDSSubscription{
-				ID:               "stream-id-3",
-				GlobalInstanceID: "cp-1",
-				ConnectTime:      zoneinsight_api.NewTime(sampleTime.Add(2 * time.Hour)),
-				Status:           zoneinsight_api.NewSubscriptionStatus(sampleTime.Add(2 * time.Hour)),
+			zoneInsight.Spec.Subscriptions = append(zoneInsight.Spec.Subscriptions, &system_proto.KDSSubscription{
+				Id:               "stream-id-3",
+				GlobalInstanceId: "cp-1",
+				ConnectTime:      proto.MustTimestampProto(sampleTime.Add(2 * time.Hour)),
+				Status:           system_proto.NewSubscriptionStatus(sampleTime.Add(2 * time.Hour)),
 				Generation:       0,
 			})
 			return nil

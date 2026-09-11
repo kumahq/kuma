@@ -168,7 +168,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 			Fields: map[string]*structpb.Value{
 				"version": {
 					Kind: &structpb.Value_StructValue{
-						StructValue: version.MustToStruct(),
+						StructValue: util_proto.MustToStruct(version),
 					},
 				},
 			},

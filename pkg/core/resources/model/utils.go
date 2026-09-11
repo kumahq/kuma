@@ -13,7 +13,11 @@ import (
 )
 
 func ToJSON(spec ResourceSpec) ([]byte, error) {
-	return json.Marshal(spec)
+	if msg, ok := spec.(proto.Message); ok {
+		return util_proto.ToJSON(msg)
+	} else {
+		return json.Marshal(spec)
+	}
 }
 
 func ToMap(spec ResourceSpec) (map[string]any, error) {
@@ -29,61 +33,52 @@ func ToMap(spec ResourceSpec) (map[string]any, error) {
 }
 
 func ToYAML(spec ResourceSpec) ([]byte, error) {
-	return yaml.Marshal(spec)
-}
-
-// KDSWireSpec is implemented by a spec that a released control plane defines as
-// a protobuf message but this one defines as a plain Go struct. ToAny and
-// FromAny are the KDS wire codec, and such a peer reads the Any by its type URL
-// and then parses protobuf, so the wire form has to stay the message it knows.
-// Dropping an implementation does not degrade gracefully: the peer fails the
-// whole DeltaDiscoveryResponse rather than the one resource, so its sync stream
-// restarts forever and nothing at all reaches it.
-type KDSWireSpec interface {
-	ToKDSWire() proto.Message
-	FromKDSWire(proto.Message) error
+	if msg, ok := spec.(proto.Message); ok {
+		return util_proto.ToYAML(msg)
+	} else {
+		return yaml.Marshal(spec)
+	}
 }
 
 func ToAny(spec ResourceSpec) (*anypb.Any, error) {
-	if s, ok := spec.(KDSWireSpec); ok {
-		return util_proto.MarshalAnyDeterministic(s.ToKDSWire())
+	if msg, ok := spec.(proto.Message); ok {
+		return util_proto.MarshalAnyDeterministic(msg)
+	} else {
+		bytes, err := json.Marshal(spec)
+		if err != nil {
+			return nil, err
+		}
+		return &anypb.Any{
+			Value: bytes,
+		}, nil
 	}
-	bytes, err := json.Marshal(spec)
-	if err != nil {
-		return nil, err
-	}
-	return &anypb.Any{
-		Value: bytes,
-	}, nil
 }
 
 func FromJSON(src []byte, spec ResourceSpec) error {
-	return json.Unmarshal(src, spec)
+	if msg, ok := spec.(proto.Message); ok {
+		return util_proto.FromJSON(src, msg)
+	} else {
+		return json.Unmarshal(src, spec)
+	}
 }
 
 func FromYAML(src []byte, spec ResourceSpec) error {
-	return yaml.Unmarshal(src, spec)
+	if msg, ok := spec.(proto.Message); ok {
+		return util_proto.FromYAML(src, msg)
+	} else {
+		return yaml.Unmarshal(src, spec)
+	}
 }
 
-// FromAny reads a KDSWireSpec from either form: the protobuf message ToAny
-// writes, or the type-URL-less JSON a control plane built between the Go struct
-// rewrite and the wire fix sends. Failing that JSON instead would leave such a
-// peer restarting its stream with nothing synced.
 func FromAny(src *anypb.Any, spec ResourceSpec) error {
-	s, ok := spec.(KDSWireSpec)
-	if !ok || src.GetTypeUrl() == "" {
-		// json.Unmarshal merges into what the target already holds, so a field the
-		// sender omitted would keep the value a previous read left behind. The
-		// protobuf side below resets for the same reason.
-		reset(spec)
-		return json.Unmarshal(src.GetValue(), spec)
+	if msg, ok := spec.(proto.Message); ok {
+		return util_proto.UnmarshalAnyTo(src, msg)
 	}
-	wire := s.ToKDSWire()
-	proto.Reset(wire)
-	if err := util_proto.UnmarshalAnyTo(src, wire); err != nil {
-		return err
-	}
-	return s.FromKDSWire(wire)
+	// json.Unmarshal merges into what the target already holds, so a field the
+	// sender omitted would keep the value a previous read left behind. The
+	// protobuf side above replaces rather than merges.
+	reset(spec)
+	return json.Unmarshal(src.Value, spec)
 }
 
 // reset returns a spec to its zero value, so that reading into it replaces
@@ -102,9 +97,23 @@ func FullName(spec ResourceSpec) string {
 }
 
 func Equal(x, y ResourceSpec) bool {
-	return reflect.DeepEqual(x, y)
+	xMsg, xOk := x.(proto.Message)
+	yMsg, yOk := y.(proto.Message)
+	if xOk != yOk {
+		return false
+	}
+
+	if xOk {
+		return proto.Equal(xMsg, yMsg)
+	} else {
+		return reflect.DeepEqual(x, y)
+	}
 }
 
 func IsEmpty(spec ResourceSpec) bool {
-	return reflect.ValueOf(spec).Elem().IsZero()
+	if msg, ok := spec.(proto.Message); ok {
+		return proto.Size(msg) == 0
+	} else {
+		return reflect.ValueOf(spec).Elem().IsZero()
+	}
 }

@@ -3374,275 +3374,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTrafficPermissionList'
-  /dataplanes:
-    get:
-      operationId: getDataplaneListAllMeshes
-      parameters:
-        - description: offset in the list of entities
-          in: query
-          name: offset
-          required: false
-          schema:
-            example: 0
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-      responses:
-        '200':
-          $ref: '#/components/responses/DataplaneList'
-      summary: Returns a list of Dataplane across all meshes.
-      tags:
-        - Dataplane
-  /meshes/{mesh}/dataplanes:
-    get:
-      operationId: getDataplaneList
-      parameters:
-        - description: offset in the list of entities
-          example: 0
-          in: query
-          name: offset
-          required: false
-          schema:
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/DataplaneList'
-      summary: Returns a list of Dataplane in the mesh.
-      tags:
-        - Dataplane
-  /meshes/{mesh}/dataplanes/{name}:
-    delete:
-      operationId: deleteDataplane
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-        - description: name of the Dataplane
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/DataplaneDeleteSuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Deletes Dataplane entity
-      tags:
-        - Dataplane
-    get:
-      operationId: getDataplane
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-        - description: name of the Dataplane
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/DataplaneItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Returns Dataplane entity
-      tags:
-        - Dataplane
-    put:
-      operationId: putDataplane
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-        - description: name of the Dataplane
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DataplaneItem'
-        description: Put request
-        required: true
-      responses:
-        '200':
-          $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
-      summary: Creates or Updates Dataplane entity
-      tags:
-        - Dataplane
-  /dataplane-insights:
-    get:
-      operationId: getDataplaneInsightListAllMeshes
-      parameters:
-        - description: offset in the list of entities
-          in: query
-          name: offset
-          required: false
-          schema:
-            example: 0
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-      responses:
-        '200':
-          $ref: '#/components/responses/DataplaneInsightList'
-      summary: Returns a list of DataplaneInsight across all meshes.
-      tags:
-        - DataplaneInsight
-  /meshes/{mesh}/dataplane-insights:
-    get:
-      operationId: getDataplaneInsightList
-      parameters:
-        - description: offset in the list of entities
-          example: 0
-          in: query
-          name: offset
-          required: false
-          schema:
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/DataplaneInsightList'
-      summary: Returns a list of DataplaneInsight in the mesh.
-      tags:
-        - DataplaneInsight
-  /meshes/{mesh}/dataplane-insights/{name}:
-    get:
-      operationId: getDataplaneInsight
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-        - description: name of the DataplaneInsight
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/DataplaneInsightItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Returns DataplaneInsight entity
-      tags:
-        - DataplaneInsight
   /meshes/{mesh}/dataplanes/{name}/_overview:
     get:
       operationId: getDataplaneOverview
@@ -3853,104 +3584,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/GlobalSecretList'
-  /meshes:
-    get:
-      operationId: getMeshList
-      parameters:
-        - description: offset in the list of entities
-          example: 0
-          in: query
-          name: offset
-          required: false
-          schema:
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshList'
-      summary: Returns a list of Mesh.
-      tags:
-        - Mesh
-  /meshes/{name}:
-    delete:
-      operationId: deleteMesh
-      parameters:
-        - description: name of the Mesh
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshDeleteSuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Deletes Mesh entity
-      tags:
-        - Mesh
-    get:
-      operationId: getMesh
-      parameters:
-        - description: name of the Mesh
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Returns Mesh entity
-      tags:
-        - Mesh
-    put:
-      operationId: putMesh
-      parameters:
-        - description: name of the Mesh
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MeshItem'
-        description: Put request
-        required: true
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
-      summary: Creates or Updates Mesh entity
-      tags:
-        - Mesh
   /mesh-insights/{name}:
     get:
       operationId: getMeshInsight
@@ -4028,167 +3661,6 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/secrets:
-    get:
-      operationId: getSecretList
-      parameters:
-        - description: offset in the list of entities
-          example: 0
-          in: query
-          name: offset
-          required: false
-          schema:
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/SecretList'
-      summary: Returns a list of Secret in the mesh.
-      tags:
-        - Secret
-  /meshes/{mesh}/secrets/{name}:
-    delete:
-      operationId: deleteSecret
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-        - description: name of the Secret
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/SecretDeleteSuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Deletes Secret entity
-      tags:
-        - Secret
-    get:
-      operationId: getSecret
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-        - description: name of the Secret
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          $ref: '#/components/responses/SecretItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-      summary: Returns Secret entity
-      tags:
-        - Secret
-    put:
-      operationId: putSecret
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-        - description: name of the Secret
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SecretItem'
-        description: Put request
-        required: true
-      responses:
-        '200':
-          $ref: '#/components/responses/SecretCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/SecretCreateOrUpdateSuccessResponse'
-      summary: Creates or Updates Secret entity
-      tags:
-        - Secret
-  /secrets:
-    get:
-      operationId: getSecretListAllMeshes
-      parameters:
-        - description: offset in the list of entities
-          in: query
-          name: offset
-          required: false
-          schema:
-            example: 0
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-      responses:
-        '200':
-          $ref: '#/components/responses/SecretList'
-      summary: Returns a list of Secret across all meshes.
-      tags:
-        - Secret
   /zones/{name}/_overview:
     get:
       operationId: getZoneOverview
@@ -5610,161 +5082,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/WorkloadList'
-  /zones/{name}:
-    get:
-      operationId: getZone
-      summary: Returns Zone entity
-      tags:
-        - Zone
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Zone
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: putZone
-      summary: Creates or Updates Zone entity
-      tags:
-        - Zone
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Zone
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ZoneItem'
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
-        '201':
-          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
-    delete:
-      operationId: deleteZone
-      summary: Deletes Zone entity
-      tags:
-        - Zone
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Zone
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneDeleteSuccessResponse'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /zones:
-    get:
-      operationId: getZoneList
-      summary: Returns a list of Zone.
-      tags:
-        - Zone
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-          example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneList'
-  /zone-insights/{name}:
-    get:
-      operationId: getZoneInsight
-      summary: Returns ZoneInsight entity
-      tags:
-        - ZoneInsight
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the ZoneInsight
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneInsightItem'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /zone-insights:
-    get:
-      operationId: getZoneInsightList
-      summary: Returns a list of ZoneInsight.
-      tags:
-        - ZoneInsight
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-          example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-      responses:
-        '200':
-          $ref: '#/components/responses/ZoneInsightList'
 components:
   securitySchemes:
     BasicAuth:
@@ -16150,169 +15467,138 @@ components:
             skipCreatingInitialPolicies:
               description: >-
                 List of policies to skip creating by default when the mesh is
-                created,
+                created.
 
-                for example TrafficPermission or MeshRetry. An '*' skips all
+                e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to
+                skip all
+
                 policies.
               items:
                 type: string
               type: array
           type: object
         meshInsight:
-          description: MeshInsight carries the observed state of the mesh.
           properties:
             dataplanes:
-              description: Dataplanes aggregates over the dataplanes of the mesh.
               properties:
                 offline:
-                  description: Offline counts the dataplanes that are not connected.
                   type: integer
                 online:
-                  description: Online counts the dataplanes that are connected.
                   type: integer
                 partiallyDegraded:
-                  description: >-
-                    PartiallyDegraded counts the dataplanes with some inbounds
-                    offline.
                   type: integer
                 total:
                   type: integer
               type: object
             dataplanesByType:
-              description: DataplanesByType splits the dataplane stats by proxy type.
               properties:
-                standard:
-                  description: Standard holds the stats of every dataplane.
+                gateway:
                   properties:
                     offline:
-                      description: Offline counts the dataplanes that are not connected.
                       type: integer
                     online:
-                      description: Online counts the dataplanes that are connected.
                       type: integer
                     partiallyDegraded:
-                      description: >-
-                        PartiallyDegraded counts the dataplanes with some
-                        inbounds offline.
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+                gatewayDelegated:
+                  properties:
+                    offline:
+                      type: integer
+                    online:
+                      type: integer
+                    partiallyDegraded:
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+                standard:
+                  properties:
+                    offline:
+                      type: integer
+                    online:
+                      type: integer
+                    partiallyDegraded:
                       type: integer
                     total:
                       type: integer
                   type: object
               type: object
             dpVersions:
-              description: DpVersions holds the dataplane stats grouped by version.
               properties:
                 envoy:
                   additionalProperties:
-                    description: >-
-                      MeshInsight_DataplaneStat defines statistics specifically
-                      for Dataplanes.
+                    description: DataplaneStat defines statistic specifically for Dataplane
                     properties:
                       offline:
-                        description: Offline counts the dataplanes that are not connected.
                         type: integer
                       online:
-                        description: Online counts the dataplanes that are connected.
                         type: integer
                       partiallyDegraded:
-                        description: >-
-                          PartiallyDegraded counts the dataplanes with some
-                          inbounds offline.
                         type: integer
                       total:
                         type: integer
                     type: object
-                  description: Envoy holds the dataplane stats grouped by Envoy version.
+                  description: Dataplane stats grouped by Envoy version
                   type: object
                 kumaDp:
                   additionalProperties:
-                    description: >-
-                      MeshInsight_DataplaneStat defines statistics specifically
-                      for Dataplanes.
+                    description: DataplaneStat defines statistic specifically for Dataplane
                     properties:
                       offline:
-                        description: Offline counts the dataplanes that are not connected.
                         type: integer
                       online:
-                        description: Online counts the dataplanes that are connected.
                         type: integer
                       partiallyDegraded:
-                        description: >-
-                          PartiallyDegraded counts the dataplanes with some
-                          inbounds offline.
                         type: integer
                       total:
                         type: integer
                     type: object
-                  description: KumaDp holds the dataplane stats grouped by KumaDP version.
+                  description: Dataplane stats grouped by KumaDP version
                   type: object
               type: object
             mTLS:
-              description: MTLS holds the dataplane stats grouped by certificate backend.
+              description: mTLS statistics
               properties:
                 issuedBackends:
                   additionalProperties:
-                    description: >-
-                      MeshInsight_DataplaneStat defines statistics specifically
-                      for Dataplanes.
+                    description: DataplaneStat defines statistic specifically for Dataplane
                     properties:
                       offline:
-                        description: Offline counts the dataplanes that are not connected.
                         type: integer
                       online:
-                        description: Online counts the dataplanes that are connected.
                         type: integer
                       partiallyDegraded:
-                        description: >-
-                          PartiallyDegraded counts the dataplanes with some
-                          inbounds offline.
                         type: integer
                       total:
                         type: integer
                     type: object
-                  description: >-
-                    IssuedBackends groups the dataplanes by the backend that
-                    issued their
-
-                    certificate.
+                  description: Dataplanes grouped by issued backends.
                   type: object
                 supportedBackends:
                   additionalProperties:
-                    description: >-
-                      MeshInsight_DataplaneStat defines statistics specifically
-                      for Dataplanes.
+                    description: DataplaneStat defines statistic specifically for Dataplane
                     properties:
                       offline:
-                        description: Offline counts the dataplanes that are not connected.
                         type: integer
                       online:
-                        description: Online counts the dataplanes that are connected.
                         type: integer
                       partiallyDegraded:
-                        description: >-
-                          PartiallyDegraded counts the dataplanes with some
-                          inbounds offline.
                         type: integer
                       total:
                         type: integer
                     type: object
-                  description: >-
-                    SupportedBackends groups the dataplanes by the backends they
-                    accept
-
-                    certificates from.
+                  description: Dataplanes grouped by supported backends.
                   type: object
               type: object
             resources:
               additionalProperties:
-                description: >-
-                  MeshInsight_ResourceStat counts the stored resources of a
-                  single type.
                 properties:
                   total:
                     type: integer
                 type: object
-              description: Resources counts the stored resources of the mesh by type.
               type: object
           type: object
       type: object
@@ -16320,297 +15606,6 @@ components:
       allOf:
         - $ref: '#/components/schemas/Meta'
         - $ref: '#/components/schemas/MeshOverview'
-    DataplaneInsightItem:
-      properties:
-        creationTime:
-          description: Time at which the resource was created
-          format: date-time
-          readOnly: true
-          type: string
-        labels:
-          additionalProperties:
-            type: string
-          type: object
-        mTLS:
-          description: Insights about mTLS for Dataplane.
-          properties:
-            certificateExpirationTime:
-              description: |-
-                Expiration time of the last certificate that was generated for a
-                Dataplane.
-              format: date-time
-              type: string
-            certificateRegenerations:
-              description: Number of certificate regenerations for a Dataplane.
-              type: integer
-            issuedBackend:
-              description: Backend that was used to generate current certificate
-              type: string
-            lastCertificateRegeneration:
-              description: Time on which the last certificate was generated.
-              format: date-time
-              type: string
-            supportedBackends:
-              description: Supported backends (CA).
-              items:
-                type: string
-              type: array
-          type: object
-        mesh:
-          maxLength: 253
-          pattern: ^[0-9a-z-_.]*$
-          type: string
-        metadata:
-          properties: {}
-          type: object
-        modificationTime:
-          description: Time at which the resource was updated
-          format: date-time
-          readOnly: true
-          type: string
-        name:
-          maxLength: 253
-          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
-          type: string
-        openTelemetry:
-          description: Insights about OTel runtime resolution for this Dataplane.
-          properties:
-            backends:
-              items:
-                properties:
-                  logs:
-                    properties:
-                      blockedReasons:
-                        items:
-                          type: string
-                        type: array
-                      enabled:
-                        type: boolean
-                      envAllowed:
-                        type: boolean
-                      envInputPresent:
-                        type: boolean
-                      missingFields:
-                        items:
-                          type: string
-                        type: array
-                      overrideKinds:
-                        items:
-                          type: string
-                        type: array
-                      state:
-                        type: string
-                    type: object
-                  metrics:
-                    properties:
-                      blockedReasons:
-                        items:
-                          type: string
-                        type: array
-                      enabled:
-                        type: boolean
-                      envAllowed:
-                        type: boolean
-                      envInputPresent:
-                        type: boolean
-                      missingFields:
-                        items:
-                          type: string
-                        type: array
-                      overrideKinds:
-                        items:
-                          type: string
-                        type: array
-                      state:
-                        type: string
-                    type: object
-                  name:
-                    type: string
-                  traces:
-                    properties:
-                      blockedReasons:
-                        items:
-                          type: string
-                        type: array
-                      enabled:
-                        type: boolean
-                      envAllowed:
-                        type: boolean
-                      envInputPresent:
-                        type: boolean
-                      missingFields:
-                        items:
-                          type: string
-                        type: array
-                      overrideKinds:
-                        items:
-                          type: string
-                        type: array
-                      state:
-                        type: string
-                    type: object
-                type: object
-              type: array
-          type: object
-        subscriptions:
-          description: List of ADS subscriptions created by a given Dataplane.
-          items:
-            description: >-
-              DiscoverySubscription describes a single ADS subscription created
-              by a Dataplane to the Control Plane.
-            properties:
-              connectTime:
-                description: Time when a given Dataplane connected to the Control Plane.
-                format: date-time
-                type: string
-              controlPlaneInstanceId:
-                description: Control Plane instance that handled given subscription.
-                type: string
-              disconnectTime:
-                description: >-
-                  Time when a given Dataplane disconnected from the Control
-                  Plane.
-                format: date-time
-                type: string
-              generation:
-                description: >-
-                  Generation is an integer number which is periodically
-                  increased by the
-
-                  status sink
-                type: integer
-              id:
-                description: Unique id per ADS subscription.
-                type: string
-              status:
-                description: Status of the ADS subscription.
-                properties:
-                  cds:
-                    description: CDS defines all CDS stats.
-                    properties:
-                      responsesAcknowledged:
-                        description: Number of xDS responses ACKed by the Dataplane.
-                        type: integer
-                      responsesRejected:
-                        description: Number of xDS responses NACKed by the Dataplane.
-                        type: integer
-                      responsesSent:
-                        description: Number of xDS responses sent to the Dataplane.
-                        type: integer
-                    type: object
-                  eds:
-                    description: EDS defines all EDS stats.
-                    properties:
-                      responsesAcknowledged:
-                        description: Number of xDS responses ACKed by the Dataplane.
-                        type: integer
-                      responsesRejected:
-                        description: Number of xDS responses NACKed by the Dataplane.
-                        type: integer
-                      responsesSent:
-                        description: Number of xDS responses sent to the Dataplane.
-                        type: integer
-                    type: object
-                  lastUpdateTime:
-                    description: >-
-                      Time when status of a given ADS subscription was most
-                      recently updated.
-                    format: date-time
-                    type: string
-                  lds:
-                    description: LDS defines all LDS stats.
-                    properties:
-                      responsesAcknowledged:
-                        description: Number of xDS responses ACKed by the Dataplane.
-                        type: integer
-                      responsesRejected:
-                        description: Number of xDS responses NACKed by the Dataplane.
-                        type: integer
-                      responsesSent:
-                        description: Number of xDS responses sent to the Dataplane.
-                        type: integer
-                    type: object
-                  rds:
-                    description: RDS defines all RDS stats.
-                    properties:
-                      responsesAcknowledged:
-                        description: Number of xDS responses ACKed by the Dataplane.
-                        type: integer
-                      responsesRejected:
-                        description: Number of xDS responses NACKed by the Dataplane.
-                        type: integer
-                      responsesSent:
-                        description: Number of xDS responses sent to the Dataplane.
-                        type: integer
-                    type: object
-                  total:
-                    description: Total defines an aggregate over individual xDS stats.
-                    properties:
-                      responsesAcknowledged:
-                        description: Number of xDS responses ACKed by the Dataplane.
-                        type: integer
-                      responsesRejected:
-                        description: Number of xDS responses NACKed by the Dataplane.
-                        type: integer
-                      responsesSent:
-                        description: Number of xDS responses sent to the Dataplane.
-                        type: integer
-                    type: object
-                type: object
-              version:
-                description: Version of Envoy and Kuma dataplane
-                properties:
-                  dependencies:
-                    additionalProperties:
-                      type: string
-                    description: Versions of other dependencies
-                    type: object
-                  envoy:
-                    description: Version of Envoy
-                    properties:
-                      build:
-                        description: Full build tag of Envoy version
-                        type: string
-                      kumaDpCompatible:
-                        description: >-
-                          True iff Envoy version is compatible with Kuma DP
-                          version
-                        type: boolean
-                      version:
-                        description: Version number of Envoy
-                        type: string
-                    type: object
-                  kumaDp:
-                    description: Version of Kuma Dataplane
-                    properties:
-                      buildDate:
-                        description: Build date of Kuma Dataplane version
-                        type: string
-                      gitCommit:
-                        description: Git commit of Kuma Dataplane version
-                        type: string
-                      gitTag:
-                        description: Git tag of Kuma Dataplane version
-                        type: string
-                      kumaCpCompatible:
-                        description: >-
-                          True iff Kuma DP version is compatible with Kuma CP
-                          version
-                        type: boolean
-                      version:
-                        description: Version number of Kuma Dataplane
-                        type: string
-                    type: object
-                type: object
-            type: object
-          type: array
-        type:
-          type: string
-      required:
-        - type
-        - name
-        - mesh
-      type: object
     GlobalSecretItem:
       type: object
       required:
@@ -16649,193 +15644,126 @@ components:
       description: MeshInsight defines the observed state of a Mesh.
       properties:
         dataplanes:
-          description: Dataplanes aggregates over the dataplanes of the mesh.
           properties:
             offline:
-              description: Offline counts the dataplanes that are not connected.
               type: integer
             online:
-              description: Online counts the dataplanes that are connected.
               type: integer
             partiallyDegraded:
-              description: >-
-                PartiallyDegraded counts the dataplanes with some inbounds
-                offline.
               type: integer
             total:
               type: integer
           type: object
         dataplanesByType:
-          description: DataplanesByType splits the dataplane stats by proxy type.
           properties:
-            standard:
-              description: Standard holds the stats of every dataplane.
+            gateway:
               properties:
                 offline:
-                  description: Offline counts the dataplanes that are not connected.
                   type: integer
                 online:
-                  description: Online counts the dataplanes that are connected.
                   type: integer
                 partiallyDegraded:
-                  description: >-
-                    PartiallyDegraded counts the dataplanes with some inbounds
-                    offline.
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            gatewayDelegated:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            standard:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
                   type: integer
                 total:
                   type: integer
               type: object
           type: object
         dpVersions:
-          description: DpVersions holds the dataplane stats grouped by version.
           properties:
             envoy:
               additionalProperties:
-                description: >-
-                  MeshInsight_DataplaneStat defines statistics specifically for
-                  Dataplanes.
+                description: DataplaneStat defines statistic specifically for Dataplane
                 properties:
                   offline:
-                    description: Offline counts the dataplanes that are not connected.
                     type: integer
                   online:
-                    description: Online counts the dataplanes that are connected.
                     type: integer
                   partiallyDegraded:
-                    description: >-
-                      PartiallyDegraded counts the dataplanes with some inbounds
-                      offline.
                     type: integer
                   total:
                     type: integer
                 type: object
-              description: Envoy holds the dataplane stats grouped by Envoy version.
+              description: Dataplane stats grouped by Envoy version
               type: object
             kumaDp:
               additionalProperties:
-                description: >-
-                  MeshInsight_DataplaneStat defines statistics specifically for
-                  Dataplanes.
+                description: DataplaneStat defines statistic specifically for Dataplane
                 properties:
                   offline:
-                    description: Offline counts the dataplanes that are not connected.
                     type: integer
                   online:
-                    description: Online counts the dataplanes that are connected.
                     type: integer
                   partiallyDegraded:
-                    description: >-
-                      PartiallyDegraded counts the dataplanes with some inbounds
-                      offline.
                     type: integer
                   total:
                     type: integer
                 type: object
-              description: KumaDp holds the dataplane stats grouped by KumaDP version.
+              description: Dataplane stats grouped by KumaDP version
               type: object
           type: object
         mTLS:
-          description: MTLS holds the dataplane stats grouped by certificate backend.
+          description: mTLS statistics
           properties:
             issuedBackends:
               additionalProperties:
-                description: >-
-                  MeshInsight_DataplaneStat defines statistics specifically for
-                  Dataplanes.
+                description: DataplaneStat defines statistic specifically for Dataplane
                 properties:
                   offline:
-                    description: Offline counts the dataplanes that are not connected.
                     type: integer
                   online:
-                    description: Online counts the dataplanes that are connected.
                     type: integer
                   partiallyDegraded:
-                    description: >-
-                      PartiallyDegraded counts the dataplanes with some inbounds
-                      offline.
                     type: integer
                   total:
                     type: integer
                 type: object
-              description: >-
-                IssuedBackends groups the dataplanes by the backend that issued
-                their
-
-                certificate.
+              description: Dataplanes grouped by issued backends.
               type: object
             supportedBackends:
               additionalProperties:
-                description: >-
-                  MeshInsight_DataplaneStat defines statistics specifically for
-                  Dataplanes.
+                description: DataplaneStat defines statistic specifically for Dataplane
                 properties:
                   offline:
-                    description: Offline counts the dataplanes that are not connected.
                     type: integer
                   online:
-                    description: Online counts the dataplanes that are connected.
                     type: integer
                   partiallyDegraded:
-                    description: >-
-                      PartiallyDegraded counts the dataplanes with some inbounds
-                      offline.
                     type: integer
                   total:
                     type: integer
                 type: object
-              description: >-
-                SupportedBackends groups the dataplanes by the backends they
-                accept
-
-                certificates from.
+              description: Dataplanes grouped by supported backends.
               type: object
           type: object
         resources:
           additionalProperties:
-            description: >-
-              MeshInsight_ResourceStat counts the stored resources of a single
-              type.
             properties:
               total:
                 type: integer
             type: object
-          description: Resources counts the stored resources of the mesh by type.
           type: object
-      type: object
-    SecretItem:
-      properties:
-        creationTime:
-          description: Time at which the resource was created
-          format: date-time
-          readOnly: true
-          type: string
-        data:
-          description: Value of the secret
-          format: byte
-          type: string
-        labels:
-          additionalProperties:
-            type: string
-          type: object
-        mesh:
-          maxLength: 253
-          pattern: ^[0-9a-z-_.]*$
-          type: string
-        modificationTime:
-          description: Time at which the resource was updated
-          format: date-time
-          readOnly: true
-          type: string
-        name:
-          maxLength: 253
-          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
-          type: string
-        type:
-          type: string
-      required:
-        - type
-        - name
-        - mesh
       type: object
     ZoneOverviewWithMeta:
       allOf:
@@ -16843,8 +15771,6 @@ components:
         - $ref: '#/components/schemas/ZoneOverview'
     ZoneOverview:
       description: ZoneOverview defines the projected state of a Zone.
-      required:
-        - zone
       properties:
         zone:
           properties:
@@ -19088,309 +18014,6 @@ components:
               type: object
           type: object
           readOnly: true
-    ZoneItem:
-      type: object
-      description: >-
-        Zone defines the Zone configuration used at the Global Control Plane
-        within a
-
-        distributed deployment. Enabled is a pointer because an unset value and
-        an explicit
-
-        false mean different things: protobuf omitted an unset wrapper entirely,
-        and an older
-
-        control plane still distinguishes the two.
-      required:
-        - type
-        - name
-      properties:
-        type:
-          description: the type of the resource
-          type: string
-          enum:
-            - Zone
-        kri:
-          description: >-
-            A unique identifier for this resource instance used by internal
-            tooling and integrations. Typically derived from resource attributes
-            and may be used for cross-references or indexing
-          type: string
-          readOnly: true
-          example: kri_z___kuma-demo_myresource1_
-        name:
-          description: Name of the Kuma resource
-          type: string
-          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
-          maxLength: 253
-        labels:
-          additionalProperties:
-            type: string
-          description: The labels to help identity resources
-          type: object
-        creationTime:
-          readOnly: true
-          type: string
-          description: Time at which the resource was created
-          format: date-time
-          example: '1901-01-01T00:00:00.000Z'
-        modificationTime:
-          readOnly: true
-          type: string
-          description: Time at which the resource was updated
-          format: date-time
-          example: '1901-01-01T00:00:00.000Z'
-        enabled:
-          description: >-
-            Enabled allows to turn the zone on and off, and to exclude the whole
-            zone from
-
-            balancing traffic on it.
-          type: boolean
-    ZoneInsightItem:
-      type: object
-      description: ZoneInsight defines the observed state of a Zone Kuma CP.
-      required:
-        - type
-        - name
-      properties:
-        type:
-          description: the type of the resource
-          type: string
-          enum:
-            - ZoneInsight
-        name:
-          description: Name of the Kuma resource
-          type: string
-          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
-          maxLength: 253
-        labels:
-          additionalProperties:
-            type: string
-          description: The labels to help identity resources
-          type: object
-        creationTime:
-          readOnly: true
-          type: string
-          description: Time at which the resource was created
-          format: date-time
-          example: '1901-01-01T00:00:00.000Z'
-        modificationTime:
-          readOnly: true
-          type: string
-          description: Time at which the resource was updated
-          format: date-time
-          example: '1901-01-01T00:00:00.000Z'
-        envoyAdminStreams:
-          description: Statistics about Envoy Admin Streams, superseded by KDSStreams.
-          properties:
-            clustersGlobalInstanceId:
-              description: Global instance ID that handles Clusters streams.
-              type: string
-            configDumpGlobalInstanceId:
-              description: Global instance ID that handles XDS Config Dump streams.
-              type: string
-            statsGlobalInstanceId:
-              description: Global instance ID that handles Stats streams.
-              type: string
-          type: object
-        healthCheck:
-          description: Information about the last received zone health check.
-          properties:
-            time:
-              description: Time last health check received.
-              format: date-time
-              type: string
-          type: object
-        kdsStreams:
-          description: >-
-            Information about kds streams that are established between global
-            and zone.
-          properties:
-            clusters:
-              description: Details of stream that handles Clusters stream.
-              properties:
-                connectTime:
-                  description: Time when the stream was open.
-                  format: date-time
-                  type: string
-                globalInstanceId:
-                  description: Global instance ID that handles the stream.
-                  type: string
-              type: object
-            configDump:
-              description: Details of stream that handles XDS Config Dump stream.
-              properties:
-                connectTime:
-                  description: Time when the stream was open.
-                  format: date-time
-                  type: string
-                globalInstanceId:
-                  description: Global instance ID that handles the stream.
-                  type: string
-              type: object
-            globalToZone:
-              description: >-
-                Details of stream that handles global to zone resource sync
-                stream.
-              properties:
-                connectTime:
-                  description: Time when the stream was open.
-                  format: date-time
-                  type: string
-                globalInstanceId:
-                  description: Global instance ID that handles the stream.
-                  type: string
-              type: object
-            stats:
-              description: Details of stream that handles Stats stream.
-              properties:
-                connectTime:
-                  description: Time when the stream was open.
-                  format: date-time
-                  type: string
-                globalInstanceId:
-                  description: Global instance ID that handles the stream.
-                  type: string
-              type: object
-            zoneToGlobal:
-              description: >-
-                Details of stream that handles zone to global resource sync
-                stream.
-              properties:
-                connectTime:
-                  description: Time when the stream was open.
-                  format: date-time
-                  type: string
-                globalInstanceId:
-                  description: Global instance ID that handles the stream.
-                  type: string
-              type: object
-          type: object
-        subscriptions:
-          description: List of KDS subscriptions created by a given Zone Kuma CP.
-          items:
-            description: >-
-              KDSSubscription describes a single KDS subscription created by a
-              Zone to the Global.
-
-              Ideally there is one per Zone lifecycle. Several of them indicate
-              a transient loss of
-
-              connectivity, or a restart of either control plane.
-            properties:
-              authTokenProvided:
-                description: Indicates if subscription provided auth token.
-                type: boolean
-              config:
-                description: Config of Zone Kuma CP.
-                type: string
-              connectTime:
-                description: Time when a given Zone connected to the Global.
-                format: date-time
-                type: string
-              disconnectTime:
-                description: Time when a given Zone disconnected from the Global.
-                format: date-time
-                type: string
-              generation:
-                description: >-
-                  Generation is an integer number which is periodically
-                  increased by the status sink.
-                format: int32
-                type: integer
-              globalInstanceId:
-                description: Global CP instance that handled given subscription.
-                type: string
-              id:
-                description: Unique id per KDS subscription.
-                type: string
-              status:
-                description: Status of the KDS subscription.
-                properties:
-                  lastUpdateTime:
-                    description: >-
-                      Time when status of a given KDS subscription was most
-                      recently updated.
-                    format: date-time
-                    type: string
-                  stat:
-                    additionalProperties:
-                      description: >-
-                        KDSServiceStats defines all stats over a single xDS
-                        service. The counters serialize
-
-                        as JSON strings because protobuf writes 64 bit integers
-                        that way, and an older
-
-                        control plane rejects them when written as numbers.
-                      properties:
-                        responsesAcknowledged:
-                          description: Number of xDS responses ACKed by the Dataplane.
-                          format: int64
-                          type: string
-                        responsesRejected:
-                          description: Number of xDS responses NACKed by the Dataplane.
-                          format: int64
-                          type: string
-                        responsesSent:
-                          description: Number of xDS responses sent to the Dataplane.
-                          format: int64
-                          type: string
-                      type: object
-                    description: Stat holds the KDS stats per resource type.
-                    type: object
-                  total:
-                    description: Total defines an aggregate over individual KDS stats.
-                    properties:
-                      responsesAcknowledged:
-                        description: Number of xDS responses ACKed by the Dataplane.
-                        format: int64
-                        type: string
-                      responsesRejected:
-                        description: Number of xDS responses NACKed by the Dataplane.
-                        format: int64
-                        type: string
-                      responsesSent:
-                        description: Number of xDS responses sent to the Dataplane.
-                        format: int64
-                        type: string
-                    type: object
-                type: object
-              version:
-                description: Version of Zone Kuma CP.
-                properties:
-                  kumaCp:
-                    description: Version of Zone Kuma CP.
-                    properties:
-                      buildDate:
-                        description: Build date of Kuma ControlPlane version.
-                        type: string
-                      gitCommit:
-                        description: Git commit of Kuma ControlPlane version.
-                        type: string
-                      gitTag:
-                        description: Git tag of Kuma ControlPlane version.
-                        type: string
-                      kumaCpGlobalCompatible:
-                        description: >-
-                          True iff this Zone CP version is compatible with
-                          Global CP.
-                        type: boolean
-                      version:
-                        description: Version number of Kuma ControlPlane.
-                        type: string
-                    type: object
-                type: object
-              zoneInstanceId:
-                description: >-
-                  Zone CP instance that handled the given subscription, the
-                  leader at the time of
-
-                  connection.
-                type: string
-            type: object
-          type: array
   responses:
     GlobalInsightsResponse:
       description: A response containing counts of global resources.
@@ -20376,112 +18999,6 @@ components:
         application/json:
           schema:
             type: object
-    DataplaneCreateOrUpdateSuccessResponse:
-      content:
-        application/json:
-          schema:
-            properties:
-              warnings:
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-                readOnly: true
-                type: array
-            type: object
-      description: Successful response
-    DataplaneDeleteSuccessResponse:
-      content:
-        application/json:
-          schema:
-            type: object
-      description: Successful response
-    DataplaneItem:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/DataplaneItem'
-      description: Successful response
-    DataplaneList:
-      content:
-        application/json:
-          schema:
-            properties:
-              items:
-                items:
-                  $ref: '#/components/schemas/DataplaneItem'
-                type: array
-              next:
-                description: URL to the next page, or null when this is the last page
-                type:
-                  - string
-                  - 'null'
-              total:
-                description: The total number of entities
-                type: number
-            required:
-              - total
-              - items
-              - next
-            type: object
-      description: List
-    DataplaneInsightCreateOrUpdateSuccessResponse:
-      content:
-        application/json:
-          schema:
-            properties:
-              warnings:
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-                readOnly: true
-                type: array
-            type: object
-      description: Successful response
-    DataplaneInsightDeleteSuccessResponse:
-      content:
-        application/json:
-          schema:
-            type: object
-      description: Successful response
-    DataplaneInsightItem:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/DataplaneInsightItem'
-      description: Successful response
-    DataplaneInsightList:
-      content:
-        application/json:
-          schema:
-            properties:
-              items:
-                items:
-                  $ref: '#/components/schemas/DataplaneInsightItem'
-                type: array
-              next:
-                description: URL to the next page, or null when this is the last page
-                type:
-                  - string
-                  - 'null'
-              total:
-                description: The total number of entities
-                type: number
-            required:
-              - total
-              - items
-              - next
-            type: object
-      description: List
     GetDataplaneOverviewResponse:
       description: A response containing the overview of a dataplane.
       content:
@@ -20564,59 +19081,6 @@ components:
         application/json:
           schema:
             type: object
-    MeshCreateOrUpdateSuccessResponse:
-      content:
-        application/json:
-          schema:
-            properties:
-              warnings:
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-                readOnly: true
-                type: array
-            type: object
-      description: Successful response
-    MeshDeleteSuccessResponse:
-      content:
-        application/json:
-          schema:
-            type: object
-      description: Successful response
-    MeshItem:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/MeshItem'
-      description: Successful response
-    MeshList:
-      content:
-        application/json:
-          schema:
-            properties:
-              items:
-                items:
-                  $ref: '#/components/schemas/MeshItem'
-                type: array
-              next:
-                description: URL to the next page, or null when this is the last page
-                type:
-                  - string
-                  - 'null'
-              total:
-                description: The total number of entities
-                type: number
-            required:
-              - total
-              - items
-              - next
-            type: object
-      description: List
     GetMeshInsightResponse:
       description: A response containing the insight of a mesh.
       content:
@@ -20675,59 +19139,6 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/MeshOverviewWithMeta'
-    SecretCreateOrUpdateSuccessResponse:
-      content:
-        application/json:
-          schema:
-            properties:
-              warnings:
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-                readOnly: true
-                type: array
-            type: object
-      description: Successful response
-    SecretDeleteSuccessResponse:
-      content:
-        application/json:
-          schema:
-            type: object
-      description: Successful response
-    SecretItem:
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/SecretItem'
-      description: Successful response
-    SecretList:
-      content:
-        application/json:
-          schema:
-            properties:
-              items:
-                items:
-                  $ref: '#/components/schemas/SecretItem'
-                type: array
-              next:
-                description: URL to the next page, or null when this is the last page
-                type:
-                  - string
-                  - 'null'
-              total:
-                description: The total number of entities
-                type: number
-            required:
-              - total
-              - items
-              - next
-            type: object
-      description: List
     GetZoneOverviewResponse:
       description: A response containing the overview of a zone.
       content:
@@ -21229,112 +19640,6 @@ components:
                 items:
                   type: string
     WorkloadDeleteSuccessResponse:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            type: object
-    ZoneItem:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ZoneItem'
-    ZoneList:
-      description: List
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - total
-              - items
-              - next
-            properties:
-              items:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ZoneItem'
-              total:
-                type: number
-                description: The total number of entities
-              next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
-    ZoneCreateOrUpdateSuccessResponse:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              warnings:
-                type: array
-                readOnly: true
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-    ZoneDeleteSuccessResponse:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            type: object
-    ZoneInsightItem:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ZoneInsightItem'
-    ZoneInsightList:
-      description: List
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - total
-              - items
-              - next
-            properties:
-              items:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ZoneInsightItem'
-              total:
-                type: number
-                description: The total number of entities
-              next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
-    ZoneInsightCreateOrUpdateSuccessResponse:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              warnings:
-                type: array
-                readOnly: true
-                description: >
-                  warnings is a list of warning messages to return to the
-                  requesting Kuma API clients.
-
-                  Warning messages describe a problem the client making the API
-                  request should correct or be aware of.
-                items:
-                  type: string
-    ZoneInsightDeleteSuccessResponse:
       description: Successful response
       content:
         application/json:

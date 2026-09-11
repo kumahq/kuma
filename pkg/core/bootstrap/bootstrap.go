@@ -27,8 +27,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
-	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -422,12 +420,12 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	)
 
 	customizableManager.Customize(
-		zone_api.ZoneType,
+		system.ZoneType,
 		zone.NewZoneManager(builder.ResourceStore(), zone.Validator{Store: builder.ResourceStore()}, builder.Config().Store.UnsafeDelete),
 	)
 
 	customizableManager.Customize(
-		zoneinsight_api.ZoneInsightType,
+		system.ZoneInsightType,
 		zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone),
 	)
 

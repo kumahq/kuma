@@ -5843,7 +5843,6 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ZoneInsight defines the observed state of a Zone Kuma CP.
         properties:
           apiVersion:
             description: |-
@@ -5859,6 +5858,11 @@ spec:
               Cannot be updated.
               In CamelCase.
               More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          mesh:
+            description: |-
+              Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
             type: string
           metadata:
             type: object
@@ -5891,11 +5895,6 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: |-
-          Zone defines the Zone configuration used at the Global Control Plane within a
-          distributed deployment. Enabled is a pointer because an unset value and an explicit
-          false mean different things: protobuf omitted an unset wrapper entirely, and an older
-          control plane still distinguishes the two.
         properties:
           apiVersion:
             description: |-
@@ -5911,6 +5910,11 @@ spec:
               Cannot be updated.
               In CamelCase.
               More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          mesh:
+            description: |-
+              Mesh is the name of the Kuma mesh this resource belongs to.
+              It may be omitted for cluster-scoped resources.
             type: string
           metadata:
             type: object
@@ -8334,6 +8338,8 @@ rules:
       - dataplanes
       - dataplaneinsights
       - meshes
+      - zones
+      - zoneinsights
       - meshinsights
       - containerpatches
       - meshaccesslogs
@@ -8361,8 +8367,6 @@ rules:
       - meshtrusts
       - meshzoneaddresses
       - workloads
-      - zoneinsights
-      - zones
     verbs:
       - get
       - list
@@ -8666,7 +8670,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 1fa6f39d97a8aad47eff6f6670269d3333a30c2e107b0a9d14b2aa23e0f3bf24
-        checksum/tls-secrets: 5f00112948cc1ca4c1382568f0bccf94ddda13a9697734334aca1926a219172c
+        checksum/tls-secrets: f6033fcf07311251d42af5ec4d088306bf0aa0300daf9ddcd142032744c4fdbd
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -8897,6 +8901,8 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
+          - zones
+          - zoneinsights
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections
@@ -8922,8 +8928,6 @@ webhooks:
           - meshtrusts
           - meshzoneaddresses
           - workloads
-          - zoneinsights
-          - zones
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
@@ -8975,8 +8979,6 @@ webhooks:
           - meshtrusts
           - meshzoneaddresses
           - workloads
-          - zoneinsights
-          - zones
   
       
     sideEffects: None
@@ -9144,8 +9146,6 @@ webhooks:
           - meshtrusts
           - meshzoneaddresses
           - workloads
-          - zoneinsights
-          - zones
     
       
     sideEffects: None

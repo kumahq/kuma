@@ -6,11 +6,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
@@ -74,10 +72,10 @@ var _ = Describe("DefaultProxyProfile", func() {
 				},
 			}
 
-			Expect(yaml.Unmarshal([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
+			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
 
 			dataplane := &mesh_proto.Dataplane{}
-			Expect(core_model.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
+			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
 			proxy := &core_xds.Proxy{
 				Id: *core_xds.BuildProxyId("demo", "backend-01"),

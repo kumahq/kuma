@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Global Insight", func() {
@@ -120,13 +121,13 @@ func createZoneInsight(name string, online bool, rs store.ResourceStore) error {
 	builder := builders.ZoneInsight().WithName(name)
 
 	if online {
-		builder.AddSubscription(&zoneinsight_api.KDSSubscription{
-			ConnectTime: zoneinsight_api.NewTime(time.Unix(1694779925, 0)),
+		builder.AddSubscription(&system_proto.KDSSubscription{
+			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
 		})
 	} else {
-		builder.AddSubscription(&zoneinsight_api.KDSSubscription{
-			ConnectTime:    zoneinsight_api.NewTime(time.Unix(1694779805, 0)),
-			DisconnectTime: zoneinsight_api.NewTime(time.Unix(1694779925, 0)),
+		builder.AddSubscription(&system_proto.KDSSubscription{
+			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
+			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
 		})
 	}
 

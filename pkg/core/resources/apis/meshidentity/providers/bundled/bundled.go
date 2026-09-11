@@ -42,6 +42,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/once"
 )
 
@@ -123,7 +124,7 @@ func (b *bundledIdentityProvider) Initialize(ctx context.Context, identity *mesh
 			}
 			certSecret := &core_system.SecretResource{
 				Spec: &system_proto.Secret{
-					Data: system_proto.Bytes(keyPair.CertPEM),
+					Data: util_proto.Bytes(keyPair.CertPEM),
 				},
 			}
 			mesh := identity.Meta.GetMesh()
@@ -134,7 +135,7 @@ func (b *bundledIdentityProvider) Initialize(ctx context.Context, identity *mesh
 			}
 			keySecret := &core_system.SecretResource{
 				Spec: &system_proto.Secret{
-					Data: system_proto.Bytes(keyPair.KeyPEM),
+					Data: util_proto.Bytes(keyPair.KeyPEM),
 				},
 			}
 			if err := b.secretManager.Create(ctx, keySecret, core_store.CreateWithOwner(identity), core_store.CreateByKey(PrivateKeyName(model.GetDisplayName(identity.GetMeta())), mesh)); err != nil {

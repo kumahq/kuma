@@ -160,7 +160,7 @@ func (r *resourceInspectHandler) configForProxy() handlerFunc {
 			return nil, withTitle(err, "Failed to fetch dataplane insight")
 		}
 
-		inspector, err := inspect.NewProxyConfigInspector(mc, core_xds.DataplaneMetadataFromXdsMetadata(dataplaneInsight.Spec.Metadata.ToProto()), r.zoneName, r.knownInternalAddresses, r.xdsHooks...)
+		inspector, err := inspect.NewProxyConfigInspector(mc, core_xds.DataplaneMetadataFromXdsMetadata(dataplaneInsight.Spec.Metadata), r.zoneName, r.knownInternalAddresses, r.xdsHooks...)
 		if err != nil {
 			return nil, withTitle(err, "Failed to create proxy config inspector")
 		}
