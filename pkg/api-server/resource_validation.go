@@ -103,18 +103,6 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 	return err
 }
 
-func (r *resourceCrudHandler) validateImmutableLabels(storedLabels, newComputedLabels map[string]string) validators.ValidationError {
-	var err validators.ValidationError
-	stored, ok := storedLabels[mesh_proto.ResourceOriginLabel]
-	if computed := newComputedLabels[mesh_proto.ResourceOriginLabel]; ok && stored != computed {
-		err.AddViolationAt(
-			validators.Root().Key(mesh_proto.ResourceOriginLabel),
-			fmt.Sprintf("is immutable, cannot be changed from %q to %q", stored, computed),
-		)
-	}
-	return err
-}
-
 func (r *resourceCrudHandler) validatePolicyRole(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
 	policyRole := core_model.PolicyRole(resource.GetMeta())
