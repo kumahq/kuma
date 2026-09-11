@@ -58,7 +58,11 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 		return admission.Allowed("")
 	}
 
-	coreRes, k8sObj, err := h.decode(req)
+	raw := req.Object
+	if req.Operation == v1.Delete {
+		raw = req.OldObject
+	}
+	coreRes, k8sObj, err := h.decode(req.Kind.Kind, raw)
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
@@ -106,8 +110,8 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 	}
 }
 
-func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, k8s_model.KubernetesObject, error) {
-	coreRes, err := h.coreRegistry.NewObject(core_model.ResourceType(req.Kind.Kind))
+func (h *validatingHandler) decode(kind string, raw kube_runtime.RawExtension) (core_model.Resource, k8s_model.KubernetesObject, error) {
+	coreRes, err := h.coreRegistry.NewObject(core_model.ResourceType(kind))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -115,18 +119,9 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 	if err != nil {
 		return nil, nil, err
 	}
-
-	switch req.Operation {
-	case v1.Delete:
-		if err := h.decoder.DecodeRaw(req.OldObject, k8sObj); err != nil {
-			return nil, nil, err
-		}
-	default:
-		if err := h.decoder.Decode(req, k8sObj); err != nil {
-			return nil, nil, err
-		}
+	if err := h.decoder.DecodeRaw(raw, k8sObj); err != nil {
+		return nil, nil, err
 	}
-
 	if err := h.converter.ToCoreResource(k8sObj, coreRes); err != nil {
 		return nil, nil, err
 	}
@@ -149,7 +144,7 @@ func (h *validatingHandler) validateOriginNotChanged(req admission.Request, newO
 		return nil, nil
 	}
 
-	oldObj, err := h.decodeOldObject(req)
+	_, oldObj, err := h.decode(req.Kind.Kind, req.OldObject)
 	if err != nil {
 		return nil, err
 	}
@@ -164,21 +159,6 @@ func (h *validatingHandler) validateOriginNotChanged(req admission.Request, newO
 		)), nil
 	}
 	return nil, nil
-}
-
-func (h *validatingHandler) decodeOldObject(req admission.Request) (k8s_model.KubernetesObject, error) {
-	coreRes, err := h.coreRegistry.NewObject(core_model.ResourceType(req.Kind.Kind))
-	if err != nil {
-		return nil, err
-	}
-	k8sObj, err := h.k8sRegistry.NewObject(coreRes.GetSpec())
-	if err != nil {
-		return nil, err
-	}
-	if err := h.decoder.DecodeRaw(req.OldObject, k8sObj); err != nil {
-		return nil, err
-	}
-	return k8sObj, nil
 }
 
 func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validators.ValidationError {
