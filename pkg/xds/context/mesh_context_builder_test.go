@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -618,6 +619,112 @@ spec:
 		// then the error is surfaced rather than causing a nil-pointer panic
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("failed to build base mesh context"))
+	})
+
+	const meshWithBackend = `
+type: Mesh
+name: mesh-1
+---
+type: MeshService
+name: backend
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneRef:
+      name: dp-1
+  ports:
+  - port: 80
+    targetPort: 8080
+    appProtocol: http
+---
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: 127.0.0.1
+  inbound:
+  - port: 8080
+---
+type: MeshTimeout
+name: timeout
+mesh: mesh-1
+spec:
+  to:
+  - targetRef:
+      kind: Mesh
+    default:
+      connectionTimeout: 1s
+`
+
+	samePointer := func(a, b any) bool {
+		return reflect.ValueOf(a).UnsafePointer() == reflect.ValueOf(b).UnsafePointer()
+	}
+
+	It("keeps the topology when only a policy changes", func() {
+		Expect(test_store.LoadResources(context.Background(), resourceStore, meshWithBackend)).To(Succeed())
+		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(endpointTargets(before)).To(ConsistOf("127.0.0.1"))
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: MeshTimeout
+name: timeout
+mesh: mesh-1
+spec:
+  to:
+  - targetRef:
+      kind: Mesh
+    default:
+      connectionTimeout: 2s
+`)).To(Succeed())
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(after.Hash).ToNot(Equal(before.Hash))
+		Expect(after.BaseMeshContext).ToNot(BeIdenticalTo(before.BaseMeshContext))
+		Expect(samePointer(after.EndpointMap, before.EndpointMap)).To(BeTrue(), "endpoint maps should be reused when only a policy changed")
+		Expect(samePointer(after.DataplanesByName, before.DataplanesByName)).To(BeTrue())
+	})
+
+	It("keeps the base mesh context and rebuilds the topology when only a Dataplane changes", func() {
+		Expect(test_store.LoadResources(context.Background(), resourceStore, meshWithBackend)).To(Succeed())
+		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: 127.0.0.2
+  inbound:
+  - port: 8080
+`)).To(Succeed())
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(after.Hash).ToNot(Equal(before.Hash))
+		Expect(after.BaseMeshContext).To(BeIdenticalTo(before.BaseMeshContext), "policies and destinations did not change")
+		Expect(endpointTargets(after)).To(ConsistOf("127.0.0.2"))
+		Expect(after.DataplanesByName["dp-1"].Spec.GetNetworking().GetAddress()).To(Equal("127.0.0.2"))
+	})
+
+	It("rebuilds the topology when a Secret changes", func() {
+		Expect(test_store.LoadResources(context.Background(), resourceStore, meshWithBackend)).To(Succeed())
+		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Secret
+name: ca
+mesh: mesh-1
+data: dGVzdA==
+`)).To(Succeed())
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(after.Hash).ToNot(Equal(before.Hash))
+		Expect(samePointer(after.EndpointMap, before.EndpointMap)).To(BeFalse(), "MeshExternalService TLS endpoints are built from Secrets")
 	})
 })
 

@@ -3,7 +3,6 @@ package context_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
@@ -43,7 +42,7 @@ var _ = Describe("DestinationIndex", func() {
 						Kind:      "MeshService",
 						Name:      "backend-svc",
 						Namespace: "other-ns",
-						Port:      wrapperspb.UInt32(8080),
+						Port:      mesh_proto.NewUInt32(8080),
 					},
 				},
 			}

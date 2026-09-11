@@ -13,11 +13,7 @@ import (
 )
 
 func ToJSON(spec ResourceSpec) ([]byte, error) {
-	if msg, ok := spec.(proto.Message); ok {
-		return util_proto.ToJSON(msg)
-	} else {
-		return json.Marshal(spec)
-	}
+	return json.Marshal(spec)
 }
 
 func ToMap(spec ResourceSpec) (map[string]any, error) {
@@ -33,11 +29,7 @@ func ToMap(spec ResourceSpec) (map[string]any, error) {
 }
 
 func ToYAML(spec ResourceSpec) ([]byte, error) {
-	if msg, ok := spec.(proto.Message); ok {
-		return util_proto.ToYAML(msg)
-	} else {
-		return yaml.Marshal(spec)
-	}
+	return yaml.Marshal(spec)
 }
 
 // KDSWireSpec is implemented by a spec that a released control plane defines as
@@ -53,59 +45,55 @@ type KDSWireSpec interface {
 }
 
 func ToAny(spec ResourceSpec) (*anypb.Any, error) {
-	switch s := spec.(type) {
-	case proto.Message:
-		return util_proto.MarshalAnyDeterministic(s)
-	case KDSWireSpec:
+	if s, ok := spec.(KDSWireSpec); ok {
 		return util_proto.MarshalAnyDeterministic(s.ToKDSWire())
-	default:
-		bytes, err := json.Marshal(spec)
-		if err != nil {
-			return nil, err
-		}
-		return &anypb.Any{
-			Value: bytes,
-		}, nil
 	}
+	bytes, err := json.Marshal(spec)
+	if err != nil {
+		return nil, err
+	}
+	return &anypb.Any{
+		Value: bytes,
+	}, nil
 }
 
 func FromJSON(src []byte, spec ResourceSpec) error {
-	if msg, ok := spec.(proto.Message); ok {
-		return util_proto.FromJSON(src, msg)
-	} else {
-		return json.Unmarshal(src, spec)
-	}
+	return json.Unmarshal(src, spec)
 }
 
 func FromYAML(src []byte, spec ResourceSpec) error {
-	if msg, ok := spec.(proto.Message); ok {
-		return util_proto.FromYAML(src, msg)
-	} else {
-		return yaml.Unmarshal(src, spec)
-	}
+	return yaml.Unmarshal(src, spec)
 }
 
 // FromAny reads a KDSWireSpec from either form: the protobuf message ToAny
 // writes, or the type-URL-less JSON a control plane built between the Go struct
-// rewrite and this fix sends. Failing that JSON instead would leave such a peer
-// restarting its stream with nothing synced.
+// rewrite and the wire fix sends. Failing that JSON instead would leave such a
+// peer restarting its stream with nothing synced.
 func FromAny(src *anypb.Any, spec ResourceSpec) error {
-	switch s := spec.(type) {
-	case proto.Message:
-		return util_proto.UnmarshalAnyTo(src, s)
-	case KDSWireSpec:
-		if src.GetTypeUrl() == "" {
-			return json.Unmarshal(src.GetValue(), spec)
-		}
-		wire := s.ToKDSWire()
-		proto.Reset(wire)
-		if err := util_proto.UnmarshalAnyTo(src, wire); err != nil {
-			return err
-		}
-		return s.FromKDSWire(wire)
-	default:
+	s, ok := spec.(KDSWireSpec)
+	if !ok || src.GetTypeUrl() == "" {
+		// json.Unmarshal merges into what the target already holds, so a field the
+		// sender omitted would keep the value a previous read left behind. The
+		// protobuf side below resets for the same reason.
+		reset(spec)
 		return json.Unmarshal(src.GetValue(), spec)
 	}
+	wire := s.ToKDSWire()
+	proto.Reset(wire)
+	if err := util_proto.UnmarshalAnyTo(src, wire); err != nil {
+		return err
+	}
+	return s.FromKDSWire(wire)
+}
+
+// reset returns a spec to its zero value, so that reading into it replaces
+// rather than merges.
+func reset(spec ResourceSpec) {
+	v := reflect.ValueOf(spec)
+	if v.Kind() != reflect.Pointer || v.IsNil() {
+		return
+	}
+	v.Elem().Set(reflect.Zero(v.Elem().Type()))
 }
 
 func FullName(spec ResourceSpec) string {
@@ -114,23 +102,9 @@ func FullName(spec ResourceSpec) string {
 }
 
 func Equal(x, y ResourceSpec) bool {
-	xMsg, xOk := x.(proto.Message)
-	yMsg, yOk := y.(proto.Message)
-	if xOk != yOk {
-		return false
-	}
-
-	if xOk {
-		return proto.Equal(xMsg, yMsg)
-	} else {
-		return reflect.DeepEqual(x, y)
-	}
+	return reflect.DeepEqual(x, y)
 }
 
 func IsEmpty(spec ResourceSpec) bool {
-	if msg, ok := spec.(proto.Message); ok {
-		return proto.Size(msg) == 0
-	} else {
-		return reflect.ValueOf(spec).Elem().IsZero()
-	}
+	return reflect.ValueOf(spec).Elem().IsZero()
 }

@@ -20,7 +20,7 @@ ifneq ($(EXTRA_GOFLAGS),)
 GOFLAGS += $(EXTRA_GOFLAGS)
 endif
 
-TOP := $(shell pwd)
+TOP := $(CURDIR)
 BUILD_DIR ?= $(TOP)/build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_KUMACTL_DIR := ${BUILD_ARTIFACTS_DIR}/kumactl
@@ -62,11 +62,6 @@ build/info: ## Dev: Show build info
 	@echo arch-os ignored=$(IGNORED_ARCH_OS), enabled=$(ENABLED_ARCH_OS)
 	$(EXTRA_BUILD_INFO)
 
-.PHONY: build/info/short
-build/info/short:
-	@echo enabled arch-os:$(ENABLED_ARCH_OS)
-	$(EXTRA_BUILD_INFO)
-
 .PHONY: build/info/version
 build/info/version:
 	@echo $(BUILD_INFO_VERSION)
@@ -89,10 +84,6 @@ check/binary-version: ## Dev: Assert the already built binary at $(BINARY_PATH) 
 		exit 1; \
 	fi; \
 	echo "$(BINARY_PATH) binary correctly reports version '$(EXPECTED_VERSION)'"
-
-.PHONY: build/assert-tag-version
-build/assert-tag-version: build/kuma-cp ## Dev: Build kuma-cp and assert it reports the tag version
-	@$(MAKE) check/binary-version
 
 .PHONY: build
 build: build/release build/test ## Dev: Build all binaries
@@ -140,11 +131,11 @@ build/artifacts-$(1)-$(2)/kumactl:
 
 .PHONY: build/artifacts-$(1)-$(2)/kuma-cni
 build/artifacts-$(1)-$(2)/kuma-cni:
-	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/kuma-cni
+	$(Build_Go_Application) ./app/cni/cmd/kuma-cni
 
 .PHONY: build/artifacts-$(1)-$(2)/install-cni
 build/artifacts-$(1)-$(2)/install-cni:
-	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/install
+	$(Build_Go_Application) ./app/cni/cmd/install
 
 .PHONY: build/artifacts-$(1)-$(2)/envoy
 build/artifacts-$(1)-$(2)/envoy:

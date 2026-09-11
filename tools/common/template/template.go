@@ -9,6 +9,10 @@ import (
 	"text/template"
 )
 
+// DefaultOpenAPIErrorSchema is the OpenAPI document holding the shared error
+// responses, relative to the root of the prepared specs tree (see mk/docs.mk).
+const DefaultOpenAPIErrorSchema = "base/specs/common/error_schema.yaml"
+
 func GoTemplate(tmpl *template.Template, data any, outPath string) error {
 	outBuf := bytes.Buffer{}
 	if err := tmpl.Execute(&outBuf, data); err != nil {

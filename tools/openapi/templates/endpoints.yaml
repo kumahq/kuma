@@ -29,7 +29,7 @@ paths:
         '200':
           $ref: "#/components/responses/{{.Name}}Item"
         '404':
-          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+          $ref: "../../{{ .ErrorSchema }}#/components/responses/NotFound"
 
     {{- if not .ReadOnly}}
     put:
@@ -87,7 +87,7 @@ paths:
         '200':
           $ref: '#/components/responses/{{.Name}}DeleteSuccessResponse'
         '404':
-          $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
+          $ref: "../../{{ .ErrorSchema }}#/components/responses/NotFound"
     {{- end}}
 
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}:

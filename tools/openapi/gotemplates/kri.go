@@ -31,9 +31,9 @@ paths:
                   - $ref: '{{.Path}}#/components/schemas/{{.ResourceType}}Item'
 {{- end }}
         '400':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
+          $ref: "/specs/{{ .ErrorSchema }}#/components/responses/BadRequest"
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+          $ref: "/specs/{{ .ErrorSchema }}#/components/responses/NotFound"
   /_kri/{kri}/_overview:
     get:
       operationId: getOverviewByKri
@@ -57,7 +57,7 @@ paths:
                   - $ref: '/specs/protoresources/dataplaneoverview/rest.yaml#/components/schemas/DataplaneOverviewWithMeta'
                   - $ref: '/specs/protoresources/meshoverview/rest.yaml#/components/schemas/MeshOverviewWithMeta'
         '400':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/BadRequest"
+          $ref: "/specs/{{ .ErrorSchema }}#/components/responses/BadRequest"
         '404':
-          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+          $ref: "/specs/{{ .ErrorSchema }}#/components/responses/NotFound"
 `

@@ -1,4 +1,4 @@
-PROTOC := $(PROTOC_BIN) \
+PROTOC = $(PROTOC_BIN) \
 	--proto_path=$(PROTO_GOOGLE_APIS) \
 	--proto_path=$(PROTO_XDS) \
 	--proto_path=$(PROTO_PGV) \
@@ -7,7 +7,7 @@ PROTOC := $(PROTOC_BIN) \
 	--proto_path=$(KUMA_DIR) \
 	--proto_path=.
 
-PROTOC_GO := $(PROTOC) \
+PROTOC_GO = $(PROTOC) \
 	--plugin=protoc-gen-go=$(PROTOC_GEN_GO) \
 	--plugin=protoc-gen-go-grpc=$(PROTOC_GEN_GO_GRPC) \
 	--go_opt=paths=source_relative \

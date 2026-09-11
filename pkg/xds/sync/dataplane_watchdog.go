@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -192,7 +191,7 @@ func (d *DataplaneWatchdog) syncOtelStatus(backends *core_xds.OtelPipeBackends) 
 
 	status := otelstatus.Build(all)
 
-	if d.otelStatusSynced && proto.Equal(status, d.lastOtelStatus) {
+	if d.otelStatusSynced && status.Equal(d.lastOtelStatus) {
 		return false
 	}
 

@@ -7,14 +7,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/v3/api/generic"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ generic.Insight = &DataplaneInsight{}
 
 func NewSubscriptionStatus(now time.Time) *DiscoverySubscriptionStatus {
 	return &DiscoverySubscriptionStatus{
-		LastUpdateTime: util_proto.MustTimestampProto(now),
+		LastUpdateTime: NewTime(now),
 		Total:          &DiscoveryServiceStats{},
 		Cds:            &DiscoveryServiceStats{},
 		Eds:            &DiscoveryServiceStats{},
@@ -70,12 +69,12 @@ func (x *DataplaneInsight) UpdateCert(generation time.Time, expiration time.Time
 		x.MTLS = &DataplaneInsight_MTLS{}
 	}
 	if !managedExternally {
-		ts := util_proto.MustTimestampProto(expiration)
+		ts := NewTime(expiration)
 		if err := ts.CheckValid(); err != nil {
 			return err
 		}
 		x.MTLS.CertificateExpirationTime = ts
-		ts = util_proto.MustTimestampProto(generation)
+		ts = NewTime(generation)
 		if err := ts.CheckValid(); err != nil {
 			return err
 		}
@@ -110,7 +109,7 @@ func (x *DataplaneInsight) UpdateSubscription(s generic.Subscription) error {
 // Because of the way we process subscriptions the lack of DisconnectTime on old subscription
 // will cause wrong status.
 func (x *DataplaneInsight) finalizeSubscriptions() {
-	now := util_proto.Now()
+	now := NewTime(time.Now())
 	for _, subscription := range x.GetSubscriptions() {
 		if subscription.DisconnectTime == nil {
 			subscription.DisconnectTime = now
@@ -126,7 +125,7 @@ func (x *DataplaneInsight) GetLastSubscription() generic.Subscription {
 }
 
 func (x *DiscoverySubscription) SetDisconnectTime(t time.Time) {
-	x.DisconnectTime = util_proto.MustTimestampProto(t)
+	x.DisconnectTime = NewTime(t)
 }
 
 func (x *DiscoverySubscription) IsOnline() bool {
