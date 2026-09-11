@@ -212,9 +212,6 @@ validate/openapi-generated-docs:
 	fi; \
 	rm -f $$tmp_file
 
-.PHONY: generate/oas-for-ts
-generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate OpenAPI spec from `/api/openapi/specs` ready for typescript type generation
-
 .PHONY: generate/builtin-crds
 generate/builtin-crds:
 	$(CONTROLLER_GEN) "crd:crdVersions=v1" paths=./pkg/plugins/resources/k8s/native/api/... output:crd:artifacts:config=$(HELM_CRD_DIR)
