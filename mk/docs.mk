@@ -42,12 +42,12 @@ ifneq ($(strip $(DOCS_PROTOS)),)
 endif
 
 # Built beside the target and moved on success, so a failing generator cannot
-# leave the committed file truncated. pipefail because the redirect would
-# otherwise report sed's status and hide a helm or yq failure entirely.
+# leave the committed file truncated. SHELL sets pipefail, so a helm or yq
+# failure is not hidden behind sed's status.
 .PHONY: docs/generated/raw/rbac.yaml
 docs/generated/raw/rbac.yaml:
 	@mkdir -p docs/generated/raw
-	@set -o pipefail; $(HELM) template --namespace $(PROJECT_NAME)-system $(PROJECT_NAME) deployments/charts/$(PROJECT_NAME) | \
+	@$(HELM) template --namespace $(PROJECT_NAME)-system $(PROJECT_NAME) deployments/charts/$(PROJECT_NAME) | \
 	$(YQ) eval-all 'select((.kind == "ClusterRole" or .kind == "ClusterRoleBinding" or .kind == "Role" or .kind == "RoleBinding") and (.metadata.annotations["helm.sh/hook"] == null)) | del(.metadata.labels)' - | \
 	grep -Ev '^\s*#' | \
 	sed 's/[[:space:]]*#.*$$//' > $@.tmp || { rm -f $@.tmp; exit 1; }
