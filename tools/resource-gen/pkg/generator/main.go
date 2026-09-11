@@ -425,6 +425,10 @@ func Run() {
 
 	flag.Parse()
 
+	if errorSchema == "" {
+		log.Fatalf("-errorSchema must not be empty")
+	}
+
 	switch pkg {
 	case "mesh", "system":
 	default:

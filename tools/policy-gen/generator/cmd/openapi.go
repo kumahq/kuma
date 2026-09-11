@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -26,6 +27,9 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 		Short: "Generate an OpenAPI schema for the policy REST",
 		Long:  "Generate an OpenAPI schema for the policy REST.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if localArgs.errorSchema == "" {
+				return errors.New("--error-schema must not be empty")
+			}
 			pluginDir := filepath.Clean(rootArgs.pluginDir)
 			policyName := filepath.Base(pluginDir)
 			policyPath := filepath.Join(pluginDir, "api", rootArgs.version, policyName+".go")

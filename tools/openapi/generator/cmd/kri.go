@@ -43,6 +43,9 @@ func newKriPolicies(rootArgs *args) *cobra.Command {
 		Short: "Generate KRI OpenAPI fragment",
 		Long:  "Collect all policies and resources to render the KRI endpoint OpenAPI fragment for them.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if errorSchema == "" {
+				return errors.New("--error-schema must not be empty")
+			}
 			resources, err := gatherPlugins(rootArgs)
 			if err != nil {
 				return err
