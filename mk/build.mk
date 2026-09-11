@@ -20,7 +20,7 @@ ifneq ($(EXTRA_GOFLAGS),)
 GOFLAGS += $(EXTRA_GOFLAGS)
 endif
 
-TOP := $(shell pwd)
+TOP := $(CURDIR)
 BUILD_DIR ?= $(TOP)/build
 BUILD_ARTIFACTS_DIR ?= $(BUILD_DIR)/artifacts-${GOOS}-${GOARCH}
 BUILD_KUMACTL_DIR := ${BUILD_ARTIFACTS_DIR}/kumactl
