@@ -23,7 +23,13 @@ type Namespace struct {
 
 var UnsetNamespace = Namespace{}
 
-const legacyProxyTypeLabel = "kuma.io/proxy-type"
+// Labels the control plane used to compute and no longer does. They are
+// deleted on every write so a resource created by an older control plane stops
+// carrying them, instead of keeping a value nothing maintains.
+const (
+	legacyProxyTypeLabel = "kuma.io/proxy-type"
+	legacyGatewayLabel   = "kuma.io/gateway"
+)
 
 func NewNamespace(value string, system bool) Namespace {
 	return Namespace{
@@ -193,6 +199,7 @@ func Compute(
 
 	if rd.IsProxy {
 		delete(labels, legacyProxyTypeLabel)
+		delete(labels, legacyGatewayLabel)
 		if dp, ok := spec.(*mesh_proto.Dataplane); ok {
 			hasIngress, hasEgress := false, false
 			for _, l := range dp.GetNetworking().GetListeners() {

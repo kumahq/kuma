@@ -1,10 +1,12 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"text/template"
 
 	"github.com/pkg/errors"
 
+	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
@@ -17,6 +19,41 @@ func (r *MeshIdentityResource) validate() error {
 		verr.AddErrorAt(path.Field("provider"), validateProvider(pointer.Deref(r.Spec.Provider)))
 	}
 	return verr.OrNil()
+}
+
+// ValidateUpdate rejects edits to the SPIFFE ID. A trust domain is an identity
+// namespace and its path names workloads inside it, so moving either is a
+// migration, not an edit: issuance re-renders immediately while the MeshTrust
+// publishing the CA bundle, MeshService.spec.identities and the SPIFFE ID rules
+// of MeshTrafficPermission all move on their own schedules, leaving already
+// issued leaves unverifiable in between. Users migrate by creating a second
+// MeshIdentity under a different name and deleting the old one, which keeps both
+// trust domains published for the whole transition. Reusing the name instead
+// rebuilds the same gap, because the MeshTrust and the CA are keyed by it.
+func (r *MeshIdentityResource) ValidateUpdate(previous core_model.Resource) error {
+	prev, ok := previous.(*MeshIdentityResource)
+	if !ok {
+		return fmt.Errorf("invalid type %T for the previous MeshIdentity", previous)
+	}
+	var verr validators.ValidationError
+	path := validators.RootedAt("spec").Field("spiffeID")
+	previousSpiffeID := pointer.Deref(prev.Spec.SpiffeID)
+	currentSpiffeID := pointer.Deref(r.Spec.SpiffeID)
+	if previousTrustDomain, currentTrustDomain := pointer.Deref(previousSpiffeID.TrustDomain), pointer.Deref(currentSpiffeID.TrustDomain); previousTrustDomain != currentTrustDomain {
+		verr.AddViolationAt(path.Field("trustDomain"), immutableFieldMessage(previousTrustDomain, currentTrustDomain))
+	}
+	if previousPath, currentPath := pointer.Deref(previousSpiffeID.Path), pointer.Deref(currentSpiffeID.Path); previousPath != currentPath {
+		verr.AddViolationAt(path.Field("path"), immutableFieldMessage(previousPath, currentPath))
+	}
+	return verr.OrNil()
+}
+
+func immutableFieldMessage(previous string, current string) string {
+	return fmt.Sprintf(
+		"is immutable, cannot be changed from %q to %q. Create a MeshIdentity under a different name with the new value and delete this one once every workload has migrated",
+		previous,
+		current,
+	)
 }
 
 func validateSPIFFEID(spiffeID SpiffeID) validators.ValidationError {

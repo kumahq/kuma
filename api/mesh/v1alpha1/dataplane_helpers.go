@@ -17,6 +17,10 @@ const (
 	K8sKumaIOPrefix = "k8s.kuma.io/"
 )
 
+// DefaultOutboundAddress is the address an outbound listener is bound to when
+// the Dataplane does not set one explicitly.
+const DefaultOutboundAddress = "127.0.0.1"
+
 const (
 	KubeNamespaceTag = "k8s.kuma.io/namespace"
 	// KDSSyncLabel a label that controls properties of the KDS sync.
@@ -86,15 +90,6 @@ const (
 
 	// ListenerZoneEgressLabel is auto-computed when a Dataplane has at least one ZoneEgress listener.
 	ListenerZoneEgressLabel = "kuma.io/listener-zoneegress"
-
-	// GatewayLabel marks a Dataplane as a delegated gateway: a proxy that
-	// receives inbound traffic Kuma does not proxy and sends outbound traffic
-	// into the mesh. On Kubernetes it is set from the pod's kuma.io/gateway
-	// annotation; on Universal it is set by the user.
-	GatewayLabel = "kuma.io/gateway"
-
-	// GatewayEnabled is the only value of GatewayLabel that marks a gateway.
-	GatewayEnabled = "true"
 )
 
 type ResourceOrigin string
@@ -241,7 +236,7 @@ func (n *Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networkin
 	if outbound.Address != "" {
 		oface.DataplaneIP = outbound.Address
 	} else {
-		oface.DataplaneIP = "127.0.0.1"
+		oface.DataplaneIP = DefaultOutboundAddress
 	}
 	return oface
 }
@@ -427,13 +422,6 @@ func MultiValueTagSetFrom(data map[string][]string) MultiValueTagSet {
 		}
 	}
 	return set
-}
-
-// IsDelegatedGateway reports whether a proxy with these labels fronts a
-// delegated gateway. The kuma.io/gateway label is the signal; the control
-// plane backfills it from the deprecated networking.gateway field.
-func IsDelegatedGateway(labels map[string]string) bool {
-	return labels[GatewayLabel] == GatewayEnabled
 }
 
 func (t MultiValueTagSet) String() string {

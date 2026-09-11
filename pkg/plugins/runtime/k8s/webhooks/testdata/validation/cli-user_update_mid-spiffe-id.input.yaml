@@ -1,0 +1,38 @@
+# user=cli-user,operation=UPDATE,namespace=kuma-system
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+metadata:
+  name: identity-1
+  labels:
+    kuma.io/mesh: default
+  ownerReferences:
+    - apiVersion: kuma.io/v1alpha1
+      kind: Mesh
+      name: default
+      uid: 8a2c3d1e-0000-4000-8000-000000000003
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: new.mesh.local
+    path: /workload/{{ .Workload }}
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshIdentity
+metadata:
+  name: identity-1
+  labels:
+    kuma.io/mesh: default
+  ownerReferences:
+    - apiVersion: kuma.io/v1alpha1
+      kind: Mesh
+      name: default
+      uid: 8a2c3d1e-0000-4000-8000-000000000003
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: old.mesh.local
+    path: /ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}

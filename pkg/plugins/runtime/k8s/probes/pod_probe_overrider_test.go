@@ -21,13 +21,8 @@ var _ = Describe("ApplicationProbeProxyPort", func() {
 				Expect(port).To(Equal(uint32(expected)))
 			}
 		},
-		Entry("gateway mode with proxy port set", map[string]string{
-			"kuma.io/application-probe-proxy-port": "9000",
-			"kuma.io/gateway":                      "enabled",
-		}, 10001, 0, "application probe proxies probes can't be enabled in gateway mode"),
-
-		Entry("gateway mode without proxy", map[string]string{
-			"kuma.io/gateway": "enabled",
+		Entry("proxy port disabled", map[string]string{
+			"kuma.io/application-probe-proxy-port": "0",
 		}, 10001, 0, ""),
 
 		Entry("proxy port set", map[string]string{

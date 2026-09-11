@@ -40,6 +40,7 @@ var _ = Describe("Match order", func() {
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "api.example.com",
+						Port:     pointer.To[uint32](9000),
 						Protocol: api.ProtocolType("tls"),
 					},
 					{
@@ -113,6 +114,7 @@ var _ = Describe("Match order", func() {
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "otherexample.com",
+						Port:     pointer.To[uint32](8080),
 						Protocol: api.ProtocolType("http"),
 					},
 					{
@@ -312,7 +314,7 @@ var _ = Describe("Match order", func() {
 				`ignoring match "grpc.com", protocols http and grpc produce the same filter chain for domains on port 9001`,
 			},
 		}),
-		Entry("the same domain on all ports and on a port with a different L7 protocol", conflictingTestCase{
+		Entry("a domain without a port, there is no port to resolve the domain on", conflictingTestCase{
 			conf: api.Conf{
 				AppendMatch: &[]api.Match{
 					{
@@ -326,12 +328,37 @@ var _ = Describe("Match order", func() {
 						Value:    "datadog.datadog.svc.cluster.local",
 						Protocol: api.ProtocolType("http"),
 					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "otel.datadog.svc.cluster.local",
+						Port:     pointer.To[uint32](0),
+						Protocol: api.ProtocolType("http"),
+					},
 				},
 			},
-			orderedGolden: "conflicting-protocols-on-all-ports.golden.yaml",
+			orderedGolden: "domain-without-port.golden.yaml",
 			warnings: []string{
-				"protocols grpc and http produce the same filter chain for domains on port 4317, matches with protocol http and no port are not applied there",
+				`ignoring match "datadog.datadog.svc.cluster.local", a domain needs a port, the sidecar resolves the domain to pin the destination`,
+				`ignoring match "otel.datadog.svc.cluster.local", a domain needs a port, the sidecar resolves the domain to pin the destination`,
 			},
+		}),
+		Entry("a wildcard domain without a port, it keeps following the original destination", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "*.example.com",
+						Port:     pointer.To[uint32](8443),
+						Protocol: api.ProtocolType("tls"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "*.example.com",
+						Protocol: api.ProtocolType("tls"),
+					},
+				},
+			},
+			orderedGolden: "wildcard-domain-without-port.golden.yaml",
 		}),
 		Entry("an IP and a CIDR resolving to the same address range with the same protocol", conflictingTestCase{
 			conf: api.Conf{

@@ -73,6 +73,17 @@ func (i *IdentityProviderReconciler) Start(stop <-chan struct{}) error {
 					i.logger.Error(err, "failed to list Meshes")
 					continue
 				}
+				if mid.Status == nil {
+					mid.Status = &meshidentity_api.MeshIdentityStatus{}
+				}
+				pinnedTrustDomain, err := i.pinTrustDomain(mid)
+				if err != nil {
+					i.logger.Error(err, "failed to resolve trust domain", "meshIdentity", mid.GetMeta().GetName())
+					continue
+				}
+				needsUpdate := pointer.Deref(mid.Status.TrustDomain) != pinnedTrustDomain
+				mid.Status.TrustDomain = pointer.To(pinnedTrustDomain)
+
 				conditions := []common_api.Condition{}
 				message := "Successfully initialized"
 				generationConditionStatus := kube_meta.ConditionTrue
@@ -99,10 +110,6 @@ func (i *IdentityProviderReconciler) Start(stop <-chan struct{}) error {
 					Message: message,
 				})
 
-				if mid.Status == nil {
-					mid.Status = &meshidentity_api.MeshIdentityStatus{}
-				}
-				needsUpdate := false
 				if !reflect.DeepEqual(conditions, mid.Status.Conditions) {
 					mid.Status.Conditions = conditions
 					needsUpdate = true
@@ -199,12 +206,26 @@ func (i *IdentityProviderReconciler) initialize(ctx context.Context, mid *meshid
 	return conditions
 }
 
+// pinTrustDomain resolves the trust domain the identity issues in, recording it
+// on first sight and never re-rendering it afterwards. A trust domain is an
+// identity namespace, and everything that has to agree on it - the MeshTrust
+// carrying the CA bundle, MeshService.spec.identities, MeshTrafficPermission
+// SPIFFE ID rules - is reconciled on its own schedule, so a template input that
+// moves under the mesh (a renamed zone in `{{ .Zone }}`) would leave freshly
+// issued leaves in a domain nothing trusts yet.
+func (i *IdentityProviderReconciler) pinTrustDomain(mid *meshidentity_api.MeshIdentityResource) (string, error) {
+	if pinned := pointer.Deref(pointer.Deref(mid.Status).TrustDomain); pinned != "" {
+		return pinned, nil
+	}
+	return mid.Spec.RenderTrustDomain(mid.GetMeta(), i.zone)
+}
+
 func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, ca []byte) error {
 	meshTrust := meshtrust_api.NewMeshTrustResource()
 	meshName := identity.Meta.GetMesh()
 	resourceName := identity.Meta.GetName()
 
-	trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), i.zone)
+	trustDomain, err := identity.GetTrustDomain(i.zone)
 	if err != nil {
 		return err
 	}
@@ -224,11 +245,11 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 	if update {
 		needsUpdate := false
 
-		// The trust domain follows the zone name, which changes when a standalone
-		// zone is federated. Without this the MeshTrust keeps advertising the old
-		// domain while the provider already issues certificates in the new one, so
-		// Envoy has no bundle for the presented SPIFFE ID and every mTLS handshake
-		// fails.
+		// An identity that already had a MeshTrust when it was first pinned can be
+		// pinned to a domain the MeshTrust never advertised: the zone was renamed
+		// before this control plane ever saw the identity. Converge it, otherwise the
+		// bundle stays keyed under the old domain and no leaf verifies. Once both
+		// agree the pin holds them there.
 		if meshTrust.Spec.TrustDomain != trustDomain {
 			meshTrust.Spec.TrustDomain = trustDomain
 			needsUpdate = true

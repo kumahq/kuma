@@ -1,0 +1,14 @@
+metadata:
+  namespace: demo
+  name: example
+spec:
+  clusterIP: 192.168.0.1
+  selector:
+    app: example
+  ports:
+    - name: proxy
+      port: 80
+      targetPort: 8000
+    - name: api
+      port: 8080
+      targetPort: 8080

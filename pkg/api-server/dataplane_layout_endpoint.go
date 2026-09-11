@@ -197,7 +197,7 @@ func (dle *dataplaneLayoutEndpoint) computeSpiffeID(request *restful.Request, me
 	if !ok || !identity.Status.IsInitialized() {
 		return nil
 	}
-	trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), dle.zone)
+	trustDomain, err := identity.GetTrustDomain(dle.zone)
 	if err != nil {
 		log.V(1).Info("could not get trust domain", "mesh", meshName, "dataplane", dataplane.GetMeta().GetName(), "err", err)
 		return nil

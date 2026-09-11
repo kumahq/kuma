@@ -410,9 +410,7 @@ func (r *resyncer) createOrUpdateMeshInsight(
 	insight := &mesh_proto.MeshInsight{
 		Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{},
 		DataplanesByType: &mesh_proto.MeshInsight_DataplanesByType{
-			Standard:         &mesh_proto.MeshInsight_DataplaneStat{},
-			Gateway:          &mesh_proto.MeshInsight_DataplaneStat{},
-			GatewayDelegated: &mesh_proto.MeshInsight_DataplaneStat{},
+			Standard: &mesh_proto.MeshInsight_DataplaneStat{},
 		},
 		Resources: map[string]*mesh_proto.MeshInsight_ResourceStat{},
 		DpVersions: &mesh_proto.MeshInsight_DpVersions{
@@ -439,10 +437,6 @@ func (r *resyncer) createOrUpdateMeshInsight(
 		status, _ := dpOverview.Status()
 
 		statByType := insight.GetDataplanesByType().GetStandard()
-		if dpOverview.IsDelegatedGateway() {
-			statByType = insight.GetDataplanesByType().GetGatewayDelegated()
-		}
-
 		statByType.Total++
 
 		switch status {
@@ -467,11 +461,6 @@ func (r *resyncer) createOrUpdateMeshInsight(
 		updateTotal(envoyVersion, insight.DpVersions.Envoy)
 		updateMTLS(dpInsight.GetMTLS(), status, insight.MTLS)
 	}
-
-	insight.DataplanesByType.Gateway.Online = insight.GetDataplanesByType().GetGatewayDelegated().GetOnline()
-	insight.DataplanesByType.Gateway.Offline = insight.GetDataplanesByType().GetGatewayDelegated().GetOffline()
-	insight.DataplanesByType.Gateway.PartiallyDegraded = insight.GetDataplanesByType().GetGatewayDelegated().GetPartiallyDegraded()
-	insight.DataplanesByType.Gateway.Total = insight.GetDataplanesByType().GetGatewayDelegated().GetTotal()
 
 	key := MeshInsightKey(mesh)
 	changed := false

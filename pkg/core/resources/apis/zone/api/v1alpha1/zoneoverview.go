@@ -13,9 +13,20 @@ import (
 // Zone and its insight, never stored and never synced, so it is written by hand rather
 // than generated: the resource generator produces one resource per package, and a
 // generated overview would have to import the Zone package that imports it back.
+//
+// Zone is always populated, see newZoneOverview. A nil one would drop the field from the
+// response without any error: omitempty skips it, and the inlined REST representation
+// throws the whole spec away once it renders as an empty object.
 type ZoneOverview struct {
 	Zone        *Zone                        `json:"zone,omitempty"`
 	ZoneInsight *zoneinsight_api.ZoneInsight `json:"zoneInsight,omitempty"`
+}
+
+func newZoneOverview(zone *Zone) *ZoneOverview {
+	if zone == nil {
+		zone = &Zone{}
+	}
+	return &ZoneOverview{Zone: zone}
 }
 
 const ZoneOverviewType model.ResourceType = "ZoneOverview"
@@ -78,7 +89,7 @@ func (t *ZoneOverviewResource) SetOverviewSpec(resource model.Resource, insight 
 	if !ok {
 		return errors.New("failed to convert to resource type 'Zone'")
 	}
-	overview := &ZoneOverview{Zone: zone}
+	overview := newZoneOverview(zone)
 	if insight != nil {
 		ins, ok := insight.GetSpec().(*zoneinsight_api.ZoneInsight)
 		if !ok {
@@ -155,7 +166,7 @@ func NewZoneOverviews(zones ZoneResourceList, insights zoneinsight_api.ZoneInsig
 	for _, zone := range zones.Items {
 		overview := ZoneOverviewResource{
 			Meta: zone.Meta,
-			Spec: &ZoneOverview{Zone: zone.Spec},
+			Spec: newZoneOverview(zone.Spec),
 		}
 		if insight, exists := insightsByKey[model.MetaToResourceKey(overview.Meta)]; exists {
 			overview.Spec.ZoneInsight = insight.Spec
