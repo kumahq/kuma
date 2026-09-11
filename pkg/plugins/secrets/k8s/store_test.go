@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/v3/pkg/plugins/secrets/k8s"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("KubernetesStore", func() {
@@ -90,7 +91,7 @@ var _ = Describe("KubernetesStore", func() {
 			// given
 			secret := &core_system.SecretResource{
 				Spec: &system_proto.Secret{
-					Data: system_proto.Bytes([]byte("example")),
+					Data: util_proto.Bytes([]byte("example")),
 				},
 			}
 			expected := backend.ParseYAML(`
@@ -134,7 +135,7 @@ var _ = Describe("KubernetesStore", func() {
 			// given
 			secret := &core_system.GlobalSecretResource{
 				Spec: &system_proto.Secret{
-					Data: system_proto.Bytes([]byte("example")),
+					Data: util_proto.Bytes([]byte("example")),
 				},
 			}
 			expected := backend.ParseYAML(`
@@ -358,7 +359,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			// when
 			secret1.Spec = &system_proto.Secret{
-				Data: system_proto.Bytes([]byte("example")),
+				Data: util_proto.Bytes([]byte("example")),
 			}
 			err = rs.Update(context.Background(), secret1)
 			// then
@@ -366,7 +367,7 @@ var _ = Describe("KubernetesStore", func() {
 
 			// when
 			secret2.Spec = &system_proto.Secret{
-				Data: system_proto.Bytes([]byte("another")),
+				Data: util_proto.Bytes([]byte("another")),
 			}
 			err = rs.Update(context.Background(), secret2)
 			// then

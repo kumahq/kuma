@@ -477,7 +477,7 @@ func loadSecureBytes(ctx context.Context, sds *datasource_api.SecureDataSource, 
 			return nil, errors.New("secretRef must be defined")
 		}
 		return loader.Load(ctx, mesh, &system_proto.DataSource{
-			Secret: pointer.To(sds.SecretRef.Name),
+			Type: &system_proto.DataSource_Secret{Secret: sds.SecretRef.Name},
 		})
 	case datasource_api.SecureDataSourceInline:
 		if sds.InsecureInline == nil {

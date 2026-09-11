@@ -6,6 +6,7 @@ import (
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	meshaccesslog "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshtrafficpermissions "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var (
@@ -51,13 +52,13 @@ var (
 		},
 	}
 	Secret2 = &system_proto.Secret{
-		Data: system_proto.Bytes([]byte("secret")),
+		Data: util_proto.Bytes([]byte("secret")),
 	}
 	Secret = &system_proto.Secret{
-		Data: system_proto.Bytes([]byte("secret key")),
+		Data: util_proto.Bytes([]byte("secret key")),
 	}
 	GlobalSecret = &system_proto.Secret{
-		Data: system_proto.Bytes([]byte("global secret key")),
+		Data: util_proto.Bytes([]byte("global secret key")),
 	}
 	Config = &system_proto.Config{
 		Config: "sample config",
