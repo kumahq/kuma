@@ -204,8 +204,8 @@ $(foreach s,$(OAS_SPECS),$(eval $(call OAS_RULE,$(s))))
 
 .PHONY: generate/oas
 generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN) $(OAPI_GEN) $(OAS_TYPES)
-	@$(RESOURCE_GEN) -package mesh   -generator openapi -readDir $(KUMA_DIR) -writeDir .
-	@$(RESOURCE_GEN) -package system -generator openapi -readDir $(KUMA_DIR) -writeDir .
+	@$(RESOURCE_GEN) -package mesh   -generator openapi -readDir $(KUMA_DIR) -writeDir . -error-schema=$(OAS_ERROR_SCHEMA)
+	@$(RESOURCE_GEN) -package system -generator openapi -readDir $(KUMA_DIR) -writeDir . -error-schema=$(OAS_ERROR_SCHEMA)
 	@$(OAPI_GEN) kri --error-schema=$(OAS_ERROR_SCHEMA)
 
 .PHONY: validate/openapi-generated-docs
