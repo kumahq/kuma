@@ -275,7 +275,7 @@ func (s *StatusUpdater) hasReadyIdentity(
 	if identity.Spec.Provider != nil && identity.Spec.Provider.Type == meshidentity_api.SpireType {
 		return true
 	}
-	td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
+	td, err := identity.GetTrustDomain(s.localZone)
 	if err != nil {
 		s.logger.Error(err, "cannot resolve trust domain")
 		return false
@@ -291,7 +291,7 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 			if identity.Status == nil || (!identity.Status.IsInitialized() && !identity.Status.IsPartiallyReady()) {
 				continue
 			}
-			td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
+			td, err := identity.GetTrustDomain(s.localZone)
 			if err != nil {
 				s.logger.Error(err, "cannot resolve trust domain")
 				continue

@@ -32,8 +32,11 @@ var _ = Describe("MeshPassthrough", func() {
 	outboundPassthroughIPv6Name := naming.ContextualTransparentProxyName("outbound", 6)
 
 	type testCase struct {
-		resources       []*core_xds.Resource
-		proxyConf       *core_rules.ProxyConf
+		resources []*core_xds.Resource
+		proxyConf *core_rules.ProxyConf
+		// dataplaneIPv6 makes the proxy itself IPv6, which is what picks the address
+		// family a domain cluster resolves in
+		dataplaneIPv6   bool
 		listenersGolden string
 		clustersGolden  string
 		warnings        []string
@@ -47,14 +50,18 @@ var _ = Describe("MeshPassthrough", func() {
 			context := *xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				Build()
+			address, ipFamilyMode := "127.0.0.1", "ipv4"
+			if given.dataplaneIPv6 {
+				address, ipFamilyMode = "::1", "dualstack"
+			}
 			proxy := xds_builders.Proxy().
 				WithApiVersion(envoy_common.APIV3).
-				WithTransparentProxy("ipv4").
+				WithTransparentProxy(ipFamilyMode).
 				WithDataplane(
 					builders.Dataplane().
 						WithName("test").
 						WithMesh("default").
-						WithAddress("127.0.0.1").
+						WithAddress(address).
 						AddInbound(
 							builders.Inbound().
 								WithAddress("127.0.0.1").
@@ -274,6 +281,58 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "simple.listener.golden.yaml",
 			clustersGolden:  "simple.clusters.golden.yaml",
 		}),
+		Entry("an IPv6 proxy, the domain cluster resolves in both families", testCase{
+			dataplaneIPv6: true,
+			resources: []*core_xds.Resource{
+				{
+					Name:   outboundPassthroughIPv4Name,
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv4Name).
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv4Name).WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   outboundPassthroughIPv6Name,
+					Origin: metadata.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, outboundPassthroughIPv6Name).
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName(outboundPassthroughIPv6Name).WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			proxyConf: mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						AppendMatch: &[]api.Match{
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "api.example.com",
+								Port:     pointer.To[uint32](443),
+								Protocol: api.ProtocolType("tls"),
+							},
+							{
+								Type:     api.MatchType("Domain"),
+								Value:    "*.example.com",
+								Port:     pointer.To[uint32](443),
+								Protocol: api.ProtocolType("tls"),
+							},
+						},
+					},
+				},
+			}),
+			listenersGolden: "ipv6-dataplane-domains.listener.golden.yaml",
+			// the domain cluster carries no dnsLookupFamily, AUTO is the field's
+			// default, where the IPv4 goldens pin it to V4_ONLY
+			clustersGolden: "ipv6-dataplane-domains.clusters.golden.yaml",
+		}),
 		Entry("cidr and http policy", testCase{
 			resources: []*core_xds.Resource{
 				{
@@ -367,6 +426,7 @@ var _ = Describe("MeshPassthrough", func() {
 							{
 								Type:     api.MatchType("Domain"),
 								Value:    "anotherexample.com",
+								Port:     pointer.To[uint32](80),
 								Protocol: api.ProtocolType("http"),
 							},
 							{
@@ -426,6 +486,7 @@ var _ = Describe("MeshPassthrough", func() {
 							{
 								Type:     api.MatchType("Domain"),
 								Value:    "www.anotherexample.com",
+								Port:     pointer.To[uint32](8080),
 								Protocol: api.ProtocolType("http"),
 							},
 						},
@@ -483,7 +544,7 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "same-protocol.listener.golden.yaml",
 			clustersGolden:  "same-protocol.clusters.golden.yaml",
 		}),
-		Entry("the same domain with a different L7 protocol on all ports", testCase{
+		Entry("a domain without a port, the sidecar has no port to resolve it on", testCase{
 			resources: []*core_xds.Resource{
 				{
 					Name:   outboundPassthroughIPv4Name,
@@ -528,10 +589,10 @@ var _ = Describe("MeshPassthrough", func() {
 					},
 				},
 			}),
-			listenersGolden: "conflicting-protocols.listener.golden.yaml",
-			clustersGolden:  "conflicting-protocols.clusters.golden.yaml",
+			listenersGolden: "domain-without-port.listener.golden.yaml",
+			clustersGolden:  "domain-without-port.clusters.golden.yaml",
 			warnings: []string{
-				"protocols grpc and http produce the same filter chain for domains on port 4317, matches with protocol http and no port are not applied there",
+				`ignoring match "datadog.datadog.svc.cluster.local", a domain needs a port, the sidecar resolves the domain to pin the destination`,
 			},
 		}),
 		Entry("mysql protocol", testCase{

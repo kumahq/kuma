@@ -125,7 +125,7 @@ func matchingHostnames(resManager manager.ResourceManager, isGlobal bool) handle
 			}
 		}
 
-		resp := types.InspectHostnames{}
+		resp := types.InspectHostnames{Items: []types.InspectHostname{}}
 		for _, host := range util_maps.SortedKeys(byHostname) {
 			zoneSet := byHostname[host]
 			zones := make([]types.InspectHostnameZone, 0, len(zoneSet))

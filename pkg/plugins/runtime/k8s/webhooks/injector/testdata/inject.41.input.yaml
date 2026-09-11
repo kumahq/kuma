@@ -3,7 +3,7 @@ kind: Pod
 metadata:
   name: busybox
   annotations:
-    kuma.io/gateway: enabled
+    traffic.kuma.io/exclude-inbound-ports: "8080"
   labels:
     run: busybox
 spec:

@@ -72,7 +72,7 @@ func (s *spireIdentityProvider) CreateIdentity(ctx context.Context, identity *me
 		s.logger.Info("dataplane doesn't have spire socket mounted, please redeploy your Pod", "dpp", model.MetaToResourceKey(proxy.Dataplane.GetMeta()), "identity", model.MetaToResourceKey(identity.GetMeta()))
 		return nil, nil
 	}
-	trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), s.zone)
+	trustDomain, err := identity.GetTrustDomain(s.zone)
 	if err != nil {
 		return nil, err
 	}

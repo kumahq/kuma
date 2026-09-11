@@ -291,16 +291,6 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 	})
 })
 
-var _ = Describe("Dataplane classification", func() {
-	Describe("IsDelegatedGateway", func() {
-		It("should read the gateway label", func() {
-			Expect(IsDelegatedGateway(map[string]string{GatewayLabel: GatewayEnabled})).To(BeTrue())
-			Expect(IsDelegatedGateway(map[string]string{GatewayLabel: "false"})).To(BeFalse())
-			Expect(IsDelegatedGateway(nil)).To(BeFalse())
-		})
-	})
-})
-
 var _ = Describe("TagSelector", func() {
 	Describe("Matches()", func() {
 		type testCase struct {

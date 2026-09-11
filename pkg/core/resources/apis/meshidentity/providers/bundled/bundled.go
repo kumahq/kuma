@@ -112,7 +112,7 @@ func (b *bundledIdentityProvider) Validate(ctx context.Context, identity *meshid
 func (b *bundledIdentityProvider) Initialize(ctx context.Context, identity *meshidentity_api.MeshIdentityResource) error {
 	if identity.Spec.Provider.Bundled.Autogenerate != nil && pointer.DerefOr(identity.Spec.Provider.Bundled.Autogenerate.Enabled, false) {
 		if _, err := b.getCAKeyPair(ctx, identity, identity.Meta.GetMesh()); err != nil && core_store.IsNotFound(err) {
-			trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), b.zone)
+			trustDomain, err := identity.GetTrustDomain(b.zone)
 			if err != nil {
 				return err
 			}
@@ -246,7 +246,7 @@ func (b *bundledIdentityProvider) CreateIdentity(ctx context.Context, identity *
 	if err != nil {
 		return nil, err
 	}
-	trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), b.zone)
+	trustDomain, err := identity.GetTrustDomain(b.zone)
 	if err != nil {
 		return nil, err
 	}

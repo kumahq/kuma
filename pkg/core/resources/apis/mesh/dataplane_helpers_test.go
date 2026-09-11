@@ -16,6 +16,38 @@ import (
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
+var _ = Describe("Default", func() {
+	It("should fill in the outbound address and keep an explicit one", func() {
+		// given
+		dp := &DataplaneResource{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "10.0.0.1",
+					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+						{Port: 10001},
+						{Port: 10002, Address: "240.0.0.1"},
+					},
+				},
+			},
+		}
+
+		// when
+		Expect(dp.Default()).To(Succeed())
+
+		// then
+		Expect(dp.Spec.Networking.Outbound[0].Address).To(Equal("127.0.0.1"))
+		Expect(dp.Spec.Networking.Outbound[1].Address).To(Equal("240.0.0.1"))
+	})
+
+	It("should not fail on a dataplane without networking", func() {
+		// given
+		dp := &DataplaneResource{Spec: &mesh_proto.Dataplane{}}
+
+		// when and then
+		Expect(dp.Default()).To(Succeed())
+	})
+})
+
 var _ = Describe("InboundIdentifyingName", func() {
 	type testCase struct {
 		meta     test_model.ResourceMeta

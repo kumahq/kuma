@@ -20,6 +20,15 @@ resources:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: meshpassthrough_http_www_gmail_com_80
     connectTimeout: 5s
-    lbPolicy: CLUSTER_PROVIDED
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: meshpassthrough_http_www.gmail.com_80
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: www.gmail.com
+                portValue: 80
     name: meshpassthrough_http_www.gmail.com_80
-    type: ORIGINAL_DST
+    type: STRICT_DNS

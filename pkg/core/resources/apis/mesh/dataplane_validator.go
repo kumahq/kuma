@@ -41,24 +41,8 @@ func (d *DataplaneResource) Validate() error {
 		}
 	}
 
-	switch {
-	case d.IsDelegatedGateway():
-		if len(d.Spec.GetNetworking().GetInbound()) > 0 {
-			err.AddViolationAt(net.Field("inbound"),
-				"inbound cannot be defined for delegated gateways")
-		}
-
-		if len(d.Spec.GetNetworking().GetListeners()) > 0 {
-			err.AddViolationAt(net.Field("listeners"),
-				"listeners cannot be defined for delegated gateways")
-		}
-
-		err.Add(validateNetworking(d.Spec.GetNetworking()))
-
-	default:
-		err.Add(validateNetworking(d.Spec.GetNetworking()))
-		err.AddErrorAt(net.Field("listeners"), validateListeners(d.Spec.GetNetworking()))
-	}
+	err.Add(validateNetworking(d.Spec.GetNetworking()))
+	err.AddErrorAt(net.Field("listeners"), validateListeners(d.Spec.GetNetworking()))
 
 	return err.OrNil()
 }

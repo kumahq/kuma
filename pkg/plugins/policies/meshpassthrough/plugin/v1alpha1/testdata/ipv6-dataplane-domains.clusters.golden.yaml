@@ -1,0 +1,25 @@
+resources:
+- name: meshpassthrough_tls_*.example.com_443
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_tls___example_com_443
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_tls_*.example.com_443
+    type: ORIGINAL_DST
+- name: meshpassthrough_tls_api.example.com_443
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_tls_api_example_com_443
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: meshpassthrough_tls_api.example.com_443
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: api.example.com
+                portValue: 443
+    name: meshpassthrough_tls_api.example.com_443
+    type: STRICT_DNS
