@@ -103,9 +103,8 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 	return err
 }
 
-// kuma.io/zone is not on the list: Compute force-sets it to the local zone, so
-// a stored foreign value can only be a Global-synced leftover, which the origin
-// check already covers on federated zones and which a non-federated zone owns.
+// a non-federated zone owns everything in its store, including leftovers of a
+// previous federation whose origin gets recomputed to 'zone' on update
 func (r *resourceCrudHandler) validateImmutableLabels(storedLabels, newComputedLabels map[string]string) validators.ValidationError {
 	var err validators.ValidationError
 	if r.mode != config_core.Global && !r.federatedZone {
