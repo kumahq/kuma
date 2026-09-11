@@ -26,7 +26,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/log"
-	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
@@ -101,11 +100,17 @@ func (m *meshContextBuilder) Build(ctx context.Context, meshName string) (MeshCo
 }
 
 func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string, latestMeshCtx *MeshContext) (*MeshContext, error) {
-	globalContext, err := m.BuildGlobalContextIfChanged(ctx, nil)
+	var latestGlobal *GlobalContext
+	var latestBase *BaseMeshContext
+	if latestMeshCtx != nil {
+		latestGlobal = latestMeshCtx.globalContext
+		latestBase = latestMeshCtx.BaseMeshContext
+	}
+	globalContext, err := m.BuildGlobalContextIfChanged(ctx, latestGlobal)
 	if err != nil {
 		return nil, err
 	}
-	baseMeshContext, err := m.BuildBaseMeshContextIfChanged(ctx, meshName, nil)
+	baseMeshContext, err := m.BuildBaseMeshContextIfChanged(ctx, meshName, latestBase)
 	if err != nil {
 		return nil, err
 	}
@@ -132,6 +137,18 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		}
 	}
 
+	slices.Sort(managedTypes)
+	managedTypeHashes := resources.MeshLocalResources.typeHashes(managedTypes)
+	newHash := base64.StdEncoding.EncodeToString(m.hash(globalContext, baseMeshContext, managedTypeHashes))
+	if latestMeshCtx != nil && newHash == latestMeshCtx.Hash {
+		return latestMeshCtx, nil
+	}
+
+	var policyMatchingHash string
+	if m.withPolicyMatchingHash {
+		policyMatchingHash = base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypeHashes))
+	}
+
 	dataplanes := resources.Dataplanes().Items
 	dataplanesByName := make(map[string]*core_mesh.DataplaneResource, len(dataplanes))
 	for _, dp := range dataplanes {
@@ -140,16 +157,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	var domains []xds_types.VIPDomains
 	var outbounds []*xds_types.Outbound
-	// This base64 encoding seems superfluous but keeping it for backward compatibility
-	newHash := base64.StdEncoding.EncodeToString(m.hash(globalContext, baseMeshContext, managedTypes, resources))
-	if latestMeshCtx != nil && newHash == latestMeshCtx.Hash {
-		return latestMeshCtx, nil
-	}
-
-	var policyMatchingHash string
-	if m.withPolicyMatchingHash {
-		policyMatchingHash = base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypes, resources))
-	}
 
 	meshServices := resources.MeshServices().Items
 	meshExternalServices := resources.MeshExternalServices().Items
@@ -193,6 +200,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	)
 
 	return &MeshContext{
+		globalContext:                   globalContext,
 		Hash:                            newHash,
 		PolicyMatchingHash:              policyMatchingHash,
 		Resource:                        mesh,
@@ -212,13 +220,12 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 func (m *meshContextBuilder) BuildGlobalContextIfChanged(ctx context.Context, latest *GlobalContext) (*GlobalContext, error) {
 	rmap := ResourceMap{}
-	// Only pick the global stuff
 	for t := range m.typeSet {
 		desc, err := registry.Global().DescriptorFor(t)
 		if err != nil {
 			return nil, err
 		}
-		if desc.Scope == core_model.ScopeGlobal && desc.Name != system.ConfigType { // For config we ignore them atm and prefer to rely on more specific filters.
+		if desc.Scope == core_model.ScopeGlobal && !meshScopedGlobalTypes[desc.Name] {
 			rmap[t], err = m.fetchResourceList(ctx, t, nil)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to build global context")
@@ -226,14 +233,24 @@ func (m *meshContextBuilder) BuildGlobalContextIfChanged(ctx context.Context, la
 		}
 	}
 
-	newHash := rmap.Hash()
+	typeHashes := rmap.hashByType()
+	newHash := combineTypeHashes(typeHashes)
 	if latest != nil && bytes.Equal(newHash, latest.hash) {
 		return latest, nil
 	}
 	return &GlobalContext{
 		hash:        newHash,
+		typeHashes:  typeHashes,
 		ResourceMap: rmap,
 	}, nil
+}
+
+// meshScopedGlobalTypes are global types that never go to the global context. Config is left to
+// more specific filters, and each mesh only needs its own Mesh, which the base mesh context holds,
+// so a change to one Mesh does not invalidate every other mesh.
+var meshScopedGlobalTypes = map[core_model.ResourceType]bool{
+	system.ConfigType:  true,
+	core_mesh.MeshType: true,
 }
 
 func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, meshName string, latest *BaseMeshContext) (*BaseMeshContext, error) {
@@ -269,13 +286,15 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 			// DO nothing we're not interested in this type
 		}
 	}
-	newHash := rmap.Hash()
+	typeHashes := rmap.hashByType()
+	newHash := combineTypeHashes(typeHashes)
 	if latest != nil && bytes.Equal(newHash, latest.hash) {
 		return latest, nil
 	}
 
 	return &BaseMeshContext{
 		hash:             newHash,
+		typeHashes:       typeHashes,
 		Mesh:             mesh,
 		ResourceMap:      rmap,
 		DestinationIndex: NewDestinationIndex(destinations...),
@@ -362,13 +381,12 @@ func modifyAllEntries(list core_model.ResourceList, fn func(resource core_model.
 	return newList, nil
 }
 
-func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
-	slices.Sort(managedTypes)
+func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypeHashes []typeHash) []byte {
 	hasher := fnv.New128a()
 	_, _ = hasher.Write(globalContext.hash)
 	_, _ = hasher.Write(baseMeshContext.hash)
-	for _, resType := range managedTypes {
-		_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
+	for _, th := range managedTypeHashes {
+		_, _ = hasher.Write(th.hash)
 	}
 	return hasher.Sum(nil)
 }
@@ -384,21 +402,13 @@ func affectsPolicyMatching(resType core_model.ResourceType) bool {
 	return descriptor.AffectsPolicyMatching
 }
 
-func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
+func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypeHashes []typeHash) []byte {
 	hasher := fnv.New128a()
-	for _, resType := range maps.SortedKeys(globalContext.ResourceMap) {
-		if affectsPolicyMatching(resType) {
-			_, _ = hasher.Write(resourceListXDSHash(globalContext.ResourceMap[resType]))
-		}
-	}
-	for _, resType := range maps.SortedKeys(baseMeshContext.ResourceMap) {
-		if affectsPolicyMatching(resType) {
-			_, _ = hasher.Write(resourceListXDSHash(baseMeshContext.ResourceMap[resType]))
-		}
-	}
-	for _, resType := range managedTypes {
-		if affectsPolicyMatching(resType) {
-			_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
+	for _, hashes := range [][]typeHash{globalContext.typeHashes, baseMeshContext.typeHashes, managedTypeHashes} {
+		for _, th := range hashes {
+			if affectsPolicyMatching(th.resourceType) {
+				_, _ = hasher.Write(th.hash)
+			}
 		}
 	}
 	return hasher.Sum(nil)

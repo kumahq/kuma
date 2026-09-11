@@ -36,9 +36,30 @@ func (rm ResourceMap) listOrEmpty(resourceType core_model.ResourceType) core_mod
 }
 
 func (rm ResourceMap) Hash() []byte {
+	return combineTypeHashes(rm.hashByType())
+}
+
+type typeHash struct {
+	resourceType core_model.ResourceType
+	hash         []byte
+}
+
+func (rm ResourceMap) hashByType() []typeHash {
+	return rm.typeHashes(maps.SortedKeys(rm))
+}
+
+func (rm ResourceMap) typeHashes(types []core_model.ResourceType) []typeHash {
+	hashes := make([]typeHash, 0, len(types))
+	for _, t := range types {
+		hashes = append(hashes, typeHash{resourceType: t, hash: resourceListXDSHash(rm[t])})
+	}
+	return hashes
+}
+
+func combineTypeHashes(hashes []typeHash) []byte {
 	hasher := fnv.New128a()
-	for _, k := range maps.SortedKeys(rm) {
-		hasher.Write(resourceListXDSHash(rm[k]))
+	for _, th := range hashes {
+		_, _ = hasher.Write(th.hash)
 	}
 	return hasher.Sum(nil)
 }
