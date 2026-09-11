@@ -196,18 +196,6 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		return http.DefaultClient.Do(request)
 	}
 
-	del := func(address string, resType model.ResourceTypeDescriptor, name string) (*http.Response, error) {
-		GinkgoHelper()
-		request, err := http.NewRequestWithContext(
-			context.Background(),
-			http.MethodDelete,
-			fmt.Sprintf("http://%s/meshes/%s/%s/%s", address, mesh, resType.WsPath, name),
-			http.NoBody,
-		)
-		Expect(err).ToNot(HaveOccurred())
-		return http.DefaultClient.Do(request)
-	}
-
 	createMesh := func(s core_store.ResourceStore) {
 		// create default mesh
 		err := s.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(mesh, model.NoMesh))
@@ -533,72 +521,5 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
-	})
-
-	// KDS never runs again on a detached zone to clean up what it was synced
-	Describe("leftovers of a previous federation on a non-federated zone", func() {
-		createGlobalOriginPolicy := func(s core_store.ResourceStore) {
-			mtp := v1alpha1.NewMeshTrafficPermissionResource()
-			mtp.Spec = builders.MeshTrafficPermission().
-				WithTargetRef(builders.TargetRefMesh()).
-				AddRule(v1alpha1.Allow).
-				Build().Spec
-			Expect(s.Create(context.Background(), mtp,
-				core_store.CreateByKey("mtp-global", mesh),
-				core_store.CreateWithLabels(map[string]string{
-					mesh_proto.MeshTag:             mesh,
-					mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
-					mesh_proto.ZoneTag:             "zone-2",
-				}),
-			)).To(Succeed())
-		}
-
-		It("should allow updating a policy that originated on Global", func() {
-			// given
-			apiServer, store, stop := createServer(false)
-			defer stop()
-			createMesh(store)
-			createGlobalOriginPolicy(store)
-
-			// when
-			res := &rest_v1alpha1.Resource{
-				Name: "mtp-global",
-				Mesh: mesh,
-				Type: string(v1alpha1.MeshTrafficPermissionType),
-				Spec: builders.MeshTrafficPermission().
-					WithTargetRef(builders.TargetRefMesh()).
-					AddRule(v1alpha1.Deny).
-					Build().Spec,
-			}
-			resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-global", res)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-			// and then
-			actual := v1alpha1.NewMeshTrafficPermissionResource()
-			Expect(store.Get(context.Background(), actual, core_store.GetByKey("mtp-global", mesh))).To(Succeed())
-			Expect(actual.Meta.GetLabels()).To(HaveKeyWithValue(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)))
-		})
-
-		It("should allow deleting a policy that originated on Global", func() {
-			// given
-			apiServer, store, stop := createServer(false)
-			defer stop()
-			createMesh(store)
-			createGlobalOriginPolicy(store)
-
-			// when
-			resp, err := del(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-global")
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			defer resp.Body.Close()
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-			// and then
-			Expect(store.Get(context.Background(), v1alpha1.NewMeshTrafficPermissionResource(), core_store.GetByKey("mtp-global", mesh))).
-				To(MatchError(ContainSubstring("not found")))
-		})
 	})
 })

@@ -103,14 +103,8 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 	return err
 }
 
-// a non-federated zone owns everything in its store, including leftovers of a
-// previous federation whose origin gets recomputed to 'zone' on update
 func (r *resourceCrudHandler) validateImmutableLabels(storedLabels, newComputedLabels map[string]string) validators.ValidationError {
 	var err validators.ValidationError
-	if r.mode != config_core.Global && !r.federatedZone {
-		return err
-	}
-
 	stored, ok := storedLabels[mesh_proto.ResourceOriginLabel]
 	if computed := newComputedLabels[mesh_proto.ResourceOriginLabel]; ok && stored != computed {
 		err.AddViolationAt(
