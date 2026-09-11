@@ -69,14 +69,12 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 	err.AddError("", r.validateOriginForWrite(resource.GetMeta()))
 
 	if r.mode != config_core.Global {
-		if origin != mesh_proto.GlobalResourceOrigin {
-			zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-			if ok && zoneTag != r.zoneName {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
-			}
-			if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
-			}
+		zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+		if ok && zoneTag != r.zoneName {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
+		}
+		if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
 		}
 	}
 
@@ -102,33 +100,6 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
 	}
-	return err
-}
-
-func (r *resourceCrudHandler) validateImmutableLabels(currentComputedLabels, newComputedLabels map[string]string) validators.ValidationError {
-	var err validators.ValidationError
-
-	immutableLabels := []string{
-		mesh_proto.ZoneTag,
-	}
-
-	for _, label := range immutableLabels {
-		currentVal, currentExists := currentComputedLabels[label]
-		newVal, newExists := newComputedLabels[label]
-
-		if currentExists && !newExists {
-			err.AddViolationAt(
-				validators.Root().Key(label),
-				fmt.Sprintf("is immutable, cannot be removed (was %q)", currentVal),
-			)
-		} else if currentExists && currentVal != newVal {
-			err.AddViolationAt(
-				validators.Root().Key(label),
-				fmt.Sprintf("is immutable, cannot be changed from %q to %q", currentVal, newVal),
-			)
-		}
-	}
-
 	return err
 }
 
