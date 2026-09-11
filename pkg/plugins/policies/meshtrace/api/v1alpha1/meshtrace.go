@@ -98,6 +98,9 @@ type DatadogBackend struct {
 	// `backend` service that communicates with a couple of databases, you would
 	// get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
 	// `backend_OUTBOUND_db2` in Datadog.
+	// This setting has no effect on zone-proxy-only Dataplanes (zone-ingress,
+	// zone-egress): traffic direction is not tracked for those listeners, so the
+	// service name is never suffixed regardless of this value.
 	// +kubebuilder:default=false
 	// +kubebuilder:validation:Optional
 	SplitService bool `json:"splitService"`
