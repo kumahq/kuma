@@ -9,6 +9,7 @@ import (
 
 	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
 	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 var _ = Describe("DataplaneProxyFactory", func() {
