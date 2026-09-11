@@ -146,7 +146,7 @@ paths:
         "200":
           $ref: '#/components/responses/ZoneDeleteSuccessResponse'
         "404":
-          $ref: ../../<no value>#/components/responses/NotFound
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
       summary: Deletes Zone entity
       tags:
       - Zone
@@ -163,7 +163,7 @@ paths:
         "200":
           $ref: '#/components/responses/ZoneItem'
         "404":
-          $ref: ../../<no value>#/components/responses/NotFound
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
       summary: Returns Zone entity
       tags:
       - Zone

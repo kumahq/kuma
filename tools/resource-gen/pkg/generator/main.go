@@ -409,8 +409,9 @@ func init() {
 `))
 
 var (
-	readDir  = "."
-	writeDir = "."
+	readDir     = "."
+	writeDir    = "."
+	errorSchema = commontemplate.DefaultOpenAPIErrorSchema
 )
 
 func Run() {
@@ -421,6 +422,7 @@ func Run() {
 	flag.StringVar(&pkg, "package", "", "the name of the package to generate: (mesh, system)")
 	flag.StringVar(&readDir, "readDir", "", "where to read files from, default: .")
 	flag.StringVar(&writeDir, "writeDir", "", "where to write files to, default: .")
+	flag.StringVar(&errorSchema, "error-schema", commontemplate.DefaultOpenAPIErrorSchema, "OpenAPI document with the shared error responses, relative to the specs root")
 
 	flag.Parse()
 
@@ -571,12 +573,13 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			path.Join(readDir, "tools", "openapi", "templates", "endpoints.yaml"),
 			tmpRestPath,
 			map[string]any{
-				"Package":   "v1alpha1",
-				"Name":      r.ResourceType,
-				"ShortName": r.ShortName,
-				"Scope":     scope,
-				"Path":      r.WsPath,
-				"ReadOnly":  r.WsReadOnly,
+				"Package":     "v1alpha1",
+				"Name":        r.ResourceType,
+				"ShortName":   r.ShortName,
+				"Scope":       scope,
+				"Path":        r.WsPath,
+				"ReadOnly":    r.WsReadOnly,
+				"ErrorSchema": errorSchema,
 			},
 		); err != nil {
 			return err

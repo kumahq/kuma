@@ -448,7 +448,7 @@ paths:
         "200":
           $ref: '#/components/responses/DataplaneInsightItem'
         "404":
-          $ref: ../../<no value>#/components/responses/NotFound
+          $ref: ../../base/specs/common/error_schema.yaml#/components/responses/NotFound
       summary: Returns DataplaneInsight entity
       tags:
       - DataplaneInsight
