@@ -1,4 +1,6 @@
-SHELL := /usr/bin/env bash
+# pipefail in SHELL, not .SHELLFLAGS: macOS ships make 3.81, which ignores .SHELLFLAGS.
+SHELL := /usr/bin/env bash -o pipefail
+.DELETE_ON_ERROR:
 
 .PHONY: help
 help: ## Display this help screen

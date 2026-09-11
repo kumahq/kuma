@@ -431,7 +431,7 @@ endif
 k3d/cluster/deploy/kumactl/install:
 	$(Q)$(KUMACTL) install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) \
 	  | $(KUBECTL) apply --filename - \
-	  | grep --invert-match 'unchanged'
+	  | { grep --invert-match 'unchanged' || true; }
 	$(Q)printf '\n'
 
 .PHONY: k3d/cluster/deploy/kumactl/clean

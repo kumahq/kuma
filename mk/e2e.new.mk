@@ -133,7 +133,7 @@ test/e2e: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run slower e2e tests (slowe
 	@# skipinboundtags on job-0) would fail even though that's expected.
 	@# Instead, validate the package list so we don't accidentally run the
 	@# wrong packages (like KUBE_E2E_PKG_LIST) for another year.
-	@echo '$(E2E_PKG_LIST)' | grep -q '\./test/e2e/' || \
+	@grep -q '\./test/e2e/' <<< '$(E2E_PKG_LIST)' || \
 		{ echo "ERROR: E2E_PKG_LIST does not contain ./test/e2e/ packages: $(E2E_PKG_LIST)"; exit 1; }
 	$(MAKE) docker/tag
 	$(MAKE) test/e2e/k8s/start
