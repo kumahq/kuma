@@ -161,6 +161,7 @@ var _ = Describe("MeshHealthCheck", func() {
 						Conf: []any{
 							api.Conf{
 								Interval:                     test.ParseDuration("10s"),
+								UnhealthyInterval:            test.ParseDuration("17s"),
 								Timeout:                      test.ParseDuration("2s"),
 								UnhealthyThreshold:           pointer.To[int32](3),
 								HealthyThreshold:             pointer.To[int32](1),
