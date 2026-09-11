@@ -58,11 +58,18 @@ var _ = Describe("annotation deprecation", func() {
 				Expect(deprecateMessage).To(Equal(-1))
 			}
 		},
-		Entry("kuma.io/gateway - enabled", testCase{
-			annotationKey:           metadata.KumaGatewayAnnotation,
+		Entry("kuma.io/wait-for-dataplane-ready - enabled", testCase{
+			annotationKey:           metadata.KumaWaitForDataplaneReady,
 			annotationValue:         "enabled",
 			expectedKeyDeprecated:   false,
 			expectedValueDeprecated: false,
+		}),
+		Entry("kuma.io/wait-for-dataplane-ready - yes", testCase{
+			annotationKey:            metadata.KumaWaitForDataplaneReady,
+			annotationValue:          "yes",
+			expectedKeyDeprecated:    false,
+			expectedValueDeprecated:  true,
+			expectedValueReplacement: "true",
 		}),
 	)
 

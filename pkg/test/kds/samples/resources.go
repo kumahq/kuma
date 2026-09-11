@@ -30,7 +30,7 @@ var (
 			},
 		},
 	}
-	GatewayDataplane = &mesh_proto.Dataplane{
+	OutboundOnlyDataplane = &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
 			Address: "192.168.0.1",
 			Outbound: []*mesh_proto.Dataplane_Networking_Outbound{

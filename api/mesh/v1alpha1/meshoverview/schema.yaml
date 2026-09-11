@@ -35,42 +35,8 @@ components:
             dataplanesByType:
               description: DataplanesByType splits the dataplane stats by proxy type.
               properties:
-                gateway:
-                  description: Gateway holds the stats of every gateway dataplane.
-                  properties:
-                    offline:
-                      description: Offline counts the dataplanes that are not connected.
-                      type: integer
-                    online:
-                      description: Online counts the dataplanes that are connected.
-                      type: integer
-                    partiallyDegraded:
-                      description: PartiallyDegraded counts the dataplanes with some
-                        inbounds offline.
-                      type: integer
-                    total:
-                      type: integer
-                  type: object
-                gatewayDelegated:
-                  description: GatewayDelegated holds the stats of the delegated gateway
-                    dataplanes.
-                  properties:
-                    offline:
-                      description: Offline counts the dataplanes that are not connected.
-                      type: integer
-                    online:
-                      description: Online counts the dataplanes that are connected.
-                      type: integer
-                    partiallyDegraded:
-                      description: PartiallyDegraded counts the dataplanes with some
-                        inbounds offline.
-                      type: integer
-                    total:
-                      type: integer
-                  type: object
                 standard:
-                  description: Standard holds the stats of the dataplanes that are
-                    not gateways.
+                  description: Standard holds the stats of every dataplane.
                   properties:
                     offline:
                       description: Offline counts the dataplanes that are not connected.

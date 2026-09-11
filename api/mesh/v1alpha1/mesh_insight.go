@@ -136,12 +136,8 @@ func (m *MeshInsight_MTLS) GetSupportedBackends() map[string]*MeshInsight_Datapl
 
 // MeshInsight_DataplanesByType splits the statistics by dataplane type.
 type MeshInsight_DataplanesByType struct {
-	// Standard holds the stats of the dataplanes that are not gateways.
+	// Standard holds the stats of every dataplane.
 	Standard *MeshInsight_DataplaneStat `json:"standard,omitempty"`
-	// Gateway holds the stats of every gateway dataplane.
-	Gateway *MeshInsight_DataplaneStat `json:"gateway,omitempty"`
-	// GatewayDelegated holds the stats of the delegated gateway dataplanes.
-	GatewayDelegated *MeshInsight_DataplaneStat `json:"gatewayDelegated,omitempty"`
 }
 
 func (d *MeshInsight_DataplanesByType) GetStandard() *MeshInsight_DataplaneStat {
@@ -149,20 +145,6 @@ func (d *MeshInsight_DataplanesByType) GetStandard() *MeshInsight_DataplaneStat 
 		return nil
 	}
 	return d.Standard
-}
-
-func (d *MeshInsight_DataplanesByType) GetGateway() *MeshInsight_DataplaneStat {
-	if d == nil {
-		return nil
-	}
-	return d.Gateway
-}
-
-func (d *MeshInsight_DataplanesByType) GetGatewayDelegated() *MeshInsight_DataplaneStat {
-	if d == nil {
-		return nil
-	}
-	return d.GatewayDelegated
 }
 
 // MeshInsight_ResourceStat counts the stored resources of a single type.

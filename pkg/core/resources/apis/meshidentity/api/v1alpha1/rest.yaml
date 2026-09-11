@@ -452,6 +452,15 @@ components:
               x-kubernetes-list-map-keys:
                 - type
               x-kubernetes-list-type: map
+            trustDomain:
+              description: |-
+                TrustDomain is the trust domain this identity issues certificates in. The
+                control plane renders `spec.spiffeID.trustDomain` once, when it first
+                initializes the identity, and then keeps issuing in the recorded value.
+                Templates such as `{{ .Zone }}` therefore stop following the zone name,
+                which would otherwise silently move every workload into a trust domain no
+                MeshTrust publishes yet.
+              type: string
           type: object
           readOnly: true
   responses:
@@ -467,6 +476,7 @@ components:
         application/json:
           schema:
             type: object
+            required: [total, items, next]
             properties:
               items:
                 type: array
@@ -476,8 +486,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshIdentityCreateOrUpdateSuccessResponse:
       description: Successful response
       content:

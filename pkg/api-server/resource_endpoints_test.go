@@ -19,6 +19,7 @@ import (
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/unversioned"
@@ -31,6 +32,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 // errOnGetStore wraps a real store but returns getErr for Gets of the specified resource type.
@@ -463,6 +465,43 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			mesh_proto.EnvTag:              "universal",
 			mesh_proto.DisplayName:         "ext-svc",
 		}))
+	})
+
+	It("should return 400 when the SPIFFE ID of an existing MeshIdentity is changed", func() {
+		// given
+		apiServer, store, stop := createServer(false)
+		defer stop()
+		createMesh(store)
+		name := "identity-1"
+
+		identity := func(trustDomain string) *rest_v1alpha1.Resource {
+			return &rest_v1alpha1.Resource{
+				Name: name,
+				Mesh: mesh,
+				Type: string(meshidentity_api.MeshIdentityType),
+				Spec: &meshidentity_api.MeshIdentity{
+					SpiffeID: &meshidentity_api.SpiffeID{TrustDomain: pointer.To(trustDomain)},
+				},
+			}
+		}
+
+		// when
+		resp, err := put(apiServer.Address(), meshidentity_api.MeshIdentityResourceTypeDescriptor, name, identity("old.mesh.local"))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+
+		// when
+		resp, err = put(apiServer.Address(), meshidentity_api.MeshIdentityResourceTypeDescriptor, name, identity("new.mesh.local"))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(body)).To(ContainSubstring("spec.spiffeID.trustDomain"))
+		Expect(string(body)).To(ContainSubstring("is immutable"))
 	})
 
 	It("should return 500 and not drop the connection when the mesh context build fails on _rules", func() {

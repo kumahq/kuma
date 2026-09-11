@@ -6,8 +6,8 @@ metadata:
     kubectl.kubernetes.io/default-container: busybox
     kuma.io/application-probe-proxy-port: "0"
     kuma.io/envoy-admin-port: "9901"
-    kuma.io/gateway: enabled
     kuma.io/sidecar-injected: "true"
+    traffic.kuma.io/exclude-inbound-ports: "8080"
     traffic.kuma.io/transparent-proxy-config: |
       cniMode: true
       ipFamilyMode: dualstack
@@ -20,10 +20,11 @@ metadata:
           resolvConfigPath: /etc/resolv.conf
           skipConntrackZoneSplit: false
         inbound:
-          enabled: false
+          enabled: true
           excludePorts:
+          - 8080
           - 9902
-          port: 15006
+          port: 15055
         outbound:
           enabled: true
           port: 15001
@@ -46,6 +47,36 @@ spec:
       name: default-token-w7dxf
       readOnly: true
   initContainers:
+  - args:
+    - --config-file=/tmp/.kumactl
+    - --transparent-proxy-config=/tmp/transparent-proxy/base/config.yaml
+    command:
+    - /usr/bin/kumactl
+    - install
+    - transparent-proxy-validator
+    image: kuma/kuma-init:latest
+    imagePullPolicy: IfNotPresent
+    name: kuma-validation
+    resources:
+      limits:
+        memory: 50M
+      requests:
+        cpu: 20m
+        memory: 20M
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsGroup: 5678
+      runAsUser: 5678
+    volumeMounts:
+    - mountPath: /tmp
+      name: kuma-sidecar-tmp
+    - mountPath: /tmp/transparent-proxy/base
+      name: transparent-proxy-base
+      readOnly: true
   - args:
     - run
     - --log-level=info

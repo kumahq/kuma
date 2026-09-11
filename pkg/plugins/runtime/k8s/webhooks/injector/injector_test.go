@@ -243,22 +243,6 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
-		Entry("06. Pod with kuma.io/gateway annotation", testCase{
-			num: "06",
-			mesh: `
-              apiVersion: kuma.io/v1alpha1
-              kind: Mesh
-              metadata:
-                name: default`,
-			namespace: `
-              apiVersion: v1
-              kind: Namespace
-              metadata:
-                name: default
-                labels:
-                  kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.config.yaml",
-		}),
 		Entry("07. Pod with mesh with metrics enabled", testCase{
 			num: "07",
 			mesh: `
@@ -824,7 +808,7 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.probe-proxy-disabled.config.yaml",
 		}),
-		Entry("41. gateway provided with cni enabled", testCase{
+		Entry("41. excluded inbound ports with cni enabled", testCase{
 			num: "41",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -856,38 +840,6 @@ spec:
                   labels:
                     kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.spire.config.yaml",
-		}),
-		Entry(`44. Pod with kuma.io/gateway annotation set to "true"`, testCase{
-			num: "44",
-			mesh: `
-              apiVersion: kuma.io/v1alpha1
-              kind: Mesh
-              metadata:
-                name: default`,
-			namespace: `
-              apiVersion: v1
-              kind: Namespace
-              metadata:
-                name: default
-                labels:
-                  kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.config.yaml",
-		}),
-		Entry("45. Pod with probes and kuma.io/gateway annotation set to disabled", testCase{
-			num: "45",
-			mesh: `
-              apiVersion: kuma.io/v1alpha1
-              kind: Mesh
-              metadata:
-                name: default`,
-			namespace: `
-              apiVersion: v1
-              kind: Namespace
-              metadata:
-                name: default
-                labels:
-                  kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.config.yaml",
 		}),
 	)
 

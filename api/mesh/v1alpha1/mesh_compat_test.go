@@ -32,7 +32,7 @@ var _ = Describe("Mesh family storage compatibility", func() {
 	)
 
 	It("round trips a fully populated insight", func() {
-		stored := `{"dataplanes":{"total":7,"online":4,"offline":2,"partiallyDegraded":1},"dpVersions":{"kumaDp":{"2.14.0":{"total":7,"online":4}},"envoy":{"1.31.0":{"total":7}}},"mTLS":{"issuedBackends":{"ca-1":{"total":3}},"supportedBackends":{"ca-1":{"total":5}}},"dataplanesByType":{"standard":{"total":5},"gateway":{"total":2},"gatewayDelegated":{"total":1}},"resources":{"MeshTimeout":{"total":9}}}`
+		stored := `{"dataplanes":{"total":7,"online":4,"offline":2,"partiallyDegraded":1},"dpVersions":{"kumaDp":{"2.14.0":{"total":7,"online":4}},"envoy":{"1.31.0":{"total":7}}},"mTLS":{"issuedBackends":{"ca-1":{"total":3}},"supportedBackends":{"ca-1":{"total":5}}},"dataplanesByType":{"standard":{"total":5}},"resources":{"MeshTimeout":{"total":9}}}`
 
 		insight := &mesh_proto.MeshInsight{}
 		Expect(json.Unmarshal([]byte(stored), insight)).To(Succeed())
@@ -40,7 +40,7 @@ var _ = Describe("Mesh family storage compatibility", func() {
 		Expect(insight.GetDataplanes().GetPartiallyDegraded()).To(Equal(uint32(1)))
 		Expect(insight.GetDpVersions().GetKumaDp()).To(HaveKey("2.14.0"))
 		Expect(insight.GetMTLS().GetIssuedBackends()).To(HaveKey("ca-1"))
-		Expect(insight.GetDataplanesByType().GetGatewayDelegated().GetTotal()).To(Equal(uint32(1)))
+		Expect(insight.GetDataplanesByType().GetStandard().GetTotal()).To(Equal(uint32(5)))
 		Expect(insight.GetResources()).To(HaveKey("MeshTimeout"))
 
 		rewritten, err := json.Marshal(insight)
