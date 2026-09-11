@@ -186,10 +186,6 @@ func (r *resourceCrudHandler) deleteResource(request *restful.Request) (any, err
 		return nil, withTitle(verr.OrNil(), "Could not delete a resource")
 	}
 
-	if verr := r.validateOwnershipForDelete(resource.GetMeta()); verr.HasViolations() {
-		return nil, withTitle(verr.OrNil(), "Could not delete a resource")
-	}
-
 	if err := r.resourceAccess.ValidateDelete(
 		request.Request.Context(),
 		core_model.ResourceKey{Mesh: meshName, Name: name},

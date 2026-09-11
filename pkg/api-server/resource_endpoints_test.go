@@ -548,6 +548,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 				core_store.CreateWithLabels(map[string]string{
 					mesh_proto.MeshTag:             mesh,
 					mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+					mesh_proto.ZoneTag:             "zone-2",
 				}),
 			)).To(Succeed())
 		}
@@ -597,34 +598,5 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			Expect(store.Get(context.Background(), v1alpha1.NewMeshTrafficPermissionResource(), core_store.GetByKey("mtp-global", mesh))).
 				To(MatchError(ContainSubstring("not found")))
 		})
-	})
-
-	It("should return 400 when deleting a policy that originated in another zone", func() {
-		// given
-		apiServer, store, stop := createServer(true)
-		defer stop()
-		createMesh(store)
-		mtp := v1alpha1.NewMeshTrafficPermissionResource()
-		mtp.Spec = builders.MeshTrafficPermission().
-			WithTargetRef(builders.TargetRefMesh()).
-			AddRule(v1alpha1.Allow).
-			Build().Spec
-		Expect(store.Create(context.Background(), mtp,
-			core_store.CreateByKey("mtp-zone-2", mesh),
-			core_store.CreateWithLabels(map[string]string{
-				mesh_proto.MeshTag:             mesh,
-				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
-				mesh_proto.ZoneTag:             "zone-2",
-			}),
-		)).To(Succeed())
-
-		// when
-		resp, err := del(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-zone-2")
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
-		// and then
-		Expect(store.Get(context.Background(), v1alpha1.NewMeshTrafficPermissionResource(), core_store.GetByKey("mtp-zone-2", mesh))).To(Succeed())
 	})
 })

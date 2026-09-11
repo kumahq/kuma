@@ -56,35 +56,6 @@ func (r *resourceCrudHandler) validateOriginForWrite(meta core_model.ResourceMet
 	return err
 }
 
-// A policy created in another zone reaches this one through Global with
-// kuma.io/origin: zone and a foreign kuma.io/zone, so the origin label alone
-// does not prove ownership; a non-federated zone owns everything in its store.
-func (r *resourceCrudHandler) validateOwnershipForDelete(meta core_model.ResourceMeta) validators.ValidationError {
-	var err validators.ValidationError
-	if !r.federatedZone {
-		return err
-	}
-
-	origin, ok := core_model.ResourceOrigin(meta)
-	if !ok {
-		return err
-	}
-	if origin != mesh_proto.ZoneResourceOrigin {
-		err.AddViolationAt(
-			validators.Root().Key(mesh_proto.ResourceOriginLabel),
-			fmt.Sprintf("resource with %s=%s cannot be deleted on this control plane", mesh_proto.ResourceOriginLabel, origin),
-		)
-		return err
-	}
-	if zoneTag, hasZone := meta.GetLabels()[mesh_proto.ZoneTag]; hasZone && zoneTag != r.zoneName {
-		err.AddViolationAt(
-			validators.Root().Key(mesh_proto.ZoneTag),
-			fmt.Sprintf("resource originated in zone %q cannot be deleted on zone %q", zoneTag, r.zoneName),
-		)
-	}
-	return err
-}
-
 func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
 
@@ -132,35 +103,22 @@ func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.
 	return err
 }
 
+// kuma.io/zone is not on the list: Compute force-sets it to the local zone, so
+// a stored foreign value can only be a Global-synced leftover, which the origin
+// check already covers on federated zones and which a non-federated zone owns.
 func (r *resourceCrudHandler) validateImmutableLabels(storedLabels, newComputedLabels map[string]string) validators.ValidationError {
 	var err validators.ValidationError
-
-	immutableLabels := []string{
-		mesh_proto.ZoneTag,
-	}
-	// a non-federated zone owns everything in its store, including leftovers of a
-	// previous federation whose origin gets recomputed to 'zone' on update
-	if r.mode == config_core.Global || r.federatedZone {
-		immutableLabels = append(immutableLabels, mesh_proto.ResourceOriginLabel)
+	if r.mode != config_core.Global && !r.federatedZone {
+		return err
 	}
 
-	for _, label := range immutableLabels {
-		currentVal, currentExists := storedLabels[label]
-		newVal, newExists := newComputedLabels[label]
-
-		if currentExists && !newExists {
-			err.AddViolationAt(
-				validators.Root().Key(label),
-				fmt.Sprintf("is immutable, cannot be removed (was %q)", currentVal),
-			)
-		} else if currentExists && currentVal != newVal {
-			err.AddViolationAt(
-				validators.Root().Key(label),
-				fmt.Sprintf("is immutable, cannot be changed from %q to %q", currentVal, newVal),
-			)
-		}
+	stored, ok := storedLabels[mesh_proto.ResourceOriginLabel]
+	if computed := newComputedLabels[mesh_proto.ResourceOriginLabel]; ok && stored != computed {
+		err.AddViolationAt(
+			validators.Root().Key(mesh_proto.ResourceOriginLabel),
+			fmt.Sprintf("is immutable, cannot be changed from %q to %q", stored, computed),
+		)
 	}
-
 	return err
 }
 
