@@ -136,17 +136,6 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 	}
 	b.mutable["dps_total"] = strconv.Itoa(len(dps.Items))
 
-	ngateways := 0
-	for _, dp := range dps.Items {
-		if dp.IsDelegatedGateway() {
-			ngateways++
-		}
-	}
-	b.mutable["gateway_dps"] = strconv.Itoa(ngateways)
-	// Delegated is the only kind of gateway left, so the per-type series is
-	// kept alive with the total rather than dropped from the report.
-	b.mutable["gateway_dp_type_delegated"] = strconv.Itoa(ngateways)
-
 	meshes, err := fetchMeshes(ctx, rt)
 	if err != nil {
 		return err

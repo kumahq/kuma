@@ -227,8 +227,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dp3, store.CreateByKey("dp3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.GatewayDataplane}, store.CreateByKey("dp4", "mesh-1"),
-			store.CreateWithLabels(map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled}))
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.OutboundOnlyDataplane}, store.CreateByKey("dp4", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		dp4 := core_mesh.NewDataplaneInsightResource()
@@ -249,19 +248,9 @@ var _ = Describe("Insight Persistence", func() {
 
 			// then
 			standardDP := meshInsight.Spec.GetDataplanesByType().GetStandard()
-			g.Expect(standardDP.GetTotal()).To(Equal(uint32(3)))
-			g.Expect(standardDP.GetOnline()).To(Equal(uint32(1)))
+			g.Expect(standardDP.GetTotal()).To(Equal(uint32(4)))
+			g.Expect(standardDP.GetOnline()).To(Equal(uint32(2)))
 			g.Expect(standardDP.GetOffline()).To(Equal(uint32(2)))
-
-			gatewayDP := meshInsight.Spec.GetDataplanesByType().GetGateway()
-			g.Expect(gatewayDP.GetTotal()).To(Equal(uint32(1)))
-			g.Expect(gatewayDP.GetOffline()).To(Equal(uint32(0)))
-			g.Expect(gatewayDP.GetOnline()).To(Equal(uint32(1)))
-
-			delegatedGatewayDP := meshInsight.Spec.GetDataplanesByType().GetGatewayDelegated()
-			g.Expect(delegatedGatewayDP.GetTotal()).To(Equal(uint32(1)))
-			g.Expect(delegatedGatewayDP.GetOffline()).To(Equal(uint32(0)))
-			g.Expect(delegatedGatewayDP.GetOnline()).To(Equal(uint32(1)))
 		}).Should(Succeed())
 	})
 
@@ -373,8 +362,7 @@ var _ = Describe("Insight Persistence", func() {
 				Address: "10.0.0.2",
 			},
 		}
-		err = rm.Create(context.Background(), delegatedGw, store.CreateByKey("dp2", "mesh-1"),
-			store.CreateWithLabels(map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled}))
+		err = rm.Create(context.Background(), delegatedGw, store.CreateByKey("dp2", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		externalService := samples2.MeshExternalServiceExampleBuilder().WithMesh("mesh-1").WithName("es1").Build()
@@ -576,8 +564,7 @@ var _ = Describe("Insight Persistence", func() {
 				Address: "192.0.0.1",
 			},
 		}
-		err = rm.Create(context.Background(), dpOnline, store.CreateByKey("dpOnline", "mesh-1"),
-			store.CreateWithLabels(map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled}))
+		err = rm.Create(context.Background(), dpOnline, store.CreateByKey("dpOnline", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		dpOnlineI := core_mesh.NewDataplaneInsightResource()
@@ -593,8 +580,7 @@ var _ = Describe("Insight Persistence", func() {
 				Address: "192.0.0.1",
 			},
 		}
-		err = rm.Create(context.Background(), dpOffline, store.CreateByKey("dpOffline", "mesh-1"),
-			store.CreateWithLabels(map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled}))
+		err = rm.Create(context.Background(), dpOffline, store.CreateByKey("dpOffline", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		dpOfflineI := core_mesh.NewDataplaneInsightResource()
@@ -611,8 +597,7 @@ var _ = Describe("Insight Persistence", func() {
 				Address: "192.0.0.1",
 			},
 		}
-		err = rm.Create(context.Background(), dpNoInsights, store.CreateByKey("dpNoInsights", "mesh-1"),
-			store.CreateWithLabels(map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled}))
+		err = rm.Create(context.Background(), dpNoInsights, store.CreateByKey("dpNoInsights", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		step(stepsToResync)

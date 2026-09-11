@@ -45,13 +45,9 @@ const (
 	ProxyRoleZoneEgress  = "zone-egress"
 	ProxyRoleZoneIngress = "zone-ingress"
 	ProxyRoleZoneProxy   = "zone-proxy"
-	ProxyRoleGateway     = "gateway"
 )
 
 func deriveProxyRole(dataplane *core_mesh.DataplaneResource) string {
-	if dataplane.IsDelegatedGateway() {
-		return ProxyRoleGateway
-	}
 	networking := dataplane.Spec.GetNetworking()
 	if networking == nil {
 		return ProxyRoleSidecar

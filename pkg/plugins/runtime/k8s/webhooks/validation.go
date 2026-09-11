@@ -92,13 +92,47 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 			return admission.Denied(err.Error())
 		}
 
+		// Privileged writers are exempt for the same reason they are exempt from
+		// IsOperationAllowed: a KDS sync replaying a resource the user recreated with a
+		// new value upstream must not be wedged by a guard that exists to protect the
+		// user from an in-place edit.
+		if req.Operation == v1.Update && !h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) {
+			previousRes, _, err := h.decodeOld(req)
+			if err != nil {
+				return admission.Errored(http.StatusBadRequest, err)
+			}
+			if err := validator.ValidateUpdate(previousRes, coreRes); err != nil {
+				if kumaErr, ok := err.(*validators.ValidationError); ok {
+					return convertSpecValidationError(kumaErr, coreRes.Descriptor().IsPluginOriginated, k8sObj)
+				}
+				return admission.Denied(err.Error())
+			}
+		}
+
 		warnings = append(warnings, core_model.Deprecations(coreRes)...)
 		return admission.Allowed("").WithWarnings(warnings...)
 	}
 }
 
 func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, k8s_model.KubernetesObject, error) {
-	coreRes, err := h.coreRegistry.NewObject(core_model.ResourceType(req.Kind.Kind))
+	switch req.Operation {
+	case v1.Delete:
+		return h.decodeOld(req)
+	default:
+		return h.decodeInto(req.Kind.Kind, func(obj k8s_model.KubernetesObject) error {
+			return h.decoder.Decode(req, obj)
+		})
+	}
+}
+
+func (h *validatingHandler) decodeOld(req admission.Request) (core_model.Resource, k8s_model.KubernetesObject, error) {
+	return h.decodeInto(req.Kind.Kind, func(obj k8s_model.KubernetesObject) error {
+		return h.decoder.DecodeRaw(req.OldObject, obj)
+	})
+}
+
+func (h *validatingHandler) decodeInto(kind string, decode func(k8s_model.KubernetesObject) error) (core_model.Resource, k8s_model.KubernetesObject, error) {
+	coreRes, err := h.coreRegistry.NewObject(core_model.ResourceType(kind))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -106,18 +140,9 @@ func (h *validatingHandler) decode(req admission.Request) (core_model.Resource, 
 	if err != nil {
 		return nil, nil, err
 	}
-
-	switch req.Operation {
-	case v1.Delete:
-		if err := h.decoder.DecodeRaw(req.OldObject, k8sObj); err != nil {
-			return nil, nil, err
-		}
-	default:
-		if err := h.decoder.Decode(req, k8sObj); err != nil {
-			return nil, nil, err
-		}
+	if err := decode(k8sObj); err != nil {
+		return nil, nil, err
 	}
-
 	if err := h.converter.ToCoreResource(k8sObj, coreRes); err != nil {
 		return nil, nil, err
 	}

@@ -36,6 +36,7 @@ func MeshPassthrough() {
 				testserver.Install(
 					testserver.WithNamespace(mesNamespace),
 					testserver.WithName("external-service"),
+					testserver.WithEchoArgs("--instance", "external-service"),
 				),
 				testserver.Install(
 					testserver.WithNamespace(mesNamespace),
@@ -44,6 +45,7 @@ func MeshPassthrough() {
 				testserver.Install(
 					testserver.WithNamespace(mesNamespace),
 					testserver.WithName("not-accessible-external-service"),
+					testserver.WithEchoArgs("--instance", "forbidden-external-service"),
 				),
 			)).
 			Setup(kubernetes.Cluster)
@@ -114,6 +116,56 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Exitcode).To(Equal(curlRecvError))
+		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
+	})
+
+	It("should send a request with an allowed Host to the domain, not to the address the client dialed", func() {
+		// given a policy allowing one domain and no address
+		meshPassthrough := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1 
+kind: MeshPassthrough
+metadata:
+  name: allow-domain
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: demo-client
+  default:
+    passthroughMode: Matched
+    appendMatch:
+    - type: Domain
+      value: external-service.mesh-passthrough-mes.svc.cluster.local
+      port: 80
+      protocol: http
+`, Config.KumaNamespace, meshName)
+
+		// when
+		Expect(kubernetes.Cluster.Install(YamlK8s(meshPassthrough))).To(Succeed())
+
+		// then the allowed domain is reachable
+		Eventually(func(g Gomega) {
+			resp, err := client.CollectEchoResponse(
+				kubernetes.Cluster, "demo-client", "external-service.mesh-passthrough-mes.svc.cluster.local:80",
+				client.FromKubernetesPod(namespace, "demo-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.Instance).To(Equal("external-service"))
+		}, "30s", "1s").Should(Succeed())
+
+		// and the sidecar resolves the domain itself, so the allowed Host cannot carry
+		// the request to an address the policy doesn't allow
+		Eventually(func(g Gomega) {
+			resp, err := client.CollectEchoResponse(
+				kubernetes.Cluster, "demo-client", curlAddress(notAccessibleEsIP),
+				client.FromKubernetesPod(namespace, "demo-client"),
+				client.WithHeader("Host", "external-service.mesh-passthrough-mes.svc.cluster.local"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.Instance).To(Equal("external-service"))
 		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
 	})
 

@@ -141,9 +141,6 @@ type DataplaneXDSConfig struct {
 
 // DataplanesStats Dataplanes statistics
 type DataplanesStats struct {
-	// GatewayDelegated Delegated Gateway dataplane proxy statistics
-	GatewayDelegated FullStatus `json:"gatewayDelegated"`
-
 	// Standard Standard dataplane proxy statistics
 	Standard FullStatus `json:"standard"`
 }
@@ -214,8 +211,10 @@ type Index struct {
 // InspectDataplanesForPolicy A list of proxies
 type InspectDataplanesForPolicy struct {
 	Items []externalRef0.Meta `json:"items"`
-	Next  *string             `json:"next,omitempty"`
-	Total int                 `json:"total"`
+
+	// Next URL to the next page, or null when this is the last page
+	Next  *string `json:"next"`
+	Total int     `json:"total"`
 }
 
 // InspectHostname An supported hostname along with the zones it exists in
@@ -290,9 +289,6 @@ type ServicesStats struct {
 	External struct {
 		Total int `json:"total"`
 	} `json:"external"`
-
-	// GatewayDelegated Delegated Gateway services statistics
-	GatewayDelegated FullStatus `json:"gatewayDelegated"`
 
 	// Internal Internal services statistics
 	Internal FullStatus `json:"internal"`

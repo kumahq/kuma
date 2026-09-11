@@ -17,10 +17,14 @@ type Configurer struct {
 	InternalAddresses []core_xds.InternalAddress
 	Conf              api.Conf
 	IPv6Enabled       bool
+	// DataplaneIPv6 is the address family of the proxy, it picks the family a domain
+	// cluster resolves in. A domain chain is on both listeners and shares one cluster,
+	// so the cluster follows the proxy rather than the listener.
+	DataplaneIPv6 bool
 }
 
 func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
-	clustersAccumulator := map[string]core_meta.Protocol{}
+	clustersAccumulator := map[string]Cluster{}
 	filterChainMatches := GetOrderedMatchers(c.Conf)
 
 	if hasIPv4Matches(filterChainMatches) {
@@ -34,8 +38,8 @@ func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listene
 		}
 	}
 
-	for name, protocol := range clustersAccumulator {
-		config, err := CreateCluster(c.APIVersion, name, protocol)
+	for name, cluster := range clustersAccumulator {
+		config, err := CreateCluster(c.APIVersion, name, cluster, c.DataplaneIPv6)
 		if err != nil {
 			return err
 		}
@@ -51,7 +55,7 @@ func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listene
 func (c Configurer) configureListener(
 	orderedFilterChainMatches []FilterChainMatch,
 	listener *envoy_listener.Listener,
-	clustersAccumulator map[string]core_meta.Protocol,
+	clustersAccumulator map[string]Cluster,
 	isIPv6 bool,
 	ipv6Enabled bool,
 ) error {

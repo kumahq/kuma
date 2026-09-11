@@ -206,7 +206,11 @@ components:
                   items:
                     properties:
                       port:
-                        description: Port defines the port to which a user makes a request.
+                        description: |-
+                          Port defines the port to which a user makes a request. It is required for a
+                          `Domain` that is not a wildcard: the sidecar resolves the domain itself and
+                          connects to this port, so the destination doesn't depend on the address the
+                          client dials.
                         format: int32
                         type: integer
                       protocol:
@@ -228,7 +232,10 @@ components:
                           - CIDR
                         type: string
                       value:
-                        description: Value for the specified Type.
+                        description: |-
+                          Value for the specified Type. A wildcard `Domain`, for example
+                          `*.example.com`, cannot be resolved by the sidecar, so its traffic goes to the
+                          address the client dials and the match only restricts the SNI or Host.
                         type: string
                     required:
                       - type
@@ -300,6 +307,7 @@ components:
         application/json:
           schema:
             type: object
+            required: [total, items, next]
             properties:
               items:
                 type: array
@@ -309,8 +317,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshPassthroughCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
