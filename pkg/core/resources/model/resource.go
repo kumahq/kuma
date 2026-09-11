@@ -204,20 +204,14 @@ type ResourceTypeDescriptor struct {
 	KumactlArgAlias string
 	// KumactlListArgAlias the alternative name of the cmdline argument when doing `list`.
 	KumactlListArgAlias string
-	// AllowToInspect if it's required to generate Inspect API endpoint for this type
-	AllowToInspect bool
 	// IsPolicy if this type is a policy (Dataplanes, Insights, Ingresses are not policies as they describe either metadata or workload, Retries are policies).
 	IsPolicy bool
 	// DisplayName the name of the policy showed as plural to be displayed in the UI and maybe CLI
 	SingularDisplayName string
 	// PluralDisplayName the name of the policy showed as plural to be displayed in the UI and maybe CLI
 	PluralDisplayName string
-	// IsExperimental indicates if a policy is in experimental state (might not be production ready).
-	IsExperimental bool
 	// IsPluginOriginated indicates if a policy is implemented as a plugin
 	IsPluginOriginated bool
-	// IsTargetRefBased indicates if a policy uses targetRef or not
-	IsTargetRefBased bool
 	// HasToTargetRef indicates that the policy can be applied to outbound traffic
 	HasToTargetRef bool
 	// HasRulesTargetRef indicates that the policy can be applied to inbound traffic
@@ -240,8 +234,6 @@ type ResourceTypeDescriptor struct {
 	Insight Resource
 	// Overview contains the overview type attached to this resourceType
 	Overview Resource
-	// DumpForGlobal whether resources of this type should be dumped when exporting a zone to migrate to global
-	DumpForGlobal bool
 	// AllowedOnSystemNamespaceOnly whether this resource type can be created only in the system namespace
 	AllowedOnSystemNamespaceOnly bool
 	// ShortName a name that is used in kubectl or in the envoy configuration
@@ -382,9 +374,9 @@ func HasWsEnabled() TypeFilter {
 	})
 }
 
-func AllowedToInspect() TypeFilter {
+func IsPolicy() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		return descriptor.AllowToInspect
+		return descriptor.IsPolicy
 	})
 }
 
