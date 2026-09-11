@@ -8,21 +8,6 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
-### Sidecar Envoy concurrency defaults to 2 without a CPU limit
-
-Removing the default sidecar CPU limit in 2.14 also removed the `--concurrency`
-flag from injected sidecars, because concurrency was derived only from that
-limit. Envoy then sized its worker threads to every core on the node, which
-raised sidecar memory and upstream connection counts on large nodes. The
-injector now emits `--concurrency=2` when no CPU limit is set, matching the
-behaviour before 2.14. With a CPU limit the value is still derived from it,
-floored at 2.
-
-**Action required**
-
-None. To pick a different value, set the `kuma.io/sidecar-proxy-concurrency`
-annotation on the Pod; `"0"` lets Envoy size workers to all visible CPUs.
-
 ### `MeshIdentity.spec.spiffeID` is immutable and its trust domain no longer follows the zone
 
 A trust domain is an identity namespace, so moving one is a migration rather
