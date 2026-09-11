@@ -83,28 +83,28 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 		if serviceProbe.Timeout == nil {
 			timeout = util_proto.Duration(g.config.CheckDefaults.Timeout.Duration)
 		} else {
-			timeout = serviceProbe.Timeout
+			timeout = util_proto.Duration(serviceProbe.Timeout.AsDuration())
 		}
 
 		var interval *durationpb.Duration
 		if serviceProbe.Interval == nil {
 			interval = util_proto.Duration(g.config.CheckDefaults.Interval.Duration)
 		} else {
-			interval = serviceProbe.Interval
+			interval = util_proto.Duration(serviceProbe.Interval.AsDuration())
 		}
 
 		var healthyThreshold *wrapperspb.UInt32Value
 		if serviceProbe.HealthyThreshold == nil {
 			healthyThreshold = util_proto.UInt32(g.config.CheckDefaults.HealthyThreshold)
 		} else {
-			healthyThreshold = serviceProbe.HealthyThreshold
+			healthyThreshold = util_proto.UInt32(serviceProbe.HealthyThreshold.GetValue())
 		}
 
 		var unhealthyThreshold *wrapperspb.UInt32Value
 		if serviceProbe.UnhealthyThreshold == nil {
 			unhealthyThreshold = util_proto.UInt32(g.config.CheckDefaults.UnhealthyThreshold)
 		} else {
-			unhealthyThreshold = serviceProbe.UnhealthyThreshold
+			unhealthyThreshold = util_proto.UInt32(serviceProbe.UnhealthyThreshold.GetValue())
 		}
 
 		hc := &envoy_service_health.ClusterHealthCheck{

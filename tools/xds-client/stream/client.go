@@ -17,7 +17,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
-	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 type Client struct {
@@ -95,7 +94,7 @@ func (s *Stream) Request(clientId string, typ string, dp rest.Resource) error {
 			"dataplane.resource": {Kind: &structpb.Value_StringValue{StringValue: string(dpJSON)}},
 			"version": {
 				Kind: &structpb.Value_StructValue{
-					StructValue: util_proto.MustToStruct(version),
+					StructValue: version.MustToStruct(),
 				},
 			},
 		},

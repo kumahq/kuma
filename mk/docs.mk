@@ -111,7 +111,6 @@ docs/generated/openapi/prepare/layout:
 	@mkdir -p $(OAPI_TMP_DIR)
 
 # Create or reset a named subdirectory under $(OAPI_TMP_DIR)
-.PHONY: docs/generated/openapi/prepare/layout/%
 docs/generated/openapi/prepare/layout/%:
 	@rm -rf $(OAPI_TMP_DIR)/$*
 	@mkdir -p $(OAPI_TMP_DIR)/$*

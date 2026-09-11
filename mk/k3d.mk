@@ -395,7 +395,6 @@ k3d/cluster/deploy/wait/cp: \
   k3d/cluster/deploy/wait/Ready/pods/$(PROJECT_NAME)-control-plane \
   k3d/cluster/deploy/wait/mesh
 
-.PHONY: k3d/cluster/deploy/wait/%
 k3d/cluster/deploy/wait/%: CONDITION = $(word 1,$(subst /, ,$*))
 k3d/cluster/deploy/wait/%: KIND      = $(word 2,$(subst /, ,$*))
 k3d/cluster/deploy/wait/%: APP       = $(word 3,$(subst /, ,$*))

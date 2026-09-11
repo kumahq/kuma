@@ -140,11 +140,11 @@ build/artifacts-$(1)-$(2)/kumactl:
 
 .PHONY: build/artifacts-$(1)-$(2)/kuma-cni
 build/artifacts-$(1)-$(2)/kuma-cni:
-	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/kuma-cni
+	$(Build_Go_Application) ./app/cni/cmd/kuma-cni
 
 .PHONY: build/artifacts-$(1)-$(2)/install-cni
 build/artifacts-$(1)-$(2)/install-cni:
-	$(Build_Go_Application) -ldflags="-extldflags=-static" ./app/cni/cmd/install
+	$(Build_Go_Application) ./app/cni/cmd/install
 
 .PHONY: build/artifacts-$(1)-$(2)/envoy
 build/artifacts-$(1)-$(2)/envoy:
