@@ -56,9 +56,13 @@ PROTO_XDS=$(shell $(GO) mod download github.com/cncf/xds@$(XDS_VERSION) && $(GO)
 PGV_VERSION=$(shell $(GO) list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
 PROTO_PGV=$(shell $(GO) mod download github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION) && $(GO) list -f '{{ .Dir }}' -m github.com/envoyproxy/protoc-gen-validate@$(PGV_VERSION))
 PROTO_GOOGLE_APIS=$(shell $(GO) mod download github.com/googleapis/googleapis@master && $(GO) list -f '{{ .Dir }}' -m github.com/googleapis/googleapis@master)
-PROTO_ENVOY=$(shell $(GO) mod download github.com/envoyproxy/data-plane-api@main && $(GO) list -f '{{ .Dir }}' -m github.com/envoyproxy/data-plane-api@main)
 
 BUF=$(shell $(MISE) which buf)
+BUF_CACHE_DIR := $(CI_TOOLS_DIR)/buf/cache
+# Envoy does not publish a BSR proto snapshot for every patch release, but always does
+# for a minor, so follow ENVOY_VERSION's minor. Override to pick up a later patch's API.
+ENVOY_PROTO_VERSION ?= v$(basename $(ENVOY_VERSION)).0
+PROTO_ENVOY=$(shell $(BUF) export buf.build/envoyproxy/envoy:$(ENVOY_PROTO_VERSION) --output $(BUF_CACHE_DIR)/envoy && echo $(BUF_CACHE_DIR)/envoy)
 YQ=$(shell $(MISE) which yq)
 HELM=$(shell $(MISE) which helm)
 K3D_BIN=$(shell $(MISE) which k3d)
