@@ -89,10 +89,6 @@ endif
 E2E_ENV_VARS += KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl
 E2E_ENV_VARS += PATH=$(CI_TOOLS_BIN_DIR):$$PATH
 E2E_ENV_VARS += KUMA_DUMP_DIR=$(abspath $(REPORTS_DIR)/e2e-debug)
-.PHONY: test/e2e/list
-test/e2e/list:
-	@echo $(ALL_TESTS)
-
 .PHONY: test/e2e/k8s/start
 test/e2e/k8s/start:
 	$(Q)for cluster in $(K8SCLUSTERS); do \

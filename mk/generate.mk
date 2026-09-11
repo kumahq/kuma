@@ -214,9 +214,6 @@ validate/openapi-generated-docs:
 	fi; \
 	rm -f $$tmp_file
 
-.PHONY: generate/oas-for-ts
-generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate OpenAPI spec from `/api/openapi/specs` ready for typescript type generation
-
 .PHONY: generate/builtin-crds
 generate/builtin-crds: $(RESOURCE_GEN)
 	$(RESOURCE_GEN) -package mesh -generator crd > ./pkg/plugins/resources/k8s/native/api/v1alpha1/zz_generated.mesh.go

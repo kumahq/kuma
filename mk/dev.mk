@@ -6,7 +6,6 @@ BUILD_INFO_VERSION = $(word 1, $(BUILD_INFO))
 GIT_TAG = $(word 2, $(BUILD_INFO))
 GIT_COMMIT = $(word 3, $(BUILD_INFO))
 BUILD_DATE = $(word 4, $(BUILD_INFO))
-CI_TOOLS_VERSION = $(word 5, $(BUILD_INFO))
 # renovate: datasource=github-tags depName=envoy packageName=kumahq/envoy-builds versioning=semver
 ENVOY_VERSION ?= 1.39.1
 KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
@@ -74,8 +73,6 @@ ACTIONLINT=$(shell $(MISE) which actionlint)
 CONTAINER_STRUCTURE_TEST=$(shell $(MISE) which container-structure-test)
 PROTOC_GEN_GO=$(shell $(MISE) which protoc-gen-go)
 PROTOC_GEN_GO_GRPC=$(shell $(MISE) which protoc-gen-go-grpc)
-PROTOC_GEN_VALIDATE=$(MISE) exec -- protoc-gen-validate
-PROTOC_GEN_KUMADOC=$(MISE) exec -- protoc-gen-kumadoc
 PROTOC_GEN_JSONSCHEMA=$(shell $(MISE) which protoc-gen-jsonschema)
 GINKGO=$(shell $(MISE) which ginkgo)
 GOLANGCI_LINT=$(shell $(MISE) which golangci-lint)
@@ -85,10 +82,6 @@ HADOLINT=$(shell $(MISE) which hadolint)
 DASHBOARD_LINTER=$(shell $(MISE) which dashboard-linter)
 # oapi-codegen: mise go: backend installs to CI_TOOLS_BIN_DIR, mise which doesn't find it
 OAPI_CODEGEN=$(shell test -f $(CI_TOOLS_BIN_DIR)/oapi-codegen && echo $(CI_TOOLS_BIN_DIR)/oapi-codegen || command -v oapi-codegen)
-
-TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
-TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
-TOOLS_MAKEFILE=$(KUMA_DIR)/mk/dev.mk
 
 LATEST_RELEASE_BRANCH := $(shell $(YQ) e '.[] | .branch' versions.yml | grep -v dev | sort -V | tail -n 1)
 
@@ -152,19 +145,6 @@ dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 	done >> .envrc
 	@echo 'export KUBEBUILDER_ASSETS=$(KUBEBUILDER_ASSETS)' >> .envrc
 	@direnv allow
-
-.PHONY: dev/sync-demo
-dev/sync-demo:
-	rm app/kumactl/data/install/k8s/demo/*.yaml
-	curl -s --fail https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/demo.yaml | \
-		sed 's/"local"/"{{ .Zone }}"/g' | \
-		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' | \
-		sed 's/\([^/]\)kuma-system/\1{{ .SystemNamespace }}/g' \
-		> app/kumactl/data/install/k8s/demo/demo.yaml
-	curl -s --fail https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/gateway.yaml | \
-		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' | \
-		sed 's/\([^/]\)kuma-system/\1{{ .SystemNamespace }}/g' \
-		> app/kumactl/data/install/k8s/demo/gateway.yaml
 
 .PHONY: dev/set-kuma-helm-repo
 dev/set-kuma-helm-repo:

@@ -384,9 +384,6 @@ k3d/clusters/destroy:
 k3d/destroy: k3d/docker/credentials/cleanup k3d/clusters/destroy k3d/docker/network/destroy
 	$(Q)echo "k3d environment cleaned up"
 
-.PHONY: k3d/teardown k3d/nuke k3d/kill
-k3d/teardown k3d/nuke k3d/kill: k3d/destroy
-
 # --- Deploy: wait helpers ---
 
 .PHONY: k3d/cluster/deploy/wait/cp

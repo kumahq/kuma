@@ -78,10 +78,8 @@ endef
 dist_os = $(word 1, $(subst :, ,$(elt)))
 dist_arch = $(word 2, $(subst :, ,$(elt)))
 dist_envoy = $(word 3, $(subst :, ,$(elt)))
-dist_envoy_alt = $(word 4, $(subst :, ,$(elt)))
 dist_name = $(dist_os)-$(dist_arch)
-# Call make_distribution_target with each combination
-$(foreach elt,$(DISTRIBUTION_LIST),$(eval $(call make_distributions_target,$(dist_os),$(dist_arch),$(dist_envoy),$(dist_envoy_alt))))
+$(foreach elt,$(DISTRIBUTION_LIST),$(eval $(call make_distributions_target,$(dist_os),$(dist_arch),$(dist_envoy))))
 ENABLED_DIST_NAMES=$(filter $(addprefix %,$(ENABLED_ARCH_OS)),$(foreach elt,$(DISTRIBUTION_LIST),$(dist_name)))
 
 # Create a main target which will call the tar.gz target for each distribution
@@ -103,7 +101,3 @@ build/info/cloudsmith_repository:
 # Create a main target which will publish to pulp each to the tar.gz built
 .PHONY: publish/pulp ## Publish to pulp all enabled distributions
 publish/pulp: $(addprefix publish/pulp/$(DISTRIBUTION_TARGET_NAME)-,$(ENABLED_DIST_NAMES))
-
-.PHONY: clean/distributions
-clean/distributions:
-	rm -rf build/distributions
