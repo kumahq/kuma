@@ -15,12 +15,13 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -30,6 +31,7 @@ import (
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	util_grpc "github.com/kumahq/kuma/v3/pkg/util/grpc"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var log = core.Log.WithName("kds-service")
@@ -94,13 +96,13 @@ func (g *GlobalKDSServiceServer) HealthCheck(ctx context.Context, _ *mesh_proto.
 	tenantZoneID := TenantZoneClientIDFromCtx(ctx, zone)
 	log := log.WithValues("clientID", tenantZoneID.String())
 
-	insight := zoneinsight_api.NewZoneInsightResource()
+	insight := system.NewZoneInsightResource()
 	if err := manager.Upsert(ctx, g.resManager, model.ResourceKey{Name: zone, Mesh: model.NoMesh}, insight, func(resource model.Resource) error {
 		if insight.Spec.HealthCheck == nil {
-			insight.Spec.HealthCheck = &zoneinsight_api.HealthCheck{}
+			insight.Spec.HealthCheck = &system_proto.HealthCheck{}
 		}
 
-		insight.Spec.HealthCheck.Time = zoneinsight_api.NewTime(time.Now())
+		insight.Spec.HealthCheck.Time = timestamppb.Now()
 		return nil
 	}, manager.WithConflictRetry(
 		g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent,
@@ -267,7 +269,7 @@ func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone
 		ctx,
 		retry.WithMaxRetries(30, retry.NewConstant(1*time.Second)),
 		func(ctx context.Context) error {
-			return retry.RetryableError(g.resManager.Get(ctx, zone_api.NewZoneResource(), core_store.GetBy(key)))
+			return retry.RetryableError(g.resManager.Get(ctx, system.NewZoneResource(), core_store.GetBy(key)))
 		},
 	)
 	if err != nil {
@@ -281,32 +283,32 @@ func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone
 	// #nosec G404 - math rand is enough
 	time.Sleep(time.Duration(rand.Int31n(10000)) * time.Millisecond)
 
-	zoneInsight := zoneinsight_api.NewZoneInsightResource()
+	zoneInsight := system.NewZoneInsightResource()
 	return manager.Upsert(ctx, g.resManager, key, zoneInsight, func(resource model.Resource) error {
 		if zoneInsight.Spec.EnvoyAdminStreams == nil {
-			zoneInsight.Spec.EnvoyAdminStreams = &zoneinsight_api.EnvoyAdminStreams{}
+			zoneInsight.Spec.EnvoyAdminStreams = &system_proto.EnvoyAdminStreams{}
 		}
-		if zoneInsight.Spec.KDSStreams == nil {
-			zoneInsight.Spec.KDSStreams = &zoneinsight_api.KDSStreams{}
+		if zoneInsight.Spec.KdsStreams == nil {
+			zoneInsight.Spec.KdsStreams = &system_proto.KDSStreams{}
 		}
 		stream := zoneInsight.Spec.GetKDSStream(string(streamType))
 		if stream == nil {
-			stream = &zoneinsight_api.KDSStream{}
+			stream = &system_proto.KDSStream{}
 		}
-		if stream.GetConnectTime() == nil || stream.ConnectTime.Time.Before(connectTime) {
-			stream.GlobalInstanceID = g.instanceID
-			stream.ConnectTime = zoneinsight_api.NewTime(connectTime)
+		if stream.GetConnectTime() == nil || proto.MustTimestampFromProto(stream.ConnectTime).Before(connectTime) {
+			stream.GlobalInstanceId = g.instanceID
+			stream.ConnectTime = proto.MustTimestampProto(connectTime)
 		}
 		switch streamType {
 		case ConfigDump:
-			zoneInsight.Spec.EnvoyAdminStreams.ConfigDumpGlobalInstanceID = g.instanceID
-			zoneInsight.Spec.KDSStreams.ConfigDump = stream
+			zoneInsight.Spec.EnvoyAdminStreams.ConfigDumpGlobalInstanceId = g.instanceID
+			zoneInsight.Spec.KdsStreams.ConfigDump = stream
 		case Stats:
-			zoneInsight.Spec.EnvoyAdminStreams.StatsGlobalInstanceID = g.instanceID
-			zoneInsight.Spec.KDSStreams.Stats = stream
+			zoneInsight.Spec.EnvoyAdminStreams.StatsGlobalInstanceId = g.instanceID
+			zoneInsight.Spec.KdsStreams.Stats = stream
 		case Clusters:
-			zoneInsight.Spec.EnvoyAdminStreams.ClustersGlobalInstanceID = g.instanceID
-			zoneInsight.Spec.KDSStreams.Clusters = stream
+			zoneInsight.Spec.EnvoyAdminStreams.ClustersGlobalInstanceId = g.instanceID
+			zoneInsight.Spec.KdsStreams.Clusters = stream
 		}
 		return nil
 	}, manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)) // we need retry because zone sink or other RPC may also update the insight.

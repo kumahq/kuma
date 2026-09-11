@@ -193,7 +193,6 @@ var MeshTCPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:            "Mesh TCP Routes",
 	IsPluginOriginated:           true,
 	AffectsPolicyMatching:        true,
-	ReadOnly:                     false,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
 	HasRulesTargetRef:            false,

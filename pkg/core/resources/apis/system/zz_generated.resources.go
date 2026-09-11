@@ -251,3 +251,373 @@ var SecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
 func init() {
 	registry.RegisterType(SecretResourceTypeDescriptor)
 }
+
+const (
+	ZoneType model.ResourceType = "Zone"
+)
+
+var _ model.Resource = &ZoneResource{}
+
+type ZoneResource struct {
+	Meta model.ResourceMeta
+	Spec *system_proto.Zone
+}
+
+func NewZoneResource() *ZoneResource {
+	return &ZoneResource{
+		Spec: &system_proto.Zone{},
+	}
+}
+
+func (t *ZoneResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *ZoneResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *ZoneResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *ZoneResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*system_proto.Zone)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		if protoType == nil {
+			t.Spec = &system_proto.Zone{}
+		} else {
+			t.Spec = protoType
+		}
+		return nil
+	}
+}
+
+func (t *ZoneResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ZoneResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
+func (t *ZoneResource) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneResourceTypeDescriptor
+}
+
+var _ model.ResourceList = &ZoneResourceList{}
+
+type ZoneResourceList struct {
+	Items      []*ZoneResource
+	Pagination model.Pagination
+}
+
+func (l *ZoneResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *ZoneResourceList) GetItemType() model.ResourceType {
+	return ZoneType
+}
+
+func (l *ZoneResourceList) NewItem() model.Resource {
+	return NewZoneResource()
+}
+
+func (l *ZoneResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*ZoneResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*ZoneResource)(nil), r)
+	}
+}
+
+func (l *ZoneResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+func (l *ZoneResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
+var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:                  ZoneType,
+	Resource:              NewZoneResource(),
+	ResourceList:          &ZoneResourceList{},
+	ReadOnly:              false,
+	AdminOnly:             false,
+	Scope:                 model.ScopeGlobal,
+	KDSFlags:              model.ProvidedByGlobalFlag | model.ProvidedByZoneFlag,
+	WsPath:                "zones",
+	KumactlArg:            "zone",
+	KumactlListArg:        "zones",
+	AllowToInspect:        false,
+	IsPolicy:              false,
+	SingularDisplayName:   "Zone",
+	PluralDisplayName:     "Zones",
+	ShortName:             "z",
+	IsExperimental:        false,
+	IsProxy:               false,
+	AffectsPolicyMatching: false,
+	Insight:               NewZoneInsightResource(),
+	Overview:              NewZoneOverviewResource(),
+}
+
+func init() {
+	registry.RegisterType(ZoneResourceTypeDescriptor)
+}
+
+const (
+	ZoneInsightType model.ResourceType = "ZoneInsight"
+)
+
+var _ model.Resource = &ZoneInsightResource{}
+
+type ZoneInsightResource struct {
+	Meta model.ResourceMeta
+	Spec *system_proto.ZoneInsight
+}
+
+func NewZoneInsightResource() *ZoneInsightResource {
+	return &ZoneInsightResource{
+		Spec: &system_proto.ZoneInsight{},
+	}
+}
+
+func (t *ZoneInsightResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *ZoneInsightResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *ZoneInsightResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *ZoneInsightResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*system_proto.ZoneInsight)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		if protoType == nil {
+			t.Spec = &system_proto.ZoneInsight{}
+		} else {
+			t.Spec = protoType
+		}
+		return nil
+	}
+}
+
+func (t *ZoneInsightResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ZoneInsightResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
+func (t *ZoneInsightResource) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneInsightResourceTypeDescriptor
+}
+
+var _ model.ResourceList = &ZoneInsightResourceList{}
+
+type ZoneInsightResourceList struct {
+	Items      []*ZoneInsightResource
+	Pagination model.Pagination
+}
+
+func (l *ZoneInsightResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *ZoneInsightResourceList) GetItemType() model.ResourceType {
+	return ZoneInsightType
+}
+
+func (l *ZoneInsightResourceList) NewItem() model.Resource {
+	return NewZoneInsightResource()
+}
+
+func (l *ZoneInsightResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*ZoneInsightResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*ZoneInsightResource)(nil), r)
+	}
+}
+
+func (l *ZoneInsightResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+func (l *ZoneInsightResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
+var ZoneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:                  ZoneInsightType,
+	Resource:              NewZoneInsightResource(),
+	ResourceList:          &ZoneInsightResourceList{},
+	ReadOnly:              true,
+	AdminOnly:             false,
+	Scope:                 model.ScopeGlobal,
+	KDSFlags:              model.ProvidedByGlobalFlag | model.ProvidedByZoneFlag,
+	WsPath:                "zone-insights",
+	KumactlArg:            "",
+	KumactlListArg:        "",
+	AllowToInspect:        false,
+	IsPolicy:              false,
+	SingularDisplayName:   "Zone Insight",
+	PluralDisplayName:     "Zone Insights",
+	IsExperimental:        false,
+	IsProxy:               false,
+	AffectsPolicyMatching: false,
+}
+
+func init() {
+	registry.RegisterType(ZoneInsightResourceTypeDescriptor)
+}
+
+const (
+	ZoneOverviewType model.ResourceType = "ZoneOverview"
+)
+
+var _ model.Resource = &ZoneOverviewResource{}
+
+type ZoneOverviewResource struct {
+	Meta model.ResourceMeta
+	Spec *system_proto.ZoneOverview
+}
+
+func NewZoneOverviewResource() *ZoneOverviewResource {
+	return &ZoneOverviewResource{
+		Spec: &system_proto.ZoneOverview{},
+	}
+}
+
+func (t *ZoneOverviewResource) GetMeta() model.ResourceMeta {
+	return t.Meta
+}
+
+func (t *ZoneOverviewResource) SetMeta(m model.ResourceMeta) {
+	t.Meta = m
+}
+
+func (t *ZoneOverviewResource) GetSpec() model.ResourceSpec {
+	return t.Spec
+}
+
+func (t *ZoneOverviewResource) SetSpec(spec model.ResourceSpec) error {
+	protoType, ok := spec.(*system_proto.ZoneOverview)
+	if !ok {
+		return fmt.Errorf("invalid type %T for Spec", spec)
+	} else {
+		if protoType == nil {
+			t.Spec = &system_proto.ZoneOverview{}
+		} else {
+			t.Spec = protoType
+		}
+		return nil
+	}
+}
+
+func (t *ZoneOverviewResource) GetStatus() model.ResourceStatus {
+	return nil
+}
+
+func (t *ZoneOverviewResource) SetStatus(_ model.ResourceStatus) error {
+	return errors.New("status not supported")
+}
+
+func (t *ZoneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
+	return ZoneOverviewResourceTypeDescriptor
+}
+
+func (t *ZoneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
+	t.SetMeta(resource.GetMeta())
+	overview := &system_proto.ZoneOverview{
+		Zone: resource.GetSpec().(*system_proto.Zone),
+	}
+	if insight != nil {
+		ins, ok := insight.GetSpec().(*system_proto.ZoneInsight)
+		if !ok {
+			return errors.New("failed to convert to insight type 'ZoneInsight'")
+		}
+		overview.ZoneInsight = ins
+	}
+	return t.SetSpec(overview)
+}
+
+var _ model.ResourceList = &ZoneOverviewResourceList{}
+
+type ZoneOverviewResourceList struct {
+	Items      []*ZoneOverviewResource
+	Pagination model.Pagination
+}
+
+func (l *ZoneOverviewResourceList) GetItems() []model.Resource {
+	res := make([]model.Resource, len(l.Items))
+	for i, elem := range l.Items {
+		res[i] = elem
+	}
+	return res
+}
+
+func (l *ZoneOverviewResourceList) GetItemType() model.ResourceType {
+	return ZoneOverviewType
+}
+
+func (l *ZoneOverviewResourceList) NewItem() model.Resource {
+	return NewZoneOverviewResource()
+}
+
+func (l *ZoneOverviewResourceList) AddItem(r model.Resource) error {
+	if trr, ok := r.(*ZoneOverviewResource); ok {
+		l.Items = append(l.Items, trr)
+		return nil
+	} else {
+		return model.ErrorInvalidItemType((*ZoneOverviewResource)(nil), r)
+	}
+}
+
+func (l *ZoneOverviewResourceList) GetPagination() *model.Pagination {
+	return &l.Pagination
+}
+
+func (l *ZoneOverviewResourceList) SetPagination(p model.Pagination) {
+	l.Pagination = p
+}
+
+var ZoneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
+	Name:                  ZoneOverviewType,
+	Resource:              NewZoneOverviewResource(),
+	ResourceList:          &ZoneOverviewResourceList{},
+	ReadOnly:              false,
+	AdminOnly:             false,
+	Scope:                 model.ScopeGlobal,
+	WsPath:                "",
+	KumactlArg:            "",
+	KumactlListArg:        "",
+	AllowToInspect:        false,
+	IsPolicy:              false,
+	SingularDisplayName:   "Zone Overview",
+	PluralDisplayName:     "Zone Overviews",
+	IsExperimental:        false,
+	IsProxy:               false,
+	AffectsPolicyMatching: false,
+}
