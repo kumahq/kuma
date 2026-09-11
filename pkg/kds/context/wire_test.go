@@ -9,7 +9,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
-
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
