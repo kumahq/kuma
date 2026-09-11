@@ -574,6 +574,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			// and then
 			actual := v1alpha1.NewMeshTrafficPermissionResource()
@@ -593,6 +594,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
+			defer resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			// and then
 			Expect(store.Get(context.Background(), v1alpha1.NewMeshTrafficPermissionResource(), core_store.GetByKey("mtp-global", mesh))).
