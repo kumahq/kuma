@@ -5826,16 +5826,12 @@ components:
       required:
         - total
         - items
-        - next
       properties:
         total:
           type: integer
           example: 200
         next:
-          type:
-            - string
-            - 'null'
-          description: URL to the next page, or null when this is the last page
+          type: string
         items:
           type: array
           items:
@@ -5913,6 +5909,7 @@ components:
         - total
         - internal
         - external
+        - gatewayDelegated
       properties:
         internal:
           description: Internal services statistics
@@ -5927,6 +5924,10 @@ components:
             total:
               type: integer
               example: 5
+        gatewayDelegated:
+          description: Delegated Gateway services statistics
+          allOf:
+            - $ref: '#/components/schemas/FullStatus'
     ZonesStats:
       type: object
       title: Zones Stats
@@ -5954,9 +5955,14 @@ components:
       description: Dataplanes statistics
       required:
         - standard
+        - gatewayDelegated
       properties:
         standard:
           description: Standard dataplane proxy statistics
+          allOf:
+            - $ref: '#/components/schemas/FullStatus'
+        gatewayDelegated:
+          description: Delegated Gateway dataplane proxy statistics
           allOf:
             - $ref: '#/components/schemas/FullStatus'
     PoliciesStats:
@@ -6490,6 +6496,12 @@ components:
               description: >-
                 Set to `enabled` when the proxy has a zone egress listener.
                 Always computed by the control plane.
+            ^kuma\.io/gateway$:
+              type: string
+              description: >-
+                Set to `true` on a Dataplane that fronts a delegated gateway. On
+                Kubernetes it is computed from the pod's `kuma.io/gateway`
+                annotation.
             ^kuma\.io/mesh$:
               type: string
               description: Mesh the resource belongs to. Defaults to `default` when unset.
@@ -7219,7 +7231,7 @@ components:
                 Listeners describes zone proxy listeners embedded in this
                 Dataplane.
 
-                Listeners may coexist with inbounds.
+                Listeners may coexist with inbounds and gateways.
               items:
                 description: >-
                   Listener describes a zone proxy listener (ZoneIngress or
@@ -7285,11 +7297,7 @@ components:
                       proxy. On Kubernetes, it's usually ClusterIP of a Service
                       or PodIP of a
 
-                      Headless Service. When left out, the control plane sets it
-                      to
-
-                      127.0.0.1, so a Dataplane read back from the API always
-                      carries one.
+                      Headless Service. Defaults to 127.0.0.1
                     type: string
                   backendRef:
                     description: BackendRef is a way to target MeshService.
@@ -7329,8 +7337,6 @@ components:
 
                       port.
                     type: integer
-                required:
-                  - address
                 type: object
               type: array
             transparentProxying:
@@ -7371,27 +7377,23 @@ components:
                       items:
                         properties:
                           kind:
-                            description: >-
-                              Type of the backend: MeshService,
-                              MeshExternalService or MeshMultiZoneService
+                            description: "Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService\n\n\t+required"
                             type: string
                           labels:
                             additionalProperties:
                               type: string
-                            description: Labels used to select backends
+                            description: "Labels used to select backends\n\n\t+optional"
                             type: object
                           name:
-                            description: Name of the backend.
+                            description: "Name of the backend.\n\n\t+optional"
                             type: string
                           namespace:
-                            description: Namespace of the backend. Might be empty
+                            description: "Namespace of the backend. Might be empty\n\n\t+optional"
                             type: string
                           port:
-                            description: Port of the backend.
+                            description: "Port of the backend.\n\n\t+optional"
                             format: uint32
                             type: integer
-                        required:
-                          - kind
                         type: object
                       type: array
                   type: object
@@ -12153,17 +12155,7 @@ components:
                   items:
                     properties:
                       port:
-                        description: >-
-                          Port defines the port to which a user makes a request.
-                          It is required for a
-
-                          `Domain` that is not a wildcard: the sidecar resolves
-                          the domain itself and
-
-                          connects to this port, so the destination doesn't
-                          depend on the address the
-
-                          client dials.
+                        description: Port defines the port to which a user makes a request.
                         format: int32
                         type: integer
                       protocol:
@@ -12190,15 +12182,7 @@ components:
                           - CIDR
                         type: string
                       value:
-                        description: >-
-                          Value for the specified Type. A wildcard `Domain`, for
-                          example
-
-                          `*.example.com`, cannot be resolved by the sidecar, so
-                          its traffic goes to the
-
-                          address the client dials and the match only restricts
-                          the SNI or Host.
+                        description: Value for the specified Type.
                         type: string
                     required:
                       - type
@@ -15685,7 +15669,7 @@ components:
                     Listeners describes zone proxy listeners embedded in this
                     Dataplane.
 
-                    Listeners may coexist with inbounds.
+                    Listeners may coexist with inbounds and gateways.
                   items:
                     description: >-
                       Listener describes a zone proxy listener (ZoneIngress or
@@ -15754,11 +15738,7 @@ components:
                           proxy. On Kubernetes, it's usually ClusterIP of a
                           Service or PodIP of a
 
-                          Headless Service. When left out, the control plane
-                          sets it to
-
-                          127.0.0.1, so a Dataplane read back from the API
-                          always carries one.
+                          Headless Service. Defaults to 127.0.0.1
                         type: string
                       backendRef:
                         description: BackendRef is a way to target MeshService.
@@ -15799,8 +15779,6 @@ components:
 
                           port.
                         type: integer
-                    required:
-                      - address
                     type: object
                   type: array
                 transparentProxying:
@@ -15843,27 +15821,23 @@ components:
                           items:
                             properties:
                               kind:
-                                description: >-
-                                  Type of the backend: MeshService,
-                                  MeshExternalService or MeshMultiZoneService
+                                description: "Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService\n\n\t+required"
                                 type: string
                               labels:
                                 additionalProperties:
                                   type: string
-                                description: Labels used to select backends
+                                description: "Labels used to select backends\n\n\t+optional"
                                 type: object
                               name:
-                                description: Name of the backend.
+                                description: "Name of the backend.\n\n\t+optional"
                                 type: string
                               namespace:
-                                description: Namespace of the backend. Might be empty
+                                description: "Namespace of the backend. Might be empty\n\n\t+optional"
                                 type: string
                               port:
-                                description: Port of the backend.
+                                description: "Port of the backend.\n\n\t+optional"
                                 format: uint32
                                 type: integer
-                            required:
-                              - kind
                             type: object
                           type: array
                       type: object
@@ -16150,169 +16124,138 @@ components:
             skipCreatingInitialPolicies:
               description: >-
                 List of policies to skip creating by default when the mesh is
-                created,
+                created.
 
-                for example TrafficPermission or MeshRetry. An '*' skips all
+                e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to
+                skip all
+
                 policies.
               items:
                 type: string
               type: array
           type: object
         meshInsight:
-          description: MeshInsight carries the observed state of the mesh.
           properties:
             dataplanes:
-              description: Dataplanes aggregates over the dataplanes of the mesh.
               properties:
                 offline:
-                  description: Offline counts the dataplanes that are not connected.
                   type: integer
                 online:
-                  description: Online counts the dataplanes that are connected.
                   type: integer
                 partiallyDegraded:
-                  description: >-
-                    PartiallyDegraded counts the dataplanes with some inbounds
-                    offline.
                   type: integer
                 total:
                   type: integer
               type: object
             dataplanesByType:
-              description: DataplanesByType splits the dataplane stats by proxy type.
               properties:
-                standard:
-                  description: Standard holds the stats of every dataplane.
+                gateway:
                   properties:
                     offline:
-                      description: Offline counts the dataplanes that are not connected.
                       type: integer
                     online:
-                      description: Online counts the dataplanes that are connected.
                       type: integer
                     partiallyDegraded:
-                      description: >-
-                        PartiallyDegraded counts the dataplanes with some
-                        inbounds offline.
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+                gatewayDelegated:
+                  properties:
+                    offline:
+                      type: integer
+                    online:
+                      type: integer
+                    partiallyDegraded:
+                      type: integer
+                    total:
+                      type: integer
+                  type: object
+                standard:
+                  properties:
+                    offline:
+                      type: integer
+                    online:
+                      type: integer
+                    partiallyDegraded:
                       type: integer
                     total:
                       type: integer
                   type: object
               type: object
             dpVersions:
-              description: DpVersions holds the dataplane stats grouped by version.
               properties:
                 envoy:
                   additionalProperties:
-                    description: >-
-                      MeshInsight_DataplaneStat defines statistics specifically
-                      for Dataplanes.
+                    description: DataplaneStat defines statistic specifically for Dataplane
                     properties:
                       offline:
-                        description: Offline counts the dataplanes that are not connected.
                         type: integer
                       online:
-                        description: Online counts the dataplanes that are connected.
                         type: integer
                       partiallyDegraded:
-                        description: >-
-                          PartiallyDegraded counts the dataplanes with some
-                          inbounds offline.
                         type: integer
                       total:
                         type: integer
                     type: object
-                  description: Envoy holds the dataplane stats grouped by Envoy version.
+                  description: Dataplane stats grouped by Envoy version
                   type: object
                 kumaDp:
                   additionalProperties:
-                    description: >-
-                      MeshInsight_DataplaneStat defines statistics specifically
-                      for Dataplanes.
+                    description: DataplaneStat defines statistic specifically for Dataplane
                     properties:
                       offline:
-                        description: Offline counts the dataplanes that are not connected.
                         type: integer
                       online:
-                        description: Online counts the dataplanes that are connected.
                         type: integer
                       partiallyDegraded:
-                        description: >-
-                          PartiallyDegraded counts the dataplanes with some
-                          inbounds offline.
                         type: integer
                       total:
                         type: integer
                     type: object
-                  description: KumaDp holds the dataplane stats grouped by KumaDP version.
+                  description: Dataplane stats grouped by KumaDP version
                   type: object
               type: object
             mTLS:
-              description: MTLS holds the dataplane stats grouped by certificate backend.
+              description: mTLS statistics
               properties:
                 issuedBackends:
                   additionalProperties:
-                    description: >-
-                      MeshInsight_DataplaneStat defines statistics specifically
-                      for Dataplanes.
+                    description: DataplaneStat defines statistic specifically for Dataplane
                     properties:
                       offline:
-                        description: Offline counts the dataplanes that are not connected.
                         type: integer
                       online:
-                        description: Online counts the dataplanes that are connected.
                         type: integer
                       partiallyDegraded:
-                        description: >-
-                          PartiallyDegraded counts the dataplanes with some
-                          inbounds offline.
                         type: integer
                       total:
                         type: integer
                     type: object
-                  description: >-
-                    IssuedBackends groups the dataplanes by the backend that
-                    issued their
-
-                    certificate.
+                  description: Dataplanes grouped by issued backends.
                   type: object
                 supportedBackends:
                   additionalProperties:
-                    description: >-
-                      MeshInsight_DataplaneStat defines statistics specifically
-                      for Dataplanes.
+                    description: DataplaneStat defines statistic specifically for Dataplane
                     properties:
                       offline:
-                        description: Offline counts the dataplanes that are not connected.
                         type: integer
                       online:
-                        description: Online counts the dataplanes that are connected.
                         type: integer
                       partiallyDegraded:
-                        description: >-
-                          PartiallyDegraded counts the dataplanes with some
-                          inbounds offline.
                         type: integer
                       total:
                         type: integer
                     type: object
-                  description: >-
-                    SupportedBackends groups the dataplanes by the backends they
-                    accept
-
-                    certificates from.
+                  description: Dataplanes grouped by supported backends.
                   type: object
               type: object
             resources:
               additionalProperties:
-                description: >-
-                  MeshInsight_ResourceStat counts the stored resources of a
-                  single type.
                 properties:
                   total:
                     type: integer
                 type: object
-              description: Resources counts the stored resources of the mesh by type.
               type: object
           type: object
       type: object
@@ -16649,157 +16592,125 @@ components:
       description: MeshInsight defines the observed state of a Mesh.
       properties:
         dataplanes:
-          description: Dataplanes aggregates over the dataplanes of the mesh.
           properties:
             offline:
-              description: Offline counts the dataplanes that are not connected.
               type: integer
             online:
-              description: Online counts the dataplanes that are connected.
               type: integer
             partiallyDegraded:
-              description: >-
-                PartiallyDegraded counts the dataplanes with some inbounds
-                offline.
               type: integer
             total:
               type: integer
           type: object
         dataplanesByType:
-          description: DataplanesByType splits the dataplane stats by proxy type.
           properties:
-            standard:
-              description: Standard holds the stats of every dataplane.
+            gateway:
               properties:
                 offline:
-                  description: Offline counts the dataplanes that are not connected.
                   type: integer
                 online:
-                  description: Online counts the dataplanes that are connected.
                   type: integer
                 partiallyDegraded:
-                  description: >-
-                    PartiallyDegraded counts the dataplanes with some inbounds
-                    offline.
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            gatewayDelegated:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
+                  type: integer
+                total:
+                  type: integer
+              type: object
+            standard:
+              properties:
+                offline:
+                  type: integer
+                online:
+                  type: integer
+                partiallyDegraded:
                   type: integer
                 total:
                   type: integer
               type: object
           type: object
         dpVersions:
-          description: DpVersions holds the dataplane stats grouped by version.
           properties:
             envoy:
               additionalProperties:
-                description: >-
-                  MeshInsight_DataplaneStat defines statistics specifically for
-                  Dataplanes.
+                description: DataplaneStat defines statistic specifically for Dataplane
                 properties:
                   offline:
-                    description: Offline counts the dataplanes that are not connected.
                     type: integer
                   online:
-                    description: Online counts the dataplanes that are connected.
                     type: integer
                   partiallyDegraded:
-                    description: >-
-                      PartiallyDegraded counts the dataplanes with some inbounds
-                      offline.
                     type: integer
                   total:
                     type: integer
                 type: object
-              description: Envoy holds the dataplane stats grouped by Envoy version.
+              description: Dataplane stats grouped by Envoy version
               type: object
             kumaDp:
               additionalProperties:
-                description: >-
-                  MeshInsight_DataplaneStat defines statistics specifically for
-                  Dataplanes.
+                description: DataplaneStat defines statistic specifically for Dataplane
                 properties:
                   offline:
-                    description: Offline counts the dataplanes that are not connected.
                     type: integer
                   online:
-                    description: Online counts the dataplanes that are connected.
                     type: integer
                   partiallyDegraded:
-                    description: >-
-                      PartiallyDegraded counts the dataplanes with some inbounds
-                      offline.
                     type: integer
                   total:
                     type: integer
                 type: object
-              description: KumaDp holds the dataplane stats grouped by KumaDP version.
+              description: Dataplane stats grouped by KumaDP version
               type: object
           type: object
         mTLS:
-          description: MTLS holds the dataplane stats grouped by certificate backend.
+          description: mTLS statistics
           properties:
             issuedBackends:
               additionalProperties:
-                description: >-
-                  MeshInsight_DataplaneStat defines statistics specifically for
-                  Dataplanes.
+                description: DataplaneStat defines statistic specifically for Dataplane
                 properties:
                   offline:
-                    description: Offline counts the dataplanes that are not connected.
                     type: integer
                   online:
-                    description: Online counts the dataplanes that are connected.
                     type: integer
                   partiallyDegraded:
-                    description: >-
-                      PartiallyDegraded counts the dataplanes with some inbounds
-                      offline.
                     type: integer
                   total:
                     type: integer
                 type: object
-              description: >-
-                IssuedBackends groups the dataplanes by the backend that issued
-                their
-
-                certificate.
+              description: Dataplanes grouped by issued backends.
               type: object
             supportedBackends:
               additionalProperties:
-                description: >-
-                  MeshInsight_DataplaneStat defines statistics specifically for
-                  Dataplanes.
+                description: DataplaneStat defines statistic specifically for Dataplane
                 properties:
                   offline:
-                    description: Offline counts the dataplanes that are not connected.
                     type: integer
                   online:
-                    description: Online counts the dataplanes that are connected.
                     type: integer
                   partiallyDegraded:
-                    description: >-
-                      PartiallyDegraded counts the dataplanes with some inbounds
-                      offline.
                     type: integer
                   total:
                     type: integer
                 type: object
-              description: >-
-                SupportedBackends groups the dataplanes by the backends they
-                accept
-
-                certificates from.
+              description: Dataplanes grouped by supported backends.
               type: object
           type: object
         resources:
           additionalProperties:
-            description: >-
-              MeshInsight_ResourceStat counts the stored resources of a single
-              type.
             properties:
               total:
                 type: integer
             type: object
-          description: Resources counts the stored resources of the mesh by type.
           type: object
       type: object
     SecretItem:
@@ -16843,8 +16754,6 @@ components:
         - $ref: '#/components/schemas/ZoneOverview'
     ZoneOverview:
       description: ZoneOverview defines the projected state of a Zone.
-      required:
-        - zone
       properties:
         zone:
           properties:
@@ -17976,25 +17885,6 @@ components:
               x-kubernetes-list-map-keys:
                 - type
               x-kubernetes-list-type: map
-            trustDomain:
-              description: >-
-                TrustDomain is the trust domain this identity issues
-                certificates in. The
-
-                control plane renders `spec.spiffeID.trustDomain` once, when it
-                first
-
-                initializes the identity, and then keeps issuing in the recorded
-                value.
-
-                Templates such as `{{ .Zone }}` therefore stop following the
-                zone name,
-
-                which would otherwise silently move every workload into a trust
-                domain no
-
-                MeshTrust publishes yet.
-              type: string
           type: object
           readOnly: true
     MeshMultiZoneServiceItem:
@@ -19540,10 +19430,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -19553,10 +19439,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshAccessLogCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19593,10 +19477,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -19606,10 +19486,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshCircuitBreakerCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19646,10 +19524,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -19659,10 +19533,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshFaultInjectionCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19699,10 +19571,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -19712,10 +19580,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshHealthCheckCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19752,10 +19618,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -19765,10 +19627,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshHTTPRouteCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19805,10 +19665,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -19818,10 +19674,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19858,10 +19712,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -19871,10 +19721,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshMetricCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19911,10 +19759,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -19924,10 +19768,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshPassthroughCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -19964,10 +19806,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -19977,10 +19815,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshProxyPatchCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20017,10 +19853,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -20030,10 +19862,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshRateLimitCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20070,10 +19900,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -20083,10 +19909,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshRetryCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20123,10 +19947,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -20136,10 +19956,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshTCPRouteCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20176,10 +19994,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -20189,10 +20003,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshTimeoutCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20229,10 +20041,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -20242,10 +20050,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshTLSCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20282,10 +20088,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -20295,10 +20097,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshTraceCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20335,10 +20135,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -20348,10 +20144,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshTrafficPermissionCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20416,17 +20210,11 @@ components:
                   $ref: '#/components/schemas/DataplaneItem'
                 type: array
               next:
-                description: URL to the next page, or null when this is the last page
-                type:
-                  - string
-                  - 'null'
+                description: URL to the next page
+                type: string
               total:
                 description: The total number of entities
                 type: number
-            required:
-              - total
-              - items
-              - next
             type: object
       description: List
     DataplaneInsightCreateOrUpdateSuccessResponse:
@@ -20469,17 +20257,11 @@ components:
                   $ref: '#/components/schemas/DataplaneInsightItem'
                 type: array
               next:
-                description: URL to the next page, or null when this is the last page
-                type:
-                  - string
-                  - 'null'
+                description: URL to the next page
+                type: string
               total:
                 description: The total number of entities
                 type: number
-            required:
-              - total
-              - items
-              - next
             type: object
       description: List
     GetDataplaneOverviewResponse:
@@ -20494,19 +20276,12 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               total:
                 type: integer
                 example: 200
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
               items:
                 type: array
                 items:
@@ -20523,10 +20298,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -20536,10 +20307,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     GlobalSecretCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20604,17 +20373,11 @@ components:
                   $ref: '#/components/schemas/MeshItem'
                 type: array
               next:
-                description: URL to the next page, or null when this is the last page
-                type:
-                  - string
-                  - 'null'
+                description: URL to the next page
+                type: string
               total:
                 description: The total number of entities
                 type: number
-            required:
-              - total
-              - items
-              - next
             type: object
       description: List
     GetMeshInsightResponse:
@@ -20629,19 +20392,12 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               total:
                 type: integer
                 example: 200
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
               items:
                 type: array
                 items:
@@ -20658,19 +20414,12 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               total:
                 type: integer
                 example: 200
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
               items:
                 type: array
                 items:
@@ -20715,17 +20464,11 @@ components:
                   $ref: '#/components/schemas/SecretItem'
                 type: array
               next:
-                description: URL to the next page, or null when this is the last page
-                type:
-                  - string
-                  - 'null'
+                description: URL to the next page
+                type: string
               total:
                 description: The total number of entities
                 type: number
-            required:
-              - total
-              - items
-              - next
             type: object
       description: List
     GetZoneOverviewResponse:
@@ -20740,19 +20483,12 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               total:
                 type: integer
                 example: 200
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
               items:
                 type: array
                 items:
@@ -20769,10 +20505,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -20782,10 +20514,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     HostnameGeneratorCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20822,10 +20552,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -20835,10 +20561,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshExternalServiceCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20875,10 +20599,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -20888,10 +20608,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshIdentityCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20928,10 +20646,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -20941,10 +20655,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshMultiZoneServiceCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -20981,10 +20693,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -20994,10 +20702,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshOpenTelemetryBackendCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -21034,10 +20740,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -21047,10 +20749,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshServiceCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -21087,10 +20787,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -21100,10 +20796,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshTrustCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -21140,10 +20834,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -21153,10 +20843,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     MeshZoneAddressCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -21193,10 +20881,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -21206,10 +20890,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     WorkloadCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -21246,10 +20928,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -21259,10 +20937,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     ZoneCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -21299,10 +20975,6 @@ components:
         application/json:
           schema:
             type: object
-            required:
-              - total
-              - items
-              - next
             properties:
               items:
                 type: array
@@ -21312,10 +20984,8 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type:
-                  - string
-                  - 'null'
-                description: URL to the next page, or null when this is the last page
+                type: string
+                description: URL to the next page
     ZoneInsightCreateOrUpdateSuccessResponse:
       description: Successful response
       content:
@@ -21353,6 +21023,11 @@ components:
             partiallyDegraded: 1
           external:
             total: 1
+          gatewayDelegated:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
           internalByStatus:
             total: 4
             online: 2
@@ -21370,6 +21045,11 @@ components:
             total: 1
         dataplanes:
           standard:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          gatewayDelegated:
             total: 4
             online: 2
             offline: 1
