@@ -105,6 +105,64 @@ var _ = Describe("MeshServiceResource.Hash()", func() {
 	})
 })
 
+var _ = Describe("MeshServiceResource.PolicyMatchingHash()", func() {
+	newMeshService := func() *api.MeshServiceResource {
+		return builders.MeshService().
+			WithName("backend").
+			WithMesh("default").
+			WithLabels(map[string]string{
+				mesh_proto.ZoneTag: "zone-1",
+				"team":             "infra",
+			}).
+			AddIntPort(80, 8080, core_meta.ProtocolHTTP).
+			WithKumaVIP("10.0.0.1").
+			WithTLSStatus(api.TLSReady).
+			Build()
+	}
+
+	It("is stable when fields derived from backing dataplanes change", func() {
+		original := newMeshService()
+		originalHash := original.PolicyMatchingHash()
+
+		changed := newMeshService()
+		changed.Meta.(*test_model.ResourceMeta).Version = "2"
+		changed.Spec.State = api.StateUnavailable
+		changed.Spec.Identities = &[]api.MeshServiceIdentity{{Type: api.MeshServiceIdentitySpiffeIDType, Value: "spiffe://default.zone-1.mesh.local/backend"}}
+		changed.Status.TLS.Status = api.TLSNotReady
+		changed.Status.DataplaneProxies = api.DataplaneProxies{Connected: 3, Healthy: 2, Total: 3}
+
+		Expect(changed.PolicyMatchingHash()).To(Equal(originalHash))
+		Expect(changed.XDSHash()).NotTo(Equal(original.XDSHash()))
+	})
+
+	It("changes when a label changes", func() {
+		original := newMeshService()
+		changed := newMeshService()
+		changed.Meta.(*test_model.ResourceMeta).Labels["team"] = "payments"
+
+		Expect(changed.PolicyMatchingHash()).NotTo(Equal(original.PolicyMatchingHash()))
+	})
+
+	It("changes when a port changes", func() {
+		original := newMeshService()
+		changed := newMeshService()
+		changed.Spec.Ports[0].Port = 8081
+
+		Expect(changed.PolicyMatchingHash()).NotTo(Equal(original.PolicyMatchingHash()))
+	})
+
+	It("does not modify the resource", func() {
+		changed := newMeshService()
+		changed.Spec.State = api.StateAvailable
+		changed.Status.TLS.Status = api.TLSReady
+
+		_ = changed.PolicyMatchingHash()
+
+		Expect(changed.Spec.State).To(Equal(api.StateAvailable))
+		Expect(changed.Status.TLS.Status).To(Equal(api.TLSReady))
+	})
+})
+
 var _ = Describe("MeshServiceResource.XDSHash()", func() {
 	newMeshService := func() *api.MeshServiceResource {
 		return builders.MeshService().

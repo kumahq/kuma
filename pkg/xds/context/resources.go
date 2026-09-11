@@ -42,6 +42,7 @@ func (rm ResourceMap) Hash() []byte {
 type typeHash struct {
 	resourceType core_model.ResourceType
 	hash         []byte
+	list         core_model.ResourceList
 }
 
 func (rm ResourceMap) hashByType() []typeHash {
@@ -51,7 +52,7 @@ func (rm ResourceMap) hashByType() []typeHash {
 func (rm ResourceMap) typeHashes(types []core_model.ResourceType) []typeHash {
 	hashes := make([]typeHash, 0, len(types))
 	for _, t := range types {
-		hashes = append(hashes, typeHash{resourceType: t, hash: resourceListXDSHash(rm[t])})
+		hashes = append(hashes, typeHash{resourceType: t, hash: resourceListXDSHash(rm[t]), list: rm[t]})
 	}
 	return hashes
 }
