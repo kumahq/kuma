@@ -29,6 +29,112 @@
 * perf(rules): cut allocations in rule building [#17954](https://github.com/kumahq/kuma/pull/17954) @slonka
 
 
+## 2.13.11
+> Released on 2026/09/11
+
+* chore(deps): bump coredns to v1.14.7 [#18319](https://github.com/kumahq/kuma/pull/18319) @lukidzi
+* chore(deps): bump distroless base images [#18119](https://github.com/kumahq/kuma/pull/18119) @bartsmykla
+* chore(deps): bump envoy from 1.36.9 to 1.36.10 [#18224](https://github.com/kumahq/kuma/pull/18224) @lukidzi
+* chore(deps): bump github.com/cilium/ebpf from 0.20.0 to 0.22.0 [#18108](https://github.com/kumahq/kuma/pull/18108) @renovate
+* chore(deps): bump github.com/google/cel-go from 0.29.0 to 0.30.0 [#18140](https://github.com/kumahq/kuma/pull/18140) @renovate
+* chore(deps): bump github.com/moby/go-archive from 0.1.0 to 0.3.3 [#18111](https://github.com/kumahq/kuma/pull/18111) @bartsmykla
+* chore(deps): bump golang.org/x/crypto from 0.55.0 to 0.56.0 [#18359](https://github.com/kumahq/kuma/pull/18359) @renovate
+* chore(deps): bump google.golang.org/grpc from 1.83.1 to 1.83.2 [#18589](https://github.com/kumahq/kuma/pull/18589) @renovate
+* chore(deps): security update [#18067](https://github.com/kumahq/kuma/pull/18067) [#18306](https://github.com/kumahq/kuma/pull/18306) @kumahq
+* chore(helm): control plane, hook, ingress and egress containers now drop all Linux capabilities and disallow privilege escalation [#18129](https://github.com/kumahq/kuma/pull/18129) @bartsmykla
+* feat(labels): compute `kuma.io/display-name` for all resources (backport of #17162) [#18164](https://github.com/kumahq/kuma/pull/18164) @kumahq
+* feat(labels): compute `kuma.io/origin` on global and zone control planes (backport of #17176) (backport of #18279) [#18370](https://github.com/kumahq/kuma/pull/18370) @kumahq
+* fix(k8s): enforce control-plane-owned labels on read (backport of #18271) [#18396](https://github.com/kumahq/kuma/pull/18396) @kumahq
+* fix(k8s): reconcile pods that match a Service only once ignoredServiceSelectorLabels are stripped [#18540](https://github.com/kumahq/kuma/pull/18540) @kumahq
+* fix(k8s): reject user-set service-account label (backport of #18273) [#18288](https://github.com/kumahq/kuma/pull/18288) @kumahq
+* fix(k8s): scope gateway mapper logger per call [#18215](https://github.com/kumahq/kuma/pull/18215) @lukidzi
+* fix(labels): make Compute authoritative for zone, env, namespace and service-account (backport of #18410) [#18578](https://github.com/kumahq/kuma/pull/18578) @kumahq
+* fix(meshhttproute): resolve mirror backendRef (backport of #17676) [#17850](https://github.com/kumahq/kuma/pull/17850) @kumahq
+* fix(meshidentity): reconcile the MeshTrust trust domain when it changes [#18617](https://github.com/kumahq/kuma/pull/18617) @kumahq
+* fix(meshmetric): honor includeUnused sidecar flag [#18482](https://github.com/kumahq/kuma/pull/18482) @kumahq
+* fix(meshtls): apply tls params without inbounds (backport of #18444) [#18445](https://github.com/kumahq/kuma/pull/18445) @kumahq
+* fix(xds): stop status-only writes forcing mesh-wide xDS recomputation [#18623](https://github.com/kumahq/kuma/pull/18623) @kumahq
+* perf(rules): cut allocations in rule building (backport of #17954) [#18046](https://github.com/kumahq/kuma/pull/18046) @kumahq
+
+
+## 2.12.15
+> Released on 2026/09/11
+
+* chore(deps): bump coredns to v1.14.7 [#18318](https://github.com/kumahq/kuma/pull/18318) @lukidzi
+* chore(deps): bump distroless base images [#18120](https://github.com/kumahq/kuma/pull/18120) @bartsmykla
+* chore(deps): bump envoy from 1.35.13 to 1.36.10 [#18223](https://github.com/kumahq/kuma/pull/18223) @lukidzi
+* chore(deps): bump github.com/cilium/ebpf from 0.19.0 to 0.22.0 [#18106](https://github.com/kumahq/kuma/pull/18106) @renovate
+* chore(deps): bump github.com/moby/go-archive from 0.1.0 to 0.3.3 [#18112](https://github.com/kumahq/kuma/pull/18112) @bartsmykla
+* chore(deps): bump golang.org/x/crypto from 0.55.0 to 0.56.0 [#18358](https://github.com/kumahq/kuma/pull/18358) @renovate
+* chore(deps): bump google.golang.org/grpc from 1.82.1 to 1.83.2 [#18311](https://github.com/kumahq/kuma/pull/18311) [#18588](https://github.com/kumahq/kuma/pull/18588) @renovate
+* chore(deps): security update [#18065](https://github.com/kumahq/kuma/pull/18065) [#18138](https://github.com/kumahq/kuma/pull/18138) @kumahq
+* chore(helm): control plane, hook, ingress and egress containers now drop all Linux capabilities and disallow privilege escalation [#18130](https://github.com/kumahq/kuma/pull/18130) @bartsmykla
+* feat(labels): compute `kuma.io/display-name` for all resources (backport of #17162) [#18163](https://github.com/kumahq/kuma/pull/18163) @kumahq
+* feat(labels): compute `kuma.io/origin` on global and zone control planes (backport of #17176) (backport of #18279) [#18372](https://github.com/kumahq/kuma/pull/18372) @kumahq
+* fix(k8s): enforce control-plane-owned labels on read (backport of #18271) [#18395](https://github.com/kumahq/kuma/pull/18395) @kumahq
+* fix(k8s): reject user-set service-account label (backport of #18273) [#18287](https://github.com/kumahq/kuma/pull/18287) @kumahq
+* fix(k8s): scope gateway mapper logger per call [#18216](https://github.com/kumahq/kuma/pull/18216) @lukidzi
+* fix(labels): make Compute authoritative for zone, env, namespace and service-account (backport of #18410) [#18575](https://github.com/kumahq/kuma/pull/18575) @kumahq
+* fix(meshmetric): honor includeUnused sidecar flag [#18483](https://github.com/kumahq/kuma/pull/18483) @kumahq
+* fix(meshtls): apply tls params without inbounds (backport of #18444) [#18448](https://github.com/kumahq/kuma/pull/18448) @kumahq
+* perf(rules): cut allocations in rule building (backport of #17954) [#18049](https://github.com/kumahq/kuma/pull/18049) @kumahq
+
+
+## 2.11.19
+> Released on 2026/09/11
+
+* chore(deps): bump coredns to v1.14.7 [#18317](https://github.com/kumahq/kuma/pull/18317) @lukidzi
+* chore(deps): bump distroless base images [#18121](https://github.com/kumahq/kuma/pull/18121) @bartsmykla
+* chore(deps): bump envoy from 1.35.13 to 1.36.10 [#18222](https://github.com/kumahq/kuma/pull/18222) @lukidzi
+* chore(deps): bump github.com/cilium/ebpf from 0.18.0 to 0.22.0 [#18105](https://github.com/kumahq/kuma/pull/18105) @renovate
+* chore(deps): bump golang.org/x/crypto from 0.55.0 to 0.56.0 [#18357](https://github.com/kumahq/kuma/pull/18357) @renovate
+* chore(deps): bump google.golang.org/grpc from 1.82.1 to 1.83.2 [#18310](https://github.com/kumahq/kuma/pull/18310) [#18591](https://github.com/kumahq/kuma/pull/18591) @renovate
+* chore(deps): security update [#18063](https://github.com/kumahq/kuma/pull/18063) [#18135](https://github.com/kumahq/kuma/pull/18135) @kumahq
+* chore(helm): control plane, hook, ingress and egress containers now drop all Linux capabilities and disallow privilege escalation [#18131](https://github.com/kumahq/kuma/pull/18131) @bartsmykla
+* feat(labels): compute `kuma.io/display-name` for all resources (backport of #17162) [#18160](https://github.com/kumahq/kuma/pull/18160) @kumahq
+* feat(labels): compute `kuma.io/origin` on global and zone control planes (backport of #17176) (backport of #18279) [#18369](https://github.com/kumahq/kuma/pull/18369) @kumahq
+* fix(k8s): enforce control-plane-owned labels on read (backport of #18271) [#18398](https://github.com/kumahq/kuma/pull/18398) @kumahq
+* fix(k8s): scope gateway mapper logger per call [#18217](https://github.com/kumahq/kuma/pull/18217) @lukidzi
+* fix(labels): make Compute authoritative for zone, env, namespace and service-account (backport of #18410) [#18576](https://github.com/kumahq/kuma/pull/18576) @kumahq
+* fix(meshmetric): honor includeUnused sidecar flag [#18484](https://github.com/kumahq/kuma/pull/18484) @kumahq
+* fix(meshtls): apply tls params without inbounds (backport of #18444) [#18446](https://github.com/kumahq/kuma/pull/18446) @kumahq
+* perf(rules): cut allocations in rule building (backport of #17954) [#18045](https://github.com/kumahq/kuma/pull/18045) @kumahq
+
+
+## 2.9.20
+> Released on 2026/09/11
+
+* chore(deps): bump coredns to v1.14.7 [#18315](https://github.com/kumahq/kuma/pull/18315) @lukidzi
+* chore(deps): bump envoy from 1.35.13 to 1.36.10 [#18221](https://github.com/kumahq/kuma/pull/18221) @lukidzi
+* chore(deps): bump github.com/cilium/ebpf from 0.16.0 to 0.22.0 [#18104](https://github.com/kumahq/kuma/pull/18104) @renovate
+* chore(deps): bump golang.org/x/crypto from 0.55.0 to 0.56.0 [#18356](https://github.com/kumahq/kuma/pull/18356) @renovate
+* chore(deps): bump google.golang.org/grpc from 1.82.1 to 1.83.2 [#18309](https://github.com/kumahq/kuma/pull/18309) [#18590](https://github.com/kumahq/kuma/pull/18590) @renovate
+* chore(deps): security update [#18062](https://github.com/kumahq/kuma/pull/18062) @kumahq
+* chore(helm): control plane, hook, ingress and egress containers now drop all Linux capabilities and disallow privilege escalation [#18132](https://github.com/kumahq/kuma/pull/18132) @bartsmykla
+* feat(labels): compute `kuma.io/display-name` for all resources (backport of #17162) [#18162](https://github.com/kumahq/kuma/pull/18162) @kumahq
+* feat(labels): compute `kuma.io/origin` on global and zone control planes (backport of #17176) (backport of #18279) [#18368](https://github.com/kumahq/kuma/pull/18368) @kumahq
+* fix(k8s): enforce control-plane-owned labels on read (backport of #18271) [#18397](https://github.com/kumahq/kuma/pull/18397) @kumahq
+* fix(k8s): scope gateway mapper logger per call [#18218](https://github.com/kumahq/kuma/pull/18218) @lukidzi
+* fix(labels): make Compute authoritative for zone, env, namespace and service-account (backport of #18410) [#18577](https://github.com/kumahq/kuma/pull/18577) @kumahq
+* fix(meshmetric): honor includeUnused sidecar flag [#18480](https://github.com/kumahq/kuma/pull/18480) @kumahq
+* perf(rules): cut allocations in rule building (backport of #17954) [#18048](https://github.com/kumahq/kuma/pull/18048) @kumahq
+
+
+## 2.7.30
+> Released on 2026/09/11
+
+* chore(deps): bump coredns to v1.14.7 [#18314](https://github.com/kumahq/kuma/pull/18314) @lukidzi
+* chore(deps): bump envoy from 1.35.13 to 1.36.10 [#18220](https://github.com/kumahq/kuma/pull/18220) @lukidzi
+* chore(deps): bump github.com/cilium/ebpf from 0.14.0 to 0.22.0 [#18103](https://github.com/kumahq/kuma/pull/18103) @renovate
+* chore(deps): bump golang.org/x/crypto from 0.55.0 to 0.56.0 [#18355](https://github.com/kumahq/kuma/pull/18355) @renovate
+* chore(deps): bump google.golang.org/grpc from 1.82.1 to 1.83.2 [#18308](https://github.com/kumahq/kuma/pull/18308) [#18619](https://github.com/kumahq/kuma/pull/18619) @renovate
+* chore(deps): security update [#18061](https://github.com/kumahq/kuma/pull/18061) @kumahq
+* chore(helm): control plane, hook, ingress and egress containers now drop all Linux capabilities and disallow privilege escalation [#18133](https://github.com/kumahq/kuma/pull/18133) @bartsmykla
+* fix(k8s): scope gateway mapper logger per call [#18219](https://github.com/kumahq/kuma/pull/18219) @lukidzi
+* fix(meshmetric): honor includeUnused sidecar flag [#18481](https://github.com/kumahq/kuma/pull/18481) @kumahq
+* perf(rules): cut allocations in rule building (backport of #17954) [#18047](https://github.com/kumahq/kuma/pull/18047) @kumahq
+
+
 ## 2.14.3
 > Released on 2026/08/10
 
