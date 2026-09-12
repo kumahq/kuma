@@ -121,6 +121,26 @@ spec:
             limits:
               memory: 16Mi
           {{- end }}
+          {{- if eq $role "egress" }}
+          {{- /* Clients reach a zone egress by pod IP straight out of EDS, so a
+                 terminating pod keeps receiving requests until the control plane
+                 recomputes endpoints and pushes them. Outlive that propagation:
+                 it costs the store cache TTL plus the xDS refresh interval plus
+                 the push itself, so this has to be raised alongside those.
+                 A zone ingress needs no such hook: it is addressed through its
+                 Service, which drops terminating pods from the backend set. */}}
+          {{- $preStopSleep := int (include "kuma.mesh.zoneproxy.setting" (dict "cfg" $cfg "defaults" $defaults "field" "preStopSleepSeconds")) }}
+          {{- if gt $preStopSleep 0 }}
+          {{- $grace := int (include "kuma.mesh.zoneproxy.setting" (dict "cfg" $cfg "defaults" $defaults "field" "terminationGracePeriodSeconds")) }}
+          {{- if ge $preStopSleep $grace }}
+          {{- fail (printf "meshes[%s].egress: preStopSleepSeconds (%d) must be lower than terminationGracePeriodSeconds (%d), otherwise the pod is killed before the hook completes" $meshName $preStopSleep $grace) }}
+          {{- end }}
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: {{ $preStopSleep }}
+          {{- end }}
+          {{- end }}
 {{- end }}
 
 {{- end }}
