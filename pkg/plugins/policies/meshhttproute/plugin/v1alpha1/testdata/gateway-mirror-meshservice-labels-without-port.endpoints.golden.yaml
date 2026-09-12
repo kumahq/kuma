@@ -1,0 +1,5 @@
+resources:
+- name: backend-26cb64fa4e85e7b7
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: backend-26cb64fa4e85e7b7

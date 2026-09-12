@@ -281,6 +281,11 @@ func makeHttpRouteEntry(
 					// This should be caught by validation
 					continue
 				}
+				if dest[mesh_proto.ServiceTag] == "" {
+					dest = map[string]string{
+						mesh_proto.ServiceTag: metadata.UnresolvedBackendServiceTag,
+					}
+				}
 			} else {
 				// We have a real backendRef but it's not valid
 				dest = map[string]string{
@@ -327,7 +332,7 @@ func makeHttpRouteEntry(
 				continue
 			}
 			tags, ok := tags.FromLegacyTargetRef(m.BackendRef.TargetRef)
-			if !ok {
+			if !ok || tags[mesh_proto.ServiceTag] == "" {
 				continue
 			}
 			entry.Mirror = &route.Mirror{
