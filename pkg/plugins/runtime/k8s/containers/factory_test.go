@@ -9,6 +9,7 @@ import (
 
 	runtime_k8s "github.com/kumahq/kuma/v2/pkg/config/plugins/runtime/k8s"
 	config_types "github.com/kumahq/kuma/v2/pkg/config/types"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 )
 
 var _ = Describe("DataplaneProxyFactory", func() {
@@ -38,4 +39,24 @@ var _ = Describe("DataplaneProxyFactory", func() {
 			Expect(ok).To(BeFalse(), "expected KUMA_DATAPLANE_RUNTIME_OTEL_ENV_ENABLED to stay unset")
 		})
 	})
+
+	DescribeTable("proxyConcurrencyFor",
+		func(cpuLimit string, annotations map[string]string, expected int64) {
+			factory := &DataplaneProxyFactory{
+				ContainerConfig: runtime_k8s.DataplaneContainer{
+					Resources: runtime_k8s.SidecarResources{
+						Limits: runtime_k8s.SidecarResourceLimits{CPU: cpuLimit},
+					},
+				},
+			}
+			concurrency, err := factory.proxyConcurrencyFor(annotations)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(concurrency).To(Equal(expected))
+		},
+		Entry("defaults to 2 without a CPU limit", "0", nil, int64(2)),
+		Entry("floors at 2 with a small CPU limit", "500m", nil, int64(2)),
+		Entry("follows a larger CPU limit", "3000m", nil, int64(3)),
+		Entry("annotation overrides the CPU limit", "3000m", map[string]string{metadata.KumaSidecarConcurrencyAnnotation: "8"}, int64(8)),
+		Entry("annotation 0 keeps Envoy's own sizing", "0", map[string]string{metadata.KumaSidecarConcurrencyAnnotation: "0"}, int64(0)),
+	)
 })

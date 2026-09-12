@@ -6,6 +6,24 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.14.5`
+
+Patch releases normally do not require upgrade instructions. The entry below is included because it changes behaviour existing deployments may rely on.
+
+### Injected sidecars default to 2 Envoy worker threads
+
+The injector derives Envoy's `--concurrency` from the sidecar CPU limit. Since the default limit was removed in 2.14.0, a sidecar without a CPU limit starts without the flag and Envoy runs one worker thread per core on the node, raising sidecar memory use and upstream connection counts. The injector now sets `--concurrency=2` when the sidecar has no CPU limit, the same value 2.13 produced with its `1000m` default limit. A sidecar with a CPU limit still gets the limit in whole cores, floored at 2, and the `kuma.io/sidecar-proxy-concurrency` annotation still overrides both.
+
+**Action required**
+
+None for most users. Existing sidecars keep their current concurrency until their Pods are recreated. If a workload relies on Envoy scaling with node cores, set the annotation on its Pod template to a fixed number, or to `"0"` to let Envoy size workers to the node:
+
+```yaml
+metadata:
+  annotations:
+    kuma.io/sidecar-proxy-concurrency: "0"
+```
+
 ## Upgrade to `2.14.4`
 
 Patch releases normally do not require upgrade instructions. The entries below are included because they change behaviour existing deployments may rely on.
@@ -390,6 +408,10 @@ KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU=100m
 KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU=1000m
 KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_CPU=100m
 ```
+
+**Sidecar concurrency**
+
+The injector sets Envoy's `--concurrency` from the sidecar CPU limit. With no limit, 2.14.0 to 2.14.4 omit the flag and Envoy runs one worker thread per core on the node. 2.14.5 restores the default of 2, see [Upgrade to `2.14.5`](#upgrade-to-2145).
 
 ### Envoy admin API now uses Unix domain socket by default
 
