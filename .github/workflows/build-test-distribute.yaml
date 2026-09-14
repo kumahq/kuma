@@ -172,7 +172,7 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.8.14
+          version: 2026.9.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
       # Module contents are a pure function of go.sum, so one immutable entry
@@ -306,7 +306,7 @@ jobs:
             go-build-${{ runner.os }}-
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.8.14
+          version: 2026.9.0
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
@@ -461,7 +461,7 @@ jobs:
       - name: Get Cloudsmith OIDC token
         id: cloudsmith_token
         if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
-        uses: cloudsmith-io/cloudsmith-cli-action@ad73fafb92e3e29a5166c529464c2df7658a608e # v3.1.0
+        uses: cloudsmith-io/cloudsmith-cli-action@69e169e2ad9bc9a1599c2dff464061a00fe9f8ba # v3.1.1
         with:
           oidc-namespace: kong
           oidc-service-slug: ${{ contains(needs.check.outputs.VERSION_NAME, 'preview') && vars.CLOUDSMITH_PREVIEW_SERVICE_ACCOUNT || vars.CLOUDSMITH_PROD_SERVICE_ACCOUNT }}

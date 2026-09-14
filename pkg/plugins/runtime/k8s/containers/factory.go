@@ -83,12 +83,10 @@ func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]strin
 		return int64(count), err
 	}
 
+	// Only autotune down to 2 to mitigate the latency risk if a worker
+	// thread blocks. This also covers the no-limit case, where Envoy
+	// would otherwise size workers to every core on the node.
 	cpuLimit := kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU)
-	if cpuLimit.IsZero() {
-		return 0, nil
-	}
-	// Only autotune to down to 2 to mitigate the latency
-	// risk if a worker thread blocks.
 	return max(cpuLimit.MilliValue()/1000, 2), nil
 }
 

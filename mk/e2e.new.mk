@@ -12,13 +12,19 @@ E2E_ENV_VARS ?=
 
 E2E_K8S_BIN_DEPS = images/test
 E2E_UNIVERSAL_BIN_DEPS = images/test
-ifdef CI
-# In circleCI all this was built from previous targets let's reuse them!
+# `docker/load` reads the image tars an earlier job saved with `docker/save`, so
+# it only works for a job the build pipeline runs ahead of. A CI job that stands
+# on its own, such as the golden-file refresh a PR comment triggers, sets this to
+# false and has the images built in the job instead.
+E2E_REUSE_PREBUILT_IMAGES ?= $(if $(CI),true,false)
+ifeq ($(E2E_REUSE_PREBUILT_IMAGES),true)
 E2E_K8S_BIN_DEPS += docker/load
 E2E_UNIVERSAL_BIN_DEPS += docker/load
 else
 E2E_K8S_BIN_DEPS += build/kumactl images
 E2E_UNIVERSAL_BIN_DEPS += build/kumactl
+endif
+ifndef CI
 E2E_ENV_VARS += GINKGO_EDITOR_INTEGRATION=true
 endif
 
