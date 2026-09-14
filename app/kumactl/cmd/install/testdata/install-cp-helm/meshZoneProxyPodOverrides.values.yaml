@@ -1,6 +1,7 @@
 # Zone ingress exercises the falsy overrides (replicas: 0,
 # terminationGracePeriodSeconds: 0, automountServiceAccountToken: false),
-# zone egress exercises the same fields with non-falsy values.
+# zone egress exercises the same fields with non-falsy values, plus a
+# preStopSleepSeconds override below the default 15.
 global:
   imagePullSecrets: [image-secret]
 meshes:
@@ -26,6 +27,7 @@ meshes:
         repository: pause
         tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
       terminationGracePeriodSeconds: 15
+      preStopSleepSeconds: 10
       automountServiceAccountToken: true
       serviceAccountAnnotations:
         foo: '{"baz": "egress"}'

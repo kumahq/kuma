@@ -362,6 +362,15 @@ controlPlane:
 			},
 			errorMsg: "secretName and caBundle must be empty",
 		}),
+		Entry("egress preStopSleepSeconds not lower than terminationGracePeriodSeconds", errTestCase{
+			extraArgs: []string{
+				"--set", "meshes[0].name=default",
+				"--set", "meshes[0].egress.enabled=true",
+				"--set", "meshes[0].egress.terminationGracePeriodSeconds=10",
+				"--set", "meshes[0].egress.preStopSleepSeconds=30",
+			},
+			errorMsg: "meshes[default].egress: preStopSleepSeconds (30) must be lower than terminationGracePeriodSeconds (10)",
+		}),
 		Entry("with unexpected image tag", errTestCase{
 			extraArgs: []string{"--set", "global.image.tag=1.5.0"},
 			errorMsg:  "only supports",
