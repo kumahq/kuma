@@ -663,29 +663,26 @@ func resolveZoneEgresses(
 		if len(listeners) == 0 {
 			continue
 		}
-		var san string
-		// IsInitialized mirrors IdentityProviderManager.GetWorkloadIdentity: an identity that only
-		// propagates SPIFFE IDs, or one whose provider hasn't issued yet, leaves the egress without a
-		// certificate, so it must not be advertised on the strength of a SPIFFE ID it can't present.
-		if identity, ok := meshidentity_api.BestMatched(dp.GetMeta().GetLabels(), identities); ok && identity.Status.IsInitialized() {
-			env := config_core.UniversalEnvironment
-			if _, isK8s := dp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; isK8s {
-				env = config_core.KubernetesEnvironment
-			}
-			if trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), zone); err != nil {
-				logger.Error(err, "failed to compute trust domain for zone egress", "dataplane", dp.GetMeta().GetName())
-			} else if spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, dp.GetMeta(), env); err != nil {
-				logger.Error(err, "failed to compute SPIFFE ID for zone egress", "dataplane", dp.GetMeta().GetName())
-			} else {
-				san = spiffeID
-			}
-		}
-		if san == "" {
-			// ZoneProxyListenerGenerator skips the egress listener without a WorkloadIdentity, so
-			// advertising this instance would point every proxy in the mesh at a port nothing serves.
-			// Leaving it out keeps the legacy zone egresses in the pool until identity is enabled.
+		// Mirrors IdentityProviderManager.GetWorkloadIdentity: without a certificate the egress gets no listener,
+		// so advertising it would evict the working legacy egresses for a port nothing serves.
+		identity, ok := meshidentity_api.BestMatched(dp.GetMeta().GetLabels(), identities)
+		if !ok || !identity.Status.IsInitialized() {
 			logger.V(1).Info("zone egress is not advertised: no initialized MeshIdentity matches it",
 				"dataplane", dp.GetMeta().GetName(), "mesh", dp.GetMeta().GetMesh())
+			continue
+		}
+		env := config_core.UniversalEnvironment
+		if _, isK8s := dp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; isK8s {
+			env = config_core.KubernetesEnvironment
+		}
+		trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), zone)
+		if err != nil {
+			logger.Error(err, "failed to compute trust domain for zone egress", "dataplane", dp.GetMeta().GetName())
+			continue
+		}
+		san, err := identity.Spec.GetSpiffeID(trustDomain, dp.GetMeta(), env)
+		if err != nil {
+			logger.Error(err, "failed to compute SPIFFE ID for zone egress", "dataplane", dp.GetMeta().GetName())
 			continue
 		}
 		for _, l := range listeners {

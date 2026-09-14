@@ -62,10 +62,7 @@ func GenerateClusters(
 						continue
 					}
 					edsClusterBuilder.Configure(envoy_clusters.EdsCluster())
-					// The egress terminates this connection, so the pool decides which identity
-					// is verified. The cluster is emitted either way: GenerateEndpoints emits a
-					// load assignment for this destination, and an orphaned one makes the whole
-					// snapshot inconsistent.
+					// The egress terminates this connection, so the pool decides which identity is verified.
 					if egressSANs := meshCtx.ZoneEgressSANs(); len(egressSANs) > 0 && proxy.WorkloadIdentity != nil {
 						// Zone proxies key the SNI by port name, a backendRef may use the number.
 						sni := core_sni.FromKRI(kri.WithSectionName(realResourceRef.Resource, port.GetName()))
