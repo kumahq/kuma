@@ -114,9 +114,6 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 		}
 		newOutbounds = append(newOutbounds, outbound)
 	}
-	// VIP outbounds never carry a legacy outbound, so the dataplane's legacy
-	// outbound list is always cleared here.
-	dataplane.Spec.Networking.Outbound = nil
 	return newOutbounds
 }
 
