@@ -143,7 +143,8 @@ jobs:
             trap 'docker logout docker.io' EXIT
           fi
 
-          make UPDATE_GOLDEN_FILES=true test/e2e-golden-files
+          # No earlier job saved image tars for this one, so the images are built here.
+          make E2E_REUSE_PREBUILT_IMAGES=false UPDATE_GOLDEN_FILES=true test/e2e-golden-files
 
       # Enable IPv6 for transparent proxy tests
       - name: "Enable IPv6 for Docker and enable necessary kernel modules for ip6tables"
