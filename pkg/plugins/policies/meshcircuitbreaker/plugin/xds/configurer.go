@@ -24,16 +24,18 @@ func NewConfigurer(conf api.Conf) *Configurer {
 }
 
 func (c *Configurer) ConfigureCluster(cluster *envoy_cluster.Cluster) error {
-	configureCircuitBreakers(cluster, c.Conf.ConnectionLimits)
+	if err := configureCircuitBreakers(cluster, c.Conf.ConnectionLimits); err != nil {
+		return err
+	}
 	return configureOutlierDetection(cluster, c.Conf.OutlierDetection)
 }
 
-func configureCircuitBreakers(cluster *envoy_cluster.Cluster, conf *api.ConnectionLimits) {
+func configureCircuitBreakers(cluster *envoy_cluster.Cluster, conf *api.ConnectionLimits) error {
 	defaultThreshold := ensureDefaultThreshold(cluster)
 	defaultThreshold.TrackRemaining = true
 
 	if conf == nil {
-		return
+		return nil
 	}
 
 	if conf.MaxConnectionPools != nil {
@@ -55,6 +57,23 @@ func configureCircuitBreakers(cluster *envoy_cluster.Cluster, conf *api.Connecti
 	if conf.MaxRequests != nil {
 		defaultThreshold.MaxRequests = util_proto.UInt32(*conf.MaxRequests)
 	}
+
+	if conf.RetryBudget != nil {
+		retryBudget := &envoy_cluster.CircuitBreakers_Thresholds_RetryBudget{}
+		if conf.RetryBudget.BudgetPercent != nil {
+			budgetPercent, err := envoyPercent(*conf.RetryBudget.BudgetPercent)
+			if err != nil {
+				return err
+			}
+			retryBudget.BudgetPercent = budgetPercent
+		}
+		if conf.RetryBudget.MinRetryConcurrency != nil {
+			retryBudget.MinRetryConcurrency = util_proto.UInt32(*conf.RetryBudget.MinRetryConcurrency)
+		}
+		defaultThreshold.RetryBudget = retryBudget
+	}
+
+	return nil
 }
 
 func EnsureTrackRemaining(cluster *envoy_cluster.Cluster) {
