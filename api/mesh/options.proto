@@ -7,6 +7,9 @@ import "google/protobuf/descriptor.proto";
 option go_package = "github.com/kumahq/kuma/v3/api/mesh";
 
 message KumaResourceOptions {
+  reserved 13, 16;
+  reserved "allow_to_inspect", "is_experimental";
+
   // Name of the Kuma resource struct.
   string name = 1;
 

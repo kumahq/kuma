@@ -386,7 +386,7 @@ var File_api_mesh_options_proto protoreflect.FileDescriptor
 
 const file_api_mesh_options_proto_rawDesc = "" +
 	"\n" +
-	"\x16api/mesh/options.proto\x12\tkuma.mesh\x1a google/protobuf/descriptor.proto\"\xe5\x04\n" +
+	"\x16api/mesh/options.proto\x12\tkuma.mesh\x1a google/protobuf/descriptor.proto\"\x94\x05\n" +
 	"\x13KumaResourceOptions\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12\x16\n" +
@@ -405,7 +405,7 @@ const file_api_mesh_options_proto_rawDesc = "" +
 	"\n" +
 	"short_name\x18\x13 \x01(\tR\tshortName\x12\x19\n" +
 	"\bis_proxy\x18\x14 \x01(\bR\aisProxy\x124\n" +
-	"\x16policy_matching_exempt\x18\x15 \x01(\bR\x14policyMatchingExempt\"\xb9\x01\n" +
+	"\x16policy_matching_exempt\x18\x15 \x01(\bR\x14policyMatchingExemptJ\x04\b\r\x10\x0eJ\x04\b\x10\x10\x11R\x10allow_to_inspectR\x0fis_experimental\"\xb9\x01\n" +
 	"\rKumaWsOptions\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06plural\x18\x02 \x01(\tR\x06plural\x12\x1b\n" +
