@@ -48,7 +48,7 @@ func (r *resourceCrudHandler) validateOriginForWrite(meta core_model.ResourceMet
 		}
 	}
 
-	if r.federatedZone && r.descriptor.IsPluginOriginated {
+	if r.federatedZone {
 		if ok && origin != mesh_proto.ZoneResourceOrigin {
 			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.ZoneResourceOrigin))
 		}

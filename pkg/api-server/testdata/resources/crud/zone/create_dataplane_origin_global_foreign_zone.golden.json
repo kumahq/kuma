@@ -5,12 +5,20 @@
  "detail": "Resource is not valid",
  "invalid_parameters": [
   {
+   "field": "labels[\"kuma.io/origin\"]",
+   "reason": "the origin label must be set to 'zone'"
+  },
+  {
    "field": "labels[\"kuma.io/zone\"]",
    "reason": "kuma.io/zone label should have zone-1 value"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
+  {
+   "field": "labels[\"kuma.io/origin\"]",
+   "message": "the origin label must be set to 'zone'"
+  },
   {
    "field": "labels[\"kuma.io/zone\"]",
    "message": "kuma.io/zone label should have zone-1 value"
