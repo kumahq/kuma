@@ -62,7 +62,6 @@ func GenerateClusters(
 						continue
 					}
 					edsClusterBuilder.Configure(envoy_clusters.EdsCluster())
-					// The egress terminates this connection, so the pool decides which identity is verified.
 					if egressSANs := meshCtx.ZoneEgressSANs(); len(egressSANs) > 0 && proxy.WorkloadIdentity != nil {
 						// Zone proxies key the SNI by port name, a backendRef may use the number.
 						sni := core_sni.FromKRI(kri.WithSectionName(realResourceRef.Resource, port.GetName()))
