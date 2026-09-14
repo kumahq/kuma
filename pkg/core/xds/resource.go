@@ -103,15 +103,6 @@ func (s *ResourceSet) ListOf(typ string) ResourceList {
 	return list
 }
 
-func (s *ResourceSet) Contains(name string, resource ResourcePayload) bool {
-	names, ok := s.typeToNamesIndex[s.typeName(resource)]
-	if !ok {
-		return false
-	}
-	_, ok = names[name]
-	return ok
-}
-
 func (s *ResourceSet) Empty() bool {
 	for _, resourceMap := range s.typeToNamesIndex {
 		if len(resourceMap) != 0 {
@@ -180,10 +171,6 @@ func (s *ResourceSet) List() ResourceList {
 
 func NonMeshExternalService(r *Resource) bool {
 	return r.ResourceOrigin.ResourceType != meshexternalservice_api.MeshExternalServiceType
-}
-
-func MeshExternalServiceOnly(r *Resource) bool {
-	return r.ResourceOrigin.ResourceType == meshexternalservice_api.MeshExternalServiceType
 }
 
 func HasAssociatedServiceResource(r *Resource) bool {

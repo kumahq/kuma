@@ -14,9 +14,19 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
-	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
-	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 )
+
+// Default fills in the outbound address so that every Dataplane the API serves
+// carries one, which is what the OpenAPI schema promises. It is called by the
+// Kubernetes defaulting webhook and by the Dataplane resource manager.
+func (d *DataplaneResource) Default() error {
+	for _, outbound := range d.Spec.GetNetworking().GetOutbound() {
+		if outbound.GetAddress() == "" {
+			outbound.Address = mesh_proto.DefaultOutboundAddress
+		}
+	}
+	return nil
+}
 
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
 	return d.UsesInboundInterface(address, port) || d.UsesOutboundInterface(address, port)
@@ -71,24 +81,6 @@ func (d *DataplaneResource) GetAddress() string {
 	}
 
 	return d.Spec.GetNetworking().GetAddress()
-}
-
-func (d *DataplaneResource) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
-	if d == nil {
-		return &tproxy_dp.DataplaneConfig{}
-	}
-
-	if tp := d.Spec.GetNetworking().GetTransparentProxying(); tp != nil {
-		return &tproxy_dp.DataplaneConfig{
-			IPFamilyMode: tproxy_config.IPFamilyModeFromStringer(tp.GetIpFamilyMode()),
-			Redirect: tproxy_dp.DataplaneRedirect{
-				Inbound:  tproxy_dp.DataplaneTrafficFlowFromPortLike(tp.GetRedirectPortInbound()),
-				Outbound: tproxy_dp.DataplaneTrafficFlowFromPortLike(tp.GetRedirectPortOutbound()),
-			},
-		}
-	}
-
-	return &tproxy_dp.DataplaneConfig{}
 }
 
 func (d *DataplaneResource) AdminAddress(defaultAdminPort uint32) string {
@@ -166,27 +158,19 @@ func (d *DataplaneResource) IdentifyingName() string {
 	return mesh_proto.ServiceUnknown
 }
 
-// DisplayTags returns the dataplane's resource labels merged with its
-// gateway tags (if any), formatted for CLI/API display (the TAGS column
-// and the `?tag=` filter).
+// DisplayTags returns the dataplane's resource labels formatted for CLI/API
+// display (the TAGS column and the `?tag=` filter).
 func (d *DataplaneResource) DisplayTags() mesh_proto.MultiValueTagSet {
-	return DisplayTags(d.Spec, d.GetMeta().GetLabels())
+	return DisplayTags(d.GetMeta().GetLabels())
 }
 
-// DisplayTags merges labels with a dataplane's gateway tags (if any) for
-// CLI/API display. Split from the DataplaneResource method so overview
-// endpoints, which carry the Dataplane spec and its labels separately, can
-// call it too.
-func DisplayTags(dataplane *mesh_proto.Dataplane, labels map[string]string) mesh_proto.MultiValueTagSet {
+// DisplayTags formats labels for CLI/API display. Split from the
+// DataplaneResource method so overview endpoints, which carry the labels
+// separately, can call it too.
+func DisplayTags(labels map[string]string) mesh_proto.MultiValueTagSet {
 	tags := mesh_proto.MultiValueTagSet{}
 	for key, value := range labels {
 		tags[key] = map[string]bool{value: true}
-	}
-	for key, value := range dataplane.GetNetworking().GetGateway().GetTags() {
-		if _, ok := tags[key]; !ok {
-			tags[key] = map[string]bool{}
-		}
-		tags[key][value] = true
 	}
 	return tags
 }

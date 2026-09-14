@@ -95,7 +95,7 @@ var _ = Describe("Workload Label Validator", func() {
 				tc.meshIdentities()
 			}
 
-			dpLabels := map[string]string{"kuma.io/service": tc.dataplaneService}
+			dpLabels := map[string]string{"kuma.io/display-name": tc.dataplaneService}
 			maps.Copy(dpLabels, tc.dataplaneLabels)
 
 			dp := createDataplane("test-dp", "default", dpLabels)
@@ -113,7 +113,7 @@ var _ = Describe("Workload Label Validator", func() {
 		Entry("should allow connection when dataplane has workload label", testCase{
 			meshIdentities: func() {
 				createMeshIdentity("mi-with-workload-label", "default",
-					map[string]string{"kuma.io/service": "web"},
+					map[string]string{"kuma.io/display-name": "web"},
 					pointer.To(`/workload/{{ label "kuma.io/workload" }}`))
 			},
 			dataplaneService: "web",
@@ -123,7 +123,7 @@ var _ = Describe("Workload Label Validator", func() {
 		Entry("should deny connection when dataplane is missing workload label", testCase{
 			meshIdentities: func() {
 				createMeshIdentity("mi-with-workload-label", "default",
-					map[string]string{"kuma.io/service": "web"},
+					map[string]string{"kuma.io/display-name": "web"},
 					pointer.To(`/workload/{{ label "kuma.io/workload" }}`))
 			},
 			dataplaneService: "web",
@@ -134,7 +134,7 @@ var _ = Describe("Workload Label Validator", func() {
 		Entry("should allow connection when MeshIdentity does not use workload label", testCase{
 			meshIdentities: func() {
 				createMeshIdentity("mi-without-workload-label", "default",
-					map[string]string{"kuma.io/service": "backend"},
+					map[string]string{"kuma.io/display-name": "backend"},
 					pointer.To(`/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}`))
 			},
 			dataplaneService: "backend",
@@ -150,7 +150,7 @@ var _ = Describe("Workload Label Validator", func() {
 		Entry("should allow connection when MeshIdentity has nil SpiffeID", testCase{
 			meshIdentities: func() {
 				createMeshIdentity("mi-nil-spiffeid", "default",
-					map[string]string{"kuma.io/service": "test"}, nil)
+					map[string]string{"kuma.io/display-name": "test"}, nil)
 			},
 			dataplaneService: "test",
 			dataplaneLabels:  map[string]string{},
@@ -159,7 +159,7 @@ var _ = Describe("Workload Label Validator", func() {
 		Entry("should allow connection when MeshIdentity has empty path", testCase{
 			meshIdentities: func() {
 				createMeshIdentity("mi-empty-path", "default",
-					map[string]string{"kuma.io/service": "empty"},
+					map[string]string{"kuma.io/display-name": "empty"},
 					pointer.To(""))
 			},
 			dataplaneService: "empty",
@@ -169,7 +169,7 @@ var _ = Describe("Workload Label Validator", func() {
 		Entry("should handle whitespace variations in workload label template", testCase{
 			meshIdentities: func() {
 				createMeshIdentity("mi-whitespace", "default",
-					map[string]string{"kuma.io/service": "whitespace-test"},
+					map[string]string{"kuma.io/display-name": "whitespace-test"},
 					pointer.To(`/workload/{{  label  "kuma.io/workload"  }}`))
 			},
 			dataplaneService: "whitespace-test",
@@ -182,18 +182,18 @@ var _ = Describe("Workload Label Validator", func() {
 	Context("with multiple MeshIdentities", func() {
 		BeforeEach(func() {
 			createMeshIdentity("mi-less-specific", "default",
-				map[string]string{"kuma.io/service": "api"},
-				pointer.To(`/service/{{ label "kuma.io/service" }}`))
+				map[string]string{"kuma.io/display-name": "api"},
+				pointer.To(`/service/{{ label "kuma.io/display-name" }}`))
 
 			createMeshIdentity("mi-more-specific", "default",
-				map[string]string{"kuma.io/service": "api", "version": "v2"},
+				map[string]string{"kuma.io/display-name": "api", "version": "v2"},
 				pointer.To(`/workload/{{ label "kuma.io/workload" }}`))
 		})
 
 		It("should use best match and require workload label", func() {
 			dp := createDataplane("api-v2-01", "default", map[string]string{
-				"kuma.io/service": "api",
-				"version":         "v2",
+				"kuma.io/display-name": "api",
+				"version":              "v2",
 			})
 
 			err := validateConnection(dp, mesh_proto.DataplaneProxyType, "default", "api-v2-01")
@@ -213,10 +213,10 @@ var _ = Describe("Workload Label Validator", func() {
 			universalValidator := NewWorkloadLabelValidator(resManager, config_core.UniversalEnvironment)
 
 			createMeshIdentity("mi-default", "default",
-				map[string]string{"kuma.io/service": "universal-svc"}, nil)
+				map[string]string{"kuma.io/display-name": "universal-svc"}, nil)
 
 			dp := createDataplane("universal-dp", "default", map[string]string{
-				"kuma.io/service": "universal-svc",
+				"kuma.io/display-name": "universal-svc",
 			})
 
 			err := universalValidator.OnProxyConnected(streamIDCounter, core_model.ResourceKey{Mesh: "default", Name: "universal-dp"}, context.Background(), core_xds.DataplaneMetadata{Resource: dp, ProxyType: mesh_proto.DataplaneProxyType})

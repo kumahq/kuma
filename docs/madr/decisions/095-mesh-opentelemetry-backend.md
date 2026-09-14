@@ -2,6 +2,8 @@
 
 - Status: accepted
 
+> Note: Kuma 3.0.0 removed `FeatureOtelViaKumaDp`. The control plane routes every `backendRef` backend through the `kuma-dp` pipe and writes `/otel` without checking data plane features, so the feature checks described below no longer apply.
+
 ## Context and problem statement
 
 Kuma has three observability policies that can export telemetry to an OpenTelemetry collector: MeshMetric, MeshTrace, and MeshAccessLog. Each policy defines the OTel collector endpoint independently in its own spec.

@@ -192,7 +192,7 @@ var _ = Describe("Global Sync", func() {
 				// it drives attribution on the global ingest path.
 				zoneNames = append(zoneNames, fmt.Sprintf(zoneName, i))
 			}
-			kds_setup.StartDeltaClient(clientStreams, zoneNames, []model.ResourceType{mesh.DataplaneType}, stopCh, kds_sync_store.GlobalSyncCallback(context.Background(), globalSyncer, false, nil, "kuma-system", nil, nil))
+			kds_setup.StartDeltaClient(clientStreams, zoneNames, []model.ResourceType{mesh.DataplaneType}, stopCh, kds_sync_store.GlobalSyncCallback(context.Background(), globalSyncer, false, nil, "kuma-system", nil))
 
 			// Create Zone resources for each Kuma CP Zone
 			for i := range numOfZones {

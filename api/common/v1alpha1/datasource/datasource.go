@@ -38,12 +38,6 @@ type SecureDataSource struct {
 // +kubebuilder:validation:Enum=File;EnvVar;Inline
 type DataSourceType string
 
-const (
-	DataSourceFile   DataSourceType = "File"
-	DataSourceEnvVar DataSourceType = "EnvVar"
-	DataSourceInline DataSourceType = "Inline"
-)
-
 // DataSource is just a way to provide data. Not necessarily secrets,
 // can be any data, i.e. certs, configs, OPA policies written in rego, lua plugins etc.
 type DataSource struct {

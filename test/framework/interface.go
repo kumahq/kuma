@@ -59,11 +59,23 @@ type kumaDeploymentOptions struct {
 	dockerVolumes    []string
 }
 
+// kdsFastWatchdogEnv shortens KDS snapshot timing for tests. The shipped
+// defaults coalesce changes over seconds and schedule a full resync every
+// minute, which is tuned for a control plane serving many zones and is far
+// longer than a test is willing to wait for a zone to converge.
+var kdsFastWatchdogEnv = map[string]string{
+	"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":       "1s",
+	"KUMA_MULTIZONE_GLOBAL_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL": "1s",
+	"KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FLUSH_INTERVAL":         "1s",
+	"KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":   "1s",
+}
+
 func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
 	// Set defaults.
 	k.isipv6 = Config.IPV6
 	k.installationMode = KumactlInstallationMode
 	k.env = map[string]string{}
+	maps.Copy(k.env, kdsFastWatchdogEnv)
 	k.meshUpdateFuncs = map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh{}
 	k.verifyKuma = true
 	k.setupKumactl = true

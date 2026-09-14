@@ -3,6 +3,7 @@ package framework
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
@@ -182,8 +183,15 @@ func DistributeMeshTrusts(global Cluster, mesh string, identityName string, zone
 			}
 		}
 	}
+
+	time.Sleep(trustPropagationDelay)
 	return nil
 }
+
+// Proxies reject peer certificates until the trust reaches them, 0.6-0.9s on a
+// loaded CI runner. Nothing exposes it: MeshService TLS status ignores peer
+// trust domains and DataplaneInsight carries no SDS stats.
+const trustPropagationDelay = 3 * time.Second
 
 // waitForMeshIdentity waits until KDS has delivered the MeshIdentity to the
 // zone. The zone cannot generate its CA (and therefore its MeshTrust) before

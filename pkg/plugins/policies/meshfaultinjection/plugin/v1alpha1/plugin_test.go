@@ -112,7 +112,7 @@ var _ = Describe("MeshFaultInjection", func() {
 					Name:   inboundName17777,
 					Origin: metadata.OriginInbound,
 					Resource: listeners.NewListenerBuilder(envoy_common.APIV3, inboundName17777).
-						Configure(listeners.InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
+						Configure(listeners.InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
 						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(listeners.HttpConnectionManager(inboundName17777, false, nil, true)).
 							Configure(
@@ -128,7 +128,7 @@ var _ = Describe("MeshFaultInjection", func() {
 					Name:   inboundName17778,
 					Origin: metadata.OriginInbound,
 					Resource: listeners.NewListenerBuilder(envoy_common.APIV3, inboundName17778).
-						Configure(listeners.InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP, true)).
+						Configure(listeners.InboundListener("127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP)).
 						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(listeners.TcpProxyDeprecated(inboundName17778, plugins_xds.NewClusterBuilder().WithName(inboundName17778).Build())),
 						)).MustBuild(),
@@ -209,7 +209,7 @@ var _ = Describe("MeshFaultInjection", func() {
 			Name:   name,
 			Origin: metadata.OriginEgress,
 			Resource: listeners.NewListenerBuilder(envoy_common.APIV3, name).
-				Configure(listeners.InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true)).
+				Configure(listeners.InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP)).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
 					Configure(listeners.MatchTransportProtocol("tls")).
 					Configure(listeners.MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).

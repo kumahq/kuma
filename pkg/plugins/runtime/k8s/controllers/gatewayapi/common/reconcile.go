@@ -51,10 +51,6 @@ func LegacyOwnerLabelValue(name kube_types.NamespacedName) string {
 	return fmt.Sprintf("%.54s-%x", fmt.Sprintf("%s_%s", name.Namespace, name.Name), hash.Sum(nil))
 }
 
-func OwnedPolicyName(owner kube_types.NamespacedName) string {
-	return fmt.Sprintf("%s.%s", owner.Name, owner.Namespace)
-}
-
 // ReconcileLabelledObject manages a set of owned kuma objects based on
 // labels with the owner key.
 // ownerMesh can be empty if the ownedSpec is nil.

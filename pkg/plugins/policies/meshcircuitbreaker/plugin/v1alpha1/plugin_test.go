@@ -130,7 +130,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						WithName("backend").
 						WithMesh("default").
 						WithAddress("127.0.0.1").
-						WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend"),
+						WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "backend"),
 				)
 			if !given.withoutPolicy {
 				proxy = proxy.WithPolicies(

@@ -58,9 +58,6 @@ k8s_cluster_kubeconfig = $(KUBECONFIG_DIR)/$(1)-$(2).yaml
 KIND_CLUSTER_KUBECONFIG := $(call k8s_cluster_kubeconfig,kind,$(CLUSTER_NAME))
 K3D_CLUSTER_KUBECONFIG := $(call k8s_cluster_kubeconfig,k3d,$(CLUSTER_NAME))
 
-# Compatibility alias: kong-mesh and older workflows reference KIND_KUBECONFIG
-KIND_KUBECONFIG = $(KIND_CLUSTER_KUBECONFIG)
-
 # Temp workspace for generated k8s manifests and caches
 TMP_DIR_K8S ?= /tmp/.kuma-dev
 
@@ -76,10 +73,23 @@ endif
 # --- Docker network: shared create target ---
 # Tool-agnostic; usable from e2e targets that just need the network present.
 
+# An existing network keeps whatever address family it was created with, so a
+# run of the other kind silently gets containers it cannot address: IPV6=true
+# reusing an IPv4 network fails with "couldn't find a valid IP address", and an
+# IPv6 network breaks cluster startup for a run without IPV6. Say so instead.
 .PHONY: k8s/docker/network/create
 k8s/docker/network/create:
-	$(Q)docker network inspect $(DOCKER_NETWORK) >/dev/null 2>&1 \
-	  || docker network create --driver bridge $(DOCKER_NETWORK_OPTS) $(DOCKER_NETWORK) >/dev/null 2>&1 \
-	  || docker network inspect $(DOCKER_NETWORK) >/dev/null 2>&1
+	$(Q)if docker network inspect $(DOCKER_NETWORK) >/dev/null 2>&1; then \
+	  have=$$(docker network inspect $(DOCKER_NETWORK) --format '{{.EnableIPv6}}' 2>/dev/null); \
+	  want=$(if $(IPV6),true,false); \
+	  if [ "$$have" != "$$want" ]; then \
+	    echo "docker network '$(DOCKER_NETWORK)' has EnableIPv6=$$have, this run needs $$want"; \
+	    echo "remove it and run again: docker network rm $(DOCKER_NETWORK)"; \
+	    exit 1; \
+	  fi; \
+	else \
+	  docker network create --driver bridge $(DOCKER_NETWORK_OPTS) $(DOCKER_NETWORK) >/dev/null 2>&1 \
+	    || docker network inspect $(DOCKER_NETWORK) >/dev/null 2>&1; \
+	fi
 
 endif # _K8S_MK

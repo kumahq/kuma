@@ -4,13 +4,9 @@ import (
 	"math"
 	"slices"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/core"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
-
-var log = core.Log.WithName("mesh-load-balancing-strategy")
 
 type LocalLbGroup struct {
 	Key    string
@@ -25,20 +21,20 @@ type CrossZoneLbGroup struct {
 	Priority uint32
 }
 
-func GetLocalityGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, podLabels map[string]string, localZone string) ([]LocalLbGroup, []CrossZoneLbGroup) {
+func GetLocalityGroups(conf *api.Conf, podLabels map[string]string, localZone string) ([]LocalLbGroup, []CrossZoneLbGroup) {
 	podLabels = affinityTagPodLabels(podLabels, *conf)
 	if conf.LocalityAwareness == nil {
 		return nil, nil
 	}
-	return getLocalLbGroups(conf, inboundTags, podLabels), getCrossZoneLbGroups(conf, localZone)
+	return getLocalLbGroups(conf, podLabels), getCrossZoneLbGroups(conf, localZone)
 }
 
-func getLocalLbGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet, podLabels map[string]string) []LocalLbGroup {
+func getLocalLbGroups(conf *api.Conf, podLabels map[string]string) []LocalLbGroup {
 	var localGroups []LocalLbGroup
 	if conf.LocalityAwareness.LocalZone != nil {
 		rulesLen := len(pointer.Deref(conf.LocalityAwareness.LocalZone.AffinityTags))
 		for i, tag := range pointer.Deref(conf.LocalityAwareness.LocalZone.AffinityTags) {
-			values := resolveAffinityValues(inboundTags, podLabels, tag.Key)
+			values := resolveAffinityValues(podLabels, tag.Key)
 			// when weights are not provided we are generating weights by ourselves
 			// the first rule has the highest priority which is 9 * 10^(number of rules - rules position -1)
 			// that makes that the highest priority locality gets 90% of the traffic and sum of all weights is a
@@ -124,12 +120,8 @@ func affinityTagPodLabels(labels map[string]string, conf api.Conf) map[string]st
 // It prefers inbound tags but falls back to pod labels when tags are absent.
 // Inbounds carry no tags in tag-free mode; pod labels are passed so the
 // endpoint side can fold them into envoy.lb metadata (see topology.endpointIdentity).
-func resolveAffinityValues(inboundTags mesh_proto.MultiValueTagSet, podLabels map[string]string, key string) []string {
-	if values := inboundTags.Values(key); len(values) > 0 {
-		return values
-	}
+func resolveAffinityValues(podLabels map[string]string, key string) []string {
 	if v, ok := podLabels[key]; ok {
-		log.V(1).Info("affinity tag absent from inbound tags, using pod label fallback", "key", key, "value", v)
 		return []string{v}
 	}
 	return nil

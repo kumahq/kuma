@@ -22,6 +22,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/controllers"
@@ -412,13 +413,13 @@ var _ = Describe("PodReconciler", func() {
 			Scheme:        k8sClientScheme,
 			Log:           core.Log.WithName("test"),
 			PodConverter: PodConverter{
-				ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
+				ResourceConverter: k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}),
 				Mode:              config_core.Zone,
 				Zone:              "zone-1",
 				SystemNamespace:   "kuma-system",
 			},
 			SystemNamespace:   "kuma-system",
-			ResourceConverter: k8s.NewSimpleConverter("kuma-system"),
+			ResourceConverter: k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}),
 		}
 	})
 
@@ -839,5 +840,50 @@ var _ = Describe("MeshUpdateIgnoredPredicate", func() {
 
 	It("keeps the predicate.Funcs default of true for Generic events", func() {
 		Expect(predicate.Generic(event.GenericEvent{Object: mesh})).To(BeTrue())
+	})
+})
+
+var _ = Describe("ServiceToPodsMapper", func() {
+	newPod := func(name, color string) *kube_core.Pod {
+		return &kube_core.Pod{
+			Namespace: "demo",
+			Name:      name,
+			Labels: map[string]string{
+				"app":   "test-server",
+				"color": color,
+			},
+		}
+	}
+
+	svc := &kube_core.Service{
+		Namespace: "demo",
+		Name:      "test-server",
+		Spec: kube_core.ServiceSpec{
+			Selector: map[string]string{
+				"app":   "test-server",
+				"color": "blue",
+			},
+		},
+	}
+
+	enqueued := func(ignoredLabels []string) []string {
+		client := kube_client_fake.NewClientBuilder().
+			WithScheme(k8sClientScheme).
+			WithObjects(newPod("blue", "blue"), newPod("green", "green")).
+			Build()
+
+		var names []string
+		for _, req := range ServiceToPodsMapper(core.Log, client, ignoredLabels)(context.Background(), svc) {
+			names = append(names, req.Name)
+		}
+		return names
+	}
+
+	It("should enqueue only the Pods the selector matches", func() {
+		Expect(enqueued(nil)).To(ConsistOf("blue"))
+	})
+
+	It("should enqueue Pods that match once ignored labels are stripped", func() {
+		Expect(enqueued([]string{"color"})).To(ConsistOf("blue", "green"))
 	})
 })

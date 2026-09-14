@@ -25,12 +25,11 @@ var managedIdentityLabels = []string{
 }
 
 type ResourceAdmissionChecker struct {
-	AllowedUsers                 []string
-	Mode                         core.CpMode
-	FederatedZone                bool
-	DisableOriginLabelValidation bool
-	SystemNamespace              string
-	ZoneName                     string
+	AllowedUsers    []string
+	Mode            core.CpMode
+	FederatedZone   bool
+	SystemNamespace string
+	ZoneName        string
 }
 
 const (
@@ -120,15 +119,13 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 	switch c.Mode {
 	case core.Global:
 		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
-		if !c.DisableOriginLabelValidation && originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
+		if originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
 			return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin), string(resourceOrigin)))
 		}
 	case core.Zone:
 		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
-		if !c.DisableOriginLabelValidation && ns == c.SystemNamespace {
-			if !originPresent || resourceOrigin != mesh_proto.ZoneResourceOrigin {
-				return c.resourceIsNotAllowedResponse()
-			}
+		if originPresent && ns == c.SystemNamespace && resourceOrigin != mesh_proto.ZoneResourceOrigin {
+			return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin), string(resourceOrigin)))
 		}
 		if originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
 			zoneTag, ok := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
@@ -138,27 +135,6 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 		}
 	}
 	return nil
-}
-
-func (c *ResourceAdmissionChecker) resourceIsNotAllowedResponse() *admission.Response {
-	return &admission.Response{
-		Allowed: false,
-		Result: &metav1.Status{
-			Status:  "Failure",
-			Message: fmt.Sprintf("Operation not allowed. Applying policies on Zone CP on a system namespace requires '%s' label to be set to '%s'.", mesh_proto.ResourceOriginLabel, mesh_proto.ZoneResourceOrigin),
-			Reason:  "Forbidden",
-			Code:    403,
-			Details: &metav1.StatusDetails{
-				Causes: []metav1.StatusCause{
-					{
-						Type:    "FieldValueInvalid",
-						Message: "cannot be empty",
-						Field:   "metadata.labels[kuma.io/origin]",
-					},
-				},
-			},
-		},
-	}
 }
 
 func labelsNotAllowedMsg(label, correctValue, actual string) string {

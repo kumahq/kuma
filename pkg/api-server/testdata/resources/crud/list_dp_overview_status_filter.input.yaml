@@ -21,7 +21,7 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: my-svc
+        kuma.io/display-name: my-svc
 ---
 type: Dataplane
 mesh: default
@@ -31,7 +31,7 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: my-svc
+        kuma.io/display-name: my-svc
 ---
 type: Dataplane
 mesh: default
@@ -41,7 +41,7 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: my-svc
+        kuma.io/display-name: my-svc
 ---
 type: DataplaneInsight
 mesh: default

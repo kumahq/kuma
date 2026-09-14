@@ -3,7 +3,7 @@ type: Dataplane
 name: web-1
 mesh: default
 labels:
-  kuma.io/service: web
+  kuma.io/display-name: web
 networking:
   address: 192.168.0.1
   inbound:
@@ -13,7 +13,7 @@ networking:
     directAccessServices: ["backend"]
 ---
 # legacy dataplane, provisioned before service identity moved to labels: it
-# carries no kuma.io/service label and exposes two services on its inbounds
+# carries no kuma.io/display-name label and exposes two services on its inbounds
 type: Dataplane
 name: backend-1
 mesh: default
@@ -22,16 +22,16 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: backend
+        kuma.io/display-name: backend
     - port: 1235
       tags:
-        kuma.io/service: backend-api
+        kuma.io/display-name: backend-api
 ---
 type: Dataplane
 name: backend-2
 mesh: default
 labels:
-  kuma.io/service: backend
+  kuma.io/display-name: backend
 networking:
   address: 192.168.0.3
   inbound:
@@ -41,7 +41,7 @@ type: Dataplane
 name: backend-api-1
 mesh: default
 labels:
-  kuma.io/service: backend-api
+  kuma.io/display-name: backend-api
 networking:
   address: 192.168.0.5
   inbound:

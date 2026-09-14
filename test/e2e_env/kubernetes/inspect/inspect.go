@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	api_types "github.com/kumahq/kuma/v3/api/openapi/types"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/v3/test/framework/envs/kubernetes"
@@ -48,11 +47,6 @@ spec:
           maxStreamDuration: 0s`, Config.KumaNamespace, meshName))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(DeleteMeshPolicyOrError(
-			kubernetes.Cluster,
-			v1alpha1.MeshTimeoutResourceTypeDescriptor,
-			fmt.Sprintf("mesh-timeout-all-%s", meshName),
-		)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

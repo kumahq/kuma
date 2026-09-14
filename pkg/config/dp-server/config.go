@@ -50,8 +50,6 @@ type DpServerConfig struct {
 	Hds *HdsConfig `json:"hds"`
 }
 
-type DpServerAuthType string
-
 const (
 	DpServerAuthServiceAccountToken = "serviceAccountToken"
 	DpServerAuthDpToken             = "dpToken"

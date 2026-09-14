@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
@@ -22,6 +23,16 @@ const (
 	nonMergableAnotation    = "+kuma:non-mergeable-struct"
 	discriminatorAnnotation = "+kuma:discriminator"
 	nolintAnnotation        = "+kuma:nolint"
+	// opaqueAnnotation marks raw JSON that is the user's own data rather than the
+	// configuration of an extension, so it has no schema to document.
+	opaqueAnnotation = "+kuma:opaque-payload"
+)
+
+const (
+	rawJSONPackage     = "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	rawJSONType        = "JSON"
+	extensionsPackage  = "github.com/kumahq/kuma/v3/pkg/core/resources/extensions"
+	extensionPointType = "Point"
 )
 
 var eql = func(a, b string) bool { return a == b }
@@ -53,6 +64,7 @@ func flags() flag.FlagSet {
 }
 
 func run(pass *analysis.Pass) (any, error) {
+	points := collectExtensionPoints(pass)
 	for _, file := range pass.Files {
 		fileName := pass.Fset.File(file.Pos()).Name()
 		fileNameWithoutExtension := stripExtension(fileName)
@@ -81,7 +93,9 @@ func run(pass *analysis.Pass) (any, error) {
 				return true
 			}
 
-			analyzeStructFields(pass, structType, typeSpec.Name.Name, false)
+			// "spec" roots the JSON path because an extension point is addressed
+			// from the resource's item schema, where the API sits under spec.
+			analyzeStructFields(pass, points, structType, typeSpec.Name.Name, []string{"spec"}, false)
 			hasRunForFile = true
 
 			return false
@@ -104,7 +118,10 @@ func shouldExcludeResource(name string, rules map[string]func(string, string) bo
 	return false
 }
 
-func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parentPath string, isMergeable bool) {
+// analyzeStructFields walks a resource's fields. jsonPath is where the current
+// struct sits in the item schema, or nil once the walk passes through something an
+// extension point cannot address, such as a slice.
+func analyzeStructFields(pass *analysis.Pass, points []extensionPoint, structType *ast.StructType, parentPath string, jsonPath []string, isMergeable bool) {
 	for _, field := range structType.Fields.List {
 		fieldName := ""
 		if len(field.Names) != 1 {
@@ -123,9 +140,18 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 		}
 		fieldPath := parentPath + "." + fieldName
 
+		var fieldJSONPath []string
+		if jsonPath != nil {
+			if name := jsonName(field); name != "" {
+				fieldJSONPath = append(append([]string{}, jsonPath...), name)
+			}
+		}
+
 		if *debugLog {
 			fmt.Println("DEBUG: Analyzing field", fieldPath)
 		}
+
+		checkRawJSON(pass, points, field, fieldPath, jsonPath)
 
 		// Handle pointers to structs (*Struct)
 		baseType := field.Type
@@ -140,7 +166,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 				if hasAnnotations(field, nonMergableAnotation) {
 					isMergeable = false
 				}
-				analyzeStructFields(pass, namedStruct, fieldPath, isMergeable)
+				analyzeStructFields(pass, points, namedStruct, fieldPath, fieldJSONPath, isMergeable)
 			}
 		}
 
@@ -149,7 +175,8 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 			if elemIdent, ok := arrayType.Elt.(*ast.Ident); ok {
 				namedStruct := findStructByName(pass, elemIdent.Name)
 				if namedStruct != nil {
-					analyzeStructFields(pass, namedStruct, fieldPath+"[]", false)
+					// nil: an extension point addresses properties, not elements.
+					analyzeStructFields(pass, points, namedStruct, fieldPath+"[]", nil, false)
 				}
 			}
 
@@ -160,7 +187,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 			if named, ok := elemType.(*types.Named); ok {
 				namedStruct := findStructByName(pass, named.String())
 				if namedStruct != nil {
-					analyzeStructFields(pass, namedStruct, fieldPath+"[]", false)
+					analyzeStructFields(pass, points, namedStruct, fieldPath+"[]", nil, false)
 				}
 			}
 		}
@@ -203,6 +230,145 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 			}
 		}
 	}
+}
+
+// extensionPoint is an extensions.Point declared in the package under analysis.
+type extensionPoint struct {
+	schemaPath     []string
+	configProperty string
+}
+
+// checkRawJSON requires every raw JSON field to say what it is. Left undeclared it
+// reaches the OpenAPI spec as "anything at all": either an extension point
+// describes the configurations that may go in it, or it is the user's own opaque
+// data and says so. Forgetting is what leaves a documented API with a hole in it.
+func checkRawJSON(pass *analysis.Pass, points []extensionPoint, field *ast.Field, fieldPath string, parentJSONPath []string) {
+	// hasAnnotations requires all of them, so ask separately: either marker is
+	// enough on its own.
+	if !isRawJSON(pass, field) || hasAnnotations(field, opaqueAnnotation) || hasAnnotations(field, nolintAnnotation) {
+		return
+	}
+
+	property := jsonName(field)
+	if parentJSONPath == nil || property == "" {
+		pass.Reportf(field.Pos(), "raw JSON field %s cannot be reached by an extension point, so it must be marked '%s'",
+			fieldPath, opaqueAnnotation)
+		return
+	}
+
+	for _, point := range points {
+		if point.configProperty == property && slices.Equal(point.schemaPath, parentJSONPath) {
+			return
+		}
+	}
+	pass.Reportf(field.Pos(),
+		"raw JSON field %s is undocumented: declare an extensions.Point with SchemaPath []string{%s} and ConfigProperty %q, or mark the field '%s'",
+		fieldPath, `"`+strings.Join(parentJSONPath, `", "`)+`"`, property, opaqueAnnotation)
+}
+
+func isRawJSON(pass *analysis.Pass, field *ast.Field) bool {
+	fieldType := pass.TypesInfo.TypeOf(field.Type)
+	if fieldType == nil {
+		return false
+	}
+	if ptr, ok := fieldType.(*types.Pointer); ok {
+		fieldType = ptr.Elem()
+	}
+	named, ok := fieldType.(*types.Named)
+	if !ok || named.Obj().Pkg() == nil {
+		return false
+	}
+	return named.Obj().Name() == rawJSONType && named.Obj().Pkg().Path() == rawJSONPackage
+}
+
+// collectExtensionPoints reads the extensions.Point values the package declares.
+// They are read from the syntax rather than evaluated, which is enough because a
+// point is a literal sitting next to the resource it describes.
+func collectExtensionPoints(pass *analysis.Pass) []extensionPoint {
+	var points []extensionPoint
+	for _, file := range pass.Files {
+		ast.Inspect(file, func(n ast.Node) bool {
+			lit, ok := n.(*ast.CompositeLit)
+			if !ok || !isExtensionPointType(pass, lit) {
+				return true
+			}
+			point := extensionPoint{}
+			for _, elt := range lit.Elts {
+				kv, ok := elt.(*ast.KeyValueExpr)
+				if !ok {
+					continue
+				}
+				key, ok := kv.Key.(*ast.Ident)
+				if !ok {
+					continue
+				}
+				switch key.Name {
+				case "SchemaPath":
+					point.schemaPath = stringLiterals(kv.Value)
+				case "ConfigProperty":
+					if values := stringLiterals(kv.Value); len(values) == 1 {
+						point.configProperty = values[0]
+					}
+				}
+			}
+			points = append(points, point)
+			return true
+		})
+	}
+	return points
+}
+
+func isExtensionPointType(pass *analysis.Pass, lit *ast.CompositeLit) bool {
+	litType := pass.TypesInfo.TypeOf(lit.Type)
+	named, ok := litType.(*types.Named)
+	if !ok || named.Obj().Pkg() == nil {
+		return false
+	}
+	return named.Obj().Name() == extensionPointType && named.Obj().Pkg().Path() == extensionsPackage
+}
+
+// stringLiterals reads a string literal or a slice of them, and reports nothing
+// for anything computed, which a point declaration has no reason to be.
+func stringLiterals(expr ast.Expr) []string {
+	if basic, ok := expr.(*ast.BasicLit); ok {
+		if value, err := strconv.Unquote(basic.Value); err == nil {
+			return []string{value}
+		}
+		return nil
+	}
+	lit, ok := expr.(*ast.CompositeLit)
+	if !ok {
+		return nil
+	}
+	values := make([]string, 0, len(lit.Elts))
+	for _, elt := range lit.Elts {
+		basic, ok := elt.(*ast.BasicLit)
+		if !ok {
+			return nil
+		}
+		value, err := strconv.Unquote(basic.Value)
+		if err != nil {
+			return nil
+		}
+		values = append(values, value)
+	}
+	return values
+}
+
+// jsonName is the name the field takes in the schema.
+func jsonName(field *ast.Field) string {
+	if field.Tag == nil {
+		return ""
+	}
+	jsonTag, ok := reflect.StructTag(strings.Trim(field.Tag.Value, "`")).Lookup("json")
+	if !ok {
+		return ""
+	}
+	name, _, _ := strings.Cut(jsonTag, ",")
+	if name == "-" {
+		return ""
+	}
+	return name
 }
 
 var CommonTypes = map[string]*ast.StructType{}

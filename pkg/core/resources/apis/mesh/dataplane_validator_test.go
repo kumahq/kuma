@@ -6,6 +6,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
@@ -86,7 +87,7 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               gateway:
                 tags:
-                  kuma.io/service: backend
+                  kuma.io/display-name: backend
                   kuam.io/protocol: tcp
                   version: "1"
               outbound:
@@ -104,7 +105,7 @@ var _ = Describe("Dataplane", func() {
               address: 192.168.0.1
               gateway:
                 tags:
-                  kuma.io/service: backend
+                  kuma.io/display-name: backend
                   version: "1"
                   kuma.io/valid: abc.0123-789.under_score:90
               outbound:
@@ -250,16 +251,6 @@ var _ = Describe("Dataplane", func() {
                       kuma.io/display-name: redis
                     port: 8080`,
 		),
-		Entry("no inbound with transparent proxy", `
-            type: Dataplane
-            name: dp-1
-            mesh: default
-            networking:
-              address: 192.168.0.1
-              transparentProxying:
-                redirectPortInbound: 15006
-                redirectPortOutbound: 15001`,
-		),
 		Entry("no inbound outbound-only", `
             type: Dataplane
             name: dp-1
@@ -337,6 +328,7 @@ var _ = Describe("Dataplane", func() {
 		func(given testCase) {
 			// setup
 			dataplane := core_mesh.NewDataplaneResource()
+			dataplane.Meta = &test_model.ResourceMeta{Name: "dp-1", Mesh: "default"}
 
 			// when
 			err := util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)
@@ -441,50 +433,6 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.address
                   message:  address has to be valid IP address or domain name`,
 		}),
-		Entry("networking: both inbounds and gateway are defined", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  inbound:
-                    - port: 8080
-                      servicePort: 7777
-                  gateway:
-                    tags:
-                      kuma.io/service: kong
-                  outbound:
-                    - port: 3333
-                      backendRef:
-                        kind: MeshService
-                        name: redis
-                        port: 6379`,
-			expected: `
-                violations:
-                - field: networking.inbound
-                  message: inbound cannot be defined for delegated gateways`,
-		}),
-		Entry("networking: delegated gateway must not have listeners", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    tags:
-                      kuma.io/service: kong
-                  listeners:
-                    - type: ZoneEgress
-                      address: 192.168.0.1
-                      port: 10002
-                      name: ze-port`,
-			expected: `
-                violations:
-                - field: networking.listeners
-                  message: listeners cannot be defined for delegated gateways`,
-		}),
 		Entry("networking.inbound: port of the range", testCase{
 			dataplane: `
                 type: Dataplane
@@ -549,71 +497,6 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.inbound[0].address
                   message: address has to be valid IP address`,
-		}),
-		Entry("networking.gateway: empty service tag", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    tags:
-                      version: "v1"
-                  outbound:
-                    - port: 3333
-                      backendRef:
-                        kind: MeshService
-                        name: redis
-                        port: 6379`,
-			expected: `
-                violations:
-                - field: networking.gateway.tags
-                  message: mandatory tag "kuma.io/service" is missing`,
-		}),
-		Entry("networking.gateway: empty tag value", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    tags:
-                      kuma.io/service: backend
-                      version:
-                  outbound:
-                    - port: 3333
-                      backendRef:
-                        kind: MeshService
-                        name: redis
-                        port: 6379`,
-			expected: `
-                violations:
-                - field: 'networking.gateway.tags["version"]'
-                  message: tag value must be non-empty`,
-		}),
-		Entry("networking.gateway: protocol http", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    tags:
-                      kuma.io/service: backend
-                      kuma.io/protocol: http
-                  outbound:
-                    - port: 3333
-                      backendRef:
-                        kind: MeshService
-                        name: redis
-                        port: 6379`,
-			expected: `
-                violations:
-                - field: 'networking.gateway.tags["kuma.io/protocol"]'
-                  message: other values than tcp are not allowed, provided value "http"`,
 		}),
 		Entry("networking.outbound: missing backendRef", testCase{
 			dataplane: `
@@ -1132,7 +1015,7 @@ var _ = Describe("Dataplane", func() {
 		}),
 	)
 
-	Describe("gateway service tag requirement based on tag presence", func() {
+	Describe("gateway", func() {
 		It("should allow dataplane with empty inbound tags (tag-free mode)", func() {
 			// setup
 			dataplane := core_mesh.NewDataplaneResource()
@@ -1151,44 +1034,24 @@ var _ = Describe("Dataplane", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should allow dataplane with empty gateway tags (tag-free mode)", func() {
+		It("should ignore the removed gateway field", func() {
+			// given a Dataplane written against the removed networking.gateway
+			// field, including the removed built-in gateway type
 			dataplane := core_mesh.NewDataplaneResource()
 
 			// when
 			err := util_proto.FromYAML([]byte(`
-                networking:
-                  address: 192.168.0.1
-                  gateway:
-                    type: DELEGATED
-                    tags: {}
-`), dataplane.Spec)
-			Expect(err).ToNot(HaveOccurred())
-
-			// then - empty tags = new setup, no service tag required
-			err = dataplane.Validate()
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		It("should not accept BUILTIN as a gateway type", func() {
-			// given a Dataplane written against the removed built-in gateway
-			dataplane := core_mesh.NewDataplaneResource()
-
-			// when
-			err := util_proto.FromYAML([]byte(`
-                type: Dataplane
-                name: dp-1
-                mesh: default
                 networking:
                   address: 192.168.0.1
                   gateway:
                     type: BUILTIN
                     tags:
-                      kuma.io/service: kong
+                      kuma.io/display-name: kong
 `), dataplane.Spec)
 
-			// then the value is not a known gateway type anymore
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("BUILTIN"))
+			// then the field is dropped and what is left is an ordinary Dataplane
+			Expect(err).ToNot(HaveOccurred())
+			Expect(dataplane.Validate()).To(Succeed())
 		})
 	})
 })

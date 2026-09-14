@@ -73,23 +73,6 @@ func keyBytesToRsaPrivateKey(keyBytes []byte) (*rsa.PrivateKey, error) {
 	return key, nil
 }
 
-func keyBytesToRsaPublicKey(keyBytes []byte) (*rsa.PublicKey, error) {
-	if util_rsa.IsPublicKeyPEMBytes(keyBytes) {
-		key, err := util_rsa.FromPEMBytesToPublicKey(keyBytes)
-		if err != nil {
-			return nil, err
-		}
-		return key, nil
-	}
-
-	// support non-PEM RSA key for legacy reasons
-	key, err := x509.ParsePKCS1PublicKey(keyBytes)
-	if err != nil {
-		return nil, err
-	}
-	return key, nil
-}
-
 func signingKeySerialNumber(secretName string, signingKeyPrefix string) (int, error) {
 	serialNumberStr := strings.ReplaceAll(secretName, signingKeyPrefix+"-", "")
 	serialNumber, err := strconv.Atoi(serialNumberStr)

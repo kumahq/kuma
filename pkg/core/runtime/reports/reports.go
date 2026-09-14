@@ -14,7 +14,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -136,22 +135,6 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 		return err
 	}
 	b.mutable["dps_total"] = strconv.Itoa(len(dps.Items))
-
-	ngateways := 0
-	gatewayTypes := map[string]int{}
-	for _, dp := range dps.Items {
-		spec := dp.GetSpec().(*mesh_proto.Dataplane)
-		gateway := spec.GetNetworking().GetGateway()
-		if gateway != nil {
-			ngateways++
-			gatewayType := strings.ToLower(gateway.GetType().String())
-			gatewayTypes["gateway_dp_type_"+gatewayType] += 1
-		}
-	}
-	b.mutable["gateway_dps"] = strconv.Itoa(ngateways)
-	for gtype, n := range gatewayTypes {
-		b.mutable[gtype] = strconv.Itoa(n)
-	}
 
 	meshes, err := fetchMeshes(ctx, rt)
 	if err != nil {

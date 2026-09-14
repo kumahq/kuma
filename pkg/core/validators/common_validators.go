@@ -67,14 +67,6 @@ func ValidateDurationGreaterThanZeroOrNil(path PathBuilder, duration *k8s.Durati
 	return err
 }
 
-func ValidateValueGreaterThanZero(path PathBuilder, value int32) ValidationError {
-	var err ValidationError
-	if value <= 0 {
-		err.AddViolationAt(path, MustBeDefinedAndGreaterThanZero)
-	}
-	return err
-}
-
 func ValidateValueGreaterThanZeroOrNil(path PathBuilder, value *int32) ValidationError {
 	var err ValidationError
 	if value == nil {
@@ -325,41 +317,9 @@ func ValidateBackendResourceRef(ref *common_api.BackendResourceRef) ValidationEr
 	return verr
 }
 
-// ValidateOtelBackendRefOrEndpoint validates that exactly one of endpoint or
-// backendRef is set. If backendRef is set, delegates to ValidateBackendResourceRef.
-// If endpoint is set, rejects URL characters and runs optional extra validators.
-// Extra validators allow policies to enforce stricter endpoint rules for
-// backward compatibility (e.g. MeshMetric requires host:port).
-func ValidateOtelBackendRefOrEndpoint(
-	endpoint string,
-	backendRef *common_api.BackendResourceRef,
-	extraEndpointValidators ...func(string) ValidationError,
-) ValidationError {
-	var verr ValidationError
-
-	switch {
-	case endpoint != "" && backendRef != nil:
-		verr.AddViolation("", MustHaveOnlyOne("openTelemetry", "endpoint", "backendRef"))
-		return verr
-	case endpoint == "" && backendRef == nil:
-		verr.AddViolation("", MustHaveExactlyOneOf("openTelemetry", "endpoint", "backendRef"))
-		return verr
-	case backendRef != nil:
-		verr.AddErrorAt(RootedAt("backendRef"), ValidateBackendResourceRef(backendRef))
-	case strings.ContainsAny(endpoint, "/?#"):
-		verr.AddViolationAt(RootedAt("endpoint"), "must be in host:port format, not a URL")
-	default:
-		for _, v := range extraEndpointValidators {
-			verr.Add(v(endpoint))
-		}
-	}
-
-	return verr
-}
-
 func ValidateBackendRef(b common_api.BackendRef) ValidationError {
 	verr := OK()
-	if b.Kind == common_api.MeshMultiZoneService && b.Port == nil {
+	if b.Kind == common_api.BackendRefKindMeshMultiZoneService && b.Port == nil {
 		verr.AddViolationAt(RootedAt("port"), MustBeDefined+" with kind MeshMultiZoneService")
 	}
 	if b.Weight != nil && *b.Weight > math.MaxUint32 {

@@ -14,13 +14,13 @@ networking:
       name: main-port
       protocol: http
       tags:
-        kuma.io/service: foo
+        kuma.io/display-name: foo
         kuma.io/protocol: http
     - port: 8081
       name: secondary-port
       protocol: tcp
       tags:
-        kuma.io/service: foo
+        kuma.io/display-name: foo
         kuma.io/protocol: tcp
   outbound:
     - port: 8080
@@ -28,4 +28,4 @@ networking:
         kind: MeshService
         name: test-server
         port: 80
-      kuma.io/service: test-server
+      kuma.io/display-name: test-server

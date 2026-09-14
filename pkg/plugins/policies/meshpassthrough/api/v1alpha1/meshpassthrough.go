@@ -47,9 +47,14 @@ const (
 type Match struct {
 	// Type of the match, one of `Domain`, `IP` or `CIDR` is available.
 	Type MatchType `json:"type"`
-	// Value for the specified Type.
+	// Value for the specified Type. A wildcard `Domain`, for example
+	// `*.example.com`, cannot be resolved by the sidecar, so its traffic goes to the
+	// address the client dials and the match only restricts the SNI or Host.
 	Value string `json:"value"`
-	// Port defines the port to which a user makes a request.
+	// Port defines the port to which a user makes a request. It is required for a
+	// `Domain` that is not a wildcard: the sidecar resolves the domain itself and
+	// connects to this port, so the destination doesn't depend on the address the
+	// client dials.
 	Port *uint32 `json:"port,omitempty"`
 	// Protocol defines the communication protocol. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`, `mysql`.
 	// +kubebuilder:default=tcp

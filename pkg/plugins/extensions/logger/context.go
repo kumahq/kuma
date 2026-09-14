@@ -15,7 +15,7 @@ type SpanLogValuesProcessor func(trace.Span) []any
 // NewSpanLogValuesProcessorContext will enrich the provided context with
 // the provided spanLogValuesProcessor. It may be useful for any application
 // which depends on Kuma, but wants to for example transform trace/span ids
-// from otel to datadog format.
+// from otel to datadog format. Kong Mesh does exactly that.
 func NewSpanLogValuesProcessorContext(
 	ctx context.Context,
 	fn SpanLogValuesProcessor,

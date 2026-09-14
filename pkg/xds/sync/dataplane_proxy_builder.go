@@ -130,7 +130,10 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		opts = append(opts, core_plugins.IncludeShadow())
 	}
 	if p.policyMatchingCache != nil {
-		opts = append(opts, core_plugins.WithCache(p.policyMatchingCache, meshContext.PolicyMatchingHash))
+		opts = append(opts,
+			core_plugins.WithCache(p.policyMatchingCache, meshContext.PolicyMatchingHash),
+			core_plugins.WithDataplaneHash(dataplane.Hash()),
+		)
 	}
 	for _, p := range core_plugins.Plugins().PolicyPlugins() {
 		res, err := p.Plugin.MatchedPolicies(dataplane, resources, opts...)
@@ -162,7 +165,7 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 		)
 		// convert proto BackendRef to common_api.BackendRef
 		backendRef := common_api.BackendRef{
-			Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
+			Kind:   common_api.BackendRefKind(o.BackendRef.Kind),
 			Labels: pointer.To(labels),
 			Port:   pointer.To(o.BackendRef.Port),
 		}

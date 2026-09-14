@@ -43,7 +43,7 @@ func MeshHttpOutboundWithSeveralRoutes(serviceName string) *meshhttproute_xds.Ht
 			},
 		},
 		DpTags: map[string]map[string]bool{
-			"kuma.io/service": {
+			"kuma.io/display-name": {
 				"web": true,
 			},
 		},
@@ -84,7 +84,7 @@ func RealMeshHTTPRouteOutboundRoutes(serviceName string, meshHTTPRoute kri.Ident
 			},
 		},
 		DpTags: map[string]map[string]bool{
-			"kuma.io/service": {
+			"kuma.io/display-name": {
 				"web": true,
 			},
 		},
@@ -111,7 +111,7 @@ func MeshHttpOutboudWithSingleRoute(serviceName string) *meshhttproute_xds.HttpO
 			},
 		},
 		DpTags: map[string]map[string]bool{
-			"kuma.io/service": {
+			"kuma.io/display-name": {
 				"web": true,
 			},
 		},

@@ -63,7 +63,7 @@ func MeshServiceTargeting() {
 					testserver.WithNamespace(namespace),
 				),
 				testserver.Install(
-					testserver.WithName("kumaioservice-targeted-test-server"),
+					testserver.WithName("display-name-targeted-test-server"),
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
 				),
@@ -193,13 +193,13 @@ spec:
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	It("should configure URLRewrite if targeted to kuma.io/service", func() {
+	It("should configure URLRewrite if targeted by display name", func() {
 		// when
 		Expect(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
 metadata:
-  name: http-to-kumaio-meshservice
+  name: http-to-display-name-meshservice
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -209,7 +209,7 @@ spec:
     - targetRef:
         kind: MeshService
         labels:
-          kuma.io/display-name: kumaioservice-targeted-test-server
+          kuma.io/display-name: display-name-targeted-test-server
           k8s.kuma.io/namespace: %s
       rules:
         - matches:
@@ -229,7 +229,7 @@ spec:
 			resp, err := client.CollectEchoResponse(
 				multizone.KubeZone1,
 				"test-client",
-				fmt.Sprintf("%s/prefix/world", addressToMeshService("kumaioservice-targeted-test-server")),
+				fmt.Sprintf("%s/prefix/world", addressToMeshService("display-name-targeted-test-server")),
 				client.FromKubernetesPod(namespace, "test-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())

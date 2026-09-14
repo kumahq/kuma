@@ -3,15 +3,6 @@
     "$ref": "#/definitions/Mesh",
     "definitions": {
         "Mesh": {
-            "properties": {
-                "skipCreatingInitialPolicies": {
-                    "items": {
-                        "type": "string"
-                    },
-                    "type": "array",
-                    "description": "List of policies to skip creating by default when the mesh is created. e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all policies."
-                }
-            },
             "additionalProperties": true,
             "type": "object",
             "title": "Mesh",

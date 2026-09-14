@@ -36,9 +36,31 @@ func (rm ResourceMap) listOrEmpty(resourceType core_model.ResourceType) core_mod
 }
 
 func (rm ResourceMap) Hash() []byte {
+	return combineTypeHashes(rm.hashByType())
+}
+
+type typeHash struct {
+	resourceType core_model.ResourceType
+	hash         []byte
+	list         core_model.ResourceList
+}
+
+func (rm ResourceMap) hashByType() []typeHash {
+	return rm.typeHashes(maps.SortedKeys(rm))
+}
+
+func (rm ResourceMap) typeHashes(types []core_model.ResourceType) []typeHash {
+	hashes := make([]typeHash, 0, len(types))
+	for _, t := range types {
+		hashes = append(hashes, typeHash{resourceType: t, hash: resourceListXDSHash(rm[t]), list: rm[t]})
+	}
+	return hashes
+}
+
+func combineTypeHashes(hashes []typeHash) []byte {
 	hasher := fnv.New128a()
-	for _, k := range maps.SortedKeys(rm) {
-		hasher.Write(resourceListXDSHash(rm[k]))
+	for _, th := range hashes {
+		_, _ = hasher.Write(th.hash)
 	}
 	return hasher.Sum(nil)
 }
@@ -76,10 +98,6 @@ func (r Resources) Secrets() *system.SecretResourceList {
 
 func (r Resources) MeshFaultInjections() *meshfaultinjection_api.MeshFaultInjectionResourceList {
 	return r.ListOrEmpty(meshfaultinjection_api.MeshFaultInjectionType).(*meshfaultinjection_api.MeshFaultInjectionResourceList)
-}
-
-func (r Resources) Meshes() *core_mesh.MeshResourceList {
-	return r.ListOrEmpty(core_mesh.MeshType).(*core_mesh.MeshResourceList)
 }
 
 func (r Resources) MeshServices() *meshsvc.MeshServiceResourceList {

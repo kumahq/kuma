@@ -117,7 +117,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 							{
 								Target: "192.168.0.1",
 								Port:   2521,
-								Tags:   map[string]string{"kuma.io/service": "backend"},
+								Tags:   map[string]string{"kuma.io/display-name": "backend"},
 								Weight: 1,
 							},
 						},
@@ -166,7 +166,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 							{
 								Target: "192.168.0.1",
 								Port:   2521,
-								Tags:   map[string]string{"kuma.io/service": "backend"},
+								Tags:   map[string]string{"kuma.io/display-name": "backend"},
 								Weight: 1,
 							},
 						},
@@ -225,7 +225,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 							{
 								Target: "192.168.0.1",
 								Port:   2521,
-								Tags:   map[string]string{"kuma.io/service": "backend"},
+								Tags:   map[string]string{"kuma.io/display-name": "backend"},
 								Weight: 1,
 							},
 						},
@@ -279,7 +279,7 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 							{
 								Target: "192.168.0.1",
 								Port:   8080,
-								Tags:   map[string]string{mesh_proto.ServiceTag: "backend"},
+								Tags:   map[string]string{"kuma.io/display-name": "backend"},
 								Weight: 1,
 							},
 						},

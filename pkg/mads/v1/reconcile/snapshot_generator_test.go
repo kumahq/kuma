@@ -137,7 +137,7 @@ var _ = Describe("snapshotGenerator", func() {
 				dataplanes: []*core_mesh.DataplaneResource{
 					samples.DataplaneBackendBuilder().
 						WithName("backend-01").
-						WithInboundOfTags(mesh_proto.ServiceTag, "backend", "env", "intg").
+						WithInboundOfTags("kuma.io/display-name", "backend", "env", "intg").
 						Build(),
 				},
 				meshMetrics: []*v1alpha1.MeshMetricResource{
@@ -184,7 +184,7 @@ var _ = Describe("snapshotGenerator", func() {
 				dataplanes: []*core_mesh.DataplaneResource{
 					samples.DataplaneBackendBuilder().
 						WithName("backend-01").
-						WithInboundOfTags(mesh_proto.ServiceTag, "backend", "env", "intg").
+						WithInboundOfTags("kuma.io/display-name", "backend", "env", "intg").
 						Build(),
 				},
 				meshMetrics: []*v1alpha1.MeshMetricResource{
@@ -243,7 +243,7 @@ var _ = Describe("snapshotGenerator", func() {
 				dataplanes: []*core_mesh.DataplaneResource{
 					samples.DataplaneBackendBuilder().
 						WithName("backend-01").
-						WithInboundOfTags(mesh_proto.ServiceTag, "backend", "env", "intg").
+						WithInboundOfTags("kuma.io/display-name", "backend", "env", "intg").
 						Build(),
 				},
 				meshMetrics: []*v1alpha1.MeshMetricResource{
@@ -325,14 +325,14 @@ var _ = Describe("snapshotGenerator", func() {
 				dataplanes: []*core_mesh.DataplaneResource{
 					builders.Dataplane().
 						WithName("backend-01").
-						WithInboundOfTags(mesh_proto.ServiceTag, "backend-01").
+						WithInboundOfTags("kuma.io/display-name", "backend-01").
 						WithServices("backend-01").
 						WithAddress("192.168.0.1").
-						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-01", metadata.KumaWorkload: "backend-01"}).
+						WithLabels(map[string]string{"kuma.io/display-name": "backend-01", metadata.KumaWorkload: "backend-01"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-02").
-						WithInboundOfTags(mesh_proto.ServiceTag, "backend-02").
+						WithInboundOfTags("kuma.io/display-name", "backend-02").
 						WithAddress("192.168.0.2").
 						Build(),
 				},
@@ -345,7 +345,7 @@ var _ = Describe("snapshotGenerator", func() {
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TopLevelTargetRef{
 								Kind:   common_api.TopLevelTargetRefKindDataplane,
-								Labels: pointer.To(map[string]string{mesh_proto.ServiceTag: "backend-01"}),
+								Labels: pointer.To(map[string]string{"kuma.io/display-name": "backend-01"}),
 							},
 							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
@@ -393,20 +393,20 @@ var _ = Describe("snapshotGenerator", func() {
 				dataplanes: []*core_mesh.DataplaneResource{
 					builders.Dataplane().
 						WithName("backend-01").
-						WithInboundOfTags(mesh_proto.ServiceTag, "backend-01").
+						WithInboundOfTags("kuma.io/display-name", "backend-01").
 						WithServices("backend-01").
 						WithAddress("192.168.0.1").
 						WithLabels(map[string]string{metadata.KumaWorkload: "backend-01"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-02").
-						WithInboundOfTags(mesh_proto.ServiceTag, "backend-02").
+						WithInboundOfTags("kuma.io/display-name", "backend-02").
 						WithAddress("192.168.0.2").
-						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-02", metadata.KumaWorkload: "backend-02"}).
+						WithLabels(map[string]string{"kuma.io/display-name": "backend-02", metadata.KumaWorkload: "backend-02"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-03").
-						WithInboundOfTags(mesh_proto.ServiceTag, "backend-03").
+						WithInboundOfTags("kuma.io/display-name", "backend-03").
 						WithAddress("192.168.0.3").
 						WithLabels(map[string]string{metadata.KumaWorkload: "backend-03"}).
 						Build(),
@@ -446,7 +446,7 @@ var _ = Describe("snapshotGenerator", func() {
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TopLevelTargetRef{
 								Kind:   common_api.TopLevelTargetRefKindDataplane,
-								Labels: pointer.To(map[string]string{mesh_proto.ServiceTag: "backend-02"}),
+								Labels: pointer.To(map[string]string{"kuma.io/display-name": "backend-02"}),
 							},
 							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
@@ -516,20 +516,20 @@ var _ = Describe("snapshotGenerator", func() {
 				dataplanes: []*core_mesh.DataplaneResource{
 					builders.Dataplane().
 						WithName("backend-01").
-						WithInboundOfTags(mesh_proto.ServiceTag, "backend-01").
+						WithInboundOfTags("kuma.io/display-name", "backend-01").
 						WithServices("backend-01").
 						WithAddress("192.168.0.1").
 						WithLabels(map[string]string{metadata.KumaWorkload: "backend-01"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-02").
-						WithInboundOfTags(mesh_proto.ServiceTag, "backend-02").
+						WithInboundOfTags("kuma.io/display-name", "backend-02").
 						WithAddress("192.168.0.2").
-						WithLabels(map[string]string{mesh_proto.ServiceTag: "backend-02", metadata.KumaWorkload: "backend-02"}).
+						WithLabels(map[string]string{"kuma.io/display-name": "backend-02", metadata.KumaWorkload: "backend-02"}).
 						Build(),
 					builders.Dataplane().
 						WithName("backend-03").
-						WithInboundOfTags(mesh_proto.ServiceTag, "backend-03").
+						WithInboundOfTags("kuma.io/display-name", "backend-03").
 						WithAddress("192.168.0.3").
 						WithLabels(map[string]string{metadata.KumaWorkload: "backend-03"}).
 						Build(),
@@ -569,7 +569,7 @@ var _ = Describe("snapshotGenerator", func() {
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TopLevelTargetRef{
 								Kind:   common_api.TopLevelTargetRefKindDataplane,
-								Labels: pointer.To(map[string]string{mesh_proto.ServiceTag: "backend-02"}),
+								Labels: pointer.To(map[string]string{"kuma.io/display-name": "backend-02"}),
 							},
 							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
@@ -629,5 +629,59 @@ var _ = Describe("snapshotGenerator", func() {
 				},
 			}),
 		)
+
+		It("matches dataplanes again once the mesh changes", func() {
+			meshContextBuilder := xds_context.NewMeshContextBuilder(resourceManager, server.MeshResourceTypes(), net.LookupIP, "")
+			newMetrics, err := metrics.NewMetrics("")
+			Expect(err).ToNot(HaveOccurred())
+			cache, err := mesh.NewCache(time.Millisecond, meshContextBuilder, newMetrics)
+			Expect(err).ToNot(HaveOccurred())
+
+			ctx := context.Background()
+			createDataplane := func(name, address string) {
+				dp := samples.DataplaneBackendBuilder().
+					WithName(name).
+					WithAddress(address).
+					WithInboundOfTags("kuma.io/display-name", name).
+					Build()
+				Expect(resourceManager.Create(ctx, dp,
+					core_store.CreateBy(core_model.MetaToResourceKey(dp.GetMeta())),
+					core_store.CreateWithLabels(dp.GetMeta().GetLabels()))).To(Succeed())
+			}
+			Expect(resourceManager.Create(ctx, core_mesh.NewMeshResource(), core_store.CreateByKey("default", core_model.NoMesh))).To(Succeed())
+			createDataplane("backend-01", "192.168.0.1")
+			meshMetric := &v1alpha1.MeshMetricResource{
+				Meta: &test_model.ResourceMeta{Name: "default", Mesh: "default"},
+				Spec: &v1alpha1.MeshMetric{
+					TargetRef: &common_api.TopLevelTargetRef{Kind: common_api.TopLevelTargetRefKindMesh},
+					Default: v1alpha1.Conf{
+						Backends: &[]v1alpha1.Backend{{
+							Type: v1alpha1.PrometheusBackendType,
+							Prometheus: &v1alpha1.PrometheusBackend{
+								Port: 1234,
+								Path: "/custom",
+								Tls:  &v1alpha1.PrometheusTls{Mode: v1alpha1.Disabled},
+							},
+						}},
+					},
+				},
+			}
+			Expect(resourceManager.Create(ctx, meshMetric, core_store.CreateBy(core_model.MetaToResourceKey(meshMetric.GetMeta())))).To(Succeed())
+			snapshotter := NewSnapshotGenerator(resourceManager, cache)
+
+			snapshotPerClient, err := snapshotter.GenerateSnapshot(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(snapshotPerClient[meshmetrics_generator.DefaultKumaClientId].GetResources(mads_v1.MonitoringAssignmentType)).
+				To(HaveKey("/meshes/default/dataplanes/backend-01"))
+
+			createDataplane("backend-02", "192.168.0.2")
+
+			Eventually(func(g Gomega) {
+				snapshotPerClient, err := snapshotter.GenerateSnapshot(ctx)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(snapshotPerClient[meshmetrics_generator.DefaultKumaClientId].GetResources(mads_v1.MonitoringAssignmentType)).
+					To(HaveKey("/meshes/default/dataplanes/backend-02"))
+			}).Should(Succeed())
+		})
 	})
 })

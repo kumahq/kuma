@@ -14,6 +14,8 @@ import (
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -22,11 +24,12 @@ import (
 
 var _ = Describe("DNSGenerator", func() {
 	type testCase struct {
-		dataplaneFile string
-		expected      string
-		features      map[string]bool
-		dpLabels      map[string]string
-		dpMesh        string
+		dataplaneFile    string
+		expected         string
+		features         map[string]bool
+		transparentProxy *tproxy_dp.DataplaneConfig
+		dpLabels         map[string]string
+		dpMesh           string
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -67,9 +70,10 @@ var _ = Describe("DNSGenerator", func() {
 				APIVersion: envoy_common.APIV3,
 				Routing:    model.Routing{},
 				Metadata: &model.DataplaneMetadata{
-					DNSPort:  53001,
-					Version:  &mesh_proto.Version{Envoy: &mesh_proto.EnvoyVersion{Version: "1.20.0"}},
-					Features: given.features,
+					DNSPort:          53001,
+					Version:          &mesh_proto.Version{Envoy: &mesh_proto.EnvoyVersion{Version: "1.20.0"}},
+					Features:         given.features,
+					TransparentProxy: given.transparentProxy,
 				},
 				InternalAddresses: DummyInternalAddresses,
 			}
@@ -97,20 +101,23 @@ var _ = Describe("DNSGenerator", func() {
 			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "dns", given.expected)))
 		},
 		Entry("01. DNS enabled", testCase{
-			dataplaneFile: "1-dataplane.input.yaml",
-			expected:      "1-envoy-config.golden.yaml",
+			dataplaneFile:    "1-dataplane.input.yaml",
+			expected:         "1-envoy-config.golden.yaml",
+			transparentProxy: xds_builders.TransparentProxy("dualstack"),
 		}),
 		Entry("02. DNS disabled", testCase{
 			dataplaneFile: "2-dataplane.input.yaml",
 			expected:      "2-envoy-config.golden.yaml",
 		}),
 		Entry("03. DNS enabled no ipv6", testCase{
-			dataplaneFile: "3-dataplane.input.yaml",
-			expected:      "3-envoy-config.golden.yaml",
+			dataplaneFile:    "3-dataplane.input.yaml",
+			expected:         "3-envoy-config.golden.yaml",
+			transparentProxy: xds_builders.TransparentProxy("ipv4"),
 		}),
 		Entry("04. DNS using proxy map", testCase{
-			dataplaneFile: "4-dataplane.input.yaml",
-			expected:      "4-envoy-config.golden.yaml",
+			dataplaneFile:    "4-dataplane.input.yaml",
+			expected:         "4-envoy-config.golden.yaml",
+			transparentProxy: xds_builders.TransparentProxy("dualstack"),
 			dpLabels: map[string]string{
 				"kuma.io/workload":      "backend",
 				"k8s.kuma.io/namespace": "test-ns",
@@ -119,8 +126,9 @@ var _ = Describe("DNSGenerator", func() {
 			dpMesh: "default",
 		}),
 		Entry("06. DNS enabled with unified naming", testCase{
-			dataplaneFile: "6-dataplane.input.yaml",
-			expected:      "6-envoy-config.golden.yaml",
+			dataplaneFile:    "6-dataplane.input.yaml",
+			expected:         "6-envoy-config.golden.yaml",
+			transparentProxy: xds_builders.TransparentProxy("dualstack"),
 		}),
 	)
 })

@@ -24,7 +24,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 	DescribeTable("should generate proper Envoy config with metadata",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(TcpProxyDeprecatedWithMetadata(given.statsName, given.clusters...)))).
 				Build()
@@ -68,8 +68,8 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			listenerPort:    5432,
 			statsName:       "db",
 			clusters: []envoy_common.Cluster{
-				plugins_xds.NewClusterBuilder().WithService("db").WithTags(map[string]string{"kuma.io/service": "db", "version": "v1"}).Build(),
-				plugins_xds.NewClusterBuilder().WithService("db").WithTags(map[string]string{"kuma.io/service": "db", "version": "v2"}).Build(),
+				plugins_xds.NewClusterBuilder().WithService("db").WithTags(map[string]string{"kuma.io/display-name": "db", "version": "v1"}).Build(),
+				plugins_xds.NewClusterBuilder().WithService("db").WithTags(map[string]string{"kuma.io/display-name": "db", "version": "v2"}).Build(),
 			},
 			expected: `
             address:
@@ -87,12 +87,14 @@ var _ = Describe("TcpProxyConfigurer", func() {
                     - metadataMatch:
                         filterMetadata:
                           envoy.lb:
+                            kuma.io/display-name: db
                             version: v1
                       name: db
                       weight: 1
                     - metadataMatch:
                         filterMetadata:
                           envoy.lb:
+                            kuma.io/display-name: db
                             version: v2
                       name: db
                       weight: 1
@@ -105,7 +107,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 	DescribeTable("should generate proper Envoy config without metadata",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
+			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 					Configure(TcpProxyDeprecated(given.statsName, given.clusters...)))).
 				Build()

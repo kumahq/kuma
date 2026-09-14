@@ -10,8 +10,10 @@ func (x *To) GetDefault() any {
 		return Rule{
 			Default: RuleConf{
 				BackendRefs: &[]common_api.BackendRef{{
-					TargetRef: x.TargetRef.ToTargetRef(),
-					Weight:    pointer.To(uint(1)),
+					Kind:        common_api.BackendRefKind(x.TargetRef.Kind),
+					Labels:      x.TargetRef.Labels,
+					SectionName: x.TargetRef.SectionName,
+					Weight:      pointer.To(uint(1)),
 				}},
 			},
 		}

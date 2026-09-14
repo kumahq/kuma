@@ -6,7 +6,6 @@ import (
 	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
-	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
@@ -22,11 +21,9 @@ var (
 	HashMeshExcludedResources = map[core_model.ResourceType]bool{
 		core_mesh.DataplaneInsightType:  true,
 		core_mesh.DataplaneOverviewType: true,
-		core_mesh.ServiceInsightType:    true,
 	}
 	HashMeshIncludedGlobalResources = map[core_model.ResourceType]bool{
-		core_system.GlobalSecretType: true,
-		core_mesh.MeshType:           true,
+		core_mesh.MeshType: true,
 	}
 )
 

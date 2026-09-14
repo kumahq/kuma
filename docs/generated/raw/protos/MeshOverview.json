@@ -19,15 +19,6 @@
             "description": "MeshOverview defines the projected state of a Mesh."
         },
         "kuma.mesh.v1alpha1.Mesh": {
-            "properties": {
-                "skipCreatingInitialPolicies": {
-                    "items": {
-                        "type": "string"
-                    },
-                    "type": "array",
-                    "description": "List of policies to skip creating by default when the mesh is created. e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all policies."
-                }
-            },
             "additionalProperties": true,
             "type": "object",
             "title": "Mesh",

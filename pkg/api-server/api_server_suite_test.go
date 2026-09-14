@@ -50,13 +50,12 @@ func TestWs(t *testing.T) {
 }
 
 type testApiServerConfigurer struct {
-	store                        store.ResourceStore
-	config                       *config_api_server.ApiServerConfig
-	metrics                      func() core_metrics.Metrics
-	zone                         string
-	global                       bool
-	disableOriginLabelValidation bool
-	accessConfigMutator          func(config *config_access.AccessConfig)
+	store               store.ResourceStore
+	config              *config_api_server.ApiServerConfig
+	metrics             func() core_metrics.Metrics
+	zone                string
+	global              bool
+	accessConfigMutator func(config *config_access.AccessConfig)
 }
 
 func NewTestApiServerConfigurer() *testApiServerConfigurer {
@@ -88,11 +87,6 @@ func (t *testApiServerConfigurer) WithGlobal() *testApiServerConfigurer {
 
 func (t *testApiServerConfigurer) WithStore(resourceStore store.ResourceStore) *testApiServerConfigurer {
 	t.store = resourceStore
-	return t
-}
-
-func (t *testApiServerConfigurer) WithDisableOriginLabelValidation(disable bool) *testApiServerConfigurer {
-	t.disableOriginLabelValidation = disable
 	return t
 }
 
@@ -145,6 +139,47 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 		return nil, kuma_cp.Config{}, stop, err
 	}
 	t.config.HTTPS.Port = uint32(port)
+
+	apiServer, cfg, err := newTestApiServer(t)
+	if err != nil {
+		return nil, cfg, stop, err
+	}
+	errChan := make(chan error, 1)
+	go func() {
+		err := apiServer.Start(ctx.Done()) //nolint:contextcheck
+		errChan <- err
+	}()
+
+	tick := time.NewTicker(time.Millisecond * 500)
+	defer tick.Stop()
+	leftTicks := 10
+	for {
+		if leftTicks == 0 {
+			stop()
+			return nil, cfg, stop, errors.New("no more ticks left")
+		}
+		select {
+		case err = <-errChan:
+			return nil, cfg, stop, err
+		case <-tick.C:
+			leftTicks--
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+apiServer.Address()+"/config", http.NoBody)
+			if err != nil {
+				return nil, cfg, stop, err
+			}
+			r, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return nil, cfg, stop, err
+			}
+			r.Body.Close()
+			if r.StatusCode == http.StatusOK {
+				return apiServer, cfg, stop, nil
+			}
+		}
+	}
+}
+
+func newTestApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_cp.Config, error) {
 	if t.config.HTTPS.TlsKeyFile == "" {
 		t.config.HTTPS.TlsKeyFile = filepath.Join("..", "..", "test", "certs", "server-key.pem")
 		t.config.HTTPS.TlsCertFile = filepath.Join("..", "..", "test", "certs", "server-cert.pem")
@@ -162,8 +197,6 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 	if t.accessConfigMutator != nil {
 		t.accessConfigMutator(&cfg.Access)
 	}
-
-	cfg.Multizone.Zone.DisableOriginLabelValidation = t.disableOriginLabelValidation
 
 	resManager := manager.NewResourceManager(t.store)
 	apiServer, err := api_server.NewApiServer(
@@ -199,40 +232,9 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 		nil,
 	)
 	if err != nil {
-		return nil, cfg, stop, err
+		return nil, cfg, err
 	}
-	errChan := make(chan error)
-	go func() {
-		err := apiServer.Start(ctx.Done()) //nolint:contextcheck
-		errChan <- err
-	}()
-
-	tick := time.NewTicker(time.Millisecond * 500)
-	leftTicks := 10
-	for {
-		if leftTicks == 0 {
-			stop()
-			return nil, cfg, stop, errors.New("no more ticks left")
-		}
-		select {
-		case err = <-errChan:
-			return nil, cfg, stop, err
-		case <-tick.C:
-			leftTicks--
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+apiServer.Address()+"/config", http.NoBody)
-			if err != nil {
-				return nil, cfg, stop, err
-			}
-			r, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return nil, cfg, stop, err
-			}
-			r.Body.Close()
-			if r.StatusCode == http.StatusOK {
-				return apiServer, cfg, stop, nil
-			}
-		}
-	}
+	return apiServer, cfg, nil
 }
 
 type action struct {

@@ -63,7 +63,7 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 		}
 
 		backendRef := common_api.BackendRef{
-			Kind:   common_api.TargetRefKind(kind),
+			Kind:   common_api.BackendRefKind(kind),
 			Labels: &selectorLabels,
 			Port:   port,
 		}

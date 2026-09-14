@@ -6,8 +6,6 @@ import (
 	"text/template"
 
 	"github.com/pkg/errors"
-
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 )
 
 // DataplaneTemplateData represents the data for dataplane templates
@@ -46,8 +44,6 @@ type DataplaneTemplateData struct {
 
 // TransparentProxyConfig represents transparent proxy configuration
 type TransparentProxyConfig struct {
-	RedirectPortInbound  string
-	RedirectPortOutbound string
 	// ReachableBackends is the raw YAML body rendered under
 	// networking.transparentProxying.reachableBackends (e.g. a `refs:` list).
 	ReachableBackends string
@@ -96,14 +92,10 @@ networking:
 {{- if .Protocol }}
     protocol: {{ .Protocol }}
 {{- end }}
-{{- if .TransparentProxy }}
+{{- if and .TransparentProxy .TransparentProxy.ReachableBackends }}
   transparentProxying:
-    redirectPortInbound: {{ .TransparentProxy.RedirectPortInbound }}
-    redirectPortOutbound: {{ .TransparentProxy.RedirectPortOutbound }}
-{{- if .TransparentProxy.ReachableBackends }}
     reachableBackends:
 {{ .TransparentProxy.ReachableBackends }}
-{{- end }}
 {{- end }}
 {{- end }}
 {{- if .AppendConfig }}
@@ -121,7 +113,7 @@ func RenderDataplaneTemplate(data DataplaneTemplateData) (string, error) {
 	maps.Copy(labels, data.Labels)
 	maps.Copy(labels, data.AdditionalTags)
 	if data.ServiceName != "" {
-		labels[mesh_proto.ServiceTag] = data.ServiceName
+		labels["service"] = data.ServiceName
 	}
 	if data.Team != "" {
 		labels["team"] = data.Team

@@ -44,10 +44,6 @@ type muxServer struct {
 	meshCache *mesh.Cache
 }
 
-type HttpService interface {
-	RegisterRoutes(ws *restful.WebService)
-}
-
 var _ component.Component = &muxServer{}
 
 func (s *muxServer) Ready() bool {
@@ -91,7 +87,7 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 
 	container := restful.NewContainer()
 	container.Add(ws)
-	errChan := make(chan error)
+	errChan := make(chan error, 1)
 	httpS := &http.Server{
 		Addr:              fmt.Sprintf(":%d", s.config.Port),
 		ReadHeaderTimeout: time.Second,

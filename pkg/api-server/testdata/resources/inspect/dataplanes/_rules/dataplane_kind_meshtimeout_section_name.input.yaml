@@ -13,11 +13,11 @@ networking:
     - port: 8080
       name: main-port
       tags:
-        kuma.io/service: foo
+        kuma.io/display-name: foo
     - port: 9090
       name: secondary-port
       tags:
-        kuma.io/service: bar
+        kuma.io/display-name: bar
 ---
 type: MeshTimeout
 name: select-whole-dpp

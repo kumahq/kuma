@@ -148,12 +148,12 @@ func validateHeaders(headers []common_api.HeaderMatch) validators.ValidationErro
 		switch matchType {
 		case common_api.HeaderMatchExact:
 		case common_api.HeaderMatchPresent:
-			if header.Value != "" {
+			if header.Value != nil {
 				errs.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
 			}
 		case common_api.HeaderMatchRegularExpression:
 		case common_api.HeaderMatchAbsent:
-			if header.Value != "" {
+			if header.Value != nil {
 				errs.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
 			}
 		case common_api.HeaderMatchPrefix:
@@ -249,7 +249,7 @@ func validateFilters(filters *[]Filter, matches []Match) validators.ValidationEr
 			backendRefPath := path.Field("requestMirror").Field("backendRef")
 			errs.AddErrorAt(
 				backendRefPath,
-				mesh.ValidateTargetRef(filter.RequestMirror.BackendRef.TargetRef, &mesh.ValidateTargetRefOpts{
+				mesh.ValidateTargetRef(filter.RequestMirror.BackendRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
 					SupportedKinds: []common_api.TargetRefKind{
 						common_api.MeshService,
 						common_api.MeshExternalService,
@@ -356,7 +356,7 @@ func validateBackendRefs(backendRefs []BackendRef) validators.ValidationError {
 	for i, backendRef := range backendRefs {
 		errs.AddErrorAt(
 			validators.Root().Index(i),
-			mesh.ValidateTargetRef(backendRef.TargetRef, &mesh.ValidateTargetRefOpts{
+			mesh.ValidateTargetRef(backendRef.CommonBackendRef().ToTargetRef(), &mesh.ValidateTargetRefOpts{
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.MeshService,
 					common_api.MeshExternalService,

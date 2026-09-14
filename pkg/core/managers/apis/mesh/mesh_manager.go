@@ -7,8 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
-	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -26,38 +24,23 @@ func NewMeshManager(
 	extensions context.Context,
 	config kuma_cp.Config,
 ) core_manager.ResourceManager {
-	var cpZone string
-	if config.Multizone != nil {
-		cpZone = config.Multizone.Zone.Name
-	}
-	meshManager := &meshManager{
+	return &meshManager{
 		store:         store,
 		otherManagers: otherManagers,
 		registry:      registry,
 		meshValidator: validator,
 		unsafeDelete:  config.Store.UnsafeDelete,
 		extensions:    extensions,
-		cpMode:        config.Mode,
-		cpZone:        cpZone,
 	}
-	if config.Store.Type == config_store.KubernetesStore {
-		meshManager.k8sStore = true
-		meshManager.systemNamespace = config.Store.Kubernetes.SystemNamespace
-	}
-	return meshManager
 }
 
 type meshManager struct {
-	store           core_store.ResourceStore
-	otherManagers   core_manager.ResourceManager
-	registry        core_registry.TypeRegistry
-	meshValidator   MeshValidator
-	unsafeDelete    bool
-	extensions      context.Context
-	k8sStore        bool
-	systemNamespace string
-	cpMode          config_core.CpMode
-	cpZone          string
+	store         core_store.ResourceStore
+	otherManagers core_manager.ResourceManager
+	registry      core_registry.TypeRegistry
+	meshValidator MeshValidator
+	unsafeDelete  bool
+	extensions    context.Context
 }
 
 func (m *meshManager) Get(ctx context.Context, resource core_model.Resource, fs ...core_store.GetOptionsFunc) error {
@@ -92,17 +75,7 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
 		return err
 	}
-	if err := defaults_mesh.EnsureDefaultMeshResources(
-		ctx,
-		m.otherManagers,
-		mesh,
-		mesh.Spec.GetSkipCreatingInitialPolicies(),
-		m.extensions,
-		m.k8sStore,
-		m.systemNamespace,
-		m.cpMode,
-		m.cpZone,
-	); err != nil {
+	if err := defaults_mesh.EnsureDefaultMeshResources(ctx, m.otherManagers, mesh, m.extensions); err != nil {
 		return err
 	}
 	return nil

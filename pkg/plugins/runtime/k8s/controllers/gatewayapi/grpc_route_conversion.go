@@ -214,8 +214,10 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaMeshRule(
 			weight = uint(*gapiBackendRef.Weight)
 		}
 		backendRefs = append(backendRefs, v1alpha1.BackendRef{
-			TargetRef: ref,
-			Weight:    pointer.To(weight),
+			Kind:        common_api.BackendRefKind(ref.Kind),
+			Labels:      ref.Labels,
+			SectionName: ref.SectionName,
+			Weight:      pointer.To(weight),
 		})
 	}
 
@@ -248,7 +250,7 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaMeshMatch(gapiMatch gatewayapi.GRPCR
 		header := common_api.HeaderMatch{
 			Type:  pointer.To(common_api.HeaderMatchType(headerType)),
 			Name:  common_api.HeaderName(strings.ToLower(string(gapiHeader.Name))),
-			Value: common_api.HeaderValue(gapiHeader.Value),
+			Value: pointer.To(common_api.HeaderValue(gapiHeader.Value)),
 		}
 		match.Headers = pointer.To(append(pointer.Deref(match.Headers), header))
 	}
@@ -351,7 +353,7 @@ func (r *GRPCRouteReconciler) gapiGRPCToKumaMeshFilter(
 		return v1alpha1.Filter{
 			Type: v1alpha1.RequestMirrorType,
 			RequestMirror: &v1alpha1.RequestMirror{
-				BackendRef: common_api.BackendRef{TargetRef: ref},
+				BackendRef: common_api.BackendRefFrom(ref),
 				Percentage: grpcMirrorPercentage(*mirror),
 			},
 		}, conditions, true

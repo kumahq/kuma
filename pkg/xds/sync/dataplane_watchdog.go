@@ -138,6 +138,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 	if err != nil {
 		return SyncResult{}, errors.Wrap(err, "could not build dataplane proxy")
 	}
+	proxy.WorkloadIdentityRequired = identity != nil
 	if syncIdentity {
 		identity, err := d.EnvoyCpCtx.IdentityManager.GetWorkloadIdentity(ctx, proxy, identity)
 		if err != nil {

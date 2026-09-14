@@ -13,7 +13,7 @@ labels:
 spec:
   selector:
     dataplaneTags:
-      kuma.io/service: test-server
+      kuma.io/display-name: test-server
   ports:
     - port: 80
       targetPort: 80

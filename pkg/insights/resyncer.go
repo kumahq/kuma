@@ -348,19 +348,6 @@ func (r *resyncer) processEvent(ctx context.Context, start time.Time, event resy
 	r.idleTime.Observe(float64(startProcessingTime.Sub(start).Milliseconds()))
 	r.timeToProcessItem.Observe(float64(startProcessingTime.Sub(event.time).Milliseconds()))
 
-	// Only on a full resync of the mesh, not on every event: the cleanup costs a store
-	// round-trip, but it can't be done once per mesh either, because during a
-	// mixed-version rollout an old replica keeps recreating the resource.
-	_, fullResync := event.reasons[ReasonResync]
-	_, forced := event.reasons[ReasonForce]
-	if fullResync || forced {
-		// Not fatal for the rest of the resync: retried on the next resync of this mesh.
-		if err := r.deleteLegacyServiceInsights(ctx, event.mesh); err != nil && !errors.Is(err, context.Canceled) {
-			log := kuma_log.AddFieldsFromCtx(log, ctx, r.extensions).WithValues("mesh", event.mesh)
-			log.Error(err, "unable to delete leftover ServiceInsight")
-		}
-	}
-
 	dpOverviews, err := r.dpOverviews(ctx, event.mesh)
 	if err != nil {
 		return errors.Wrap(err, "unable to get DataplaneOverviews to recompute insights")
@@ -382,27 +369,6 @@ func (r *resyncer) processEvent(ctx context.Context, start time.Time, event resy
 		result = ResultChanged
 	}
 	r.itemProcessingTime.WithLabelValues(reason, result).Observe(float64(time.Since(startProcessingTime).Milliseconds()))
-	return nil
-}
-
-// deleteLegacyServiceInsights removes the per-mesh ServiceInsight that control planes
-// used to write before service statistics moved to MeshService/MeshExternalService.
-// Nothing computes the resource anymore, so without this cleanup an upgraded control
-// plane would keep serving the stale, permanently frozen object on the legacy
-// /meshes/{mesh}/service-insights endpoints, and operators couldn't remove it
-// themselves because the type is read-only in the API.
-func (r *resyncer) deleteLegacyServiceInsights(ctx context.Context, mesh string) error {
-	serviceInsights := &core_mesh.ServiceInsightResourceList{}
-	if err := r.rm.List(ctx, serviceInsights, store.ListByMesh(mesh)); err != nil {
-		return err
-	}
-	for _, serviceInsight := range serviceInsights.Items {
-		key := model.MetaToResourceKey(serviceInsight.GetMeta())
-		if err := r.rm.Delete(ctx, serviceInsight, store.DeleteBy(key)); err != nil && !store.IsNotFound(err) {
-			return err
-		}
-	}
-
 	return nil
 }
 

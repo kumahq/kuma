@@ -113,7 +113,7 @@ var _ = Describe("GenerateClusters", func() {
 			WithDataplane(builders.Dataplane().
 				WithName("web-01").
 				WithAddress("192.168.0.2").
-				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"))
+				WithInboundOfTags("kuma.io/display-name", "web", mesh_proto.ProtocolTag, "http"))
 		if !given.noIdentity {
 			proxyBuilder = proxyBuilder.WithWorkloadIdentity(xds_builders.WorkloadIdentity())
 		}
@@ -209,7 +209,7 @@ var _ = Describe("GenerateClusters", func() {
 				WithDataplane(builders.Dataplane().
 					WithName("web-01").
 					WithAddress("192.168.0.2").
-					WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+					WithInboundOfTags("kuma.io/display-name", "web", mesh_proto.ProtocolTag, "http")).
 				WithWorkloadIdentity(&core_xds.WorkloadIdentity{
 					IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
 						return bldrs_tls.SdsSecretConfigSource(
@@ -262,7 +262,7 @@ var _ = Describe("GenerateClusters", func() {
 				WithDataplane(builders.Dataplane().
 					WithName("web-01").
 					WithAddress("192.168.0.2").
-					WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+					WithInboundOfTags("kuma.io/display-name", "web", mesh_proto.ProtocolTag, "http")).
 				WithWorkloadIdentity(&core_xds.WorkloadIdentity{
 					IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
 						return bldrs_tls.SdsSecretConfigSource(

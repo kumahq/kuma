@@ -2,11 +2,9 @@ package v1alpha1
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 
 	"github.com/evanphx/json-patch/v5"
-	"go.uber.org/multierr"
 )
 
 // JsonPatchBlock is one json patch operation block.
@@ -17,27 +15,20 @@ type JsonPatchBlock struct {
 	Op string `json:"op"`
 	// Path is a jsonpatch path string.
 	// +required
-	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
-	Path *string `json:"path"`
+	Path string `json:"path"`
 	// Value must be a valid json value used by replace and add operations.
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:pruning:PreserveUnknownFields
-	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
+	// +kuma:nolint // json.RawMessage is already nilable, so an unset value stays distinguishable from an empty one without wrapping it in a pointer
 	Value json.RawMessage `json:"value,omitempty"`
 	// From is a jsonpatch from string, used by move and copy operations.
 	From *string `json:"from,omitempty"`
 }
 
-func ToJsonPatch(in []JsonPatchBlock) (jsonpatch.Patch, error) {
-	var errs error
+func ToJsonPatch(in []JsonPatchBlock) jsonpatch.Patch {
 	var res []jsonpatch.Operation
 
 	for _, o := range in {
-		if o.Path == nil {
-			errs = multierr.Append(errs, fmt.Errorf("path must be defined"))
-			continue
-		}
-
 		var fromString string
 		if o.From != nil {
 			fromString = *o.From
@@ -45,7 +36,7 @@ func ToJsonPatch(in []JsonPatchBlock) (jsonpatch.Patch, error) {
 
 		op := json.RawMessage(strconv.Quote(o.Op))
 		from := json.RawMessage(strconv.Quote(fromString))
-		path := json.RawMessage(strconv.Quote(*o.Path))
+		path := json.RawMessage(strconv.Quote(o.Path))
 		value := o.Value
 
 		res = append(res, jsonpatch.Operation{
@@ -56,5 +47,5 @@ func ToJsonPatch(in []JsonPatchBlock) (jsonpatch.Patch, error) {
 		})
 	}
 
-	return res, errs
+	return res
 }

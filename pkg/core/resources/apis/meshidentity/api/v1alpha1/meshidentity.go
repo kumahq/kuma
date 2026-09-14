@@ -114,7 +114,6 @@ const (
 	ProviderConditionType         string = "Provider"
 	SpiffeIDProviderConditionType string = "SpiffeIDProvider"
 	MeshTrustConditionType        string = "MeshTrustCreated"
-	DependenciesReadyType         string = "DependenciesReady"
 )
 
 type MeshIdentityStatus struct {
@@ -126,4 +125,14 @@ type MeshIdentityStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	Conditions []common_api.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+
+	// TrustDomain is the trust domain this identity issues certificates in. The
+	// control plane renders `spec.spiffeID.trustDomain` once, when it first
+	// initializes the identity, and then keeps issuing in the recorded value.
+	// Templates such as `{{ .Zone }}` therefore stop following the zone name,
+	// which would otherwise silently move every workload into a trust domain no
+	// MeshTrust publishes yet.
+	//
+	// +optional
+	TrustDomain *string `json:"trustDomain,omitempty"`
 }

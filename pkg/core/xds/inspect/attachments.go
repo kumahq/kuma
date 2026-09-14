@@ -46,23 +46,12 @@ type PolicyKey struct {
 	Key  core_model.ResourceKey
 }
 
-type PoliciesByResourceType map[core_model.ResourceType][]core_model.Resource
-
 type (
 	AttachmentList []Attachment
 	Attachments    map[Attachment][]core_model.Resource
 )
 
-type (
-	AttachmentMap       map[Attachment]PoliciesByResourceType
-	AttachmentsByPolicy map[PolicyKey]AttachmentList
-)
-
-func (abp AttachmentsByPolicy) Merge(other AttachmentsByPolicy) {
-	for k, v := range other {
-		abp[k] = append(abp[k], v...)
-	}
-}
+type AttachmentsByPolicy map[PolicyKey]AttachmentList
 
 func (a AttachmentList) Len() int           { return len(a) }
 func (a AttachmentList) Less(i, j int) bool { return fmt.Sprintf("%s", a[i]) < fmt.Sprintf("%s", a[j]) }
@@ -99,27 +88,6 @@ func BuildAttachments(matchedPolicies *xds.MatchedPolicies) Attachments {
 	attachments[Attachment{Type: Dataplane, Name: ""}] = getDataplaneMatchedPolicies(matchedPolicies)
 
 	return attachments
-}
-
-// GroupByAttachment backs the deprecated GET /meshes/{mesh}/dataplanes/{name}/policies
-// endpoint, kept only because the vendored GUI bundle still calls it directly.
-func GroupByAttachment(matchedPolicies *xds.MatchedPolicies) AttachmentMap {
-	result := AttachmentMap{}
-
-	for attachment, policies := range BuildAttachments(matchedPolicies) {
-		if len(policies) == 0 {
-			continue
-		}
-		if _, ok := result[attachment]; !ok {
-			result[attachment] = PoliciesByResourceType{}
-		}
-		for _, policy := range policies {
-			resType := policy.Descriptor().Name
-			result[attachment][resType] = append(result[attachment][resType], policy)
-		}
-	}
-
-	return result
 }
 
 func GroupByPolicy(matchedPolicies *xds.MatchedPolicies) AttachmentsByPolicy {

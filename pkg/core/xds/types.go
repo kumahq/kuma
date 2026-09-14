@@ -59,8 +59,6 @@ func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
 // ServiceName is a convenience type alias to clarify the meaning of string value.
 type ServiceName = string
 
-type MeshName = string
-
 // TagSelectorSet is a set of unique TagSelectors.
 type TagSelectorSet []mesh_proto.TagSelector
 
@@ -150,7 +148,8 @@ type Proxy struct {
 	EnvoyAdminMTLSCerts ServerSideMTLSCerts
 
 	// WorkloadIdentity stores information about identity of the proxy.
-	WorkloadIdentity *WorkloadIdentity
+	WorkloadIdentity         *WorkloadIdentity
+	WorkloadIdentityRequired bool
 
 	// Zone the zone the proxy is in
 	Zone string
@@ -192,6 +191,15 @@ type WorkloadIdentity struct {
 	AdditionalResources *ResourceSet
 }
 
+const IdentityReadinessPath = "/identity-readiness"
+
+// IdentityReadinessConfig tells kuma-dp which identity generation Envoy must have loaded.
+type IdentityReadinessConfig struct {
+	Required        bool       `json:"required"`
+	CertificateHash string     `json:"certificateHash,omitempty"`
+	ExpirationTime  *time.Time `json:"expirationTime,omitempty"`
+}
+
 func (c *WorkloadIdentity) CertLifetime() time.Duration {
 	return c.ExpirationTime.Sub(pointer.Deref(c.GenerationTime))
 }
@@ -209,8 +217,6 @@ type ServerSideTLSCertPaths struct {
 	CertPath string
 	KeyPath  string
 }
-
-type ExternalServiceDynamicPolicies map[ServiceName]PluginOriginatedPolicies
 
 type Routing struct {
 	OutboundTargets EndpointMap
@@ -259,15 +265,6 @@ func (s TagSelectorSet) Add(n mesh_proto.TagSelector) TagSelectorSet {
 		return s
 	}
 	return append(s, n)
-}
-
-func (s TagSelectorSet) Matches(tags map[string]string) bool {
-	for _, selector := range s {
-		if selector.Matches(tags) {
-			return true
-		}
-	}
-	return false
 }
 
 func (e Endpoint) IsExternalService() bool {

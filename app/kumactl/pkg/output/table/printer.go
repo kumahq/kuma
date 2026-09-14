@@ -5,10 +5,6 @@ import (
 	"io"
 )
 
-type Printer interface {
-	Print(io.Writer) error
-}
-
 type Table struct {
 	Headers    []string
 	FooterFn   func(container any) string

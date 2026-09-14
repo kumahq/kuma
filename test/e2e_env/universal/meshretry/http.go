@@ -28,7 +28,7 @@ spec:
   selector:
     dataplaneLabels:
       matchLabels:
-        kuma.io/service: test-server
+        kuma.io/display-name: test-server
   ports:
   - port: 80
     targetPort: 80
@@ -38,8 +38,8 @@ spec:
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
-			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/service": "demo-client"}))).
-			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal"}), WithLabels(map[string]string{"kuma.io/service": "test-server"}))).
+			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true), WithLabels(map[string]string{"kuma.io/display-name": "demo-client"}))).
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal"}), WithLabels(map[string]string{"kuma.io/display-name": "test-server"}))).
 			Install(YamlUniversal(uniServiceYAML)).
 			Install(YamlUniversal(`
 type: HostnameGenerator
@@ -54,11 +54,6 @@ spec:
 `)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-
-		// Delete the default meshretry policy
-		Eventually(func() error {
-			return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "meshretry", "--mesh", meshName, "mesh-retry-all-"+meshName)
-		}).Should(Succeed())
 	})
 
 	BeforeEach(func() {
@@ -88,7 +83,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: test-server
+      kuma.io/display-name: test-server
   rules:
     - default:
         http:
@@ -104,7 +99,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: demo-client
+      kuma.io/display-name: demo-client
   to:
     - targetRef:
         kind: MeshService
@@ -166,7 +161,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: test-server
+      kuma.io/display-name: test-server
   rules:
     - default:
         http:

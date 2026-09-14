@@ -23,7 +23,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: test-server
+      kuma.io/display-name: test-server
   rules:
     - default:
         local:
@@ -45,7 +45,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: test-server-tcp
+      kuma.io/display-name: test-server-tcp
   rules:
     - default:
         local:
@@ -61,13 +61,13 @@ spec:
 			Install(TestServerUniversal(
 				"test-server", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-1"}),
-				WithLabels(map[string]string{"kuma.io/service": "test-server"}),
+				WithLabels(map[string]string{"kuma.io/display-name": "test-server"}),
 			)).
 			Install(TestServerUniversal(
 				"test-server-tcp", meshName,
 				WithArgs([]string{"echo", "--instance", "universal-2"}),
 				WithServiceName("test-server-tcp"),
-				WithLabels(map[string]string{"kuma.io/service": "test-server-tcp"}),
+				WithLabels(map[string]string{"kuma.io/display-name": "test-server-tcp"}),
 			)).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(DemoClientUniversal("tcp-client", meshName, WithTransparentProxy(false))).

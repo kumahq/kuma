@@ -5,16 +5,11 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 type ContainerPatchValidator struct {
 	SystemNamespace string
-}
-
-func NewContainerPatchValidatorWebhook() k8s_common.AdmissionValidator {
-	return &ContainerPatchValidator{}
 }
 
 func (h *ContainerPatchValidator) InjectDecoder(d admission.Decoder) {

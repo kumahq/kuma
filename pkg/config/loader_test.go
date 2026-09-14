@@ -223,7 +223,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels).To(Equal([]string{"x", "y"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.NodeLabelsToCopy).To(Equal([]string{"label-1", "label-2"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.TransparentProxyConfigMapName).To(Equal("foo"))
-			Expect(cfg.Runtime.Kubernetes.Injector.OtelPipeEnabled).To(BeFalse())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.Enabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.MountPath).To(Equal("/run/test"))
 			Expect(cfg.Runtime.Kubernetes.Injector.Spire.SocketFileName).To(Equal("my-socket"))
@@ -596,7 +595,6 @@ runtime:
       ignoredServiceSelectorLabels: ["x", "y"]
       nodeLabelsToCopy: ["label-1", "label-2"]
       transparentProxyConfigMap: foo
-      otelPipeEnabled: false
       spire:
         enabled: true
         mountPath: "/run/test"
@@ -670,7 +668,6 @@ multizone:
       tlsSkipVerify: true
       labels:
         skipPrefixes: ["argocd.argoproj.io"]
-    disableOriginLabelValidation: true
 dnsServer:
   domain: test-domain
   serviceVipPort: 9090
@@ -965,7 +962,6 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS":                         "x,y",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME":                        "foo",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY":                                     "label-1,label-2",
-				"KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED":                                       "false",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_ENABLED":                                           "true",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_MOUNT_PATH":                                        "/run/test",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SPIRE_SOCKET_FILE_NAME":                                  "my-socket",
@@ -1022,7 +1018,6 @@ meshService:
 				"KUMA_MULTIZONE_ZONE_KDS_RESPONSE_BACKOFF":                                                 "2s",
 				"KUMA_MULTIZONE_ZONE_KDS_LOG_PAYLOADS":                                                     "true",
 				"KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY":                                                  "true",
-				"KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION":                                      "true",
 				"KUMA_MULTIZONE_ZONE_KDS_LABELS_SKIP_PREFIXES":                                             "argocd.argoproj.io",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",

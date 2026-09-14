@@ -112,7 +112,7 @@ func createHostnameGenerator(name string, rs store.ResourceStore) error {
 		WithName(name).
 		WithTemplate("{{ .Name }}.mesh").
 		WithMeshServiceMatchLabels(map[string]string{
-			"kuma.io/service": name,
+			"kuma.io/display-name": name,
 		}).
 		Create(rs)
 }

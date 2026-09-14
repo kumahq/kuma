@@ -183,7 +183,7 @@ You can test development versions by first pushing to `gcr.io`:
 
 ```bash
 gcloud auth configure-docker
-make images/push DOCKER_REGISTRY=gcr.io/proj-123456
+make images docker/push DOCKER_REGISTRY=gcr.io/proj-123456
 ```
 
 then setting up `kubectl` to connect to your cluster and installing Kuma:

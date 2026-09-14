@@ -12,14 +12,6 @@ func Check(selected bool) string {
 	return ""
 }
 
-func OnOff(on bool) string {
-	if on {
-		return "on"
-	} else {
-		return "off"
-	}
-}
-
 func Date(t *time.Time) string {
 	if t == nil {
 		return "-"

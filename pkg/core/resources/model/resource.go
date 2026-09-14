@@ -175,11 +175,6 @@ type OverviewResource interface {
 	SetOverviewSpec(resource Resource, insight Resource) error
 }
 
-type ResourceWithInsights interface {
-	NewInsightList() ResourceList
-	NewOverviewList() ResourceList
-}
-
 type ResourceTypeDescriptor struct {
 	// Name identifier of this resourceType this maps to the k8s entity and universal name.
 	Name ResourceType
@@ -399,12 +394,6 @@ func HasScope(scope ResourceScope) TypeFilter {
 	})
 }
 
-func IsPolicy() TypeFilter {
-	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		return descriptor.IsPolicy
-	})
-}
-
 func IsInsight() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
 		return descriptor.IsInsight()
@@ -425,18 +414,6 @@ func Named(names ...ResourceType) TypeFilter {
 func Not(filter TypeFilter) TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
 		return !filter.Apply(descriptor)
-	})
-}
-
-func Or(filters ...TypeFilter) TypeFilter {
-	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		for _, filter := range filters {
-			if filter.Apply(descriptor) {
-				return true
-			}
-		}
-
-		return false
 	})
 }
 
@@ -601,29 +578,6 @@ func ResourceListToResourceKeys(rl ResourceList) []ResourceKey {
 	return rkey
 }
 
-func ResourceListByMesh(rl ResourceList) (map[string]ResourceList, error) {
-	res := map[string]ResourceList{}
-	for _, r := range rl.GetItems() {
-		mrl, ok := res[r.GetMeta().GetMesh()]
-		if !ok {
-			mrl = r.Descriptor().NewList()
-			res[r.GetMeta().GetMesh()] = mrl
-		}
-		if err := mrl.AddItem(r); err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func ResourceListHash(rl ResourceList) []byte {
-	hasher := fnv.New128()
-	for _, entity := range rl.GetItems() {
-		_, _ = hasher.Write(Hash(entity))
-	}
-	return hasher.Sum(nil)
-}
-
 type ResourceList interface {
 	GetItemType() ResourceType
 	GetItems() []Resource
@@ -638,16 +592,8 @@ type Pagination struct {
 	NextOffset string
 }
 
-func (p *Pagination) GetTotal() uint32 {
-	return p.Total
-}
-
 func (p *Pagination) SetTotal(total uint32) {
 	p.Total = total
-}
-
-func (p *Pagination) GetNextOffset() string {
-	return p.NextOffset
 }
 
 func (p *Pagination) SetNextOffset(nextOffset string) {

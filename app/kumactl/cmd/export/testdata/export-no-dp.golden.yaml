@@ -5,8 +5,6 @@ kri: kri_m____default_
 modificationTime: "0001-01-01T00:00:00Z"
 name: default
 type: Mesh
-skipCreatingInitialPolicies:
-- '*'
 ---
 creationTime: "0001-01-01T00:00:00Z"
 kri: kri_mal_default___mal-1_
@@ -17,7 +15,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: web
+      kuma.io/display-name: web
   to:
   - default:
       backends:

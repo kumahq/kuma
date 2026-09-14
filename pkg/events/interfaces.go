@@ -3,8 +3,6 @@ package events
 import (
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
@@ -42,8 +40,6 @@ type WorkloadIdentityChangedEvent struct {
 	ExpirationTime *time.Time
 	Origin         kri.Identifier
 }
-
-var ListenerStoppedErr = errors.New("listener closed")
 
 type Listener interface {
 	Recv() <-chan Event

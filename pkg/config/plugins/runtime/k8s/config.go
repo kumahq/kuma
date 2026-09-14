@@ -108,7 +108,6 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			// topology labels that are useful for, for example, MeshLoadBalancingStrategy policy.
 			NodeLabelsToCopy:              []string{"topology.kubernetes.io/zone", "topology.kubernetes.io/region", "kubernetes.io/hostname"},
 			TransparentProxyConfigMapName: "kuma-transparent-proxy-config",
-			OtelPipeEnabled:               true,
 			Spire: Spire{
 				Enabled:        false,
 				MountPath:      "/run/spire/sockets",
@@ -238,7 +237,10 @@ type Injector struct {
 	CaCertFile string     `json:"caCertFile" envconfig:"kuma_runtime_kubernetes_injector_ca_cert_file"`
 	BuiltinDNS BuiltinDNS `json:"builtinDNS"`
 	// IgnoredServiceSelectorLabels defines a list ignored labels in Service selector.
-	// If Pod matches a Service with ignored labels, but does not match it fully, it gets Ignored inbound.
+	// A Pod that matches a Service on every other label gets that Service's inbounds in a ready
+	// state, so it is already an eligible endpoint when the selector moves onto it. Which Pods
+	// actually receive traffic is decided by the MeshService selector, which still matches the
+	// full set of labels.
 	// It is useful when you change Service selector and expect traffic to be sent immediately.
 	// An example of this is ArgoCD's BlueGreen deployment and "rollouts-pod-template-hash" selector.
 	IgnoredServiceSelectorLabels []string `json:"ignoredServiceSelectorLabels" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS"`
@@ -248,9 +250,6 @@ type Injector struct {
 	// transparent proxy configuration. The sidecar injector reads it, merges it with pod annotations and injects the
 	// result. It defaults to "kuma-transparent-proxy-config" and the ConfigMap is expected to exist.
 	TransparentProxyConfigMapName string `json:"transparentProxyConfigMap" envconfig:"kuma_runtime_kubernetes_injector_transparent_proxy_configmap_name"`
-	// OtelPipeEnabled controls whether kuma-dp pipe mode is enabled for OTel backends.
-	// When true (default), kuma-dp proxies OTel traffic through a Unix socket.
-	OtelPipeEnabled bool `json:"otelPipeEnabled" envconfig:"kuma_runtime_kubernetes_injector_otel_pipe_enabled"`
 	// Spire is used to specify spire integration configuration.
 	Spire Spire `json:"spire"`
 }

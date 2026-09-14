@@ -107,9 +107,6 @@ func (c *virtualHostModificator) add(routeCfg *envoy_route.RouteConfiguration, v
 }
 
 func (c *virtualHostModificator) virtualHostMatches(vHost *envoy_route.VirtualHost) bool {
-	if c.Match == nil {
-		return true
-	}
 	if c.Match.Name != nil && *c.Match.Name != vHost.Name {
 		return false
 	}
@@ -117,16 +114,10 @@ func (c *virtualHostModificator) virtualHostMatches(vHost *envoy_route.VirtualHo
 }
 
 func (c *virtualHostModificator) originMatches(routeCfg *core_xds.Resource) bool {
-	if c.Match == nil {
-		return true
-	}
 	return c.Match.Origin == nil || (*c.Match.Origin == string(routeCfg.Origin))
 }
 
 func (c *virtualHostModificator) routeConfigurationMatches(routeCfg *envoy_route.RouteConfiguration) bool {
-	if c.Match == nil {
-		return true
-	}
 	if c.Match.RouteConfigurationName != nil && *c.Match.RouteConfigurationName != routeCfg.Name {
 		return false
 	}

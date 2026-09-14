@@ -182,3 +182,59 @@ var _ = Describe("SplitHierarchy", func() {
 		Entry("four segments", "a.b.c.d", []string{"a.b.c.d", "a.b.c", "a.b", "a"}),
 	)
 })
+
+var _ = Describe("ApplyComponentLevels", func() {
+	var registry *kuma_log.ComponentLevelRegistry
+
+	BeforeEach(func() {
+		registry = kuma_log.NewComponentLevelRegistry()
+	})
+
+	DescribeTable("valid specs",
+		func(spec string, expected map[string]kuma_log.LogLevel) {
+			Expect(kuma_log.ApplyComponentLevels(registry, spec)).To(Succeed())
+			Expect(registry.ListOverrides()).To(Equal(expected))
+		},
+		Entry("a single pair", "dnsproxy:debug", map[string]kuma_log.LogLevel{
+			"dnsproxy": kuma_log.DebugLevel,
+		}),
+		Entry("several pairs", "dnsproxy:debug,xds.server:info", map[string]kuma_log.LogLevel{
+			"dnsproxy":   kuma_log.DebugLevel,
+			"xds.server": kuma_log.InfoLevel,
+		}),
+		Entry("surrounding whitespace", " dnsproxy : debug , xds:info ", map[string]kuma_log.LogLevel{
+			"dnsproxy": kuma_log.DebugLevel,
+			"xds":      kuma_log.InfoLevel,
+		}),
+		Entry("empty entries", "dnsproxy:debug,,", map[string]kuma_log.LogLevel{
+			"dnsproxy": kuma_log.DebugLevel,
+		}),
+		Entry("nothing at all", "", map[string]kuma_log.LogLevel{}),
+		Entry("only separators", ",,", map[string]kuma_log.LogLevel{}),
+		Entry("only whitespace", " ", map[string]kuma_log.LogLevel{}),
+	)
+
+	DescribeTable("rejected specs",
+		func(spec string) {
+			Expect(kuma_log.ApplyComponentLevels(registry, spec)).To(HaveOccurred())
+			Expect(registry.ListOverrides()).To(BeEmpty())
+		},
+		Entry("no separator", "dnsproxy"),
+		Entry("a valid pair followed by an invalid one", "dnsproxy:debug,invalid"),
+		Entry("a valid pair followed by an unknown level", "dnsproxy:debug,xds:verbose"),
+		Entry("unknown level", "dnsproxy:verbose"),
+		Entry("empty component", ":debug"),
+		Entry("empty component and level", ":"),
+		Entry("empty level", "dnsproxy:"),
+		Entry("more overrides than the registry allows", tooManyOverrides()),
+		Entry("invalid component name", "dns proxy:debug"),
+	)
+})
+
+func tooManyOverrides() string {
+	pairs := make([]string, 0, kuma_log.MaxOverrides+1)
+	for i := range kuma_log.MaxOverrides + 1 {
+		pairs = append(pairs, fmt.Sprintf("c%d:debug", i))
+	}
+	return strings.Join(pairs, ",")
+}

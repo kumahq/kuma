@@ -34,8 +34,10 @@ func GatewayIPV6CNIV2() {
 			Install(democlient.Install(
 				democlient.WithNamespace(namespace),
 				democlient.WithMesh(meshName),
+				// A gateway is an ordinary proxy whose listen ports are
+				// excluded from inbound redirection.
 				democlient.WithPodAnnotations(map[string]string{
-					metadata.KumaGatewayAnnotation: "enabled",
+					metadata.KumaTrafficExcludeInboundPorts: "3000",
 				}),
 			)).
 			Install(testserver.Install(

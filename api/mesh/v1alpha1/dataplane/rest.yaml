@@ -37,11 +37,17 @@ components:
                   $ref: '#/components/schemas/DataplaneItem'
                 type: array
               next:
-                description: URL to the next page
-                type: string
+                description: URL to the next page, or null when this is the last page
+                type:
+                - string
+                - "null"
               total:
                 description: The total number of entities
                 type: number
+            required:
+            - total
+            - items
+            - next
             type: object
       description: List
   schemas:
@@ -97,32 +103,6 @@ components:
                 port:
                   description: Port on which Envoy Admin API server will be listening
                   type: integer
-              type: object
-            gateway:
-              description: Gateway describes a configuration of the gateway of the
-                data plane proxy.
-              properties:
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: |-
-                    Tags associated with a gateway of this data plane to, e.g.
-                    `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is
-                    mandatory.
-                  type: object
-                type:
-                  description: |-
-                    Type of gateway this data plane proxy manages.
-
-                    The only supported type is `DELEGATED`: an independently deployed proxy
-                    (e.g., Kong, Contour, etc) that receives inbound traffic that is not
-                    proxied by Kuma, and it sends outbound traffic into the data plane
-                    proxy.
-
-                    See https://kuma.io/docs/latest/explore/gateway/ for more information.
-                  enum:
-                  - DELEGATED
-                  type: string
               type: object
             inbound:
               description: |-
@@ -244,7 +224,7 @@ components:
             listeners:
               description: |-
                 Listeners describes zone proxy listeners embedded in this Dataplane.
-                Listeners may coexist with inbounds and gateways.
+                Listeners may coexist with inbounds.
               items:
                 description: Listener describes a zone proxy listener (ZoneIngress
                   or ZoneEgress) embedded in a regular Dataplane.
@@ -293,7 +273,8 @@ components:
                     description: |-
                       IP on which the consumed service will be available to this data plane
                       proxy. On Kubernetes, it's usually ClusterIP of a Service or PodIP of a
-                      Headless Service. Defaults to 127.0.0.1
+                      Headless Service. When left out, the control plane sets it to
+                      127.0.0.1, so a Dataplane read back from the API always carries one.
                     type: string
                   backendRef:
                     description: BackendRef is a way to target MeshService.
@@ -324,6 +305,8 @@ components:
                       proxy. When transparent proxying is not used, Envoy will bind to this
                       port.
                     type: integer
+                required:
+                - address
                 type: object
               type: array
             transparentProxying:
@@ -340,15 +323,6 @@ components:
                   items:
                     type: string
                   type: array
-                ipFamilyMode:
-                  description: The IP family mode to enable for. Can be "IPv4" or
-                    "DualStack".
-                  enum:
-                  - UnSpecified
-                  - DualStack
-                  - IPv4
-                  - IPv6
-                  type: string
                 reachableBackends:
                   description: |-
                     Reachable backend via transparent proxy when running with
@@ -360,35 +334,29 @@ components:
                       items:
                         properties:
                           kind:
-                            description: "Type of the backend: MeshService, MeshExternalService
-                              or MeshMultiZoneService\n\n\t+required"
+                            description: 'Type of the backend: MeshService, MeshExternalService
+                              or MeshMultiZoneService'
                             type: string
                           labels:
                             additionalProperties:
                               type: string
-                            description: "Labels used to select backends\n\n\t+optional"
+                            description: Labels used to select backends
                             type: object
                           name:
-                            description: "Name of the backend.\n\n\t+optional"
+                            description: Name of the backend.
                             type: string
                           namespace:
-                            description: "Namespace of the backend. Might be empty\n\n\t+optional"
+                            description: Namespace of the backend. Might be empty
                             type: string
                           port:
-                            description: "Port of the backend.\n\n\t+optional"
+                            description: Port of the backend.
                             format: uint32
                             type: integer
+                        required:
+                        - kind
                         type: object
                       type: array
                   type: object
-                redirectPortInbound:
-                  description: Port on which all inbound traffic is being transparently
-                    redirected.
-                  type: integer
-                redirectPortOutbound:
-                  description: Port on which all outbound traffic is being transparently
-                    redirected.
-                  type: integer
               type: object
           type: object
         type:
@@ -404,6 +372,46 @@ info:
   version: v1alpha1
 openapi: 3.1.0
 paths:
+  /dataplanes:
+    get:
+      operationId: getDataplaneListAllMeshes
+      parameters:
+      - description: offset in the list of entities
+        in: query
+        name: offset
+        required: false
+        schema:
+          example: 0
+          type: integer
+      - description: the number of items per page
+        in: query
+        name: size
+        required: false
+        schema:
+          default: 100
+          maximum: 1000
+          minimum: 1
+          type: integer
+      - description: filter by labels when multiple filters are present, they are
+          ANDed
+        example:
+          label.k8s.kuma.io/namespace: my-ns
+        in: query
+        name: filter
+        required: false
+        schema:
+          properties:
+            key:
+              type: string
+            value:
+              type: string
+          type: object
+      responses:
+        "200":
+          $ref: '#/components/responses/DataplaneList'
+      summary: Returns a list of Dataplane across all meshes.
+      tags:
+      - Dataplane
   /meshes/{mesh}/dataplanes:
     get:
       operationId: getDataplaneList

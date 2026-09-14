@@ -1,0 +1,2 @@
+."components"."schemas"."FakeResourceFakeExtensionConfig" = {"description":"Fake config","properties":{"field":{"type":"string"}},"type":"object"}
+  | ."components"."schemas"."FakeResourceItem"."properties"."spec"."properties"."extension".oneOf = [{"properties":{"config":{"$ref":"#/components/schemas/FakeResourceFakeExtensionConfig"},"type":{"const":"fake"}},"title":"fake"},{"description":"An extension this control plane does not ship. Its configuration is not described here.","properties":{"type":{"not":{"enum":["fake"]}}},"title":"Other"}]

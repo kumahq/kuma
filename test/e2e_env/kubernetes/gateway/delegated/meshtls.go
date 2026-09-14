@@ -45,7 +45,7 @@ spec:
 			)).To(Succeed())
 		})
 
-		XIt("should not break communication once switched to TLS 1.3", func() {
+		It("should not break communication once switched to TLS 1.3", func() {
 			// check that communication to test-server works
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
@@ -59,6 +59,21 @@ spec:
 
 			// change TLS version to 1.3
 			Expect(framework.YamlK8s(meshTls)(kubernetes.Cluster)).To(Succeed())
+
+			// check that the policy reached the data path the gateway uses.
+			// The gateway proxy has no inbounds of its own, so mesh traffic
+			// entering through it is secured by the backend's inbound.
+			Eventually(func(g Gomega) {
+				stdout, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput(
+					"inspect", "dataplane",
+					"-m", config.Mesh,
+					fmt.Sprintf("test-server-0.%s", config.Namespace),
+					"--type=config-dump",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring(`"tls_minimum_protocol_version": "TLSv1_3"`))
+				g.Expect(stdout).To(ContainSubstring(`"tls_maximum_protocol_version": "TLSv1_3"`))
+			}, "30s", "1s").Should(Succeed())
 
 			// check that communication to test-server works
 			Eventually(func(g Gomega) {

@@ -48,9 +48,9 @@ func DefaultGlobalConfig() *GlobalConfig {
 			NackBackoff:              config_types.Duration{Duration: 5 * time.Second},
 			LogPayloads:              false,
 			EventBasedWatchdog: GlobalEventBasedWatchdogConfig{
-				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
-				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
-				DelayFullResync:    false,
+				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+				DelayFullResync:    true,
 			},
 			Tracing: KDSServerTracing{
 				Enabled: true,
@@ -69,8 +69,6 @@ type ZoneConfig struct {
 	GlobalAddress string `json:"globalAddress,omitempty" envconfig:"kuma_multizone_zone_global_address"`
 	// KDS Configuration
 	KDS *KdsClientConfig `json:"kds,omitempty"`
-	// DisableOriginLabelValidation disables validation of the origin label when applying resources on Zone CP
-	DisableOriginLabelValidation bool `json:"disableOriginLabelValidation,omitempty" envconfig:"kuma_multizone_zone_disable_origin_label_validation"`
 }
 
 func (r *ZoneConfig) Sanitize() {
@@ -128,12 +126,11 @@ func DefaultZoneConfig() *ZoneConfig {
 			NackBackoff:    config_types.Duration{Duration: 5 * time.Second},
 			LogPayloads:    false,
 			EventBasedWatchdog: ZoneEventBasedWatchdogConfig{
-				FlushInterval:      config_types.Duration{Duration: 1 * time.Second},
-				FullResyncInterval: config_types.Duration{Duration: 1 * time.Second},
-				DelayFullResync:    false,
+				FlushInterval:      config_types.Duration{Duration: 5 * time.Second},
+				FullResyncInterval: config_types.Duration{Duration: 1 * time.Minute},
+				DelayFullResync:    true,
 			},
 		},
-		DisableOriginLabelValidation: false,
 	}
 }
 

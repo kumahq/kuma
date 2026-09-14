@@ -1,0 +1,2 @@
+."components"."schemas"."FakeResourceRoute53ExtensionConfig" = {"type":"object"}
+  | ."components"."schemas"."FakeResourceItem"."properties"."spec"."properties"."extension".oneOf = [{"properties":{"config":{"$ref":"#/components/schemas/FakeResourceRoute53ExtensionConfig"},"type":{"const":"Route53"}},"title":"Route53"},{"description":"An extension this control plane does not ship. Its configuration is not described here.","properties":{"type":{"not":{"enum":["Route53"]}}},"title":"Other"}]

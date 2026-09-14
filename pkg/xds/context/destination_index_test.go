@@ -33,10 +33,10 @@ var _ = Describe("DestinationIndex", func() {
 					mesh_proto.ZoneTag:          "zone-1",
 				}).
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
-				WithTransparentProxying(15001, 15006, "").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				Build()
 
+			dp.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
 			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
 				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
 					{
@@ -67,10 +67,10 @@ var _ = Describe("DestinationIndex", func() {
 			dp := builders.Dataplane().
 				WithName("dp-1").
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
-				WithTransparentProxying(15001, 15006, "").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				Build()
 
+			dp.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
 			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
 				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
 					{
@@ -108,10 +108,10 @@ var _ = Describe("DestinationIndex", func() {
 					mesh_proto.ZoneTag:          "zone-1",
 				}).
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
-				WithTransparentProxying(15001, 15006, "").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				Build()
 
+			dp.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
 			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
 				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
 					{
@@ -149,10 +149,10 @@ var _ = Describe("DestinationIndex", func() {
 					mesh_proto.ZoneTag:          "zone-1",
 				}).
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
-				WithTransparentProxying(15001, 15006, "").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				Build()
 
+			dp.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
 			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
 				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
 					{
@@ -188,7 +188,7 @@ var _ = Describe("DestinationIndex", func() {
 					mesh_proto.ZoneTag:          "zone-1",
 				}).
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				AddOutbound(
 					builders.Outbound().
 						WithPort(10001).
@@ -222,10 +222,10 @@ var _ = Describe("DestinationIndex", func() {
 					mesh_proto.ZoneTag:          "zone-1",
 				}).
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "web").
-				WithTransparentProxying(15001, 15006, "").
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
 				Build()
 
+			dp.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
 			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
 				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
 					{

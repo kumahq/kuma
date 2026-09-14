@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"fmt"
 	"maps"
 	"strconv"
 	"strings"
@@ -15,14 +14,6 @@ const (
 	// KumaSidecarInjectionAnnotation defines the label that enables or disables
 	// sidecar injection on Pods and Namespaces.
 	KumaSidecarInjectionAnnotation = "kuma.io/sidecar-injection"
-
-	// KumaGatewayAnnotation marks a delegated gateway pod. It is parsed as a
-	// boolean, so inbound listeners and inbound redirection are skipped for
-	// "enabled"/"true"/"yes" only.
-	KumaGatewayAnnotation = "kuma.io/gateway"
-
-	// KumaTagsAnnotation holds a JSON representation of desired tags
-	KumaTagsAnnotation = "kuma.io/tags"
 
 	// KumaDirectAccess defines a comma-separated list of Services that will be accessed directly
 	KumaDirectAccess = "kuma.io/direct-access-services"
@@ -71,6 +62,11 @@ const (
 	KumaEnvoyLogLevel          = "kuma.io/envoy-log-level"
 	KumaEnvoyComponentLogLevel = "kuma.io/envoy-component-log-level"
 
+	// KumaComponentLogLevel raises the log level of individual kuma-dp
+	// components without raising it for the whole sidecar. Comma separated
+	// component:level pairs, for example "dnsproxy:debug".
+	KumaComponentLogLevel = "kuma.io/component-log-level"
+
 	// KumaInitFirst allows to specify whether the init container should be prepended or appended to the existing
 	// list of init containers
 	KumaInitFirst = "kuma.io/init-first"
@@ -105,28 +101,6 @@ type Deprecation struct {
 	Message string
 }
 
-func NewReplaceByDeprecation(old, n string, removed bool) Deprecation {
-	msg := fmt.Sprintf("'%s' is being replaced by: '%s'", old, n)
-	if removed {
-		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored, use '%s' instead", old, n)
-	}
-	return Deprecation{
-		Key:     old,
-		Message: msg,
-	}
-}
-
-func NewDeprecation(old string, removed bool) Deprecation {
-	msg := fmt.Sprintf("'%s' will be removed in a future release", old)
-	if removed {
-		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored, please see documentation on how to migrate", old)
-	}
-	return Deprecation{
-		Key:     old,
-		Message: msg,
-	}
-}
-
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
 const (
 	KumaSidecarInjectedAnnotation       = "kuma.io/sidecar-injected"
@@ -154,22 +128,6 @@ const (
 	AnnotationYes      = "yes"
 	AnnotationNo       = "no"
 )
-
-// these values are defined for users to specify in configuration:
-// values comes from mesh_proto.Dataplane_Networking_TransparentProxying_IpFamilyMode_name
-const (
-	IpFamilyModeDualStack = "dualstack"
-	IpFamilyModeIPv4      = "ipv4"
-	IpFamilyModeIPv6      = "ipv6"
-)
-
-func BoolToEnabled(b bool) string {
-	if b {
-		return AnnotationEnabled
-	}
-
-	return AnnotationDisabled
-}
 
 type Annotations map[string]string
 

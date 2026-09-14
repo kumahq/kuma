@@ -1,7 +1,7 @@
 targetRef:
   kind: MeshSubset
   tags:
-    kuma.io/service: svc-1
+    kuma.io/display-name: svc-1
 rules:
   - default:
       tlsVersion:
