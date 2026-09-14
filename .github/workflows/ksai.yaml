@@ -1,0 +1,133 @@
+name: KSAI
+
+permissions: {}
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request:
+    types: [review_requested, opened, synchronize, reopened, ready_for_review, edited]
+  pull_request_review:
+    types: [submitted, dismissed]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number to review
+        required: false
+      actor:
+        description: GitHub username to authorize against CODEOWNERS, matching comment authorization
+        required: false
+      issue_number:
+        description: Issue number for plan continuation; empty when work_ref names the work
+        required: false
+      work_ref:
+        description: The work to do when there is no GitHub issue, as jira/<KEY>
+        required: false
+      attempt:
+        description: Runs already spent by this continuation chain
+        required: false
+      stall:
+        description: Consecutive runs that completed no step
+        required: false
+      prev_remaining:
+        description: Unchecked boxes seen by the predecessor, with empty distinct from zero
+        required: false
+
+jobs:
+  ksai:
+    name: run
+    if: >-
+      (github.event_name == 'workflow_dispatch' &&
+      (inputs.pr != '' || inputs.issue_number != '' || inputs.work_ref != '')) ||
+      ((github.event_name == 'issue_comment' ||
+      github.event_name == 'pull_request_review_comment') &&
+      github.event.comment.user.type != 'Bot' &&
+      (contains(github.event.comment.body, '/ksai') ||
+      (vars.KSAI_TRIGGER_PHRASE != '' &&
+      contains(github.event.comment.body, vars.KSAI_TRIGGER_PHRASE)))) ||
+      (github.event_name == 'issue_comment' &&
+      github.event.comment.user.type != 'Bot' &&
+      github.event.issue.pull_request &&
+      github.event.issue.user.type == 'Bot') ||
+      (github.event_name == 'pull_request_review' &&
+      github.event.action == 'submitted' &&
+      github.event.review.user.type != 'Bot' &&
+      github.event.pull_request.draft == true &&
+      github.event.pull_request.user.type == 'Bot' &&
+      github.event.pull_request.head.repo.full_name == github.repository)
+    uses: Kong/ksai-public/.github/workflows/ksai.yml@v3.40.5
+    permissions:
+      contents: write      # checked out by every command, and pushed by one that changes code
+      issues: write        # every command answers with a comment, and reacts to the one that asked
+      pull-requests: write # post reviews and maintain draft pull request plans
+      id-token: write      # mint the GitHub OIDC token for federation
+      checks: read         # read what CI said about the head
+      statuses: read       # the older API a build may report through
+      actions: write       # old caller review dispatch, successor plan runs and test publication
+    with:
+      trigger_phrase: ${{ vars.KSAI_TRIGGER_PHRASE }}
+      runs_on: "${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}"
+      federation_rule_id: fdrl_01JLrZWycNsKnYDHCMENB7GW
+      organization_id: 4ce7a6d3-9549-4842-bd51-1def5eba611b
+      service_account_id: svac_014JPxtfRvpRaSutKqdx618v
+      workspace_id: wrkspc_01Q32UiN3E2G5L1PdtX3P9d3
+      continuation_workflow: ksai.yaml
+      clear_request: true
+      pr: ${{ inputs.pr }}
+      actor: ${{ inputs.actor }}
+      issue_number: ${{ inputs.issue_number }}
+      work_ref: ${{ inputs.work_ref }}
+      attempt: ${{ inputs.attempt }}
+      stall: ${{ inputs.stall }}
+      prev_remaining: ${{ inputs.prev_remaining }}
+    secrets:
+      ksai_private_key: ${{ secrets.KSAI_PRIVATE_KEY }}
+
+  # Requests a review on every pull request these filters admit, and each one spends your team's
+  # Anthropic budget. Tune them with `skip_label`, `require_label`, `review_drafts` and
+  # `review_bots` rather than by editing the condition.
+  #
+  # The head-repository term stays a condition because a fork run is handed no secrets, so the call
+  # could not mint its token anyway.
+  request:
+    if: >-
+      (github.event_name == 'pull_request' &&
+      github.event.action == 'review_requested' &&
+      github.event.requested_team.slug == (vars.KSAI_REVIEW_TEAM || 'ksai') &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.sender.type != 'Bot') ||
+      (github.event_name == 'pull_request' &&
+      contains(fromJSON('["opened", "ready_for_review"]'), github.event.action) &&
+      github.event.pull_request.head.repo.full_name == github.repository)
+    uses: Kong/ksai-public/.github/workflows/ksai-request.yml@v3.40.5
+    permissions:
+      actions: write # dispatch this workflow onto the default branch
+      contents: read # download the actions this call runs, which live in a private repository
+    with:
+      runs_on: "${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}"
+    secrets:
+      ksai_private_key: ${{ secrets.KSAI_PRIVATE_KEY }}
+
+  # Holds a pull request until an approval arrives from somebody who did not contribute to it.
+  # GitHub refuses an approval only from the author, and on everything KSAI opens that is the App -
+  # so without this the person who asked for the work approves it.
+  #
+  # It posts the commit status `KSAI / independent approval` whatever this job is named, and only a
+  # default branch ruleset carrying all three settings enforces it. The job skips fork pull
+  # requests, whose read-only token cannot write a status.
+  approval:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      ((github.event_name == 'pull_request' &&
+      contains(fromJSON('["opened", "synchronize", "reopened", "edited"]'), github.event.action) &&
+      (github.event.action != 'edited' || github.event.changes.base.ref.from != '')) ||
+      (github.event_name == 'pull_request_review' &&
+      github.event.sender.type != 'Bot' &&
+      github.event.review.state != 'commented'))
+    uses: Kong/ksai-public/.github/workflows/ksai-hold.yml@v3.40.5
+    permissions:
+      contents: read       # download the action this call runs, which lives in a private repository
+      pull-requests: write # dismiss an approval from somebody who contributed to the pull request
+      statuses: write      # report the check the ruleset makes required
