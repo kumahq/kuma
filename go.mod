@@ -23,7 +23,7 @@ require (
 	github.com/go-logr/zapr v1.3.0
 	github.com/goburrow/cache v0.1.4
 	github.com/golang-jwt/jwt/v5 v5.3.1
-	github.com/golang-migrate/migrate/v4 v4.19.1
+	github.com/golang-migrate/migrate/v4 v4.20.1
 	// NOTE: We intentionally keep github.com/golang/protobuf/jsonpb (via github.com/golang/protobuf)
 	// because jsonpb's unmarshalling semantics match our expectations and existing payloads, whereas
 	// google.golang.org/protobuf/protojson differs in several edge-cases (e.g., well-known types,
@@ -162,7 +162,6 @@ require (
 	github.com/cyphar/filepath-securejoin v0.7.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
-	github.com/docker/docker v28.5.2+incompatible // indirect
 	github.com/docker/go-connections v0.7.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.10.1 // indirect
