@@ -122,9 +122,6 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 		if originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
 			return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin), string(resourceOrigin)))
 		}
-		if _, ok := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]; ok {
-			return forbiddenResponse(fmt.Sprintf("Operation not allowed. '%s' label is not allowed on a global control plane", mesh_proto.ZoneTag))
-		}
 	case core.Zone:
 		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
 		if originPresent && ns == c.SystemNamespace && resourceOrigin != mesh_proto.ZoneResourceOrigin {
