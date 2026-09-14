@@ -9,6 +9,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/unversioned"
@@ -134,5 +135,38 @@ var _ = Describe("Rest Resource", func() {
 				Expect(*rs.Next).To(Equal("http://localhost:5681/meshes?offset=1"))
 			})
 		})
+	})
+})
+
+var _ = Describe("Rest Resource with a spec that is not a protobuf message", func() {
+	It("should round trip through the inlined representation, so converting a core resource away from protobuf does not move its endpoint to the nested spec form", func() {
+		// given
+		res := &unversioned.Resource{
+			Meta: v1alpha1.ResourceMeta{Type: "MeshTrust", Name: "one", Mesh: "default"},
+			Spec: &meshtrust_api.MeshTrust{
+				TrustDomain: "default.mesh.local",
+				CABundles: []meshtrust_api.CABundle{{
+					Type: meshtrust_api.PemCABundleType,
+					PEM:  &meshtrust_api.PEM{Value: "cert"},
+				}},
+			},
+		}
+
+		// when
+		bytes, err := json.Marshal(res)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(bytes)).To(ContainSubstring(`"trustDomain":"default.mesh.local"`))
+		Expect(string(bytes)).ToNot(ContainSubstring(`"spec"`))
+
+		// when
+		back := &unversioned.Resource{Spec: &meshtrust_api.MeshTrust{}}
+		err = json.Unmarshal(bytes, back)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(back.Meta).To(Equal(res.Meta))
+		Expect(back.Spec).To(Equal(res.Spec))
 	})
 })

@@ -22,7 +22,6 @@ import (
 type inspectDataplanesContext struct {
 	args struct {
 		tags    map[string]string
-		gateway bool
 		ingress bool
 	}
 }
@@ -38,7 +37,7 @@ func newInspectDataplanesCmd(pctx *cmd.RootContext) *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "failed to create a dataplane client")
 			}
-			overviews, err := client.List(context.Background(), pctx.CurrentMesh(), ctx.args.tags, ctx.args.gateway, ctx.args.ingress)
+			overviews, err := client.List(context.Background(), pctx.CurrentMesh(), ctx.args.tags, ctx.args.ingress)
 			if err != nil {
 				return err
 			}
@@ -49,7 +48,6 @@ func newInspectDataplanesCmd(pctx *cmd.RootContext) *cobra.Command {
 	}
 	cmd.PersistentFlags().StringToStringVarP(&ctx.args.tags, "tag", "", map[string]string{}, "filter by tag in format of key=value. You can provide many tags")
 	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
-	cmd.PersistentFlags().BoolVarP(&ctx.args.gateway, "gateway", "", false, "filter gateway dataplanes")
 	cmd.PersistentFlags().BoolVarP(&ctx.args.ingress, "ingress", "", false, "filter ingress dataplanes")
 	return cmd
 }

@@ -25,16 +25,8 @@ func (t *NatTable) Prerouting() *chains.Chain {
 	return t.prerouting
 }
 
-func (t *NatTable) Input() *chains.Chain {
-	return t.input
-}
-
 func (t *NatTable) Output() *chains.Chain {
 	return t.output
-}
-
-func (t *NatTable) Postrouting() *chains.Chain {
-	return t.postrouting
 }
 
 func (t *NatTable) Chains() []*chains.Chain {

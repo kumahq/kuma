@@ -145,25 +145,6 @@ func ConfigureMatchedRoutesOnFilterChain(filterChain *envoy_listener.FilterChain
 	return nil
 }
 
-func EnsureMatchFilterState(listener *envoy_listener.Listener, inboundRules []*rules_inbound.Rule) error {
-	if listener == nil {
-		return nil
-	}
-
-	matchedRules := matchedRouteTimeoutRules(inboundRules)
-	if len(matchedRules) == 0 {
-		return nil
-	}
-
-	for _, filterChain := range listener.FilterChains {
-		if err := ensureMatchFilterStateFilter(filterChain, matchedRules); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func ConfigureMatchedRoutes(routeConfiguration *envoy_route.RouteConfiguration, inboundRules []*rules_inbound.Rule) error {
 	if routeConfiguration == nil {
 		return nil

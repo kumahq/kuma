@@ -662,7 +662,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
 				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
-					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
@@ -696,7 +696,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
 				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
-					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
@@ -737,7 +737,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
 				Resource: NewListenerBuilder(envoy_common.APIV3, inboundNameHTTP).
-					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager(inboundNameHTTP, false, nil, true)).
@@ -853,7 +853,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   "inbound",
 				Origin: metadata.OriginInbound,
 				Resource: NewListenerBuilder(envoy_common.APIV3, inboundName17777).
-					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP, true)).
+					Configure(InboundListener("127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(HttpConnectionManager(inboundName17777, false, nil, true)).
@@ -901,7 +901,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   zoneEgressName,
 				Origin: metadata.OriginEgress,
 				Resource: NewListenerBuilder(envoy_common.APIV3, zoneEgressName).
-					Configure(InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP, true)).
+					Configure(InboundListener("10.20.30.40", 10002, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
@@ -934,7 +934,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Name:   zoneIngressName,
 				Origin: metadata.OriginIngress,
 				Resource: NewListenerBuilder(envoy_common.APIV3, zoneIngressName).
-					Configure(InboundListener("10.20.30.40", 10001, core_xds.SocketAddressProtocolTCP, true)).
+					Configure(InboundListener("10.20.30.40", 10001, core_xds.SocketAddressProtocolTCP)).
 					Configure(FilterChain(
 						NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
@@ -964,7 +964,7 @@ var _ = Describe("MeshAccessLog", func() {
 		}),
 	)
 
-	It("should route opentelemetry backendRef via kuma-dp when feature is enabled", func() {
+	It("should route opentelemetry backendRef via kuma-dp", func() {
 		const (
 			workDir     = "/tmp"
 			backendName = "otel-backend"
@@ -1005,9 +1005,6 @@ var _ = Describe("MeshAccessLog", func() {
 			WithID(*core_xds.BuildProxyId("default", "backend")).
 			WithMetadata(&core_xds.DataplaneMetadata{
 				WorkDir: workDir,
-				Features: xds_types.Features{
-					xds_types.FeatureOtelViaKumaDp: true,
-				},
 			}).
 			WithDataplane(
 				builders.Dataplane().
@@ -1092,9 +1089,6 @@ var _ = Describe("MeshAccessLog", func() {
 			WithID(*core_xds.BuildProxyId("default", "backend")).
 			WithMetadata(&core_xds.DataplaneMetadata{
 				WorkDir: "/tmp",
-				Features: xds_types.Features{
-					xds_types.FeatureOtelViaKumaDp: true,
-				},
 			}).
 			WithDataplane(
 				builders.Dataplane().

@@ -69,6 +69,15 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		"--set", "controller.ingressController.ingressClass="+t.name,
 		"--set", "controller.podLabels.kuma\\.io/mesh="+t.mesh,
 		"--set", "gateway.podLabels.kuma\\.io/mesh="+t.mesh,
+		// The chart used to mark both pods with kuma.io/gateway, which kept
+		// every inbound port out of redirection. Kong and the controller
+		// terminate this traffic themselves, so every port their Services
+		// target is excluded instead: proxy, proxy-tls, admin-tls, status and
+		// the two manager ports on the gateway; webhook, cstatus and cmetrics
+		// on the controller. A port left in would be redirected into Envoy and
+		// served as a mesh inbound, which is not what either pod expects.
+		"--set", "gateway.podAnnotations.traffic\\.kuma\\.io/exclude-inbound-ports=8000\\,8443\\,8444\\,8100\\,8002\\,8445",
+		"--set", "controller.podAnnotations.traffic\\.kuma\\.io/exclude-inbound-ports=8080\\,10254\\,10255",
 		// KONG_UPSTREAM_KEEPALIVE_POOL_SIZE=0 makes every proxied request open a
 		// fresh upstream connection. Without it Kong reuses a handful of pooled
 		// connections, and policies the sidecar applies per connection (TCP

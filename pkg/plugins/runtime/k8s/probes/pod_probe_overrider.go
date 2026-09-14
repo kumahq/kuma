@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -193,18 +192,6 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 	if proxyPortAnnoExists {
 		appProbeProxyPort = proxyPortAnno
 	}
-	gwEnabled, _, err := metadata.Annotations(podAnnotations).GetEnabled(metadata.KumaGatewayAnnotation)
-	if err != nil {
-		return err
-	}
-	if gwEnabled {
-		if proxyPortAnnoExists && proxyPortAnno > 0 {
-			return errors.New("application probe proxies probes can't be enabled in gateway mode")
-		}
-		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = "0"
-		return nil
-	}
-
 	annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = str(appProbeProxyPort)
 	return nil
 }
@@ -218,16 +205,8 @@ func GetApplicationProbeProxyPort(
 		return 0, err
 	}
 
-	gwEnabled, _, _ := annotations.GetEnabled(metadata.KumaGatewayAnnotation)
-
-	switch {
-	case gwEnabled && proxyPort > 0:
-		return 0, errors.New("application probe proxies probes can't be enabled in gateway mode")
-	case gwEnabled:
-		return 0, nil
-	case proxyPortExist:
+	if proxyPortExist {
 		return proxyPort, nil
-	default:
-		return defaultAppProbeProxyPort, nil
 	}
+	return defaultAppProbeProxyPort, nil
 }

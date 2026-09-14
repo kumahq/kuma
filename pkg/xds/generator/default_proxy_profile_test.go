@@ -14,7 +14,9 @@ import (
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	test_xds "github.com/kumahq/kuma/v3/pkg/test/xds"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/v3/pkg/tls"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -23,10 +25,11 @@ import (
 
 var _ = Describe("DefaultProxyProfile", func() {
 	type testCase struct {
-		mesh      string
-		dataplane string
-		expected  string
-		features  xds_types.Features
+		mesh             string
+		dataplane        string
+		expected         string
+		features         xds_types.Features
+		transparentProxy *tproxy_dp.DataplaneConfig
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -96,9 +99,10 @@ var _ = Describe("DefaultProxyProfile", func() {
 							Version: "1.2.0",
 						},
 					},
-					WorkDir:     "/tmp",
-					Features:    given.features,
-					IPv6Enabled: true,
+					WorkDir:          "/tmp",
+					Features:         given.features,
+					IPv6Enabled:      true,
+					TransparentProxy: given.transparentProxy,
 				},
 				EnvoyAdminMTLSCerts: core_xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
@@ -180,12 +184,9 @@ var _ = Describe("DefaultProxyProfile", func() {
               - port: 59200
                 tags:
                   kuma.io/display-name: elastic
-              transparentProxying:
-                redirectPortOutbound: 15001
-                redirectPortInbound: 15006
-                ipFamilyMode: IPv4
 `,
-			expected: "2-envoy-config.golden.yaml",
+			transparentProxy: xds_builders.TransparentProxy("ipv4"),
+			expected:         "2-envoy-config.golden.yaml",
 		}),
 	)
 })

@@ -8,6 +8,7 @@ import (
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -22,6 +23,7 @@ import (
 
 type kriEndpoint struct {
 	k8sMapper       k8s.ResourceMapperFunc
+	k8sSecretMapper k8s.ResourceMapperFunc
 	resManager      manager.ResourceManager
 	resourceAccess  access.ResourceAccess
 	cpMode          config_core.CpMode
@@ -82,13 +84,25 @@ func (k *kriEndpoint) findByKriRoute(withInsight bool) handlerFunc {
 			}
 		}
 
-		res, err := formatResource(resource, request.QueryParameter("format"), k.k8sMapper, identifier.Namespace)
+		mapper := k8sMapperForDescriptor(*descriptor, k.k8sMapper, k.k8sSecretMapper)
+		res, err := formatResource(resource, request.QueryParameter("format"), mapper, identifier.Namespace)
 		if err != nil {
 			return nil, withTitle(err, "Could not format a resource")
 		}
 
 		return res, nil
 	}
+}
+
+func k8sMapperForDescriptor(
+	descriptor core_model.ResourceTypeDescriptor,
+	defaultMapper k8s.ResourceMapperFunc,
+	secretMapper k8s.ResourceMapperFunc,
+) k8s.ResourceMapperFunc {
+	if descriptor.Name == system.SecretType || descriptor.Name == system.GlobalSecretType {
+		return secretMapper
+	}
+	return defaultMapper
 }
 
 func (k *kriEndpoint) getCoreName(id kri.Identifier, desc core_model.ResourceTypeDescriptor) string {

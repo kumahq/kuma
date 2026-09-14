@@ -1,0 +1,26 @@
+metadata:
+  namespace: demo
+  name: a-active
+spec:
+  clusterIP: 192.168.0.2
+  selector:
+    app: example
+    rollouts-pod-template-hash: blue
+  ports:
+    - protocol: TCP
+      appProtocol: http
+      port: 80
+      targetPort: main
+---
+metadata:
+  namespace: demo
+  name: b-preview
+spec:
+  clusterIP: 192.168.0.3
+  selector:
+    app: example
+    rollouts-pod-template-hash: green
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: main

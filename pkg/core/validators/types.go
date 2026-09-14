@@ -99,18 +99,6 @@ func (v *ValidationError) Transform(transformFunc func(Violation) Violation) *Va
 	return &result
 }
 
-func MakeUnimplementedFieldErr(path PathBuilder) ValidationError {
-	var err ValidationError
-	err.AddViolationAt(path, "field is not implemented")
-	return err
-}
-
-func MakeRequiredFieldErr(path PathBuilder) ValidationError {
-	var err ValidationError
-	err.AddViolationAt(path, "cannot be empty")
-	return err
-}
-
 func MakeOneOfErr(fieldA, fieldB, msg string, oneOf []string) ValidationError {
 	var err ValidationError
 	var quoted []string

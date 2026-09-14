@@ -2,7 +2,6 @@ package xds_test
 
 import (
 	"fmt"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -22,7 +21,7 @@ var _ = Describe("Match order", func() {
 	DescribeTable("should generate proper order",
 		func(given validTestCase) {
 			// when
-			orderedFilterChainMatches, _ := plugin_xds.GetOrderedMatchers(given.conf)
+			orderedFilterChainMatches := plugin_xds.GetOrderedMatchers(given.conf)
 
 			yaml, err := yaml.Marshal(orderedFilterChainMatches)
 			// then
@@ -41,6 +40,7 @@ var _ = Describe("Match order", func() {
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "api.example.com",
+						Port:     pointer.To[uint32](9000),
 						Protocol: api.ProtocolType("tls"),
 					},
 					{
@@ -114,6 +114,7 @@ var _ = Describe("Match order", func() {
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "otherexample.com",
+						Port:     pointer.To[uint32](8080),
 						Protocol: api.ProtocolType("http"),
 					},
 					{
@@ -249,23 +250,23 @@ var _ = Describe("Match order", func() {
 			orderedGolden: "ordered-diff-protocols.golden.yaml",
 		}),
 	)
-	type invalidTestCase struct {
-		conf      api.Conf
-		errorMsgs []string
+	type conflictingTestCase struct {
+		conf          api.Conf
+		orderedGolden string
+		warnings      []string
 	}
-	DescribeTable("should fail when many protocols L7 on the same port",
-		func(given invalidTestCase) {
+	DescribeTable("should ignore conflicting matches instead of failing",
+		func(given conflictingTestCase) {
 			// when
-			_, err := plugin_xds.GetOrderedMatchers(given.conf)
+			orderedFilterChainMatches := plugin_xds.GetOrderedMatchers(given.conf)
 
+			yaml, err := yaml.Marshal(orderedFilterChainMatches)
 			// then
-			Expect(err).To(HaveOccurred())
-			for _, errorMsg := range given.errorMsgs {
-				Expect(err.Error()).To(ContainSubstring(errorMsg))
-			}
-			Expect(strings.Split(err.Error(), ";")).To(HaveLen(len(given.errorMsgs)))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(yaml).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.orderedGolden)))
+			Expect(given.conf.Warnings()).To(Equal(given.warnings))
 		},
-		Entry("many different protocols", invalidTestCase{
+		Entry("many different protocols", conflictingTestCase{
 			conf: api.Conf{
 				AppendMatch: &[]api.Match{
 					{
@@ -306,7 +307,208 @@ var _ = Describe("Match order", func() {
 					},
 				},
 			},
-			errorMsgs: []string{"you cannot configure http, http2, grpc on the same port 8080", "you cannot configure http, http2, grpc on the same port 9001"},
+			orderedGolden: "conflicting-protocols-on-the-same-port.golden.yaml",
+			warnings: []string{
+				`ignoring match "another.com", protocols http and http2 produce the same filter chain for domains on port 8080`,
+				`ignoring match "http2.com", protocols http and http2 produce the same filter chain for domains on port 9001`,
+				`ignoring match "grpc.com", protocols http and grpc produce the same filter chain for domains on port 9001`,
+			},
+		}),
+		Entry("a domain without a port, there is no port to resolve the domain on", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "datadog.datadog.svc.cluster.local",
+						Port:     pointer.To[uint32](4317),
+						Protocol: api.ProtocolType("grpc"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "datadog.datadog.svc.cluster.local",
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "otel.datadog.svc.cluster.local",
+						Port:     pointer.To[uint32](0),
+						Protocol: api.ProtocolType("http"),
+					},
+				},
+			},
+			orderedGolden: "domain-without-port.golden.yaml",
+			warnings: []string{
+				`ignoring match "datadog.datadog.svc.cluster.local", a domain needs a port, the sidecar resolves the domain to pin the destination`,
+				`ignoring match "otel.datadog.svc.cluster.local", a domain needs a port, the sidecar resolves the domain to pin the destination`,
+			},
+		}),
+		Entry("a wildcard domain without a port, it keeps following the original destination", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "*.example.com",
+						Port:     pointer.To[uint32](8443),
+						Protocol: api.ProtocolType("tls"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "*.example.com",
+						Protocol: api.ProtocolType("tls"),
+					},
+				},
+			},
+			orderedGolden: "wildcard-domain-without-port.golden.yaml",
+		}),
+		Entry("an IP and a CIDR resolving to the same address range with the same protocol", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "10.0.0.1",
+						Port:     pointer.To[uint32](80),
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "10.0.0.1/32",
+						Port:     pointer.To[uint32](80),
+						Protocol: api.ProtocolType("http"),
+					},
+				},
+			},
+			orderedGolden: "duplicate-ip-and-cidr.golden.yaml",
+			warnings: []string{
+				`ignoring match "10.0.0.1/32", matches "10.0.0.1" and "10.0.0.1/32" produce the same filter chain for 10.0.0.1/32 on port 80`,
+			},
+		}),
+		Entry("tcp and mysql on the same address and port", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "10.1.1.1",
+						Port:     pointer.To[uint32](3306),
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "10.1.1.1",
+						Port:     pointer.To[uint32](3306),
+						Protocol: api.ProtocolType("mysql"),
+					},
+				},
+			},
+			orderedGolden: "duplicate-tcp-and-mysql.golden.yaml",
+			warnings: []string{
+				`ignoring match "10.1.1.1", protocols tcp and mysql produce the same filter chain for 10.1.1.1/32 on port 3306`,
+			},
+		}),
+		Entry("CIDRs with host bits resolving to the same range with different L7 protocols", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "10.0.0.1/24",
+						Port:     pointer.To[uint32](8080),
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "10.0.0.0/24",
+						Port:     pointer.To[uint32](8080),
+						Protocol: api.ProtocolType("grpc"),
+					},
+				},
+			},
+			orderedGolden: "duplicate-cidr-host-bits.golden.yaml",
+			warnings: []string{
+				`ignoring match "10.0.0.0/24", protocols http and grpc produce the same filter chain for 10.0.0.0/24 on port 8080`,
+			},
+		}),
+		Entry("a match without a port duplicating an explicit chain of the same protocol", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "192.168.0.1",
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "192.168.0.1/32",
+						Port:     pointer.To[uint32](9090),
+						Protocol: api.ProtocolType("tcp"),
+					},
+				},
+			},
+			orderedGolden: "duplicate-all-ports-and-explicit-port.golden.yaml",
+			warnings: []string{
+				`matches "192.168.0.1/32" and "192.168.0.1" produce the same filter chain for 192.168.0.1/32 on port 9090, matches with protocol tcp and no port are not applied there`,
+			},
+		}),
+		Entry("IPv6 spelled differently resolving to the same address", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "0:0:0:0:0:0:0:1",
+						Port:     pointer.To[uint32](443),
+						Protocol: api.ProtocolType("tls"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "::1/128",
+						Port:     pointer.To[uint32](443),
+						Protocol: api.ProtocolType("tls"),
+					},
+				},
+			},
+			orderedGolden: "duplicate-ipv6-forms.golden.yaml",
+			warnings: []string{
+				`ignoring match "::1/128", matches "0:0:0:0:0:0:0:1" and "::1/128" produce the same filter chain for ::1/128 on port 443`,
+			},
+		}),
+		Entry("an IPv4-mapped IPv6 address next to the IPv4 address it encodes, they get a chain on a different listener", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "::ffff:10.0.0.1",
+						Port:     pointer.To[uint32](443),
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "10.0.0.1",
+						Port:     pointer.To[uint32](443),
+						Protocol: api.ProtocolType("tcp"),
+					},
+				},
+			},
+			orderedGolden: "ipv4-mapped-and-ipv4.golden.yaml",
+		}),
+		Entry("a protocol the generator doesn't know, it builds an HTTP chain for it", conflictingTestCase{
+			conf: api.Conf{
+				AppendMatch: &[]api.Match{
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "example.com",
+						Port:     pointer.To[uint32](8080),
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "other.com",
+						Port:     pointer.To[uint32](8080),
+						Protocol: api.ProtocolType("foo"),
+					},
+				},
+			},
+			orderedGolden: "unsupported-protocol-conflict.golden.yaml",
+			warnings: []string{
+				`ignoring match "other.com", protocols http and foo produce the same filter chain for domains on port 8080`,
+			},
 		}),
 	)
 })

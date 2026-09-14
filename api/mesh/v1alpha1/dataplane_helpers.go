@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"encoding"
 	"fmt"
-	"maps"
 	"net"
 	"reflect"
 	"sort"
@@ -18,13 +17,12 @@ const (
 	K8sKumaIOPrefix = "k8s.kuma.io/"
 )
 
-// WildcardHostname matches any hostname when used in hostname-based matching.
-const WildcardHostname = "*"
+// DefaultOutboundAddress is the address an outbound listener is bound to when
+// the Dataplane does not set one explicitly.
+const DefaultOutboundAddress = "127.0.0.1"
 
 const (
 	KubeNamespaceTag = "k8s.kuma.io/namespace"
-	KubeServiceTag   = "k8s.kuma.io/service-name"
-	KubePortTag      = "k8s.kuma.io/service-port"
 	// KDSSyncLabel a label that controls properties of the KDS sync.
 	// currently only disabled/enabled is supported
 	KDSSyncLabel = "kuma.io/kds-sync"
@@ -59,18 +57,6 @@ const (
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
 	ProtocolTag = "kuma.io/protocol"
-	// InstanceTag is set only for Dataplanes that implements headless services
-	InstanceTag = "kuma.io/instance"
-
-	// External service tag
-	ExternalServiceTag = "kuma.io/external-service-name"
-
-	// Listener tag is used to select Gateway listeners
-	ListenerTag = "gateways.kuma.io/listener-name"
-
-	// Port tag is used to select Gateway listeners
-	PortTag = "gateways.kuma.io/listener-port"
-
 	// Used for Service-less dataplanes
 	TCPPortReserved = 49151 // IANA Reserved
 
@@ -104,15 +90,6 @@ const (
 
 	// ListenerZoneEgressLabel is auto-computed when a Dataplane has at least one ZoneEgress listener.
 	ListenerZoneEgressLabel = "kuma.io/listener-zoneegress"
-
-	// GatewayLabel marks a Dataplane as a delegated gateway: a proxy that
-	// receives inbound traffic Kuma does not proxy and sends outbound traffic
-	// into the mesh. On Kubernetes it is set from the pod's kuma.io/gateway
-	// annotation; on Universal it is set by the user.
-	GatewayLabel = "kuma.io/gateway"
-
-	// GatewayEnabled is the only value of GatewayLabel that marks a gateway.
-	GatewayEnabled = "true"
 )
 
 type ResourceOrigin string
@@ -259,7 +236,7 @@ func (n *Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networkin
 	if outbound.Address != "" {
 		oface.DataplaneIP = outbound.Address
 	} else {
-		oface.DataplaneIP = "127.0.0.1"
+		oface.DataplaneIP = DefaultOutboundAddress
 	}
 	return oface
 }
@@ -403,76 +380,11 @@ func (s TagSelector) MatchesFuzzy(tags map[string]string) bool {
 	return true
 }
 
-func (s TagSelector) Rank() TagSelectorRank {
-	var r TagSelectorRank
-
-	for _, value := range s {
-		if value == MatchAllTag {
-			r.WildcardMatches++
-		} else {
-			r.ExactMatches++
-		}
-	}
-	return r
-}
-
 func (s TagSelector) Equal(other TagSelector) bool {
 	return len(s) == 0 && len(other) == 0 || len(s) == len(other) && reflect.DeepEqual(s, other)
 }
 
 // Set of tags that only allows a single value per key.
-type SingleValueTagSet map[string]string
-
-func (t SingleValueTagSet) Keys() []string {
-	keys := make([]string, 0, len(t))
-	for key := range t {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
-}
-
-func Merge[TagSet ~map[string]string](other ...TagSet) TagSet {
-	// Small optimization, to not iterate over the whole map if only one
-	// argument is provided
-	if len(other) == 1 {
-		return other[0]
-	}
-
-	merged := TagSet{}
-
-	for _, t := range other {
-		maps.Copy(merged, t)
-	}
-
-	return merged
-}
-
-// MergeAs is just syntactic sugar which converts merged result to assumed type
-func MergeAs[R ~map[string]string, T ~map[string]string](other ...T) R {
-	return R(Merge(other...))
-}
-
-func (t SingleValueTagSet) Exclude(key string) SingleValueTagSet {
-	rv := SingleValueTagSet{}
-	for k, v := range t {
-		if k == key {
-			continue
-		}
-		rv[k] = v
-	}
-	return rv
-}
-
-func (t SingleValueTagSet) String() string {
-	var tags []string
-	for tag, value := range t {
-		tags = append(tags, fmt.Sprintf("%s=%s", tag, value))
-	}
-	sort.Strings(tags)
-	return strings.Join(tags, " ")
-}
-
 // Set of tags that allows multiple values per key.
 type MultiValueTagSet map[string]map[string]bool
 
@@ -497,22 +409,6 @@ func (t MultiValueTagSet) Values(key string) []string {
 	return result
 }
 
-func (t MultiValueTagSet) UniqueValues(key string) []string {
-	if t == nil {
-		return nil
-	}
-	alreadyFound := map[string]bool{}
-	var result []string
-	for value := range t[key] {
-		if !alreadyFound[value] {
-			result = append(result, value)
-			alreadyFound[value] = true
-		}
-	}
-	sort.Strings(result)
-	return result
-}
-
 func MultiValueTagSetFrom(data map[string][]string) MultiValueTagSet {
 	set := MultiValueTagSet{}
 	for tagName, values := range data {
@@ -526,13 +422,6 @@ func MultiValueTagSetFrom(data map[string][]string) MultiValueTagSet {
 		}
 	}
 	return set
-}
-
-// IsDelegatedGateway reports whether a proxy with these labels fronts a
-// delegated gateway. The kuma.io/gateway label is the signal; the control
-// plane backfills it from the deprecated networking.gateway field.
-func IsDelegatedGateway(labels map[string]string) bool {
-	return labels[GatewayLabel] == GatewayEnabled
 }
 
 func (t MultiValueTagSet) String() string {

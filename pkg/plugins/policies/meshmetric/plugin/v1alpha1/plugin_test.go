@@ -16,7 +16,6 @@ import (
 	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
@@ -566,7 +565,7 @@ var _ = Describe("MeshMetric", func() {
 		})
 	})
 
-	Describe("pipe mode (FeatureOtelViaKumaDp)", func() {
+	Describe("pipe mode", func() {
 		const (
 			workDir     = "/tmp"
 			backendName = "otel-backend"
@@ -596,9 +595,6 @@ var _ = Describe("MeshMetric", func() {
 				).
 				WithMetadata(&core_xds.DataplaneMetadata{
 					WorkDir: workDir,
-					Features: xds_types.Features{
-						xds_types.FeatureOtelViaKumaDp: true,
-					},
 				}).
 				WithPolicies(xds_builders.MatchedPolicies().
 					WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
@@ -670,13 +666,6 @@ var _ = Describe("MeshMetric", func() {
 			}),
 			v1alpha1.ProxyRoleSidecar,
 		),
-		Entry("gateway by label", gatewayDpp(nil), v1alpha1.ProxyRoleGateway),
-		Entry("gateway with inbounds (gateway wins)",
-			gatewayDpp(&mesh_proto.Dataplane_Networking{
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{Port: 8080}},
-			}),
-			v1alpha1.ProxyRoleGateway,
-		),
 		Entry("zone ingress only",
 			dppWithNetworking(&mesh_proto.Dataplane_Networking{
 				Listeners: []*mesh_proto.Dataplane_Networking_Listener{
@@ -710,14 +699,4 @@ func dppWithNetworking(networking *mesh_proto.Dataplane_Networking) *core_mesh.D
 		Meta: &test_model.ResourceMeta{Name: "dpp", Mesh: "default"},
 		Spec: &mesh_proto.Dataplane{Networking: networking},
 	}
-}
-
-func gatewayDpp(networking *mesh_proto.Dataplane_Networking) *core_mesh.DataplaneResource {
-	dpp := dppWithNetworking(networking)
-	dpp.Meta = &test_model.ResourceMeta{
-		Name:   "dpp",
-		Mesh:   "default",
-		Labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
-	}
-	return dpp
 }

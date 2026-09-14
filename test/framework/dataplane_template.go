@@ -44,8 +44,6 @@ type DataplaneTemplateData struct {
 
 // TransparentProxyConfig represents transparent proxy configuration
 type TransparentProxyConfig struct {
-	RedirectPortInbound  string
-	RedirectPortOutbound string
 	// ReachableBackends is the raw YAML body rendered under
 	// networking.transparentProxying.reachableBackends (e.g. a `refs:` list).
 	ReachableBackends string
@@ -94,14 +92,10 @@ networking:
 {{- if .Protocol }}
     protocol: {{ .Protocol }}
 {{- end }}
-{{- if .TransparentProxy }}
+{{- if and .TransparentProxy .TransparentProxy.ReachableBackends }}
   transparentProxying:
-    redirectPortInbound: {{ .TransparentProxy.RedirectPortInbound }}
-    redirectPortOutbound: {{ .TransparentProxy.RedirectPortOutbound }}
-{{- if .TransparentProxy.ReachableBackends }}
     reachableBackends:
 {{ .TransparentProxy.ReachableBackends }}
-{{- end }}
 {{- end }}
 {{- end }}
 {{- if .AppendConfig }}

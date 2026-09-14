@@ -218,49 +218,68 @@ func (r *resourceInspectHandler) configForProxyParams(request *restful.Request) 
 	return params, nil
 }
 
+func (r *resourceInspectHandler) loadDataplaneForInspection(request *restful.Request) (*core_mesh.DataplaneResource, *xds_context.BaseMeshContext, error) {
+	dataplaneName := request.PathParameter("name")
+	meshName, err := r.meshFromRequest(request)
+	if err != nil {
+		return nil, nil, withTitle(err, "Failed to retrieve Mesh")
+	}
+
+	if err := r.resourceAccess.ValidateGet(
+		request.Request.Context(),
+		core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
+		r.descriptor,
+		user.FromCtx(request.Request.Context()),
+	); err != nil {
+		return nil, nil, withTitle(err, "Access Denied")
+	}
+
+	resource := r.descriptor.NewObject()
+	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(dataplaneName, meshName)); err != nil {
+		return nil, nil, withTitle(err, fmt.Sprintf("Could not retrieve %s", r.descriptor.Name))
+	}
+	if r.descriptor.Name != core_mesh.DataplaneType {
+		return nil, nil, withTitle(fmt.Errorf("rules not supported for type %s", r.descriptor.Name), "Unsupported resource type")
+	}
+	dataplane := resource.(*core_mesh.DataplaneResource)
+
+	baseMeshContext, err := r.meshContextBuilder.BuildBaseMeshContextIfChanged(request.Request.Context(), meshName, nil)
+	if err != nil {
+		return nil, nil, withTitle(err, "Failed to build Mesh context")
+	}
+
+	return dataplane, baseMeshContext, nil
+}
+
+func matchPolicies(plugins []core_plugins.RegisteredPolicyPlugin, dataplane *core_mesh.DataplaneResource, resources xds_context.Resources) ([]core_xds.TypedMatchingPolicies, error) {
+	var matchedPolicies []core_xds.TypedMatchingPolicies
+	for _, policyPlugin := range plugins {
+		matched, err := policyPlugin.Plugin.MatchedPolicies(dataplane, resources)
+		if err != nil {
+			return nil, withTitle(err, fmt.Sprintf("could not apply policy plugin %s", policyPlugin.Name))
+		}
+		if matched.Type == "" {
+			return nil, withTitle(fmt.Errorf("matched policy didn't set type for policy plugin %s", policyPlugin.Name), "could not apply policy plugin")
+		}
+
+		matchedPolicies = append(matchedPolicies, matched)
+	}
+	return matchedPolicies, nil
+}
+
 func (r *resourceInspectHandler) getPoliciesConf(plugins []core_plugins.RegisteredPolicyPlugin, mapToResponse matchedPoliciesToResponse) handlerFunc {
 	return func(request *restful.Request) (any, error) {
-		dataplaneName := request.PathParameter("name")
-		meshName, err := r.meshFromRequest(request)
+		dataplane, baseMeshContext, err := r.loadDataplaneForInspection(request)
 		if err != nil {
-			return nil, withTitle(err, "Failed to retrieve Mesh")
+			return nil, err
 		}
-
-		if err := r.resourceAccess.ValidateGet(
-			request.Request.Context(),
-			core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
-			r.descriptor,
-			user.FromCtx(request.Request.Context()),
-		); err != nil {
-			return nil, withTitle(err, "Access Denied")
-		}
-
-		resource := r.descriptor.NewObject()
-		if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(dataplaneName, meshName)); err != nil {
-			return nil, withTitle(err, fmt.Sprintf("Could not retrieve %s", r.descriptor.Name))
-		}
-		dataplane := resource.(*core_mesh.DataplaneResource)
-
-		baseMeshContext, err := r.meshContextBuilder.BuildBaseMeshContextIfChanged(request.Request.Context(), meshName, nil)
+		resources := baseMeshContext.Resources()
+		matchedPolicies, err := matchPolicies(plugins, dataplane, resources)
 		if err != nil {
-			return nil, withTitle(err, "Failed to build Mesh context")
+			return nil, err
 		}
 
-		var matchedPolicies []core_xds.TypedMatchingPolicies
-		allPlugins := plugins
-		for _, policyPlugin := range allPlugins {
-			res, err := policyPlugin.Plugin.MatchedPolicies(dataplane, baseMeshContext.Resources())
-			if err != nil {
-				return nil, withTitle(err, fmt.Sprintf("could not apply policy plugin %s", policyPlugin.Name))
-			}
-			if res.Type == "" {
-				return nil, withTitle(fmt.Errorf("matched policy didn't set type for policy plugin %s", policyPlugin.Name), "could not apply policy plugin")
-			}
-
-			matchedPolicies = append(matchedPolicies, res)
-		}
-
-		out, err := mapToResponse(matchedPolicies, request, baseMeshContext.Mesh, dataplane, baseMeshContext.Resources())
+		out, err := mapToResponse(matchedPolicies, request, baseMeshContext.Mesh, dataplane, resources)
 		if err != nil {
 			return nil, withTitle(err, "Failed building response")
 		}
@@ -451,151 +470,120 @@ func originToKRI(origin core_model.ResourceMeta, policyType core_model.ResourceT
 
 func (r *resourceInspectHandler) rulesForResource() handlerFunc {
 	return func(request *restful.Request) (any, error) {
-		resourceName := request.PathParameter("name")
-		meshName, err := r.meshFromRequest(request)
+		dataplane, baseMeshContext, err := r.loadDataplaneForInspection(request)
 		if err != nil {
-			return nil, withTitle(err, "Failed to retrieve Mesh")
+			return nil, err
 		}
-
-		if err := r.resourceAccess.ValidateGet(
-			request.Request.Context(),
-			core_model.ResourceKey{Mesh: meshName, Name: resourceName},
-			r.descriptor,
-			user.FromCtx(request.Request.Context()),
-		); err != nil {
-			return nil, withTitle(err, "Access Denied")
-		}
-
-		resource := r.descriptor.NewObject()
-		if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(resourceName, meshName)); err != nil {
-			return nil, withTitle(err, fmt.Sprintf("Could not retrieve %s", r.descriptor.Name))
-		}
-		var dp *core_mesh.DataplaneResource
-		switch r.descriptor.Name {
-		case core_mesh.DataplaneType:
-			dp = resource.(*core_mesh.DataplaneResource)
-		default:
-			return nil, withTitle(fmt.Errorf("rules not supported for type %s", r.descriptor.Name), "Unsupported resource type")
-		}
-		baseMeshContext, err := r.meshContextBuilder.BuildBaseMeshContextIfChanged(request.Request.Context(), meshName, nil)
+		resources := baseMeshContext.Resources()
+		matchedPolicies, err := matchPolicies(core_plugins.Plugins().PolicyPlugins(), dataplane, resources)
 		if err != nil {
-			return nil, withTitle(err, "Failed to build Mesh context")
+			return nil, err
 		}
+		return matchedPoliciesToRulesResponse(matchedPolicies, dataplane), nil
+	}
+}
 
-		resources := xds_context.Resources{
-			MeshLocalResources: baseMeshContext.ResourceMap,
-		}
-		matchesByHash := map[common_api.MatchesHash][]meshhttproute_api.Match{}
-		// Get all the matching policies
-		allPlugins := core_plugins.Plugins().PolicyPlugins()
-		rules := []api_common.InspectRule{}
-		for _, policyPlugin := range allPlugins {
-			res, err := policyPlugin.Plugin.MatchedPolicies(dp, resources)
-			if err != nil {
-				return nil, withTitle(err, fmt.Sprintf("could not apply policy plugin %s", policyPlugin.Name))
-			}
-			if res.Type == "" {
-				return nil, withTitle(fmt.Errorf("matched policy didn't set type for policy plugin %s", policyPlugin.Name), "could not apply policy plugin")
-			}
-			if res.Type == meshhttproute_api.MeshHTTPRouteType {
-				for _, resourceRule := range res.ToRules.ResourceRules {
-					for _, conf := range resourceRule.Conf {
-						if pd, ok := conf.(meshhttproute_api.PolicyDefault); ok {
-							for _, r := range pd.Rules {
-								matchesByHash[meshhttproute_api.HashMatches(r.Matches)] = r.Matches
-							}
+func matchedPoliciesToRulesResponse(matchedPolicies []core_xds.TypedMatchingPolicies, dataplane *core_mesh.DataplaneResource) api_types.InspectRulesResponse {
+	matchesByHash := map[common_api.MatchesHash][]meshhttproute_api.Match{}
+	rules := []api_common.InspectRule{}
+	for _, matched := range matchedPolicies {
+		if matched.Type == meshhttproute_api.MeshHTTPRouteType {
+			for _, resourceRule := range matched.ToRules.ResourceRules {
+				for _, conf := range resourceRule.Conf {
+					if policyDefault, ok := conf.(meshhttproute_api.PolicyDefault); ok {
+						for _, rule := range policyDefault.Rules {
+							matchesByHash[meshhttproute_api.HashMatches(rule.Matches)] = rule.Matches
 						}
 					}
 				}
 			}
+		}
 
-			if len(res.ToRules.ResourceRules) == 0 && len(res.FromRules.InboundRules) == 0 && res.ProxyConf == nil {
+		if len(matched.ToRules.ResourceRules) == 0 && len(matched.FromRules.InboundRules) == 0 && matched.ProxyConf == nil {
+			continue
+		}
+		var proxyRule *api_common.ProxyRule
+		if matched.ProxyConf != nil {
+			proxyRule = &api_common.ProxyRule{
+				Conf:   matched.ProxyConf.Conf,
+				Origin: oapi_helpers.ResourceMetaListToMetaList(matched.Type, matched.ProxyConf.Origin),
+			}
+		}
+
+		getInboundPortName := func(port uint32) *string {
+			if name := dataplane.Spec.GetNetworking().GetInboundForPort(port).GetName(); name != "" {
+				return &name
+			}
+			return nil
+		}
+
+		inboundRules := []api_common.InboundRulesEntry{}
+		for inbound, rulesForInbound := range matched.FromRules.InboundRules {
+			if len(rulesForInbound) == 0 {
 				continue
 			}
-			var proxyRule *api_common.ProxyRule
-			if res.ProxyConf != nil {
-				proxyRule = &api_common.ProxyRule{
-					Conf:   res.ProxyConf.Conf,
-					Origin: oapi_helpers.ResourceMetaListToMetaList(res.Type, res.ProxyConf.Origin),
+			rs := make([]api_common.InboundRule, len(rulesForInbound))
+			for i := range rulesForInbound {
+				rs[i] = api_common.InboundRule{
+					Conf:   []any{rulesForInbound[i].Conf},
+					Match:  rulesForInbound[i].Match,
+					Origin: oapi_helpers.OriginListToResourceRuleOrigin(matched.Type, []common.Origin{rulesForInbound[i].Origin}),
 				}
 			}
-
-			getInboundPortName := func(port uint32) *string {
-				if name := dp.Spec.GetNetworking().GetInboundForPort(port).GetName(); name != "" {
-					return &name
-				}
-				return nil
-			}
-
-			inboundRules := []api_common.InboundRulesEntry{}
-			for inbound, rulesForInbound := range res.FromRules.InboundRules {
-				if len(rulesForInbound) == 0 {
-					continue
-				}
-				rs := make([]api_common.InboundRule, len(rulesForInbound))
-				for i := range rulesForInbound {
-					rs[i] = api_common.InboundRule{
-						Conf:   []any{rulesForInbound[i].Conf},
-						Match:  rulesForInbound[i].Match,
-						Origin: oapi_helpers.OriginListToResourceRuleOrigin(res.Type, []common.Origin{rulesForInbound[i].Origin}),
-					}
-				}
-				inboundRules = append(inboundRules, api_common.InboundRulesEntry{
-					Inbound: api_common.Inbound{
-						Name: getInboundPortName(inbound.Port),
-						Port: int(inbound.Port),
-					},
-					Rules: rs,
-				})
-			}
-			sort.SliceStable(inboundRules, func(i, j int) bool {
-				return inboundRules[i].Inbound.Port < inboundRules[j].Inbound.Port
-			})
-
-			toResourceRules := []api_common.ResourceRule{}
-			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
-				toResourceRules = append(toResourceRules, api_common.ResourceRule{
-					Conf:                resourceRuleItem.Conf,
-					Origin:              oapi_helpers.OriginListToResourceRuleOrigin(res.Type, resourceRuleItem.Origin),
-					ResourceMeta:        oapi_helpers.ResourceMetaToMeta(itemIdentifier.ResourceType, resourceRuleItem.Resource),
-					ResourceSectionName: &resourceRuleItem.ResourceSectionName,
-				})
-			}
-			sort.Slice(toResourceRules, func(i, j int) bool {
-				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
-			})
-
-			if proxyRule == nil && len(toResourceRules) == 0 && len(inboundRules) == 0 && len(res.Warnings) == 0 {
-				// No matches for this policy, keep going...
-				continue
-			}
-			warnings := res.Warnings
-			if warnings == nil {
-				warnings = []string{}
-			}
-			rules = append(rules, api_common.InspectRule{
-				Type:            string(res.Type),
-				ToResourceRules: &toResourceRules,
-				InboundRules:    &inboundRules,
-				ProxyRule:       proxyRule,
-				Warnings:        &warnings,
+			inboundRules = append(inboundRules, api_common.InboundRulesEntry{
+				Inbound: api_common.Inbound{
+					Name: getInboundPortName(inbound.Port),
+					Port: int(inbound.Port),
+				},
+				Rules: rs,
 			})
 		}
-		httpMatches := []api_common.HttpMatch{}
-		for k, v := range matchesByHash {
-			httpMatches = append(httpMatches, api_common.HttpMatch{
-				Match: v,
-				Hash:  string(k),
-			})
-		}
-		sort.Slice(httpMatches, func(i, j int) bool {
-			return httpMatches[i].Hash < httpMatches[j].Hash
+		sort.SliceStable(inboundRules, func(i, j int) bool {
+			return inboundRules[i].Inbound.Port < inboundRules[j].Inbound.Port
 		})
-		out := api_types.InspectRulesResponse{
-			HttpMatches: httpMatches,
-			Resource:    oapi_helpers.ResourceToMeta(resource),
-			Rules:       rules,
+
+		toResourceRules := []api_common.ResourceRule{}
+		for itemIdentifier, resourceRuleItem := range matched.ToRules.ResourceRules {
+			toResourceRules = append(toResourceRules, api_common.ResourceRule{
+				Conf:                resourceRuleItem.Conf,
+				Origin:              oapi_helpers.OriginListToResourceRuleOrigin(matched.Type, resourceRuleItem.Origin),
+				ResourceMeta:        oapi_helpers.ResourceMetaToMeta(itemIdentifier.ResourceType, resourceRuleItem.Resource),
+				ResourceSectionName: &resourceRuleItem.ResourceSectionName,
+			})
 		}
-		return out, nil
+		sort.Slice(toResourceRules, func(i, j int) bool {
+			return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
+		})
+
+		if proxyRule == nil && len(toResourceRules) == 0 && len(inboundRules) == 0 && len(matched.Warnings) == 0 {
+			// No matches for this policy, keep going...
+			continue
+		}
+		warnings := matched.Warnings
+		if warnings == nil {
+			warnings = []string{}
+		}
+		rules = append(rules, api_common.InspectRule{
+			Type:            string(matched.Type),
+			ToResourceRules: &toResourceRules,
+			InboundRules:    &inboundRules,
+			ProxyRule:       proxyRule,
+			Warnings:        &warnings,
+		})
+	}
+	httpMatches := []api_common.HttpMatch{}
+	for hash, matches := range matchesByHash {
+		httpMatches = append(httpMatches, api_common.HttpMatch{
+			Match: matches,
+			Hash:  string(hash),
+		})
+	}
+	sort.Slice(httpMatches, func(i, j int) bool {
+		return httpMatches[i].Hash < httpMatches[j].Hash
+	})
+	return api_types.InspectRulesResponse{
+		HttpMatches: httpMatches,
+		Resource:    oapi_helpers.ResourceToMeta(dataplane),
+		Rules:       rules,
 	}
 }

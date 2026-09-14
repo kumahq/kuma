@@ -630,10 +630,6 @@ func (c Config) InitializeKumaDPUser() (string, error) {
 
 type IPFamilyMode string
 
-func IPFamilyModeFromStringer(s fmt.Stringer) IPFamilyMode {
-	return IPFamilyMode(strings.ToLower(s.String()))
-}
-
 func (e *IPFamilyMode) UnmarshalJSON(bs []byte) error {
 	var value string
 

@@ -8,6 +8,10 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
+	secrets_k8s "github.com/kumahq/kuma/v3/pkg/plugins/secrets/k8s"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 )
 
 func descriptorFor(id kri.Identifier) core_model.ResourceTypeDescriptor {
@@ -17,6 +21,53 @@ func descriptorFor(id kri.Identifier) core_model.ResourceTypeDescriptor {
 }
 
 var _ = Describe("KRI endpoint", func() {
+	DescribeTable("selecting a Kubernetes mapper for secrets",
+		func(resource core_model.Resource, kubernetesStore bool, namespace, expectedNamespace string) {
+			const systemNamespace = "kuma-system"
+			var defaultMapper, secretMapper k8s.ResourceMapperFunc
+			if kubernetesStore {
+				resource.SetMeta(&secrets_k8s.KubernetesMetaAdapter{
+					Name:      resource.GetMeta().GetName(),
+					Namespace: systemNamespace,
+				})
+				defaultMapper = k8s.NewKubernetesMapper(k8s.NewSimpleKubeFactory())
+				secretMapper = secrets_k8s.NewKubernetesMapper()
+			} else {
+				defaultMapper = k8s.NewInferenceMapper(systemNamespace, k8s.NewSimpleKubeFactory())
+				secretMapper = secrets_k8s.NewInferenceMapper(systemNamespace)
+			}
+
+			mapped, err := k8sMapperForDescriptor(resource.Descriptor(), defaultMapper, secretMapper)(resource, namespace)
+
+			Expect(err).ToNot(HaveOccurred())
+			secret, ok := mapped.(*secrets_k8s.Secret)
+			Expect(ok).To(BeTrue())
+			Expect(secret.GetNamespace()).To(Equal(expectedNamespace))
+		},
+		Entry("Secret from Kubernetes with an explicit namespace", builders.Secret().Build(), true, "other", "other"),
+		Entry("Secret from Kubernetes with its stored namespace", builders.Secret().Build(), true, "", "kuma-system"),
+		Entry("GlobalSecret from Kubernetes with an explicit namespace", builders.GlobalSecret().Build(), true, "other", "other"),
+		Entry("GlobalSecret from Kubernetes with its stored namespace", builders.GlobalSecret().Build(), true, "", "kuma-system"),
+		Entry("inferred Secret with an explicit namespace", builders.Secret().Build(), false, "other", "other"),
+		Entry("inferred Secret with the system namespace", builders.Secret().Build(), false, "", "kuma-system"),
+		Entry("inferred GlobalSecret with an explicit namespace", builders.GlobalSecret().Build(), false, "other", "other"),
+		Entry("inferred GlobalSecret with the system namespace", builders.GlobalSecret().Build(), false, "", "kuma-system"),
+	)
+
+	It("selects the default mapper for other resources", func() {
+		defaultMapperCalled := false
+		defaultMapper := func(core_model.Resource, string) (k8s_model.KubernetesObject, error) {
+			defaultMapperCalled = true
+			return nil, nil
+		}
+
+		mapper := k8sMapperForDescriptor(descriptorFor(kri.MustFromString("kri_m____default_")), defaultMapper, nil)
+		_, err := mapper(nil, "")
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(defaultMapperCalled).To(BeTrue())
+	})
+
 	It("should properly generate CoreName on resources synced from different zone", func() {
 		// given
 		cpZone := "kuma-1"

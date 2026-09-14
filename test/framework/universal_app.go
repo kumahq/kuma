@@ -411,6 +411,17 @@ cp %s/envoy /usr/bin/envoy
 		"--binary-path", "/usr/local/bin/envoy",
 	}
 
+	if transparent {
+		if dpVersion != "" && !Config.IPV6 {
+			// older kuma-dp binds its DNS proxy to ::1 in dual-stack mode, which fails with IPv6 disabled
+			tpCfgPath := fmt.Sprintf("/kuma/tproxy-%s.yaml", name)
+			_, _ = fmt.Fprintf(cmd, "echo 'ipFamilyMode: ipv4' > %s\n", tpCfgPath)
+			args = append(args, "--transparent-proxy-config="+tpCfgPath)
+		} else {
+			args = append(args, "--transparent-proxy")
+		}
+	}
+
 	if dpyaml != "" {
 		dpPath := fmt.Sprintf("/kuma-dp-%s.yaml", name)
 		_, _ = fmt.Fprintf(cmd, `cat > %s << 'EOF'

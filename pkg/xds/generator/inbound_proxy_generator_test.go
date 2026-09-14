@@ -13,6 +13,7 @@ import (
 	model "github.com/kumahq/kuma/v3/pkg/core/xds"
 	. "github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -97,10 +98,12 @@ var _ = Describe("InboundProxyGenerator", func() {
 		}),
 		Entry("04. transparent_proxying=true, ip_addresses=2, ports=2", testCase{
 			dataplaneFile: "4-dataplane.input.yaml",
+			dataplaneMeta: &model.DataplaneMetadata{TransparentProxy: xds_builders.TransparentProxy("dualstack")},
 			expected:      "4-envoy-config.golden.yaml",
 		}),
 		Entry("07. transparent_proxying=true, ip_addresses=2, ports=2, loopback inbounds", testCase{
 			dataplaneFile: "7-dataplane.input.yaml",
+			dataplaneMeta: &model.DataplaneMetadata{TransparentProxy: xds_builders.TransparentProxy("dualstack")},
 			expected:      "7-envoy-config.golden.yaml",
 		}),
 		Entry("10. transparent_proxying=false, http protocol", testCase{

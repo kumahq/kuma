@@ -36,6 +36,7 @@ import (
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	dns_dpapi "github.com/kumahq/kuma/v3/pkg/dns/dpapi"
+	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 	meshmetric_dpapi "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/dpapi"
 	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
 	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
@@ -56,13 +57,13 @@ var runLog = dataplaneLog.WithName("run")
 // rather than relying on a single :: socket, because nodes with
 // net.ipv6.bindv6only=1 would silently drop IPv4 traffic. Without VNet,
 // we bind to loopback only since OUTPUT chain REDIRECT sends to 127.0.0.1
-// (IPv4) and ::1 (IPv6).
-func dnsProxyAddresses(tpCfg *tproxy_dp.DataplaneConfig, port string) []string {
+// (IPv4) and ::1 (IPv6). With IPv6 disabled, we bind IPv4 addresses only.
+func dnsProxyAddresses(tpCfg *tproxy_dp.DataplaneConfig, ipv6Enabled bool, port string) []string {
 	if tpCfg == nil {
 		return []string{net.JoinHostPort("0.0.0.0", port)}
 	}
 
-	dualStack := tpCfg.IPFamilyMode != tproxy_config.IPFamilyModeIPv4
+	dualStack := tpCfg.IPFamilyMode != tproxy_config.IPFamilyModeIPv4 && ipv6Enabled
 	vnet := tpCfg.HasVNet()
 
 	switch {
@@ -109,6 +110,12 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			if err := config.Load("", cfg); err != nil {
 				runLog.Error(err, "unable to load configuration")
 				return err
+			}
+
+			if spec := cfg.DataplaneRuntime.ComponentLogLevel; spec != "" {
+				if err := kuma_log.ApplyComponentLevels(kuma_log.GlobalComponentLevelRegistry(), spec); err != nil {
+					return errors.Wrap(err, "invalid component log level")
+				}
 			}
 
 			var tpCfg *tproxy_dp.DataplaneConfig
@@ -210,34 +217,18 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.DataplaneRuntime.IPv6Enabled = false
 			}
 
-			rootCtx.Features = []string{
-				xds_types.FeatureTCPAccessLogViaNamedPipe,
-			}
-			if cfg.DataplaneRuntime.OtelPipeEnabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureOtelViaKumaDp)
-			}
-
-			if cfg.DataplaneRuntime.TransparentProxy != nil {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureTransparentProxyInDataplaneMetadata)
-			}
-
+			rootCtx.Features = nil
 			if cfg.DataplaneRuntime.BindOutbounds {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureBindOutbounds)
 			}
 			if cfg.DataplaneRuntime.Spire.Supported {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureSpire)
 			}
-			if cfg.DataplaneRuntime.StrictInboundPortsEnabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureStrictInboundPorts)
-			}
-			if cfg.DataplaneRuntime.ReusePortEnabled {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureReusePort)
-			}
 
 			if hostIP := os.Getenv("HOST_IP"); hostIP != "" {
 				rootCtx.BootstrapDynamicMetadata[core_xds.FieldDynamicHostIP] = hostIP
 			}
-			discoveredEnv := otelenv.Discover(cfg.DataplaneRuntime.OtelPipeEnabled)
+			discoveredEnv := otelenv.Discover()
 			rootCtx.DiscoveredOtelEnv = discoveredEnv
 			rootCtx.BootstrapOtelEnv = &discoveredEnv.Inventory
 
@@ -299,6 +290,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
 				cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration,
 			)
+			identityGate := readiness.NewIdentityGate(core_xds.IdentityReadinessSocketName(cfg.DataplaneRuntime.WorkDir))
+			if err := confFetcher.AddHandler(core_xds.IdentityReadinessPath, identityGate.OnChange); err != nil {
+				return err
+			}
 			// Add external dynamic config handlers
 			for path, handler := range rootCtx.DynamicConfigHandlers {
 				if err := confFetcher.AddHandler(path, handler); err != nil {
@@ -309,7 +304,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			var dnsConfigReady <-chan struct{}
 			if cfg.DNS.Enabled {
 				portStr := strconv.Itoa(int(cfg.DNS.ProxyPort))
-				addresses := dnsProxyAddresses(cfg.DataplaneRuntime.TransparentProxy, portStr)
+				addresses := dnsProxyAddresses(cfg.DataplaneRuntime.TransparentProxy, cfg.DataplaneRuntime.IPv6Enabled, portStr)
 				runLog.Info("Running with embedded DNS proxy", "port", cfg.DNS.ProxyPort, "addresses", addresses)
 				dnsproxyServer, err := dnsproxy.NewServer(addresses)
 				if err != nil {
@@ -357,6 +352,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					Port:       adminPort,
 				},
 				dnsConfigReady)
+			readinessReporter.SetIdentityGate(identityGate)
 			components = append(components, readinessReporter)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
@@ -441,6 +437,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringToStringVarP(&cfg.DataplaneRuntime.ResourceVars, "dataplane-var", "v", map[string]string{}, "Variables to replace Dataplane template")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.EnvoyLogLevel, "envoy-log-level", "", "Envoy log level. Available values are: [trace][debug][info][warning|warn][error][critical][off]. By default it inherits Kuma DP logging level.")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.EnvoyComponentLogLevel, "envoy-component-log-level", "", "Configures Envoy's --component-log-level")
+	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ComponentLogLevel, "component-log-level", "", "Raises the log level of individual kuma-dp components, as comma separated component:level pairs, for example \"dnsproxy:debug\"")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Metrics.CertPath, "metrics-cert-path", cfg.DataplaneRuntime.Metrics.CertPath, "A path to the certificate for metrics listener")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Metrics.KeyPath, "metrics-key-path", cfg.DataplaneRuntime.Metrics.KeyPath, "A path to the certificate key for metrics listener")
 	cmd.PersistentFlags().BoolVar(&cfg.DataplaneRuntime.BindOutbounds, "bind-outbounds", cfg.DataplaneRuntime.BindOutbounds, "If true then dataplane bind outbounds to real addresses")

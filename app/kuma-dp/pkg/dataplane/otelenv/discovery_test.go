@@ -18,9 +18,8 @@ var _ = Describe("DiscoverWithLookup", func() {
 			"OTEL_EXPORTER_OTLP_METRICS_PROTOCOL": "grpc",
 		}
 
-		cfg := discoverWithLookup(true, env)
+		cfg := discoverWithLookup(env)
 
-		Expect(cfg.Inventory.PipeEnabled).To(BeTrue())
 		Expect(cfg.Inventory.Shared).ToNot(BeNil())
 		Expect(cfg.Inventory.Shared.EndpointPresent).To(BeTrue())
 		Expect(cfg.Inventory.Shared.EndpointParsedAsURL).To(BeTrue())
@@ -43,7 +42,7 @@ var _ = Describe("DiscoverWithLookup", func() {
 			"OTEL_EXPORTER_OTLP_TRACES_CLIENT_CERTIFICATE": "/cert",
 		}
 
-		cfg := discoverWithLookup(false, env)
+		cfg := discoverWithLookup(env)
 
 		Expect(cfg.Inventory.ValidationErrors).To(ConsistOf("shared.protocol", "shared.timeout", "shared.compression", "traces.mtls"))
 		Expect(cfg.Inventory.Shared).ToNot(BeNil())
@@ -57,7 +56,7 @@ var _ = Describe("DiscoverWithLookup", func() {
 			"OTEL_EXPORTER_OTLP_COMPRESSION": "none",
 		}
 
-		cfg := discoverWithLookup(false, env)
+		cfg := discoverWithLookup(env)
 
 		Expect(cfg.Inventory.ValidationErrors).To(BeEmpty())
 		Expect(cfg.Inventory.Shared).ToNot(BeNil())
@@ -69,7 +68,7 @@ var _ = Describe("DiscoverWithLookup", func() {
 			"OTEL_EXPORTER_OTLP_ENDPOINT": "   ",
 		}
 
-		cfg := discoverWithLookup(false, env)
+		cfg := discoverWithLookup(env)
 
 		Expect(cfg.Inventory.Shared).To(BeNil())
 		Expect(cfg.Inventory.ValidationErrors).To(BeEmpty())
@@ -80,7 +79,7 @@ var _ = Describe("DiscoverWithLookup", func() {
 			"OTEL_EXPORTER_OTLP_ENDPOINT": "https://collector.example:4317/custom",
 		}
 
-		cfg := discoverWithLookup(false, env)
+		cfg := discoverWithLookup(env)
 
 		Expect(cfg.Inventory.ValidationErrors).To(ContainElement("shared.endpoint"))
 	})
@@ -91,7 +90,7 @@ var _ = Describe("DiscoverWithLookup", func() {
 			"OTEL_EXPORTER_OTLP_TRACES_ENDPOINT": "https://collector.example:4317/traces",
 		}
 
-		cfg := discoverWithLookup(false, env)
+		cfg := discoverWithLookup(env)
 
 		Expect(cfg.Inventory.ValidationErrors).To(ContainElement("traces.endpoint"))
 	})
@@ -101,7 +100,7 @@ var _ = Describe("DiscoverWithLookup", func() {
 			"OTEL_EXPORTER_OTLP_PROTOCOL": " http/protobuf ",
 		}
 
-		cfg := discoverWithLookup(false, env)
+		cfg := discoverWithLookup(env)
 
 		Expect(cfg.Inventory.ValidationErrors).To(BeEmpty())
 		Expect(cfg.Inventory.Shared).ToNot(BeNil())

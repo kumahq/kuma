@@ -58,7 +58,11 @@ func BuildCacheKey(rType string, cfg *core_plugins.MatchedPoliciesConfig, dpp *c
 	} else {
 		_, _ = h.Write([]byte{0})
 	}
-	_, _ = h.Write(dpp.Hash())
+	dppHash := cfg.DataplaneHash
+	if dppHash == nil {
+		dppHash = dpp.Hash()
+	}
+	_, _ = h.Write(dppHash)
 	_, _ = h.Write([]byte(cfg.PolicyMatchingHash))
 	return string(h.Sum(nil))
 }

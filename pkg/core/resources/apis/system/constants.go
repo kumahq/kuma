@@ -11,9 +11,6 @@ const (
 	ZoneTokenSigningKeyPrefix = "zone-token-signing-key"
 	// ZoneTokenSigningPublicKeyPrefix is the prefix for the global secret holding the zone token signing public key
 	ZoneTokenSigningPublicKeyPrefix = "zone-token-signing-public-key"
-	// ZoneTokenRevocations is the name of the global secret holding the zone token revocations
-	ZoneTokenRevocations = "zone-token-revocations" // #nosec G101 -- this is not a credential
-
 	// UserTokenSigningKeyPrefix is the prefix for the global secret holding the user token signing key
 	UserTokenSigningKeyPrefix = "user-token-signing-key"
 	// UserTokenRevocations is the name of the global secret holding the user token revocations

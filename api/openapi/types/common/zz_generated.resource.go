@@ -258,8 +258,14 @@ type ResourceRuleOrigin struct {
 
 // ResourceTypeDescription Description of a resource type, this is useful for dynamically generated clients and the gui
 type ResourceTypeDescription struct {
+	// AdminOnly whether accessing resources of this type requires admin credentials.
+	AdminOnly bool `json:"adminOnly"`
+
 	// IncludeInFederation description resources of this type should be included in federetion-with-policies export profile (especially useful for moving from non-federated to federated or migrating to a new global).
 	IncludeInFederation bool `json:"includeInFederation"`
+
+	// IsInsight whether this resource type holds state computed by the control plane rather than user configuration.
+	IsInsight bool `json:"isInsight"`
 
 	// Name the name of the resource type
 	Name string `json:"name"`

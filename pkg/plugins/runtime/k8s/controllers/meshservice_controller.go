@@ -113,26 +113,10 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 			}
 			return kube_ctrl.Result{}, nil
 		}
-		if gwEnabled, _, _ := metadata.Annotations(svc.GetAnnotations()).GetEnabled(metadata.KumaGatewayAnnotation); gwEnabled {
-			log.V(1).Info("service is for gateway. Ignoring.")
-			return kube_ctrl.Result{}, nil
-		}
 	}
 
 	if _, ok := svc.GetLabels()[metadata.KumaZoneProxyTypeLabel]; ok {
 		log.V(1).Info("service is for zone proxy listener. Ignoring.")
-		if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
-			return kube_ctrl.Result{}, err
-		}
-		return kube_ctrl.Result{}, nil
-	}
-
-	// Check if Service backs gateway Pods (delegated gateways have annotation on Pod, not Service)
-	isGateway, err := r.isServiceForGateway(ctx, log, svc)
-	if err != nil {
-		return kube_ctrl.Result{}, err
-	}
-	if isGateway {
 		if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
 			return kube_ctrl.Result{}, err
 		}
@@ -273,53 +257,6 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 	}
 
 	return kube_ctrl.Result{}, nil
-}
-
-// isServiceForGateway checks if Service backs gateway Pods by inspecting EndpointSlices
-func (r *MeshServiceReconciler) isServiceForGateway(ctx context.Context, log logr.Logger, svc *kube_core.Service) (bool, error) {
-	endpointSlices := &kube_discovery.EndpointSliceList{}
-	if err := r.List(
-		ctx,
-		endpointSlices,
-		kube_client.InNamespace(svc.Namespace),
-		kube_client.MatchingLabels(map[string]string{
-			kube_discovery.LabelServiceName: svc.Name,
-		}),
-	); err != nil {
-		return false, errors.Wrap(err, "unable to list EndpointSlices for Service")
-	}
-
-	for _, slice := range endpointSlices.Items {
-		for _, endpoint := range slice.Endpoints {
-			if endpoint.TargetRef == nil ||
-				endpoint.TargetRef.Kind != "Pod" ||
-				(endpoint.TargetRef.APIVersion != kube_core.SchemeGroupVersion.String() &&
-					endpoint.TargetRef.APIVersion != "") {
-				continue
-			}
-
-			pod := &kube_core.Pod{}
-			podKey := kube_types.NamespacedName{
-				Name:      endpoint.TargetRef.Name,
-				Namespace: string_util.OrDefault(endpoint.TargetRef.Namespace, svc.Namespace),
-			}
-			if err := r.Get(ctx, podKey, pod); err != nil {
-				if kube_apierrs.IsNotFound(err) {
-					continue
-				}
-				return false, errors.Wrap(err, "unable to get Pod for endpoint")
-			}
-
-			if gwEnabled, _, _ := metadata.Annotations(pod.GetAnnotations()).GetEnabled(metadata.KumaGatewayAnnotation); gwEnabled {
-				log.V(1).Info("service backs gateway pods. Ignoring.", "pod", podKey.String())
-				return true, nil
-			}
-
-			return false, nil
-		}
-	}
-
-	return false, nil
 }
 
 func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshservice_k8s.MeshService, svc *kube_core.Service) error {
@@ -493,7 +430,6 @@ func (r *MeshServiceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(predicate.LabelChangedPredicate{})).
 		Watches(&v1alpha1.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToAllMeshServices(r.Log, mgr.GetClient())), builder.WithPredicates(CreateOrDeletePredicate{})).
 		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToServicesMapper(r.Log, mgr.GetClient()))).
-		Watches(&kube_core.Pod{}, kube_handler.EnqueueRequestsFromMapFunc(PodToServicesMapper(r.Log, mgr.GetClient())), builder.WithPredicates(GatewayAnnotationChangedPredicate{})).
 		Complete(r)
 }
 
@@ -548,38 +484,6 @@ func MeshToAllMeshServices(l logr.Logger, client kube_client.Client) kube_handle
 	}
 }
 
-func PodToServicesMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
-	l = l.WithName("pod-to-service-mapper")
-	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
-		pod := obj.(*kube_core.Pod)
-		services := &kube_core.ServiceList{}
-		if err := client.List(ctx, services, kube_client.InNamespace(pod.Namespace)); err != nil {
-			l.WithValues("pod", pod.Name, "namespace", pod.Namespace).Error(err, "failed to fetch Services")
-			return nil
-		}
-		var req []kube_reconcile.Request
-		for _, svc := range services.Items {
-			if svc.Spec.Selector == nil {
-				continue
-			}
-			// Check if Service selector matches Pod labels
-			matches := true
-			for key, value := range svc.Spec.Selector {
-				if pod.Labels[key] != value {
-					matches = false
-					break
-				}
-			}
-			if matches {
-				req = append(req, kube_reconcile.Request{
-					Namespace: svc.Namespace, Name: svc.Name,
-				})
-			}
-		}
-		return req
-	}
-}
-
 type CreateOrDeletePredicate struct {
 	predicate.Funcs
 }
@@ -590,20 +494,4 @@ func (p CreateOrDeletePredicate) Create(e event.CreateEvent) bool {
 
 func (p CreateOrDeletePredicate) Delete(e event.DeleteEvent) bool {
 	return true
-}
-
-type GatewayAnnotationChangedPredicate struct {
-	predicate.Funcs
-}
-
-func (p GatewayAnnotationChangedPredicate) Update(e event.UpdateEvent) bool {
-	if e.ObjectOld == nil || e.ObjectNew == nil {
-		return false
-	}
-	// Compare the parsed value, not mere presence: flipping the annotation
-	// between enabled and disabled changes whether the Service gets a
-	// MeshService, so it has to trigger a reconcile too.
-	oldGateway, _, _ := metadata.Annotations(e.ObjectOld.GetAnnotations()).GetEnabled(metadata.KumaGatewayAnnotation)
-	newGateway, _, _ := metadata.Annotations(e.ObjectNew.GetAnnotations()).GetEnabled(metadata.KumaGatewayAnnotation)
-	return oldGateway != newGateway
 }

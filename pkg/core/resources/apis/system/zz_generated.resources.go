@@ -548,11 +548,21 @@ func (t *ZoneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneOverviewResourceTypeDescriptor
 }
 
+// newZoneOverviewResourceSpec normalizes a nil spec the way SetSpec does. A nil one would
+// drop the field from the response without any error: the marshaller omits a nil message
+// and then throws the whole spec away once what is left renders as an empty object.
+func newZoneOverviewResourceSpec(spec *system_proto.Zone) *system_proto.ZoneOverview {
+	if spec == nil {
+		spec = &system_proto.Zone{}
+	}
+	return &system_proto.ZoneOverview{
+		Zone: spec,
+	}
+}
+
 func (t *ZoneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
-	overview := &system_proto.ZoneOverview{
-		Zone: resource.GetSpec().(*system_proto.Zone),
-	}
+	overview := newZoneOverviewResourceSpec(resource.GetSpec().(*system_proto.Zone))
 	if insight != nil {
 		ins, ok := insight.GetSpec().(*system_proto.ZoneInsight)
 		if !ok {

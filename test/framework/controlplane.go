@@ -6,12 +6,14 @@ import (
 )
 
 func ExtractSecretDataFromResponse(output string) (string, error) {
-	var secret map[string]string
+	// Only "data" is needed; the response also carries non-string fields like "labels".
+	var secret struct {
+		Data string `json:"data"`
+	}
 	if err := json.Unmarshal([]byte(output), &secret); err != nil {
 		return "", err
 	}
-	data := secret["data"]
-	token, err := base64.StdEncoding.DecodeString(data)
+	token, err := base64.StdEncoding.DecodeString(secret.Data)
 	if err != nil {
 		return "", err
 	}

@@ -11,20 +11,23 @@ HELM_CRD_DIR ?= "deployments/charts/kuma/crds/"
 HELM_VALUES_FILE_POLICY_PATH ?= ".plugins.policies"
 
 GENERATE_OAS_PREREQUISITES ?=
+# OpenAPI document the generated REST specs take their error responses from,
+# relative to the prepared specs root (see docs/generated/openapi/prepare/base).
+OAS_ERROR_SCHEMA ?= base/specs/common/error_schema.yaml
 EXTRA_GENERATE_DEPS_TARGETS ?= generate/envoy-imports
 
 .PHONY: clean/generated
 clean/generated: clean/protos clean/builtin-crds clean/legacy-resources clean/resources clean/policies clean/tools
 
 .PHONY: generate/protos
-generate/protos:
+generate/protos: dev/protos/deps
 	find $(PROTO_DIRS) -name '*.proto' -exec $(PROTOC_GO) {} \;
 
 .PHONY: clean/tools
 clean/tools:
 	rm -rf $(KUMA_DIR)/build/tools-*
 
-.PHONY: clean/proto
+.PHONY: clean/protos
 clean/protos: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIRS) -name '*.pb.go' -delete
 	find $(PROTO_DIRS) -name '*.pb.validate.go' -delete
@@ -38,8 +41,33 @@ $(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 $(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
 
-$(OAPI_GEN): $(wildcard $(KUMA_DIR)/tools/openapi/**/*) $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
+# Always rebuilt, because oapi-gen embeds the extension registrations of whatever
+# module builds it: its real inputs are this repo's own main and every package
+# that main reaches, which no wildcard over $(KUMA_DIR)/tools describes. Without
+# this, editing a Register call regenerates the spec from a stale binary. The Go
+# build cache makes the rebuild a no-op when nothing changed.
+.PHONY: $(OAPI_GEN)
+$(OAPI_GEN):
 	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/oapi-gen ./tools/openapi/generator/main.go
+
+# Replace the opaque `config` of every extension registered with
+# pkg/core/resources/extensions by its real schema, in the OpenAPI document named
+# by OAS_EXTENSIONS_SPEC. What is registered depends on what $(OAPI_GEN) imports,
+# and that binary is built from this repo; a build that registers none leaves the
+# document alone.
+#
+# Point it at an input of the docs bundle rather than at the bundle itself: yq
+# rewrites the whole file it edits, so patching the merged document would churn
+# every folded description in it.
+#
+# The guard is not decoration: unset, --spec swallows the next flag as its value,
+# the required-flag check passes, and --controller-gen-bin silently falls back to
+# PATH.
+OAS_EXTENSIONS_SPEC ?=
+.PHONY: generate/oas/extensions
+generate/oas/extensions: $(OAPI_GEN)
+	@test -n "$(OAS_EXTENSIONS_SPEC)" || { echo "generate/oas/extensions: OAS_EXTENSIONS_SPEC must name the OpenAPI document to patch"; exit 1; }
+	$(OAPI_GEN) extensions --spec $(OAS_EXTENSIONS_SPEC) --controller-gen-bin $(CONTROLLER_GEN) --yq-bin $(YQ) --work-dir $(BUILD_DIR)/openapi-extensions
 
 .PHONY: resources/type
 resources/type: $(RESOURCE_GEN)
@@ -65,6 +93,7 @@ clean/resources: POLICIES_DIR=$(RESOURCES_DIR)
 clean/resources:
 	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) clean/policies
 
+.PHONY: generate/resources
 generate/resources: POLICIES_DIR=$(RESOURCES_DIR)
 generate/resources:
 	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) $(addprefix generate/policy/,$(policies))
@@ -72,6 +101,7 @@ generate/resources:
 	POLICIES_DIR=$(RESOURCES_DIR) HELM_VALUES_FILE_POLICY_PATH=".plugins.resources" $(MAKE) generate/policy-helm
 	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) generate/policy-config
 
+.PHONY: generate/policies
 generate/policies: generate/deep-copy/common $(addprefix generate/policy/,$(policies)) generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm ## Generate all policies written as plugins
 
 .PHONY: clean/policies
@@ -82,6 +112,7 @@ clean/policy/%:
 	$(shell find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*'  \) -not -path '*/testdata/*' -type f -delete)
 	@rm -fr $(POLICIES_DIR)/$*/k8s
 
+.PHONY: generate/deep-copy/common
 generate/deep-copy/common:
 	for version in $(foreach dir,$(wildcard $(COMMON_DIR)/*),$(notdir $(dir))); do \
 		$(CONTROLLER_GEN) object paths="./$(COMMON_DIR)/$$version/..."  ; \
@@ -92,9 +123,10 @@ generate/policy/%: $(POLICY_GEN)
 	$(POLICY_GEN) k8s-resource --plugin-dir $(POLICIES_DIR)/$* --controller-gen-bin $(CONTROLLER_GEN) --gomodule $(GO_MODULE) && \
 	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
 	$(POLICY_GEN) helpers --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE)
-	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --yq-bin $(YQ) --openapi-template-path=$(TOOLS_DIR)/openapi/templates/endpoints.yaml --jsonschema-template-path=$(TOOLS_DIR)/openapi/templates/schema.yaml --gomodule $(GO_MODULE)
+	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --yq-bin $(YQ) --openapi-template-path=$(TOOLS_DIR)/openapi/templates/endpoints.yaml --jsonschema-template-path=$(TOOLS_DIR)/openapi/templates/schema.yaml --error-schema=$(OAS_ERROR_SCHEMA) --gomodule $(GO_MODULE)
 	@echo "Policy $* successfully generated"
 
+.PHONY: generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm
 generate/policy-import:
 	./tools/policy-gen/generate-policy-import.sh $(GO_MODULE) $(POLICIES_DIR) $(policies)
 
@@ -172,9 +204,9 @@ $(foreach s,$(OAS_SPECS),$(eval $(call OAS_RULE,$(s))))
 
 .PHONY: generate/oas
 generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN) $(OAPI_GEN) $(OAS_TYPES)
-	@$(RESOURCE_GEN) -package mesh   -generator openapi -readDir $(KUMA_DIR) -writeDir .
-	@$(RESOURCE_GEN) -package system -generator openapi -readDir $(KUMA_DIR) -writeDir .
-	@$(OAPI_GEN) kri
+	@$(RESOURCE_GEN) -package mesh   -generator openapi -readDir $(KUMA_DIR) -writeDir . -error-schema=$(OAS_ERROR_SCHEMA)
+	@$(RESOURCE_GEN) -package system -generator openapi -readDir $(KUMA_DIR) -writeDir . -error-schema=$(OAS_ERROR_SCHEMA)
+	@$(OAPI_GEN) kri --error-schema=$(OAS_ERROR_SCHEMA)
 
 .PHONY: validate/openapi-generated-docs
 validate/openapi-generated-docs:
@@ -190,9 +222,6 @@ validate/openapi-generated-docs:
 		exit 1; \
 	fi; \
 	rm -f $$tmp_file
-
-.PHONY: generate/oas-for-ts
-generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate OpenAPI spec from `/api/openapi/specs` ready for typescript type generation
 
 .PHONY: generate/builtin-crds
 generate/builtin-crds: $(RESOURCE_GEN)

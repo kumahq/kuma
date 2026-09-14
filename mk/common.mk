@@ -11,10 +11,10 @@ Q := $(if $(V),,@)
 
 # --- String helpers ---
 
-# _is_digits(x): "yes" iff x is non-empty and contains only digits.
-# Uses $(shell) because recursive $(call) crashes GNU Make (segfault)
-# when evaluated during Makefile parsing in certain versions.
-_is_digits = $(if $(strip $(1)),$(if $(shell echo '$(1)' | grep -qE '^[0-9]+$$' && echo yes),yes))
+# _is_digits(x): "yes" iff x is a single word made only of digits.
+# Nested $(subst) instead of recursive $(call), which crashes GNU Make
+# (segfault) when evaluated during Makefile parsing in certain versions.
+_is_digits = $(if $(filter 1,$(words $(1))),$(if $(subst 0,,$(subst 1,,$(subst 2,,$(subst 3,,$(subst 4,,$(subst 5,,$(subst 6,,$(subst 7,,$(subst 8,,$(subst 9,,$(1))))))))))),,yes))
 
 # --- _retry ---
 

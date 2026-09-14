@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/test/framework/kumactl"
@@ -42,6 +43,11 @@ type K8sControlPlane struct {
 	replicas   int
 	apiHeaders []string
 	refreshMu  sync.Mutex
+
+	// Both inspect callers poll inside an Eventually, so this is read once per
+	// control plane rather than once per request.
+	adminTokenMu sync.Mutex
+	adminToken   string
 }
 
 func NewK8sControlPlane(
@@ -166,12 +172,20 @@ func (c *K8sControlPlane) VerifyKumaCtl() error {
 	return c.kumactl.RunKumactl("get", "meshes")
 }
 
-func (c *K8sControlPlane) VerifyKumaREST() error {
+// parseAPIHeaders splits `name=value` entries on the first `=`, so a bearer
+// token carrying base64 padding survives, and skips an entry without one.
+func parseAPIHeaders(apiHeaders []string) map[string]string {
 	headers := map[string]string{}
-	for _, header := range c.apiHeaders {
-		res := strings.Split(header, "=")
-		headers[res[0]] = res[1]
+	for _, header := range apiHeaders {
+		if kv := strings.SplitN(header, "=", 2); len(kv) == 2 {
+			headers[kv[0]] = kv[1]
+		}
 	}
+	return headers
+}
+
+func (c *K8sControlPlane) VerifyKumaREST() error {
+	headers := parseAPIHeaders(c.apiHeaders)
 	_, err := http_helper.HTTPDoWithRetryContextE(
 		c.t,
 		context.Background(),
@@ -234,11 +248,63 @@ func (c *K8sControlPlane) FinalizeAddWithPortFwd(
 	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, c.GetAPIServerAddress(), token, c.apiHeaders)
 }
 
+// adminTokenSettings is the part of the control plane's own config that decides
+// whether a bootstrapped token exists, so a deployment can turn it off through
+// WithYamlConfig rather than the environment.
+type adminTokenSettings struct {
+	ApiServer struct {
+		Authn struct {
+			Type   string `json:"type"`
+			Tokens struct {
+				BootstrapAdminToken *bool `json:"bootstrapAdminToken"`
+			} `json:"tokens"`
+		} `json:"authn"`
+	} `json:"apiServer"`
+}
+
+// bootstrapsAdminToken answers without reading anything. Without it the read in
+// retrieveAdminToken spends the whole retry budget on a secret nothing writes.
+// The environment wins over the file, as it does in the control plane.
+func (c *K8sControlPlane) bootstrapsAdminToken() bool {
+	var cfg adminTokenSettings
+	if raw := c.cluster.opts.yamlConfig; raw != "" {
+		// A config this malformed fails the deployment itself, so the guard
+		// gives it the benefit of the doubt rather than deciding on it.
+		_ = yaml.Unmarshal([]byte(raw), &cfg)
+	}
+
+	authnType := cfg.ApiServer.Authn.Type
+	if fromEnv, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TYPE"]; exist {
+		authnType = fromEnv
+	}
+	if authnType != "" && authnType != "tokens" {
+		return false
+	}
+
+	bootstrap := true
+	if fromYaml := cfg.ApiServer.Authn.Tokens.BootstrapAdminToken; fromYaml != nil {
+		bootstrap = *fromYaml
+	}
+	if fromEnv, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN"]; exist {
+		// ParseBool because the control plane parses it that way.
+		if parsed, err := strconv.ParseBool(fromEnv); err == nil {
+			bootstrap = parsed
+		}
+	}
+	return bootstrap
+}
+
 func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
-	if authnType, exist := c.cluster.opts.env["KUMA_API_SERVER_AUTHN_TYPE"]; exist && authnType != "tokens" {
+	if !c.bootstrapsAdminToken() {
 		return "", nil
 	}
 	if c.cluster.opts.helmOpts["controlPlane.environment"] == "universal" {
+		// Reading the token is itself an admin request, and the chart pins
+		// localhostIsAdmin false here, so it can only succeed if the deployment
+		// put loopback admin back.
+		if loopbackAdmin, _ := strconv.ParseBool(c.cluster.opts.env["KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN"]); !loopbackAdmin {
+			return "", nil
+		}
 		body, err := http_helper.HTTPDoWithRetryWithOptionsE(c.t, http_helper.HttpDoOptions{
 			Method:    "GET",
 			Url:       c.GetAPIServerAddress() + "/global-secrets/admin-user-token",
@@ -258,6 +324,24 @@ func (c *K8sControlPlane) retrieveAdminToken() (string, error) {
 		}
 		return string(sec.Data["value"]), nil
 	})
+}
+
+// cachedAdminToken returns the bootstrapped admin token, or an empty string
+// when there is none to attach. A failure is not cached: one blip would
+// otherwise outlive the Eventually the callers poll inside.
+func (c *K8sControlPlane) cachedAdminToken() (string, error) {
+	c.adminTokenMu.Lock()
+	defer c.adminTokenMu.Unlock()
+
+	if c.adminToken != "" {
+		return c.adminToken, nil
+	}
+	token, err := c.retrieveAdminToken()
+	if err != nil {
+		return "", err
+	}
+	c.adminToken = token
+	return token, nil
 }
 
 func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
@@ -349,6 +433,13 @@ func (c *K8sControlPlane) InspectEnvoyProxy(inspectPath string, query url.Values
 		reqURL += "?" + encoded
 	}
 
+	// Before the deadline is armed: a cold read retries for longer than the
+	// deadline allows, and would spend it.
+	token, err := c.cachedAdminToken()
+	if err != nil {
+		return nil, err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), inspectEnvoyProxyTimeout)
 	defer cancel()
 
@@ -356,10 +447,12 @@ func (c *K8sControlPlane) InspectEnvoyProxy(inspectPath string, query url.Values
 	if err != nil {
 		return nil, err
 	}
-	for _, header := range c.apiHeaders {
-		if kv := strings.SplitN(header, "=", 2); len(kv) == 2 {
-			req.Header.Set(kv[0], kv[1])
-		}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	// Set after the token so an explicit Authorization in apiHeaders wins.
+	for name, value := range parseAPIHeaders(c.apiHeaders) {
+		req.Header.Set(name, value)
 	}
 
 	client := &http.Client{Timeout: inspectEnvoyProxyTimeout}

@@ -447,7 +447,6 @@ components:
                                   pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                   type: string
                                 type:
-                                  default: Exact
                                   description: Type specifies how to match against the value of the header.
                                   enum:
                                     - Exact
@@ -482,7 +481,6 @@ components:
                                   pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                   type: string
                                 type:
-                                  default: Exact
                                   description: Type specifies how to match against the value of the header.
                                   enum:
                                     - Exact
@@ -527,6 +525,9 @@ components:
                               - "500"
                               - "503"
                             items:
+                              description: |-
+                                HTTPRetryOn names a condition a request is retried on. Alongside the named
+                                conditions it also accepts any numeric HTTP status code.
                               type: string
                             type: array
                         type: object
@@ -601,6 +602,7 @@ components:
         application/json:
           schema:
             type: object
+            required: [total, items, next]
             properties:
               items:
                 type: array
@@ -610,8 +612,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshRetryCreateOrUpdateSuccessResponse:
       description: Successful response
       content:

@@ -23,13 +23,6 @@ type ResourceContext[T any] struct {
 	fallback T
 }
 
-func AsResourceContext[T any](conf T) *ResourceContext[T] {
-	return &ResourceContext[T]{
-		rules:    ResourceRules{},
-		fallback: conf,
-	}
-}
-
 func RootContext[T any](mesh *core_mesh.MeshResource, rules ResourceRules) *ResourceContext[T] {
 	return &ResourceContext[T]{
 		ids: []kri.Identifier{

@@ -20,6 +20,7 @@ import (
 	v3 "github.com/kumahq/kuma/v3/pkg/hds/v3"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
+	xds_builders "github.com/kumahq/kuma/v3/pkg/test/xds/builders"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
@@ -110,10 +111,12 @@ networking:
       servicePort: 80
       serviceProbe: 
         tcp: {}
-  transparentProxying:
-    redirectPortInbound: 15006
-    redirectPortOutbound: 15001
 `,
+			metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					xds.FieldTransparentProxy: structpb.NewStructValue(util_proto.MustStructToProtoStruct(xds_builders.TransparentProxy("dualstack"))),
+				},
+			},
 			hdsConfig: &dp_server.HdsConfig{
 				Interval: config_types.Duration{Duration: 8 * time.Second},
 				Enabled:  true,
@@ -137,10 +140,12 @@ networking:
       servicePort: 80
       serviceProbe: 
         tcp: {}
-  transparentProxying:
-    redirectPortInbound: 15006
-    redirectPortOutbound: 15001
 `,
+			metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					xds.FieldTransparentProxy: structpb.NewStructValue(util_proto.MustStructToProtoStruct(xds_builders.TransparentProxy("dualstack"))),
+				},
+			},
 			hdsConfig: &dp_server.HdsConfig{
 				Interval: config_types.Duration{Duration: 8 * time.Second},
 				Enabled:  true,

@@ -150,7 +150,7 @@ components:
                 listeners:
                   description: |-
                     Listeners describes zone proxy listeners embedded in this Dataplane.
-                    Listeners may coexist with inbounds and gateways.
+                    Listeners may coexist with inbounds.
                   items:
                     description: Listener describes a zone proxy listener (ZoneIngress
                       or ZoneEgress) embedded in a regular Dataplane.
@@ -199,7 +199,8 @@ components:
                         description: |-
                           IP on which the consumed service will be available to this data plane
                           proxy. On Kubernetes, it's usually ClusterIP of a Service or PodIP of a
-                          Headless Service. Defaults to 127.0.0.1
+                          Headless Service. When left out, the control plane sets it to
+                          127.0.0.1, so a Dataplane read back from the API always carries one.
                         type: string
                       backendRef:
                         description: BackendRef is a way to target MeshService.
@@ -230,6 +231,8 @@ components:
                           proxy. When transparent proxying is not used, Envoy will bind to this
                           port.
                         type: integer
+                    required:
+                    - address
                     type: object
                   type: array
                 transparentProxying:
@@ -246,15 +249,6 @@ components:
                       items:
                         type: string
                       type: array
-                    ipFamilyMode:
-                      description: The IP family mode to enable for. Can be "IPv4"
-                        or "DualStack".
-                      enum:
-                      - UnSpecified
-                      - DualStack
-                      - IPv4
-                      - IPv6
-                      type: string
                     reachableBackends:
                       description: |-
                         Reachable backend via transparent proxy when running with
@@ -266,35 +260,29 @@ components:
                           items:
                             properties:
                               kind:
-                                description: "Type of the backend: MeshService, MeshExternalService
-                                  or MeshMultiZoneService\n\n\t+required"
+                                description: 'Type of the backend: MeshService, MeshExternalService
+                                  or MeshMultiZoneService'
                                 type: string
                               labels:
                                 additionalProperties:
                                   type: string
-                                description: "Labels used to select backends\n\n\t+optional"
+                                description: Labels used to select backends
                                 type: object
                               name:
-                                description: "Name of the backend.\n\n\t+optional"
+                                description: Name of the backend.
                                 type: string
                               namespace:
-                                description: "Namespace of the backend. Might be empty\n\n\t+optional"
+                                description: Namespace of the backend. Might be empty
                                 type: string
                               port:
-                                description: "Port of the backend.\n\n\t+optional"
+                                description: Port of the backend.
                                 format: uint32
                                 type: integer
+                            required:
+                            - kind
                             type: object
                           type: array
                       type: object
-                    redirectPortInbound:
-                      description: Port on which all inbound traffic is being transparently
-                        redirected.
-                      type: integer
-                    redirectPortOutbound:
-                      description: Port on which all outbound traffic is being transparently
-                        redirected.
-                      type: integer
                   type: object
               type: object
           type: object
@@ -307,12 +295,8 @@ components:
                   description: |-
                     Expiration time of the last certificate that was generated for a
                     Dataplane.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 certificateRegenerations:
                   description: Number of certificate regenerations for a Dataplane.
                   type: integer
@@ -321,12 +305,8 @@ components:
                   type: string
                 lastCertificateRegeneration:
                   description: Time on which the last certificate was generated.
-                  properties:
-                    nanos:
-                      type: integer
-                    seconds:
-                      type: integer
-                  type: object
+                  format: date-time
+                  type: string
                 supportedBackends:
                   description: Supported backends (CA).
                   items:
@@ -425,24 +405,16 @@ components:
                   connectTime:
                     description: Time when a given Dataplane connected to the Control
                       Plane.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   controlPlaneInstanceId:
                     description: Control Plane instance that handled given subscription.
                     type: string
                   disconnectTime:
                     description: Time when a given Dataplane disconnected from the
                       Control Plane.
-                    properties:
-                      nanos:
-                        type: integer
-                      seconds:
-                        type: integer
-                    type: object
+                    format: date-time
+                    type: string
                   generation:
                     description: |-
                       Generation is an integer number which is periodically increased by the
@@ -483,12 +455,8 @@ components:
                       lastUpdateTime:
                         description: Time when status of a given ADS subscription
                           was most recently updated.
-                        properties:
-                          nanos:
-                            type: integer
-                          seconds:
-                            type: integer
-                        type: object
+                        format: date-time
+                        type: string
                       lds:
                         description: LDS defines all LDS stats.
                         properties:

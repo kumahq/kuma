@@ -1,0 +1,3 @@
+."components"."schemas"."FakeResourceVaultExtensionConfig" = {"properties":{"agent":{"type":"object"},"server":{"type":"object"},"type":{"enum":["Server","Agent"]}}}
+  | ."components"."schemas"."FakeResourceVaultExtensionConfig".oneOf = [{"properties":{"server":{},"type":{"enum":["Server"]}}},{"properties":{"agent":{},"type":{"enum":["Agent"]}}}]
+  | ."components"."schemas"."FakeResourceItem"."properties"."spec"."properties"."extension".oneOf = [{"properties":{"config":{"$ref":"#/components/schemas/FakeResourceVaultExtensionConfig"},"type":{"const":"vault"}},"title":"vault"},{"description":"An extension this control plane does not ship. Its configuration is not described here.","properties":{"type":{"not":{"enum":["vault"]}}},"title":"Other"}]

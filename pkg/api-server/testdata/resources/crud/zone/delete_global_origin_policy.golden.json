@@ -1,7 +1,19 @@
 {
  "type": "/std-errors",
  "status": 400,
- "title": "Bad Request",
- "detail": "bad request: resource with kuma.io/origin=global cannot be deleted on this control plane",
- "details": "bad request: resource with kuma.io/origin=global cannot be deleted on this control plane"
+ "title": "Could not delete a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "[\"kuma.io/origin\"]",
+   "reason": "the origin label must be set to 'zone'"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "[\"kuma.io/origin\"]",
+   "message": "the origin label must be set to 'zone'"
+  }
+ ]
 }

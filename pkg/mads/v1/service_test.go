@@ -209,9 +209,8 @@ var _ = Describe("MADS http service", func() {
 
 		dp1 := &core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{
-				Name:   "dp-1",
-				Mesh:   testMesh.GetMeta().GetName(),
-				Labels: map[string]string{v1alpha1.GatewayLabel: v1alpha1.GatewayEnabled},
+				Name: "dp-1",
+				Mesh: testMesh.GetMeta().GetName(),
 			},
 			Spec: &v1alpha1.Dataplane{
 				Networking: &v1alpha1.Dataplane_Networking{

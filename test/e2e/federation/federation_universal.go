@@ -39,17 +39,13 @@ func FederateKubeZoneCPToUniversalGlobal() {
 			Install(Kuma(core.Zone,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
+				WithHelmOpt("controlPlane.zone", zone.ZoneName()),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(MeshKubernetes("default")).
 			Install(MeshIdentityBundledKubernetes("default", "identity-default")).
-			// Federating renames the zone: it runs standalone first, where
-			// {{ .Zone }} resolves to "default", and picks up its real name once
-			// it points at Global. Both trust domains have to be allowed or the
-			// re-issued certificates stop matching after federation.
 			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity("default",
-				"default.default.mesh.local",
-				fmt.Sprintf("default.%s.mesh.local", zone.ZoneName()),
+				MeshIdentityTrustDomain("default", zone),
 			)).
 			Install(Parallel(
 				democlient.Install(),

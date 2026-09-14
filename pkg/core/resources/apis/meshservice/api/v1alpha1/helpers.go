@@ -91,6 +91,31 @@ func (t *MeshServiceResource) hash(includeVersion bool) []byte {
 	return hasher.Sum(nil)
 }
 
+// PolicyMatchingHash returns the MeshService hash used to key cached policy
+// matching. On top of what XDSHash leaves out, it drops the fields derived from
+// which dataplanes back the service (identities, state and TLS readiness). They
+// change as proxies come and go but never change which policies match.
+func (t *MeshServiceResource) PolicyMatchingHash() []byte {
+	hasher := fnv.New128a()
+	_, _ = hasher.Write(core_model.HashMetaIdentity(t))
+	core_model.WriteSortedLabels(hasher, t.GetMeta().GetLabels())
+	spec := MeshService{}
+	if t.Spec != nil {
+		spec = *t.Spec
+	}
+	spec.Identities = nil
+	spec.State = ""
+	core_model.WriteDeterministicJSON(hasher, spec)
+	status := MeshServiceStatus{}
+	if t.Status != nil {
+		status = *t.Status
+	}
+	status.DataplaneProxies = DataplaneProxies{}
+	status.TLS = TLS{}
+	core_model.WriteDeterministicJSON(hasher, status)
+	return hasher.Sum(nil)
+}
+
 var _ core_vip.ResourceHoldingVIPs = &MeshServiceResource{}
 
 func (t *MeshServiceResource) VIPs() []string {
@@ -105,29 +130,6 @@ func (t *MeshServiceResource) AllocateVIP(vip string) {
 	t.Status.VIPs = append(t.Status.VIPs, VIP{
 		IP: vip,
 	})
-}
-
-// todo(jakubdyszkiewicz) strongly consider putting this in MeshService object to avoid problems with computation
-func (t *MeshServiceResource) SNIName(systemNamespace string) string {
-	displayName := t.GetMeta().GetLabels()[mesh_proto.DisplayName]
-	namespace := t.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
-	origin := t.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
-	if origin == string(mesh_proto.GlobalResourceOrigin) {
-		// we need to use original name and namespace for services that were synced from another cluster
-		sniName := displayName
-		if namespace != "" {
-			// when we sync resources from universal to kube, when we retrieve it has KubeNamespaceTag as label value
-			if systemNamespace == "" || systemNamespace != namespace {
-				sniName += "." + namespace
-			}
-		}
-		return sniName
-	}
-	if systemNamespace == "" && origin == string(mesh_proto.ZoneResourceOrigin) && namespace != "" {
-		// when namespace label was added to Universal MeshService to have a copy of Kubernets MeshService
-		return t.GetMeta().GetName() + "." + namespace
-	}
-	return t.GetMeta().GetName()
 }
 
 func (t *MeshServiceResource) AsOutbounds() xds_types.Outbounds {
@@ -187,12 +189,4 @@ func (s *MeshService) SNIs() []sni.Section {
 		out = append(out, sni.Section{Port: p.Port, SectionName: p.GetName()})
 	}
 	return out
-}
-
-func (l *MeshServiceResourceList) GetDestinations() []core.Destination {
-	var result []core.Destination
-	for _, item := range l.Items {
-		result = append(result, item)
-	}
-	return result
 }

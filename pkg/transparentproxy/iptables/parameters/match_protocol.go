@@ -6,10 +6,3 @@ func MatchUdp() *MatchParameter {
 		parameters: []ParameterBuilder{},
 	}
 }
-
-func MatchTcp() *MatchParameter {
-	return &MatchParameter{
-		name:       "udp",
-		parameters: []ParameterBuilder{},
-	}
-}

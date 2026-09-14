@@ -620,8 +620,7 @@ spec:
 		})
 	})
 
-	// https://github.com/kumahq/kuma/issues/15805
-	Context("MeshExternalService with endpoint priority", Ordered, Label("ipv6-not-supported"), func() {
+	Context("MeshExternalService with endpoint priority", Ordered, func() {
 		mesPrimaryName := "mes-priority-primary"
 		mesPrimaryPort := 83
 		var mesPrimaryContainerName string
@@ -669,6 +668,37 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring(mesPrimaryName))
 			}, "30s", "1s").Should(Succeed())
+
+			By("Ejecting the primary endpoint once it stops accepting connections")
+			// Priority failover only reacts to host health, and a
+			// MeshExternalService cluster has neither health checks nor outlier
+			// detection by default. Without this the primary stays healthy and
+			// keeps taking traffic, and the spec only passes where DNS happens
+			// to drop the host, which is not the case on every address family.
+			outlierDetection := fmt.Sprintf(`
+type: MeshCircuitBreaker
+name: mes-priority-outlier
+mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        labels:
+          kuma.io/display-name: mes-priority
+      default:
+        outlierDetection:
+          interval: 1s
+          baseEjectionTime: 30s
+          maxEjectionPercent: 100
+          healthyPanicThreshold: 0
+          splitExternalAndLocalErrors: true
+          detectors:
+            localOriginFailures:
+              consecutive: 1
+`, meshNameNoDefaults)
+			Expect(universal.Cluster.Install(YamlUniversal(outlierDetection))).To(Succeed())
 
 			By("Removing primary endpoint to trigger failover")
 			Expect(universal.Cluster.DeleteApp(mesPrimaryName)).To(Succeed())

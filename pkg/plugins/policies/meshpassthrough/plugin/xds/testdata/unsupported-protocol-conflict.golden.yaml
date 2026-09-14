@@ -1,0 +1,7 @@
+- MatchType: 2
+  Port: 8080
+  Protocol: http
+  Routes:
+  - MatchType: 2
+    Value: example.com
+  Value: ""

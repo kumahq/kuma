@@ -1,0 +1,4 @@
+violations:
+- field: spec.default.appendMatch[1].port
+  message: port must be defined for a domain, the sidecar resolves the domain to pin
+    the destination

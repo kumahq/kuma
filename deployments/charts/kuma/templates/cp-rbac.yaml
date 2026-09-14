@@ -90,7 +90,6 @@ rules:
       - zones
       - zoneinsights
       - meshinsights
-      - serviceinsights
       - containerpatches
   {{- range $policy, $v := .Values.plugins.policies }}
   {{- if $v }}

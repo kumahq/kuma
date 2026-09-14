@@ -14,6 +14,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	resources_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -41,7 +42,7 @@ var _ = Describe("MeshReconciler", func() {
 					return []string{string(secret.Type)}
 				}).
 			Build()
-		store, err := k8s.NewStore(kubeClient, k8sClientScheme, k8s.NewSimpleConverter("kuma-system"))
+		store, err := k8s.NewStore(kubeClient, k8sClientScheme, k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}))
 		Expect(err).ToNot(HaveOccurred())
 
 		// we need to bring in the actual scheme we're using so that the Mesh CRD can be hooked up as owner,

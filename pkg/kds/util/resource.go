@@ -3,7 +3,6 @@ package util
 import (
 	"fmt"
 	"maps"
-	"strings"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -50,29 +49,37 @@ func ToDeltaCoreResourceList(response *envoy_sd.DeltaDiscoveryResponse) (core_mo
 func ToEnvoyResources(rlist core_model.ResourceList) ([]envoy_types.Resource, error) {
 	rv := make([]envoy_types.Resource, 0, len(rlist.GetItems()))
 	for _, r := range rlist.GetItems() {
-		pbany, err := core_model.ToAny(r.GetSpec())
+		res, err := ToEnvoyResource(r)
 		if err != nil {
 			return nil, err
 		}
-		var pbanyStatus *anypb.Any
-		if r.Descriptor().HasStatus {
-			pbanyStatus, err = core_model.ToAny(r.GetStatus())
-			if err != nil {
-				return nil, err
-			}
-		}
-		rv = append(rv, &mesh_proto.KumaResource{
-			Meta: &mesh_proto.KumaResource_Meta{
-				Name:    r.GetMeta().GetName(),
-				Mesh:    r.GetMeta().GetMesh(),
-				Labels:  maps.Clone(r.GetMeta().GetLabels()),
-				Version: "",
-			},
-			Spec:   pbany,
-			Status: pbanyStatus,
-		})
+		rv = append(rv, res)
 	}
 	return rv, nil
+}
+
+func ToEnvoyResource(r core_model.Resource) (envoy_types.Resource, error) {
+	pbany, err := core_model.ToAny(r.GetSpec())
+	if err != nil {
+		return nil, err
+	}
+	var pbanyStatus *anypb.Any
+	if r.Descriptor().HasStatus {
+		pbanyStatus, err = core_model.ToAny(r.GetStatus())
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &mesh_proto.KumaResource{
+		Meta: &mesh_proto.KumaResource_Meta{
+			Name:    r.GetMeta().GetName(),
+			Mesh:    r.GetMeta().GetMesh(),
+			Labels:  maps.Clone(r.GetMeta().GetLabels()),
+			Version: "",
+		},
+		Spec:   pbany,
+		Status: pbanyStatus,
+	}, nil
 }
 
 func AddPrefixToNames(rs []core_model.Resource, prefix string) {
@@ -105,16 +112,6 @@ func AddSuffixToResourceKeyNames(rk []core_model.ResourceKey, suffix string) []c
 		rk[idx].Name = fmt.Sprintf("%s.%s", r.Name, suffix)
 	}
 	return rk
-}
-
-func ResourceNameHasAtLeastOneOfPrefixes(resName string, prefixes ...string) bool {
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(resName, prefix) {
-			return true
-		}
-	}
-
-	return false
 }
 
 func toResources(resourceType core_model.ResourceType, krs []*mesh_proto.KumaResource) (core_model.ResourceList, error) {

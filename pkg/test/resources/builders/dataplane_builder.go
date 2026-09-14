@@ -198,24 +198,6 @@ func (d *DataplaneBuilder) AddOutboundsToServices(services ...string) *Dataplane
 	return d
 }
 
-func (d *DataplaneBuilder) WithTransparentProxying(redirectPortOutbound, redirectPortInbound uint32, ipFamilyMode string) *DataplaneBuilder {
-	d.res.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
-		RedirectPortInbound:  redirectPortInbound,
-		RedirectPortOutbound: redirectPortOutbound,
-		IpFamilyMode:         ipFamilyModeEnumValue(ipFamilyMode),
-	}
-	return d
-}
-
-func ipFamilyModeEnumValue(mode string) mesh_proto.Dataplane_Networking_TransparentProxying_IpFamilyMode {
-	switch mode {
-	case "ipv4":
-		return mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
-	default:
-		return mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
-	}
-}
-
 func TagsKVToMap(tagsKV []string) map[string]string {
 	if len(tagsKV)%2 == 1 {
 		panic("tagsKV has to have even number of arguments")
@@ -225,16 +207,6 @@ func TagsKVToMap(tagsKV []string) map[string]string {
 		tags[tagsKV[i]] = tagsKV[i+1]
 	}
 	return tags
-}
-
-func (d *DataplaneBuilder) WithDelegatedGateway() *DataplaneBuilder {
-	meta := d.res.Meta.(*test_model.ResourceMeta)
-	if meta.Labels == nil {
-		meta.Labels = map[string]string{}
-	}
-	meta.Labels[mesh_proto.GatewayLabel] = mesh_proto.GatewayEnabled
-	d.res.Spec.Networking.Inbound = nil
-	return d
 }
 
 func (d *DataplaneBuilder) WithAdminPort(i int) *DataplaneBuilder {

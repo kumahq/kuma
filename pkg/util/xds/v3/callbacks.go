@@ -145,10 +145,6 @@ func (d *discoveryRequest) ErrorMsg() string {
 	return d.GetErrorDetail().GetMessage()
 }
 
-func (d *discoveryRequest) ResourceNames() []string {
-	return d.GetResourceNames()
-}
-
 var _ xds.DiscoveryRequest = &discoveryRequest{}
 
 type discoveryResponse struct {
@@ -191,10 +187,6 @@ func (d *deltaDiscoveryRequest) HasErrors() bool {
 
 func (d *deltaDiscoveryRequest) ErrorMsg() string {
 	return d.GetErrorDetail().GetMessage()
-}
-
-func (d *deltaDiscoveryRequest) ResourceNames() []string {
-	return d.GetResourceNamesSubscribe()
 }
 
 func (d *deltaDiscoveryRequest) GetInitialResourceVersions() map[string]string {

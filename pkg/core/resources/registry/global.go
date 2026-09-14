@@ -18,12 +18,6 @@ func RegisterType(res model.ResourceTypeDescriptor) {
 	}
 }
 
-// RegisterTypeValidator allows registering a custom validator for a specific resource type.
-// It should be called during bootstrap and must not be called at runtime.
-func RegisterTypeValidator(res model.ResourceTypeDescriptor, validator AdditionalValidator) {
-	global.RegisterValidator(res, validator)
-}
-
 func RegisterTypeIfAbsent(res model.ResourceTypeDescriptor) {
 	if slices.Contains(global.ObjectTypes(), res.Name) {
 		return

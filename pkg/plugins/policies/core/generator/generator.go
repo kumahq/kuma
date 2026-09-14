@@ -8,7 +8,6 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/core/plugins"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/dynconf"
 	generator_core "github.com/kumahq/kuma/v3/pkg/xds/generator/core"
@@ -38,10 +37,6 @@ func (g generator) Generate(ctx context.Context, rs *xds.ResourceSet, xdsCtx xds
 
 func writeUnifiedOtelRoute(rs *xds.ResourceSet, proxy *xds.Proxy) error {
 	if proxy.OtelPipeBackends.Empty() {
-		return nil
-	}
-
-	if !proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) {
 		return nil
 	}
 

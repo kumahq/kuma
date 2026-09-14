@@ -1,0 +1,10 @@
+- MatchType: 1
+  Port: 8443
+  Protocol: tls
+  Routes: []
+  Value: '*.example.com'
+- MatchType: 1
+  Port: 0
+  Protocol: tls
+  Routes: []
+  Value: '*.example.com'

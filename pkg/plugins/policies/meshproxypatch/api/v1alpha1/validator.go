@@ -149,7 +149,7 @@ func validateVirtualHostMod(mod VirtualHostMod) validators.ValidationError {
 	path := validators.RootedAt("virtualHost")
 	switch mod.Operation {
 	case ModOpAdd:
-		if mod.Match != nil && mod.Match.Name != nil {
+		if mod.Match.Name != nil {
 			verr.AddViolationAt(path.Field("match").Field("name"), validators.MustNotBeDefined)
 		}
 		verr.Add(validateResourceValue(path.Field("value"), mod.Value, &envoy_route_v3.VirtualHost{}))

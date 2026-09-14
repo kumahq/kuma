@@ -53,12 +53,6 @@ type (
 
 type AttachmentsByPolicy map[PolicyKey]AttachmentList
 
-func (abp AttachmentsByPolicy) Merge(other AttachmentsByPolicy) {
-	for k, v := range other {
-		abp[k] = append(abp[k], v...)
-	}
-}
-
 func (a AttachmentList) Len() int           { return len(a) }
 func (a AttachmentList) Less(i, j int) bool { return fmt.Sprintf("%s", a[i]) < fmt.Sprintf("%s", a[j]) }
 func (a AttachmentList) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }

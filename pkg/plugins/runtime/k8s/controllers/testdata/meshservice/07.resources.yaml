@@ -46,8 +46,6 @@ metadata:
   uid: gateway-pod-1-uid
   labels:
     app: gateway
-  annotations:
-    kuma.io/gateway: disabled
 spec:
   containers:
     - name: gateway

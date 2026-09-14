@@ -45,6 +45,14 @@ func MeshTrafficPermission() {
 		)
 	}
 
+	zoneEgress := func() InstallFunc {
+		return zoneproxy.Install(
+			zoneproxy.WithMesh(meshName),
+			zoneproxy.WithNamespace(namespace),
+			zoneproxy.WithEgress(),
+		)
+	}
+
 	BeforeAll(func() {
 		// Global. No MeshTrafficPermission is installed: the mesh has to start
 		// out default-deny for the first assertion of the test.
@@ -75,6 +83,7 @@ func MeshTrafficPermission() {
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
 				zoneIngress(),
+				zoneEgress(),
 			)).
 			SetupInGroup(multizone.KubeZone1, &group)
 		Expect(group.Wait()).To(Succeed())
@@ -149,8 +158,34 @@ spec:
 		trafficAllowed(serverHostname)
 	})
 
-	It("should allow the traffic to the external service through the egress", func() {
-		Skip("MeshTrafficPermission cannot gate a MeshExternalService without Zone Proxy + MeshIdentity (SNI rules); tracked in https://github.com/kumahq/kuma/issues/17160")
-		trafficAllowed("external-service.extsvc.mesh.local")
+	It("should gate the external service on the egress by SNI", func() {
+		esHostname := "external-service.extsvc.mesh.local"
+
+		// the egress denies everything it has no rule for
+		trafficBlocked(esHostname)
+
+		// MeshExternalService access is granted on the egress listener by
+		// matching the SNI the client presents for it, which is the
+		// MeshExternalService's KRI rendered in the SNI format. The resource
+		// is created on Global, so it carries no zone segment.
+		yaml := `
+type: MeshTrafficPermission
+name: mtp-egress
+mesh: mtp-test
+spec:
+ targetRef:
+   kind: Dataplane
+   labels:
+     kuma.io/listener-zoneegress: enabled
+ rules:
+   - default:
+       allow:
+         - sni:
+             type: Exact
+             value: sni.extsvc.mtp-test.external-service.80
+`
+		Expect(YamlUniversal(yaml)(multizone.Global)).To(Succeed())
+
+		trafficAllowed(esHostname)
 	})
 }

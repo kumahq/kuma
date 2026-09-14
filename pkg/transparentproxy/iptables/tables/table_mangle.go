@@ -23,22 +23,6 @@ func (t *MangleTable) Prerouting() *chains.Chain {
 	return t.prerouting
 }
 
-func (t *MangleTable) Input() *chains.Chain {
-	return t.input
-}
-
-func (t *MangleTable) Forward() *chains.Chain {
-	return t.forward
-}
-
-func (t *MangleTable) Output() *chains.Chain {
-	return t.output
-}
-
-func (t *MangleTable) Postrouting() *chains.Chain {
-	return t.postrouting
-}
-
 func (t *MangleTable) Chains() []*chains.Chain {
 	return []*chains.Chain{t.prerouting, t.input, t.forward, t.output, t.postrouting}
 }

@@ -11,6 +11,9 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
+// TargetRefKind is the full set of kinds a targetRef can name. It carries no
+// enum of its own: each field narrows the set it accepts, and a stored policy
+// may still name a kind that was since removed, which IsKnownKind handles.
 type TargetRefKind string
 
 var (
@@ -60,6 +63,7 @@ type TargetRef struct {
 
 // TopLevelTargetRefKind is the set of TargetRefKind values valid for the
 // top-level spec.targetRef field.
+// +kubebuilder:validation:Enum=Mesh;Dataplane
 type TopLevelTargetRefKind string
 
 const (
@@ -71,7 +75,6 @@ const (
 // used to attach a policy's default configuration to a Mesh or Dataplane.
 type TopLevelTargetRef struct {
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;Dataplane
 	Kind TopLevelTargetRefKind `json:"kind"`
 	// Labels are used to select referenced real resources and to carry legacy
 	// service identity when a common TargetRef must still target old
@@ -99,6 +102,7 @@ func (t *TopLevelTargetRef) ToTargetRef() TargetRef {
 
 // OutboundTargetRefKind is the set of TargetRefKind values valid for the
 // spec.to[].targetRef field.
+// +kubebuilder:validation:Enum=Mesh;MeshService;MeshExternalService;MeshMultiZoneService;MeshHTTPRoute
 type OutboundTargetRefKind string
 
 const (
@@ -113,7 +117,6 @@ const (
 // used to match a group of destinations a policy configuration applies to.
 type OutboundTargetRef struct {
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshService;MeshExternalService;MeshMultiZoneService;MeshHTTPRoute
 	Kind OutboundTargetRefKind `json:"kind"`
 	// Labels are used to select referenced real resources and to carry legacy
 	// service identity when a common TargetRef must still target old
@@ -184,6 +187,7 @@ type BackendResourceRef struct {
 // BackendRef defines where to forward traffic.
 // BackendRefKind is the set of TargetRefKind values valid for a backendRef,
 // which routes traffic to a destination rather than selecting a proxy.
+// +kubebuilder:validation:Enum=MeshService;MeshExternalService;MeshMultiZoneService
 type BackendRefKind string
 
 const (
@@ -195,7 +199,6 @@ const (
 // BackendRef defines the destination traffic is routed to.
 type BackendRef struct {
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=MeshService;MeshExternalService;MeshMultiZoneService
 	Kind BackendRefKind `json:"kind"`
 	// Labels are used to select the referenced real resource.
 	Labels *map[string]string `json:"labels,omitempty"`
@@ -204,8 +207,6 @@ type BackendRef struct {
 	SectionName *string `json:"sectionName,omitempty"`
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=4294967295
-	// +kubebuilder:default=1
-	// +kuma:nolint // https://github.com/kumahq/kuma/issues/14107
 	Weight *uint `json:"weight,omitempty"`
 	// Port is only supported when this ref refers to a real MeshService object
 	Port *uint32 `json:"port,omitempty"`

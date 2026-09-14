@@ -163,7 +163,6 @@ rules:
       - zones
       - zoneinsights
       - meshinsights
-      - serviceinsights
       - containerpatches
       - meshaccesslogs
       - meshcircuitbreakers
@@ -493,7 +492,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 345e5805076edc29201056aff714082e531755a43278703503620812d06dd10f
-        checksum/tls-secrets: 9c02da5d6f044014fcabd1f25d80bd1660fec9c1048522188d84766e740c72f2
+        checksum/tls-secrets: 4cce690dd10573f8132993729fa7c3d5d588edd09c413e4c11d945c92bc08e69
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -749,8 +748,7 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - serviceinsights
-          - zone
+          - zones
           - zoneinsights
           - meshaccesslogs
           - meshcircuitbreakers

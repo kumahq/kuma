@@ -1290,7 +1290,7 @@ func externalServiceEndpoint(address string, priority uint32) core_xds.Endpoint 
 func zoneProxyEgressListener(id kri.Identifier) *core_xds.Resource {
 	name := naming.ContextualZoneEgressListenerName("ze-port")
 	listener, err := NewListenerBuilder(envoy_common.APIV3, name).
-		Configure(InboundListener("10.0.0.1", 10002, core_xds.SocketAddressProtocolTCP, false)).
+		Configure(InboundListener("10.0.0.1", 10002, core_xds.SocketAddressProtocolTCP)).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, id.String()).
 			Configure(HttpConnectionManager(id.String(), false, nil, false)).
 			Configure(AddFilterChainConfigurer(&meshhttproute_xds.HttpOutboundRouteConfigurer{

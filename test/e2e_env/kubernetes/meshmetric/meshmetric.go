@@ -391,6 +391,18 @@ func MeshMetric() {
 		Expect(kubernetes.Cluster.DeleteMesh(secondaryMesh)).To(Succeed())
 	})
 
+	// The OpenTelemetry specs assert on envoy_cluster_external_upstream_rq_time,
+	// a histogram Envoy only emits once requests actually flow. Nothing else in
+	// this suite sends mesh traffic, so drive some instead of depending on what
+	// another spec happens to leave behind.
+	generateTraffic := func(g Gomega) {
+		_, _, err := client.CollectResponse(
+			kubernetes.Cluster, "test-server-0", "http://test-server-1:80",
+			client.FromKubernetesPod(namespace, "test-server-0"),
+		)
+		g.Expect(err).ToNot(HaveOccurred())
+	}
+
 	It("Basic MeshMetric policy exposes Envoy metrics on correct port", func() {
 		// given
 		Expect(kubernetes.Cluster.Install(BasicMeshMetricForMesh("mesh-policy", mainMesh))).To(Succeed())
@@ -489,13 +501,15 @@ func MeshMetric() {
 		}, "1m", "1s").Should(Succeed())
 	})
 
-	XIt("MeshMetric with OpenTelemetry enabled", func() {
+	It("MeshMetric with OpenTelemetry enabled", func() {
 		// given
 		openTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		Expect(kubernetes.Cluster.Install(MeshMetricWithOpenTelemetryBackend(mainMesh, openTelemetryCollector.CollectorEndpoint()))).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {
+			generateTraffic(g)
+
 			stdout, _, err := client.CollectResponse(
 				kubernetes.Cluster, "demo-client", openTelemetryCollector.ExporterEndpoint(),
 				client.FromKubernetesPod(observabilityNamespace, "demo-client"),
@@ -506,13 +520,15 @@ func MeshMetric() {
 		}, "3m", "5s").Should(Succeed())
 	})
 
-	XIt("MeshMetric with OpenTelemetry and usedonly/filter", func() {
+	It("MeshMetric with OpenTelemetry and usedonly/filter", func() {
 		// given
 		openTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		Expect(kubernetes.Cluster.Install(MeshMetricWithOpenTelemetryAndIncludeUnused(mainMesh, openTelemetryCollector.CollectorEndpoint()))).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {
+			generateTraffic(g)
+
 			stdout, _, err := client.CollectResponse(
 				kubernetes.Cluster, "demo-client", openTelemetryCollector.ExporterEndpoint(),
 				client.FromKubernetesPod(observabilityNamespace, "demo-client"),
@@ -524,7 +540,7 @@ func MeshMetric() {
 		}, "3m", "5s").Should(Succeed())
 	})
 
-	XIt("MeshMetric with OpenTelemetry and Prometheus enabled", func() {
+	It("MeshMetric with OpenTelemetry and Prometheus enabled", func() {
 		// given
 		openTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		testServerIp, err := PodIPOfApp(kubernetes.Cluster, "test-server-0", namespace)
@@ -533,6 +549,8 @@ func MeshMetric() {
 
 		// then
 		Eventually(func(g Gomega) {
+			generateTraffic(g)
+
 			// metrics from OpenTelemetry
 			stdout, _, err := client.CollectResponse(
 				kubernetes.Cluster, "demo-client", openTelemetryCollector.ExporterEndpoint(),
@@ -553,7 +571,7 @@ func MeshMetric() {
 		}, "3m", "5s").Should(Succeed())
 	})
 
-	XIt("MeshMetric with multiple OpenTelemetry backends", func() {
+	It("MeshMetric with multiple OpenTelemetry backends", func() {
 		// given
 		primaryOpenTelemetryCollector := otelcollector.From(kubernetes.Cluster, primaryOtelCollectorName)
 		secondaryOpenTelemetryCollector := otelcollector.From(kubernetes.Cluster, secondaryOtelCollectorName)
@@ -561,6 +579,8 @@ func MeshMetric() {
 
 		// then
 		Eventually(func(g Gomega) {
+			generateTraffic(g)
+
 			// primary collector
 			stdout, _, err := client.CollectResponse(
 				kubernetes.Cluster, "demo-client", primaryOpenTelemetryCollector.ExporterEndpoint(),

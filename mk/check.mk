@@ -2,6 +2,14 @@
 fmt/proto: ## Dev: Run buf format on .proto files
 	$(BUF) format -w
 
+# Keeps the Envoy proto dependency on the same release as ENVOY_VERSION, so an
+# Envoy bump can't leave buf lint resolving a different API than codegen does.
+.PHONY: fmt/proto-deps
+fmt/proto-deps: ## Dev: Pin the buf Envoy dependency to ENVOY_PROTO_VERSION
+	@COMMIT=$$($(BUF) registry module label info buf.build/envoyproxy/envoy:$(ENVOY_PROTO_VERSION) --format json | $(YQ) -p json -r '.commit') && \
+		$(YQ) -i '(.deps[] | select(test("^buf\.build/envoyproxy/envoy"))) = "buf.build/envoyproxy/envoy:'"$$COMMIT"'" | (.deps[] | select(test("^buf\.build/envoyproxy/envoy"))) line_comment = "$(ENVOY_PROTO_VERSION)"' buf.yaml
+	$(BUF) dep update
+
 .PHONY: tidy
 tidy:
 	@TOP=$(shell pwd) && \
@@ -22,8 +30,12 @@ else
 endif
 
 .PHONY: fmt/ci
+# `yq -i` reserializes the document and drops the folded runs-on scalars, so `check` fails
+# on its own diff. No `sed -i`: GNU and BSD disagree on its argument.
 fmt/ci:
-	$(YQ) -i '.env.K8S_MIN_VERSION = "$(K8S_MIN_VERSION)" | .env.K8S_MAX_VERSION = "$(K8S_MAX_VERSION)"' .github/workflows/"$(ACTION_PREFIX)"_test.yaml
+	@f=.github/workflows/"$(ACTION_PREFIX)"_test.yaml; t=$$(mktemp); \
+	sed -E -e 's|^(  K8S_MIN_VERSION: ).*|\1$(K8S_MIN_VERSION)|' \
+	       -e 's|^(  K8S_MAX_VERSION: ).*|\1$(K8S_MAX_VERSION)|' "$$f" > "$$t" && mv "$$t" "$$f"
 
 .PHONY: helm-lint
 helm-lint:
@@ -38,7 +50,7 @@ ginkgo/lint:
 	$(GO) run $(TOOLS_DIR)/ci/check_test_files.go
 
 .PHONY: format
-format: fmt/proto generate tidy ginkgo/unfocus fmt/ci docs
+format: fmt/proto fmt/proto-deps generate tidy ginkgo/unfocus fmt/ci docs
 
 .PHONY: kube-lint
 kube-lint:
@@ -101,8 +113,8 @@ check: format lint check/rbac ## Dev: Run code checks (go fmt, go vet, ...)
 check/rbac:
 	@BASE=$$(git merge-base HEAD origin/master); \
 	RBAC_CHANGED=$$(for f in $$(git --no-pager diff $$BASE --name-only -- deployments/); do \
-		{ cat "$$f" 2>/dev/null; git --no-pager show "$$BASE:$$f" 2>/dev/null; } \
-			| grep -qE 'kind: (Role|RoleBinding|ClusterRole|ClusterRoleBinding)' && echo true && break; \
+		grep -qE 'kind: (Role|RoleBinding|ClusterRole|ClusterRoleBinding)' \
+			<({ cat "$$f" 2>/dev/null; git --no-pager show "$$BASE:$$f" 2>/dev/null; }) && echo true && break; \
 	done); \
 	UPGRADE_CHANGED=$$(git --no-pager diff $$BASE --quiet UPGRADE.md; [ $$? -ne 0 ] && echo true || echo ""); \
 	if [ -n "$$RBAC_CHANGED" ] && [ -z "$$UPGRADE_CHANGED" ]; then \

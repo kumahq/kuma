@@ -104,7 +104,22 @@ func (i *MeshIdentity) getSpiffeIDTemplate(env config_core.EnvironmentType) stri
 	return builder.String()
 }
 
-func (i *MeshIdentity) GetTrustDomain(meta model.ResourceMeta, localZone string) (string, error) {
+// GetTrustDomain returns the trust domain this identity issues certificates in.
+// The status pins the value the first time the identity is initialized, so a
+// template that references a moving input, such as `{{ .Zone }}` on a zone that
+// is later renamed, keeps resolving to the domain the published MeshTrust
+// advertises instead of silently re-rendering.
+func (r *MeshIdentityResource) GetTrustDomain(localZone string) (string, error) {
+	if pinned := pointer.Deref(pointer.Deref(r.Status).TrustDomain); pinned != "" {
+		return pinned, nil
+	}
+	return r.Spec.RenderTrustDomain(r.GetMeta(), localZone)
+}
+
+// RenderTrustDomain resolves the trust domain template. Callers that issue or
+// advertise identities want GetTrustDomain: this one always re-renders and is
+// only for computing the value that GetTrustDomain then pins.
+func (i *MeshIdentity) RenderTrustDomain(meta model.ResourceMeta, localZone string) (string, error) {
 	var trustDomainTmpl string
 	if i.SpiffeID == nil || i.SpiffeID.TrustDomain == nil {
 		trustDomainTmpl = defaultTrustDomainTemplate

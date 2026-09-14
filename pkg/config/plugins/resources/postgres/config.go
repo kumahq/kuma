@@ -21,8 +21,6 @@ const (
 var _ config.Config = &PostgresStoreConfig{}
 
 var (
-	DefaultMinReconnectInterval        = config_types.Duration{Duration: 10 * time.Second}
-	DefaultMaxReconnectInterval        = config_types.Duration{Duration: 60 * time.Second}
 	DefaultMaxConnectionLifetime       = config_types.Duration{Duration: time.Hour}
 	DefaultMaxConnectionLifetimeJitter = config_types.Duration{Duration: 1 * time.Minute}
 	DefaultHealthCheckInterval         = config_types.Duration{Duration: 30 * time.Second}

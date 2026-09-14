@@ -965,7 +965,7 @@ func httpInboundListenerWith() envoy_common.NamedResource {
 	inboundName := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))
 	return createListener(
 		NewListenerBuilder(envoy_common.APIV3, inboundName).
-			Configure(InboundListener("127.0.0.1", 80, core_xds.SocketAddressProtocolTCP, true)),
+			Configure(InboundListener("127.0.0.1", 80, core_xds.SocketAddressProtocolTCP)),
 		HttpInboundRoute(
 			inboundName,
 			inboundName,
@@ -995,7 +995,7 @@ func zoneEgressListenerResource() core_xds.Resource {
 		Name:   name,
 		Origin: metadata.OriginEgress,
 		Resource: NewListenerBuilder(envoy_common.APIV3, name).
-			Configure(InboundListener("192.168.0.10", 10002, core_xds.SocketAddressProtocolTCP, true)).
+			Configure(InboundListener("192.168.0.10", 10002, core_xds.SocketAddressProtocolTCP)).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
 				Configure(MatchTransportProtocol("tls")).
 				Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).

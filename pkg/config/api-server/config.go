@@ -195,17 +195,17 @@ func (t TokensValidator) Validate() error {
 func (a *ApiServerConfig) Validate() error {
 	var errs error
 	if err := a.HTTP.Validate(); err != nil {
-		errs = multierr.Append(err, errors.Wrap(err, ".HTTP not valid"))
+		errs = multierr.Append(errs, errors.Wrap(err, ".HTTP not valid"))
 	}
 	if err := a.HTTPS.Validate(); err != nil {
-		errs = multierr.Append(err, errors.Wrap(err, ".HTTPS not valid"))
+		errs = multierr.Append(errs, errors.Wrap(err, ".HTTPS not valid"))
 	}
 	if err := a.GUI.Validate(); err != nil {
-		errs = multierr.Append(err, errors.Wrap(err, ".GUI not valid"))
+		errs = multierr.Append(errs, errors.Wrap(err, ".GUI not valid"))
 	}
 	if a.RootUrl != "" {
 		if _, err := url.Parse(a.RootUrl); err != nil {
-			errs = multierr.Append(err, errors.New("RootUrl is not a valid URL"))
+			errs = multierr.Append(errs, errors.New("RootUrl is not a valid URL"))
 		}
 	}
 	if a.BasePath != "" {
@@ -215,7 +215,7 @@ func (a *ApiServerConfig) Validate() error {
 		}
 	}
 	if err := a.Authn.Validate(); err != nil {
-		errs = multierr.Append(err, errors.Wrap(err, ".Authn is not valid"))
+		errs = multierr.Append(errs, errors.Wrap(err, ".Authn is not valid"))
 	}
 	if a.ReadHeaderTimeout.Duration < 0 {
 		errs = multierr.Append(errs, errors.New(".ReadHeaderTimeout must be greater or equal 0s"))

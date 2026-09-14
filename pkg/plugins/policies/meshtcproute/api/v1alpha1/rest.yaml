@@ -269,7 +269,6 @@ components:
                                       For example, you can target a port from MeshService.ports[] by its name.
                                     type: string
                                   weight:
-                                    default: 1
                                     maximum: 4294967295
                                     minimum: 0
                                     type: integer
@@ -345,6 +344,7 @@ components:
         application/json:
           schema:
             type: object
+            required: [total, items, next]
             properties:
               items:
                 type: array
@@ -354,8 +354,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     MeshTCPRouteCreateOrUpdateSuccessResponse:
       description: Successful response
       content:

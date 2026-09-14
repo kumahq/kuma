@@ -106,7 +106,7 @@ make build/kuma-cp        # Build control plane
 make test TEST_PKG_LIST=./pkg/xds/...    # Test specific package
 UPDATE_GOLDEN_FILES=true make test       # Update golden files
 
-make k3d/restart && skaffold dev          # Dev environment
+make k3d/cluster/start && skaffold dev          # Dev environment
 ```
 
 ### Git & PRs

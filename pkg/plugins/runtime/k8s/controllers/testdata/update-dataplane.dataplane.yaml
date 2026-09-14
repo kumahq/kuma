@@ -7,7 +7,6 @@ metadata:
     k8s.kuma.io/namespace: demo
     kuma.io/display-name: example
     kuma.io/mesh: default
-    kuma.io/zone: default
     version: "0.1"
   name: example
   namespace: playground

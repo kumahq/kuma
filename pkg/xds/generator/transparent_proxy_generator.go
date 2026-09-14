@@ -121,7 +121,7 @@ func CreateInboundPassthroughListener(
 	useStrictInboundPorts bool,
 	statPrefix string,
 ) (envoy_common.NamedResource, error) {
-	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, inboundPort, model.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort)).
+	inboundListenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, inboundPort, model.SocketAddressProtocolTCP).
 		WithOverwriteName(listenerName).
 		Configure(envoy_listeners.StatPrefix(statPrefix)).
 		Configure(envoy_listeners.OriginalDstForwarder())
@@ -186,7 +186,6 @@ func (TransparentProxyGenerator) generate(
 	// proxy with a workload identity defaults to strict. A proxy without one has no
 	// strict inbound to restrict to.
 	useStrictInboundPorts := proxy.Dataplane != nil &&
-		proxy.Metadata.HasFeature(xds_types.FeatureStrictInboundPorts) &&
 		proxy.Dataplane.Spec.Networking != nil &&
 		proxy.WorkloadIdentity != nil
 

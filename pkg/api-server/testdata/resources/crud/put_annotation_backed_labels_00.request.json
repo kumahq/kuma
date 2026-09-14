@@ -1,0 +1,7 @@
+{
+  "type": "MeshTimeout",
+  "mesh": "mesh-1",
+  "name": "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+  "labels": { "kuma.io/origin": "zone" },
+  "spec": { "targetRef": { "kind": "Mesh" }, "to": [ { "targetRef": { "kind": "Mesh" }, "default": { "idleTimeout": "1s" } } ] }
+}

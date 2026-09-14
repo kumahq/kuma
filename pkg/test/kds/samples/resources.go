@@ -31,7 +31,7 @@ var (
 			},
 		},
 	}
-	GatewayDataplane = &mesh_proto.Dataplane{
+	OutboundOnlyDataplane = &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
 			Address: "192.168.0.1",
 			Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
@@ -50,9 +50,6 @@ var (
 		MTLS: &mesh_proto.DataplaneInsight_MTLS{
 			CertificateRegenerations: 3,
 		},
-	}
-	ServiceInsight = &mesh_proto.ServiceInsight{
-		Services: map[string]*mesh_proto.ServiceInsight_Service{},
 	}
 	Secret2 = &system_proto.Secret{
 		Data: util_proto.Bytes([]byte("secret")),

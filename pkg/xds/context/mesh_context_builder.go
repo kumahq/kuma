@@ -15,7 +15,10 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/datasource"
 	"github.com/kumahq/kuma/v3/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
@@ -26,7 +29,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	"github.com/kumahq/kuma/v3/pkg/log"
-	"github.com/kumahq/kuma/v3/pkg/util/maps"
 	xds_topology "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
 
@@ -101,11 +103,17 @@ func (m *meshContextBuilder) Build(ctx context.Context, meshName string) (MeshCo
 }
 
 func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string, latestMeshCtx *MeshContext) (*MeshContext, error) {
-	globalContext, err := m.BuildGlobalContextIfChanged(ctx, nil)
+	var latestGlobal *GlobalContext
+	var latestBase *BaseMeshContext
+	if latestMeshCtx != nil {
+		latestGlobal = latestMeshCtx.globalContext
+		latestBase = latestMeshCtx.BaseMeshContext
+	}
+	globalContext, err := m.BuildGlobalContextIfChanged(ctx, latestGlobal)
 	if err != nil {
 		return nil, err
 	}
-	baseMeshContext, err := m.BuildBaseMeshContextIfChanged(ctx, meshName, nil)
+	baseMeshContext, err := m.BuildBaseMeshContextIfChanged(ctx, meshName, latestBase)
 	if err != nil {
 		return nil, err
 	}
@@ -132,93 +140,113 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		}
 	}
 
-	dataplanes := resources.Dataplanes().Items
-	dataplanesByName := make(map[string]*core_mesh.DataplaneResource, len(dataplanes))
-	for _, dp := range dataplanes {
-		dataplanesByName[dp.Meta.GetName()] = dp
-	}
-
-	var domains []xds_types.VIPDomains
-	var outbounds []*xds_types.Outbound
-	// This base64 encoding seems superfluous but keeping it for backward compatibility
-	newHash := base64.StdEncoding.EncodeToString(m.hash(globalContext, baseMeshContext, managedTypes, resources))
+	slices.Sort(managedTypes)
+	managedTypeHashes := resources.MeshLocalResources.typeHashes(managedTypes)
+	newHash := base64.StdEncoding.EncodeToString(m.hash(globalContext, baseMeshContext, managedTypeHashes))
 	if latestMeshCtx != nil && newHash == latestMeshCtx.Hash {
 		return latestMeshCtx, nil
 	}
 
 	var policyMatchingHash string
 	if m.withPolicyMatchingHash {
-		policyMatchingHash = base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypes, resources))
+		policyMatchingHash = base64.StdEncoding.EncodeToString(m.computePolicyMatchingHash(globalContext, baseMeshContext, managedTypeHashes))
 	}
 
+	loader := datasource.NewStaticLoader(resources.Secrets().Items)
+	topology := m.topologyContextIfChanged(ctx, latestMeshCtx, baseMeshContext, managedTypeHashes, resources, loader)
+
+	return &MeshContext{
+		globalContext:                   globalContext,
+		topology:                        topology,
+		Hash:                            newHash,
+		PolicyMatchingHash:              policyMatchingHash,
+		Resource:                        baseMeshContext.Mesh,
+		Resources:                       resources,
+		BaseMeshContext:                 baseMeshContext,
+		DataplanesByName:                topology.DataplanesByName,
+		EndpointMap:                     topology.EndpointMap,
+		VIPDomains:                      baseMeshContext.VIPDomains,
+		VIPOutbounds:                    baseMeshContext.VIPOutbounds,
+		DataSourceLoader:                loader,
+		CAsByTrustDomain:                getCAsByTrustDomain(resources.MeshTrusts().Items),
+		ZoneEgresses:                    topology.ZoneEgresses,
+		DataplaneZoneIngressEndpointMap: topology.DataplaneZoneIngressEndpointMap,
+		DataplaneZoneEgressEndpointMap:  topology.DataplaneZoneEgressEndpointMap,
+	}, nil
+}
+
+// topologyInputTypes are the types a TopologyContext is built from. Its hash covers only these,
+// so a change to anything else, like a policy, keeps the endpoint maps of the previous context.
+var topologyInputTypes = map[core_model.ResourceType]bool{
+	core_mesh.DataplaneType:                         true,
+	meshzoneaddress_api.MeshZoneAddressType:         true,
+	system.SecretType:                               true,
+	meshidentity_api.MeshIdentityType:               true,
+	meshservice_api.MeshServiceType:                 true,
+	meshexternalservice_api.MeshExternalServiceType: true,
+	meshmzservice_api.MeshMultiZoneServiceType:      true,
+}
+
+func (m *meshContextBuilder) topologyContextIfChanged(
+	ctx context.Context,
+	latestMeshCtx *MeshContext,
+	baseMeshContext *BaseMeshContext,
+	managedTypeHashes []typeHash,
+	resources Resources,
+	loader datasource.Loader,
+) *TopologyContext {
+	hasher := fnv.New128a()
+	for _, hashes := range [][]typeHash{baseMeshContext.typeHashes, managedTypeHashes} {
+		for _, th := range hashes {
+			if topologyInputTypes[th.resourceType] {
+				_, _ = hasher.Write(th.hash)
+			}
+		}
+	}
+	hash := hasher.Sum(nil)
+	if latestMeshCtx != nil && latestMeshCtx.topology != nil && bytes.Equal(latestMeshCtx.topology.hash, hash) {
+		return latestMeshCtx.topology
+	}
+
+	dataplanes := resources.Dataplanes().Items
+	dataplanesByName := make(map[string]*core_mesh.DataplaneResource, len(dataplanes))
+	for _, dp := range dataplanes {
+		dataplanesByName[dp.Meta.GetName()] = dp
+	}
 	meshServices := resources.MeshServices().Items
 	meshExternalServices := resources.MeshExternalServices().Items
-	meshMultiZoneServices := resources.MeshMultiZoneServices().Items
-
-	outbounds = append(outbounds, xds_topology.Outbounds(meshServices)...)
-	outbounds = append(outbounds, xds_topology.Outbounds(meshExternalServices)...)
-	outbounds = append(outbounds, xds_topology.Outbounds(meshMultiZoneServices)...)
-
-	domains = append(domains, xds_topology.Domains(meshServices)...)
-	domains = append(domains, xds_topology.Domains(meshExternalServices)...)
-	domains = append(domains, xds_topology.Domains(meshMultiZoneServices)...)
-
-	loader := datasource.NewStaticLoader(resources.Secrets().Items)
-	mesh := baseMeshContext.Mesh
-	casByTrustDomain := getCAsByTrustDomain(resources.MeshTrusts().Items)
-	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
-	endpointMap := xds_topology.BuildDataplaneEndpointMap(
+	identities := resources.MeshIdentities().Items
+	zoneEgresses := resolveZoneEgresses(dataplanes, identities, m.zone)
+	endpointMap, zoneIngressEndpointMap := xds_topology.BuildDataplaneEndpointMaps(
 		ctx,
 		m.zone,
 		meshServices,
-		meshMultiZoneServices,
+		resources.MeshMultiZoneServices().Items,
 		meshExternalServices,
 		dataplanes,
 		resources.MeshZoneAddresses().Items,
 		loader,
-		len(resources.MeshIdentities().Items) > 0,
-		zoneEgressList,
+		len(identities) > 0,
+		zoneEgresses,
 	)
-
-	dpZoneIngressEndpointMap := xds_topology.BuildDataplaneZoneIngressEndpointMap(
-		meshServices,
-		meshMultiZoneServices,
-		dataplanes,
-	)
-	dpZoneEgressEndpointMap := xds_topology.BuildDataplaneZoneEgressEndpointMap(
-		ctx,
-		mesh,
-		meshExternalServices,
-		loader,
-	)
-
-	return &MeshContext{
-		Hash:                            newHash,
-		PolicyMatchingHash:              policyMatchingHash,
-		Resource:                        mesh,
-		Resources:                       resources,
-		BaseMeshContext:                 baseMeshContext,
+	return &TopologyContext{
 		DataplanesByName:                dataplanesByName,
 		EndpointMap:                     endpointMap,
-		VIPDomains:                      domains,
-		VIPOutbounds:                    outbounds,
-		DataSourceLoader:                loader,
-		CAsByTrustDomain:                casByTrustDomain,
-		ZoneEgresses:                    zoneEgressList,
-		DataplaneZoneIngressEndpointMap: dpZoneIngressEndpointMap,
-		DataplaneZoneEgressEndpointMap:  dpZoneEgressEndpointMap,
-	}, nil
+		ZoneEgresses:                    zoneEgresses,
+		DataplaneZoneIngressEndpointMap: zoneIngressEndpointMap,
+		DataplaneZoneEgressEndpointMap:  xds_topology.BuildDataplaneZoneEgressEndpointMap(ctx, baseMeshContext.Mesh, meshExternalServices, loader),
+		hash:                            hash,
+	}
 }
 
 func (m *meshContextBuilder) BuildGlobalContextIfChanged(ctx context.Context, latest *GlobalContext) (*GlobalContext, error) {
 	rmap := ResourceMap{}
-	// Only pick the global stuff
 	for t := range m.typeSet {
 		desc, err := registry.Global().DescriptorFor(t)
 		if err != nil {
 			return nil, err
 		}
-		if desc.Scope == core_model.ScopeGlobal && desc.Name != system.ConfigType { // For config we ignore them atm and prefer to rely on more specific filters.
+		if desc.Scope == core_model.ScopeGlobal && !meshScopedGlobalTypes[desc.Name] {
 			rmap[t], err = m.fetchResourceList(ctx, t, nil)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to build global context")
@@ -226,14 +254,24 @@ func (m *meshContextBuilder) BuildGlobalContextIfChanged(ctx context.Context, la
 		}
 	}
 
-	newHash := rmap.Hash()
+	typeHashes := rmap.hashByType()
+	newHash := combineTypeHashes(typeHashes)
 	if latest != nil && bytes.Equal(newHash, latest.hash) {
 		return latest, nil
 	}
 	return &GlobalContext{
 		hash:        newHash,
+		typeHashes:  typeHashes,
 		ResourceMap: rmap,
 	}, nil
+}
+
+// meshScopedGlobalTypes are global types that never go to the global context. Config is left to
+// more specific filters, and each mesh only needs its own Mesh, which the base mesh context holds,
+// so a change to one Mesh does not invalidate every other mesh.
+var meshScopedGlobalTypes = map[core_model.ResourceType]bool{
+	system.ConfigType:  true,
+	core_mesh.MeshType: true,
 }
 
 func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, meshName string, latest *BaseMeshContext) (*BaseMeshContext, error) {
@@ -269,17 +307,36 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 			// DO nothing we're not interested in this type
 		}
 	}
-	newHash := rmap.Hash()
+	typeHashes := rmap.hashByType()
+	newHash := combineTypeHashes(typeHashes)
 	if latest != nil && bytes.Equal(newHash, latest.hash) {
 		return latest, nil
 	}
 
+	destinationResources := Resources{MeshLocalResources: rmap}
 	return &BaseMeshContext{
 		hash:             newHash,
+		typeHashes:       typeHashes,
 		Mesh:             mesh,
 		ResourceMap:      rmap,
 		DestinationIndex: NewDestinationIndex(destinations...),
+		VIPDomains:       vipDomains(destinationResources),
+		VIPOutbounds:     vipOutbounds(destinationResources),
 	}, nil
+}
+
+func vipOutbounds(resources Resources) xds_types.Outbounds {
+	var outbounds xds_types.Outbounds
+	outbounds = append(outbounds, xds_topology.Outbounds(resources.MeshServices().Items)...)
+	outbounds = append(outbounds, xds_topology.Outbounds(resources.MeshExternalServices().Items)...)
+	return append(outbounds, xds_topology.Outbounds(resources.MeshMultiZoneServices().Items)...)
+}
+
+func vipDomains(resources Resources) []xds_types.VIPDomains {
+	var domains []xds_types.VIPDomains
+	domains = append(domains, xds_topology.Domains(resources.MeshServices().Items)...)
+	domains = append(domains, xds_topology.Domains(resources.MeshExternalServices().Items)...)
+	return append(domains, xds_topology.Domains(resources.MeshMultiZoneServices().Items)...)
 }
 
 // fetch all resources of a type with potential filters etc
@@ -362,13 +419,12 @@ func modifyAllEntries(list core_model.ResourceList, fn func(resource core_model.
 	return newList, nil
 }
 
-func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
-	slices.Sort(managedTypes)
+func (m *meshContextBuilder) hash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypeHashes []typeHash) []byte {
 	hasher := fnv.New128a()
 	_, _ = hasher.Write(globalContext.hash)
 	_, _ = hasher.Write(baseMeshContext.hash)
-	for _, resType := range managedTypes {
-		_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
+	for _, th := range managedTypeHashes {
+		_, _ = hasher.Write(th.hash)
 	}
 	return hasher.Sum(nil)
 }
@@ -384,21 +440,13 @@ func affectsPolicyMatching(resType core_model.ResourceType) bool {
 	return descriptor.AffectsPolicyMatching
 }
 
-func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypes []core_model.ResourceType, resources Resources) []byte {
+func (m *meshContextBuilder) computePolicyMatchingHash(globalContext *GlobalContext, baseMeshContext *BaseMeshContext, managedTypeHashes []typeHash) []byte {
 	hasher := fnv.New128a()
-	for _, resType := range maps.SortedKeys(globalContext.ResourceMap) {
-		if affectsPolicyMatching(resType) {
-			_, _ = hasher.Write(resourceListXDSHash(globalContext.ResourceMap[resType]))
-		}
-	}
-	for _, resType := range maps.SortedKeys(baseMeshContext.ResourceMap) {
-		if affectsPolicyMatching(resType) {
-			_, _ = hasher.Write(resourceListXDSHash(baseMeshContext.ResourceMap[resType]))
-		}
-	}
-	for _, resType := range managedTypes {
-		if affectsPolicyMatching(resType) {
-			_, _ = hasher.Write(resourceListXDSHash(resources.MeshLocalResources[resType]))
+	for _, hashes := range [][]typeHash{globalContext.typeHashes, baseMeshContext.typeHashes, managedTypeHashes} {
+		for _, th := range hashes {
+			if affectsPolicyMatching(th.resourceType) {
+				_, _ = hasher.Write(policyMatchingListHash(th))
+			}
 		}
 	}
 	return hasher.Sum(nil)
@@ -421,7 +469,7 @@ func resolveZoneEgresses(
 			if _, isK8s := dp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; isK8s {
 				env = config_core.KubernetesEnvironment
 			}
-			if trustDomain, err := identity.Spec.GetTrustDomain(identity.GetMeta(), zone); err != nil {
+			if trustDomain, err := identity.GetTrustDomain(zone); err != nil {
 				logger.Error(err, "failed to compute trust domain for zone egress", "dataplane", dp.GetMeta().GetName())
 			} else if spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, dp.GetMeta(), env); err != nil {
 				logger.Error(err, "failed to compute SPIFFE ID for zone egress", "dataplane", dp.GetMeta().GetName())
