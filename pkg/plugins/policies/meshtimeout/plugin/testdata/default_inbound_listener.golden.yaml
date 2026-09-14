@@ -35,8 +35,8 @@ filterChains:
               prefix: /
             route:
               cluster: self_inbound_dp_80
-              idleTimeout: 1800s
-              timeout: 15s
+              idleTimeout: 3600s
+              timeout: 0s
       statPrefix: self_inbound_dp_80
 name: self_inbound_dp_80
 trafficDirection: INBOUND

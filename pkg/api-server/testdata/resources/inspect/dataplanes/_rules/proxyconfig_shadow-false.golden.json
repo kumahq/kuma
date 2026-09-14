@@ -4,7 +4,7 @@
    "self_inbound_dp_8080": {
     "name": "self_inbound_dp_8080",
     "type": "STATIC",
-    "connectTimeout": "5s",
+    "connectTimeout": "10s",
     "loadAssignment": {
      "clusterName": "self_inbound_dp_8080",
      "endpoints": [
@@ -52,7 +52,7 @@
          "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
          "statPrefix": "self_inbound_dp_8080",
          "cluster": "self_inbound_dp_8080",
-         "idleTimeout": "3600s"
+         "idleTimeout": "7200s"
         }
        }
       ]

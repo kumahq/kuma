@@ -322,9 +322,6 @@ var _ = Describe("RemoteStore", func() {
   "type": "Mesh",
   "name": "someMesh",
   "kri": "kri_m____someMesh_",
-  "skipCreatingInitialPolicies": [
-    "MeshRetry"
-  ],
   "creationTime": "0001-01-01T00:00:00Z",
   "modificationTime": "0001-01-01T00:00:00Z"
 }`))
@@ -332,9 +329,7 @@ var _ = Describe("RemoteStore", func() {
 
 			// when
 			resource := core_mesh.MeshResource{
-				Spec: &mesh_proto.Mesh{
-					SkipCreatingInitialPolicies: []string{"MeshRetry"},
-				},
+				Spec: &mesh_proto.Mesh{},
 				Meta: &model.ResourceMeta{
 					Name: meshName,
 				},

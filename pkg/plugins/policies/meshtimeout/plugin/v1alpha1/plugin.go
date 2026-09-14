@@ -17,6 +17,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/merge"
@@ -83,6 +84,7 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			Conf:             m.Conf,
 			Rules:            m.Rules,
 			SkipCommonConfig: !applyCommonConf,
+			Defaults:         policies_defaults.InboundTimeouts,
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -96,7 +98,7 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 		}
 
 		if applyCommonConf {
-			clusterConfigurer := plugin_xds.ClusterConfigurerFromConf(m.Conf, protocol)
+			clusterConfigurer := plugin_xds.ClusterConfigurerFromConf(m.Conf, protocol, policies_defaults.InboundTimeouts)
 			if err := clusterConfigurer.Configure(cluster); err != nil {
 				return err
 			}
@@ -163,7 +165,7 @@ func applyToZoneProxyListener(
 		cluster := filterChainTargets[filterChain]
 		protocol := xds.FilterChainProtocol(filterChain)
 		if applyCommonConf {
-			if err := plugin_xds.ConfigureFilterChain(commonConf, filterChain); err != nil {
+			if err := plugin_xds.ConfigureFilterChain(commonConf, policies_defaults.OutboundTimeouts, filterChain); err != nil {
 				return err
 			}
 			if err := applyZoneProxyClusterConf(cluster, protocol, commonConf); err != nil {
@@ -175,7 +177,7 @@ func applyToZoneProxyListener(
 		if conf, ok, err := mergeZoneProxyRuleConfs(matchedRules); err != nil {
 			return err
 		} else if ok {
-			if err := plugin_xds.ConfigureFilterChain(conf, filterChain); err != nil {
+			if err := plugin_xds.ConfigureFilterChain(conf, policies_defaults.OutboundTimeouts, filterChain); err != nil {
 				return err
 			}
 			if err := applyZoneProxyClusterConf(cluster, protocol, conf); err != nil {
@@ -199,7 +201,7 @@ func applyZoneProxyClusterConf(
 	if cluster == nil {
 		return nil
 	}
-	configurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
+	configurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol, policies_defaults.OutboundTimeouts)
 	return configurer.Configure(cluster)
 }
 
@@ -299,7 +301,7 @@ func buildListenerScopedInboundRules(
 func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.Resource) error {
 	switch envoyResource := r.Resource.(type) {
 	case *envoy_listener.Listener:
-		configurer := plugin_xds.ListenerConfigurer{Conf: rctx.Conf()}
+		configurer := plugin_xds.ListenerConfigurer{Conf: rctx.Conf(), Defaults: policies_defaults.OutboundTimeouts}
 		if err := configurer.ConfigureListener(envoyResource); err != nil {
 			return err
 		}
@@ -325,6 +327,7 @@ func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.R
 							route.GetRoute(),
 							pointer.Deref(routeCtx.Conf().Http).RequestTimeout,
 							pointer.Deref(routeCtx.Conf().Http).StreamIdleTimeout,
+							policies_defaults.OutboundTimeouts,
 						)
 					}
 				}
@@ -335,7 +338,7 @@ func applyToRealResource(rctx *outbound.ResourceContext[api.Conf], r *core_xds.R
 		}
 
 	case *envoy_cluster.Cluster:
-		configurer := plugin_xds.ClusterConfigurerFromConf(rctx.Conf(), r.Protocol)
+		configurer := plugin_xds.ClusterConfigurerFromConf(rctx.Conf(), r.Protocol, policies_defaults.OutboundTimeouts)
 		if err := configurer.Configure(envoyResource); err != nil {
 			return err
 		}

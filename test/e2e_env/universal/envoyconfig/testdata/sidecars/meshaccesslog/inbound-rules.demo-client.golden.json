@@ -166,7 +166,7 @@
             }
           ]
         },
-        "connectTimeout": "5s",
+        "connectTimeout": "10s",
         "loadAssignment": {
           "clusterName": "self_inbound_dp_3000",
           "endpoints": [
@@ -640,7 +640,7 @@
                     }
                   ],
                   "cluster": "self_inbound_dp_3000",
-                  "idleTimeout": "3600s",
+                  "idleTimeout": "7200s",
                   "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }

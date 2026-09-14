@@ -31,8 +31,7 @@ func MeshTimeout() {
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(Yaml(builders.Mesh().
-				WithName(mesh).
-				WithoutInitialPolicies())).
+				WithName(mesh))).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh)),

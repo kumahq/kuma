@@ -388,7 +388,11 @@ var _ = Describe("MeshTimeout", func() {
 			expectedClusters:  []string{"modified_inbound_cluster.golden.yaml", "default_outbound_cluster.golden.yaml"},
 			expectedListeners: []string{"modified_inbound_listener.golden.yaml", "default_outbound_listener.golden.yaml"},
 		}),
-		Entry("default outbound conf when no to section specified", sidecarTestCase{
+		// A mesh carries no MeshTimeout of its own, so this is what every mesh
+		// starts with: the inbound side keeps the larger values, or none where
+		// the request timeout is disabled, and the outbound side gets the
+		// values a MeshTimeout would otherwise carry.
+		Entry("no MeshTimeout at all", sidecarTestCase{
 			resources: []core_xds.Resource{
 				{
 					Name:     "inbound",

@@ -47,6 +47,24 @@ func FederateKubeZoneCPToUniversalGlobal() {
 			Install(MeshTrafficPermissionAllowAllKubernetesWorkloadIdentity("default",
 				MeshIdentityTrustDomain("default", zone),
 			)).
+			Install(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshCircuitBreaker
+metadata:
+  name: mcb-federation
+  namespace: %s
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionLimits:
+          maxConnections: 1024
+`, Config.KumaNamespace))).
 			Install(Parallel(
 				democlient.Install(),
 				testserver.Install(),
@@ -110,7 +128,7 @@ func FederateKubeZoneCPToUniversalGlobal() {
 			Eventually(func(g Gomega) {
 				out, _, err := global.GetKuma().Exec("curl", "--fail", "--show-error", "http://localhost:5681/meshcircuitbreakers")
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(out).Should(ContainSubstring("mesh-circuit-breaker-all-default-zw856xvxdb7558d9"))
+				g.Expect(out).Should(ContainSubstring("mcb-federation"))
 			}, "30s", "1s").Should(Succeed())
 		})
 

@@ -80,6 +80,21 @@ A wildcard `Domain`, for example `*.example.com`, has no address to resolve, so 
 
 - Make sure the sidecar can resolve those domains. A domain the sidecar cannot resolve has no endpoint, so its traffic fails instead of following the original destination.
 
+### Meshes no longer come with default policies
+
+Creating a `Mesh` used to create four policies with it: `mesh-timeout-all-<mesh>`, `mesh-timeout-to-all-<mesh>`, `mesh-circuit-breaker-all-<mesh>` and `mesh-retry-all-<mesh>`. Kuma 3.0 creates none of them, so a new mesh starts with no policies at all, and `skipCreatingInitialPolicies` is removed from the `Mesh` spec.
+
+A mesh that already has these policies keeps them. The control plane neither recreates nor deletes them, so an upgraded mesh behaves as it did before, and `kumactl delete meshtimeout -m <mesh> mesh-timeout-all-<mesh>` removes one when you no longer want it.
+
+Timeouts and circuit breakers are unchanged, because the values those policies carried are the ones the control plane writes anyway when no policy selects a listener, a cluster or a route. Outbound keeps its 5s connect timeout, 1h cluster idle timeout, 15s request timeout and 30m stream idle timeout. Inbound keeps the larger values it is meant to have, so the side that receives a request never cuts it before the side that sent it: a 10s connect timeout, a 2h cluster idle timeout, a 1h stream idle timeout and no request timeout at all. Circuit breakers fall back to Envoy's own limits, which are what the removed policy set: 1024 connections, 1024 pending requests, 1024 requests and 3 retries.
+
+Retries are the one thing that changes. A mesh without a `MeshRetry` does not retry: the removed policy retried an HTTP or gRPC request 5 times with a 16s per-try timeout and a 25ms to 250ms backoff, and made 5 TCP connection attempts.
+
+**Action required**
+
+- Apply a `MeshRetry` of your own to any new mesh that needs requests retried.
+- Drop `skipCreatingInitialPolicies` from your `Mesh` manifests. The control plane ignores the field, so a manifest that still sets it applies without an error, and a mesh stored with it loads fine. The first write to such a mesh drops the field, which matters only if you then roll back to 2.14: that mesh gets the default policies created again.
+
 ### Strict inbound ports and `SO_REUSEPORT` can no longer be turned off
 
 `kuma-dp` no longer reads `KUMA_DATAPLANE_RUNTIME_STRICT_INBOUND_PORTS_ENABLED` or `KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED`. Both defaulted to `true`, and the control plane now applies that behavior to every data plane:

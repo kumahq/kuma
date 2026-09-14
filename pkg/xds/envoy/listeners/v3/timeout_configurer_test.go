@@ -8,7 +8,6 @@ import (
 
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/defaults/mesh"
 	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -251,7 +250,7 @@ trafficDirection: OUTBOUND`,
 		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 				Configure(TcpProxyDeprecated("localhost:8080", plugins_xds.NewClusterBuilder().WithName("backend").Build())).
-				Configure(Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolTCP)))).
+				Configure(Timeout(policies_defaults.InboundTimeouts.Envoy(), core_meta.ProtocolTCP)))).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 
@@ -284,7 +283,7 @@ enableReusePort: true`
 		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 				Configure(HttpConnectionManager("localhost:8080", false, nil, true)).
-				Configure(Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolHTTP)))).
+				Configure(Timeout(policies_defaults.InboundTimeouts.Envoy(), core_meta.ProtocolHTTP)))).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 

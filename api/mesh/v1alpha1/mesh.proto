@@ -39,10 +39,8 @@ message Mesh {
   reserved 7;
   reserved "constraints";
 
-  // List of policies to skip creating by default when the mesh is created.
-  // e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all
-  // policies.
-  repeated string skipCreatingInitialPolicies = 8;
+  reserved 8;
+  reserved "skipCreatingInitialPolicies";
 
   reserved 9; // formerly meshServices
 }
