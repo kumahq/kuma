@@ -272,6 +272,9 @@ func buildHealthCheck(conf api.Conf) *envoy_core.HealthCheck {
 		HealthyThreshold:   util_proto.UInt32(uint32(healthyThreshold)),
 	}
 
+	if conf.UnhealthyInterval != nil {
+		hc.UnhealthyInterval = util_proto.Duration(conf.UnhealthyInterval.Duration)
+	}
 	if conf.InitialJitter != nil {
 		hc.InitialJitter = util_proto.Duration(conf.InitialJitter.Duration)
 	}
