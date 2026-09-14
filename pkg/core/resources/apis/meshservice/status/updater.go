@@ -139,23 +139,33 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			log.Info("mesh doesn't exists, skip", "mesh", ms.Meta.GetMesh())
 			continue
 		}
+
+		// ms is served from the read-only cache and is shared with the xDS mesh
+		// context, KDS and the API server. Compute the new spec/status on a copy
+		// so nothing unpersisted leaks to those readers, and so a conflicting
+		// Update doesn't leave a mutated object behind in the cache.
+		updated := meshservice_api.NewMeshServiceResource()
+		updated.Meta = ms.GetMeta()
+		ms.Spec.DeepCopyInto(updated.Spec)
+		ms.Status.DeepCopyInto(updated.Status)
+
 		mids := identityByMesh[mesh.Meta.GetName()]
 		identities := s.buildIdentities(dpps, mids)
 		if !reflect.DeepEqual(pointer.Deref(ms.Spec.Identities), identities) {
 			changeReasons = append(changeReasons, "identities")
-			ms.Spec.Identities = &identities
+			updated.Spec.Identities = &identities
 		}
 
 		tls := s.buildTLS(ms.Status.TLS, dpps, mids, trustDomains)
 		if !reflect.DeepEqual(ms.Status.TLS, tls) {
 			changeReasons = append(changeReasons, "tls status")
-			ms.Status.TLS = tls
+			updated.Status.TLS = tls
 		}
 
 		dataplaneProxies := buildDataplaneProxies(dpps, insightsByKey, ms.Spec.Ports)
 		if !reflect.DeepEqual(ms.Status.DataplaneProxies, dataplaneProxies) {
 			changeReasons = append(changeReasons, "data plane proxies")
-			ms.Status.DataplaneProxies = dataplaneProxies
+			updated.Status.DataplaneProxies = dataplaneProxies
 		}
 
 		state := meshservice_api.StateUnavailable
@@ -164,12 +174,12 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		}
 		if ms.Spec.State != state {
 			changeReasons = append(changeReasons, "availability state")
-			ms.Spec.State = state
+			updated.Spec.State = state
 		}
 
 		if len(changeReasons) > 0 {
 			log.Info("updating mesh service", "reason", changeReasons)
-			if err := s.resManager.Update(ctx, ms); err != nil {
+			if err := s.resManager.Update(ctx, updated); err != nil {
 				if store.IsConflict(err) {
 					log.Info("couldn't update mesh service, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
 				} else {
