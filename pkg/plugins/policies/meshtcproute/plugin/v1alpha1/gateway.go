@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/gateway/route"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
@@ -123,6 +124,11 @@ func makeTcpRouteEntry(
 			if !ok {
 				// This should be caught by validation
 				continue
+			}
+			if dest[mesh_proto.ServiceTag] == "" {
+				dest = map[string]string{
+					mesh_proto.ServiceTag: metadata.UnresolvedBackendServiceTag,
+				}
 			}
 		}
 		target := route.Destination{

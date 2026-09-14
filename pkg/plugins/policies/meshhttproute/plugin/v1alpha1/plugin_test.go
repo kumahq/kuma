@@ -3384,6 +3384,160 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("gateway-meshservice-labels-without-port", func() outboundsTestCase {
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								mesh_proto.ServiceTag: "sample-gateway",
+							},
+						},
+					},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8080,
+							},
+						},
+					},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{gateway},
+			}
+			xdsContext := xds_builders.Context().
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				Build()
+
+			commonRules := core_rules.ToRules{
+				Rules: core_rules.Rules{
+					test_policies.NewRule(subsetutils.MeshSubset(), api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{
+									Type:  api.PathPrefix,
+									Value: "/",
+								},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]common_api.BackendRef{{
+									Kind: common_api.MeshService,
+									Labels: &map[string]string{
+										mesh_proto.DisplayName: "backend",
+									},
+									Weight: pointer.To(uint(1)),
+								}},
+							},
+						}},
+					}),
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing()).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): commonRules,
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("gateway-mirror-meshservice-labels-without-port", func() outboundsTestCase {
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								mesh_proto.ServiceTag: "sample-gateway",
+							},
+						},
+					},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8080,
+							},
+						},
+					},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{gateway},
+			}
+			xdsContext := xds_builders.Context().
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				Build()
+
+			commonRules := core_rules.ToRules{
+				Rules: core_rules.Rules{
+					test_policies.NewRule(subsetutils.MeshSubset(), api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{
+									Type:  api.PathPrefix,
+									Value: "/",
+								},
+							}},
+							Default: api.RuleConf{
+								Filters: &[]api.Filter{{
+									Type: api.RequestMirrorType,
+									RequestMirror: &api.RequestMirror{
+										BackendRef: common_api.BackendRef{
+											TargetRef: common_api.TargetRef{
+												Kind: common_api.MeshService,
+												Labels: &map[string]string{
+													mesh_proto.DisplayName: "mirror",
+												},
+											},
+										},
+									},
+								}},
+								BackendRefs: &[]common_api.BackendRef{{
+									TargetRef: builders.TargetRefService("backend"),
+									Weight:    pointer.To(uint(1)),
+								}},
+							},
+						}},
+					}),
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing()).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): commonRules,
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
 		Entry("gateway-listener-specific", func() outboundsTestCase {
 			gateway := &core_mesh.MeshGatewayResource{
 				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},

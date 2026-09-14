@@ -304,6 +304,9 @@ func handleLegacyBackendRef(
 	}
 
 	service := pointer.Deref(ref.Name)
+	if service == "" {
+		return nil
+	}
 	protocol := meshCtx.GetServiceProtocol(service)
 	if _, ok := protocols[protocol]; !ok {
 		return nil

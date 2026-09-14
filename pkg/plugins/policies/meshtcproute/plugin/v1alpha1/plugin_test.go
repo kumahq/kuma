@@ -343,6 +343,54 @@ var _ = Describe("MeshTCPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("meshservice-labels-without-port", func() outboundsTestCase {
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8004).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolTCP)))
+			rules := core_rules.ToRules{
+				Rules: core_rules.Rules{
+					test_policies.NewRule(subsetutils.MeshService("backend"), api.Rule{
+						Default: api.RuleConf{
+							BackendRefs: &[]common_api.BackendRef{{
+								Kind: common_api.MeshService,
+								Labels: &map[string]string{
+									mesh_proto.DisplayName: "backend",
+								},
+								Weight: pointer.To(uint(1)),
+							}},
+						},
+					}),
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_meta.ProtocolTCP).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(
+						builders.Dataplane().
+							WithName("web-01").
+							WithAddress("192.168.0.2").
+							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
+					).
+					WithOutbounds(xds_types.Outbounds{
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "backend",
+							},
+						}},
+					}).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
+					Build(),
+			}
+		}()),
 		Entry("default-meshexternalservice", func() outboundsTestCase {
 			meshExtSvc := meshexternalservice_api.MeshExternalServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
@@ -941,6 +989,68 @@ var _ = Describe("MeshTCPRoute", func() {
 							WithOutboundTargets(outboundTargets),
 					).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
+					Build(),
+			}
+		}()),
+		Entry("gateway-meshservice-labels-without-port", func() outboundsTestCase {
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								mesh_proto.ServiceTag: "sample-gateway",
+							},
+						},
+					},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_TCP,
+								Port:     9080,
+							},
+						},
+					},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{gateway},
+			}
+			xdsContext := xds_builders.Context().
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				Build()
+
+			rules := core_rules.Rule{
+				Subset: subsetutils.MeshSubset(),
+				Conf: api.Rule{
+					Default: api.RuleConf{
+						BackendRefs: &[]common_api.BackendRef{{
+							Kind: common_api.MeshService,
+							Labels: &map[string]string{
+								mesh_proto.DisplayName: "backend",
+							},
+							Weight: pointer.To(uint(100)),
+						}},
+					},
+				},
+			}
+			return outboundsTestCase{
+				xdsContext: *xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing()).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshTCPRouteType, core_rules.GatewayRules{
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 9080, "*"): {Rules: core_rules.Rules{&rules}},
+									},
+								},
+							}),
+					).
 					Build(),
 			}
 		}()),
