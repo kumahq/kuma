@@ -44,20 +44,23 @@ type ClusterConfigurer struct {
 	HTTPMaxStreamDuration     *kube_meta.Duration
 	HTTPMaxConnectionDuration *kube_meta.Duration
 	Protocol                  core_meta.Protocol
+	// Defaults are the values written where the conf leaves a timeout unset.
+	Defaults policies_defaults.Timeouts
 }
 
-func ClusterConfigurerFromConf(conf api.Conf, protocol core_meta.Protocol) ClusterConfigurer {
+func ClusterConfigurerFromConf(conf api.Conf, protocol core_meta.Protocol, defaults policies_defaults.Timeouts) ClusterConfigurer {
 	return ClusterConfigurer{
 		ConnectionTimeout:         conf.ConnectionTimeout,
 		IdleTimeout:               conf.IdleTimeout,
 		HTTPMaxStreamDuration:     pointer.Deref(conf.Http).MaxStreamDuration,
 		HTTPMaxConnectionDuration: pointer.Deref(conf.Http).MaxConnectionDuration,
 		Protocol:                  protocol,
+		Defaults:                  defaults,
 	}
 }
 
 func (c *ClusterConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
-	cluster.ConnectTimeout = toProtoDurationOrDefault(c.ConnectionTimeout, policies_defaults.DefaultConnectTimeout)
+	cluster.ConnectTimeout = toProtoDurationOrDefault(c.ConnectionTimeout, c.Defaults.Connect)
 	switch c.Protocol {
 	case core_meta.ProtocolHTTP, core_meta.ProtocolHTTP2:
 		err := clusters_v3.UpdateCommonHttpProtocolOptions(cluster, func(options *envoy_upstream_http.HttpProtocolOptions) {
@@ -65,9 +68,9 @@ func (c *ClusterConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 				options.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
 			}
 			commonHttp := options.CommonHttpProtocolOptions
-			commonHttp.IdleTimeout = toProtoDurationOrDefault(c.IdleTimeout, policies_defaults.DefaultIdleTimeout)
-			commonHttp.MaxStreamDuration = toProtoDurationOrDefault(c.HTTPMaxStreamDuration, policies_defaults.DefaultMaxStreamDuration)
-			commonHttp.MaxConnectionDuration = toProtoDurationOrDefault(c.HTTPMaxConnectionDuration, policies_defaults.DefaultMaxConnectionDuration)
+			commonHttp.IdleTimeout = toProtoDurationOrDefault(c.IdleTimeout, c.Defaults.Idle)
+			commonHttp.MaxStreamDuration = toProtoDurationOrDefault(c.HTTPMaxStreamDuration, c.Defaults.MaxStreamDuration)
+			commonHttp.MaxConnectionDuration = toProtoDurationOrDefault(c.HTTPMaxConnectionDuration, c.Defaults.MaxConnectionDuration)
 		})
 		if err != nil {
 			return err
@@ -80,26 +83,27 @@ func ConfigureRouteAction(
 	routeAction *envoy_route.RouteAction,
 	httpRequestTimeout *kube_meta.Duration,
 	httpStreamIdleTimeout *kube_meta.Duration,
+	defaults policies_defaults.Timeouts,
 ) {
 	if routeAction == nil {
 		return
 	}
-	routeAction.Timeout = toProtoDurationOrDefault(httpRequestTimeout, policies_defaults.DefaultRequestTimeout)
+	routeAction.Timeout = toProtoDurationOrDefault(httpRequestTimeout, defaults.Request)
 	if httpStreamIdleTimeout != nil {
-		routeAction.IdleTimeout = toProtoDurationOrDefault(httpStreamIdleTimeout, policies_defaults.DefaultStreamIdleTimeout)
+		routeAction.IdleTimeout = toProtoDurationOrDefault(httpStreamIdleTimeout, defaults.StreamIdle)
 	} else if routeAction.IdleTimeout == nil {
-		routeAction.IdleTimeout = util_proto.Duration(policies_defaults.DefaultStreamIdleTimeout)
+		routeAction.IdleTimeout = util_proto.Duration(defaults.StreamIdle)
 	}
 }
 
-func ConfigureFilterChain(conf api.Conf, filterChain *envoy_listener.FilterChain) error {
+func ConfigureFilterChain(conf api.Conf, defaults policies_defaults.Timeouts, filterChain *envoy_listener.FilterChain) error {
 	if filterChain == nil {
 		return nil
 	}
 
 	httpTimeouts := func(hcm *envoy_hcm.HttpConnectionManager) error {
-		configureRouteConfigurationTimeouts(hcm.GetRouteConfig(), conf)
-		configureRequestHeadersTimeout(conf, hcm)
+		configureRouteConfigurationTimeouts(hcm.GetRouteConfig(), conf, defaults)
+		configureRequestHeadersTimeout(conf, defaults, hcm)
 		// old Timeout policy configures idleTimeout on listener while MeshTimeout sets this in cluster
 		if hcm.CommonHttpProtocolOptions == nil {
 			hcm.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
@@ -108,7 +112,7 @@ func ConfigureFilterChain(conf api.Conf, filterChain *envoy_listener.FilterChain
 		return nil
 	}
 	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
-		proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, policies_defaults.DefaultIdleTimeout)
+		proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, defaults.Idle)
 		return nil
 	}
 
@@ -182,6 +186,8 @@ type ListenerConfigurer struct {
 	Conf             api.Conf
 	Rules            []*rules_inbound.Rule
 	SkipCommonConfig bool
+	// Defaults are the values written where the conf leaves a timeout unset.
+	Defaults policies_defaults.Timeouts
 }
 
 func (rc *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
@@ -191,7 +197,7 @@ func (rc *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listene
 
 	for _, filterChain := range listener.FilterChains {
 		if !rc.SkipCommonConfig {
-			if err := ConfigureFilterChain(rc.Conf, filterChain); err != nil {
+			if err := ConfigureFilterChain(rc.Conf, rc.Defaults, filterChain); err != nil {
 				return err
 			}
 		}
@@ -203,14 +209,14 @@ func (rc *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listene
 	return nil
 }
 
-func configureRequestHeadersTimeout(conf api.Conf, hcm *envoy_hcm.HttpConnectionManager) {
+func configureRequestHeadersTimeout(conf api.Conf, defaults policies_defaults.Timeouts, hcm *envoy_hcm.HttpConnectionManager) {
 	hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
 		pointer.Deref(conf.Http).RequestHeadersTimeout,
-		policies_defaults.DefaultRequestHeadersTimeout,
+		defaults.RequestHeaders,
 	)
 }
 
-func configureRouteConfigurationTimeouts(routeConfiguration *envoy_route.RouteConfiguration, conf api.Conf) {
+func configureRouteConfigurationTimeouts(routeConfiguration *envoy_route.RouteConfiguration, conf api.Conf, defaults policies_defaults.Timeouts) {
 	if routeConfiguration == nil {
 		return
 	}
@@ -220,6 +226,7 @@ func configureRouteConfigurationTimeouts(routeConfiguration *envoy_route.RouteCo
 				route.GetRoute(),
 				pointer.Deref(conf.Http).RequestTimeout,
 				pointer.Deref(conf.Http).StreamIdleTimeout,
+				defaults,
 			)
 		}
 	}

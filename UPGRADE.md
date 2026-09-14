@@ -86,16 +86,13 @@ Creating a `Mesh` used to create four policies with it: `mesh-timeout-all-<mesh>
 
 A mesh that already has these policies keeps them. The control plane neither recreates nor deletes them, so an upgraded mesh behaves as it did before, and `kumactl delete meshtimeout -m <mesh> mesh-timeout-all-<mesh>` removes one when you no longer want it.
 
-For a mesh without them, Envoy's own defaults apply. They match what the removed policies set, except for two:
+Timeouts and circuit breakers are unchanged, because the values those policies carried are the ones the control plane writes anyway when no policy selects a listener, a cluster or a route. Outbound keeps its 5s connect timeout, 1h cluster idle timeout, 15s request timeout and 30m stream idle timeout. Inbound keeps the larger values it is meant to have, so the side that receives a request never cuts it before the side that sent it: a 10s connect timeout, a 2h cluster idle timeout, a 1h stream idle timeout and no request timeout at all. Circuit breakers fall back to Envoy's own limits, which are what the removed policy set: 1024 connections, 1024 pending requests, 1024 requests and 3 retries.
 
-- Outbound HTTP streams idle out after 5 minutes instead of 30 minutes.
-- Requests are not retried. The default `MeshRetry` retried 5 times with a 25ms base and 250ms maximum backoff, and a 16s per-try timeout.
-
-The connect timeout (5s), the cluster idle timeout (1h), the request timeout (15s) and the circuit breaker limits (1024 connections, 1024 pending requests, 1024 requests, 3 retries) are the same either way. Inbound timeouts are unchanged: the control plane has always set those without a policy.
+Retries are the one thing that changes. A mesh without a `MeshRetry` does not retry: the removed policy retried an HTTP or gRPC request 5 times with a 16s per-try timeout and a 25ms to 250ms backoff, and made 5 TCP connection attempts.
 
 **Action required**
 
-- Apply a `MeshRetry` or a `MeshTimeout` of your own to any new mesh that needs retries or the longer stream idle timeout.
+- Apply a `MeshRetry` of your own to any new mesh that needs requests retried.
 - Drop `skipCreatingInitialPolicies` from your `Mesh` manifests. The control plane ignores the field, so a manifest that still sets it applies without an error, and a mesh stored with it loads fine. The first write to such a mesh drops the field, which matters only if you then roll back to 2.14: that mesh gets the default policies created again.
 
 ### Strict inbound ports and `SO_REUSEPORT` can no longer be turned off
