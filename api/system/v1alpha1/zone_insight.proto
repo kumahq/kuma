@@ -1,0 +1,159 @@
+syntax = "proto3";
+
+package kuma.system.v1alpha1;
+
+import "api/mesh/options.proto";
+import "google/protobuf/timestamp.proto";
+import "validate/validate.proto";
+
+option go_package = "github.com/kumahq/kuma/v3/api/system/v1alpha1";
+
+// ZoneInsight defines the observed state of a Zone Kuma CP.
+message ZoneInsight {
+  option (kuma.mesh.resource).name = "ZoneInsightResource";
+  option (kuma.mesh.resource).type = "ZoneInsight";
+  option (kuma.mesh.resource).package = "system";
+  option (kuma.mesh.resource).global = true;
+  option (kuma.mesh.resource).ws.name = "zone-insight";
+  option (kuma.mesh.resource).ws.read_only = true;
+  // Zone object are managed independently by each Control Plane, they are not
+  // synced
+  option (kuma.mesh.resource).kds = "model.ProvidedByGlobalFlag | model.ProvidedByZoneFlag";
+  option (kuma.mesh.resource).policy_matching_exempt = true;
+  // List of KDS subscriptions created by a given Zone Kuma CP.
+  repeated KDSSubscription subscriptions = 1;
+
+  // Statistics about Envoy Admin Streams
+  // Deprecated: use kds_streams instead.
+  EnvoyAdminStreams envoy_admin_streams = 2;
+
+  HealthCheck health_check = 3;
+  // Information about kds streams that are estabilished between global and zone
+  KDSStreams kds_streams = 4;
+}
+
+message EnvoyAdminStreams {
+  // Global instance ID that handles XDS Config Dump streams.
+  string config_dump_global_instance_id = 1;
+  // Global instance ID that handles Stats streams.
+  string stats_global_instance_id = 2;
+  // Global instance ID that handles Clusters streams.
+  string clusters_global_instance_id = 3;
+}
+
+message KDSStreams {
+  // Details of stream that handles Clusters stream.
+  KDSStream clusters = 1;
+  // Details of stream that handles XDS Config Dump stream.
+  KDSStream config_dump = 2;
+  // Details of stream that handles Stats stream.
+  KDSStream stats = 3;
+  // Details of stream that handles global to zone resource sync stream.
+  KDSStream global_to_zone = 4;
+  // Details of stream that handles zone to global resource sync stream.
+  KDSStream zone_to_global = 5;
+}
+
+message KDSStream {
+  // Global instance ID that handles the stream.
+  string global_instance_id = 1;
+  // Time when the stream was open.
+  google.protobuf.Timestamp connect_time = 2;
+}
+
+// KDSSubscription describes a single KDS subscription
+// created by a Zone to the Global.
+// Ideally, there should be only one such subscription per Zone lifecycle.
+// Presence of multiple subscriptions might indicate one of the following
+// events:
+// - transient loss of network connection between Zone and Global Control
+// Planes
+// - Zone Kuma CP restarts (i.e. hot restart or crash)
+// - Global Kuma CP restarts (i.e. rolling update or crash)
+// - etc
+message KDSSubscription {
+  // Unique id per KDS subscription.
+  string id = 1 [(validate.rules).string.min_len = 1];
+
+  // Global CP instance that handled given subscription.
+  string global_instance_id = 2 [(validate.rules).string.min_len = 1];
+
+  // Time when a given Zone connected to the Global.
+  google.protobuf.Timestamp connect_time = 3 [(validate.rules).timestamp.required = true];
+
+  // Time when a given Zone disconnected from the Global.
+  google.protobuf.Timestamp disconnect_time = 4;
+
+  // Status of the KDS subscription.
+  KDSSubscriptionStatus status = 5 [(validate.rules).message.required = true];
+
+  // Version of Zone Kuma CP.
+  Version version = 6;
+
+  // Generation is an integer number which is periodically increased by the
+  // status sink
+  uint32 generation = 7;
+
+  // Config of Zone Kuma CP
+  string config = 8;
+
+  // Indicates if subscription provided auth token
+  bool auth_token_provided = 9;
+
+  // Zone CP instance that handled the given subscription (This is the leader at
+  // time of connection).
+  string zone_instance_id = 10;
+}
+
+// KDSSubscriptionStatus defines status of an KDS subscription.
+message KDSSubscriptionStatus {
+  // Time when status of a given KDS subscription was most recently updated.
+  google.protobuf.Timestamp last_update_time = 1;
+
+  // Total defines an aggregate over individual KDS stats.
+  KDSServiceStats total = 2;
+
+  map<string, KDSServiceStats> stat = 3;
+}
+
+// DiscoveryServiceStats defines all stats over a single xDS service.
+message KDSServiceStats {
+  // Number of xDS responses sent to the Dataplane.
+  uint64 responses_sent = 1;
+
+  // Number of xDS responses ACKed by the Dataplane.
+  uint64 responses_acknowledged = 2;
+
+  // Number of xDS responses NACKed by the Dataplane.
+  uint64 responses_rejected = 3;
+}
+
+// Version defines version of Kuma ControlPlane
+message Version {
+  // Version of Zone Kuma CP
+  KumaCpVersion kumaCp = 1;
+}
+
+// KumaCpVersion describes details of Kuma ControlPlane version
+message KumaCpVersion {
+  // Version number of Kuma ControlPlane
+  string version = 1;
+
+  // Git tag of Kuma ControlPlane version
+  string gitTag = 2;
+
+  // Git commit of Kuma ControlPlane version
+  string gitCommit = 3;
+
+  // Build date of Kuma ControlPlane version
+  string buildDate = 4;
+
+  // True iff this Zone CP version is compatible with Global CP
+  bool kumaCpGlobalCompatible = 5;
+}
+
+// HealthCheck holds information about the received zone health check
+message HealthCheck {
+  // Time last health check received
+  google.protobuf.Timestamp time = 1;
+}

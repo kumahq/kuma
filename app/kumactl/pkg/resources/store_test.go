@@ -6,10 +6,10 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/client"
 	config_proto "github.com/kumahq/kuma/v3/pkg/config/app/kumactl/v1alpha1"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Store", func() {
@@ -25,7 +25,7 @@ var _ = Describe("Store", func() {
 `
 				// when
 				cp := &config_proto.ControlPlane{}
-				err := yaml.Unmarshal([]byte(config), cp)
+				err := util_proto.FromYAML([]byte(config), cp)
 				Expect(err).ToNot(HaveOccurred())
 				_, err = client.ApiServerClient(cp.Coordinates.ApiServer, time.Second)
 

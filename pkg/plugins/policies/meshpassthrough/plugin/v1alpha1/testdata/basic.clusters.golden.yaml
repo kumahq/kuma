@@ -68,25 +68,52 @@ resources:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: meshpassthrough_http_example_com_8080
     connectTimeout: 5s
-    lbPolicy: CLUSTER_PROVIDED
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: meshpassthrough_http_example.com_8080
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: example.com
+                portValue: 8080
     name: meshpassthrough_http_example.com_8080
-    type: ORIGINAL_DST
+    type: STRICT_DNS
 - name: meshpassthrough_http_other.com_8080
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: meshpassthrough_http_other_com_8080
     connectTimeout: 5s
-    lbPolicy: CLUSTER_PROVIDED
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: meshpassthrough_http_other.com_8080
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: other.com
+                portValue: 8080
     name: meshpassthrough_http_other.com_8080
-    type: ORIGINAL_DST
+    type: STRICT_DNS
 - name: meshpassthrough_http_www.google.com_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: meshpassthrough_http_www_google_com_80
     connectTimeout: 5s
-    lbPolicy: CLUSTER_PROVIDED
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: meshpassthrough_http_www.google.com_80
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: www.google.com
+                portValue: 80
     name: meshpassthrough_http_www.google.com_80
-    type: ORIGINAL_DST
+    type: STRICT_DNS
 - name: meshpassthrough_tcp_9942:9abf:d0e0:f2da:2290:333b:e590:f497_9091
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -108,9 +135,18 @@ resources:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: meshpassthrough_tls_api_example_com_443
     connectTimeout: 5s
-    lbPolicy: CLUSTER_PROVIDED
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: meshpassthrough_tls_api.example.com_443
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: api.example.com
+                portValue: 443
     name: meshpassthrough_tls_api.example.com_443
-    type: ORIGINAL_DST
+    type: STRICT_DNS
 - name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -164,6 +200,15 @@ resources:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: meshpassthrough_tls_example_com_443
     connectTimeout: 5s
-    lbPolicy: CLUSTER_PROVIDED
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: meshpassthrough_tls_example.com_443
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: example.com
+                portValue: 443
     name: meshpassthrough_tls_example.com_443
-    type: ORIGINAL_DST
+    type: STRICT_DNS

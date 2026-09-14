@@ -1,0 +1,18 @@
+#/meshes/default/meshtimeouts/mt-zone 200 method=PUT
+type: Mesh
+name: default
+---
+type: MeshTimeout
+mesh: default
+name: mt-zone
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: zone-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 20s

@@ -209,16 +209,6 @@ func TagsKVToMap(tagsKV []string) map[string]string {
 	return tags
 }
 
-func (d *DataplaneBuilder) WithDelegatedGateway() *DataplaneBuilder {
-	meta := d.res.Meta.(*test_model.ResourceMeta)
-	if meta.Labels == nil {
-		meta.Labels = map[string]string{}
-	}
-	meta.Labels[mesh_proto.GatewayLabel] = mesh_proto.GatewayEnabled
-	d.res.Spec.Networking.Inbound = nil
-	return d
-}
-
 func (d *DataplaneBuilder) WithAdminPort(i int) *DataplaneBuilder {
 	d.res.Spec.Networking.Admin = &mesh_proto.EnvoyAdmin{
 		Port: uint32(i),

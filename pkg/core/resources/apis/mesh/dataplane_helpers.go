@@ -16,6 +16,18 @@ import (
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
+// Default fills in the outbound address so that every Dataplane the API serves
+// carries one, which is what the OpenAPI schema promises. It is called by the
+// Kubernetes defaulting webhook and by the Dataplane resource manager.
+func (d *DataplaneResource) Default() error {
+	for _, outbound := range d.Spec.GetNetworking().GetOutbound() {
+		if outbound.GetAddress() == "" {
+			outbound.Address = mesh_proto.DefaultOutboundAddress
+		}
+	}
+	return nil
+}
+
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
 	return d.UsesInboundInterface(address, port) || d.UsesOutboundInterface(address, port)
 }
@@ -57,18 +69,6 @@ func overlap(address1 net.IP, address2 net.IP) bool {
 	}
 	// exact match
 	return address1.Equal(address2)
-}
-
-// IsDelegatedGateway reports whether this proxy fronts a delegated gateway,
-// which the kuma.io/gateway label marks. A resource whose labels have not been
-// computed yet is not a gateway, so validate a write with the labels it is
-// about to store (see manager.ValidateWithLabels).
-func (d *DataplaneResource) IsDelegatedGateway() bool {
-	var labels map[string]string
-	if meta := d.GetMeta(); meta != nil {
-		labels = meta.GetLabels()
-	}
-	return mesh_proto.IsDelegatedGateway(labels)
 }
 
 func (d *DataplaneResource) IsIPv6() bool {

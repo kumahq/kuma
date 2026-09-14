@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
-	"sigs.k8s.io/yaml"
 
 	config_proto "github.com/kumahq/kuma/v3/pkg/config/app/kumactl/v1alpha1"
 	util_files "github.com/kumahq/kuma/v3/pkg/util/files"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var DefaultConfigFile = filepath.Join(os.Getenv("HOME"), ".kumactl", "config")
@@ -25,7 +25,7 @@ func Load(file string, cfg *config_proto.Configuration) error {
 	if util_files.FileExists(configFile) {
 		if contents, err := os.ReadFile(configFile); err != nil {
 			return errors.Wrapf(err, "Failed to read configuration from file %q", configFile)
-		} else if err := yaml.Unmarshal(contents, cfg); err != nil {
+		} else if err := util_proto.FromYAML(contents, cfg); err != nil {
 			return errors.Wrapf(err, "Failed to parse configuration from file %q", configFile)
 		}
 	}
@@ -33,7 +33,7 @@ func Load(file string, cfg *config_proto.Configuration) error {
 }
 
 func Save(file string, cfg *config_proto.Configuration) error {
-	contents, err := yaml.Marshal(cfg)
+	contents, err := util_proto.ToYAML(cfg)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to format configuration: %#v", cfg)
 	}

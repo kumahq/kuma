@@ -91,6 +91,31 @@ func (t *MeshServiceResource) hash(includeVersion bool) []byte {
 	return hasher.Sum(nil)
 }
 
+// PolicyMatchingHash returns the MeshService hash used to key cached policy
+// matching. On top of what XDSHash leaves out, it drops the fields derived from
+// which dataplanes back the service (identities, state and TLS readiness). They
+// change as proxies come and go but never change which policies match.
+func (t *MeshServiceResource) PolicyMatchingHash() []byte {
+	hasher := fnv.New128a()
+	_, _ = hasher.Write(core_model.HashMetaIdentity(t))
+	core_model.WriteSortedLabels(hasher, t.GetMeta().GetLabels())
+	spec := MeshService{}
+	if t.Spec != nil {
+		spec = *t.Spec
+	}
+	spec.Identities = nil
+	spec.State = ""
+	core_model.WriteDeterministicJSON(hasher, spec)
+	status := MeshServiceStatus{}
+	if t.Status != nil {
+		status = *t.Status
+	}
+	status.DataplaneProxies = DataplaneProxies{}
+	status.TLS = TLS{}
+	core_model.WriteDeterministicJSON(hasher, status)
+	return hasher.Sum(nil)
+}
+
 var _ core_vip.ResourceHoldingVIPs = &MeshServiceResource{}
 
 func (t *MeshServiceResource) VIPs() []string {

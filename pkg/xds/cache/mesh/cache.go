@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
+	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/once"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -23,6 +25,7 @@ type Cache struct {
 	hashCache *cache.Cache
 
 	meshContextBuilder xds_context.MeshContextBuilder
+	buildDuration      *prometheus.HistogramVec
 }
 
 // cleanupTime is the time after which the mesh context is removed from
@@ -39,10 +42,19 @@ func NewCache(
 	if err != nil {
 		return nil, err
 	}
+	buildDuration := prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "mesh_context_build_seconds",
+		Help:    "Duration of MeshContext builds on a mesh cache miss, by the parts of the context that were rebuilt (none when nothing changed).",
+		Buckets: prometheus.ExponentialBuckets(0.0005, 2, 14),
+	}, []string{"rebuilt"})
+	if err := metrics.Register(buildDuration); err != nil {
+		return nil, err
+	}
 	return &Cache{
 		cache:              c,
 		meshContextBuilder: meshContextBuilder,
 		hashCache:          cache.New(cleanupTime, time.Duration(int64(float64(cleanupTime)*0.9))),
+		buildDuration:      buildDuration,
 	}, nil
 }
 
@@ -57,11 +69,14 @@ func (c *Cache) GetMeshContext(ctx context.Context, mesh string) (xds_context.Me
 		}
 
 		// Rebuild the context only if the hash has changed
+		previousContext := latestContext
+		start := core.Now()
 		var err error
-		latestContext, err = c.meshContextBuilder.BuildIfChanged(ctx, mesh, latestContext)
+		latestContext, err = c.meshContextBuilder.BuildIfChanged(ctx, mesh, previousContext)
 		if err != nil {
 			return xds_context.MeshContext{}, err
 		}
+		c.buildDuration.WithLabelValues(latestContext.RebuiltParts(previousContext)).Observe(core.Now().Sub(start).Seconds())
 
 		// By always setting the mesh context, we refresh the TTL
 		// with the effect that often used contexts remain in the cache while no

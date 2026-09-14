@@ -184,6 +184,18 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		}))
 	})
 
+	It("records build durations by the parts that were rebuilt", func() {
+		_, err := meshCache.GetMeshContext(context.Background(), "mesh-0")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(test_metrics.FindMetric(metrics, "mesh_context_build_seconds", "rebuilt", "all").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
+
+		<-time.After(expiration)
+
+		_, err = meshCache.GetMeshContext(context.Background(), "mesh-0")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(test_metrics.FindMetric(metrics, "mesh_context_build_seconds", "rebuilt", "none").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
+	})
+
 	It("should count hashes independently for each mesh", func() {
 		meshCtx0, err := meshCache.GetMeshContext(context.Background(), "mesh-0")
 		Expect(err).ToNot(HaveOccurred())

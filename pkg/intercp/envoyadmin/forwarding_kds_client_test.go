@@ -9,7 +9,8 @@ import (
 	"google.golang.org/grpc"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -19,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/v3/pkg/test/runtime"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Forwarding KDS Client", func() {
@@ -63,19 +65,19 @@ var _ = Describe("Forwarding KDS Client", func() {
 	})
 
 	createZoneInsightConnectedToGlobal := func(insight string, globalInstanceID string, offline bool) {
-		zoneInsight := zoneinsight_api.NewZoneInsightResource()
-		zoneInsight.Spec.EnvoyAdminStreams = &zoneinsight_api.EnvoyAdminStreams{
-			ConfigDumpGlobalInstanceID: globalInstanceID,
-			StatsGlobalInstanceID:      globalInstanceID,
-			ClustersGlobalInstanceID:   globalInstanceID,
+		zoneInsight := system.NewZoneInsightResource()
+		zoneInsight.Spec.EnvoyAdminStreams = &system_proto.EnvoyAdminStreams{
+			ConfigDumpGlobalInstanceId: globalInstanceID,
+			StatsGlobalInstanceId:      globalInstanceID,
+			ClustersGlobalInstanceId:   globalInstanceID,
 		}
-		subscription := &zoneinsight_api.KDSSubscription{
-			ID:               "1",
-			GlobalInstanceID: globalInstanceID,
-			ConnectTime:      zoneinsight_api.NewTime(t1),
+		subscription := &system_proto.KDSSubscription{
+			Id:               "1",
+			GlobalInstanceId: globalInstanceID,
+			ConnectTime:      util_proto.MustTimestampProto(t1),
 		}
 		if offline {
-			subscription.DisconnectTime = zoneinsight_api.NewTime(t1.Add(1 * time.Hour))
+			subscription.DisconnectTime = util_proto.MustTimestampProto(t1.Add(1 * time.Hour))
 		}
 		zoneInsight.Spec.Subscriptions = append(zoneInsight.Spec.Subscriptions, subscription)
 		err := resManager.Create(context.Background(), zoneInsight, core_store.CreateByKey(insight, model.NoMesh))

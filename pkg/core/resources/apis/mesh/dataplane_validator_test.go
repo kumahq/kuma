@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -323,14 +322,13 @@ var _ = Describe("Dataplane", func() {
 
 	type testCase struct {
 		dataplane string
-		labels    map[string]string
 		expected  string
 	}
 	DescribeTable("should validate all fields and return as much individual errors as possible",
 		func(given testCase) {
 			// setup
 			dataplane := core_mesh.NewDataplaneResource()
-			dataplane.Meta = &test_model.ResourceMeta{Name: "dp-1", Mesh: "default", Labels: given.labels}
+			dataplane.Meta = &test_model.ResourceMeta{Name: "dp-1", Mesh: "default"}
 
 			// when
 			err := util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)
@@ -434,46 +432,6 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.address
                   message:  address has to be valid IP address or domain name`,
-		}),
-		Entry("networking: both inbounds and gateway are defined", testCase{
-			labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  inbound:
-                    - port: 8080
-                      servicePort: 7777
-                  outbound:
-                    - port: 3333
-                      backendRef:
-                        kind: MeshService
-                        name: redis
-                        port: 6379`,
-			expected: `
-                violations:
-                - field: networking.inbound
-                  message: inbound cannot be defined for delegated gateways`,
-		}),
-		Entry("networking: delegated gateway must not have listeners", testCase{
-			labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  listeners:
-                    - type: ZoneEgress
-                      address: 192.168.0.1
-                      port: 10002
-                      name: ze-port`,
-			expected: `
-                violations:
-                - field: networking.listeners
-                  message: listeners cannot be defined for delegated gateways`,
 		}),
 		Entry("networking.inbound: port of the range", testCase{
 			dataplane: `
@@ -1076,26 +1034,6 @@ var _ = Describe("Dataplane", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should accept a gateway marked by the label", func() {
-			dataplane := core_mesh.NewDataplaneResource()
-			dataplane.Meta = &test_model.ResourceMeta{
-				Name:   "dp-1",
-				Mesh:   "default",
-				Labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
-			}
-
-			// when
-			err := util_proto.FromYAML([]byte(`
-                networking:
-                  address: 192.168.0.1
-`), dataplane.Spec)
-			Expect(err).ToNot(HaveOccurred())
-
-			// then
-			Expect(dataplane.IsDelegatedGateway()).To(BeTrue())
-			Expect(dataplane.Validate()).To(Succeed())
-		})
-
 		It("should ignore the removed gateway field", func() {
 			// given a Dataplane written against the removed networking.gateway
 			// field, including the removed built-in gateway type
@@ -1111,10 +1049,8 @@ var _ = Describe("Dataplane", func() {
                       kuma.io/display-name: kong
 `), dataplane.Spec)
 
-			// then the field is dropped and, without the label, what is left is
-			// an ordinary Dataplane
+			// then the field is dropped and what is left is an ordinary Dataplane
 			Expect(err).ToNot(HaveOccurred())
-			Expect(dataplane.IsDelegatedGateway()).To(BeFalse())
 			Expect(dataplane.Validate()).To(Succeed())
 		})
 	})

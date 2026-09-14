@@ -3,12 +3,12 @@
   {
    "op": "test",
    "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_8080/filterChains/0/filters/0/typedConfig/idleTimeout",
-   "value": "3600s"
+   "value": "7200s"
   },
   {
    "op": "remove",
    "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_8080/filterChains/0/filters/0/typedConfig/idleTimeout",
-   "value": "3600s"
+   "value": "7200s"
   },
   {
    "op": "add",
@@ -21,7 +21,7 @@
    "self_inbound_dp_8080": {
     "name": "self_inbound_dp_8080",
     "type": "STATIC",
-    "connectTimeout": "5s",
+    "connectTimeout": "10s",
     "loadAssignment": {
      "clusterName": "self_inbound_dp_8080",
      "endpoints": [

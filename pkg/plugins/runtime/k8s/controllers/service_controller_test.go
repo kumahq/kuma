@@ -31,7 +31,7 @@ var _ = Describe("ServiceReconciler", func() {
 			&kube_core.Namespace{
 				Name: "non-system-ns-without-sidecar-injection",
 				Labels: map[string]string{
-					metadata.KumaGatewayAnnotation: metadata.AnnotationEnabled,
+					metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationDisabled,
 				},
 			},
 			&kube_core.Service{

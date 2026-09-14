@@ -93,6 +93,9 @@ func validateDefault(conf Conf) validators.ValidationError {
 			if match.Protocol == "tcp" || match.Protocol == "mysql" {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("protocol"), fmt.Sprintf("protocol %s is not supported for a domain", match.Protocol))
 			}
+			if match.Port == nil && !strings.HasPrefix(match.Value, "*") {
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be defined for a domain, the sidecar resolves the domain to pin the destination")
+			}
 			if wildcardPartialPrefixPattern.MatchString(match.Value) {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value, partial wildcard is currently not supported")
 			}

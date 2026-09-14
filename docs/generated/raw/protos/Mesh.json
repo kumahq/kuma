@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/Mesh",
+    "definitions": {
+        "Mesh": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mesh",
+            "description": "Mesh defines configuration of a single mesh."
+        }
+    }
+}

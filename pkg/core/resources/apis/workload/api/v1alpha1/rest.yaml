@@ -248,6 +248,7 @@ components:
         application/json:
           schema:
             type: object
+            required: [total, items, next]
             properties:
               items:
                 type: array
@@ -257,8 +258,10 @@ components:
                 type: number
                 description: The total number of entities
               next:
-                type: string
-                description: URL to the next page
+                type:
+                  - string
+                  - 'null'
+                description: URL to the next page, or null when this is the last page
     WorkloadCreateOrUpdateSuccessResponse:
       description: Successful response
       content:

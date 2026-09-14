@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
@@ -18,7 +19,6 @@ import (
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	meshzoneaddress_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshzoneaddress/api/v1alpha1"
 	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
-	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -35,6 +35,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 var _ = Describe("Context", func() {
@@ -197,7 +198,7 @@ var _ = Describe("Context", func() {
 			expect   bool
 
 			// zone ingresses and egresses
-			zoneResource *zone_api.ZoneResource
+			zoneResource *core_system.ZoneResource
 			zoneName     string
 		}
 
@@ -295,12 +296,12 @@ var _ = Describe("Context", func() {
 					},
 					Spec: &meshzoneaddress_api.MeshZoneAddress{Address: "192.168.0.1", Port: 10001},
 				},
-				zoneResource: &zone_api.ZoneResource{
+				zoneResource: &core_system.ZoneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "different-zone",
 					},
-					Spec: &zone_api.Zone{
-						Enabled: pointer.To(true),
+					Spec: &system_proto.Zone{
+						Enabled: util_proto.Bool(true),
 					},
 				},
 				zoneName: "different-zone",
@@ -324,12 +325,12 @@ var _ = Describe("Context", func() {
 					},
 					Spec: &meshzoneaddress_api.MeshZoneAddress{Address: "192.168.0.1", Port: 10001},
 				},
-				zoneResource: &zone_api.ZoneResource{
+				zoneResource: &core_system.ZoneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "different-zone",
 					},
-					Spec: &zone_api.Zone{
-						Enabled: pointer.To(false),
+					Spec: &system_proto.Zone{
+						Enabled: util_proto.Bool(false),
 					},
 				},
 				zoneName: "different-zone",

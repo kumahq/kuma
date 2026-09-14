@@ -4,6 +4,7 @@ import (
 	"context"
 	"maps"
 	"net"
+	"slices"
 	"strconv"
 
 	"github.com/asaskevich/govalidator"
@@ -29,21 +30,21 @@ import (
 
 var outboundLog = core.Log.WithName("xds").WithName("outbound")
 
+// BuildDataplaneEndpointMap builds the endpoints a regular Dataplane routes to: local and
+// remote MeshServices, MeshMultiZoneServices, and MeshExternalServices reached through a
+// zone egress.
+//
 // A Dataplane gets one endpoint map per listener kind it exposes, because the same
 // destination resolves to different endpoints depending on who is routing to it:
 //
-//   - BuildDataplaneEndpointMap      - a regular proxy's outbounds
-//   - BuildDataplaneZoneIngressEndpointMap - an embedded zone ingress, terminating traffic
-//     from other zones and forwarding it to local workloads
-//   - BuildDataplaneZoneEgressEndpointMap  - an embedded zone egress, terminating traffic
+//   - BuildDataplaneEndpointMap           - a regular proxy's outbounds
+//   - BuildDataplaneEndpointMaps          - the above, plus an embedded zone ingress,
+//     terminating traffic from other zones and forwarding it to local workloads
+//   - BuildDataplaneZoneEgressEndpointMap - an embedded zone egress, terminating traffic
 //     from the local zone and forwarding it outside the mesh
 //
 // Every destination is backed by a real resource (MeshService, MeshMultiZoneService,
 // MeshExternalService); tags are not a source of endpoints.
-
-// BuildDataplaneEndpointMap builds the endpoints a regular Dataplane routes to: local and
-// remote MeshServices, MeshMultiZoneServices, and MeshExternalServices reached through a
-// zone egress.
 func BuildDataplaneEndpointMap(
 	ctx context.Context,
 	localZone string,
@@ -67,22 +68,43 @@ func BuildDataplaneEndpointMap(
 	return outbound
 }
 
-// BuildDataplaneZoneIngressEndpointMap builds the endpoints an embedded zone ingress listener
-// forwards to: local MeshServices and the MeshMultiZoneServices covering them. A zone ingress
-// only ever terminates traffic destined for its own zone, so remote and external destinations
-// are absent by design.
-func BuildDataplaneZoneIngressEndpointMap(
+// BuildDataplaneEndpointMaps builds the BuildDataplaneEndpointMap result together with the
+// endpoints an embedded zone ingress listener forwards to: local MeshServices and the
+// MeshMultiZoneServices covering them. A zone ingress only ever terminates traffic destined
+// for its own zone, so remote and external destinations are absent from that map by design.
+// Dataplanes are matched with MeshServices once for both maps.
+func BuildDataplaneEndpointMaps(
+	ctx context.Context,
+	localZone string,
 	meshServices []*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
-) core_xds.EndpointMap {
-	outbound := core_xds.EndpointMap{}
+	meshZoneAddresses []*meshzoneaddress_api.MeshZoneAddressResource,
+	loader datasource.Loader,
+	workloadIdentityEnabled bool,
+	egressAddresses []core_xds.ZoneEgressInstance,
+) (core_xds.EndpointMap, core_xds.EndpointMap) {
+	local := core_xds.EndpointMap{}
+	fillLocalMeshServices(local, meshServices, dataplanes)
 
-	fillLocalMeshServices(outbound, meshServices, dataplanes)
-	// has to be last, it republishes the endpoints the filler above produced
+	outbound := cloneEndpointMap(local)
+	fillRemoteMeshServices(outbound, meshServices, meshZoneAddresses, localZone, workloadIdentityEnabled)
+	fillMeshExternalServicesOnDataplane(ctx, outbound, meshExternalServices, egressAddresses, loader)
 	fillMeshMultiZoneServices(outbound, meshServices, meshMultiZoneServices)
 
-	return outbound
+	zoneIngress := cloneEndpointMap(local)
+	fillMeshMultiZoneServices(zoneIngress, meshServices, meshMultiZoneServices)
+
+	return outbound, zoneIngress
+}
+
+func cloneEndpointMap(endpointMap core_xds.EndpointMap) core_xds.EndpointMap {
+	clone := make(core_xds.EndpointMap, len(endpointMap))
+	for name, endpoints := range endpointMap {
+		clone[name] = slices.Clone(endpoints)
+	}
+	return clone
 }
 
 // BuildDataplaneZoneEgressEndpointMap builds the endpoints an embedded zone egress listener
@@ -477,7 +499,7 @@ func loadSecureBytes(ctx context.Context, sds *datasource_api.SecureDataSource, 
 			return nil, errors.New("secretRef must be defined")
 		}
 		return loader.Load(ctx, mesh, &system_proto.DataSource{
-			Secret: pointer.To(sds.SecretRef.Name),
+			Type: &system_proto.DataSource_Secret{Secret: sds.SecretRef.Name},
 		})
 	case datasource_api.SecureDataSourceInline:
 		if sds.InsecureInline == nil {

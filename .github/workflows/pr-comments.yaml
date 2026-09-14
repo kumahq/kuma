@@ -102,7 +102,7 @@ jobs:
           token: ${{ steps.github-app-token.outputs.token }}
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.8.14
+          version: 2026.9.0
         if: steps.parse-commands.outputs.has_command == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -143,7 +143,8 @@ jobs:
             trap 'docker logout docker.io' EXIT
           fi
 
-          make UPDATE_GOLDEN_FILES=true test/e2e-golden-files
+          # No earlier job saved image tars for this one, so the images are built here.
+          make E2E_REUSE_PREBUILT_IMAGES=false UPDATE_GOLDEN_FILES=true test/e2e-golden-files
 
       # Enable IPv6 for transparent proxy tests
       - name: "Enable IPv6 for Docker and enable necessary kernel modules for ip6tables"

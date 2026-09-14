@@ -4,9 +4,18 @@ resources:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: meshpassthrough_http_api_example_com_80
     connectTimeout: 5s
-    lbPolicy: CLUSTER_PROVIDED
+    dnsLookupFamily: V4_ONLY
+    loadAssignment:
+      clusterName: meshpassthrough_http_api.example.com_80
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: api.example.com
+                portValue: 80
     name: meshpassthrough_http_api.example.com_80
-    type: ORIGINAL_DST
+    type: STRICT_DNS
 - name: meshpassthrough_tcp_192.168.0.0_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster

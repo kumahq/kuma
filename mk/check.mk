@@ -113,8 +113,8 @@ check: format lint check/rbac ## Dev: Run code checks (go fmt, go vet, ...)
 check/rbac:
 	@BASE=$$(git merge-base HEAD origin/master); \
 	RBAC_CHANGED=$$(for f in $$(git --no-pager diff $$BASE --name-only -- deployments/); do \
-		{ cat "$$f" 2>/dev/null; git --no-pager show "$$BASE:$$f" 2>/dev/null; } \
-			| grep -qE 'kind: (Role|RoleBinding|ClusterRole|ClusterRoleBinding)' && echo true && break; \
+		grep -qE 'kind: (Role|RoleBinding|ClusterRole|ClusterRoleBinding)' \
+			<({ cat "$$f" 2>/dev/null; git --no-pager show "$$BASE:$$f" 2>/dev/null; }) && echo true && break; \
 	done); \
 	UPGRADE_CHANGED=$$(git --no-pager diff $$BASE --quiet UPGRADE.md; [ $$? -ne 0 ] && echo true || echo ""); \
 	if [ -n "$$RBAC_CHANGED" ] && [ -z "$$UPGRADE_CHANGED" ]; then \

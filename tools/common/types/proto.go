@@ -12,4 +12,6 @@ var ProtoTypeToType = map[string]reflect.Type{
 	"Secret":           reflect.TypeFor[system_proto.Secret](),
 	"Dataplane":        reflect.TypeFor[mesh_proto.Dataplane](),
 	"DataplaneInsight": reflect.TypeFor[mesh_proto.DataplaneInsight](),
+	"Zone":             reflect.TypeFor[system_proto.Zone](),
+	"ZoneInsight":      reflect.TypeFor[system_proto.ZoneInsight](),
 }

@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package kuma.system.v1alpha1;
+
+import "google/protobuf/wrappers.proto";
+
+option go_package = "github.com/kumahq/kuma/v3/api/system/v1alpha1";
+
+// DataSource defines the source of bytes to use.
+message DataSource {
+  oneof type {
+    // Data source is a secret with given Secret key.
+    string secret = 1;
+    // Data source is a path to a file.
+    // Deprecated, use other sources of a data.
+    string file = 2;
+    // Data source is inline bytes.
+    google.protobuf.BytesValue inline = 3;
+    // Data source is inline string
+    string inlineString = 4;
+  }
+}

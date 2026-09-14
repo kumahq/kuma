@@ -98,6 +98,7 @@ func applyToOutboundPassthrough(
 				InternalAddresses: proxy.InternalAddresses,
 				Conf:              conf,
 				IPv6Enabled:       proxy.Metadata.IPv6Enabled,
+				DataplaneIPv6:     proxy.Dataplane.IsIPv6(),
 			}
 			return conf.Warnings(), configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
 		}

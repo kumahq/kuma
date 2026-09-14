@@ -2,6 +2,8 @@ package reconcile
 
 import (
 	"context"
+	"maps"
+	"sync"
 
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/pkg/errors"
@@ -17,18 +19,30 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
+	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 )
 
 func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, meshCache *mesh.Cache) *SnapshotGenerator {
 	return &SnapshotGenerator{
 		resourceManager: resourceManager,
 		meshCache:       meshCache,
+		matchesByMesh:   map[string]meshMetricMatches{},
 	}
 }
 
 type SnapshotGenerator struct {
 	resourceManager core_manager.ReadOnlyResourceManager
 	meshCache       *mesh.Cache
+
+	matchesMutex  sync.Mutex
+	matchesByMesh map[string]meshMetricMatches
+}
+
+// meshMetricMatches are the MeshMetric confs matched to the dataplanes of a mesh. Matching
+// depends only on what the mesh context hash covers, so they are reused until it changes.
+type meshMetricMatches struct {
+	meshHash         string
+	confToDataplanes map[*v1alpha1.Conf]*core_mesh.DataplaneResource
 }
 
 func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]envoy_cache.ResourceSnapshot, error) {
@@ -92,19 +106,36 @@ func (s *SnapshotGenerator) getMatchingDataplanes(ctx context.Context, meshesWit
 			return nil, errors.Wrap(err, "could not get mesh context")
 		}
 
-		for _, dp := range meshContext.DataplanesByName {
-			matchedPolicies, err := matchers.MatchedPolicies(v1alpha1.MeshMetricType, dp, meshContext.Resources)
-			if err != nil {
-				return nil, errors.Wrap(err, "error on matching dpp")
-			}
-			if matchedPolicies.ProxyConf != nil {
-				conf := matchedPolicies.ProxyConf.Conf.(v1alpha1.Conf)
-				meshMetricConfToDataplanes[&conf] = dp
-			}
+		matches, err := s.matchesFor(meshName, meshContext)
+		if err != nil {
+			return nil, err
 		}
+		maps.Copy(meshMetricConfToDataplanes, matches)
 	}
 
 	return meshMetricConfToDataplanes, nil
+}
+
+func (s *SnapshotGenerator) matchesFor(meshName string, meshContext xds_context.MeshContext) (map[*v1alpha1.Conf]*core_mesh.DataplaneResource, error) {
+	s.matchesMutex.Lock()
+	defer s.matchesMutex.Unlock()
+	if cached, ok := s.matchesByMesh[meshName]; ok && cached.meshHash == meshContext.Hash {
+		return cached.confToDataplanes, nil
+	}
+
+	matches := map[*v1alpha1.Conf]*core_mesh.DataplaneResource{}
+	for _, dp := range meshContext.DataplanesByName {
+		matchedPolicies, err := matchers.MatchedPolicies(v1alpha1.MeshMetricType, dp, meshContext.Resources)
+		if err != nil {
+			return nil, errors.Wrap(err, "error on matching dpp")
+		}
+		if matchedPolicies.ProxyConf != nil {
+			conf := matchedPolicies.ProxyConf.Conf.(v1alpha1.Conf)
+			matches[&conf] = dp
+		}
+	}
+	s.matchesByMesh[meshName] = meshMetricMatches{meshHash: meshContext.Hash, confToDataplanes: matches}
+	return matches, nil
 }
 
 func createSnapshot(resources []*core_xds.Resource) envoy_cache.ResourceSnapshot {

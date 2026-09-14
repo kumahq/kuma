@@ -9,9 +9,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -57,18 +56,6 @@ var _ = Describe("Global Insight", func() {
 		// all proxies connected, only some of them with ready inbounds
 		err = createMeshService("svc-2-degraded", "payments", 2, 1, 2, rs)
 		Expect(err).ToNot(HaveOccurred())
-		// two proxies of the same delegated gateway workload, only one of them online
-		err = createGatewayDataplane("edge-gw-1", "default", "edge-gw", true, rs)
-		Expect(err).ToNot(HaveOccurred())
-		err = createGatewayDataplane("edge-gw-2", "default", "edge-gw", false, rs)
-		Expect(err).ToNot(HaveOccurred())
-		err = createGatewayDataplane("payments-gw", "payments", "payments-gw", false, rs)
-		Expect(err).ToNot(HaveOccurred())
-		// no workload label, so each is its own service, grouped by the Dataplane name
-		err = createGatewayDataplane("bare-gw-1", "default", "", true, rs)
-		Expect(err).ToNot(HaveOccurred())
-		err = createGatewayDataplane("bare-gw-2", "default", "", false, rs)
-		Expect(err).ToNot(HaveOccurred())
 		err = createMeshExternalService("es-1", "default", rs)
 		Expect(err).ToNot(HaveOccurred())
 		err = createMeshExternalService("es-2", "payments", rs)
@@ -100,7 +87,6 @@ func createMeshInsight(name string, rs store.ResourceStore) error {
 	return builders.MeshInsight().
 		WithName(name).
 		WithStandardDataplaneStats(1, 1, 1, 3).
-		WithDelegatedGatewayDataplaneStats(2, 1, 0, 3).
 		AddResourceStats("MeshTimeout", 2).
 		AddResourceStats("MeshRetry", 1).
 		Create(rs)
@@ -112,48 +98,6 @@ func createMeshService(name string, mesh string, connected, healthy, total int, 
 		WithMesh(mesh).
 		WithDataplaneProxies(connected, healthy, total).
 		Create(rs)
-}
-
-// createGatewayDataplane creates a gateway Dataplane along with its insight. An empty
-// workload is left out entirely, so gateways can be grouped by either the workload
-// label or the resource name.
-func createGatewayDataplane(
-	name string,
-	mesh string,
-	workload string,
-	online bool,
-	rs store.ResourceStore,
-) error {
-	labels := map[string]string{}
-	if workload != "" {
-		labels["kuma.io/workload"] = workload
-	}
-	dataplane := core_mesh.NewDataplaneResource()
-	dataplane.Spec = &mesh_proto.Dataplane{
-		Networking: &mesh_proto.Dataplane_Networking{
-			Address: "127.0.0.1",
-		},
-	}
-	labels[mesh_proto.GatewayLabel] = mesh_proto.GatewayEnabled
-	if err := rs.Create(context.Background(), dataplane,
-		store.CreateByKey(name, mesh),
-		store.CreateWithLabels(labels),
-	); err != nil {
-		return err
-	}
-
-	insight := builders.DataplaneInsight().WithName(name).WithMesh(mesh)
-	if online {
-		insight.AddSubscription(&mesh_proto.DiscoverySubscription{
-			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
-		})
-	} else {
-		insight.AddSubscription(&mesh_proto.DiscoverySubscription{
-			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
-			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
-		})
-	}
-	return insight.Create(rs)
 }
 
 func createMeshExternalService(name string, mesh string, rs store.ResourceStore) error {
@@ -177,13 +121,13 @@ func createZoneInsight(name string, online bool, rs store.ResourceStore) error {
 	builder := builders.ZoneInsight().WithName(name)
 
 	if online {
-		builder.AddSubscription(&zoneinsight_api.KDSSubscription{
-			ConnectTime: zoneinsight_api.NewTime(time.Unix(1694779925, 0)),
+		builder.AddSubscription(&system_proto.KDSSubscription{
+			ConnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
 		})
 	} else {
-		builder.AddSubscription(&zoneinsight_api.KDSSubscription{
-			ConnectTime:    zoneinsight_api.NewTime(time.Unix(1694779805, 0)),
-			DisconnectTime: zoneinsight_api.NewTime(time.Unix(1694779925, 0)),
+		builder.AddSubscription(&system_proto.KDSSubscription{
+			ConnectTime:    util_proto.MustTimestampProto(time.Unix(1694779805, 0)),
+			DisconnectTime: util_proto.MustTimestampProto(time.Unix(1694779925, 0)),
 		})
 	}
 

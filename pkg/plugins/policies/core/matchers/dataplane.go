@@ -26,8 +26,8 @@ func PolicyMatches(resource core_model.Resource, dpp *core_mesh.DataplaneResourc
 	if !ok {
 		return false, errors.New("resource is not a targetRef policy")
 	}
-	selectedInbounds, delegatedGateway, err := DppSelectedByPolicy(resource.GetMeta(), refPolicy.GetTargetRef(), dpp, referencableResources)
-	return len(selectedInbounds) != 0 || delegatedGateway, err
+	selectedInbounds, dppSelected, err := DppSelectedByPolicy(resource.GetMeta(), refPolicy.GetTargetRef(), dpp, referencableResources)
+	return len(selectedInbounds) != 0 || dppSelected, err
 }
 
 // MatchedPolicies match policies using the standard matchers using targetRef (madr-005)
@@ -62,7 +62,7 @@ func MatchedPolicies(
 		}
 
 		refPolicy := policy.GetSpec().(core_model.Policy)
-		selectedInbounds, delegatedGatewaySelected, err := DppSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp, resources)
+		selectedInbounds, dppSelected, err := DppSelectedByPolicy(policy.GetMeta(), refPolicy.GetTargetRef(), dpp, resources)
 		if err != nil {
 			warnings = append(warnings,
 				fmt.Sprintf("unable to resolve TargetRef on policy: mesh:%s name:%s error:%q",
@@ -70,7 +70,7 @@ func MatchedPolicies(
 				),
 			)
 		}
-		if len(selectedInbounds) == 0 && !delegatedGatewaySelected {
+		if len(selectedInbounds) == 0 && !dppSelected {
 			// DPP is not matched by the policy
 			continue
 		}
@@ -127,8 +127,10 @@ func MatchedPolicies(
 	return result, nil
 }
 
-// DppSelectedByPolicy returns a list of inbounds of DPP that are selected by the top-level targetRef
-// and whether a delegated gateway is selected
+// DppSelectedByPolicy returns the inbounds of DPP that are selected by the
+// top-level targetRef, and whether the targetRef selects the proxy as a whole.
+// A proxy with no inbounds, such as one that only fronts ports excluded from
+// inbound redirection, is still selected by a proxy-wide targetRef.
 func DppSelectedByPolicy(
 	meta core_model.ResourceMeta,
 	ref common_api.TargetRef,
@@ -145,14 +147,14 @@ func DppSelectedByPolicy(
 	case common_api.Mesh:
 		inbounds := allInboundListeners(dpp)
 		inbounds = append(inbounds, embeddedListenersAsInboundListeners(dpp)...)
-		return inbounds, dpp.IsDelegatedGateway(), nil
+		return inbounds, true, nil
 	case common_api.Dataplane:
 		if allDataplanesSelected(ref) || isSelectedByLabels(dpp, ref) {
-			inboundInterfaces := dpp.Spec.GetNetworking().InboundsSelectedBySectionName(pointer.Deref(ref.SectionName))
+			sectionName := pointer.Deref(ref.SectionName)
+			inboundInterfaces := dpp.Spec.GetNetworking().InboundsSelectedBySectionName(sectionName)
 			inbounds := util_slices.Map(inboundInterfaces, func(i mesh_proto.InboundInterface) core_rules.InboundListener {
 				return core_rules.InboundListener{Address: i.DataplaneIP, Port: i.DataplanePort}
 			})
-			sectionName := pointer.Deref(ref.SectionName)
 			for _, l := range dpp.Spec.GetNetworking().GetListeners() {
 				if sectionName != "" && l.GetSectionName() != sectionName {
 					continue
@@ -163,7 +165,9 @@ func DppSelectedByPolicy(
 				}
 				inbounds = append(inbounds, core_rules.InboundListener{Address: addr, Port: l.GetPort()})
 			}
-			return inbounds, dpp.IsDelegatedGateway(), nil
+			// A sectionName scopes the policy to one inbound, so it never
+			// selects the proxy as a whole.
+			return inbounds, sectionName == "", nil
 		}
 		return []core_rules.InboundListener{}, false, nil
 	case common_api.MeshHTTPRoute:
@@ -174,9 +178,9 @@ func DppSelectedByPolicy(
 
 		var inbounds []core_rules.InboundListener
 		seen := map[core_rules.InboundListener]struct{}{}
-		var delegatedGatewaySelected bool
+		var dppSelected bool
 		for _, mhr := range mhrs {
-			selectedInbounds, delegatedGateway, err := DppSelectedByPolicy(
+			selectedInbounds, selected, err := DppSelectedByPolicy(
 				mhr.Meta,
 				mhr.Spec.TargetRef.ToTargetRef(),
 				dpp,
@@ -185,7 +189,7 @@ func DppSelectedByPolicy(
 			if err != nil {
 				return nil, false, err
 			}
-			delegatedGatewaySelected = delegatedGatewaySelected || delegatedGateway
+			dppSelected = dppSelected || selected
 			for _, inbound := range selectedInbounds {
 				if _, ok := seen[inbound]; ok {
 					continue
@@ -195,7 +199,7 @@ func DppSelectedByPolicy(
 			}
 		}
 
-		return inbounds, delegatedGatewaySelected, nil
+		return inbounds, dppSelected, nil
 	default:
 		return nil, false, fmt.Errorf("unsupported targetRef kind '%s'", ref.Kind)
 	}

@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -47,12 +46,15 @@ var _ = Describe("Defaults Component", func() {
 
 		It("should not override already created mesh", func() {
 			// given
-			mesh := &core_mesh.MeshResource{
-				Spec: &v1alpha1.Mesh{
-					SkipCreatingInitialPolicies: []string{"MeshRetry"},
-				},
-			}
-			err := manager.Create(context.Background(), mesh, core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
+			mesh := core_mesh.NewMeshResource()
+			err := manager.Create(
+				context.Background(),
+				mesh,
+				core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh),
+				// the Mesh spec has no fields, so a label stands in for what the
+				// component must not overwrite
+				core_store.CreateWithLabels(map[string]string{"test.kuma.io/marker": "kept"}),
+			)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -63,7 +65,7 @@ var _ = Describe("Defaults Component", func() {
 			Expect(err).ToNot(HaveOccurred())
 			err = manager.Get(context.Background(), mesh, core_store.GetByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(mesh.Spec.SkipCreatingInitialPolicies).To(Equal([]string{"MeshRetry"}))
+			Expect(mesh.GetMeta().GetLabels()).To(HaveKeyWithValue("test.kuma.io/marker", "kept"))
 		})
 	})
 

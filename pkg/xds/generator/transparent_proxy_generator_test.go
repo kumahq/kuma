@@ -158,14 +158,13 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			proxy:    withWorkloadIdentity(strictInboundPortsProxy([]uint32{8080, 8080})),
 			expected: "10.envoy.golden.yaml",
 		}),
-		Entry("transparent_proxying=true,inbound_filter,workload identity,gateway", testCase{
+		Entry("transparent_proxying=true,inbound_filter,workload identity,no inbounds", testCase{
 			proxy: &model.Proxy{
 				Metadata: &model.DataplaneMetadata{TransparentProxy: xds_builders.TransparentProxy("dualstack")},
 				Id:       *model.BuildProxyId("", "side-car"),
 				Dataplane: &core_mesh.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "v1",
-						Labels:  map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
 					},
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{},

@@ -666,13 +666,6 @@ var _ = Describe("MeshMetric", func() {
 			}),
 			v1alpha1.ProxyRoleSidecar,
 		),
-		Entry("gateway by label", gatewayDpp(nil), v1alpha1.ProxyRoleGateway),
-		Entry("gateway with inbounds (gateway wins)",
-			gatewayDpp(&mesh_proto.Dataplane_Networking{
-				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{Port: 8080}},
-			}),
-			v1alpha1.ProxyRoleGateway,
-		),
 		Entry("zone ingress only",
 			dppWithNetworking(&mesh_proto.Dataplane_Networking{
 				Listeners: []*mesh_proto.Dataplane_Networking_Listener{
@@ -706,14 +699,4 @@ func dppWithNetworking(networking *mesh_proto.Dataplane_Networking) *core_mesh.D
 		Meta: &test_model.ResourceMeta{Name: "dpp", Mesh: "default"},
 		Spec: &mesh_proto.Dataplane{Networking: networking},
 	}
-}
-
-func gatewayDpp(networking *mesh_proto.Dataplane_Networking) *core_mesh.DataplaneResource {
-	dpp := dppWithNetworking(networking)
-	dpp.Meta = &test_model.ResourceMeta{
-		Name:   "dpp",
-		Mesh:   "default",
-		Labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
-	}
-	return dpp
 }

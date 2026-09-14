@@ -57,6 +57,9 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 	}
 
 	m.setHealth(dp)
+	if err := dp.Default(); err != nil {
+		return err
+	}
 	labels, err := resource_labels.Compute(
 		resource.Descriptor(),
 		resource.GetSpec(),
@@ -73,8 +76,8 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 	}
 	fs = append(fs, core_store.CreateWithLabels(labels))
 
-	// Validate against the computed labels: a delegated gateway is marked by
-	// one, and the resource itself does not carry them yet.
+	// Validate against the computed labels: the resource itself does not carry
+	// them yet.
 	if err := core_manager.ValidateWithLabels(resource, labels); err != nil {
 		return err
 	}
@@ -99,6 +102,10 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 	owner := core_mesh.NewMeshResource()
 	if err := m.store.Get(ctx, owner, core_store.GetByKey(resource.GetMeta().GetMesh(), core_model.NoMesh)); err != nil {
 		return core_manager.MeshNotFound(resource.GetMeta().GetMesh())
+	}
+
+	if err := dp.Default(); err != nil {
+		return err
 	}
 
 	opts := core_store.NewUpdateOptions(fs...)

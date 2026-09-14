@@ -376,31 +376,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/env":                 "kubernetes",
 			},
 		}),
-		Entry("gateway dataplane proxy", testCase{
-			mode:      core.Zone,
-			isK8s:     true,
-			localZone: "zone-1",
-			r: &mesh.DataplaneResource{
-				Meta: &test_model.ResourceMeta{
-					Mesh:   "mesh-1",
-					Name:   "dp-1",
-					Labels: map[string]string{mesh_proto.GatewayLabel: mesh_proto.GatewayEnabled},
-				},
-				Spec: &mesh_proto.Dataplane{
-					Networking: &mesh_proto.Dataplane_Networking{
-						Address: "127.0.0.1",
-					},
-				},
-			},
-			expectedLabels: map[string]string{
-				"kuma.io/display-name": "dp-1",
-				"kuma.io/mesh":         "mesh-1",
-				"kuma.io/origin":       "zone",
-				"kuma.io/zone":         "zone-1",
-				"kuma.io/env":          "kubernetes",
-				"kuma.io/gateway":      "true",
-			},
-		}),
 		Entry("dataplane proxy", testCase{
 			mode:      core.Zone,
 			isK8s:     true,

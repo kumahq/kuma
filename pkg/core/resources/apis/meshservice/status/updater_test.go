@@ -435,6 +435,7 @@ var _ = Describe("buildTLS", func() {
 	updater := &StatusUpdater{logger: logr.Discard(), localZone: "east"}
 
 	identity := builders.MeshIdentity().
+		WithMesh("test").
 		WithBundled().
 		WithSelector(&common_api.LabelSelector{
 			MatchLabels: &map[string]string{"app": "test"},

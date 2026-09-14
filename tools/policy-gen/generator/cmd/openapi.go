@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -19,12 +20,16 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 		openAPITemplate    string
 		jsonSchemaTemplate string
 		yqBin              string
+		errorSchema        string
 	}{}
 	cmd := &cobra.Command{
 		Use:   "openapi",
 		Short: "Generate an OpenAPI schema for the policy REST",
 		Long:  "Generate an OpenAPI schema for the policy REST.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if localArgs.errorSchema == "" {
+				return errors.New("--error-schema must not be empty")
+			}
 			pluginDir := filepath.Clean(rootArgs.pluginDir)
 			policyName := filepath.Base(pluginDir)
 			policyPath := filepath.Join(pluginDir, "api", rootArgs.version, policyName+".go")
@@ -48,15 +53,14 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 			defer os.RemoveAll(tmpDir)
 
 			crdPath := filepath.Join(pluginDir, "k8s", "crd", "kuma.io_"+strings.ToLower(pconfig.Plural)+".yaml")
-			// A resource that ships an opaque Kubernetes definition keeps a typed schema
-			// beside it purely so the REST API reference can describe its spec.
-			if schemaPath := filepath.Join(pluginDir, "k8s", "schema", "kuma.io_"+strings.ToLower(pconfig.Plural)+".yaml"); fileExists(schemaPath) {
-				crdPath = schemaPath
-			}
 
 			// Generate temporary files
 			tmpRestPath := filepath.Join(tmpDir, "rest.yaml")
-			if err := template.PlainFileTemplate(localArgs.openAPITemplate, tmpRestPath, pconfig); err != nil {
+			restData := struct {
+				parse.PolicyConfig
+				ErrorSchema string
+			}{PolicyConfig: pconfig, ErrorSchema: localArgs.errorSchema}
+			if err := template.PlainFileTemplate(localArgs.openAPITemplate, tmpRestPath, restData); err != nil {
 				return err
 			}
 			tmpSchemaPath := filepath.Join(tmpDir, "schema.yaml")
@@ -82,25 +86,16 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 				unionAssignments = "\n  | " + unionAssignments
 			}
 
-			// A plugin originated resource nests its spec under "spec" in the REST API,
-			// a core resource inlines it, so the spec's own properties are hoisted to
-			// the top level and the "spec" key itself is dropped.
-			specProperties := "$crd.spec.versions[0].schema.openAPIV3Schema.properties"
-			if !pconfig.PluginOriginated {
-				specProperties = `(($crd.spec.versions[0].schema.openAPIV3Schema.properties.spec.properties // {})` +
-					` * ($crd.spec.versions[0].schema.openAPIV3Schema.properties | del(.spec)))`
-			}
-
 			// Enrich schema with CRD information
 			yqEnrichSchema := exec.CommandContext(cmd.Context(), //nolint:gosec
 				localArgs.yqBin, "e", "-i",
 				fmt.Sprintf(`load(%q) as $crd
   | .properties *= (
-      %s
+      $crd.spec.versions[0].schema.openAPIV3Schema.properties
       | del(.apiVersion, .metadata, .kind)
     ) * {"type": {"enum": [$crd.spec.names.kind]}}
   | .description = $crd.spec.versions[0].schema.openAPIV3Schema.description
-  | (.properties | select(has("status")).status) |= . + {"readOnly": true}%s`, crdPath, specProperties, unionAssignments),
+  | (.properties | select(has("status")).status) |= . + {"readOnly": true}%s`, crdPath, unionAssignments),
 				tmpSchemaPath,
 			)
 			yqEnrichSchema.Stderr = cmd.ErrOrStderr()
@@ -136,11 +131,7 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 	cmd.Flags().StringVar(&localArgs.openAPITemplate, "openapi-template-path", "", "path to the OpenAPI template file")
 	cmd.Flags().StringVar(&localArgs.jsonSchemaTemplate, "jsonschema-template-path", "", "path to the jsonschema template file")
 	cmd.Flags().StringVar(&localArgs.yqBin, "yq-bin", "", "path to a binary of yq")
+	cmd.Flags().StringVar(&localArgs.errorSchema, "error-schema", template.DefaultOpenAPIErrorSchema, "OpenAPI document with the shared error responses, relative to the specs root")
 
 	return cmd
-}
-
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
 }

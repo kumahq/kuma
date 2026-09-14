@@ -7,9 +7,10 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/multizone"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -17,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
+	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
 
 type zoneTenant struct {
@@ -83,7 +85,7 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 			start := core.Now()
 			for zone, lastStreamOpened := range zw.zones {
 				ctx := multitenant.WithTenant(context.TODO(), zone.tenantID)
-				zoneInsight := zoneinsight_api.NewZoneInsightResource()
+				zoneInsight := system.NewZoneInsightResource()
 
 				log := kuma_log.AddFieldsFromCtx(zw.log, ctx, zw.extensions)
 				if err := zw.rm.Get(ctx, zoneInsight, store.GetByKey(zone.zone, model.NoMesh)); err != nil {
@@ -103,7 +105,7 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 				// It may be that we don't have a health check yet so we use the
 				// lastSeen time because we know the zone was connected at that
 				// point at least
-				lastHealthCheck := zoneInsight.Spec.GetHealthCheck().GetTime().OrZero()
+				lastHealthCheck := zoneInsight.Spec.GetHealthCheck().GetTime().AsTime()
 				if lastStreamOpened.After(lastHealthCheck) {
 					lastHealthCheck = lastStreamOpened
 				}
@@ -174,9 +176,9 @@ func (zw *ZoneWatch) closeStaleConnectionOnConnect(newStream service.ZoneOpenedS
 	}
 }
 
-func (zw *ZoneWatch) cleanupStaleConnections(zone zoneTenant, zoneInsight *zoneinsight_api.ZoneInsightResource) {
+func (zw *ZoneWatch) cleanupStaleConnections(zone zoneTenant, zoneInsight *system.ZoneInsightResource) {
 	for stream, connOpenTime := range zw.zoneStreams[zone] {
-		var conf *zoneinsight_api.KDSStream
+		var conf *system_proto.KDSStream
 		switch stream {
 		case service.Clusters:
 			conf = zoneInsight.Spec.GetKdsStreams().GetClusters()
@@ -194,8 +196,8 @@ func (zw *ZoneWatch) cleanupStaleConnections(zone zoneTenant, zoneInsight *zonei
 		}
 		// If we have a connection that started before the one from insight, cancel the stream.
 		// There's no need to check globalId since the connection exists in the map, meaning it is local.
-		activeStreamConnTime := conf.GetConnectTime().OrZero()
-		if connOpenTime.Before(activeStreamConnTime) {
+		activeStreamConnTime := proto.MustTimestampFromProto(conf.GetConnectTime())
+		if connOpenTime.Before(*activeStreamConnTime) {
 			ctx := multitenant.WithTenant(context.TODO(), zone.tenantID)
 			log := kuma_log.AddFieldsFromCtx(zw.log, ctx, zw.extensions)
 			log.Info("the same zone has connected but the previous connection wasn't closed, closing",

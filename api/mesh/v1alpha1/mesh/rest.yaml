@@ -37,11 +37,17 @@ components:
                   $ref: '#/components/schemas/MeshItem'
                 type: array
               next:
-                description: URL to the next page
-                type: string
+                description: URL to the next page, or null when this is the last page
+                type:
+                - string
+                - "null"
               total:
                 description: The total number of entities
                 type: number
+            required:
+            - total
+            - items
+            - next
             type: object
       description: List
   schemas:
@@ -69,14 +75,6 @@ components:
           maxLength: 253
           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
           type: string
-        skipCreatingInitialPolicies:
-          description: |-
-            List of policies to skip creating by default when the mesh is created.
-            e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all
-            policies.
-          items:
-            type: string
-          type: array
         type:
           type: string
       required:

@@ -6,6 +6,7 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -15,8 +16,8 @@ import (
 )
 
 var _ = Describe("Snapshot", func() {
-	mustMarshalAny := func(spec model.ResourceSpec) *anypb.Any {
-		a, err := model.ToAny(spec)
+	mustMarshalAny := func(pb proto.Message) *anypb.Any {
+		a, err := anypb.New(pb)
 		if err != nil {
 			panic(err)
 		}
@@ -146,10 +147,12 @@ var _ = Describe("Snapshot", func() {
 
 			// given
 			resources = &mesh_proto.KumaResource{
-				Meta: &mesh_proto.KumaResource_Meta{Name: "mesh1", Mesh: "mesh1"},
-				Spec: mustMarshalAny(&mesh_proto.Mesh{
-					SkipCreatingInitialPolicies: []string{"MeshRetry"},
-				}),
+				Meta: &mesh_proto.KumaResource_Meta{
+					Name:   "mesh1",
+					Mesh:   "mesh1",
+					Labels: map[string]string{"changed": "true"},
+				},
+				Spec: mustMarshalAny(&mesh_proto.Mesh{}),
 			}
 			snapshot = cache.NewSnapshotBuilder([]model.ResourceType{core_mesh.MeshType}).
 				With(core_mesh.MeshType, []envoy_types.Resource{resources}).

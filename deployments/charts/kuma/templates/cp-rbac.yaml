@@ -87,6 +87,8 @@ rules:
       - dataplanes
       - dataplaneinsights
       - meshes
+      - zones
+      - zoneinsights
       - meshinsights
       - containerpatches
   {{- range $policy, $v := .Values.plugins.policies }}

@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
@@ -78,7 +78,9 @@ func (a *adminTokenBootstrap) generateTokenIfNotExist(ctx context.Context) error
 	}
 
 	log.Info("saving generated Admin User Token", "globalSecretName", globalSecretKey.Name)
-	secret.Spec.Data = system_proto.Bytes([]byte(token))
+	secret.Spec.Data = &wrapperspb.BytesValue{
+		Value: []byte(token),
+	}
 	if err := a.resManager.Create(ctx, secret, core_store.CreateBy(globalSecretKey)); err != nil {
 		return err
 	}

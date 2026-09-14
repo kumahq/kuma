@@ -5,16 +5,12 @@ kri: kri_m____default_
 modificationTime: "0001-01-01T00:00:00Z"
 name: default
 type: Mesh
-skipCreatingInitialPolicies:
-- '*'
 ---
 creationTime: "0001-01-01T00:00:00Z"
 kri: kri_m____another-mesh_
 modificationTime: "0001-01-01T00:00:00Z"
 name: another-mesh
 type: Mesh
-skipCreatingInitialPolicies:
-- '*'
 ---
 creationTime: "0001-01-01T00:00:00Z"
 mesh: default

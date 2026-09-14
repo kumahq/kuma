@@ -20,7 +20,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
@@ -65,8 +65,8 @@ func fetchMeshes(ctx context.Context, rt core_runtime.Runtime) (*mesh.MeshResour
 	return &meshes, nil
 }
 
-func fetchZones(ctx context.Context, rt core_runtime.Runtime) (*zone_api.ZoneResourceList, error) {
-	zones := zone_api.ZoneResourceList{}
+func fetchZones(ctx context.Context, rt core_runtime.Runtime) (*system.ZoneResourceList, error) {
+	zones := system.ZoneResourceList{}
 	if err := rt.ReadOnlyResourceManager().List(ctx, &zones); err != nil {
 		return nil, errors.Wrap(err, "could not fetch zones")
 	}
@@ -135,17 +135,6 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 		return err
 	}
 	b.mutable["dps_total"] = strconv.Itoa(len(dps.Items))
-
-	ngateways := 0
-	for _, dp := range dps.Items {
-		if dp.IsDelegatedGateway() {
-			ngateways++
-		}
-	}
-	b.mutable["gateway_dps"] = strconv.Itoa(ngateways)
-	// Delegated is the only kind of gateway left, so the per-type series is
-	// kept alive with the total rather than dropped from the report.
-	b.mutable["gateway_dp_type_delegated"] = strconv.Itoa(ngateways)
 
 	meshes, err := fetchMeshes(ctx, rt)
 	if err != nil {

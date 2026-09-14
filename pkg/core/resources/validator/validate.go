@@ -33,3 +33,29 @@ func Validate(resource model.Resource) error {
 	}
 	return verr.OrNil()
 }
+
+// ResourceUpdateValidator is implemented by resources that carry fields which
+// cannot change once the resource exists. It is consulted only on update, so it
+// complements ResourceValidator rather than replacing it.
+type ResourceUpdateValidator interface {
+	ValidateUpdate(previous model.Resource) error
+}
+
+// ValidateUpdate validates the transition from previous to current. Callers that
+// hold both revisions (the Kubernetes admission webhook and the REST API server)
+// run it in addition to Validate.
+func ValidateUpdate(previous model.Resource, current model.Resource) error {
+	rv, ok := current.(ResourceUpdateValidator)
+	if !ok {
+		return nil
+	}
+	var verr validators.ValidationError
+	if err := rv.ValidateUpdate(previous); err != nil {
+		if validationErr, ok := err.(*validators.ValidationError); ok {
+			verr.Add(*validationErr)
+		} else {
+			verr.AddViolationAt(validators.Root(), err.Error())
+		}
+	}
+	return verr.OrNil()
+}

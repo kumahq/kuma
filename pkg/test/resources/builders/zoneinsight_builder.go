@@ -3,31 +3,32 @@ package builders
 import (
 	"context"
 
-	zoneinsight_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zoneinsight/api/v1alpha1"
+	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
 type ZoneInsightBuilder struct {
-	res *zoneinsight_api.ZoneInsightResource
+	res *system.ZoneInsightResource
 }
 
 func ZoneInsight() *ZoneInsightBuilder {
 	return &ZoneInsightBuilder{
-		res: &zoneinsight_api.ZoneInsightResource{
+		res: &system.ZoneInsightResource{
 			Meta: &test_model.ResourceMeta{
 				Mesh: core_model.NoMesh,
 				Name: "zoneInsight-1",
 			},
-			Spec: &zoneinsight_api.ZoneInsight{
-				Subscriptions: []*zoneinsight_api.KDSSubscription{},
+			Spec: &system_proto.ZoneInsight{
+				Subscriptions: []*system_proto.KDSSubscription{},
 			},
 		},
 	}
 }
 
-func (zi *ZoneInsightBuilder) Build() *zoneinsight_api.ZoneInsightResource {
+func (zi *ZoneInsightBuilder) Build() *system.ZoneInsightResource {
 	return zi.res
 }
 
@@ -44,7 +45,7 @@ func (zi *ZoneInsightBuilder) WithName(name string) *ZoneInsightBuilder {
 	return zi
 }
 
-func (zi *ZoneInsightBuilder) AddSubscription(subscription *zoneinsight_api.KDSSubscription) *ZoneInsightBuilder {
+func (zi *ZoneInsightBuilder) AddSubscription(subscription *system_proto.KDSSubscription) *ZoneInsightBuilder {
 	zi.res.Spec.Subscriptions = append(zi.res.Spec.Subscriptions, subscription)
 	return zi
 }

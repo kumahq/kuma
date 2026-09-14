@@ -3823,7 +3823,6 @@ _kumactl_inspect_dataplanes()
     flags_with_completion=()
     flags_completion=()
 
-    flags+=("--gateway")
     flags+=("--ingress")
     flags+=("--mesh=")
     two_word_flags+=("--mesh")

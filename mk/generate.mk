@@ -11,20 +11,23 @@ HELM_CRD_DIR ?= "deployments/charts/kuma/crds/"
 HELM_VALUES_FILE_POLICY_PATH ?= ".plugins.policies"
 
 GENERATE_OAS_PREREQUISITES ?=
+# OpenAPI document the generated REST specs take their error responses from,
+# relative to the prepared specs root (see docs/generated/openapi/prepare/base).
+OAS_ERROR_SCHEMA ?= base/specs/common/error_schema.yaml
 EXTRA_GENERATE_DEPS_TARGETS ?= generate/envoy-imports
 
 .PHONY: clean/generated
 clean/generated: clean/protos clean/builtin-crds clean/legacy-resources clean/resources clean/policies clean/tools
 
 .PHONY: generate/protos
-generate/protos:
+generate/protos: dev/protos/deps
 	find $(PROTO_DIRS) -name '*.proto' -exec $(PROTOC_GO) {} \;
 
 .PHONY: clean/tools
 clean/tools:
 	rm -rf $(KUMA_DIR)/build/tools-*
 
-.PHONY: clean/proto
+.PHONY: clean/protos
 clean/protos: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIRS) -name '*.pb.go' -delete
 	find $(PROTO_DIRS) -name '*.pb.validate.go' -delete
@@ -69,6 +72,7 @@ generate/oas/extensions: $(OAPI_GEN)
 .PHONY: resources/type
 resources/type: $(RESOURCE_GEN)
 	$(RESOURCE_GEN) -package mesh -generator type > pkg/core/resources/apis/mesh/zz_generated.resources.go
+	$(RESOURCE_GEN) -package system -generator type > pkg/core/resources/apis/system/zz_generated.resources.go
 
 .PHONY: clean/legacy-resources
 clean/legacy-resources:
@@ -89,6 +93,7 @@ clean/resources: POLICIES_DIR=$(RESOURCES_DIR)
 clean/resources:
 	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) clean/policies
 
+.PHONY: generate/resources
 generate/resources: POLICIES_DIR=$(RESOURCES_DIR)
 generate/resources:
 	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) $(addprefix generate/policy/,$(policies))
@@ -96,6 +101,7 @@ generate/resources:
 	POLICIES_DIR=$(RESOURCES_DIR) HELM_VALUES_FILE_POLICY_PATH=".plugins.resources" $(MAKE) generate/policy-helm
 	POLICIES_DIR=$(RESOURCES_DIR) $(MAKE) generate/policy-config
 
+.PHONY: generate/policies
 generate/policies: generate/deep-copy/common $(addprefix generate/policy/,$(policies)) generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm ## Generate all policies written as plugins
 
 .PHONY: clean/policies
@@ -106,6 +112,7 @@ clean/policy/%:
 	$(shell find $(POLICIES_DIR)/$* \( -name '*.pb.go' -o -name '*.yaml' -o -name 'zz_generated.*'  \) -not -path '*/testdata/*' -type f -delete)
 	@rm -fr $(POLICIES_DIR)/$*/k8s
 
+.PHONY: generate/deep-copy/common
 generate/deep-copy/common:
 	for version in $(foreach dir,$(wildcard $(COMMON_DIR)/*),$(notdir $(dir))); do \
 		$(CONTROLLER_GEN) object paths="./$(COMMON_DIR)/$$version/..."  ; \
@@ -116,9 +123,10 @@ generate/policy/%: $(POLICY_GEN)
 	$(POLICY_GEN) k8s-resource --plugin-dir $(POLICIES_DIR)/$* --controller-gen-bin $(CONTROLLER_GEN) --gomodule $(GO_MODULE) && \
 	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
 	$(POLICY_GEN) helpers --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE)
-	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --yq-bin $(YQ) --openapi-template-path=$(TOOLS_DIR)/openapi/templates/endpoints.yaml --jsonschema-template-path=$(TOOLS_DIR)/openapi/templates/schema.yaml --gomodule $(GO_MODULE)
+	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --yq-bin $(YQ) --openapi-template-path=$(TOOLS_DIR)/openapi/templates/endpoints.yaml --jsonschema-template-path=$(TOOLS_DIR)/openapi/templates/schema.yaml --error-schema=$(OAS_ERROR_SCHEMA) --gomodule $(GO_MODULE)
 	@echo "Policy $* successfully generated"
 
+.PHONY: generate/policy-import generate/policy-config generate/policy-defaults generate/policy-helm
 generate/policy-import:
 	./tools/policy-gen/generate-policy-import.sh $(GO_MODULE) $(POLICIES_DIR) $(policies)
 
@@ -196,8 +204,9 @@ $(foreach s,$(OAS_SPECS),$(eval $(call OAS_RULE,$(s))))
 
 .PHONY: generate/oas
 generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN) $(OAPI_GEN) $(OAS_TYPES)
-	@$(RESOURCE_GEN) -package mesh   -generator openapi -readDir $(KUMA_DIR) -writeDir .
-	@$(OAPI_GEN) kri
+	@$(RESOURCE_GEN) -package mesh   -generator openapi -readDir $(KUMA_DIR) -writeDir . -error-schema=$(OAS_ERROR_SCHEMA)
+	@$(RESOURCE_GEN) -package system -generator openapi -readDir $(KUMA_DIR) -writeDir . -error-schema=$(OAS_ERROR_SCHEMA)
+	@$(OAPI_GEN) kri --error-schema=$(OAS_ERROR_SCHEMA)
 
 .PHONY: validate/openapi-generated-docs
 validate/openapi-generated-docs:
@@ -214,12 +223,10 @@ validate/openapi-generated-docs:
 	fi; \
 	rm -f $$tmp_file
 
-.PHONY: generate/oas-for-ts
-generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate OpenAPI spec from `/api/openapi/specs` ready for typescript type generation
-
 .PHONY: generate/builtin-crds
 generate/builtin-crds: $(RESOURCE_GEN)
 	$(RESOURCE_GEN) -package mesh -generator crd > ./pkg/plugins/resources/k8s/native/api/v1alpha1/zz_generated.mesh.go
+	$(RESOURCE_GEN) -package system -generator crd > ./pkg/plugins/resources/k8s/native/api/v1alpha1/zz_generated.system.go
 	$(CONTROLLER_GEN) "crd:crdVersions=v1" paths=./pkg/plugins/resources/k8s/native/api/... output:crd:artifacts:config=$(HELM_CRD_DIR)
 	$(CONTROLLER_GEN) object paths=./pkg/plugins/resources/k8s/native/api/...
 

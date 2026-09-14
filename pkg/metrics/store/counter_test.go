@@ -9,7 +9,7 @@ import (
 	io_prometheus_client "github.com/prometheus/client_model/go"
 
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	zone_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/zone/api/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -95,7 +95,7 @@ var _ = Describe("Counter", func() {
 
 	It("should count both global and mesh scoped resources", func() {
 		// given
-		err := resManager.Create(context.Background(), zone_api.NewZoneResource(), core_store.CreateByKey("zone-1", model.NoMesh))
+		err := resManager.Create(context.Background(), system.NewZoneResource(), core_store.CreateByKey("zone-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey("mesh-1", model.NoMesh))

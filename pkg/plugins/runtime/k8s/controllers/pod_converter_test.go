@@ -139,7 +139,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "01.services-for-pod.yaml",
 			dataplane:      "01.dataplane.yaml",
 		}),
-		Entry("03. Pod with gateway annotation and 1 service - legacy", testCase{
+		Entry("03. Pod with 1 service - legacy", testCase{
 			pod:            "03.pod.yaml",
 			servicesForPod: "03.services-for-pod.yaml",
 			dataplane:      "03.dataplane.yaml",
@@ -183,10 +183,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:       "13.pod.yaml",
 			dataplane: "13.dataplane.yaml",
 		}),
-		Entry("14. Gateway pod without a service", testCase{
-			pod:       "14.pod.yaml",
-			dataplane: "14.dataplane.yaml",
-		}),
 		Entry("15. Pod with transparent proxy enabled, IPv6 and without direct access servies", testCase{
 			pod:            "15.pod.yaml",
 			servicesForPod: "15.services-for-pod.yaml",
@@ -197,7 +193,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "16.services-for-pod.yaml",
 			dataplane:      "16.dataplane.yaml",
 		}),
-		Entry("18. Gateway with non tcp appProtocol", testCase{
+		Entry("18. Service with non tcp appProtocol", testCase{
 			pod:            "18.pod.yaml",
 			servicesForPod: "18.services-for-pod.yaml",
 			dataplane:      "18.dataplane.yaml",
@@ -207,18 +203,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "19.services-for-pod.yaml",
 			dataplane:      "19.dataplane.yaml",
 		}),
-		Entry(`20. Pod with gateway annotation "enabled"`, testCase{
-			pod:              "20.pod.yaml",
-			servicesForPod:   "20.services-for-pod.yaml",
-			otherReplicaSets: "20.replicasets-for-pod.yaml",
-			dataplane:        "20.dataplane.yaml",
-		}),
-		Entry(`21. Pod with gateway annotation "true"`, testCase{
-			pod:            "21.pod.yaml",
-			servicesForPod: "21.services-for-pod.yaml",
-			dataplane:      "21.dataplane.yaml",
-		}),
-		Entry(`22. Pod with gateway annotation "disabled" is a regular Dataplane`, testCase{
+		Entry("22. Pod owned by a ReplicaSet", testCase{
 			pod:              "22.pod.yaml",
 			servicesForPod:   "22.services-for-pod.yaml",
 			otherReplicaSets: "22.replicasets-for-pod.yaml",
@@ -374,11 +359,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "45.services-for-pod.yaml",
 			dataplane:      "45.dataplane.yaml",
 		}),
-		Entry("46. Pod with an invalid gateway annotation value", testCase{
-			pod:            "46.pod.yaml",
-			servicesForPod: "46.services-for-pod.yaml",
-			expectedErr:    `annotation "kuma.io/gateway" has wrong value "bogus"`,
-		}),
 		// the Pod reaches the converter through ignoredServiceSelectorLabels, so its inbound must be
 		// ready before the selector moves onto it. MeshService selectors decide who gets traffic.
 		Entry("47. Pod that the Service selector does not fully match gets a ready inbound", testCase{
@@ -392,6 +372,14 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:            "48.pod.yaml",
 			servicesForPod: "48.services-for-pod.yaml",
 			dataplane:      "48.dataplane.yaml",
+		}),
+		// A port excluded from inbound redirection is not an inbound: Envoy
+		// never receives traffic on it, so advertising it would have clients
+		// open mTLS connections against the workload's own listener.
+		Entry("49. Service port excluded from inbound redirection", testCase{
+			pod:            "49.pod.yaml",
+			servicesForPod: "49.services-for-pod.yaml",
+			dataplane:      "49.dataplane.yaml",
 		}),
 	)
 })
