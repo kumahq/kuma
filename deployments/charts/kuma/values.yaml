@@ -65,6 +65,15 @@ controlPlane:
   # -- Annotations applied only to the `Deployment` resource
   deploymentAnnotations: {}
 
+  # -- Deployment update strategy for the control plane. Note: `{}` does not
+  # disable the strategy (Helm re-merges the chart default); use `type: Recreate`
+  # to fully replace it. Setting it to `null` removes the default entirely,
+  # falling back to Kubernetes' own default strategy.
+  deploymentStrategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
   # -- Annotations applied only to the `Pod` resource
   podAnnotations: {}
 
