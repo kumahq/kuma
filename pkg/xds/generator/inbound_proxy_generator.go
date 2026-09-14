@@ -12,7 +12,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	defaults_mesh "github.com/kumahq/kuma/v3/pkg/defaults/mesh"
+	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/util/net"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -40,7 +40,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		// generate CDS resource
 		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, contextualName).
 			Configure(envoy_clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
-			Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
+			Configure(envoy_clusters.Timeout(policies_defaults.InboundTimeouts.Envoy(), protocol))
 		// localhost traffic is routed dirrectly to the application, in case of other interface we are going to set source address to
 		// 127.0.0.6 to avoid redirections and thanks to first iptables rule just return fast
 		if proxy.GetTransparentProxy().Enabled() && (endpoint.WorkloadIP != core_meta.LoopbackIPv4.String() && endpoint.WorkloadIP != core_meta.LoopbackIPv6.String()) {
@@ -121,7 +121,7 @@ func FilterChainBuilder(
 	}
 
 	return filterChainBuilder.
-		Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
+		Configure(envoy_listeners.Timeout(policies_defaults.InboundTimeouts.Envoy(), protocol))
 }
 
 // InboundListenerTags is the listener metadata of an inbound: the Dataplane's

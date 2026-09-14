@@ -1,15 +1,12 @@
 address:
   socketAddress:
     address: 127.0.0.1
-    portValue: 80
-enableReusePort: true
+    portValue: 10001
 filterChains:
 - filters:
   - name: envoy.filters.network.http_connection_manager
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-      commonHttpProtocolOptions:
-        idleTimeout: 0s
       httpFilters:
       - name: envoy.filters.http.router
         typedConfig:
@@ -20,23 +17,24 @@ filterChains:
           prefixLen: 32
         - addressPrefix: ::1
           prefixLen: 128
-      requestHeadersTimeout: 0s
       routeConfig:
-        name: self_inbound_dp_80
-        requestHeadersToRemove:
-        - x-kuma-tags
+        name: outbound:backend
+        requestHeadersToAdd:
+        - header:
+            key: x-kuma-tags
+            value: '&kuma.io/display-name=web&'
         validateClusters: false
         virtualHosts:
         - domains:
           - '*'
-          name: self_inbound_dp_80
+          name: backend
           routes:
           - match:
               prefix: /
+            name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
             route:
-              cluster: self_inbound_dp_80
-              idleTimeout: 3600s
+              cluster: backend
               timeout: 0s
-      statPrefix: self_inbound_dp_80
-name: self_inbound_dp_80
-trafficDirection: INBOUND
+      statPrefix: kri_msvc_default___http-service_10001
+name: kri_msvc_default___http-service_10001
+trafficDirection: OUTBOUND

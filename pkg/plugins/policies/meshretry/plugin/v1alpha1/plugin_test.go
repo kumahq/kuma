@@ -226,6 +226,18 @@ var _ = Describe("MeshRetry", func() {
 			},
 			goldenFilePrefix: "grpc_0_numretries",
 		}),
+		// A mesh carries no MeshRetry of its own, so a route is left without a
+		// retry policy and a request is tried once.
+		Entry("no MeshRetry at all", testCase{
+			resources: []core_xds.Resource{{
+				Name:           "outbound",
+				Origin:         metadata.OriginOutbound,
+				Resource:       httpListenerWithSimpleRoute(httpServiceIdentifier, 10001),
+				ResourceOrigin: httpServiceIdentifier,
+				Protocol:       core_meta.ProtocolHTTP,
+			}},
+			goldenFilePrefix: "no_policy",
+		}),
 		Entry("tcp retry", testCase{
 			resources: []core_xds.Resource{{
 				Name:           "outbound",

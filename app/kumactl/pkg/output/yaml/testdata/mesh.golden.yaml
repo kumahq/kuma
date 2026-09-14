@@ -3,5 +3,3 @@ kri: kri_m____demo_
 modificationTime: "2019-07-17T16:05:36.995Z"
 name: demo
 type: Mesh
-skipCreatingInitialPolicies:
-- MeshRetry

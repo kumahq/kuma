@@ -8,7 +8,6 @@ import (
 
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	"github.com/kumahq/kuma/v3/pkg/defaults/mesh"
 	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -139,7 +138,7 @@ typedExtensionProtocolOptions:
 		// given
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3, "localhost:8080").
 			Configure(clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: "192.168.0.1", Port: 8080})).
-			Configure(clusters.Timeout(mesh.DefaultInboundTimeout(), core_meta.ProtocolHTTP)).
+			Configure(clusters.Timeout(policies_defaults.InboundTimeouts.Envoy(), core_meta.ProtocolHTTP)).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
 

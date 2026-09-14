@@ -148,8 +148,7 @@ func ZoneProxy() {
 
 		Expect(NewClusterSetup().
 			Install(Yaml(builders.Mesh().
-				WithName(meshName).
-				WithoutInitialPolicies())).
+				WithName(meshName))).
 			Install(YamlUniversal(zoneProxyMeshIdentity(meshName))).
 			Install(YamlUniversal(zoneProxyMeshTrafficPermission(meshName, zoneName))).
 			Install(zoneproxy.Install(
