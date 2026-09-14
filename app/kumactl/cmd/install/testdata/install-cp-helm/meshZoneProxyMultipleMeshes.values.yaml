@@ -1,3 +1,4 @@
+# mesh-1 overrides the preStop sleep, mesh-2 drops the hook entirely.
 meshes:
   - name: mesh-1
     ingress:
@@ -10,6 +11,7 @@ meshes:
         tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
     egress:
       enabled: true
+      preStopSleepSeconds: 10
       deployment:
         replicas: 1
       image:
@@ -27,6 +29,7 @@ meshes:
         tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
     egress:
       enabled: true
+      preStopSleepSeconds: 0
       deployment:
         replicas: 1
       image:
