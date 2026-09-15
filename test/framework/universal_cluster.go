@@ -141,7 +141,11 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		return errors.Errorf("universal clusters only support the '%s' installation mode but got '%s'", KumactlInstallationMode, c.opts.installationMode)
 	}
 
-	env := map[string]string{"KUMA_MODE": mode, "KUMA_DNS_SERVER_PORT": "53"}
+	env := map[string]string{
+		"KUMA_MODE":                              mode,
+		"KUMA_DNS_SERVER_PORT":                   "53",
+		dataplaneConfigurationRefreshIntervalEnv: e2eDataplaneConfigurationRefreshInterval,
+	}
 
 	if Config.IPV6 {
 		env["KUMA_IPAM_MESH_SERVICE_CIDR"] = "fd00:fd01::/64"

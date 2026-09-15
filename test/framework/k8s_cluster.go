@@ -708,6 +708,9 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	if mode == core.Zone {
 		c.opts.env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
+	if _, ok := c.opts.env[dataplaneConfigurationRefreshIntervalEnv]; !ok {
+		c.opts.env[dataplaneConfigurationRefreshIntervalEnv] = e2eDataplaneConfigurationRefreshInterval
+	}
 
 	if Config.Debug {
 		dpEnvVarKey := "KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS"
