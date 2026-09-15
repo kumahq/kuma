@@ -207,7 +207,6 @@ var MeshServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:            "Mesh Services",
 	IsPluginOriginated:           true,
 	AffectsPolicyMatching:        true,
-	IsTargetRefBased:             false,
 	HasToTargetRef:               false,
 	HasRulesTargetRef:            false,
 	HasStatus:                    true,

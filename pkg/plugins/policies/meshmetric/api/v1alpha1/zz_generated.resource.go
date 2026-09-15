@@ -204,7 +204,6 @@ var MeshMetricResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:            "Mesh Metrics",
 	IsPluginOriginated:           true,
 	AffectsPolicyMatching:        true,
-	IsTargetRefBased:             true,
 	HasToTargetRef:               false,
 	HasRulesTargetRef:            false,
 	HasStatus:                    true,

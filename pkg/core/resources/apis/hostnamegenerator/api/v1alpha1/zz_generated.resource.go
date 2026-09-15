@@ -193,7 +193,6 @@ var HostnameGeneratorResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:            "Hostname Generators",
 	IsPluginOriginated:           true,
 	AffectsPolicyMatching:        true,
-	IsTargetRefBased:             false,
 	HasToTargetRef:               false,
 	HasRulesTargetRef:            false,
 	HasStatus:                    false,

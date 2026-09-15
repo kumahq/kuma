@@ -193,7 +193,6 @@ var MeshHTTPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:            "Mesh HTTP Routes",
 	IsPluginOriginated:           true,
 	AffectsPolicyMatching:        true,
-	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
 	HasRulesTargetRef:            false,
 	HasStatus:                    false,

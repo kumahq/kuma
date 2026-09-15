@@ -16,7 +16,6 @@ func TestMapResourceTypeDescriptionPreservesRulesTargetRefPolicies(t *testing.T)
 			Name:              "MeshCircuitBreaker",
 			WsPath:            "meshcircuitbreakers",
 			IsPolicy:          true,
-			IsTargetRefBased:  true,
 			HasToTargetRef:    true,
 			HasRulesTargetRef: true,
 		},
@@ -24,8 +23,7 @@ func TestMapResourceTypeDescriptionPreservesRulesTargetRefPolicies(t *testing.T)
 
 	require.Len(t, response.Resources, 1)
 	require.NotNil(t, response.Resources[0].Policy)
-	require.False(t, response.Resources[0].Policy.HasFromTargetRef)
-	require.False(t, response.Resources[0].Policy.IsFromAsRules)
+	require.True(t, response.Resources[0].Policy.IsTargetRef)
 	require.True(t, response.Resources[0].Policy.HasRulesTargetRef)
 	require.True(t, response.Resources[0].Policy.HasToTargetRef)
 }

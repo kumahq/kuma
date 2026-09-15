@@ -55,10 +55,7 @@ func (r *resourceInspectHandler) matchingDataplanesForPolicy() handlerFunc {
 			return nil, withTitle(err, "Failed to retrieve Mesh")
 		}
 
-		var dependentTypes []core_model.ResourceType
-		if r.descriptor.IsTargetRefBased {
-			dependentTypes = []core_model.ResourceType{meshhttproute_api.MeshHTTPRouteType}
-		}
+		dependentTypes := []core_model.ResourceType{meshhttproute_api.MeshHTTPRouteType}
 		dependentResources := xds_context.NewResources()
 		for _, dependentType := range dependentTypes {
 			hl, err := registry.Global().NewList(dependentType)

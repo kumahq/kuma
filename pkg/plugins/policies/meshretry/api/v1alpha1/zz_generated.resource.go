@@ -193,7 +193,6 @@ var MeshRetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:            "Mesh Retries",
 	IsPluginOriginated:           true,
 	AffectsPolicyMatching:        true,
-	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
 	HasRulesTargetRef:            false,
 	HasStatus:                    false,

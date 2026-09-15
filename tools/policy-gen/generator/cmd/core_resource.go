@@ -275,7 +275,6 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		PluralDisplayName: "{{.PluralDisplayName}}",
 		IsPluginOriginated: true,
 		AffectsPolicyMatching: true,
-		IsTargetRefBased: {{.IsPolicy}},
 		HasToTargetRef: {{.HasTo}},
         HasRulesTargetRef: {{.HasRules}},
 		HasStatus: {{.HasStatus}},

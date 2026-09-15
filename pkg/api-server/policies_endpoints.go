@@ -24,7 +24,7 @@ func addPoliciesWsEndpoints(ws *restful.WebService, isGlobal bool, isFederatedZo
 				SingularDisplayName: def.SingularDisplayName,
 				PluralDisplayName:   def.PluralDisplayName,
 				IsExperimental:      def.IsExperimental,
-				IsTargetRefBased:    def.IsTargetRefBased,
+				IsTargetRefBased:    true,
 				IsInbound:           def.SupportsInbound(),
 				IsOutbound:          def.HasToTargetRef,
 			})
