@@ -6,7 +6,6 @@ import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/envoy_admin.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
-import "validate/validate.proto";
 
 option go_package = "github.com/kumahq/kuma/v3/api/mesh/v1alpha1";
 
@@ -138,7 +137,9 @@ message Dataplane {
     message Outbound {
       // IP on which the consumed service will be available to this data plane
       // proxy. On Kubernetes, it's usually ClusterIP of a Service or PodIP of a
-      // Headless Service. Defaults to 127.0.0.1
+      // Headless Service. When left out, the control plane sets it to
+      // 127.0.0.1, so a Dataplane read back from the API always carries one.
+      //  +required
       string address = 3;
 
       // Port on which the consumed service will be available to this data plane
@@ -147,7 +148,7 @@ message Dataplane {
       uint32 port = 4;
 
       reserved 5;
-      reserved "tags"; // Formerly kuma.io/service based outbounds, see #17808
+      reserved "tags"; // Formerly tag-based outbounds, see #17808
 
       // BackendRef is a way to target MeshService.
       BackendRef backendRef = 6;
@@ -166,57 +167,12 @@ message Dataplane {
       }
     }
 
-    // Gateway describes a service that ingress should not be proxied.
-    message Gateway {
-      enum GatewayType {
-        // A `DELEGATED` gateway is an independently deployed proxy that
-        // receives inbound traffic that is not proxied by Kuma, and
-        // it sends outbound traffic into the data plane proxy.
-        DELEGATED = 0;
-
-        // `BUILTIN = 1` was removed along with the built-in gateway. The
-        // ordinal stays reserved so it is never reused for a new type.
-        reserved 1;
-        reserved "BUILTIN";
-      }
-
-      // Tags associated with a gateway of this data plane to, e.g.
-      // `kuma.io/service=gateway`, `env=prod`. `kuma.io/service` tag is
-      // mandatory.
-      map<string, string> tags = 1 [(validate.rules).map.min_pairs = 1];
-
-      // Type of gateway this data plane proxy manages.
-      //
-      // The only supported type is `DELEGATED`: an independently deployed proxy
-      // (e.g., Kong, Contour, etc) that receives inbound traffic that is not
-      // proxied by Kuma, and it sends outbound traffic into the data plane
-      // proxy.
-      //
-      // See https://kuma.io/docs/latest/explore/gateway/ for more information.
-      GatewayType type = 2;
-    }
-
     // TransparentProxying describes configuration for transparent proxying.
     message TransparentProxying {
-      enum IpFamilyMode {
-        // This value is to support backward compatibility and should not be
-        // used in new data plane objects.
-        UnSpecified = 0;
-        // Enables transparent proxying for both IPv4 and IPv6 traffic, This is
-        // the default.
-        DualStack = 1;
-        // Enables transparent proxying for IPv4 traffic only.
-        IPv4 = 2;
-        // Enables transparent proxying for IPv6 traffic only. This mode is to
-        // be supported in the future.
-        IPv6 = 3;
-      }
-
-      // Port on which all inbound traffic is being transparently redirected.
-      uint32 redirect_port_inbound = 1 [(validate.rules).uint32 = {lte: 65535}];
-
-      // Port on which all outbound traffic is being transparently redirected.
-      uint32 redirect_port_outbound = 2 [(validate.rules).uint32 = {lte: 65535}];
+      // `redirect_port_inbound` and `redirect_port_outbound` have been removed.
+      // kuma-dp sends the redirect ports to the control plane in its metadata.
+      reserved 1, 2;
+      reserved "redirect_port_inbound", "redirect_port_outbound";
 
       // List of services that will be accessed directly via IP:PORT
       // Use `*` to indicate direct access to every service in the Mesh.
@@ -233,8 +189,11 @@ message Dataplane {
       reserved 5;
       reserved "reachable_services";
 
-      // The IP family mode to enable for. Can be "IPv4" or "DualStack".
-      IpFamilyMode ip_family_mode = 6;
+      // `ip_family_mode` has been removed. kuma-dp sends the IP family mode to
+      // the control plane in its metadata.
+      reserved 6;
+      reserved "ip_family_mode";
+
       message ReachableBackendRef {
         // Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService
         //  +required
@@ -263,8 +222,11 @@ message Dataplane {
       ReachableBackends reachable_backends = 7;
     }
 
-    // Gateway describes a configuration of the gateway of the data plane proxy.
-    Gateway gateway = 3;
+    // `gateway = 3` was removed along with the delegated gateway concept: a
+    // gateway is an ordinary Dataplane that excludes its listen ports from
+    // inbound redirection. The ordinal stays reserved so it is never reused.
+    reserved 3;
+    reserved "gateway";
 
     // Inbound describes a list of inbound interfaces of the data plane proxy.
     //
@@ -336,7 +298,7 @@ message Dataplane {
     }
 
     // Listeners describes zone proxy listeners embedded in this Dataplane.
-    // Listeners may coexist with inbounds and gateways.
+    // Listeners may coexist with inbounds.
     repeated Listener listeners = 9;
   }
 

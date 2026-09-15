@@ -1,0 +1,24 @@
+{
+  "type": "MeshTimeout",
+  "mesh": "default",
+  "name": "mt-mesh",
+  "labels": {
+    "kuma.io/origin": "global",
+    "kuma.io/mesh": "other"
+  },
+  "spec": {
+    "targetRef": {
+      "kind": "Mesh"
+    },
+    "to": [
+      {
+        "targetRef": {
+          "kind": "Mesh"
+        },
+        "default": {
+          "idleTimeout": "20s"
+        }
+      }
+    ]
+  }
+}

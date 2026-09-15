@@ -42,12 +42,17 @@ const (
 	formatKubernetes = "kubernetes"
 )
 
+// A federation export is applied to the global control plane, which owns what it
+// stores and rejects a zone label outright, so both labels go before the resource
+// leaves the zone.
 var excludedLabelsPerProfile = map[string]map[string]struct{}{
 	profileFederation: {
 		mesh_proto.ResourceOriginLabel: struct{}{},
+		mesh_proto.ZoneTag:             struct{}{},
 	},
 	profileFederationWithPolicies: {
 		mesh_proto.ResourceOriginLabel: struct{}{},
+		mesh_proto.ZoneTag:             struct{}{},
 	},
 }
 
@@ -117,8 +122,6 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					for _, res := range list.GetItems() {
 						switch resDesc.Name {
 						case core_mesh.MeshType:
-							mesh := res.(*core_mesh.MeshResource)
-							mesh.Spec.SkipCreatingInitialPolicies = []string{"*"}
 							meshResource = append(meshResource, res)
 							continue
 						case core_system.GlobalSecretType:
@@ -180,7 +183,6 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					}
 
 					cleanKubeObject(obj)
-					// we don't want to export `kuma.io/origin: zone` in federation since the point is to import in global
 					removeExcludedLabels(excludedLabelsPerProfile[ctx.args.profile], obj)
 					if res.Descriptor().Name == core_mesh.MeshType {
 						// only for the mesh we edit object by changing mtls backend from builtin to provided and adding skip initial resources

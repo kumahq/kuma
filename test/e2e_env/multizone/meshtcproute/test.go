@@ -45,7 +45,7 @@ func Test() {
 				DemoClientUniversal(
 					AppModeDemoClient, meshName,
 					WithTransparentProxy(true),
-					WithLabels(map[string]string{"kuma.io/service": AppModeDemoClient}),
+					WithLabels(map[string]string{"kuma.io/display-name": AppModeDemoClient}),
 				),
 				TestServerUniversal(
 					"test-server-echo-1", meshName,
@@ -107,7 +107,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: demo-client
+      kuma.io/display-name: demo-client
   to:
   - targetRef:
       kind: MeshService

@@ -22,14 +22,6 @@ func (t *DataplaneOverviewResource) Status() (Status, []string) {
 	proxyOnline := t.Spec.DataplaneInsight.IsOnline()
 	networking := t.Spec.Dataplane.GetNetworking()
 
-	// Gateway is mutually exclusive with inbounds and zone proxy listeners.
-	if networking.GetGateway() != nil {
-		if proxyOnline {
-			return Online, nil
-		}
-		return Offline, nil
-	}
-
 	var ready int
 	var errs []string
 	total := len(networking.GetInbound()) + len(networking.GetListeners())
@@ -51,7 +43,15 @@ func (t *DataplaneOverviewResource) Status() (Status, []string) {
 	}
 
 	switch {
-	case !proxyOnline || ready == 0:
+	case !proxyOnline:
+		return Offline, errs
+	// A proxy that declares neither inbounds nor listeners has nothing to
+	// report readiness for and is online once it is connected. That covers an
+	// outbound-only proxy and one whose every port is excluded from inbound
+	// redirection, both of which used to be reported offline while connected.
+	case total == 0:
+		return Online, nil
+	case ready == 0:
 		return Offline, errs
 	case ready < total:
 		return PartiallyDegraded, errs

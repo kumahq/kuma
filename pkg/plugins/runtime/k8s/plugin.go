@@ -11,10 +11,10 @@ import (
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
-	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/managers/apis/zone"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
@@ -57,8 +57,9 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	}
 
 	// Mutators and Validators convert resources from Request (not from the Store)
-	// these resources doesn't have ResourceVersion, we can't cache them
-	simpleConverter := k8s.NewSimpleConverter(rt.Config().Store.Kubernetes.SystemNamespace)
+	// these resources doesn't have ResourceVersion, we can't cache them. A zero ControlPlane
+	// on purpose: the webhooks must validate the user-supplied origin and zone labels.
+	simpleConverter := k8s.NewSimpleConverter(rt.Config().Store.Kubernetes.SystemNamespace, resource_labels.ControlPlane{})
 	if err := addValidators(mgr, rt, simpleConverter); err != nil {
 		return err
 	}
@@ -181,10 +182,6 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		ResourceManager: rt.ResourceManager(),
 		Log:             core.Log.WithName("controllers").WithName("mesh-defaults"),
 		Extensions:      rt.Extensions(),
-		K8sStore:        rt.Config().Store.Type == store.KubernetesStore,
-		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
-		CpMode:          rt.Config().Mode,
-		CpZone:          rt.Config().Multizone.Zone.Name,
 	}
 	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup mesh defaults reconciller")
@@ -263,11 +260,10 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 			k8s_webhooks.GenericGarbageCollectorUser,
 			k8s_webhooks.StorageVersionMigratorUser,
 		),
-		Mode:                         rt.Config().Mode,
-		FederatedZone:                rt.Config().IsFederatedZoneCP(),
-		DisableOriginLabelValidation: rt.Config().Multizone.Zone.DisableOriginLabelValidation,
-		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,
-		ZoneName:                     rt.Config().Multizone.Zone.Name,
+		Mode:            rt.Config().Mode,
+		FederatedZone:   rt.Config().IsFederatedZoneCP(),
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+		ZoneName:        rt.Config().Multizone.Zone.Name,
 	}
 	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), resourceAdmissionChecker)
 	composite.AddValidator(handler)
@@ -362,11 +358,10 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 			k8s_webhooks.GenericGarbageCollectorUser,
 			k8s_webhooks.StorageVersionMigratorUser,
 		),
-		Mode:                         rt.Config().Mode,
-		FederatedZone:                rt.Config().IsFederatedZoneCP(),
-		DisableOriginLabelValidation: rt.Config().Multizone.Zone.DisableOriginLabelValidation,
-		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,
-		ZoneName:                     rt.Config().Multizone.Zone.Name,
+		Mode:            rt.Config().Mode,
+		FederatedZone:   rt.Config().IsFederatedZoneCP(),
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+		ZoneName:        rt.Config().Multizone.Zone.Name,
 	}
 	defaultMutator := k8s_webhooks.DefaultingWebhookFor(mgr.GetScheme(), converter, resourceAdmissionChecker)
 	mgr.GetWebhookServer().Register("/default-kuma-io-v1alpha1-mesh", defaultMutator)

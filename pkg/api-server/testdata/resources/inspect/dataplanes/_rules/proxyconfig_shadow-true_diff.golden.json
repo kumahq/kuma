@@ -3,12 +3,12 @@
   {
    "op": "test",
    "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_8080/filterChains/0/filters/0/typedConfig/idleTimeout",
-   "value": "3600s"
+   "value": "7200s"
   },
   {
    "op": "remove",
    "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_inbound_dp_8080/filterChains/0/filters/0/typedConfig/idleTimeout",
-   "value": "3600s"
+   "value": "7200s"
   },
   {
    "op": "add",
@@ -21,7 +21,7 @@
    "self_inbound_dp_8080": {
     "name": "self_inbound_dp_8080",
     "type": "STATIC",
-    "connectTimeout": "5s",
+    "connectTimeout": "10s",
     "loadAssignment": {
      "clusterName": "self_inbound_dp_8080",
      "endpoints": [
@@ -83,7 +83,95 @@
      }
     },
     "trafficDirection": "INBOUND",
-    "enableReusePort": false
+    "enableReusePort": true
+   },
+   "system_dynamicconfig": {
+    "name": "system_dynamicconfig",
+    "address": {
+     "pipe": {
+      "path": "kuma-mesh-metric-config.sock"
+     }
+    },
+    "statPrefix": "system_dynamicconfig",
+    "filterChains": [
+     {
+      "filters": [
+       {
+        "name": "envoy.filters.network.http_connection_manager",
+        "typedConfig": {
+         "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
+         "statPrefix": "system_dynamicconfig",
+         "routeConfig": {
+          "virtualHosts": [
+           {
+            "name": "system_dynamicconfig",
+            "domains": [
+             "*"
+            ],
+            "routes": [
+             {
+              "name": "system_dynamicconfig_identity-readiness_not_modified",
+              "match": {
+               "path": "/identity-readiness",
+               "headers": [
+                {
+                 "name": "If-None-Match",
+                 "stringMatch": {
+                  "exact": "8376431f05ed0574aa914db9f36153ed5837a067d6d3450847c49d89b37ad1bf"
+                 }
+                }
+               ]
+              },
+              "directResponse": {
+               "status": 304
+              }
+             },
+             {
+              "name": "system_dynamicconfig_identity-readiness",
+              "match": {
+               "path": "/identity-readiness"
+              },
+              "directResponse": {
+               "status": 200,
+               "body": {
+                "inlineString": "{\"required\":false}"
+               }
+              },
+              "responseHeadersToAdd": [
+               {
+                "header": {
+                 "key": "Etag",
+                 "value": "8376431f05ed0574aa914db9f36153ed5837a067d6d3450847c49d89b37ad1bf"
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ],
+          "maxDirectResponseBodySizeBytes": 18
+         },
+         "httpFilters": [
+          {
+           "name": "envoy.filters.http.router",
+           "typedConfig": {
+            "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
+           }
+          }
+         ],
+         "internalAddressConfig": {
+          "cidrRanges": [
+           {
+            "addressPrefix": "127.0.0.1",
+            "prefixLen": 32
+           }
+          ]
+         }
+        }
+       }
+      ]
+     }
+    ]
    }
   }
  }

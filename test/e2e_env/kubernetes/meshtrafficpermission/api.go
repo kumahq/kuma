@@ -52,7 +52,7 @@ spec:
   targetRef:
     kind: Dataplane
     labels:
-      kuma.io/service: backend
+      kuma.io/display-name: backend
   rules:
     - default:
         allow:

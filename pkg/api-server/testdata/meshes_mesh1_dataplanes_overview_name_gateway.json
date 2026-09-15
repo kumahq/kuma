@@ -10,12 +10,7 @@
    "kri": "kri_dp_mesh1___gateway-delegated_",
    "dataplane": {
     "networking": {
-     "address": "127.0.0.1",
-     "gateway": {
-      "tags": {
-       "service": "gateway"
-      }
-     }
+     "address": "127.0.0.1"
     }
    },
    "dataplaneInsight": {

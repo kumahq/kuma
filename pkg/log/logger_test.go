@@ -115,3 +115,26 @@ var _ = Describe("Logger", func() {
 		)
 	})
 })
+
+var _ = Describe("NewLoggerToWithRegistry", func() {
+	It("lets a component override raise logging above an off base level", func() {
+		out := &bytes.Buffer{}
+		registry := kuma_log.NewComponentLevelRegistry()
+		Expect(registry.SetLevel("dnsproxy", kuma_log.DebugLevel)).To(Succeed())
+
+		logger := kuma_log.NewLoggerToWithRegistry(out, kuma_log.OffLevel, registry)
+		logger.WithName("dnsproxy").V(1).Info("visible")
+		logger.WithName("other").Info("hidden")
+
+		Expect(out.String()).To(ContainSubstring("visible"))
+		Expect(out.String()).ToNot(ContainSubstring("hidden"))
+	})
+
+	It("stays silent at an off base level without an override", func() {
+		out := &bytes.Buffer{}
+		logger := kuma_log.NewLoggerToWithRegistry(out, kuma_log.OffLevel, kuma_log.NewComponentLevelRegistry())
+		logger.WithName("dnsproxy").Info("hidden")
+
+		Expect(out.String()).To(BeEmpty())
+	})
+})

@@ -237,7 +237,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dp3, store.CreateByKey("dp3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.GatewayDataplane}, store.CreateByKey("dp4", "mesh-1"))
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.OutboundOnlyDataplane}, store.CreateByKey("dp4", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		dp4 := core_mesh.NewDataplaneInsightResource()
@@ -261,19 +261,9 @@ var _ = Describe("Insight Persistence", func() {
 
 			// then
 			standardDP := meshInsight.Spec.GetDataplanesByType().GetStandard()
-			g.Expect(standardDP.GetTotal()).To(Equal(uint32(3)))
-			g.Expect(standardDP.GetOnline()).To(Equal(uint32(1)))
+			g.Expect(standardDP.GetTotal()).To(Equal(uint32(4)))
+			g.Expect(standardDP.GetOnline()).To(Equal(uint32(2)))
 			g.Expect(standardDP.GetOffline()).To(Equal(uint32(2)))
-
-			gatewayDP := meshInsight.Spec.GetDataplanesByType().GetGateway()
-			g.Expect(gatewayDP.GetTotal()).To(Equal(uint32(1)))
-			g.Expect(gatewayDP.GetOffline()).To(Equal(uint32(0)))
-			g.Expect(gatewayDP.GetOnline()).To(Equal(uint32(1)))
-
-			delegatedGatewayDP := meshInsight.Spec.GetDataplanesByType().GetGatewayDelegated()
-			g.Expect(delegatedGatewayDP.GetTotal()).To(Equal(uint32(1)))
-			g.Expect(delegatedGatewayDP.GetOffline()).To(Equal(uint32(0)))
-			g.Expect(delegatedGatewayDP.GetOnline()).To(Equal(uint32(1)))
 		}).Should(Succeed())
 	})
 
@@ -385,10 +375,6 @@ var _ = Describe("Insight Persistence", func() {
 		delegatedGw.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "10.0.0.2",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "delegated-gw"},
-					Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-				},
 			},
 		}
 		err = rm.Create(context.Background(), delegatedGw, store.CreateByKey("dp2", "mesh-1"))
@@ -406,37 +392,6 @@ var _ = Describe("Insight Persistence", func() {
 			err := rm.Get(context.Background(), meshInsight, store.GetBy(insights.MeshInsightKey("mesh-1")))
 			g.Expect(err).ToNot(HaveOccurred())
 		}).Should(Succeed())
-	})
-
-	It("should delete a ServiceInsight left over by an older control plane", func() {
-		// given a mesh with a ServiceInsight written before the upgrade
-		err := rm.Create(context.Background(), legacyMesh(), store.CreateByKey("mesh-1", model.NoMesh))
-		Expect(err).ToNot(HaveOccurred())
-
-		serviceInsight := core_mesh.NewServiceInsightResource()
-		serviceInsight.Spec = &mesh_proto.ServiceInsight{
-			Services: map[string]*mesh_proto.ServiceInsight_Service{
-				"backend": {
-					Status:      mesh_proto.ServiceInsight_Service_online,
-					ServiceType: mesh_proto.ServiceInsight_Service_internal,
-					Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{
-						Total:  1,
-						Online: 1,
-					},
-				},
-			},
-		}
-		err = rm.Create(context.Background(), serviceInsight, store.CreateByKey("all-services-mesh-1", "mesh-1"))
-		Expect(err).ToNot(HaveOccurred())
-
-		step(stepsToResync)
-
-		// then the stale resource is removed instead of being served forever
-		Eventually(func(g Gomega) {
-			serviceInsights := &core_mesh.ServiceInsightResourceList{}
-			g.Expect(rm.List(context.Background(), serviceInsights, store.ListByMesh("mesh-1"))).To(Succeed())
-			g.Expect(serviceInsights.Items).To(BeEmpty())
-		}, "10s", "100ms").Should(Succeed())
 	})
 
 	It("should return correct dataplanes statuses in mesh insights", func() {
@@ -637,9 +592,6 @@ var _ = Describe("Insight Persistence", func() {
 		dpOnline.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.0.0.1",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "gateway"},
-				},
 			},
 		}
 		err = rm.Create(context.Background(), dpOnline, store.CreateByKey("dpOnline", "mesh-1"))
@@ -659,9 +611,6 @@ var _ = Describe("Insight Persistence", func() {
 		dpOffline.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.0.0.1",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "gateway"},
-				},
 			},
 		}
 		err = rm.Create(context.Background(), dpOffline, store.CreateByKey("dpOffline", "mesh-1"))
@@ -684,9 +633,6 @@ var _ = Describe("Insight Persistence", func() {
 		dpNoInsights.Spec = &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.0.0.1",
-				Gateway: &mesh_proto.Dataplane_Networking_Gateway{
-					Tags: map[string]string{"kuma.io/service": "gateway"},
-				},
 			},
 		}
 		err = rm.Create(context.Background(), dpNoInsights, store.CreateByKey("dpNoInsights", "mesh-1"))

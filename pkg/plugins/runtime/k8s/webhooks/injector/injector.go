@@ -131,7 +131,7 @@ func New(
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady,
 			sidecarContainersEnabled,
 			cfg.ApplicationProbeProxyPort,
-			cfg.OtelPipeEnabled, cfg.Spire.Enabled,
+			cfg.Spire.Enabled,
 		),
 		systemNamespace: systemNamespace,
 		metrics:         im,

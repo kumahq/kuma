@@ -206,8 +206,9 @@ func (d *DataplaneLifecycle) deregister(
 }
 
 // validateUpsert checks if a new data plane proxy can replace the old one.
-// We cannot just upsert a new data plane proxy over the old one, because if you generate token bound to mesh + kuma.io/service
-// then you would be able to just replace any other data plane proxy in the system.
+// We cannot just upsert a new data plane proxy over the old one, because if you generate a
+// token bound to mesh + tag, then you would be able to just replace any other data plane
+// proxy in the system.
 // Ideally, when starting a new data plane proxy, the old one should be deleted, so we could do Create instead of Upsert, but this may not be the case.
 // For example, if you spin down CP, then DP, then start CP, the old DP is still there for a couple of minutes (see pkg/gc).
 // We could check if Dataplane is identical, but CP may alter Dataplane resource after is connected.

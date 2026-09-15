@@ -63,6 +63,7 @@ var _ = Describe("DataplaneOverview", func() {
 				// given
 				resource := NewDataplaneOverviewResource()
 				resource.Spec = given.overview
+				resource.Meta = &model.ResourceMeta{Name: "dp-1", Mesh: "default"}
 
 				// when
 				status, errReasons := resource.Status()
@@ -115,12 +116,10 @@ var _ = Describe("DataplaneOverview", func() {
 				},
 				status: Online,
 			}),
-			Entry("online when proxy is connected and is gateway", testCase{
+			Entry("online when proxy is connected and has no inbounds or listeners", testCase{
 				overview: &mesh_proto.DataplaneOverview{
 					Dataplane: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
-						},
+						Networking: &mesh_proto.Dataplane_Networking{},
 					},
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{
@@ -182,12 +181,10 @@ var _ = Describe("DataplaneOverview", func() {
 					"inbound[port=0] is not ready",
 				},
 			}),
-			Entry("online when proxy is disconnected and is a gateway", testCase{
+			Entry("offline when proxy is disconnected and has no inbounds or listeners", testCase{
 				overview: &mesh_proto.DataplaneOverview{
 					Dataplane: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Gateway: &mesh_proto.Dataplane_Networking_Gateway{},
-						},
+						Networking: &mesh_proto.Dataplane_Networking{},
 					},
 					DataplaneInsight: &mesh_proto.DataplaneInsight{
 						Subscriptions: []*mesh_proto.DiscoverySubscription{

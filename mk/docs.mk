@@ -19,7 +19,7 @@ helm-docs: ## Dev: Runs helm-docs generator
 	$(HELM_DOCS) -s="file" --chart-search-root=./deployments/charts
 
 .PHONY: docs/generated/raw
-docs/generated/raw: docs/generated/raw/rbac.yaml
+docs/generated/raw: docs/generated/raw/rbac.yaml $(if $(strip $(DOCS_PROTOS)),dev/protos/deps)
 	mkdir -p $@
 	command cp $(DOCS_CP_CONFIG) $@/kuma-cp.yaml
 	command cp $(HELM_VALUES_FILE) $@/helm-values.yaml
@@ -33,15 +33,25 @@ ifneq ($(strip $(DOCS_PROTOS)),)
 		--jsonschema_out=$@/protos \
 		--plugin=protoc-gen-jsonschema=$(PROTOC_GEN_JSONSCHEMA) \
 		$(DOCS_PROTOS)
+# `+required` and `+optional` drive schema generation, they are not prose, so
+# they are dropped from the published reference. No `sed -i`: GNU and BSD
+# disagree on its argument.
+	for f in $@/protos/*.json; do \
+		t=$$(mktemp) && sed -E 's/[[:space:]]*\+(required|optional)"/"/g' "$$f" > "$$t" && mv "$$t" "$$f"; \
+	done
 endif
 
+# Built beside the target and moved on success, so a failing generator cannot
+# leave the committed file truncated. SHELL sets pipefail, so a helm or yq
+# failure is not hidden behind sed's status.
 .PHONY: docs/generated/raw/rbac.yaml
 docs/generated/raw/rbac.yaml:
 	@mkdir -p docs/generated/raw
 	@$(HELM) template --namespace $(PROJECT_NAME)-system $(PROJECT_NAME) deployments/charts/$(PROJECT_NAME) | \
 	$(YQ) eval-all 'select((.kind == "ClusterRole" or .kind == "ClusterRoleBinding" or .kind == "Role" or .kind == "RoleBinding") and (.metadata.annotations["helm.sh/hook"] == null)) | del(.metadata.labels)' - | \
 	grep -Ev '^\s*#' | \
-	sed 's/[[:space:]]*#.*$$//' > $@
+	sed 's/[[:space:]]*#.*$$//' > $@.tmp || { rm -f $@.tmp; exit 1; }
+	@mv $@.tmp $@
 
 OAPI_TMP_DIR ?= $(BUILD_DIR)/oapitmp
 API_DIRS     ?= $(TOP)/api/openapi/specs:base
@@ -55,6 +65,8 @@ API_DIRS     ?= $(TOP)/api/openapi/specs:base
 docs/generated:
 	mkdir -p $@
 
+# The merge output is built beside the target and moved on success, so a failing
+# merge cannot leave the committed file truncated.
 .PHONY: docs/generated/openapi.yaml
 docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES) | docs/generated docs/generated/openapi/prepare/specs
 	@echo "Rewriting /specs/ paths in all YAML files..."
@@ -71,7 +83,8 @@ docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES) | docs/generated docs
 			REDOCLY_SUPPRESS_UPDATE_NOTICE=true mise exec -- redocly bundle $$f -o $(BUILD_DIR)/openapi-bundled/$$f || echo "Skipping $$f"; \
 		done
 	@echo "Merging all bundled specs..."
-	@mise exec -- oas-toolkit merge $$(find $(BUILD_DIR)/openapi-bundled -name '*.yaml' | LC_ALL=C sort) > $@
+	@mise exec -- oas-toolkit merge $$(find $(BUILD_DIR)/openapi-bundled -name '*.yaml' | LC_ALL=C sort) > $@.tmp || { rm -f $@.tmp; exit 1; }
+	@mv $@.tmp $@
 	@$(MAKE) --no-print-directory validate/openapi-generated-docs
 
 # Prepare $(OAPI_TMP_DIR) with a normalized directory layout for the generator
@@ -98,7 +111,6 @@ docs/generated/openapi/prepare/layout:
 	@mkdir -p $(OAPI_TMP_DIR)
 
 # Create or reset a named subdirectory under $(OAPI_TMP_DIR)
-.PHONY: docs/generated/openapi/prepare/layout/%
 docs/generated/openapi/prepare/layout/%:
 	@rm -rf $(OAPI_TMP_DIR)/$*
 	@mkdir -p $(OAPI_TMP_DIR)/$*

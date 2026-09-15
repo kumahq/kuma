@@ -23,7 +23,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewInboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol, true).
+			listener, err := NewInboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(TransparentProxying(given.transparentProxying)).
 				Build()
 			// then

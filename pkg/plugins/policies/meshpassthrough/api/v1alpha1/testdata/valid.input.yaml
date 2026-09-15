@@ -8,6 +8,7 @@ default:
     protocol: tcp
   - type: Domain
     value: example.com
+    port: 443
     protocol: tls
   - type: CIDR
     value: 1.2.3.4/24

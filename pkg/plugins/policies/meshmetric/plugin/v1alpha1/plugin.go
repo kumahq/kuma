@@ -11,9 +11,9 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_system_names "github.com/kumahq/kuma/v3/pkg/core/system_names"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	policies_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/dpapi"
@@ -45,15 +45,12 @@ const (
 	ProxyRoleZoneEgress  = "zone-egress"
 	ProxyRoleZoneIngress = "zone-ingress"
 	ProxyRoleZoneProxy   = "zone-proxy"
-	ProxyRoleGateway     = "gateway"
 )
 
-func deriveProxyRole(networking *mesh_proto.Dataplane_Networking) string {
+func deriveProxyRole(dataplane *core_mesh.DataplaneResource) string {
+	networking := dataplane.Spec.GetNetworking()
 	if networking == nil {
 		return ProxyRoleSidecar
-	}
-	if networking.GetGateway() != nil {
-		return ProxyRoleGateway
 	}
 	if !networking.HasZoneProxyListeners() {
 		return ProxyRoleSidecar
@@ -109,7 +106,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err != nil {
 		return err
 	}
-	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && proxy.OtelPipeBackends != nil {
+	if proxy.OtelPipeBackends != nil {
 		addOtelToAccumulator(proxy, openTelemetryBackends, ctx)
 	}
 	// configureOpenTelemetry creates Envoy-side OTel resources (listener + cluster).
@@ -313,7 +310,7 @@ func createDynamicConfig(
 		extraLabels["zone"] = zone
 	}
 	isZoneProxyOnly := proxy.Dataplane.Spec.GetNetworking().IsZoneProxyOnly()
-	extraLabels[ProxyRoleAttributeKey] = deriveProxyRole(proxy.Dataplane.Spec.GetNetworking())
+	extraLabels[ProxyRoleAttributeKey] = deriveProxyRole(proxy.Dataplane)
 	// Zone-proxy-only Dataplanes have no co-located workload, so kuma.workload is not meaningful.
 	// kuma.proxy_role identifies the proxy's purpose instead.
 	if !isZoneProxyOnly {
@@ -355,10 +352,10 @@ func filterPrometheusBackends(backends *[]api.Backend) []*api.PrometheusBackend 
 }
 
 // filterOtelBackendsForEnvoy returns backends that need Envoy-side OTel resources.
-// In pipe mode, backendRef backends go through the unified pipe so only inline
-// backends need Envoy config. Without pipe mode, all backends need it.
+// backendRef backends go through the unified pipe so only inline backends need
+// Envoy config. Without a pipe accumulator, all backends need it.
 func filterOtelBackendsForEnvoy(proxy *core_xds.Proxy, backends []*api.OpenTelemetryBackend) []*api.OpenTelemetryBackend {
-	if !proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) || proxy.OtelPipeBackends == nil {
+	if proxy.OtelPipeBackends == nil {
 		return backends
 	}
 

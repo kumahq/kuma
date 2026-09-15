@@ -76,16 +76,15 @@ func (s *Snapshot) ConstructVersionMap() error {
 	}
 
 	// The snapshot resources never change, so no need to ever rebuild.
-	if s.VersionMap != nil {
-		return nil
+	if s.VersionMap == nil {
+		s.VersionMap = make(ResourceVersionMap)
 	}
 
-	s.VersionMap = make(ResourceVersionMap)
-
 	for typeURL, resources := range s.Resources {
-		if _, ok := s.VersionMap[typeURL]; !ok {
-			s.VersionMap[typeURL] = make(NameToVersion)
+		if _, ok := s.VersionMap[typeURL]; ok {
+			continue
 		}
+		s.VersionMap[typeURL] = make(NameToVersion)
 
 		for _, r := range resources.Items {
 			// Hash our version in here and build the version map.

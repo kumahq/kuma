@@ -28,19 +28,19 @@ func (ss Subset) IsSubset(other Subset) bool {
 	if len(ss) == 0 {
 		return true
 	}
-	otherByKeys := map[string][]Tag{}
-	for _, t := range other {
-		otherByKeys[t.Key] = append(otherByKeys[t.Key], t)
-	}
 	for _, tag := range ss {
-		oTags, ok := otherByKeys[tag.Key]
-		if !ok {
-			return false
-		}
-		for _, otherTag := range oTags {
+		found := false
+		for _, otherTag := range other {
+			if otherTag.Key != tag.Key {
+				continue
+			}
+			found = true
 			if !isSubset(tag, otherTag) {
 				return false
 			}
+		}
+		if !found {
+			return false
 		}
 	}
 	return true

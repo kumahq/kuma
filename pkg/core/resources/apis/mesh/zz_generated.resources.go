@@ -118,12 +118,10 @@ var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:                "dataplanes",
 	KumactlArg:            "dataplane",
 	KumactlListArg:        "dataplanes",
-	AllowToInspect:        false,
 	IsPolicy:              false,
 	SingularDisplayName:   "Dataplane",
 	PluralDisplayName:     "Dataplanes",
 	ShortName:             "dp",
-	IsExperimental:        false,
 	IsProxy:               true,
 	AffectsPolicyMatching: false,
 	Insight:               NewDataplaneInsightResource(),
@@ -240,11 +238,9 @@ var DataplaneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:                "dataplane-insights",
 	KumactlArg:            "",
 	KumactlListArg:        "",
-	AllowToInspect:        false,
 	IsPolicy:              false,
 	SingularDisplayName:   "Dataplane Insight",
 	PluralDisplayName:     "Dataplane Insights",
-	IsExperimental:        false,
 	IsProxy:               false,
 	AffectsPolicyMatching: false,
 }
@@ -308,11 +304,21 @@ func (t *DataplaneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return DataplaneOverviewResourceTypeDescriptor
 }
 
+// newDataplaneOverviewResourceSpec normalizes a nil spec the way SetSpec does. A nil one would
+// drop the field from the response without any error: the marshaller omits a nil message
+// and then throws the whole spec away once what is left renders as an empty object.
+func newDataplaneOverviewResourceSpec(spec *mesh_proto.Dataplane) *mesh_proto.DataplaneOverview {
+	if spec == nil {
+		spec = &mesh_proto.Dataplane{}
+	}
+	return &mesh_proto.DataplaneOverview{
+		Dataplane: spec,
+	}
+}
+
 func (t *DataplaneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
-	overview := &mesh_proto.DataplaneOverview{
-		Dataplane: resource.GetSpec().(*mesh_proto.Dataplane),
-	}
+	overview := newDataplaneOverviewResourceSpec(resource.GetSpec().(*mesh_proto.Dataplane))
 	if insight != nil {
 		ins, ok := insight.GetSpec().(*mesh_proto.DataplaneInsight)
 		if !ok {
@@ -373,11 +379,9 @@ var DataplaneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:                "",
 	KumactlArg:            "",
 	KumactlListArg:        "",
-	AllowToInspect:        false,
 	IsPolicy:              false,
 	SingularDisplayName:   "Dataplane Overview",
 	PluralDisplayName:     "Dataplane Overviews",
-	IsExperimental:        false,
 	IsProxy:               false,
 	AffectsPolicyMatching: false,
 }
@@ -489,12 +493,10 @@ var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:                "meshes",
 	KumactlArg:            "mesh",
 	KumactlListArg:        "meshes",
-	AllowToInspect:        false,
 	IsPolicy:              false,
 	SingularDisplayName:   "Mesh",
 	PluralDisplayName:     "Meshes",
 	ShortName:             "m",
-	IsExperimental:        false,
 	IsProxy:               false,
 	AffectsPolicyMatching: true,
 	Insight:               NewMeshInsightResource(),
@@ -611,11 +613,9 @@ var MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:                "mesh-insights",
 	KumactlArg:            "",
 	KumactlListArg:        "",
-	AllowToInspect:        false,
 	IsPolicy:              false,
 	SingularDisplayName:   "Mesh Insight",
 	PluralDisplayName:     "Mesh Insights",
-	IsExperimental:        false,
 	IsProxy:               false,
 	AffectsPolicyMatching: false,
 }
@@ -679,11 +679,21 @@ func (t *MeshOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return MeshOverviewResourceTypeDescriptor
 }
 
+// newMeshOverviewResourceSpec normalizes a nil spec the way SetSpec does. A nil one would
+// drop the field from the response without any error: the marshaller omits a nil message
+// and then throws the whole spec away once what is left renders as an empty object.
+func newMeshOverviewResourceSpec(spec *mesh_proto.Mesh) *mesh_proto.MeshOverview {
+	if spec == nil {
+		spec = &mesh_proto.Mesh{}
+	}
+	return &mesh_proto.MeshOverview{
+		Mesh: spec,
+	}
+}
+
 func (t *MeshOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
-	overview := &mesh_proto.MeshOverview{
-		Mesh: resource.GetSpec().(*mesh_proto.Mesh),
-	}
+	overview := newMeshOverviewResourceSpec(resource.GetSpec().(*mesh_proto.Mesh))
 	if insight != nil {
 		ins, ok := insight.GetSpec().(*mesh_proto.MeshInsight)
 		if !ok {
@@ -744,130 +754,9 @@ var MeshOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:                "",
 	KumactlArg:            "",
 	KumactlListArg:        "",
-	AllowToInspect:        false,
 	IsPolicy:              false,
 	SingularDisplayName:   "Mesh Overview",
 	PluralDisplayName:     "Mesh Overviews",
-	IsExperimental:        false,
 	IsProxy:               false,
 	AffectsPolicyMatching: false,
-}
-
-const (
-	ServiceInsightType model.ResourceType = "ServiceInsight"
-)
-
-var _ model.Resource = &ServiceInsightResource{}
-
-type ServiceInsightResource struct {
-	Meta model.ResourceMeta
-	Spec *mesh_proto.ServiceInsight
-}
-
-func NewServiceInsightResource() *ServiceInsightResource {
-	return &ServiceInsightResource{
-		Spec: &mesh_proto.ServiceInsight{},
-	}
-}
-
-func (t *ServiceInsightResource) GetMeta() model.ResourceMeta {
-	return t.Meta
-}
-
-func (t *ServiceInsightResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
-}
-
-func (t *ServiceInsightResource) GetSpec() model.ResourceSpec {
-	return t.Spec
-}
-
-func (t *ServiceInsightResource) SetSpec(spec model.ResourceSpec) error {
-	protoType, ok := spec.(*mesh_proto.ServiceInsight)
-	if !ok {
-		return fmt.Errorf("invalid type %T for Spec", spec)
-	} else {
-		if protoType == nil {
-			t.Spec = &mesh_proto.ServiceInsight{}
-		} else {
-			t.Spec = protoType
-		}
-		return nil
-	}
-}
-
-func (t *ServiceInsightResource) GetStatus() model.ResourceStatus {
-	return nil
-}
-
-func (t *ServiceInsightResource) SetStatus(_ model.ResourceStatus) error {
-	return errors.New("status not supported")
-}
-
-func (t *ServiceInsightResource) Descriptor() model.ResourceTypeDescriptor {
-	return ServiceInsightResourceTypeDescriptor
-}
-
-var _ model.ResourceList = &ServiceInsightResourceList{}
-
-type ServiceInsightResourceList struct {
-	Items      []*ServiceInsightResource
-	Pagination model.Pagination
-}
-
-func (l *ServiceInsightResourceList) GetItems() []model.Resource {
-	res := make([]model.Resource, len(l.Items))
-	for i, elem := range l.Items {
-		res[i] = elem
-	}
-	return res
-}
-
-func (l *ServiceInsightResourceList) GetItemType() model.ResourceType {
-	return ServiceInsightType
-}
-
-func (l *ServiceInsightResourceList) NewItem() model.Resource {
-	return NewServiceInsightResource()
-}
-
-func (l *ServiceInsightResourceList) AddItem(r model.Resource) error {
-	if trr, ok := r.(*ServiceInsightResource); ok {
-		l.Items = append(l.Items, trr)
-		return nil
-	} else {
-		return model.ErrorInvalidItemType((*ServiceInsightResource)(nil), r)
-	}
-}
-
-func (l *ServiceInsightResourceList) GetPagination() *model.Pagination {
-	return &l.Pagination
-}
-
-func (l *ServiceInsightResourceList) SetPagination(p model.Pagination) {
-	l.Pagination = p
-}
-
-var ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
-	Name:                  ServiceInsightType,
-	Resource:              NewServiceInsightResource(),
-	ResourceList:          &ServiceInsightResourceList{},
-	ReadOnly:              false,
-	AdminOnly:             false,
-	Scope:                 model.ScopeMesh,
-	KDSFlags:              model.GlobalToZonesFlag,
-	WsPath:                "",
-	KumactlArg:            "",
-	KumactlListArg:        "",
-	AllowToInspect:        false,
-	IsPolicy:              true,
-	SingularDisplayName:   "Service Insight",
-	PluralDisplayName:     "Service Insights",
-	IsExperimental:        false,
-	IsProxy:               false,
-	AffectsPolicyMatching: false,
-}
-
-func init() {
-	registry.RegisterType(ServiceInsightResourceTypeDescriptor)
 }

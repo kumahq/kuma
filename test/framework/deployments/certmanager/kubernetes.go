@@ -27,17 +27,32 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		KubectlOptions: cluster.GetKubectlOptions(t.namespace),
 	}
 
-	// Install cert-manager via Helm
-	_, err := helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), &opts, "install", "cert-manager",
+	// Pull through the shared chart cache: the first run fetches from the
+	// external repository with retries, later runs reuse the tarball and never
+	// touch the network. Installing from a local chart also keeps the install
+	// itself off the network, so a flaky index fetch cannot fail BeforeAll and
+	// take the whole suite with it.
+	chartPath, err := framework.HelmChartFromRepoE(
+		cluster.GetTesting(),
+		"https://charts.jetstack.io",
+		"cert-manager",
+		t.version,
+	)
+	if err != nil {
+		return err
+	}
+
+	// `upgrade --install` keeps this idempotent if an earlier attempt failed
+	// after the release was created.
+	_, err = helm.RunHelmCommandAndGetStdOutContextE(cluster.GetTesting(), context.Background(), &opts, "upgrade", "cert-manager",
+		"--install",
 		"--namespace", t.namespace,
 		"--create-namespace",
-		"--repo", "https://charts.jetstack.io",
-		"--version", t.version,
 		"--set", "installCRDs=true",
 		"--set", "startupapicheck.enabled=false",
 		"--wait",
 		"--timeout", "5m",
-		"cert-manager",
+		chartPath,
 	)
 	if err != nil {
 		return err

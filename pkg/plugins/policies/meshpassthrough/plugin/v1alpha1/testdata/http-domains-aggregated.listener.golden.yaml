@@ -98,15 +98,6 @@ resources:
             name: meshpassthrough_http_*
             virtualHosts:
             - domains:
-              - anotherexample.com
-              - anotherexample.com:*
-              name: anotherexample.com
-              routes:
-              - match:
-                  prefix: /
-                route:
-                  cluster: meshpassthrough_http_anotherexample.com_*
-            - domains:
               - '*.example.com'
               name: '*.example.com'
               routes:
@@ -237,15 +228,6 @@ resources:
           routeConfig:
             name: meshpassthrough_http_*
             virtualHosts:
-            - domains:
-              - anotherexample.com
-              - anotherexample.com:*
-              name: anotherexample.com
-              routes:
-              - match:
-                  prefix: /
-                route:
-                  cluster: meshpassthrough_http_anotherexample.com_*
             - domains:
               - '*.example.com'
               name: '*.example.com'

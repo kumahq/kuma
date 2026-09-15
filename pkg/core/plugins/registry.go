@@ -144,14 +144,6 @@ func (r *registry) BootstrapPlugins() []BootstrapPlugin {
 	return plugins
 }
 
-func (r *registry) BootstrapPlugin(name PluginName) (BootstrapPlugin, error) {
-	if p, ok := r.bootstrap[name]; ok {
-		return p, nil
-	} else {
-		return nil, noSuchPluginError(bootstrapPlugin, name)
-	}
-}
-
 func (r *registry) AuthnAPIServer() map[PluginName]AuthnAPIServerPlugin {
 	return r.authnAPIServer
 }

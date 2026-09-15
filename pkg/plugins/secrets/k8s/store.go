@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	secret_model "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	secret_store "github.com/kumahq/kuma/v3/pkg/core/secrets/store"
@@ -45,7 +46,7 @@ func NewStore(reader kube_client.Reader, writer kube_client.Writer, scheme *runt
 		writer:             writer,
 		scheme:             scheme,
 		secretsConverter:   DefaultConverter(),
-		resourcesConverter: k8s.NewSimpleConverter(namespace),
+		resourcesConverter: k8s.NewSimpleConverter(namespace, resource_labels.ControlPlane{}),
 		namespace:          namespace,
 	}, nil
 }

@@ -94,7 +94,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: containerpatches.kuma.io
 spec:
   group: kuma.io
@@ -208,7 +208,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -258,7 +258,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshhttproutes.kuma.io
 spec:
   group: kuma.io
@@ -416,27 +416,22 @@ spec:
                                           requestMirror:
                                             properties:
                                               backendRef:
-                                                description: BackendRef defines where
-                                                  to forward traffic.
+                                                description: BackendRef defines the
+                                                  destination traffic is routed to.
                                                 properties:
                                                   kind:
                                                     description: Kind of the referenced
                                                       resource
                                                     enum:
-                                                    - Mesh
                                                     - MeshService
                                                     - MeshExternalService
                                                     - MeshMultiZoneService
-                                                    - MeshHTTPRoute
-                                                    - Dataplane
                                                     type: string
                                                   labels:
                                                     additionalProperties:
                                                       type: string
-                                                    description: |-
-                                                      Labels are used to select referenced real resources and to carry legacy
-                                                      service identity when a common TargetRef must still target old
-                                                      service-tag based paths.
+                                                    description: Labels are used to
+                                                      select the referenced real resource.
                                                     type: object
                                                   port:
                                                     description: Port is only supported
@@ -446,11 +441,10 @@ spec:
                                                     type: integer
                                                   sectionName:
                                                     description: |-
-                                                      SectionName is used to target specific section of resource.
-                                                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                                      SectionName is used to target a specific section of the resource.
+                                                      For example, you can target a port from MeshService.ports[] by its name.
                                                     type: string
                                                   weight:
-                                                    default: 1
                                                     maximum: 4294967295
                                                     minimum: 0
                                                     type: integer
@@ -623,33 +617,27 @@ spec:
                                     kind:
                                       description: Kind of the referenced resource
                                       enum:
-                                      - Mesh
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshHTTPRoute
-                                      - Dataplane
                                       type: string
                                     labels:
                                       additionalProperties:
                                         type: string
-                                      description: |-
-                                        Labels are used to select referenced real resources and to carry legacy
-                                        service identity when a common TargetRef must still target old
-                                        service-tag based paths.
+                                      description: Labels are used to select the referenced
+                                        real resource.
                                       type: object
                                     port:
                                       description: Port is only supported when this
-                                        ref refers to a MeshService object
+                                        ref refers to a real MeshService object
                                       format: int32
                                       type: integer
                                     sectionName:
                                       description: |-
-                                        SectionName is used to target specific section of resource.
-                                        For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                        SectionName is used to target a specific section of the resource.
+                                        For example, you can target a port from MeshService.ports[] by its name.
                                       type: string
                                     weight:
-                                      default: 1
                                       maximum: 4294967295
                                       minimum: 0
                                       type: integer
@@ -713,27 +701,22 @@ spec:
                                     requestMirror:
                                       properties:
                                         backendRef:
-                                          description: BackendRef defines where to
-                                            forward traffic.
+                                          description: BackendRef defines the destination
+                                            traffic is routed to.
                                           properties:
                                             kind:
                                               description: Kind of the referenced
                                                 resource
                                               enum:
-                                              - Mesh
                                               - MeshService
                                               - MeshExternalService
                                               - MeshMultiZoneService
-                                              - MeshHTTPRoute
-                                              - Dataplane
                                               type: string
                                             labels:
                                               additionalProperties:
                                                 type: string
-                                              description: |-
-                                                Labels are used to select referenced real resources and to carry legacy
-                                                service identity when a common TargetRef must still target old
-                                                service-tag based paths.
+                                              description: Labels are used to select
+                                                the referenced real resource.
                                               type: object
                                             port:
                                               description: Port is only supported
@@ -743,11 +726,10 @@ spec:
                                               type: integer
                                             sectionName:
                                               description: |-
-                                                SectionName is used to target specific section of resource.
-                                                For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                                SectionName is used to target a specific section of the resource.
+                                                For example, you can target a port from MeshService.ports[] by its name.
                                               type: string
                                             weight:
-                                              default: 1
                                               maximum: 4294967295
                                               minimum: 0
                                               type: integer
@@ -938,7 +920,6 @@ spec:
                                         pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                         type: string
                                       type:
-                                        default: Exact
                                         description: Type specifies how to match against
                                           the value of the header.
                                         enum:
@@ -1061,7 +1042,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshidentities.kuma.io
 spec:
   group: kuma.io
@@ -1337,6 +1318,15 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              trustDomain:
+                description: |-
+                  TrustDomain is the trust domain this identity issues certificates in. The
+                  control plane renders `spec.spiffeID.trustDomain` once, when it first
+                  initializes the identity, and then keeps issuing in the recorded value.
+                  Templates such as `{{ .Zone }}` therefore stop following the zone name,
+                  which would otherwise silently move every workload into a trust domain no
+                  MeshTrust publishes yet.
+                type: string
             type: object
         type: object
     served: true
@@ -1346,7 +1336,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshinsights.kuma.io
 spec:
   group: kuma.io
@@ -1396,7 +1386,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshloadbalancingstrategies.kuma.io
 spec:
   group: kuma.io
@@ -1815,7 +1805,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshmetrics.kuma.io
 spec:
   group: kuma.io
@@ -2129,7 +2119,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshmultizoneservices.kuma.io
 spec:
   group: kuma.io
@@ -2370,7 +2360,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshopentelemetrybackends.kuma.io
 spec:
   group: kuma.io
@@ -2546,7 +2536,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshpassthroughs.kuma.io
 spec:
   group: kuma.io
@@ -2602,8 +2592,11 @@ spec:
                     items:
                       properties:
                         port:
-                          description: Port defines the port to which a user makes
-                            a request.
+                          description: |-
+                            Port defines the port to which a user makes a request. It is required for a
+                            `Domain` that is not a wildcard: the sidecar resolves the domain itself and
+                            connects to this port, so the destination doesn't depend on the address the
+                            client dials.
                           format: int32
                           type: integer
                         protocol:
@@ -2628,7 +2621,10 @@ spec:
                           - CIDR
                           type: string
                         value:
-                          description: Value for the specified Type.
+                          description: |-
+                            Value for the specified Type. A wildcard `Domain`, for example
+                            `*.example.com`, cannot be resolved by the sidecar, so its traffic goes to the
+                            address the client dials and the match only restricts the SNI or Host.
                           type: string
                       required:
                       - type
@@ -2684,7 +2680,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshproxypatches.kuma.io
 spec:
   group: kuma.io
@@ -3203,7 +3199,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshratelimits.kuma.io
 spec:
   group: kuma.io
@@ -3617,7 +3613,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: dataplanes.kuma.io
 spec:
   group: kuma.io
@@ -3669,7 +3665,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshretries.kuma.io
 spec:
   group: kuma.io
@@ -3969,7 +3965,6 @@ spec:
                                     pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
-                                    default: Exact
                                     description: Type specifies how to match against
                                       the value of the header.
                                     enum:
@@ -4006,7 +4001,6 @@ spec:
                                     pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
                                     type: string
                                   type:
-                                    default: Exact
                                     description: Type specifies how to match against
                                       the value of the header.
                                     enum:
@@ -4053,6 +4047,9 @@ spec:
                               - "500"
                               - "503"
                               items:
+                                description: |-
+                                  HTTPRetryOn names a condition a request is retried on. Alongside the named
+                                  conditions it also accepts any numeric HTTP status code.
                                 type: string
                               type: array
                           type: object
@@ -4112,7 +4109,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshservices.kuma.io
 spec:
   group: kuma.io
@@ -4322,6 +4319,7 @@ spec:
                     enum:
                     - Ready
                     - NotReady
+                    - Pending
                     type: string
                 type: object
               vips:
@@ -4341,7 +4339,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshtcproutes.kuma.io
 spec:
   group: kuma.io
@@ -4437,26 +4435,21 @@ spec:
                             properties:
                               backendRefs:
                                 items:
-                                  description: BackendRef defines where to forward
-                                    traffic.
+                                  description: BackendRef defines the destination
+                                    traffic is routed to.
                                   properties:
                                     kind:
                                       description: Kind of the referenced resource
                                       enum:
-                                      - Mesh
                                       - MeshService
                                       - MeshExternalService
                                       - MeshMultiZoneService
-                                      - MeshHTTPRoute
-                                      - Dataplane
                                       type: string
                                     labels:
                                       additionalProperties:
                                         type: string
-                                      description: |-
-                                        Labels are used to select referenced real resources and to carry legacy
-                                        service identity when a common TargetRef must still target old
-                                        service-tag based paths.
+                                      description: Labels are used to select the referenced
+                                        real resource.
                                       type: object
                                     port:
                                       description: Port is only supported when this
@@ -4465,11 +4458,10 @@ spec:
                                       type: integer
                                     sectionName:
                                       description: |-
-                                        SectionName is used to target specific section of resource.
-                                        For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                                        SectionName is used to target a specific section of the resource.
+                                        For example, you can target a port from MeshService.ports[] by its name.
                                       type: string
                                     weight:
-                                      default: 1
                                       maximum: 4294967295
                                       minimum: 0
                                       type: integer
@@ -4529,7 +4521,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshtimeouts.kuma.io
 spec:
   group: kuma.io
@@ -4809,7 +4801,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshtlses.kuma.io
 spec:
   group: kuma.io
@@ -4951,7 +4943,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -5259,7 +5251,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshtrafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -5496,7 +5488,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshtrusts.kuma.io
 spec:
   group: kuma.io
@@ -5597,7 +5589,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshzoneaddresses.kuma.io
 spec:
   group: kuma.io
@@ -5661,22 +5653,30 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
-  name: serviceinsights.kuma.io
+    controller-gen.kubebuilder.io/version: v0.22.0
+  name: workloads.kuma.io
 spec:
   group: kuma.io
   names:
     categories:
     - kuma
-    kind: ServiceInsight
-    listKind: ServiceInsightList
-    plural: serviceinsights
-    singular: serviceinsight
-  scope: Cluster
+    kind: Workload
+    listKind: WorkloadList
+    plural: workloads
+    shortNames:
+    - wl
+    singular: workload
+  scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: Workload represents a logical grouping of data plane proxies
+          in the mesh, providing visibility into their operational status. It tracks
+          statistics about the data plane proxies that belong to a workload, including
+          the number of connected, healthy, and total proxies, enabling monitoring
+          and health assessment of your workload deployments. Workloads is also the
+          primary way data-planes are grouped together in metrics and traces.
         properties:
           apiVersion:
             description: |-
@@ -5693,16 +5693,39 @@ spec:
               In CamelCase.
               More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
-          mesh:
-            description: |-
-              Mesh is the name of the Kuma mesh this resource belongs to.
-              It may be omitted for cluster-scoped resources.
-            type: string
           metadata:
             type: object
           spec:
-            description: Spec is the specification of the Kuma ServiceInsight resource.
-            x-kubernetes-preserve-unknown-fields: true
+            description: Spec is the specification of the Kuma Workload resource.
+            type: object
+          status:
+            description: Status is the current status of the Kuma Workload resource.
+            properties:
+              dataplaneProxies:
+                description: DataplaneProxies defines statistics of data plane proxies
+                  that are part of this workload
+                properties:
+                  connected:
+                    description: Connected defines number of connected data plane
+                      proxies
+                    format: int32
+                    type: integer
+                  healthy:
+                    description: Healthy defines number of healthy data plane proxies
+                      for this workload
+                    format: int32
+                    type: integer
+                  total:
+                    description: Total defines total number of data plane proxies
+                      for this workload
+                    format: int32
+                    type: integer
+                required:
+                - connected
+                - healthy
+                - total
+                type: object
+            type: object
         type: object
     served: true
     storage: true
@@ -5711,7 +5734,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: hostnamegenerators.kuma.io
 spec:
   group: kuma.io
@@ -5804,88 +5827,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
-  name: workloads.kuma.io
-spec:
-  group: kuma.io
-  names:
-    categories:
-    - kuma
-    kind: Workload
-    listKind: WorkloadList
-    plural: workloads
-    shortNames:
-    - wl
-    singular: workload
-  scope: Namespaced
-  versions:
-  - name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: Workload represents a logical grouping of data plane proxies
-          in the mesh, providing visibility into their operational status. It tracks
-          statistics about the data plane proxies that belong to a workload, including
-          the number of connected, healthy, and total proxies, enabling monitoring
-          and health assessment of your workload deployments. Workloads is also the
-          primary way data-planes are grouped together in metrics and traces.
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: Spec is the specification of the Kuma Workload resource.
-            type: object
-          status:
-            description: Status is the current status of the Kuma Workload resource.
-            properties:
-              dataplaneProxies:
-                description: DataplaneProxies defines statistics of data plane proxies
-                  that are part of this workload
-                properties:
-                  connected:
-                    description: Connected defines number of connected data plane
-                      proxies
-                    format: int32
-                    type: integer
-                  healthy:
-                    description: Healthy defines number of healthy data plane proxies
-                      for this workload
-                    format: int32
-                    type: integer
-                  total:
-                    description: Total defines total number of data plane proxies
-                      for this workload
-                    format: int32
-                    type: integer
-                required:
-                - connected
-                - healthy
-                - total
-                type: object
-            type: object
-        type: object
-    served: true
-    storage: true
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: zoneinsights.kuma.io
 spec:
   group: kuma.io
@@ -5935,7 +5877,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: zones.kuma.io
 spec:
   group: kuma.io
@@ -5987,7 +5929,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -6559,7 +6501,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshcircuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -7188,7 +7130,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshes.kuma.io
 spec:
   group: kuma.io
@@ -7240,7 +7182,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshexternalservices.kuma.io
 spec:
   group: kuma.io
@@ -7683,7 +7625,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshfaultinjections.kuma.io
 spec:
   group: kuma.io
@@ -8019,7 +7961,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.21.0
+    controller-gen.kubebuilder.io/version: v0.22.0
   name: meshhealthchecks.kuma.io
 spec:
   group: kuma.io
@@ -8399,7 +8341,6 @@ rules:
       - zones
       - zoneinsights
       - meshinsights
-      - serviceinsights
       - containerpatches
       - meshaccesslogs
       - meshcircuitbreakers
@@ -8729,7 +8670,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 1fa6f39d97a8aad47eff6f6670269d3333a30c2e107b0a9d14b2aa23e0f3bf24
-        checksum/tls-secrets: 3b2f8accdc8faf6cd4b5f0a3a0798f9e1644fb939d8df10f980068717706c4ff
+        checksum/tls-secrets: f6033fcf07311251d42af5ec4d088306bf0aa0300daf9ddcd142032744c4fdbd
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -8964,8 +8905,7 @@ webhooks:
           - meshes
           - dataplanes
           - dataplaneinsights
-          - serviceinsights
-          - zone
+          - zones
           - zoneinsights
           - meshaccesslogs
           - meshcircuitbreakers

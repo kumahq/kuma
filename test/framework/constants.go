@@ -26,7 +26,4 @@ const (
 	defaultToolKubeConfigPathPattern = "${HOME}/.kube/%s-%s.yaml"
 	legacyKubeConfigPathPattern      = "${HOME}/.kube/%s.yaml"
 	oldKindKubeConfigPathPattern     = "${HOME}/.kube/kind-%s-config"
-
-	redirectPortInbound  = "15006"
-	redirectPortOutbound = "15001"
 )

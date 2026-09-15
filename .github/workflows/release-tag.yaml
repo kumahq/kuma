@@ -33,7 +33,12 @@ concurrency:
 jobs:
   tag:
     timeout-minutes: 60
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
     steps:
       - name: "Generate GitHub app token"
         id: app-token
@@ -140,7 +145,7 @@ jobs:
           echo "${SHA} has ${GREEN} successful push run(s)."
 
       - name: "Check out the commit being tagged"
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ steps.tag.outputs.sha }}
           fetch-depth: 0

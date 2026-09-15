@@ -281,4 +281,27 @@ var _ = Describe("components", func() {
 		Eventually(errCh).Should(Receive(&startErr))
 		Expect(startErr).To(HaveOccurred())
 	})
+	It("proxies a record type it does not answer from the local map", func() {
+		f := func(req *dns.Msg) (*dns.Msg, error) { //nolint:unparam
+			response := new(dns.Msg)
+			response.SetRcode(req, dns.RcodeSuccess)
+			response.Answer = []dns.RR{
+				&dns.CNAME{
+					Hdr:    dns.RR_Header{Name: req.Question[0].Name, Ttl: 30, Rrtype: dns.TypeCNAME, Class: dns.ClassINET},
+					Target: "other.example.com.",
+				},
+			}
+			return response, nil
+		}
+		mock.Store(&f)
+		msg := &dns.Msg{}
+		msg.SetQuestion("www.example.com.", dns.TypeCNAME)
+
+		c := new(dns.Client)
+		res, _, err := c.Exchange(msg, address)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res.Rcode).To(Equal(dns.RcodeSuccess))
+		Expect(res.Answer).To(HaveLen(1))
+		Expect(res.Answer[0].(*dns.CNAME).Target).To(Equal("other.example.com."))
+	})
 })

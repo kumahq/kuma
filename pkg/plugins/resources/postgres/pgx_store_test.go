@@ -11,6 +11,7 @@ import (
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
@@ -42,7 +43,7 @@ var _ = Describe("PgxStore", func() {
 			}
 			Expect(err).ToNot(HaveOccurred())
 
-			pStore, err = postgres.NewPgxStore(metrics, dbCfg, config.NoopPgxConfigCustomizationFn)
+			pStore, err = postgres.NewPgxStore(metrics, dbCfg, config.NoopPgxConfigCustomizationFn, resource_labels.ControlPlane{})
 			if err != nil {
 				logger.Default.Logf(GinkgoT(), "error connecting to database: %v", err)
 				c.PrintDebugInfo(dbCfg.DbName, dbCfg.Port)

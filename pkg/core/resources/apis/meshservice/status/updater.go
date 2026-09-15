@@ -246,6 +246,15 @@ func (s *StatusUpdater) buildTLS(
 	if tlsReadyDpps != len(dpps) {
 		return notReady
 	}
+	if existing.Status != meshservice_api.TLSPending {
+		// Every proxy is certified for the first time. Leave clients on
+		// plaintext for one interval so the destinations can pick up their
+		// certificates and inbound TLS chains before anyone originates mTLS
+		// towards them.
+		return meshservice_api.TLS{
+			Status: meshservice_api.TLSPending,
+		}
+	}
 	return meshservice_api.TLS{
 		Status: meshservice_api.TLSReady,
 	}
@@ -266,7 +275,7 @@ func (s *StatusUpdater) hasReadyIdentity(
 	if identity.Spec.Provider != nil && identity.Spec.Provider.Type == meshidentity_api.SpireType {
 		return true
 	}
-	td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
+	td, err := identity.GetTrustDomain(s.localZone)
 	if err != nil {
 		s.logger.Error(err, "cannot resolve trust domain")
 		return false
@@ -282,7 +291,7 @@ func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, mes
 			if identity.Status == nil || (!identity.Status.IsInitialized() && !identity.Status.IsPartiallyReady()) {
 				continue
 			}
-			td, err := identity.Spec.GetTrustDomain(dpp.Meta, s.localZone)
+			td, err := identity.GetTrustDomain(s.localZone)
 			if err != nil {
 				s.logger.Error(err, "cannot resolve trust domain")
 				continue

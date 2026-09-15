@@ -36,7 +36,6 @@ type DataplaneProxyFactory struct {
 	WaitForDataplane          bool
 	sidecarContainersEnabled  bool
 	applicationProbeProxyPort uint32
-	otelPipeEnabled           bool
 	spireEnabled              bool
 }
 
@@ -50,7 +49,6 @@ func NewDataplaneProxyFactory(
 	waitForDataplane bool,
 	sidecarContainersEnabled bool,
 	applicationProbeProxyPort uint32,
-	otelPipeEnabled bool,
 	spireEnabled bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
@@ -63,7 +61,6 @@ func NewDataplaneProxyFactory(
 		WaitForDataplane:          waitForDataplane,
 		sidecarContainersEnabled:  sidecarContainersEnabled,
 		applicationProbeProxyPort: applicationProbeProxyPort,
-		otelPipeEnabled:           otelPipeEnabled,
 		spireEnabled:              spireEnabled,
 	}
 }
@@ -86,12 +83,10 @@ func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]strin
 		return int64(count), err
 	}
 
+	// Only autotune down to 2 to mitigate the latency risk if a worker
+	// thread blocks. This also covers the no-limit case, where Envoy
+	// would otherwise size workers to every core on the node.
 	cpuLimit := kube_api.MustParse(i.ContainerConfig.Resources.Limits.CPU)
-	if cpuLimit.IsZero() {
-		return 0, nil
-	}
-	// Only autotune to down to 2 to mitigate the latency
-	// risk if a worker thread blocks.
 	return max(cpuLimit.MilliValue()/1000, 2), nil
 }
 
@@ -307,22 +302,21 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: complogLevel,
 		}
 	}
+	if dpCompLogLevel, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaComponentLogLevel); exist {
+		envVars["KUMA_DATAPLANE_RUNTIME_COMPONENT_LOG_LEVEL"] = kube_core.EnvVar{
+			Name:  "KUMA_DATAPLANE_RUNTIME_COMPONENT_LOG_LEVEL",
+			Value: dpCompLogLevel,
+		}
+	}
 
-	if i.otelPipeEnabled {
-		envVars["HOST_IP"] = kube_core.EnvVar{
-			Name: "HOST_IP",
-			ValueFrom: &kube_core.EnvVarSource{
-				FieldRef: &kube_core.ObjectFieldSelector{
-					APIVersion: "v1",
-					FieldPath:  "status.hostIP",
-				},
+	envVars["HOST_IP"] = kube_core.EnvVar{
+		Name: "HOST_IP",
+		ValueFrom: &kube_core.EnvVarSource{
+			FieldRef: &kube_core.ObjectFieldSelector{
+				APIVersion: "v1",
+				FieldPath:  "status.hostIP",
 			},
-		}
-	} else {
-		envVars["KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED"] = kube_core.EnvVar{
-			Name:  "KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED",
-			Value: "false",
-		}
+		},
 	}
 	if enabled, _, err := metadata.Annotations(podAnnotations).GetEnabledWithDefault(i.spireEnabled, metadata.KumaSpireSupport); err != nil {
 		return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaSpireSupport)

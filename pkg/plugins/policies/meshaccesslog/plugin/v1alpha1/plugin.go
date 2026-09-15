@@ -19,7 +19,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	workload_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/workload/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	bldrs_accesslog "github.com/kumahq/kuma/v3/pkg/envoy/builders/accesslog"
 	. "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
 	"github.com/kumahq/kuma/v3/pkg/envoy/builders/filter/network/hcm"
@@ -79,9 +78,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	endpoints := &EndpointAccumulator{
 		OtelPipe: &OtelPipeResolver{
 			Resources:        ctx.Mesh.Resources,
-			NodeHostIP:       proxy.Metadata.GetDynamicMetadata(core_xds.FieldDynamicHostIP),
 			OtelEnvInventory: proxy.Metadata.GetOtelEnvInventory(),
-			Enabled:          proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp),
 			WorkDir:          proxy.Metadata.WorkDir,
 		},
 	}
@@ -118,7 +115,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return errors.Wrap(err, "unable to add configuration for MeshAccessLog backends")
 	}
 
-	if proxy.Metadata.HasFeature(xds_types.FeatureOtelViaKumaDp) && proxy.OtelPipeBackends != nil && endpoints.OtelPipe != nil {
+	if proxy.OtelPipeBackends != nil && endpoints.OtelPipe != nil {
 		for name, info := range endpoints.OtelPipe.PipeBackends() {
 			plan := policies_xds.BuildSignalRuntimePlan(
 				endpoints.OtelPipe.OtelEnvInventory,

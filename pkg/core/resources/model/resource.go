@@ -175,11 +175,6 @@ type OverviewResource interface {
 	SetOverviewSpec(resource Resource, insight Resource) error
 }
 
-type ResourceWithInsights interface {
-	NewInsightList() ResourceList
-	NewOverviewList() ResourceList
-}
-
 type ResourceTypeDescriptor struct {
 	// Name identifier of this resourceType this maps to the k8s entity and universal name.
 	Name ResourceType
@@ -209,20 +204,14 @@ type ResourceTypeDescriptor struct {
 	KumactlArgAlias string
 	// KumactlListArgAlias the alternative name of the cmdline argument when doing `list`.
 	KumactlListArgAlias string
-	// AllowToInspect if it's required to generate Inspect API endpoint for this type
-	AllowToInspect bool
 	// IsPolicy if this type is a policy (Dataplanes, Insights, Ingresses are not policies as they describe either metadata or workload, Retries are policies).
 	IsPolicy bool
 	// DisplayName the name of the policy showed as plural to be displayed in the UI and maybe CLI
 	SingularDisplayName string
 	// PluralDisplayName the name of the policy showed as plural to be displayed in the UI and maybe CLI
 	PluralDisplayName string
-	// IsExperimental indicates if a policy is in experimental state (might not be production ready).
-	IsExperimental bool
 	// IsPluginOriginated indicates if a policy is implemented as a plugin
 	IsPluginOriginated bool
-	// IsTargetRefBased indicates if a policy uses targetRef or not
-	IsTargetRefBased bool
 	// HasToTargetRef indicates that the policy can be applied to outbound traffic
 	HasToTargetRef bool
 	// HasRulesTargetRef indicates that the policy can be applied to inbound traffic
@@ -245,8 +234,6 @@ type ResourceTypeDescriptor struct {
 	Insight Resource
 	// Overview contains the overview type attached to this resourceType
 	Overview Resource
-	// DumpForGlobal whether resources of this type should be dumped when exporting a zone to migrate to global
-	DumpForGlobal bool
 	// AllowedOnSystemNamespaceOnly whether this resource type can be created only in the system namespace
 	AllowedOnSystemNamespaceOnly bool
 	// ShortName a name that is used in kubectl or in the envoy configuration
@@ -387,21 +374,15 @@ func HasWsEnabled() TypeFilter {
 	})
 }
 
-func AllowedToInspect() TypeFilter {
+func IsPolicy() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		return descriptor.AllowToInspect
+		return descriptor.IsPolicy
 	})
 }
 
 func HasScope(scope ResourceScope) TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
 		return descriptor.Scope == scope
-	})
-}
-
-func IsPolicy() TypeFilter {
-	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		return descriptor.IsPolicy
 	})
 }
 
@@ -425,18 +406,6 @@ func Named(names ...ResourceType) TypeFilter {
 func Not(filter TypeFilter) TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
 		return !filter.Apply(descriptor)
-	})
-}
-
-func Or(filters ...TypeFilter) TypeFilter {
-	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		for _, filter := range filters {
-			if filter.Apply(descriptor) {
-				return true
-			}
-		}
-
-		return false
 	})
 }
 
@@ -601,29 +570,6 @@ func ResourceListToResourceKeys(rl ResourceList) []ResourceKey {
 	return rkey
 }
 
-func ResourceListByMesh(rl ResourceList) (map[string]ResourceList, error) {
-	res := map[string]ResourceList{}
-	for _, r := range rl.GetItems() {
-		mrl, ok := res[r.GetMeta().GetMesh()]
-		if !ok {
-			mrl = r.Descriptor().NewList()
-			res[r.GetMeta().GetMesh()] = mrl
-		}
-		if err := mrl.AddItem(r); err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func ResourceListHash(rl ResourceList) []byte {
-	hasher := fnv.New128()
-	for _, entity := range rl.GetItems() {
-		_, _ = hasher.Write(Hash(entity))
-	}
-	return hasher.Sum(nil)
-}
-
 type ResourceList interface {
 	GetItemType() ResourceType
 	GetItems() []Resource
@@ -638,16 +584,8 @@ type Pagination struct {
 	NextOffset string
 }
 
-func (p *Pagination) GetTotal() uint32 {
-	return p.Total
-}
-
 func (p *Pagination) SetTotal(total uint32) {
 	p.Total = total
-}
-
-func (p *Pagination) GetNextOffset() string {
-	return p.NextOffset
 }
 
 func (p *Pagination) SetNextOffset(nextOffset string) {

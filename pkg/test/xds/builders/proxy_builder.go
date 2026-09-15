@@ -10,6 +10,8 @@ import (
 	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
 	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 )
 
@@ -59,6 +61,11 @@ func (p *ProxyBuilder) WithMetadata(metadata *core_xds.DataplaneMetadata) *Proxy
 	return p
 }
 
+func (p *ProxyBuilder) WithTransparentProxy(ipFamilyMode string) *ProxyBuilder {
+	p.res.Metadata.TransparentProxy = TransparentProxy(ipFamilyMode)
+	return p
+}
+
 func (p *ProxyBuilder) WithWorkloadIdentity(workloadIdentity *core_xds.WorkloadIdentity) *ProxyBuilder {
 	p.res.WorkloadIdentity = workloadIdentity
 	return p
@@ -100,4 +107,10 @@ func WorkloadIdentity() *core_xds.WorkloadIdentity {
 			)
 		},
 	}
+}
+
+func TransparentProxy(ipFamilyMode string) *tproxy_dp.DataplaneConfig {
+	cfg := tproxy_dp.DefaultDataplaneConfig()
+	cfg.IPFamilyMode = tproxy_config.IPFamilyMode(ipFamilyMode)
+	return &cfg
 }

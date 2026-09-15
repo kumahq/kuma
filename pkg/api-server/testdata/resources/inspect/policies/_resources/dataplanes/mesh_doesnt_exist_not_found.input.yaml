@@ -42,7 +42,7 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: svc-1
+        kuma.io/display-name: svc-1
 ---
 type: Dataplane
 name: dp-3
@@ -52,4 +52,4 @@ networking:
   inbound:
     - port: 1234
       tags:
-        kuma.io/service: svc-2
+        kuma.io/display-name: svc-2

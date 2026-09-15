@@ -72,13 +72,8 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 		createDpWithInsights("gateway-delegated", &v1alpha1.Dataplane{
 			Networking: &v1alpha1.Dataplane_Networking{
 				Address: "127.0.0.1",
-				Gateway: &v1alpha1.Dataplane_Networking_Gateway{
-					Tags: map[string]string{
-						"service": "gateway",
-					},
-				},
 			},
-		})
+		}, map[string]string{})
 		dp1Labels := map[string]string{
 			"service":   "backend",
 			"version":   "v1",
@@ -214,12 +209,6 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 		}),
 		Entry("should not list when any tag is not matching", testCase{
 			url: "meshes/mesh1/dataplanes/_overview?tag=service:backend&tag=version:v2",
-		}),
-		Entry("should list only gateway dataplanes", testCase{
-			url: "meshes/mesh1/dataplanes/_overview?gateway=true",
-		}),
-		Entry("should list only gateway delegated", testCase{
-			url: "meshes/mesh1/dataplanes/_overview?gateway=delegated",
 		}),
 		Entry("should list only dataplanes that starts with gateway", testCase{
 			url: "meshes/mesh1/dataplanes/_overview?name=gateway",

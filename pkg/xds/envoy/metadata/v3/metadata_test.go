@@ -22,15 +22,6 @@ var _ = Describe("Metadata()", func() {
 		Expect(metadata).To(BeNil())
 	})
 
-	It("should skip service tag", func() {
-		// when
-		metadata := EndpointMetadata(map[string]string{
-			"kuma.io/service": "backend",
-		})
-		// then
-		Expect(metadata).To(BeNil())
-	})
-
 	type testCase struct {
 		tags     map[string]string
 		expected string
@@ -46,16 +37,18 @@ var _ = Describe("Metadata()", func() {
 	},
 		Entry("map with multiple tags", testCase{
 			tags: map[string]string{
-				"kuma.io/service": "redis",
-				"version":         "v1",
-				"region":          "eu",
+				"kuma.io/display-name": "redis",
+				"version":              "v1",
+				"region":               "eu",
 			},
 			expected: `
               filterMetadata:
                 envoy.lb:
+                  kuma.io/display-name: redis
                   region: eu
                   version: v1
                 envoy.transport_socket_match:
+                  kuma.io/display-name: redis
                   region: eu
                   version: v1`,
 		}),

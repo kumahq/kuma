@@ -192,8 +192,7 @@ func ZoneProxy() {
 			Install(NamespaceWithSidecarInjection(ns)).
 			Install(Namespace(extNs)).
 			Install(Yaml(builders.Mesh().
-				WithName(mesh).
-				WithoutInitialPolicies())).
+				WithName(mesh))).
 			Install(YamlK8s(zoneProxyMeshTrafficPermission(mesh, targetedSNI, untargetedSNI))).
 			Install(Parallel(
 				democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh)),

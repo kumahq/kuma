@@ -2,7 +2,6 @@ package builders
 
 import (
 	"context"
-	"maps"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -87,18 +86,22 @@ func (d *DataplaneBuilder) WithAddress(address string) *DataplaneBuilder {
 	return d
 }
 
+// WithServices adds one plain inbound per name. The names themselves are no
+// longer recorded on the inbound (Dataplane inbounds carry no service tag);
+// this only controls how many inbounds are added.
 func (d *DataplaneBuilder) WithServices(services ...string) *DataplaneBuilder {
 	d.WithoutInbounds()
-	for _, service := range services {
-		d.AddInboundOfService(service)
+	for range services {
+		d.AddInbound(d.nextInbound())
 	}
 	return d
 }
 
+// WithHttpServices adds one HTTP inbound per name, same caveat as WithServices.
 func (d *DataplaneBuilder) WithHttpServices(services ...string) *DataplaneBuilder {
 	d.WithoutInbounds()
-	for _, service := range services {
-		d.AddInboundHttpOfService(service)
+	for range services {
+		d.AddInboundOfTagsAndProtocol("http")
 	}
 	return d
 }
@@ -122,14 +125,6 @@ func (d *DataplaneBuilder) WithInboundOfTagsMap(tags map[string]string) *Datapla
 
 func (d *DataplaneBuilder) WithInboundOfTagsAndProtocol(protocol string, tagsKV ...string) *DataplaneBuilder {
 	return d.WithoutInbounds().AddInboundOfTagsAndProtocol(protocol, tagsKV...)
-}
-
-func (d *DataplaneBuilder) AddInboundOfService(service string) *DataplaneBuilder {
-	return d.AddInboundOfTags(mesh_proto.ServiceTag, service)
-}
-
-func (d *DataplaneBuilder) AddInboundHttpOfService(service string) *DataplaneBuilder {
-	return d.AddInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, service)
 }
 
 func (d *DataplaneBuilder) AddInboundOfTags(tags ...string) *DataplaneBuilder {
@@ -203,24 +198,6 @@ func (d *DataplaneBuilder) AddOutboundsToServices(services ...string) *Dataplane
 	return d
 }
 
-func (d *DataplaneBuilder) WithTransparentProxying(redirectPortOutbound, redirectPortInbound uint32, ipFamilyMode string) *DataplaneBuilder {
-	d.res.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
-		RedirectPortInbound:  redirectPortInbound,
-		RedirectPortOutbound: redirectPortOutbound,
-		IpFamilyMode:         ipFamilyModeEnumValue(ipFamilyMode),
-	}
-	return d
-}
-
-func ipFamilyModeEnumValue(mode string) mesh_proto.Dataplane_Networking_TransparentProxying_IpFamilyMode {
-	switch mode {
-	case "ipv4":
-		return mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
-	default:
-		return mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
-	}
-}
-
 func TagsKVToMap(tagsKV []string) map[string]string {
 	if len(tagsKV)%2 == 1 {
 		panic("tagsKV has to have even number of arguments")
@@ -230,21 +207,6 @@ func TagsKVToMap(tagsKV []string) map[string]string {
 		tags[tagsKV[i]] = tagsKV[i+1]
 	}
 	return tags
-}
-
-func (d *DataplaneBuilder) WithDelegatedGateway(name string) *DataplaneBuilder {
-	d.res.Spec.Networking.Gateway = &mesh_proto.Dataplane_Networking_Gateway{
-		Tags: map[string]string{
-			mesh_proto.ServiceTag: name,
-		},
-		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-	}
-	return d
-}
-
-func (d *DataplaneBuilder) AddGatewayTags(tags map[string]string) *DataplaneBuilder {
-	maps.Copy(d.res.Spec.Networking.Gateway.Tags, tags)
-	return d
 }
 
 func (d *DataplaneBuilder) WithAdminPort(i int) *DataplaneBuilder {

@@ -9,21 +9,8 @@ import (
 
 type LabelResourceIdentifierResolver func(core_model.ResourceType, map[string]string) kri.Identifier
 
-func BackendRefOrNil(origin kri.Identifier, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) *ResolvedBackendRef {
-	if br, ok := BackendRef(origin, br, resolver); ok {
-		return &br
-	}
-	return nil
-}
-
 func BackendRef(origin kri.Identifier, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) (ResolvedBackendRef, bool) {
-	switch {
-	case br.Kind == common_api.MeshService && br.ReferencesRealObject():
-	case br.Kind == common_api.MeshExternalService:
-	case br.Kind == common_api.MeshMultiZoneService:
-	default:
-		// Any other kind selects by kuma.io/service tag, which no longer
-		// resolves to anything a cluster can be built from.
+	if !br.ReferencesRealObject() {
 		return ResolvedBackendRef{}, false
 	}
 

@@ -41,7 +41,7 @@ Generate token bound by mesh
 $ kumactl generate dataplane-token --mesh demo --valid-for 24h
 
 Generate token bound by tag
-$ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api --valid-for 24h
+$ kumactl generate dataplane-token --mesh demo --tag kuma.io/display-name=web,web-api --valid-for 24h
 
 Generate token bound by workload
 $ kumactl generate dataplane-token --mesh demo --workload backend --valid-for 24h

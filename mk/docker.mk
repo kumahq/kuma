@@ -1,4 +1,3 @@
-BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images-${GOARCH}
 KUMA_VERSION ?= master
 
 DOCKER_SERVER ?= docker.io
@@ -23,25 +22,48 @@ export DOCKER_BUILDKIT := 1
 # `docker manifest create --amend` which expects plain image manifests.
 DOCKER_BUILD_OPTS ?= --provenance=false
 
+COMMA := ,
+# Opt-in buildx registry layer cache for CI (DOCKER_BUILDX_CACHE=true): every
+# base image/arch keeps its layers in a buildcache-<arch> tag next to the
+# image, so CI jobs no longer rebuild shared base images (static/base/envoy)
+# from scratch. Cache pull is anonymous (public repos); push is gated on
+# ALLOW_PUSH because it needs registry credentials. '--load' keeps the built
+# image in the local daemon for the docker/save and docker/push targets, and
+# requires the container driver (docker/setup-buildx-action in CI).
+# Only base images use it. A cached build has to go through the buildx
+# frontend since plain 'docker build' stays on the docker driver even when a
+# container builder is the current buildx instance. Final images must stay on
+# the docker driver because they FROM the '--load'ed bases, which live in the
+# daemon's image store and are invisible to the container builder; their own
+# layers are a single COPY of a prebuilt binary, so a registry cache would
+# only add push/pull overhead there.
+ifeq ($(DOCKER_BUILDX_CACHE),true)
+DOCKER_BUILD = docker buildx build
+DOCKER_BUILDX_OPTS = --cache-from type=registry$(COMMA)ref=$(DOCKER_REGISTRY)/$(1):buildcache-$(2)$(COMMA)ignore-error=true $(if $(filter $(ALLOW_PUSH),true),--cache-to type=registry$(COMMA)ref=$(DOCKER_REGISTRY)/$(1):buildcache-$(2)$(COMMA)mode=max$(COMMA)ignore-error=true) --load
+else
+DOCKER_BUILD = docker build
+DOCKER_BUILDX_OPTS =
+endif
+
 # add targets to build images for each arch
 # $(1) - GOARCH to build for
 
 define IMAGE_TARGETS_BY_ARCH
 .PHONY: image/static/$(1)
 image/static/$(1): ## Dev: Rebuild `kuma-static` Docker image
-	docker build $(DOCKER_BUILD_OPTS) -t kumahq/static-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/static.Dockerfile .
+	$(DOCKER_BUILD) $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,static-debian12,$(1)) -t kumahq/static-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/static.Dockerfile .
 
 .PHONY: image/base/$(1)
 image/base/$(1): ## Dev: Rebuild `kuma-base` Docker image
-	docker build $(DOCKER_BUILD_OPTS) -t kumahq/base-nossl-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base.Dockerfile .
+	$(DOCKER_BUILD) $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,base-nossl-debian12,$(1)) -t kumahq/base-nossl-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base.Dockerfile .
 
 .PHONY: image/base-root/$(1)
 image/base-root/$(1): ## Dev: Rebuild `kuma-base-root` Docker image
-	docker build $(DOCKER_BUILD_OPTS) -t kumahq/base-root-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base-root.Dockerfile .
+	$(DOCKER_BUILD) $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,base-root-debian12,$(1)) -t kumahq/base-root-debian12:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/base-root.Dockerfile .
 
 .PHONY: image/envoy/$(1)
 image/envoy/$(1): build/artifacts-linux-$(1)/envoy ## Dev: Rebuild `envoy` Docker image
-	docker build $(DOCKER_BUILD_OPTS) -t kumahq/envoy:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/envoy.Dockerfile .
+	$(DOCKER_BUILD) $(DOCKER_BUILD_OPTS) $(call DOCKER_BUILDX_OPTS,envoy,$(1)) -t kumahq/envoy:no-push-$(1) --build-arg ARCH=$(1) --platform=linux/$(1) -f $(TOOLS_DIR)/releases/dockerfiles/envoy.Dockerfile .
 
 .PHONY: image/kuma-cp/$(1)
 image/kuma-cp/$(1): image/static/$(1) build/artifacts-linux-$(1)/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
@@ -80,7 +102,7 @@ docker/save/$(1)/$(2):
 	@mkdir -p build/docker
 	docker save --output build/docker/$(1)-$(2).tar $$(call build_image,$(1),$(2))
 
-.PHONY: docker/$(1)/$(2)
+.PHONY: docker/load/$(1)/$(2)
 docker/load/$(1)/$(2):
 	@docker load --quiet --input build/docker/$(1)-$(2).tar
 
@@ -169,19 +191,9 @@ endef
 $(foreach image,$(IMAGES_RELEASE) $(IMAGES_TEST),$(eval $(call IMAGE_INFO_TARGETS_BY_IMAGE,$(image))))
 
 # The awk command is ok because we're passing a list of container image names which won't contain ' ' or '"'
-# This outputs something like: ["docker.io/kumahq/kuma-cp:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-dp:0.0.0-preview.vlocal-build","docker.io/kumahq/kumactl:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-init:0.0.0-preview.vlocal-build","docker.io/kumahq/kuma-cni:0.0.0-preview.vlocal-build"]
-.PHONY: manifests/json/release
-manifests/json/release: ## output all release manifests in a json array
-	@echo $(call build_image,$(IMAGES_RELEASE)) | awk 'BEGIN{FS=" "; printf("[")}{for(i=1;i<=NF;i++)  printf("\"%s\"%s", $$i, i!=NF ? "," : "")} END{printf("]")}'
-
 .PHONY: images/info/release/json
 images/info/release/json:
 	@echo $(IMAGES_RELEASE) | awk 'BEGIN{FS=" "; printf("[")}{for(i=1;i<=NF;i++)  printf("\"%s\"%s", $$i, i!=NF ? "," : "")} END{printf("]")}'
-
-.PHONY: docker/purge
-docker/purge: ## Dev: Remove all Docker containers, images, networks and volumes
-	for c in `docker ps -q`; do docker kill $$c; done
-	docker system prune --all --volumes --force
 
 .PHONY: docker/login
 docker/login:

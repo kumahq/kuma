@@ -128,6 +128,8 @@ func validateHTTP(http *HTTP) validators.ValidationError {
 	return verr
 }
 
+// validateHTTPRetryOn stands in for a schema enum, which HTTPRetryOn cannot
+// have: it accepts any numeric HTTP status code alongside the named conditions.
 func validateHTTPRetryOn(retryOn []HTTPRetryOn) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("retryOn")

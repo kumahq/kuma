@@ -1,0 +1,23 @@
+{
+  "type": "MeshTimeout",
+  "mesh": "default",
+  "name": "mt-zone",
+  "labels": {
+    "kuma.io/origin": "zone"
+  },
+  "spec": {
+    "targetRef": {
+      "kind": "Mesh"
+    },
+    "to": [
+      {
+        "targetRef": {
+          "kind": "Mesh"
+        },
+        "default": {
+          "idleTimeout": "99s"
+        }
+      }
+    ]
+  }
+}

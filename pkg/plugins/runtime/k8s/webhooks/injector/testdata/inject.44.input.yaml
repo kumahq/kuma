@@ -4,8 +4,6 @@ metadata:
   name: busybox
   labels:
     run: busybox
-  annotations:
-    kuma.io/gateway: "true"
 spec:
   volumes:
   - name: default-token-w7dxf

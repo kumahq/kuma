@@ -7,7 +7,6 @@ import (
 
 const (
 	HasToBeGreaterThan                = "must be greater than"
-	HasToBeLessThan                   = "must be less than"
 	HasToBeGreaterOrEqualThen         = "must be greater or equal then"
 	HasToBeGreaterThanZero            = "must be greater than 0"
 	MustNotBeEmpty                    = "must not be empty"

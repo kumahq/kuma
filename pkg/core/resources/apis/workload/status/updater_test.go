@@ -137,7 +137,7 @@ var _ = Describe("Updater", func() {
 		dpUnhealthy := builders.Dataplane().
 			WithName("dp-unhealthy").
 			WithAddress("192.168.0.2").
-			AddInboundOfTagsMap(map[string]string{"kuma.io/service": "backend"}).
+			AddInboundOfTagsMap(map[string]string{}).
 			With(func(resource *core_mesh.DataplaneResource) {
 				resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_NotReady
 			}).Build()

@@ -12,6 +12,3 @@ networking:
         kind: MeshService
         name: httpbin
         port: 80
-  transparentProxying:
-    redirectPortOutbound: 15001
-    redirectPortInbound: 15003

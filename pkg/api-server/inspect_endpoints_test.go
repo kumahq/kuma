@@ -17,11 +17,9 @@ import (
 	api_common "github.com/kumahq/kuma/v3/api/openapi/types/common"
 	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
 	"github.com/kumahq/kuma/v3/pkg/core"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
-	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -82,21 +80,6 @@ var _ = Describe("Inspect WS", func() {
 
 			Expect(resp.Header.Get("content-type")).To(Equal(given.contentType))
 		},
-		Entry("inspect meshtrafficpermission", testCase{
-			path:    "/meshes/mesh-1/meshtrafficpermissions/mtp-1/dataplanes",
-			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_meshtrafficpermission.json")),
-			resources: []core_model.Resource{
-				builders.Mesh().WithName("mesh-1").Build(),
-				builders.Dataplane().WithName("backend-1").WithMesh("mesh-1").WithServices("backend").
-					WithLabels(map[string]string{"app": "backend"}).Build(),
-				builders.MeshTrafficPermission().
-					WithMesh("mesh-1").
-					WithTargetRef(builders.TargetRefDataplaneLabels("app", "backend")).
-					AddRule(v1alpha1.Allow).
-					Build(),
-			},
-			contentType: restful.MIME_JSON,
-		}),
 		Entry("inspect xds for dataplane", testCase{
 			path:    "/meshes/mesh-1/dataplanes/backend-1/xds",
 			matcher: matchers.MatchGoldenJSON(path.Join("testdata", "inspect_xds_dataplane.json")),
@@ -194,61 +177,5 @@ var _ = Describe("Inspect WS", func() {
 			"toResourceRules": [],
 			"warnings": ["warning"]
 		}`))
-	})
-
-	It("should change response if state changed", func() {
-		// setup
-		var apiServer *api_server.ApiServer
-		var stop func()
-		resourceStore := memory.NewStore()
-		rm := manager.NewResourceManager(resourceStore)
-		apiServer, _, stop = StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
-		defer stop()
-
-		// when init the state
-		// TrafficPermission that selects 2 DPPs
-		initState := []core_model.Resource{
-			builders.Mesh().Build(),
-			builders.Dataplane().WithName("backend-1").WithHttpServices("backend").AddOutboundsToServices("redis", "elastic").Build(),
-			builders.Dataplane().WithName("redis-1").WithHttpServices("redis").AddOutboundsToServices("redis", "backend", "elastic").Build(),
-		}
-		for _, resource := range initState {
-			err := rm.Create(context.Background(), resource,
-				store.CreateBy(core_model.MetaToResourceKey(resource.GetMeta())))
-			Expect(err).ToNot(HaveOccurred())
-		}
-
-		// then
-		var resp *http.Response
-		Eventually(func() error {
-			r, err := http.Get((&url.URL{
-				Scheme: "http",
-				Host:   apiServer.Address(),
-				Path:   "/meshes/default/meshtrafficpermissions/tp-1/dataplanes",
-			}).String())
-			resp = r
-			return err
-		}, "3s").ShouldNot(HaveOccurred())
-		bytes, err := io.ReadAll(resp.Body)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "inspect_changed_state_before.json")))
-
-		// when change the state
-		err = rm.Delete(context.Background(), core_mesh.NewDataplaneResource(), store.DeleteByKey("backend-1", "default"))
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
-		Eventually(func() error {
-			r, err := http.Get((&url.URL{
-				Scheme: "http",
-				Host:   apiServer.Address(),
-				Path:   "/meshes/default/meshtrafficpermissions/tp-1/dataplanes",
-			}).String())
-			resp = r
-			return err
-		}, "3s").ShouldNot(HaveOccurred())
-		bytes, err = io.ReadAll(resp.Body)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "inspect_changed_state_after.json")))
 	})
 })

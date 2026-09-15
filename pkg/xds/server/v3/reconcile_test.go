@@ -498,7 +498,7 @@ var _ = Describe("Reconcile", func() {
 		})
 
 		It("should frame hash inputs and produce fixed-width versions", func() {
-			secretVersion, err := resourcesVersion(map[string]envoy_types.ResourceWithTTL{
+			secretVersion, _, err := resourcesVersion(map[string]envoy_types.ResourceWithTTL{
 				"secret": {Resource: &envoy_auth.Secret{Name: "secret"}},
 			})
 			Expect(err).ToNot(HaveOccurred())

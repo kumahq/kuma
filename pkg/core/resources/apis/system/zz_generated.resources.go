@@ -119,11 +119,9 @@ var ConfigResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:                "",
 	KumactlArg:            "",
 	KumactlListArg:        "",
-	AllowToInspect:        false,
 	IsPolicy:              false,
 	SingularDisplayName:   "Config",
 	PluralDisplayName:     "Configs",
-	IsExperimental:        false,
 	IsProxy:               false,
 	AffectsPolicyMatching: true,
 }
@@ -239,11 +237,9 @@ var SecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:                "secrets",
 	KumactlArg:            "secret",
 	KumactlListArg:        "secrets",
-	AllowToInspect:        false,
 	IsPolicy:              false,
 	SingularDisplayName:   "Secret",
 	PluralDisplayName:     "Secrets",
-	IsExperimental:        false,
 	IsProxy:               false,
 	AffectsPolicyMatching: true,
 }
@@ -358,12 +354,10 @@ var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:                "zones",
 	KumactlArg:            "zone",
 	KumactlListArg:        "zones",
-	AllowToInspect:        false,
 	IsPolicy:              false,
 	SingularDisplayName:   "Zone",
 	PluralDisplayName:     "Zones",
 	ShortName:             "z",
-	IsExperimental:        false,
 	IsProxy:               false,
 	AffectsPolicyMatching: false,
 	Insight:               NewZoneInsightResource(),
@@ -480,11 +474,9 @@ var ZoneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:                "zone-insights",
 	KumactlArg:            "",
 	KumactlListArg:        "",
-	AllowToInspect:        false,
 	IsPolicy:              false,
 	SingularDisplayName:   "Zone Insight",
 	PluralDisplayName:     "Zone Insights",
-	IsExperimental:        false,
 	IsProxy:               false,
 	AffectsPolicyMatching: false,
 }
@@ -548,11 +540,21 @@ func (t *ZoneOverviewResource) Descriptor() model.ResourceTypeDescriptor {
 	return ZoneOverviewResourceTypeDescriptor
 }
 
+// newZoneOverviewResourceSpec normalizes a nil spec the way SetSpec does. A nil one would
+// drop the field from the response without any error: the marshaller omits a nil message
+// and then throws the whole spec away once what is left renders as an empty object.
+func newZoneOverviewResourceSpec(spec *system_proto.Zone) *system_proto.ZoneOverview {
+	if spec == nil {
+		spec = &system_proto.Zone{}
+	}
+	return &system_proto.ZoneOverview{
+		Zone: spec,
+	}
+}
+
 func (t *ZoneOverviewResource) SetOverviewSpec(resource model.Resource, insight model.Resource) error {
 	t.SetMeta(resource.GetMeta())
-	overview := &system_proto.ZoneOverview{
-		Zone: resource.GetSpec().(*system_proto.Zone),
-	}
+	overview := newZoneOverviewResourceSpec(resource.GetSpec().(*system_proto.Zone))
 	if insight != nil {
 		ins, ok := insight.GetSpec().(*system_proto.ZoneInsight)
 		if !ok {
@@ -613,11 +615,9 @@ var ZoneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	WsPath:                "",
 	KumactlArg:            "",
 	KumactlListArg:        "",
-	AllowToInspect:        false,
 	IsPolicy:              false,
 	SingularDisplayName:   "Zone Overview",
 	PluralDisplayName:     "Zone Overviews",
-	IsExperimental:        false,
 	IsProxy:               false,
 	AffectsPolicyMatching: false,
 }

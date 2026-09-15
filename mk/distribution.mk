@@ -61,14 +61,7 @@ publish/pulp/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2):
 		-e PULP_PASSWORD="${PULP_PASSWORD}" \
 		-e PULP_HOST=$(PULP_HOST) \
 		-e CLOUDSMITH_API_KEY='$(CLOUDSMITH_API_KEY)' \
-		-e CLOUDSMITH_ORG='$(CLOUDSMITH_ORG)' \
-		-e CLOUDSMITH_SERVICE_SLUG='$(CLOUDSMITH_SERVICE_SLUG)' \
-		-e CLOUDSMITH_OIDC_AUDIENCE='$(CLOUDSMITH_OIDC_AUDIENCE)' \
-		-e GITHUB_ACTIONS='$(GITHUB_ACTIONS)' \
-		-e ACTIONS_ID_TOKEN_REQUEST_URL='$(ACTIONS_ID_TOKEN_REQUEST_URL)' \
-		-e ACTIONS_ID_TOKEN_REQUEST_TOKEN='$(ACTIONS_ID_TOKEN_REQUEST_TOKEN)' \
 		-e CLOUDSMITH_DRY_RUN='' \
-		-e IGNORE_CLOUDSMITH_FAILURES=x \
 		-e USE_CLOUDSMITH=x \
 		-e USE_PULP=x \
 		-v $(TOP)/build/distributions/out:/files:ro \
@@ -85,10 +78,8 @@ endef
 dist_os = $(word 1, $(subst :, ,$(elt)))
 dist_arch = $(word 2, $(subst :, ,$(elt)))
 dist_envoy = $(word 3, $(subst :, ,$(elt)))
-dist_envoy_alt = $(word 4, $(subst :, ,$(elt)))
 dist_name = $(dist_os)-$(dist_arch)
-# Call make_distribution_target with each combination
-$(foreach elt,$(DISTRIBUTION_LIST),$(eval $(call make_distributions_target,$(dist_os),$(dist_arch),$(dist_envoy),$(dist_envoy_alt))))
+$(foreach elt,$(DISTRIBUTION_LIST),$(eval $(call make_distributions_target,$(dist_os),$(dist_arch),$(dist_envoy))))
 ENABLED_DIST_NAMES=$(filter $(addprefix %,$(ENABLED_ARCH_OS)),$(foreach elt,$(DISTRIBUTION_LIST),$(dist_name)))
 
 # Create a main target which will call the tar.gz target for each distribution
@@ -103,14 +94,10 @@ endif
 build/distributions/out: $(patsubst %,build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-%.tar.gz,$(ENABLED_DIST_NAMES))
 	cd $@; sha256sum *.tar.gz > $(DISTRIBUTION_TARGET_NAME).sha256
 
-.PHONY: build/info/distribution/repo
+.PHONY: build/info/cloudsmith_repository
 build/info/cloudsmith_repository:
 	@echo $(PULP_PACKAGE_TYPE)-binaries-$(PULP_DIST_VERSION)
 
 # Create a main target which will publish to pulp each to the tar.gz built
 .PHONY: publish/pulp ## Publish to pulp all enabled distributions
 publish/pulp: $(addprefix publish/pulp/$(DISTRIBUTION_TARGET_NAME)-,$(ENABLED_DIST_NAMES))
-
-.PHONY: clean/distributions
-clean/distributions:
-	rm -rf build/distributions

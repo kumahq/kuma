@@ -16,6 +16,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/config"
 	conf "github.com/kumahq/kuma/v3/pkg/config/plugins/runtime/k8s"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
@@ -113,7 +114,7 @@ spec:
 				Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 				cfg.CaCertFile = caCertPath
 				cfg.TransparentProxyConfigMapName = tproxyConfigMapName
-				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, systemNamespace, nil)
+				injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}), 9901, 9902, systemNamespace, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				// and create mesh
@@ -228,22 +229,6 @@ spec:
 		}),
 		Entry("05. Pod without ServiceAccount token", testCase{
 			num: "05",
-			mesh: `
-              apiVersion: kuma.io/v1alpha1
-              kind: Mesh
-              metadata:
-                name: default`,
-			namespace: `
-              apiVersion: v1
-              kind: Namespace
-              metadata:
-                name: default
-                labels:
-                  kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.config.yaml",
-		}),
-		Entry("06. Pod with kuma.io/gateway annotation", testCase{
-			num: "06",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
               kind: Mesh
@@ -823,7 +808,7 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.probe-proxy-disabled.config.yaml",
 		}),
-		Entry("41. gateway provided with cni enabled", testCase{
+		Entry("41. excluded inbound ports with cni enabled", testCase{
 			num: "41",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -856,7 +841,7 @@ spec:
                     kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.spire.config.yaml",
 		}),
-		Entry(`44. Pod with kuma.io/gateway annotation set to "true"`, testCase{
+		Entry("44. sidecar without CPU limit", testCase{
 			num: "44",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -870,23 +855,7 @@ spec:
                 name: default
                 labels:
                   kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.config.yaml",
-		}),
-		Entry("45. Pod with probes and kuma.io/gateway annotation set to disabled", testCase{
-			num: "45",
-			mesh: `
-              apiVersion: kuma.io/v1alpha1
-              kind: Mesh
-              metadata:
-                name: default`,
-			namespace: `
-              apiVersion: v1
-              kind: Namespace
-              metadata:
-                name: default
-                labels:
-                  kuma.io/sidecar-injection: enabled`,
-			cfgFile: "inject.config.yaml",
+			cfgFile: "inject.no-cpu-limit.config.yaml",
 		}),
 	)
 
@@ -900,7 +869,7 @@ spec:
 			"http://kuma-control-plane.kuma-system:5681",
 			k8sClient,
 			false,
-			k8s.NewSimpleConverter("kuma-system"),
+			k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}),
 			9901,
 			9902,
 			systemNamespace,
@@ -957,7 +926,7 @@ metadata:
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
 			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, systemNamespace, nil)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}), 9901, 9902, systemNamespace, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1064,7 +1033,7 @@ metadata:
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = caCertPath
 			cfg.TransparentProxyConfigMapName = tproxyConfigMapName
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system"), 9901, 9902, systemNamespace, nil)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, true, k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}), 9901, 9902, systemNamespace, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -1148,7 +1117,7 @@ metadata:
 				"http://kuma-control-plane.kuma-system:5681",
 				k8sClient,
 				true,
-				k8s.NewSimpleConverter("kuma-system"),
+				k8s.NewSimpleConverter("kuma-system", resource_labels.ControlPlane{}),
 				9901,
 				9902,
 				systemNamespace,

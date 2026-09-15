@@ -91,7 +91,6 @@ var _ = Describe("kumactl export", func() {
 				samples.SampleSigningKeySecret(),
 				samples.MeshDefaultBuilder().WithName("another-mesh").Build(),
 				samples.SampleSigningKeySecretBuilder().WithMesh("another-mesh").Build(),
-				samples.ServiceInsight().WithMesh("another-mesh").Build(),
 				samples.SampleGlobalSecretAdminCa(),
 			},
 			goldenFile: "export.golden.yaml",
@@ -116,7 +115,7 @@ var _ = Describe("kumactl export", func() {
 				samples.SampleSigningKeyGlobalSecret(),
 				samples.MeshAccessLogWithFileBackend(),
 				samples.MeshTimeoutInCustomNamespace(),
-				samples.MeshAccessLogWithZoneOriginLabel(),
+				samples.MeshAccessLogWithZoneLabels(),
 			},
 			args: []string{
 				"--format=universal",
@@ -157,7 +156,7 @@ var _ = Describe("kumactl export", func() {
 				samples.SampleSigningKeyGlobalSecret(),
 				samples.MeshAccessLogWithFileBackend(),
 				samples.DataplaneBackend(),
-				samples.MeshAccessLogWithZoneOriginLabel(),
+				samples.MeshAccessLogWithZoneLabels(),
 			},
 			args: []string{
 				"--profile", "federation-with-policies",
@@ -222,5 +221,5 @@ var _ client.ResourcesListClient = &staticResourcesListClient{}
 func (s staticResourcesListClient) List(ctx context.Context) (api_types.ResourceTypeDescriptionList, error) {
 	// match the real /_resources endpoint, which only lists types exposed over REST
 	defs := registry.Global().ObjectDescriptors(model.HasWsEnabled())
-	return mappers.MapResourceTypeDescription(defs, false, true), nil
+	return mappers.MapResourceTypeDescription(defs, false, false, true), nil
 }

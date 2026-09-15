@@ -79,12 +79,10 @@ var _ = Describe("prepareRoutes", func() {
 										Type: api.RequestMirrorType,
 										RequestMirror: &api.RequestMirror{
 											BackendRef: common_api.BackendRef{
-												TargetRef: common_api.TargetRef{
-													Kind: common_api.MeshService,
-													Labels: pointer.To(map[string]string{
-														mesh_proto.DisplayName: "payments",
-													}),
-												},
+												Kind: common_api.BackendRefKindMeshService,
+												Labels: pointer.To(map[string]string{
+													mesh_proto.DisplayName: "payments",
+												}),
 												Port: pointer.To(uint32(8080)),
 											},
 										},
@@ -164,9 +162,7 @@ var _ = Describe("prepareRoutes", func() {
 		var backendRefs []api.BackendRef
 		for i, name := range refNames {
 			backendRefs = append(backendRefs, api.BackendRef{
-				TargetRef: builders.TargetRefMeshService(name, "kuma-demo", ""),
-				Port:      pointer.To(uint32(8080)),
-				Weight:    pointer.To(refWeights[i]),
+				BackendRef: builders.BackendRefMeshService(name, "kuma-demo", "", uint32(8080), refWeights[i]),
 			})
 		}
 		toRules := core_rules.ToRules{
@@ -244,9 +240,7 @@ var _ = Describe("prepareRoutes", func() {
 			Path: &api.PathMatch{Type: api.PathPrefix, Value: "/split"},
 		}}
 		backendRefs := []api.BackendRef{{
-			TargetRef: builders.TargetRefMeshService("payments", "kuma-demo", ""),
-			Port:      pointer.To(uint32(8080)),
-			Weight:    pointer.To(uint(70)),
+			BackendRef: builders.BackendRefMeshService("payments", "kuma-demo", "", uint32(8080), uint(70)),
 			Filters: &[]api.Filter{{
 				Type: api.RequestHeaderModifierType,
 				RequestHeaderModifier: &api.HeaderModifier{
@@ -257,9 +251,7 @@ var _ = Describe("prepareRoutes", func() {
 				},
 			}},
 		}, {
-			TargetRef: builders.TargetRefMeshService("missing-backend", "kuma-demo", ""),
-			Port:      pointer.To(uint32(8080)),
-			Weight:    pointer.To(uint(30)),
+			BackendRef: builders.BackendRefMeshService("missing-backend", "kuma-demo", "", uint32(8080), uint(30)),
 			Filters: &[]api.Filter{{
 				Type: api.RequestHeaderModifierType,
 				RequestHeaderModifier: &api.HeaderModifier{
@@ -459,14 +451,10 @@ var _ = Describe("prepareRoutes", func() {
 		Expect(matched.AllBackendRefsHaveZeroWeight).To(Equal(expectedAllZero))
 	},
 		Entry("all explicit backendRefs have zero weight", []api.BackendRef{{
-			TargetRef: builders.TargetRefMeshService("payments", "kuma-demo", ""),
-			Port:      pointer.To(uint32(8080)),
-			Weight:    pointer.To(uint(0)),
+			BackendRef: builders.BackendRefMeshService("payments", "kuma-demo", "", uint32(8080), uint(0)),
 		}}, true),
 		Entry("unresolvable explicit backendRefs with zero weight still set the all-zero flag", []api.BackendRef{{
-			TargetRef: builders.TargetRefMeshService("missing-backend", "kuma-demo", ""),
-			Port:      pointer.To(uint32(8080)),
-			Weight:    pointer.To(uint(0)),
+			BackendRef: builders.BackendRefMeshService("missing-backend", "kuma-demo", "", uint32(8080), uint(0)),
 		}}, true),
 		Entry("explicit empty backendRefs do not set the all-zero flag", []api.BackendRef{}, false),
 	)
@@ -505,9 +493,7 @@ var _ = Describe("prepareRoutes", func() {
 		var backendRefs []api.BackendRef
 		for i, port := range refPorts {
 			backendRefs = append(backendRefs, api.BackendRef{
-				TargetRef: builders.TargetRefMeshService("payments", "kuma-demo", ""),
-				Port:      pointer.To(port),
-				Weight:    pointer.To(refWeights[i]),
+				BackendRef: builders.BackendRefMeshService("payments", "kuma-demo", "", port, refWeights[i]),
 			})
 		}
 		toRules := core_rules.ToRules{
@@ -601,9 +587,7 @@ var _ = Describe("prepareRoutes", func() {
 		var backendRefs []api.BackendRef
 		for i, name := range refNames {
 			backendRefs = append(backendRefs, api.BackendRef{
-				TargetRef: builders.TargetRefMeshService(name, "kuma-demo", ""),
-				Port:      pointer.To(uint32(8080)),
-				Weight:    pointer.To(refWeights[i]),
+				BackendRef: builders.BackendRefMeshService(name, "kuma-demo", "", uint32(8080), refWeights[i]),
 			})
 		}
 		toRules := core_rules.ToRules{

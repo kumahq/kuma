@@ -251,30 +251,29 @@ func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, e
 	}
 }
 
-// Kuma resource labels are generally stored on Kubernetes as labels, except "kuma.io/display-name".
-// We store it as an annotation because the resource name on k8s is limited by 253 and the label value is limited by 63.
+// LabelsStoredAsAnnotations are Kuma labels whose values carry a resource name and
+// therefore can be up to 253 characters, which does not fit the 63-character
+// Kubernetes label value limit. They are stored as annotations instead, so callers
+// validating them must not apply label value rules to them either.
+var LabelsStoredAsAnnotations = []string{
+	v1alpha1.DisplayName,
+	metadata.KumaServiceAccount,
+	metadata.KumaWorkload,
+}
+
+// Kuma resource labels are generally stored on Kubernetes as labels, except the ones
+// listed in LabelsStoredAsAnnotations.
 func SplitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations map[string]string) (map[string]string, map[string]string) {
 	labels := maps.Clone(coreLabels)
 	annotations := maps.Clone(currentAnnotations)
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
-	if v, ok := labels[v1alpha1.DisplayName]; ok {
-		annotations[v1alpha1.DisplayName] = v
-		delete(labels, v1alpha1.DisplayName)
-	}
-	// ServiceAccount object names are constrained by the DNS subdomain name specification, with a maximum length of 253 characters.
-	// Since the source name can exceed this length, we are storing the full, original name as an annotation on the ServiceAccount object.
-	// https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-multiple-service-accounts
-	if v, ok := labels[metadata.KumaServiceAccount]; ok {
-		annotations[metadata.KumaServiceAccount] = v
-		delete(labels, metadata.KumaServiceAccount)
-	}
-	// Workload names can exceed 63 characters (up to 253), which exceeds label length limits.
-	// Store as annotation similar to kuma.io/display-name.
-	if v, ok := labels[metadata.KumaWorkload]; ok {
-		annotations[metadata.KumaWorkload] = v
-		delete(labels, metadata.KumaWorkload)
+	for _, key := range LabelsStoredAsAnnotations {
+		if v, ok := labels[key]; ok {
+			annotations[key] = v
+			delete(labels, key)
+		}
 	}
 	return labels, annotations
 }
@@ -293,18 +292,12 @@ type KubernetesMetaAdapter struct {
 	labels map[string]string
 }
 
-// newMetaAdapter is the only place an adapter's labels are computed from a Kubernetes
-// object. Taking rd and spec forces every conversion path to supply what
-// labels.EnforcedReadLabels needs, so a new converter cannot silently skip the
-// read-side recomputation. newMetaAdapterWithLabels is not a second computation: it
-// only re-wraps a set this function already produced.
-func newMetaAdapter(
-	obj k8s_model.KubernetesObject,
-	systemNamespace string,
-	rd core_model.ResourceTypeDescriptor,
-	spec core_model.ResourceSpec,
-) *KubernetesMetaAdapter {
+// newMetaAdapter is the only place labels are computed from a Kubernetes object, so
+// no conversion path can silently skip labels.EnforcedReadLabels.
+func newMetaAdapter(obj k8s_model.KubernetesObject, out core_model.Resource, systemNamespace string, cp labels.ControlPlane) *KubernetesMetaAdapter {
 	objMeta := obj.GetObjectMeta()
+	ns := labels.NewNamespace(objMeta.GetNamespace(), objMeta.GetNamespace() == systemNamespace)
+	r := labels.NewStoredResource(out, ns, objMeta.GetLabels(), cp)
 
 	computed := maps.Clone(objMeta.GetLabels())
 	if computed == nil {
@@ -321,8 +314,7 @@ func newMetaAdapter(
 	if workload, ok := objMeta.GetAnnotations()[metadata.KumaWorkload]; ok {
 		computed[metadata.KumaWorkload] = workload
 	}
-	ns := labels.NewNamespace(objMeta.GetNamespace(), objMeta.GetNamespace() == systemNamespace)
-	maps.Copy(computed, labels.EnforcedReadLabels(rd, spec, ns))
+	maps.Copy(computed, labels.EnforcedReadLabels(r, cp))
 
 	return &KubernetesMetaAdapter{
 		ObjectMeta: *objMeta,

@@ -3,7 +3,7 @@ components:
     ResourceTypeDescription:
       description: Description of a resource type, this is useful for dynamically generated clients and the gui
       type: object
-      required: [name, scope, readOnly, path, singularDisplayName, pluralDisplayName, includeInFederation, shortName]
+      required: [name, scope, readOnly, path, singularDisplayName, pluralDisplayName, includeInFederation, shortName, isInsight, adminOnly]
       properties:
         name:
           description: the name of the resource type
@@ -25,6 +25,12 @@ components:
           type: string
         includeInFederation:
           description: description resources of this type should be included in federetion-with-policies export profile (especially useful for moving from non-federated to federated or migrating to a new global).
+          type: boolean
+        isInsight:
+          description: whether this resource type holds state computed by the control plane rather than user configuration.
+          type: boolean
+        adminOnly:
+          description: whether accessing resources of this type requires admin credentials.
           type: boolean
         policy:
           $ref: "#/components/schemas/PolicyDescription"

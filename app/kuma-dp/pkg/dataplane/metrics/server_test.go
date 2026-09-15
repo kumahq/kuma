@@ -14,7 +14,10 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
 )
 
-var includeUnused = true
+var (
+	includeUnused = true
+	excludeUnused = false
+)
 
 var _ = Describe("Rewriting the metrics URL", func() {
 	type testCase struct {
@@ -51,13 +54,31 @@ var _ = Describe("Rewriting the metrics URL", func() {
 			expected:      "http://127.0.0.1:80/stats",
 			queryModifier: RemoveQueryParameters,
 		}),
-		Entry("add usedonly and filter parameters", testCase{
+		Entry("not add usedonly parameter when unused metrics are included", testCase{
+			address:   "127.0.0.1",
+			input:     "http://foo/bar?one=two&three=four",
+			adminPort: 80,
+			expected:  "http://127.0.0.1:80/stats?one=two&three=four",
+			queryModifier: AddSidecarParameters(&v1alpha1.Sidecar{
+				IncludeUnused: &includeUnused,
+			}),
+		}),
+		Entry("drop usedonly parameter passed by the scraper when unused metrics are included", testCase{
+			address:   "127.0.0.1",
+			input:     "http://foo/bar?one=two&usedonly",
+			adminPort: 80,
+			expected:  "http://127.0.0.1:80/stats?one=two",
+			queryModifier: AddSidecarParameters(&v1alpha1.Sidecar{
+				IncludeUnused: &includeUnused,
+			}),
+		}),
+		Entry("add usedonly parameter when unused metrics are excluded", testCase{
 			address:   "127.0.0.1",
 			input:     "http://foo/bar?one=two&three=four",
 			adminPort: 80,
 			expected:  "http://127.0.0.1:80/stats?one=two&three=four&usedonly=",
 			queryModifier: AddSidecarParameters(&v1alpha1.Sidecar{
-				IncludeUnused: &includeUnused,
+				IncludeUnused: &excludeUnused,
 			}),
 		}),
 		Entry("add default usedonly parameter", testCase{
@@ -95,7 +116,7 @@ var _ = Describe("Select Content Type", func() {
 		reqHeader.Add("Accept", "application/openmetrics-text;version=1.0.0,application/openmetrics-text;version=0.0.1;q=0.75,text/plain;version=0.0.4;q=0.5,*/*;q=0.1")
 
 		actualContentType := selectContentType(contentTypes, reqHeader)
-		Expect(actualContentType).To(Equal(expfmt.Negotiate(reqHeader)))
+		Expect(actualContentType).To(Equal(expfmt.NegotiateAccept(reqHeader, prometheusNegotiableContentType...)))
 	})
 
 	It("should negotiate content-type based on Accept header", func() {
@@ -105,7 +126,7 @@ var _ = Describe("Select Content Type", func() {
 		reqHeader.Add("Accept", "*/*")
 
 		actualContentType := selectContentType(contentTypes, reqHeader)
-		Expect(actualContentType).To(Equal(expfmt.Negotiate(reqHeader)))
+		Expect(actualContentType).To(Equal(expfmt.NegotiateAccept(reqHeader, prometheusNegotiableContentType...)))
 	})
 })
 

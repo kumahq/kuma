@@ -98,7 +98,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "backend")).
 			WithRouting(
 				xds_builders.Routing().
 					WithOutboundTargets(
@@ -388,7 +388,11 @@ var _ = Describe("MeshTimeout", func() {
 			expectedClusters:  []string{"modified_inbound_cluster.golden.yaml", "default_outbound_cluster.golden.yaml"},
 			expectedListeners: []string{"modified_inbound_listener.golden.yaml", "default_outbound_listener.golden.yaml"},
 		}),
-		Entry("default outbound conf when no to section specified", sidecarTestCase{
+		// A mesh carries no MeshTimeout of its own, so this is what every mesh
+		// starts with: the inbound side keeps the larger values, or none where
+		// the request timeout is disabled, and the outbound side gets the
+		// values a MeshTimeout would otherwise carry.
+		Entry("no MeshTimeout at all", sidecarTestCase{
 			resources: []core_xds.Resource{
 				{
 					Name:     "inbound",
@@ -563,7 +567,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "backend")).
 			WithPolicies(xds_builders.MatchedPolicies().
 				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
 					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
@@ -649,7 +653,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "backend")).
 			WithPolicies(xds_builders.MatchedPolicies().
 				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
 					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
@@ -723,7 +727,7 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", mesh_proto.ServiceTag, "backend")).
+				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "backend")).
 			WithPolicies(xds_builders.MatchedPolicies().
 				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{}, core_rules.FromRules{
 					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
@@ -965,7 +969,7 @@ func httpInboundListenerWith() envoy_common.NamedResource {
 	inboundName := naming.MustContextualInboundName(core_mesh.NewDataplaneResource(), uint32(80))
 	return createListener(
 		NewListenerBuilder(envoy_common.APIV3, inboundName).
-			Configure(InboundListener("127.0.0.1", 80, core_xds.SocketAddressProtocolTCP, true)),
+			Configure(InboundListener("127.0.0.1", 80, core_xds.SocketAddressProtocolTCP)),
 		HttpInboundRoute(
 			inboundName,
 			inboundName,
@@ -995,7 +999,7 @@ func zoneEgressListenerResource() core_xds.Resource {
 		Name:   name,
 		Origin: metadata.OriginEgress,
 		Resource: NewListenerBuilder(envoy_common.APIV3, name).
-			Configure(InboundListener("192.168.0.10", 10002, core_xds.SocketAddressProtocolTCP, true)).
+			Configure(InboundListener("192.168.0.10", 10002, core_xds.SocketAddressProtocolTCP)).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mes-http").
 				Configure(MatchTransportProtocol("tls")).
 				Configure(MatchServerNames("sni.extsvc.default.zone-1.aws-aurora.8443")).

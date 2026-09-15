@@ -28,7 +28,7 @@ type FilterChainConfigurer struct {
 	IPv6Enabled       bool
 }
 
-func (c FilterChainConfigurer) Configure(listener *envoy_listener.Listener, clustersAccumulator map[string]core_meta.Protocol) error {
+func (c FilterChainConfigurer) Configure(listener *envoy_listener.Listener, clustersAccumulator map[string]Cluster) error {
 	if listener == nil {
 		return nil
 	}
@@ -38,7 +38,7 @@ func (c FilterChainConfigurer) Configure(listener *envoy_listener.Listener, clus
 	return nil
 }
 
-func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_listener.Listener, clustersAccumulator map[string]core_meta.Protocol) error {
+func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_listener.Listener, clustersAccumulator map[string]Cluster) error {
 	switch c.Protocol {
 	case core_meta.ProtocolTCP, core_meta.ProtocolMysql:
 		if err := c.configureTcpFilterChain(listener, clustersAccumulator); err != nil {
@@ -51,7 +51,7 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 	default:
 		switch c.MatchType {
 		case Domain, WildcardDomain:
-			routeFn := func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]core_meta.Protocol) {
+			routeFn := func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]Cluster) {
 				for _, route := range c.Routes {
 					if c.IsIPv6 && route.MatchType == IP {
 						continue
@@ -80,7 +80,11 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 								xds_virtual_hosts.BasicRoute(clusterName),
 								xds_virtual_hosts.DomainNames(domains...),
 							)))
-						clustersAccumulator[clusterName] = c.Protocol
+						clustersAccumulator[clusterName] = Cluster{
+							Protocol: c.Protocol,
+							Hostname: pinnedHostname(route.MatchType, route.Value, c.Port),
+							Port:     c.Port,
+						}
 					}
 				}
 				routeBuilder.Configure(xds_routes.VirtualHost(xds_virtual_hosts.NewVirtualHostBuilder(c.APIVersion, "no_match").
@@ -93,14 +97,14 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 				return err
 			}
 		default:
-			routeFn := func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]core_meta.Protocol) {
+			routeFn := func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]Cluster) {
 				clusterName := ClusterName(c.MatchValue, c.Protocol, c.Port)
 				routeBuilder.Configure(xds_routes.VirtualHost(xds_virtual_hosts.NewVirtualHostBuilder(c.APIVersion, c.MatchValue).
 					Configure(
 						xds_virtual_hosts.BasicRoute(clusterName),
 						xds_virtual_hosts.DomainNames("*"),
 					)))
-				clustersAccumulator[clusterName] = c.Protocol
+				clustersAccumulator[clusterName] = Cluster{Protocol: c.Protocol}
 			}
 			filterChainName := FilterChainName(c.MatchValue, c.Protocol, c.Port)
 			if err := c.configureHttpFilterChain(listener, routeFn, clustersAccumulator, filterChainName); err != nil {
@@ -113,8 +117,8 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 
 func (c FilterChainConfigurer) configureHttpFilterChain(
 	listener *envoy_listener.Listener,
-	routeFn func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]core_meta.Protocol),
-	clustersAccumulator map[string]core_meta.Protocol,
+	routeFn func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]Cluster),
+	clustersAccumulator map[string]Cluster,
 	filterChainName string,
 ) error {
 	if c.IsIPv6 && (c.MatchType == IP || c.MatchType == CIDR) {
@@ -144,7 +148,7 @@ func (c FilterChainConfigurer) configureHttpFilterChain(
 	return nil
 }
 
-func (c FilterChainConfigurer) configureTcpFilterChain(listener *envoy_listener.Listener, clustersAccumulator map[string]core_meta.Protocol) error {
+func (c FilterChainConfigurer) configureTcpFilterChain(listener *envoy_listener.Listener, clustersAccumulator map[string]Cluster) error {
 	if c.IsIPv6 && (c.MatchType == IP || c.MatchType == CIDR) {
 		return nil
 	}
@@ -170,11 +174,11 @@ func (c FilterChainConfigurer) configureTcpFilterChain(listener *envoy_listener.
 		return err
 	}
 	listener.FilterChains = append(listener.FilterChains, filterChain.(*envoy_listener.FilterChain))
-	clustersAccumulator[clusterName] = c.Protocol
+	clustersAccumulator[clusterName] = Cluster{Protocol: c.Protocol}
 	return nil
 }
 
-func (c FilterChainConfigurer) configureTlsFilterChain(listener *envoy_listener.Listener, clustersAccumulator map[string]core_meta.Protocol) error {
+func (c FilterChainConfigurer) configureTlsFilterChain(listener *envoy_listener.Listener, clustersAccumulator map[string]Cluster) error {
 	if c.IsIPv6 && (c.MatchType == IP || c.MatchType == CIDR) {
 		return nil
 	}
@@ -205,7 +209,11 @@ func (c FilterChainConfigurer) configureTlsFilterChain(listener *envoy_listener.
 		return err
 	}
 	listener.FilterChains = append(listener.FilterChains, filterChain.(*envoy_listener.FilterChain))
-	clustersAccumulator[clusterName] = c.Protocol
+	clustersAccumulator[clusterName] = Cluster{
+		Protocol: c.Protocol,
+		Hostname: pinnedHostname(c.MatchType, c.MatchValue, c.Port),
+		Port:     c.Port,
+	}
 	return nil
 }
 

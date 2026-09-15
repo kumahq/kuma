@@ -16,7 +16,6 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	kube_event "sigs.k8s.io/controller-runtime/pkg/event"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
@@ -105,15 +104,7 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:  "04.resources.yaml",
 			outputFile: "04.meshservice.yaml",
 		}),
-		Entry("service for kuma gateway", testCase{
-			inputFile:  "05.resources.yaml",
-			outputFile: "05.meshservice.yaml",
-		}),
-		Entry("service for delegated gateway (annotation on Pod)", testCase{
-			inputFile:  "06.resources.yaml",
-			outputFile: "06.meshservice.yaml",
-		}),
-		Entry("service for pod opting out with kuma.io/gateway: disabled", testCase{
+		Entry("service backed by pods", testCase{
 			inputFile:  "07.resources.yaml",
 			outputFile: "07.meshservice.yaml",
 		}),
@@ -125,39 +116,13 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:  "ignore.resources.yaml",
 			outputFile: "ignore.meshservice.yaml",
 		}),
-		Entry("headless gateway service is unaffected by meshServices.mode", testCase{
-			inputFile:  "headless-gateway-disabled.resources.yaml",
-			outputFile: "headless-gateway-disabled.meshservice.yaml",
+		Entry("headless service with pre-existing MeshServices", testCase{
+			inputFile:  "headless-preexisting.resources.yaml",
+			outputFile: "headless-preexisting.meshservice.yaml",
 		}),
 		Entry("with Service selector matching Pod labels", testCase{
 			inputFile:  "skip-inbound-tags.resources.yaml",
 			outputFile: "skip-inbound-tags.meshservice.yaml",
 		}),
-	)
-
-	DescribeTable("GatewayAnnotationChangedPredicate",
-		func(oldValue string, newValue string, expected bool) {
-			pod := func(value string) *kube_core.Pod {
-				pod := &kube_core.Pod{}
-				if value != "" {
-					pod.Annotations = map[string]string{"kuma.io/gateway": value}
-				}
-				return pod
-			}
-
-			changed := GatewayAnnotationChangedPredicate{}.Update(kube_event.UpdateEvent{
-				ObjectOld: pod(oldValue),
-				ObjectNew: pod(newValue),
-			})
-
-			Expect(changed).To(Equal(expected))
-		},
-		Entry("annotation added", "", "enabled", true),
-		Entry("annotation removed", "enabled", "", true),
-		Entry("gateway turned off", "enabled", "disabled", true),
-		Entry("gateway turned on", "disabled", "true", true),
-		Entry("same value", "enabled", "enabled", false),
-		Entry("equivalent values", "enabled", "true", false),
-		Entry("annotation added as disabled", "", "disabled", false),
 	)
 })

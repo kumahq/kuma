@@ -19,17 +19,20 @@ import (
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/unversioned"
 	rest_v1alpha1 "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	rest_error_types "github.com/kumahq/kuma/v3/pkg/core/rest/errors/types"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/v3/pkg/test/metrics"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 // errOnGetStore wraps a real store but returns getErr for Gets of the specified resource type.
@@ -124,8 +127,47 @@ var _ = Describe("Resource Endpoints", func() {
 	})
 })
 
+var _ = Describe("Read-only Resource Endpoints", func() {
+	It("should retain explicit PUT and DELETE routes", func() {
+		apiServer, _, stop := StartApiServer(NewTestApiServerConfigurer().WithGlobal())
+		defer stop()
+
+		const detail = "On global control plane you can not modify dataplane resources with 'kumactl apply' or via the HTTP API." +
+			" You can still use 'kumactl' or the HTTP API to modify them on the zone control plane.\n"
+		for _, method := range []string{http.MethodPut, http.MethodDelete} {
+			func() {
+				By(method)
+				request, err := http.NewRequestWithContext(
+					context.Background(),
+					method,
+					fmt.Sprintf("http://%s/meshes/default/dataplanes/dp-1", apiServer.Address()),
+					bytes.NewBufferString("not-json"),
+				)
+				Expect(err).ToNot(HaveOccurred())
+				request.Header.Set(restful.HEADER_ContentType, "application/json")
+
+				response, err := http.DefaultClient.Do(request)
+				Expect(err).ToNot(HaveOccurred())
+				defer response.Body.Close()
+				Expect(response.StatusCode).To(Equal(http.StatusMethodNotAllowed))
+				Expect(response.Header.Get(restful.HEADER_ContentType)).To(Equal("application/json"))
+
+				body := rest_error_types.Error{}
+				Expect(json.NewDecoder(response.Body).Decode(&body)).To(Succeed())
+				Expect(body).To(Equal(rest_error_types.Error{
+					Type:    "/std-errors",
+					Status:  http.StatusMethodNotAllowed,
+					Title:   "Method not allowed",
+					Detail:  detail,
+					Details: detail,
+				}))
+			}()
+		}
+	})
+})
+
 var _ = Describe("Resource Endpoints on Zone, label origin", func() {
-	createServer := func(federatedZone, validateOriginLabel bool) (*api_server.ApiServer, core_store.ResourceStore, func()) {
+	createServer := func(federatedZone bool) (*api_server.ApiServer, core_store.ResourceStore, func()) {
 		store := core_store.NewPaginationStore(memory.NewStore())
 		zone := ""
 		if federatedZone {
@@ -134,7 +176,6 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		apiServer, _, stop := StartApiServer(
 			NewTestApiServerConfigurer().
 				WithStore(store).
-				WithDisableOriginLabelValidation(!validateOriginLabel).
 				WithZone(zone),
 		)
 		return apiServer, store, stop
@@ -163,9 +204,9 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	It("should return 400 when origin validation is enabled and origin label is not set", func() {
+	It("should return 400 when origin label is not zone on a federated zone", func() {
 		// given
-		apiServer, store, stop := createServer(true, true)
+		apiServer, store, stop := createServer(true)
 		defer stop()
 		createMesh(store)
 
@@ -174,6 +215,9 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			Name: "mtp-1",
 			Mesh: mesh,
 			Type: string(v1alpha1.MeshTrafficPermissionType),
+			Labels: map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+			},
 			Spec: builders.MeshTrafficPermission().
 				WithTargetRef(builders.TargetRefMesh()).
 				AddRule(v1alpha1.Allow).
@@ -181,17 +225,17 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		}
 		resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-1", res)
 
-		// and then
+		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 		bytes, err := io.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onNoOriginLabel.golden.json")))
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onWrongOriginLabel.golden.json")))
 	})
 
 	It("should return 400 when mesh label is different from resource mesh", func() {
 		// given
-		apiServer, store, stop := createServer(true, true)
+		apiServer, store, stop := createServer(true)
 		defer stop()
 		createMesh(store)
 
@@ -221,7 +265,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 	It("should not return 400 when mesh label is identical to resource mesh", func() {
 		// given
-		apiServer, store, stop := createServer(true, true)
+		apiServer, store, stop := createServer(true)
 		defer stop()
 		createMesh(store)
 
@@ -247,10 +291,10 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 	})
 
 	DescribeTable(
-		"should set origin label automatically when origin validation is disabled",
+		"should set origin label automatically",
 		func(federatedZone bool) {
 			// given
-			apiServer, store, stop := createServer(federatedZone, false)
+			apiServer, store, stop := createServer(federatedZone)
 			defer stop()
 			createMesh(store)
 			zone := "default"
@@ -290,7 +334,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 	It("should set origin label automatically for DPPs", func() {
 		// given
-		apiServer, store, stop := createServer(false, false)
+		apiServer, store, stop := createServer(false)
 		defer stop()
 		createMesh(store)
 		name := "dpp-1"
@@ -335,8 +379,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		}
 		apiServerWithErr, _, stopErr := StartApiServer(
 			NewTestApiServerConfigurer().
-				WithStore(failingStore).
-				WithDisableOriginLabelValidation(true),
+				WithStore(failingStore),
 		)
 		defer stopErr()
 
@@ -363,7 +406,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 	It("should compute labels on update of the resource", func() {
 		// given
-		apiServer, store, stop := createServer(false, false)
+		apiServer, store, stop := createServer(false)
 		defer stop()
 		createMesh(store)
 		name := "ext-svc"
@@ -424,6 +467,43 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		}))
 	})
 
+	It("should return 400 when the SPIFFE ID of an existing MeshIdentity is changed", func() {
+		// given
+		apiServer, store, stop := createServer(false)
+		defer stop()
+		createMesh(store)
+		name := "identity-1"
+
+		identity := func(trustDomain string) *rest_v1alpha1.Resource {
+			return &rest_v1alpha1.Resource{
+				Name: name,
+				Mesh: mesh,
+				Type: string(meshidentity_api.MeshIdentityType),
+				Spec: &meshidentity_api.MeshIdentity{
+					SpiffeID: &meshidentity_api.SpiffeID{TrustDomain: pointer.To(trustDomain)},
+				},
+			}
+		}
+
+		// when
+		resp, err := put(apiServer.Address(), meshidentity_api.MeshIdentityResourceTypeDescriptor, name, identity("old.mesh.local"))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+
+		// when
+		resp, err = put(apiServer.Address(), meshidentity_api.MeshIdentityResourceTypeDescriptor, name, identity("new.mesh.local"))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+		body, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(body)).To(ContainSubstring("spec.spiffeID.trustDomain"))
+		Expect(string(body)).To(ContainSubstring("is immutable"))
+	})
+
 	It("should return 500 and not drop the connection when the mesh context build fails on _rules", func() {
 		// given: a store that fails to List policies, so building the mesh context
 		// inside the _rules handler returns an error
@@ -435,8 +515,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		}
 		apiServerWithErr, _, stopErr := StartApiServer(
 			NewTestApiServerConfigurer().
-				WithStore(failingStore).
-				WithDisableOriginLabelValidation(true),
+				WithStore(failingStore),
 		)
 		defer stopErr()
 
@@ -459,7 +538,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 
 	It("should return 400 when a policy carries a non-system policy-role label", func() {
 		// given
-		apiServer, store, stop := createServer(false, false)
+		apiServer, store, stop := createServer(false)
 		defer stop()
 		createMesh(store)
 

@@ -27,7 +27,6 @@ const (
 )
 
 type OtelBootstrapInventory struct {
-	PipeEnabled      bool                    `json:"pipeEnabled,omitempty"`
 	Shared           *OtelSignalEnvInventory `json:"shared,omitempty"`
 	Traces           *OtelSignalEnvInventory `json:"traces,omitempty"`
 	Logs             *OtelSignalEnvInventory `json:"logs,omitempty"`

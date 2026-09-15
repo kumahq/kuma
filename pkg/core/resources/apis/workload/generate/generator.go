@@ -70,9 +70,9 @@ func (g *Generator) workloadForDataplane(dataplane *core_mesh.DataplaneResource)
 	if !ok || workloadName == "" {
 		return "", false
 	}
-	allErrs := apimachineryvalidation.NameIsDNS1035Label(workloadName, false)
+	allErrs := apimachineryvalidation.NameIsDNSSubdomain(workloadName, false)
 	if len(allErrs) != 0 {
-		g.logger.Info("couldn't generate Workload from kuma.io/workload label, contains invalid characters", "value", workloadName, "error", allErrs, "dataplane", dataplane.GetMeta().GetName())
+		g.logger.Info("couldn't generate Workload from kuma.io/workload label, not a valid DNS subdomain", "value", workloadName, "error", allErrs, "dataplane", dataplane.GetMeta().GetName())
 		return "", false
 	}
 	return workloadName, true

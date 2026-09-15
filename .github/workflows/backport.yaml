@@ -22,7 +22,12 @@ env:
   GH_REPO: ${{ github.repository }}
 jobs:
   pr-info:
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
     outputs:
       pr_title: ${{ steps.get-pr-info.outputs.pr_title }}
       pr_change_log: ${{ steps.get-pr-info.outputs.pr_change_log }}
@@ -109,7 +114,12 @@ jobs:
       branches: ${{ inputs.branches }}
   open-prs:
     needs: [pr-info, active-branches]
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    runs-on: >-
+      ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').md
+      || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
@@ -154,16 +164,31 @@ jobs:
             echo "Cherry-picked without conflicts!"
           else
             echo "LABELS=${BASE_LABELS},conflict" >> "$GITHUB_ENV"
+            # A path the target branch does not have, modified by the commit,
+            # cannot be resolved by staging it: that writes a whole file this
+            # branch never carried, and the result reads like a real backport.
+            DROPPED=$(git status --porcelain | awk '$1 == "DU" || $1 == "UD" { print $2 }')
             {
               echo "DIFF<<EOF"
               echo ":warning: :warning: :warning: Conflicts happened when cherry-picking! :warning: :warning: :warning:"
               echo '```'
               git status
               echo '```'
+              if [[ -n "${DROPPED}" ]]; then
+                echo ":x: These paths do not exist on \`${TARGET_BRANCH}\`, so they were left out rather than created from the source branch. Decide where the change belongs here:"
+                echo '```'
+                echo "${DROPPED}"
+                echo '```'
+              fi
               echo "EOF"
             } >> "$GITHUB_ENV"
+            if [[ -n "${DROPPED}" ]]; then
+              echo "${DROPPED}" | xargs git rm -q -f --
+            fi
             git add .
-            git cherry-pick --continue
+            # Dropping every conflicted path can leave nothing to commit, and an
+            # empty draft still has to reach review.
+            git -c core.editor=true cherry-pick --continue || git commit --allow-empty --no-edit
           fi
       - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:

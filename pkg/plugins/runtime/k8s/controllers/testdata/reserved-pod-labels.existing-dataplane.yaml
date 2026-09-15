@@ -1,0 +1,14 @@
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+mesh: default
+metadata:
+  name: example
+  namespace: demo
+  labels:
+    app: example
+    kuma.io/kds-sync: disabled
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+      - port: 8080

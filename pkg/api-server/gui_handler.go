@@ -40,8 +40,8 @@ func NewGuiHandler(guiPath string, disableGui bool, guiConfig GuiConfig) (http.H
 			http.FileServer(http.FS(guiFs)).ServeHTTP(writer, request)
 			return
 		}
-		writer.WriteHeader(http.StatusOK)
 		writer.Header().Set("Content-Type", "text/html")
+		writer.WriteHeader(http.StatusOK)
 		_, _ = writer.Write(buf.Bytes())
 	})), nil
 }

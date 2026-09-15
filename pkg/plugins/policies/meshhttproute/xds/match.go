@@ -5,6 +5,7 @@ import (
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 func regexMatcher(regex string) *envoy_type_matcher.RegexMatcher {
@@ -38,7 +39,7 @@ func routeHeadersMatch(envoyMatch *envoy_route.RouteMatch, headers []common_api.
 				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher.StringMatcher{
 						MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-							Exact: string(header.Value),
+							Exact: string(pointer.Deref(header.Value)),
 						},
 					},
 				},
@@ -56,7 +57,7 @@ func routeHeadersMatch(envoyMatch *envoy_route.RouteMatch, headers []common_api.
 				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher.StringMatcher{
 						MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
-							SafeRegex: regexMatcher(string(header.Value)),
+							SafeRegex: regexMatcher(string(pointer.Deref(header.Value))),
 						},
 					},
 				},
@@ -69,13 +70,13 @@ func routeHeadersMatch(envoyMatch *envoy_route.RouteMatch, headers []common_api.
 				},
 			}
 		case common_api.HeaderMatchPrefix:
-			if header.Value != "" {
+			if pointer.Deref(header.Value) != "" {
 				matcher = envoy_route.HeaderMatcher{
 					Name: string(header.Name),
 					HeaderMatchSpecifier: &envoy_route.HeaderMatcher_StringMatch{
 						StringMatch: &envoy_type_matcher.StringMatcher{
 							MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
-								Prefix: string(header.Value),
+								Prefix: string(pointer.Deref(header.Value)),
 							},
 						},
 					},

@@ -387,12 +387,6 @@ func ConfigForKubernetes(
 
 	cfg.Redirect.Outbound.ExcludePortsForIPs = k8sConfigurer.redirectExcludePortsForIPs(trafficKindOutbound)
 
-	if v, exists, err := annotations.GetEnabled(k8s_metadata.KumaGatewayAnnotation); err != nil {
-		return cfg, err
-	} else if exists && v {
-		cfg.Redirect.Inbound.Enabled = false
-	}
-
 	if cfg.Redirect.Inbound.Enabled {
 		cfg.Redirect.Inbound.Port = k8sConfigurer.redirectPort(trafficKindInbound)
 		cfg.Redirect.Inbound.ExcludePortsForIPs = k8sConfigurer.redirectExcludePortsForIPs(trafficKindInbound)

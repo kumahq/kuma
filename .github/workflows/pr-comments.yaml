@@ -12,7 +12,9 @@ jobs:
   pr_comments:
     timeout-minutes: 120
     if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '/golden_files_e2e') || contains(github.event.comment.body, '/tproxy_golden_files'))
-    runs-on: ${{ vars.RUNS_ON_MASTER_AMD64 || vars.RUNS_ON_AMD64 || 'ubuntu-24.04' }}
+    # Checks out the PR head, a fork on most PRs, and runs make against it. runs-on cannot
+    # read the step that resolves isCrossRepository, so this stays GitHub-hosted.
+    runs-on: ubuntu-24.04
     steps:
       # Commands are additive: one comment can request multiple actions, and all
       # matching steps below will run in order.
@@ -100,7 +102,7 @@ jobs:
           token: ${{ steps.github-app-token.outputs.token }}
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.8.8
+          version: 2026.9.0
         if: steps.parse-commands.outputs.has_command == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -141,7 +143,8 @@ jobs:
             trap 'docker logout docker.io' EXIT
           fi
 
-          make UPDATE_GOLDEN_FILES=true test/e2e-golden-files
+          # No earlier job saved image tars for this one, so the images are built here.
+          make E2E_REUSE_PREBUILT_IMAGES=false UPDATE_GOLDEN_FILES=true test/e2e-golden-files
 
       # Enable IPv6 for transparent proxy tests
       - name: "Enable IPv6 for Docker and enable necessary kernel modules for ip6tables"

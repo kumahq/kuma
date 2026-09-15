@@ -12,8 +12,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
-	defaults_mesh "github.com/kumahq/kuma/v3/pkg/defaults/mesh"
+	policies_defaults "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/defaults"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/util/net"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -41,7 +40,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		// generate CDS resource
 		clusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion, contextualName).
 			Configure(envoy_clusters.ProvidedEndpointCluster(false, core_xds.Endpoint{Target: endpoint.WorkloadIP, Port: endpoint.WorkloadPort})).
-			Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
+			Configure(envoy_clusters.Timeout(policies_defaults.InboundTimeouts.Envoy(), protocol))
 		// localhost traffic is routed dirrectly to the application, in case of other interface we are going to set source address to
 		// 127.0.0.6 to avoid redirections and thanks to first iptables rule just return fast
 		if proxy.GetTransparentProxy().Enabled() && (endpoint.WorkloadIP != core_meta.LoopbackIPv4.String() && endpoint.WorkloadIP != core_meta.LoopbackIPv6.String()) {
@@ -73,7 +72,7 @@ func (g InboundProxyGenerator) Generate(_ context.Context, _ *core_xds.ResourceS
 		// with the Strict or Permissive topology - it is the sole owner of that
 		// decision.
 		inboundListener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion, contextualName).
-			Configure(envoy_listeners.InboundListener(endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP, proxy.Metadata.HasFeature(xds_types.FeatureReusePort))).
+			Configure(envoy_listeners.InboundListener(endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP)).
 			Configure(envoy_listeners.StatPrefix(contextualName)).
 			Configure(envoy_listeners.TransparentProxying(proxy)).
 			Configure(envoy_listeners.TagsMetadata(InboundListenerTags(proxy.Dataplane, contextualName))).
@@ -122,7 +121,7 @@ func FilterChainBuilder(
 	}
 
 	return filterChainBuilder.
-		Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
+		Configure(envoy_listeners.Timeout(policies_defaults.InboundTimeouts.Envoy(), protocol))
 }
 
 // InboundListenerTags is the listener metadata of an inbound: the Dataplane's

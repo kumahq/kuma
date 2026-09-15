@@ -16,12 +16,12 @@ var envPrefix = map[core_xds.OtelSignal]string{
 	core_xds.OtelSignalMetrics: "OTEL_EXPORTER_OTLP_METRICS",
 }
 
-func Discover(pipeEnabled bool) Config {
-	return discoverWithLookup(pipeEnabled, OSEnvReader{})
+func Discover() Config {
+	return discoverWithLookup(OSEnvReader{})
 }
 
-func discoverWithLookup(pipeEnabled bool, reader EnvReader) Config {
-	return NewConfig(pipeEnabled,
+func discoverWithLookup(reader EnvReader) Config {
+	return NewConfig(
 		readLayer(core_xds.OtelSignalShared, reader),
 		readLayer(core_xds.OtelSignalTraces, reader),
 		readLayer(core_xds.OtelSignalLogs, reader),
@@ -29,24 +29,22 @@ func discoverWithLookup(pipeEnabled bool, reader EnvReader) Config {
 	)
 }
 
-func NewConfig(pipeEnabled bool, shared, traces, logs, metrics Layer) Config {
+func NewConfig(shared, traces, logs, metrics Layer) Config {
 	sharedInv := shared.analyze(nil)
 	tracesInv := traces.analyze(&shared)
 	logsInv := logs.analyze(&shared)
 	metricsInv := metrics.analyze(&shared)
 
 	return Config{
-		PipeEnabled: pipeEnabled,
-		Shared:      shared,
-		Traces:      traces,
-		Logs:        logs,
-		Metrics:     metrics,
+		Shared:  shared,
+		Traces:  traces,
+		Logs:    logs,
+		Metrics: metrics,
 		Inventory: core_xds.OtelBootstrapInventory{
-			PipeEnabled: pipeEnabled,
-			Shared:      sharedInv,
-			Traces:      tracesInv,
-			Logs:        logsInv,
-			Metrics:     metricsInv,
+			Shared:  sharedInv,
+			Traces:  tracesInv,
+			Logs:    logsInv,
+			Metrics: metricsInv,
 			ValidationErrors: slices.Concat(
 				sharedInv.GetValidationErrors(),
 				tracesInv.GetValidationErrors(),

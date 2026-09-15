@@ -2,10 +2,10 @@ package filters
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/emicklei/go-restful/v3"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
@@ -71,17 +71,38 @@ func labelFilter(request *restful.Request) (store.ListFilterFunc, error) {
 			continue
 		}
 		closingBracket := strings.Index(k, "]")
-		key := k[len("filter[labels."):closingBracket]
-		if closingBracket != len(k)-1 {
+		if closingBracket == -1 || closingBracket != len(k)-1 {
 			verr.AddViolationAt(
 				validators.RootedAt(request.SelectedRoutePath()).Field(k), "advanced filters are not supported")
+			continue
+		}
+		key := k[len("filter[labels."):closingBracket]
+		if key == "" {
+			verr.AddViolationAt(
+				validators.RootedAt(request.SelectedRoutePath()).Field(k), "label name cannot be empty")
+			continue
+		}
+		if messages := validation.IsQualifiedName(key); len(messages) > 0 {
+			for _, message := range messages {
+				verr.AddViolationAt(validators.RootedAt(request.SelectedRoutePath()).Field(k), message)
+			}
+			continue
+		}
+		if len(v) > 1 {
+			verr.AddViolationAt(
+				validators.RootedAt(request.SelectedRoutePath()).Field(k), "multiple filter values are not supported")
+			continue
+		}
+		if len(v) == 0 || v[0] == "" {
+			verr.AddViolationAt(
+				validators.RootedAt(request.SelectedRoutePath()).Field(k), "filter value cannot be empty")
 			continue
 		}
 		op := FilterOpEq
 		filters = append(filters, filterEntry{
 			Op:    op,
 			Key:   key,
-			Value: v[len(v)-1],
+			Value: v[0],
 		})
 	}
 	if verr.HasViolations() {
@@ -94,11 +115,6 @@ func labelFilter(request *restful.Request) (store.ListFilterFunc, error) {
 		labels := rs.GetMeta().GetLabels()
 		for _, filter := range filters {
 			v, ok := labels[filter.Key]
-			if filter.Op == FilterOpEq {
-				if !ok || v != filter.Value {
-					return false
-				}
-			}
 			if !ok || v != filter.Value {
 				return false
 			}
@@ -117,11 +133,6 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 		}
 		switch resDescriptor.Name {
 		case mesh.DataplaneType:
-			gatewayFilter, err := gatewayModeFilterFromParameter(request)
-			if err != nil {
-				return nil, err
-			}
-
 			tags := parseTags(request.QueryParameters("tag"))
 
 			return func(rs core_model.Resource) bool {
@@ -132,11 +143,7 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 				if !ok { // Sometimes this is going to return insights for example which will not match
 					return true
 				}
-				if !gatewayFilter(dataplane.Spec.GetNetworking().GetGateway()) {
-					return false
-				}
-
-				if !dataplane.Spec.MatchTagsFuzzy(tags) && !mesh_proto.TagSelector(tags).MatchesFuzzy(dataplane.GetMeta().GetLabels()) {
+				if !mesh_proto.TagSelector(tags).MatchesFuzzy(dataplane.GetMeta().GetLabels()) {
 					return false
 				}
 
@@ -145,41 +152,6 @@ func Resource(resDescriptor core_model.ResourceTypeDescriptor) func(request *res
 		default:
 			return genericFilter, nil
 		}
-	}
-}
-
-type DpFilter func(*mesh_proto.Dataplane_Networking_Gateway) bool
-
-func gatewayModeFilterFromParameter(request *restful.Request) (DpFilter, error) {
-	mode := strings.ToLower(request.QueryParameter("gateway"))
-	if mode != "" && mode != "true" && mode != "false" && mode != "delegated" {
-		verr := validators.ValidationError{}
-		verr.AddViolationAt(
-			validators.RootedAt(request.SelectedRoutePath()).Field("gateway"),
-			"should use `true`, `false` or `delegated` instead of "+mode)
-		return nil, &verr
-	}
-
-	isnil := func(a any) bool {
-		return a == nil || reflect.ValueOf(a).IsNil()
-	}
-	switch mode {
-	case "true":
-		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return !isnil(a)
-		}, nil
-	case "false":
-		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return isnil(a)
-		}, nil
-	case "delegated":
-		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return !isnil(a) && a.Type == mesh_proto.Dataplane_Networking_Gateway_DELEGATED
-		}, nil
-	default:
-		return func(a *mesh_proto.Dataplane_Networking_Gateway) bool {
-			return true
-		}, nil
 	}
 }
 
