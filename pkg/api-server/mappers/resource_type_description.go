@@ -31,7 +31,7 @@ func MapResourceTypeDescription(defs []model.ResourceTypeDescriptor, readOnly bo
 				HasToTargetRef:    def.HasToTargetRef,
 				HasFromTargetRef:  false,
 				HasRulesTargetRef: def.HasRulesTargetRef,
-				IsTargetRef:       def.IsTargetRefBased,
+				IsTargetRef:       true,
 				IsFromAsRules:     false,
 			}
 		}
