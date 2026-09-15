@@ -18,10 +18,8 @@ func PrintDeprecations(deprecations []Deprecation, cfg Config, out io.Writer) {
 		if _, ok := os.LookupEnv(d.Env); ok {
 			_, _ = fmt.Fprintf(out, "Deprecated: %v. %v\n", d.Env, d.EnvMsg)
 		}
-		if d.ConfigValuePath != nil {
-			if path, exist := d.ConfigValuePath(cfg); exist {
-				_, _ = fmt.Fprintf(out, "Deprecated: %v. %v\n", path, d.ConfigValueMsg)
-			}
+		if path, exist := d.ConfigValuePath(cfg); exist {
+			_, _ = fmt.Fprintf(out, "Deprecated: %v. %v\n", path, d.ConfigValueMsg)
 		}
 	}
 }
