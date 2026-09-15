@@ -70,8 +70,6 @@ store:
       ratio: 100 # ENV: KUMA_STORE_POSTGRES_READ_REPLICA_RATIO
   # Cache for read only operations. This cache is local to the instance of the control plane.
   cache:
-    # If true then cache is enabled
-    enabled: true # ENV: KUMA_STORE_CACHE_ENABLED
     # Expiration time for elements in cache.
     expirationTime: 1s # ENV: KUMA_STORE_CACHE_EXPIRATION_TIME
   # Upsert (get and update) configuration

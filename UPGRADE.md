@@ -52,6 +52,23 @@ the global control plane read-only on the zone. The
 Remove `multizone.zone.disableOriginLabelValidation` from your configuration.
 A control plane started with the setting still present fails to load its
 configuration.
+### The resource store cache can no longer be disabled
+
+The resource store cache (`store.cache.enabled`,
+`KUMA_STORE_CACHE_ENABLED`) was on by default and disabling it degraded
+performance so much that the option is removed. The cache is now always
+enabled, on every control plane instance. The cache is local to an
+instance and eventually consistent, so reads may briefly observe stale
+resources right after a write, which is also what happened with the
+default configuration before.
+
+**Action required**
+
+Remove `store.cache.enabled` / `KUMA_STORE_CACHE_ENABLED` from your
+configuration if present. The setting is ignored and only
+`store.cache.expirationTime` (`KUMA_STORE_CACHE_EXPIRATION_TIME`)
+remains configurable.
+
 ### `MeshPassthrough` resolves a domain match itself and needs a port for it
 
 A `Domain` match used to build an `ORIGINAL_DST` cluster: the sidecar matched the SNI or the `Host` header of the request and then sent it to the address the client dialed. A workload selected by the policy could therefore dial any address, present an allowed domain, and reach that address through the policy, which is the opposite of what an allowlist in `passthroughMode: Matched` is for.

@@ -111,7 +111,6 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Store.Kubernetes.SystemNamespace).To(Equal("test-namespace"))
 
-			Expect(cfg.Store.Cache.Enabled).To(BeFalse())
 			Expect(cfg.Store.Cache.ExpirationTime.Duration).To(Equal(3 * time.Second))
 
 			Expect(cfg.Store.Upsert.ConflictRetryBaseBackoff.Duration).To(Equal(4 * time.Second))
@@ -433,7 +432,6 @@ store:
   kubernetes:
     systemNamespace: test-namespace
   cache:
-    enabled: false
     expirationTime: 3s
   upsert:
     conflictRetryBaseBackoff: 4s
@@ -860,7 +858,6 @@ meshService:
 				"KUMA_STORE_POSTGRES_MAX_CONNECTION_IDLE_TIME":                                             "99s",
 				"KUMA_STORE_POSTGRES_TOLERATE_NEWER_DB_VERSIONS":                                           "true",
 				"KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE":                                                   "test-namespace",
-				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
 				"KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF":                                            "4s",
 				"KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES":                                               "15",
