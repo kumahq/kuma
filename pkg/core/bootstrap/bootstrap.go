@@ -350,13 +350,11 @@ func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 
 func initializeGlobalInsightService(cfg kuma_cp.Config, builder *core_runtime.Builder) {
 	globalInsightService := globalinsight.NewDefaultGlobalInsightService(builder.ResourceStore())
-	if cfg.Store.Cache.Enabled {
-		globalInsightService = globalinsight.NewCachedGlobalInsightService(
-			globalInsightService,
-			builder.Tenants(),
-			cfg.Store.Cache.ExpirationTime.Duration,
-		)
-	}
+	globalInsightService = globalinsight.NewCachedGlobalInsightService(
+		globalInsightService,
+		builder.Tenants(),
+		cfg.Store.Cache.ExpirationTime.Duration,
+	)
 
 	builder.WithGlobalInsightService(globalInsightService)
 }
@@ -450,20 +448,16 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 	builder.WithResourceManager(customizableManager)
 
-	if builder.Config().Store.Cache.Enabled {
-		cachedManager, err := core_manager.NewCachedManager(
-			customizableManager,
-			builder.Config().Store.Cache.ExpirationTime.Duration,
-			builder.Metrics(),
-			builder.Tenants(),
-		)
-		if err != nil {
-			return err
-		}
-		builder.WithReadOnlyResourceManager(cachedManager)
-	} else {
-		builder.WithReadOnlyResourceManager(customizableManager)
+	cachedManager, err := core_manager.NewCachedManager(
+		customizableManager,
+		builder.Config().Store.Cache.ExpirationTime.Duration,
+		builder.Metrics(),
+		builder.Tenants(),
+	)
+	if err != nil {
+		return err
 	}
+	builder.WithReadOnlyResourceManager(cachedManager)
 	return nil
 }
 
