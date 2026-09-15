@@ -22,10 +22,8 @@ func MeshInsight() *MeshInsightBuilder {
 				Name: "meshInsight-1",
 			},
 			Spec: &mesh_proto.MeshInsight{
-				DataplanesByType: &mesh_proto.MeshInsight_DataplanesByType{
-					Standard: &mesh_proto.MeshInsight_DataplaneStat{},
-				},
-				Resources: map[string]*mesh_proto.MeshInsight_ResourceStat{},
+				Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{},
+				Resources:  map[string]*mesh_proto.MeshInsight_ResourceStat{},
 			},
 		},
 	}
@@ -48,16 +46,16 @@ func (mi *MeshInsightBuilder) WithName(name string) *MeshInsightBuilder {
 	return mi
 }
 
-func (mi *MeshInsightBuilder) WithStandardDataplaneStats(
+func (mi *MeshInsightBuilder) WithDataplaneStats(
 	online uint32,
 	offline uint32,
 	partiallyDegraded uint32,
 	total uint32,
 ) *MeshInsightBuilder {
-	mi.res.Spec.DataplanesByType.Standard.Online = online
-	mi.res.Spec.DataplanesByType.Standard.Offline = offline
-	mi.res.Spec.DataplanesByType.Standard.PartiallyDegraded = partiallyDegraded
-	mi.res.Spec.DataplanesByType.Standard.Total = total
+	mi.res.Spec.Dataplanes.Online = online
+	mi.res.Spec.Dataplanes.Offline = offline
+	mi.res.Spec.Dataplanes.PartiallyDegraded = partiallyDegraded
+	mi.res.Spec.Dataplanes.Total = total
 	return mi
 }
 
