@@ -69,7 +69,7 @@ func UpgradableVersions(versions []Version, currentVersion semver.Version) []str
 				continue
 			}
 		}
-		if version.SemVer.LessThan(&currentVersion) && version.SemVer.Major() == currentVersion.Major() && version.SemVer.Minor() >= currentVersion.Minor()-2 {
+		if version.SemVer.LessThan(&currentVersion) && upgradableTo(version.SemVer, currentVersion, versions) {
 			res = append(res, version.SemVer.String())
 		}
 	}
@@ -77,6 +77,32 @@ func UpgradableVersions(versions []Version, currentVersion semver.Version) []str
 		panic(fmt.Sprintf("couldn't find version 2 minors behind current: %s", currentVersion))
 	}
 	return res
+}
+
+// upgradableTo reports whether an upgrade from version to current is within
+// the supported window: at most two minors behind within the same major, or
+// the last minor of the previous major (taken from versions) when current is
+// X.0 or X.1. This mirrors pkg/version.DeploymentVersionCompatible, which
+// treats the last minor of the previous major as the minor directly before X.0.
+func upgradableTo(version *semver.Version, current semver.Version, versions []Version) bool {
+	if version.Major() == current.Major() {
+		return version.Minor()+2 >= current.Minor()
+	}
+	if version.Major()+1 != current.Major() || current.Minor() >= 2 {
+		return false
+	}
+	return version.Minor() == lastMinorOfMajor(versions, version.Major())
+}
+
+// lastMinorOfMajor returns the highest minor of the given major line in versions.
+func lastMinorOfMajor(versions []Version, major uint64) uint64 {
+	var last uint64
+	for _, v := range versions {
+		if v.SemVer.Major() == major && v.SemVer.Minor() > last {
+			last = v.SemVer.Minor()
+		}
+	}
+	return last
 }
 
 func UpgradableVersionsFromBuild(versions []Version) []string {
