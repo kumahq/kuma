@@ -112,6 +112,8 @@ func HashMeta(r Resource) []byte {
 	hasher := fnv.New128a()
 	writeMetaIdentity(hasher, r)
 	_, _ = hasher.Write([]byte(r.GetMeta().GetVersion()))
+	// Universal stores restart the version on recreate, so the creation time tells the resources apart.
+	_, _ = hasher.Write([]byte(r.GetMeta().GetCreationTime().Format(time.RFC3339Nano)))
 	return hasher.Sum(nil)
 }
 
