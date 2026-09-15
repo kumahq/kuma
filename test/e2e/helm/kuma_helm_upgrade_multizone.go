@@ -128,9 +128,11 @@ spec:
           requestTimeout: 2s
           maxStreamDuration: 20s`, "default"))(global)).To(Succeed())
 
+			// mt1 is the only MeshTimeout anywhere: a Mesh no longer comes with
+			// default policies, so nothing else reaches the zone.
 			Eventually(func(g Gomega) (int, error) {
 				return NumberOfResources(zoneK8s, meshtimeout.MeshTimeoutResourceTypeDescriptor)
-			}, "30s", "1s").Should(Equal(3), "meshtimeouts are not synced to zone")
+			}, "30s", "1s").Should(Equal(1), "meshtimeouts are not synced to zone")
 
 			By("Sync DPPs from Zone to Global")
 			err = NewClusterSetup().
@@ -241,7 +243,7 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				policiesUniversalZone, err := NumberOfResources(zoneUniversal, meshtimeout.MeshTimeoutResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(policiesGlobal).To(And(Equal(policiesUniversalZone), Equal(policiesK8sZone), Equal(3)))
+				g.Expect(policiesGlobal).To(And(Equal(policiesUniversalZone), Equal(policiesK8sZone), Equal(1)))
 
 				dppsK8sZone, err := NumberOfResources(zoneK8s, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
