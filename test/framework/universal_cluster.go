@@ -142,9 +142,9 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	}
 
 	env := map[string]string{
-		"KUMA_MODE":                              mode,
-		"KUMA_DNS_SERVER_PORT":                   "53",
-		dataplaneConfigurationRefreshIntervalEnv: e2eDataplaneConfigurationRefreshInterval,
+		"KUMA_MODE":            mode,
+		"KUMA_DNS_SERVER_PORT": "53",
+		"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL": "3s",
 	}
 
 	if Config.IPV6 {

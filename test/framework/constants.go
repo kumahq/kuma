@@ -27,9 +27,3 @@ const (
 	legacyKubeConfigPathPattern      = "${HOME}/.kube/%s.yaml"
 	oldKindKubeConfigPathPattern     = "${HOME}/.kube/kind-%s-config"
 )
-
-const (
-	dataplaneConfigurationRefreshIntervalEnv = "KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL"
-	// Below the 10s default so e2e assertions don't idle on xDS refreshes; per-test envs override it.
-	e2eDataplaneConfigurationRefreshInterval = "3s"
-)
