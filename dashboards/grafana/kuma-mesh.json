@@ -1004,7 +1004,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum by (kuma_workload, zone) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))",
           "legendFormat": "{{kuma_workload}}",
           "refId": "A"
         }
@@ -1060,7 +1060,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_xx_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m]))",
+          "expr": "sum by (kuma_workload, zone) (rate(envoy_http_downstream_rq_xx_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m]))",
           "legendFormat": "{{kuma_workload}}",
           "refId": "A"
         }
@@ -1116,7 +1116,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (le, kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le, kuma_workload, zone) (rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])))",
           "legendFormat": "{{kuma_workload}}",
           "refId": "A"
         }
@@ -1172,7 +1172,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "sum by (kuma_workload, kuma_io_zone) (envoy_http_downstream_cx_active{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"})",
+          "expr": "sum by (kuma_workload, zone) (envoy_http_downstream_cx_active{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"})",
           "legendFormat": "{{kuma_workload}}",
           "refId": "A"
         }
@@ -1767,7 +1767,7 @@
                 "value": [
                   {
                     "title": "Open Workload Health",
-                    "url": "/d/kuma-service-health/kuma-service-health?var-datasource=${datasource}&var-mesh=${__data.fields.mesh}&var-zone=${__data.fields.kuma_io_zone}&var-workload=${__data.fields.kuma_workload}"
+                    "url": "/d/kuma-service-health/kuma-service-health?var-datasource=${datasource}&var-mesh=${__data.fields.mesh}&var-zone=${__data.fields.zone}&var-workload=${__data.fields.kuma_workload}"
                   }
                 ]
               }
@@ -1776,7 +1776,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "kuma_io_zone"
+              "options": "zone"
             },
             "properties": [
               {
@@ -1825,31 +1825,31 @@
       "type": "table",
       "targets": [
         {
-          "expr": "sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))",
+          "expr": "sum by (kuma_workload, zone) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))",
           "format": "table",
           "instant": true,
           "refId": "A"
         },
         {
-          "expr": "clamp_min(1 - ((sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_xx_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) or sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])) * 0) / sum by (kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))), 0)",
+          "expr": "clamp_min(1 - ((sum by (kuma_workload, zone) (rate(envoy_http_downstream_rq_xx_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\",envoy_response_code_class=\"5\"}[5m])) or sum by (kuma_workload, zone) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])) * 0) / sum by (kuma_workload, zone) (rate(envoy_http_downstream_rq_total{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m]))), 0)",
           "format": "table",
           "instant": true,
           "refId": "B"
         },
         {
-          "expr": "histogram_quantile(0.99, sum by (le, kuma_workload, kuma_io_zone) (rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le, kuma_workload, zone) (rate(envoy_http_downstream_rq_time_bucket{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"}[5m])))",
           "format": "table",
           "instant": true,
           "refId": "C"
         },
         {
-          "expr": "sum by (kuma_workload, kuma_io_zone) (envoy_server_memory_allocated{mesh=\"$mesh\"})",
+          "expr": "sum by (kuma_workload, zone) (envoy_server_memory_allocated{mesh=\"$mesh\"})",
           "format": "table",
           "instant": true,
           "refId": "D"
         },
         {
-          "expr": "sum by (kuma_workload, kuma_io_zone) (envoy_http_downstream_cx_active{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"})",
+          "expr": "sum by (kuma_workload, zone) (envoy_http_downstream_cx_active{mesh=\"$mesh\",envoy_http_conn_manager_prefix=~\"self_inbound_dp_.*\"})",
           "format": "table",
           "instant": true,
           "refId": "E"
