@@ -35,9 +35,10 @@ status: {}
 type: MeshAccessLog
 ---
 creationTime: "0001-01-01T00:00:00Z"
-kri: kri_mal_default___mal-with-origin_
+kri: kri_mal_default_zone-1__mal-with-origin_
 labels:
   kuma.io/origin: zone
+  kuma.io/zone: zone-1
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: mal-with-origin
