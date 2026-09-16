@@ -1,9 +1,12 @@
 package labels
 
 import (
+	"fmt"
+
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/validation"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
@@ -32,7 +35,8 @@ func ValidateOwnership(w Write, cp ControlPlane) validators.ValidationError {
 }
 
 // ValidateFormat rejects malformed label keys and values whoever the writer is: the
-// per-label format rules first, then the generic syntax rules in key order.
+// per-label format rules first, then the generic syntax rules in key order. Reserved
+// keys this control plane does not know are rejected there too, for untrusted writers.
 func ValidateFormat(w Write) validators.ValidationError {
 	err := validateRegisteredFormat(w)
 	err.Add(validateSyntax(w))
@@ -71,6 +75,9 @@ func validateSyntax(w Write) validators.ValidationError {
 		v := w.Labels[k]
 		for _, msg := range validation.IsQualifiedName(k) {
 			err.AddViolationAt(validators.Root().Key(k), msg)
+		}
+		if _, known := lookup(k); !known && !w.TrustedWriter && mesh_proto.IsReservedLabelKey(k) {
+			err.AddViolationAt(validators.Root().Key(k), fmt.Sprintf("label %q is reserved and not known to this control plane", k))
 		}
 		if storedAsAnnotation(k) {
 			for _, msg := range apimachineryvalidation.NameIsDNSSubdomain(v, false) {
