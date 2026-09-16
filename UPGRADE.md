@@ -1369,7 +1369,7 @@ On Universal, drop `kuma.io/gateway: "true"` from the labels of gateway `Datapla
 - A `Service` or `Pod` that was skipped for carrying the annotation now gets a `MeshService` like any other workload, unless the `Service` carries `kuma.io/ignore: "true"`.
 - The injected sidecar of a former gateway pod gets the regular application probe proxy port instead of `0`, so its probes are proxied.
 - The control plane no longer writes `kuma.io/zone` into a gateway's tags, and KDS no longer rewrites a zone tag inside a synced `Dataplane` spec. The `kds_zone_attribution_rewrites_total` metric is removed with it; zone attribution on labels is unaffected.
-- A `kuma.io/gateway` label left on a stored `Dataplane` by an older control plane is deleted the next time that `Dataplane` is written, so a `targetRef` or `MeshLoadBalancingStrategy` affinity key that still selects on it stops matching. Move those to a label the control plane does not manage.
+- A `kuma.io/gateway` or `kuma.io/proxy-type` label left on a stored `Dataplane` by an older control plane is not removed by the control plane; it stays until the `Dataplane` is written again without it. No new `Dataplane` gets either label, so a `targetRef` or `MeshLoadBalancingStrategy` affinity key that still selects on them matches only the stale objects. Move those to a label the control plane does not manage.
 
 Also move any key you use in a `MeshLoadBalancingStrategy` `localZone.affinityTags` from `networking.gateway.tags` to the `Dataplane`'s labels — an affinity key that exists only as a gateway tag stops matching and its locality group is dropped.
 
