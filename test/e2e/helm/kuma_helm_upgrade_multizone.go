@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -109,6 +110,11 @@ func UpgradingZoneWithHelmChart() {
 					// The chart defaults the ingress Service to LoadBalancer,
 					// which never gets an address on k3d.
 					WithHelmOpt("meshes[0].ingress.service.type", "NodePort"),
+					// Kuma 3.0 serves only Delta ADS, so the documented upgrade path
+					// turns Delta on here first. Without it every sidecar injected
+					// below keeps a SOTW bootstrap, the upgraded control plane refuses
+					// its stream, and nothing after the upgrade reaches the proxy.
+					WithHelmOpt("experimental.deltaXds", "true"),
 					WithoutHelmOpt("global.image.tag"),
 				)).
 				Install(WaitNumPods(Config.KumaNamespace, 1, meshZoneIngressApp)).
@@ -216,18 +222,27 @@ spec:
 				g.Expect(newZoneConnected).To(BeTrue())
 			}, "60s", "1s").Should(Succeed())
 
-			// Neither pod restarted, so both still run the sidecar the
-			// pre-upgrade control plane injected, which reports no transparent
-			// proxy configuration. Without the fallback to the deprecated
-			// redirect port fields every request here fails while every
-			// resource count in this spec stays correct.
-			By("Send traffic after the upgrade, without restarting the workloads")
+			// The workloads never restarted, so they still run the sidecar the
+			// 2.14 control plane injected, which reports no transparent proxy
+			// configuration of its own. The upgraded control plane has to fall back
+			// to the deprecated redirect port fields to keep generating the
+			// passthrough listeners their iptables rules still point at.
+			//
+			// Asserted against the config the control plane generates, not against
+			// traffic: a sidecar injected before the upgrade still keeps whatever
+			// config it last received, so traffic keeps flowing even when the control
+			// plane has stopped producing these listeners.
+			By("Upgraded control plane still generates the transparent proxy listeners")
 			Eventually(func(g Gomega) {
-				g.Expect(client.CollectEchoResponse(
-					zoneK8s, "demo-client", testServerURL,
-					client.FromKubernetesPod(namespace, "demo-client"),
-				)).To(HaveField("Instance", ContainSubstring("test-server")))
-			}, "60s", "1s").Should(Succeed())
+				pod, err := k8s.RunKubectlAndGetOutputE(GinkgoT(), zoneK8s.GetKubectlOptions(namespace),
+					"get", "pods", "-l", "app=test-server", "-o", "jsonpath={.items[0].metadata.name}")
+				g.Expect(err).ToNot(HaveOccurred())
+				cfg, err := zoneK8s.GetKumactlOptions().RunKumactlAndGetOutput(
+					"inspect", "dataplane", pod+"."+namespace, "--type", "config", "--mesh", "default")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(cfg).To(ContainSubstring("self_transparentproxy_passthrough_inbound"))
+				g.Expect(cfg).To(ContainSubstring("self_transparentproxy_passthrough_outbound"))
+			}, "60s", "2s").Should(Succeed())
 
 			By("start zone ingress after upgrade")
 			Expect(zoneK8s.(*K8sCluster).ScaleApp(Config.KumaNamespace, meshZoneIngressApp, 1)).To(Succeed())
