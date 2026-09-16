@@ -67,7 +67,7 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
-	if resp := h.IsOperationAllowed(req.UserInfo, coreRes, req.Namespace); !resp.Allowed {
+	if resp := h.IsOperationAllowed(req.UserInfo, coreRes, k8sObj, req.Namespace); !resp.Allowed {
 		return resp
 	}
 

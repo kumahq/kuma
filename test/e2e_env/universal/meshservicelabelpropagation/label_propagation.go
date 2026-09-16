@@ -40,7 +40,6 @@ labels:
   color: blue
   kuma.io/owner: ignored
   kuma.io/protocol: http
-  kuma.io/display-name: lp-svc
   kuma.io/workload: lp-svc
   team: payments
 networking:
@@ -75,7 +74,6 @@ name: lp-dp-1
 labels:
   color: blue
   kuma.io/protocol: http
-  kuma.io/display-name: lp-svc
   kuma.io/workload: lp-svc
   team: platform
   tier: backend
@@ -103,7 +101,6 @@ mesh: lp-mesh
 name: lp-dp-1
 labels:
   kuma.io/protocol: http
-  kuma.io/display-name: lp-svc
   kuma.io/workload: lp-svc
 networking:
   address: 192.168.10.10

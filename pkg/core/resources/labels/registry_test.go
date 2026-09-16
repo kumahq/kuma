@@ -32,14 +32,6 @@ var _ = Describe("Registry", func() {
 		}
 	})
 
-	It("should not check ownership of user-owned labels", func() {
-		for _, d := range labels.Registry {
-			if d.Owner == labels.OwnerUser {
-				Expect(d.ValidateValue).To(BeNil(), d.Key)
-			}
-		}
-	})
-
 	It("should expose the registered keys as AllComputedLabels", func() {
 		var keys []string
 		for _, d := range labels.Registry {

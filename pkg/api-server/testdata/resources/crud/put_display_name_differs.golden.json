@@ -1,5 +1,3 @@
-HTTP/1.1 400 Bad Request
-
 {
  "type": "/std-errors",
  "status": 400,
@@ -8,14 +6,14 @@ HTTP/1.1 400 Bad Request
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/display-name\"]",
-   "reason": "label \"kuma.io/display-name\" is managed by the control plane: got \"my-custom-name\", expected \"mes-display-name\""
+   "reason": "label \"kuma.io/display-name\" is managed by the control plane: got \"my-display-name\", expected \"ext-svc\""
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"kuma.io/display-name\"]",
-   "message": "label \"kuma.io/display-name\" is managed by the control plane: got \"my-custom-name\", expected \"mes-display-name\""
+   "message": "label \"kuma.io/display-name\" is managed by the control plane: got \"my-display-name\", expected \"ext-svc\""
   }
  ]
 }

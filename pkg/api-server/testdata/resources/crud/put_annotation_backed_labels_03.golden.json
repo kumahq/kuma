@@ -6,11 +6,19 @@
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/display-name\"]",
+   "reason": "label \"kuma.io/display-name\" is managed by the control plane: got \"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\", expected \"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\""
+  },
+  {
+   "field": "labels[\"kuma.io/display-name\"]",
    "reason": "must be no more than 253 characters"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
+  {
+   "field": "labels[\"kuma.io/display-name\"]",
+   "message": "label \"kuma.io/display-name\" is managed by the control plane: got \"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\", expected \"nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\""
+  },
   {
    "field": "labels[\"kuma.io/display-name\"]",
    "message": "must be no more than 253 characters"

@@ -6,14 +6,14 @@
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/zone\"]",
-   "reason": "kuma.io/zone label should have default value"
+   "reason": "label \"kuma.io/zone\" is managed by the control plane: got \"other-zone\", expected \"default\""
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"kuma.io/zone\"]",
-   "message": "kuma.io/zone label should have default value"
+   "message": "label \"kuma.io/zone\" is managed by the control plane: got \"other-zone\", expected \"default\""
   }
  ]
 }

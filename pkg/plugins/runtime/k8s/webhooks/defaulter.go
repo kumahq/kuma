@@ -63,7 +63,7 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	if resp := h.IsOperationAllowed(req.UserInfo, resource, req.Namespace); !resp.Allowed {
+	if resp := h.IsOperationAllowed(req.UserInfo, resource, obj, req.Namespace); !resp.Allowed {
 		return resp
 	}
 

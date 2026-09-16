@@ -75,7 +75,6 @@ func Compute(w Write, cp ControlPlane) (map[string]string, error) {
 
 func ComputePolicyRole(p core_model.Policy, ns Namespace) (mesh_proto.PolicyRole, error) {
 	if ns.system || ns == UnsetNamespace {
-		// on Universal the value is always empty
 		return mesh_proto.SystemPolicyRole, nil
 	}
 

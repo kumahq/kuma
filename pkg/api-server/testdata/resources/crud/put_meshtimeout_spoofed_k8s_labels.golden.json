@@ -1,0 +1,35 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not process a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "labels[\"kuma.io/env\"]",
+   "reason": "label \"kuma.io/env\" is managed by the control plane: got \"kubernetes\", expected \"universal\""
+  },
+  {
+   "field": "labels[\"k8s.kuma.io/namespace\"]",
+   "reason": "label \"k8s.kuma.io/namespace\" is managed by the control plane and cannot be set here"
+  },
+  {
+   "field": "labels[\"k8s.kuma.io/service-account\"]",
+   "reason": "label \"k8s.kuma.io/service-account\" is managed by the control plane and cannot be set here"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "labels[\"kuma.io/env\"]",
+   "message": "label \"kuma.io/env\" is managed by the control plane: got \"kubernetes\", expected \"universal\""
+  },
+  {
+   "field": "labels[\"k8s.kuma.io/namespace\"]",
+   "message": "label \"k8s.kuma.io/namespace\" is managed by the control plane and cannot be set here"
+  },
+  {
+   "field": "labels[\"k8s.kuma.io/service-account\"]",
+   "message": "label \"k8s.kuma.io/service-account\" is managed by the control plane and cannot be set here"
+  }
+ ]
+}

@@ -6,22 +6,22 @@
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/origin\"]",
-   "reason": "the origin label must be set to 'zone'"
+   "reason": "label \"kuma.io/origin\" is managed by the control plane: got \"global\", expected \"zone\""
   },
   {
    "field": "labels[\"kuma.io/zone\"]",
-   "reason": "kuma.io/zone label should have zone-1 value"
+   "reason": "label \"kuma.io/zone\" is managed by the control plane: got \"other-zone\", expected \"zone-1\""
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"kuma.io/origin\"]",
-   "message": "the origin label must be set to 'zone'"
+   "message": "label \"kuma.io/origin\" is managed by the control plane: got \"global\", expected \"zone\""
   },
   {
    "field": "labels[\"kuma.io/zone\"]",
-   "message": "kuma.io/zone label should have zone-1 value"
+   "message": "label \"kuma.io/zone\" is managed by the control plane: got \"other-zone\", expected \"zone-1\""
   }
  ]
 }
