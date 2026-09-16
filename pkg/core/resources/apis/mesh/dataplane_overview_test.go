@@ -231,6 +231,73 @@ var _ = Describe("DataplaneOverview", func() {
 					"inbound[port=0,svc=] is not ready",
 				},
 			}),
+			Entry("online when proxy is connected and other inbounds are ignored", testCase{
+				overview: &mesh_proto.DataplaneOverview{
+					Dataplane: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{
+									Port:  8080,
+									State: mesh_proto.Dataplane_Networking_Inbound_Ready,
+									Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+										Ready: true,
+									},
+								},
+								{
+									Port:  8080,
+									State: mesh_proto.Dataplane_Networking_Inbound_Ignored,
+									Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+										Ready: false,
+									},
+								},
+							},
+						},
+					},
+					DataplaneInsight: &mesh_proto.DataplaneInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								ConnectTime: proto.MustTimestampProto(core.Now()),
+							},
+						},
+					},
+				},
+				status: Online,
+			}),
+			Entry("offline when proxy is connected and non-ignored inbounds are not ready", testCase{
+				overview: &mesh_proto.DataplaneOverview{
+					Dataplane: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{
+									Port:  8080,
+									State: mesh_proto.Dataplane_Networking_Inbound_NotReady,
+									Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+										Ready: false,
+									},
+								},
+								{
+									Port:  8080,
+									State: mesh_proto.Dataplane_Networking_Inbound_Ignored,
+									Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+										Ready: false,
+									},
+								},
+							},
+						},
+					},
+					DataplaneInsight: &mesh_proto.DataplaneInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								ConnectTime: proto.MustTimestampProto(core.Now()),
+							},
+						},
+					},
+				},
+				status: Offline,
+				errReasons: []string{
+					"inbound[port=8080,svc=] is not ready",
+				},
+			}),
 			Entry("online when zone proxy listeners ready and no inbounds", testCase{
 				overview: &mesh_proto.DataplaneOverview{
 					Dataplane: &mesh_proto.Dataplane{

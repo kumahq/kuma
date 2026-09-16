@@ -30,11 +30,17 @@ func (t *DataplaneOverviewResource) Status() (Status, []string) {
 		return Offline, nil
 	}
 
-	var ready int
+	var ready, total int
 	var errs []string
-	total := len(networking.GetInbound()) + len(networking.GetListeners())
 
 	for _, inbound := range networking.GetInbound() {
+		// Ignored inbounds belong to a Service that reaches the Pod only through
+		// ignored selector labels (e.g. an Argo Rollouts preview Service), they
+		// serve no traffic and must not degrade the proxy.
+		if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
+			continue
+		}
+		total++
 		if (inbound.Health != nil && !inbound.Health.Ready) || inbound.State == mesh_proto.Dataplane_Networking_Inbound_NotReady {
 			errs = append(errs, fmt.Sprintf("inbound[port=%d,svc=%s] is not ready", inbound.Port, inbound.Tags[mesh_proto.ServiceTag]))
 		} else {
@@ -43,6 +49,7 @@ func (t *DataplaneOverviewResource) Status() (Status, []string) {
 	}
 
 	for _, l := range networking.GetListeners() {
+		total++
 		if l.State == mesh_proto.Dataplane_Networking_Listener_Ready {
 			ready++
 		} else {
