@@ -1,6 +1,10 @@
 Patches: null
-allowed: true
+allowed: false
 status:
-  code: 200
+  code: 403
+  message: 'Operation not allowed. label "kuma.io/origin" is managed by the control
+    plane: got "global", expected "zone"'
   metadata: {}
+  reason: Forbidden
+  status: Failure
 uid: "12345"

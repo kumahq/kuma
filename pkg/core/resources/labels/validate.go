@@ -1,6 +1,8 @@
 package labels
 
 import (
+	"fmt"
+
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/validation"
 
@@ -9,23 +11,28 @@ import (
 )
 
 // ValidateOwnership rejects control-plane-owned labels an untrusted writer supplied
-// with a value the control plane would not have chosen. Violations are keyed by label
-// in registry order.
+// with a value other than the one Compute stores for this write. Violations are keyed
+// by label in registry order. A label whose Compute fails is left to Compute to reject.
 func ValidateOwnership(w Write, cp ControlPlane) validators.ValidationError {
 	var err validators.ValidationError
 	if w.TrustedWriter {
 		return err
 	}
 	for _, d := range registry {
-		if d.Owner != OwnerControlPlane || d.ValidateValue == nil {
+		if d.Owner != OwnerControlPlane {
 			continue
 		}
-		v, ok := w.Labels[d.Key]
+		supplied, ok := w.Labels[d.Key]
 		if !ok {
 			continue
 		}
-		for _, msg := range d.ValidateValue(v, w, cp) {
-			err.AddViolationAt(validators.Root().Key(d.Key), msg)
+		computed, ok, computeErr := d.Compute(w, cp)
+		switch {
+		case computeErr != nil:
+		case !ok:
+			err.AddViolationAt(validators.Root().Key(d.Key), fmt.Sprintf("label %q is managed by the control plane and cannot be set here", d.Key))
+		case computed != supplied:
+			err.AddViolationAt(validators.Root().Key(d.Key), fmt.Sprintf("label %q is managed by the control plane: got %q, expected %q", d.Key, supplied, computed))
 		}
 	}
 	return err

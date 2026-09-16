@@ -267,6 +267,21 @@ func SplitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations 
 	return kubeLabels, annotations
 }
 
+// SuppliedLabels returns the labels a Kubernetes object carries as its writer submitted
+// them: its labels plus the annotation-backed keys, before any read-time enforcement.
+func SuppliedLabels(obj k8s_model.KubernetesObject) map[string]string {
+	supplied := maps.Clone(obj.GetLabels())
+	if supplied == nil {
+		supplied = map[string]string{}
+	}
+	for _, key := range labels.AnnotationBacked() {
+		if v, ok := obj.GetAnnotations()[key]; ok {
+			supplied[key] = v
+		}
+	}
+	return supplied
+}
+
 var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
 
 type KubernetesMetaAdapter struct {
@@ -288,15 +303,9 @@ func newMetaAdapter(obj k8s_model.KubernetesObject, out core_model.Resource, sys
 	ns := labels.NewNamespace(objMeta.GetNamespace(), objMeta.GetNamespace() == systemNamespace)
 	r := labels.NewStoredResource(out, ns, objMeta.GetLabels(), cp)
 
-	computed := maps.Clone(objMeta.GetLabels())
-	if computed == nil {
-		computed = map[string]string{}
-	}
-	computed[v1alpha1.DisplayName] = objMeta.GetName()
-	for _, key := range labels.AnnotationBacked() {
-		if v, ok := objMeta.GetAnnotations()[key]; ok {
-			computed[key] = v
-		}
+	computed := SuppliedLabels(obj)
+	if _, ok := computed[v1alpha1.DisplayName]; !ok {
+		computed[v1alpha1.DisplayName] = objMeta.GetName()
 	}
 	maps.Copy(computed, labels.EnforcedReadLabels(r, cp))
 

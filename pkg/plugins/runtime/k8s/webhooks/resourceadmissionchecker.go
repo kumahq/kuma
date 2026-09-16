@@ -12,6 +12,8 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
@@ -26,7 +28,9 @@ const (
 	StorageVersionMigratorUser  = "system:serviceaccount:kube-system:storage-version-migrator-controller"
 )
 
-func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string) admission.Response {
+// IsOperationAllowed validates the labels as obj carries them, not as r.GetMeta()
+// reports them: the converter has already overlaid the read-time enforced values there.
+func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, obj k8s_model.KubernetesObject, ns string) admission.Response {
 	if c.isPrivilegedUser(c.AllowedUsers, userInfo) {
 		return admission.Allowed("")
 	}
@@ -43,8 +47,8 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		Spec:        r.GetSpec(),
 		Namespace:   resource_labels.NewNamespace(ns, ns == c.SystemNamespace),
 		Mesh:        r.GetMeta().GetMesh(),
-		DisplayName: r.GetMeta().GetName(),
-		Labels:      r.GetMeta().GetLabels(),
+		DisplayName: obj.GetName(),
+		Labels:      k8s.SuppliedLabels(obj),
 	}, c.ControlPlane); err.HasViolations() {
 		return *forbiddenResponse("Operation not allowed. " + err.Violations[0].Message)
 	}

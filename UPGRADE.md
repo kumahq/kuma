@@ -8,6 +8,35 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Control-plane-owned labels are rejected when they differ from the computed value
+
+The control plane owns the labels `kuma.io/origin`, `kuma.io/zone`,
+`kuma.io/env`, `kuma.io/mesh`, `kuma.io/display-name`, `kuma.io/policy-role`,
+`k8s.kuma.io/namespace`, `k8s.kuma.io/service-account`,
+`kuma.io/listener-zoneingress` and `kuma.io/listener-zoneegress`: it computes
+their values on every write. Until now a value supplied on a create or update
+was, depending on the label and the platform, either rejected or silently
+replaced. Both platforms now apply one rule: a supplied value that differs from
+the one the control plane computes for that write is rejected, on Kubernetes by
+the admission webhook and on Universal by the API server; an equal value is
+accepted and an absent one is filled in. Writes coming from the control plane
+itself (KDS, the Kubernetes controllers, the garbage collector) are not
+validated.
+
+Examples of writes that used to be accepted and are now rejected:
+`kuma.io/zone` or `kuma.io/env` on a global control plane, a `kuma.io/zone`
+other than the local zone on a non-federated zone, a `kuma.io/origin` other
+than `zone` on a non-federated zone, a `kuma.io/policy-role` other than the
+one derived from the policy's `to[]` items (always `system` on Universal and in
+the system namespace), a `kuma.io/display-name` other than the resource name,
+and `k8s.kuma.io/namespace` or `k8s.kuma.io/service-account` set by hand.
+
+**Action required**
+
+Remove these labels from manifests that set them to anything other than the
+value the control plane shows on the stored resource, or drop them altogether.
+Plugin policies on Universal now also carry `kuma.io/policy-role: system`.
+
 ### `MeshIdentity.spec.spiffeID` is immutable and its trust domain no longer follows the zone
 
 A trust domain is an identity namespace, so moving one is a migration rather
