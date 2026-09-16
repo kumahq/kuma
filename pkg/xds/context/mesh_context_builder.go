@@ -463,19 +463,27 @@ func resolveZoneEgresses(
 		if len(listeners) == 0 {
 			continue
 		}
-		var san string
-		if identity, ok := meshidentity_api.BestMatched(dp.GetMeta().GetLabels(), identities); ok {
-			env := config_core.UniversalEnvironment
-			if _, isK8s := dp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; isK8s {
-				env = config_core.KubernetesEnvironment
-			}
-			if trustDomain, err := identity.GetTrustDomain(zone); err != nil {
-				logger.Error(err, "failed to compute trust domain for zone egress", "dataplane", dp.GetMeta().GetName())
-			} else if spiffeID, err := identity.Spec.GetSpiffeID(trustDomain, dp.GetMeta(), env); err != nil {
-				logger.Error(err, "failed to compute SPIFFE ID for zone egress", "dataplane", dp.GetMeta().GetName())
-			} else {
-				san = spiffeID
-			}
+		// Mirrors IdentityProviderManager.GetWorkloadIdentity: without a certificate the egress gets
+		// no listener, so advertising it would point every proxy in the mesh at a port nothing serves.
+		identity, ok := meshidentity_api.BestMatched(dp.GetMeta().GetLabels(), identities)
+		if !ok || !identity.Status.IsInitialized() {
+			logger.V(1).Info("zone egress is not advertised: no initialized MeshIdentity matches it",
+				"dataplane", dp.GetMeta().GetName(), "mesh", dp.GetMeta().GetMesh())
+			continue
+		}
+		env := config_core.UniversalEnvironment
+		if _, isK8s := dp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]; isK8s {
+			env = config_core.KubernetesEnvironment
+		}
+		trustDomain, err := identity.GetTrustDomain(zone)
+		if err != nil {
+			logger.Error(err, "failed to compute trust domain for zone egress", "dataplane", dp.GetMeta().GetName())
+			continue
+		}
+		san, err := identity.Spec.GetSpiffeID(trustDomain, dp.GetMeta(), env)
+		if err != nil {
+			logger.Error(err, "failed to compute SPIFFE ID for zone egress", "dataplane", dp.GetMeta().GetName())
+			continue
 		}
 		for _, l := range listeners {
 			dpEgresses = append(dpEgresses, xds.ZoneEgressInstance{Address: l.GetAddress(), Port: l.GetPort(), SAN: san})
