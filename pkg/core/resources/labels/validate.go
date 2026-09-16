@@ -1,9 +1,13 @@
 package labels
 
 import (
+	"fmt"
+
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/validation"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
@@ -45,6 +49,25 @@ func Validate(w Write, cp ControlPlane) validators.ValidationError {
 	err := validateRegisteredFormat(w)
 	err.Add(ValidateOwnership(w, cp))
 	err.Add(validateSyntax(w))
+	return err
+}
+
+// ValidateDelete rejects deleting a resource another control plane owns. Only Global
+// and a federated zone store such resources; a non-federated zone owns everything.
+func ValidateDelete(r StoredResource, cp ControlPlane) validators.ValidationError {
+	var err validators.ValidationError
+	if r.IsLocal || (cp.Mode != config_core.Global && !cp.FederatedZone) {
+		return err
+	}
+	expected := string(mesh_proto.ZoneResourceOrigin)
+	if cp.Mode == config_core.Global {
+		expected = string(mesh_proto.GlobalResourceOrigin)
+	}
+	msg := fmt.Sprintf("the origin label must be set to '%s'", expected)
+	if cp.IsK8s {
+		msg = k8sWrongValueMsg(mesh_proto.ResourceOriginLabel, expected, r.Labels[mesh_proto.ResourceOriginLabel])
+	}
+	err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), msg)
 	return err
 }
 

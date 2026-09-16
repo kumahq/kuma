@@ -217,6 +217,7 @@ var _ = Describe("EnforcedReadLabels", func() {
 			Expect(r.Descriptor.Name).To(Equal(meshtimeout_api.MeshTimeoutType))
 			Expect(r.Spec).To(Equal(meshWideTimeout().GetSpec()))
 			Expect(r.Namespace).To(Equal(ns))
+			Expect(r.Labels).To(Equal(stored))
 		},
 		Entry("an app namespace is local whatever the stored origin says", appNamespace, fromGlobal, zoneCP, true),
 		Entry("the system namespace follows the stored origin: import", systemNamespace, fromGlobal, zoneCP, false),

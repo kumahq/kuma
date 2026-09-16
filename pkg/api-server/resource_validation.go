@@ -3,8 +3,6 @@ package api_server
 import (
 	"fmt"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -38,26 +36,6 @@ func (r *resourceCrudHandler) validateResourceRequest(name string, meshName stri
 	err.AddError("", core_mesh.ValidateMeta(resource.GetMeta(), r.descriptor.Scope))
 
 	return err.OrNil()
-}
-
-// validateOriginForWrite decides whether this control plane owns a stored resource,
-// as opposed to whether a supplied label is valid.
-func (r *resourceCrudHandler) validateOriginForWrite(meta core_model.ResourceMeta) validators.ValidationError {
-	var err validators.ValidationError
-	origin, ok := core_model.ResourceOrigin(meta)
-
-	if r.cp.Mode == config_core.Global {
-		if ok && origin != mesh_proto.GlobalResourceOrigin {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.GlobalResourceOrigin))
-		}
-	}
-
-	if r.cp.FederatedZone {
-		if ok && origin != mesh_proto.ZoneResourceOrigin {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.ZoneResourceOrigin))
-		}
-	}
-	return err
 }
 
 // The resource is prefixed with the zone name when it is synchronized

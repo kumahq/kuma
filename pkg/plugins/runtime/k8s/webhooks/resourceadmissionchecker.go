@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -12,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
@@ -26,7 +28,7 @@ const (
 	StorageVersionMigratorUser  = "system:serviceaccount:kube-system:storage-version-migrator-controller"
 )
 
-func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string) admission.Response {
+func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string, op admissionv1.Operation) admission.Response {
 	if c.isPrivilegedUser(c.AllowedUsers, userInfo) {
 		return admission.Allowed("")
 	}
@@ -38,14 +40,21 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		}
 	}
 
-	if err := resource_labels.ValidateOwnership(resource_labels.Write{
-		Descriptor:  r.Descriptor(),
-		Spec:        r.GetSpec(),
-		Namespace:   resource_labels.NewNamespace(ns, ns == c.SystemNamespace),
-		Mesh:        r.GetMeta().GetMesh(),
-		DisplayName: r.GetMeta().GetName(),
-		Labels:      r.GetMeta().GetLabels(),
-	}, c.ControlPlane); err.HasViolations() {
+	namespace := resource_labels.NewNamespace(ns, ns == c.SystemNamespace)
+	var err validators.ValidationError
+	if op == admissionv1.Delete {
+		err = resource_labels.ValidateDelete(resource_labels.NewStoredResource(r, namespace, r.GetMeta().GetLabels(), c.ControlPlane), c.ControlPlane)
+	} else {
+		err = resource_labels.ValidateOwnership(resource_labels.Write{
+			Descriptor:  r.Descriptor(),
+			Spec:        r.GetSpec(),
+			Namespace:   namespace,
+			Mesh:        r.GetMeta().GetMesh(),
+			DisplayName: r.GetMeta().GetName(),
+			Labels:      r.GetMeta().GetLabels(),
+		}, c.ControlPlane)
+	}
+	if err.HasViolations() {
 		return *forbiddenResponse("Operation not allowed. " + err.Violations[0].Message)
 	}
 

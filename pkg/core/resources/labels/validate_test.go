@@ -15,6 +15,7 @@ import (
 	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var _ = Describe("Validate", func() {
@@ -215,6 +216,80 @@ var _ = Describe("Validate", func() {
 		Entry("syntax: annotation-backed values must be DNS subdomains", testCase{
 			r: timeout(), labels: map[string]string{metadata.KumaWorkload: "Not_A_Name"}, cp: universalNonFederated,
 			expected: []validators.Violation{violation(metadata.KumaWorkload, "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')")},
+		}),
+	)
+
+	type deleteCase struct {
+		r        core_model.Resource
+		ns       resource_labels.Namespace
+		stored   map[string]string
+		cp       resource_labels.ControlPlane
+		expected *validators.Violation
+	}
+
+	DescribeTable("ValidateDelete should refuse a resource another control plane owns",
+		func(given deleteCase) {
+			err := resource_labels.ValidateDelete(resource_labels.NewStoredResource(given.r, given.ns, given.stored, given.cp), given.cp)
+			if given.expected == nil {
+				Expect(err.HasViolations()).To(BeFalse(), err.Error())
+			} else {
+				Expect(err.Violations).To(Equal([]validators.Violation{*given.expected}))
+			}
+		},
+		Entry("Universal global CP: local", deleteCase{
+			r: timeout(), stored: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: universalGlobal,
+		}),
+		Entry("Universal global CP: synced from a zone", deleteCase{
+			r: timeout(), stored: map[string]string{mesh_proto.ResourceOriginLabel: "zone"}, cp: universalGlobal,
+			expected: pointer.To(violation(mesh_proto.ResourceOriginLabel, "the origin label must be set to 'global'")),
+		}),
+		Entry("Universal global CP: unknown origin", deleteCase{
+			r: timeout(), stored: map[string]string{mesh_proto.ResourceOriginLabel: "unknownvalue"}, cp: universalGlobal,
+			expected: pointer.To(violation(mesh_proto.ResourceOriginLabel, "the origin label must be set to 'global'")),
+		}),
+		Entry("Universal global CP: no origin", deleteCase{
+			r: timeout(), cp: universalGlobal,
+		}),
+		Entry("Universal global CP: empty origin", deleteCase{
+			r: timeout(), stored: map[string]string{mesh_proto.ResourceOriginLabel: ""}, cp: universalGlobal,
+		}),
+		Entry("Universal federated zone: synced from global", deleteCase{
+			r: timeout(), stored: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: universalFederated,
+			expected: pointer.To(violation(mesh_proto.ResourceOriginLabel, "the origin label must be set to 'zone'")),
+		}),
+		Entry("Universal federated zone: local", deleteCase{
+			r: timeout(), stored: map[string]string{mesh_proto.ResourceOriginLabel: "zone"}, cp: universalFederated,
+		}),
+		Entry("Universal non-federated zone owns everything", deleteCase{
+			r: timeout(), stored: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: universalNonFederated,
+		}),
+		Entry("no mode owns everything", deleteCase{
+			r: timeout(), stored: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: resource_labels.ControlPlane{},
+		}),
+		Entry("k8s global CP: synced from a zone", deleteCase{
+			r: timeout(), ns: systemNamespace, stored: map[string]string{mesh_proto.ResourceOriginLabel: "zone"}, cp: k8sGlobal,
+			expected: pointer.To(violation(mesh_proto.ResourceOriginLabel, "'kuma.io/origin' label should have 'global' value, got 'zone'")),
+		}),
+		Entry("k8s global CP: unknown origin", deleteCase{
+			r: timeout(), ns: systemNamespace, stored: map[string]string{mesh_proto.ResourceOriginLabel: "unknownvalue"}, cp: k8sGlobal,
+			expected: pointer.To(violation(mesh_proto.ResourceOriginLabel, "'kuma.io/origin' label should have 'global' value, got 'unknownvalue'")),
+		}),
+		Entry("k8s global CP: a non-plugin type synced from a zone", deleteCase{
+			r: dataplane(), ns: systemNamespace, stored: map[string]string{mesh_proto.ResourceOriginLabel: "zone"}, cp: k8sGlobal,
+			expected: pointer.To(violation(mesh_proto.ResourceOriginLabel, "'kuma.io/origin' label should have 'global' value, got 'zone'")),
+		}),
+		Entry("k8s federated zone: synced from global into the system namespace", deleteCase{
+			r: timeout(), ns: systemNamespace, stored: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: k8sFederated,
+			expected: pointer.To(violation(mesh_proto.ResourceOriginLabel, "'kuma.io/origin' label should have 'zone' value, got 'global'")),
+		}),
+		Entry("k8s federated zone: an app namespace is local whatever the origin says", deleteCase{
+			r: timeout(), ns: appNamespace, stored: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: k8sFederated,
+		}),
+		Entry("k8s federated zone: a mismatching zone label does not change who owns it", deleteCase{
+			r: timeout(), ns: systemNamespace, stored: map[string]string{mesh_proto.ResourceOriginLabel: "zone", mesh_proto.ZoneTag: "zone-2"}, cp: k8sFederated,
+		}),
+		Entry("k8s federated zone: a service-account label does not change who owns it", deleteCase{
+			r: dataplane(), ns: appNamespace, stored: map[string]string{metadata.KumaServiceAccount: "victim-sa"}, cp: k8sFederated,
 		}),
 	)
 })

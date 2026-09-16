@@ -49,7 +49,9 @@ type StoredResource struct {
 	Descriptor core_model.ResourceTypeDescriptor
 	Spec       core_model.ResourceSpec
 	Namespace  Namespace
-	IsLocal    bool
+	// Labels as stored. Read-only.
+	Labels  map[string]string
+	IsLocal bool
 }
 
 // NewStoredResource derives IsLocal: KDS only writes into the system namespace, so
@@ -60,6 +62,7 @@ func NewStoredResource(res core_model.Resource, ns Namespace, storedLabels map[s
 		Descriptor: res.Descriptor(),
 		Spec:       res.GetSpec(),
 		Namespace:  ns,
+		Labels:     storedLabels,
 		IsLocal:    (ns.value != "" && !ns.system) || core_model.IsLocallyOriginated(cp.Mode, storedLabels),
 	}
 }
