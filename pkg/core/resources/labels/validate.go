@@ -34,6 +34,21 @@ func ValidateOwnership(w Write, cp ControlPlane) validators.ValidationError {
 // ValidateFormat rejects malformed label keys and values whoever the writer is: the
 // per-label format rules first, then the generic syntax rules in key order.
 func ValidateFormat(w Write) validators.ValidationError {
+	err := validateRegisteredFormat(w)
+	err.Add(validateSyntax(w))
+	return err
+}
+
+// Validate is the API server's one call. The order is the one its responses always
+// had: the per-label format rules, then ownership, then the generic syntax rules.
+func Validate(w Write, cp ControlPlane) validators.ValidationError {
+	err := validateRegisteredFormat(w)
+	err.Add(ValidateOwnership(w, cp))
+	err.Add(validateSyntax(w))
+	return err
+}
+
+func validateRegisteredFormat(w Write) validators.ValidationError {
 	var err validators.ValidationError
 	for _, d := range registry {
 		if d.ValidateFormat == nil {
@@ -47,6 +62,11 @@ func ValidateFormat(w Write) validators.ValidationError {
 			err.AddViolationAt(validators.Root().Key(d.Key), msg)
 		}
 	}
+	return err
+}
+
+func validateSyntax(w Write) validators.ValidationError {
+	var err validators.ValidationError
 	for _, k := range maps.SortedKeys(w.Labels) {
 		v := w.Labels[k]
 		for _, msg := range validation.IsQualifiedName(k) {
@@ -62,12 +82,5 @@ func ValidateFormat(w Write) validators.ValidationError {
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
 	}
-	return err
-}
-
-// Validate is ValidateOwnership followed by ValidateFormat.
-func Validate(w Write, cp ControlPlane) validators.ValidationError {
-	err := ValidateOwnership(w, cp)
-	err.Add(ValidateFormat(w))
 	return err
 }

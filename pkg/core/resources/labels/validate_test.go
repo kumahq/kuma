@@ -96,11 +96,11 @@ var _ = Describe("Validate", func() {
 			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "unknownvalue"}, trusted: true, cp: universalGlobal,
 			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, `unknown resource origin "unknownvalue"`)},
 		}),
-		Entry("origin: ownership violation is listed before the format violation", testCase{
+		Entry("origin: format violation is listed before the ownership violation", testCase{
 			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "unknownvalue"}, cp: universalGlobal,
 			expected: []validators.Violation{
-				violation(mesh_proto.ResourceOriginLabel, "the origin label must be set to 'global'"),
 				violation(mesh_proto.ResourceOriginLabel, `unknown resource origin "unknownvalue"`),
+				violation(mesh_proto.ResourceOriginLabel, "the origin label must be set to 'global'"),
 			},
 		}),
 		// origin, k8s
