@@ -14,11 +14,13 @@ type PortLike interface {
 
 type DataplaneResourcer interface {
 	GetAddress() string
+	GetLegacyTransparentProxy() *DataplaneConfig
 }
 
 type DataplaneMetadater interface {
 	GetTransparentProxy() *DataplaneConfig
 	GetDNSPort() uint32
+	GetIPv6Enabled() bool
 }
 
 type DatalpaneTrafficFlow struct {
@@ -66,6 +68,14 @@ func (c *DataplaneConfig) withAddress(address string) *DataplaneConfig {
 		return nil
 	}
 	c.address = address
+	return c
+}
+
+func (c *DataplaneConfig) withIPFamilyMode(mode tproxy_config.IPFamilyMode) *DataplaneConfig {
+	if c == nil {
+		return nil
+	}
+	c.IPFamilyMode = mode
 	return c
 }
 
@@ -117,15 +127,25 @@ func getAddress(dp DataplaneResourcer) string {
 
 func GetDataplaneConfig(dp DataplaneResourcer, meta DataplaneMetadater) *DataplaneConfig {
 	cfg := &DataplaneConfig{}
-	if meta != nil {
-		if tp := meta.GetTransparentProxy(); tp != nil {
-			cfg = tp
-		}
+	switch {
+	case meta != nil && meta.GetTransparentProxy() != nil:
+		cfg = meta.GetTransparentProxy()
+	case dp != nil && dp.GetLegacyTransparentProxy() != nil:
+		// ipFamilyMode is gone, so the family comes from what the proxy reports
+		// about its machine instead.
+		cfg = dp.GetLegacyTransparentProxy().withIPFamilyMode(ipFamilyMode(meta))
 	}
 
 	return cfg.
 		withDNSPort(getDNSPort(meta)).
 		withAddress(getAddress(dp))
+}
+
+func ipFamilyMode(meta DataplaneMetadater) tproxy_config.IPFamilyMode {
+	if meta != nil && !meta.GetIPv6Enabled() {
+		return tproxy_config.IPFamilyModeIPv4
+	}
+	return tproxy_config.IPFamilyModeDualStack
 }
 
 func DefaultDataplaneConfig() DataplaneConfig {

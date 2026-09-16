@@ -17,6 +17,8 @@ import (
 	meshtimeout "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/api"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 )
@@ -40,6 +42,7 @@ const vipOutboundNack = "2.14 zones send VIP outbounds without backendRef, fixed
 
 func UpgradingZoneWithHelmChart() {
 	namespace := "helm-upgrade-ns"
+	testServerURL := "test-server_helm-upgrade-ns_svc_80.mesh"
 	var global, zoneK8s, zoneUniversal Cluster
 	var globalCP ControlPlane
 
@@ -137,8 +140,18 @@ spec:
 			By("Sync DPPs from Zone to Global")
 			err = NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(testserver.Install(testserver.WithNamespace(namespace))).Setup(zoneK8s)
+				Install(testserver.Install(testserver.WithNamespace(namespace))).
+				Install(democlient.Install(democlient.WithNamespace(namespace))).
+				Setup(zoneK8s)
 			Expect(err).ToNot(HaveOccurred())
+
+			By("Send traffic before the upgrade")
+			Eventually(func(g Gomega) {
+				g.Expect(client.CollectEchoResponse(
+					zoneK8s, "demo-client", testServerURL,
+					client.FromKubernetesPod(namespace, "demo-client"),
+				)).To(HaveField("Instance", ContainSubstring("test-server")))
+			}, "60s", "1s").Should(Succeed())
 
 			// Only the zone's own mesh zone ingress is asserted here. Whether
 			// the test server's Dataplane also makes it across is a race while
@@ -203,6 +216,19 @@ spec:
 				g.Expect(newZoneConnected).To(BeTrue())
 			}, "60s", "1s").Should(Succeed())
 
+			// Neither pod restarted, so both still run the sidecar the
+			// pre-upgrade control plane injected, which reports no transparent
+			// proxy configuration. Without the fallback to the deprecated
+			// redirect port fields every request here fails while every
+			// resource count in this spec stays correct.
+			By("Send traffic after the upgrade, without restarting the workloads")
+			Eventually(func(g Gomega) {
+				g.Expect(client.CollectEchoResponse(
+					zoneK8s, "demo-client", testServerURL,
+					client.FromKubernetesPod(namespace, "demo-client"),
+				)).To(HaveField("Instance", ContainSubstring("test-server")))
+			}, "60s", "1s").Should(Succeed())
+
 			By("start zone ingress after upgrade")
 			Expect(zoneK8s.(*K8sCluster).ScaleApp(Config.KumaNamespace, meshZoneIngressApp, 1)).To(Succeed())
 
@@ -230,10 +256,10 @@ spec:
 			Eventually(func(g Gomega) {
 				dppsK8sZone, err := NumberOfResources(zoneK8s, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(dppsK8sZone).To(Equal(2))
+				g.Expect(dppsK8sZone).To(Equal(3))
 				dppsGlobal, err := NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(dppsGlobal).To(Equal(3))
+				g.Expect(dppsGlobal).To(Equal(4))
 			}, "3m", "1s").Should(Succeed())
 
 			Consistently(func(g Gomega) {
@@ -247,13 +273,13 @@ spec:
 
 				dppsK8sZone, err := NumberOfResources(zoneK8s, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(dppsK8sZone).To(Equal(2))
+				g.Expect(dppsK8sZone).To(Equal(3))
 				dppsUniversalZone, err := NumberOfResources(zoneUniversal, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(dppsUniversalZone).To(Equal(1))
 				dppsGlobal, err := NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(dppsGlobal).To(Equal(3))
+				g.Expect(dppsGlobal).To(Equal(4))
 
 				addressesGlobal, err := NumberOfResources(global, meshzoneaddress_api.MeshZoneAddressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())

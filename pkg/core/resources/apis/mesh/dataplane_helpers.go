@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	k8s_metadata "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 )
 
 // Default fills in the outbound address so that every Dataplane the API serves
@@ -81,6 +82,29 @@ func (d *DataplaneResource) GetAddress() string {
 	}
 
 	return d.Spec.GetNetworking().GetAddress()
+}
+
+// GetLegacyTransparentProxy builds a config out of the deprecated redirect
+// port fields, which is all a sidecar injected before 3.0 leaves behind. The
+// IP family mode is left unset: the caller takes it from the proxy's metadata.
+func (d *DataplaneResource) GetLegacyTransparentProxy() *tproxy_dp.DataplaneConfig {
+	tp := d.GetSpec().(*mesh_proto.Dataplane).GetNetworking().GetTransparentProxying()
+	if tp == nil {
+		return nil
+	}
+
+	inbound := tp.GetRedirectPortInbound()   //nolint:staticcheck // deprecated on purpose
+	outbound := tp.GetRedirectPortOutbound() //nolint:staticcheck // deprecated on purpose
+	if inbound == 0 && outbound == 0 {
+		return nil
+	}
+
+	return &tproxy_dp.DataplaneConfig{
+		Redirect: tproxy_dp.DataplaneRedirect{
+			Inbound:  tproxy_dp.DataplaneTrafficFlowFromPortLike(inbound),
+			Outbound: tproxy_dp.DataplaneTrafficFlowFromPortLike(outbound),
+		},
+	}
 }
 
 func (d *DataplaneResource) AdminAddress(defaultAdminPort uint32) string {

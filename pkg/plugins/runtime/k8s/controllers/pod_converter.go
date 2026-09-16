@@ -138,10 +138,26 @@ func (p *PodConverter) dataplaneFor(
 		}
 	}
 
+	// Only a pod injected before 3.0 carries these, and only such a pod needs
+	// them: its sidecar reports no transparent proxy configuration of its own.
+	if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation); err != nil {
+		return nil, err
+	} else if ok {
+		tp.RedirectPortInbound = v //nolint:staticcheck // deprecated on purpose
+	}
+
+	if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation); err != nil {
+		return nil, err
+	} else if ok {
+		tp.RedirectPortOutbound = v //nolint:staticcheck // deprecated on purpose
+	}
+
 	// Avoid setting an empty TransparentProxying object by checking if any fields are set.
 	// Only assign it if at least one relevant field has a non-zero or non-nil value.
 	if tp.DirectAccessServices != nil ||
-		tp.ReachableBackends != nil {
+		tp.ReachableBackends != nil ||
+		tp.GetRedirectPortInbound() != 0 || //nolint:staticcheck // deprecated on purpose
+		tp.GetRedirectPortOutbound() != 0 { //nolint:staticcheck // deprecated on purpose
 		dataplane.Networking.TransparentProxying = &tp
 	}
 
