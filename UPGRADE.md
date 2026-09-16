@@ -8,6 +8,39 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Reserved labels are validated on every write
+
+Keys under `kuma.io/` and `k8s.kuma.io/` are reserved for the control plane.
+Until now any such key was stored as supplied, some values were checked only
+on create, and a user could set labels the control plane relies on. The API
+server on Universal and the admission webhooks on Kubernetes now reject, on
+create and on update:
+
+- a reserved key the control plane does not know, for example `kuma.io/foo`
+  or the legacy `kuma.io/proxy-type` and `kuma.io/gateway`. Keys outside the
+  reserved prefixes are still free for you to use.
+- `kuma.io/kds-sync` with a value other than `enabled` or `disabled`, and
+  `kuma.io/effect` with a value other than `shadow`. The check is
+  case-sensitive: `Disabled` used to be stored and silently meant `enabled`.
+- `kuma.io/managed-by`, `kuma.io/deletion-grace-period-started-at`,
+  `k8s.kuma.io/service-name` and `k8s.kuma.io/is-headless-service` with any
+  value. Only the control plane writes them, on the resources it generates.
+  Re-applying a generated `MeshService` (`kumactl get -oyaml | kumactl apply`)
+  is therefore rejected, as is a `kumactl export --profile all` dump that
+  contains generated resources.
+
+Resources synced by KDS and written by the control plane's own components are
+not affected.
+
+**Action required**
+
+A resource written by an older control plane may still carry a reserved key
+that is now unknown, `kuma.io/proxy-type` on a Universal `Dataplane` for
+example. It keeps working as stored, but its next update by a user fails until
+the label is removed from the manifest. Review the manifests you apply for
+keys under the reserved prefixes that are not documented, and for the values
+of `kuma.io/kds-sync` and `kuma.io/effect`.
+
 ### `MeshIdentity.spec.spiffeID` is immutable and its trust domain no longer follows the zone
 
 A trust domain is an identity namespace, so moving one is a migration rather

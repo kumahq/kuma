@@ -2,6 +2,8 @@ package labels
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
@@ -54,6 +56,33 @@ func keep(w Write, key string) (string, bool, error) {
 
 func k8sWrongValueMsg(key, expected, actual string) string {
 	return fmt.Sprintf("'%s' label should have '%s' value, got '%s'", key, expected, actual)
+}
+
+// controlPlaneOnly describes a label a control plane component writes through the
+// store: kept as supplied for a trusted writer, rejected for anyone else.
+func controlPlaneOnly(key string) Descriptor {
+	return Descriptor{
+		Key:   key,
+		Owner: OwnerControlPlane,
+		Compute: func(w Write, _ ControlPlane) (string, bool, error) {
+			if !w.TrustedWriter {
+				return "", false, nil
+			}
+			return keep(w, key)
+		},
+		ValidateValue: func(_ string, _ Write, _ ControlPlane) []string {
+			return []string{fmt.Sprintf("label %q is set by the control plane and cannot be set manually", key)}
+		},
+	}
+}
+
+func oneOf(key string, values ...string) func(string) []string {
+	return func(v string) []string {
+		if slices.Contains(values, v) {
+			return nil
+		}
+		return []string{fmt.Sprintf("label %q must be %s, got %q", key, strings.Join(values, " or "), v)}
+	}
 }
 
 func listenerLabel(key string, listenerType mesh_proto.Dataplane_Networking_Listener_Type) func(w Write, cp ControlPlane) (string, bool, error) {
@@ -315,16 +344,32 @@ var registry = []Descriptor{
 		},
 		StoredAsAnnotation: true,
 	},
+	controlPlaneOnly(mesh_proto.ManagedByLabel),
+	controlPlaneOnly(mesh_proto.DeletionGracePeriodStartedLabel),
+	controlPlaneOnly(metadata.KumaServiceName),
+	controlPlaneOnly(metadata.HeadlessService),
+	{
+		Key:            mesh_proto.KDSSyncLabel,
+		Owner:          OwnerUser,
+		ValidateFormat: oneOf(mesh_proto.KDSSyncLabel, "enabled", "disabled"),
+	},
+	{
+		Key:            mesh_proto.EffectLabel,
+		Owner:          OwnerUser,
+		ValidateFormat: oneOf(mesh_proto.EffectLabel, "shadow"),
+	},
 }
 
-// AllComputedLabels lists every registered key. If changed sync with:
+// AllComputedLabels lists every key the control plane writes itself. If changed sync with:
 // https://github.com/Kong/shared-speakeasy/blob/b3ddd3ef1f31e42bfe71b96ea473493072f9742c/customtypes/kumalabels/kumalabels.go#L15
 var AllComputedLabels = computedLabels()
 
 func computedLabels() map[string]struct{} {
 	keys := map[string]struct{}{}
 	for _, d := range registry {
-		keys[d.Key] = struct{}{}
+		if d.Compute != nil {
+			keys[d.Key] = struct{}{}
+		}
 	}
 	return keys
 }
@@ -340,11 +385,16 @@ func AnnotationBacked() []string {
 	return keys
 }
 
-func storedAsAnnotation(key string) bool {
+func lookup(key string) (Descriptor, bool) {
 	for _, d := range registry {
 		if d.Key == key {
-			return d.StoredAsAnnotation
+			return d, true
 		}
 	}
-	return false
+	return Descriptor{}, false
+}
+
+func storedAsAnnotation(key string) bool {
+	d, _ := lookup(key)
+	return d.StoredAsAnnotation
 }
