@@ -52,22 +52,6 @@ the global control plane read-only on the zone. The
 Remove `multizone.zone.disableOriginLabelValidation` from your configuration.
 A control plane started with the setting still present fails to load its
 configuration.
-
-### The admission webhook rejects a wrong label value with the same message as the API server
-
-A `kuma.io/origin`, `kuma.io/zone` or `k8s.kuma.io/service-account` label
-rejected by the Kubernetes admission webhook used to come with its own wording,
-for example `'kuma.io/origin' label should have 'global' value, got 'zone'`.
-The webhook now reports the message the Universal API server reports for the
-same violation: `the origin label must be set to 'global'`,
-`kuma.io/zone label should have <zone> value` and
-`k8s.kuma.io/service-account label is managed by Kuma and cannot be set manually`.
-Which requests are rejected has not changed.
-
-**Action required**
-
-Update any tooling that matches on the old webhook message text.
-
 ### The resource store cache can no longer be disabled
 
 The resource store cache (`store.cache.enabled`,
