@@ -62,19 +62,16 @@ func (p *PodConverter) PodToDataplane(
 		return err
 	}
 
-	labels, err := resource_labels.Compute(
-		core_mesh.DataplaneResourceTypeDescriptor,
-		dataplaneProto,
-		mergeLabels(dataplane.GetLabels(), pod.Labels, nodeLabels),
-		dataplane.Mesh,
-		dataplane.Name,
-		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
-		resource_labels.WithMode(p.Mode),
-		resource_labels.WithK8s(true),
-		resource_labels.WithZone(p.Zone),
-		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
-		resource_labels.WithWorkload(workloadName),
-	)
+	labels, err := resource_labels.Compute(resource_labels.Write{
+		Descriptor:     core_mesh.DataplaneResourceTypeDescriptor,
+		Spec:           dataplaneProto,
+		Namespace:      resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
+		Mesh:           dataplane.Mesh,
+		DisplayName:    dataplane.Name,
+		Labels:         mergeLabels(dataplane.GetLabels(), pod.Labels, nodeLabels),
+		ServiceAccount: pod.Spec.ServiceAccountName,
+		Workload:       workloadName,
+	}, resource_labels.ControlPlane{Mode: p.Mode, Zone: p.Zone, IsK8s: true})
 	if err != nil {
 		return err
 	}

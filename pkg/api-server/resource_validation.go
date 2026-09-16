@@ -2,19 +2,14 @@ package api_server
 
 import (
 	"fmt"
-	"slices"
-
-	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
-	"k8s.io/apimachinery/pkg/util/validation"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
-	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
 func (r *resourceCrudHandler) validateResourceRequest(name string, meshName string, resource rest.Resource) error {
@@ -22,7 +17,7 @@ func (r *resourceCrudHandler) validateResourceRequest(name string, meshName stri
 	if name != resource.GetMeta().Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
 	}
-	if r.federatedZone && !r.doesNameLengthFitsGlobal(name) {
+	if r.cp.FederatedZone && !r.doesNameLengthFitsGlobal(name) {
 		err.AddViolation("name", "the length of the name must be shorter")
 	}
 	if string(r.descriptor.Name) != resource.GetMeta().Type {
@@ -32,85 +27,35 @@ func (r *resourceCrudHandler) validateResourceRequest(name string, meshName stri
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
 
-	err.AddError("labels", r.validateLabels(resource))
+	err.AddError("labels", resource_labels.Validate(resource_labels.Write{
+		Descriptor:  r.descriptor,
+		Spec:        resource.GetSpec(),
+		Namespace:   resource_labels.GetNamespace(resource.GetMeta(), r.systemNamespace),
+		Mesh:        resource.GetMeta().GetMesh(),
+		DisplayName: resource.GetMeta().GetName(),
+		Labels:      resource.GetMeta().GetLabels(),
+	}, r.cp))
 	err.AddError("", core_mesh.ValidateMeta(resource.GetMeta(), r.descriptor.Scope))
 
 	return err.OrNil()
 }
 
+// validateOriginForWrite decides whether this control plane owns a stored resource,
+// as opposed to whether a supplied label is valid.
 func (r *resourceCrudHandler) validateOriginForWrite(meta core_model.ResourceMeta) validators.ValidationError {
 	var err validators.ValidationError
 	origin, ok := core_model.ResourceOrigin(meta)
 
-	if r.mode == config_core.Global {
+	if r.cp.Mode == config_core.Global {
 		if ok && origin != mesh_proto.GlobalResourceOrigin {
 			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.GlobalResourceOrigin))
 		}
 	}
 
-	if r.federatedZone {
+	if r.cp.FederatedZone {
 		if ok && origin != mesh_proto.ZoneResourceOrigin {
 			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), fmt.Sprintf("the origin label must be set to '%s'", mesh_proto.ZoneResourceOrigin))
 		}
-	}
-	return err
-}
-
-func (r *resourceCrudHandler) validateLabels(resource rest.Resource) validators.ValidationError {
-	var err validators.ValidationError
-
-	origin, ok := core_model.ResourceOrigin(resource.GetMeta())
-	if ok {
-		if oerr := origin.IsValid(); oerr != nil {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), oerr.Error())
-		}
-	}
-
-	err.AddError("", r.validateOriginForWrite(resource.GetMeta()))
-
-	zoneTag, hasZoneTag := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-	if r.mode == config_core.Global {
-		if hasZoneTag {
-			err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s is not allowed on a global control plane", mesh_proto.ZoneTag))
-		}
-	} else if hasZoneTag && zoneTag != r.zoneName {
-		err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
-	}
-	if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
-		err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
-	}
-
-	if r.descriptor.IsPluginOriginated && r.descriptor.IsPolicy {
-		err.AddError("", r.validatePolicyRole(resource))
-	}
-
-	for _, k := range maps.SortedKeys(resource.GetMeta().GetLabels()) {
-		v := resource.GetMeta().GetLabels()[k]
-		for _, msg := range validation.IsQualifiedName(k) {
-			err.AddViolationAt(validators.Root().Key(k), msg)
-		}
-		// Labels that Kubernetes stores as annotations hold a resource name, so they
-		// follow the resource name rules (DNS-1123 subdomain, 253 characters) rather
-		// than the label value rules.
-		if slices.Contains(k8s.LabelsStoredAsAnnotations, k) {
-			for _, msg := range apimachineryvalidation.NameIsDNSSubdomain(v, false) {
-				err.AddViolationAt(validators.Root().Key(k), msg)
-			}
-			continue
-		}
-		for _, msg := range validation.IsValidLabelValue(v) {
-			err.AddViolationAt(validators.Root().Key(k), msg)
-		}
-	}
-	return err
-}
-
-func (r *resourceCrudHandler) validatePolicyRole(resource rest.Resource) validators.ValidationError {
-	var err validators.ValidationError
-	policyRole := core_model.PolicyRole(resource.GetMeta())
-	// at the moment on universal all policies have system policy role
-	if policyRole != mesh_proto.SystemPolicyRole {
-		err.AddViolationAt(validators.Root().Key(mesh_proto.PolicyRoleLabel), fmt.Sprintf("%s label should have %s value, got %s", mesh_proto.PolicyRoleLabel, mesh_proto.SystemPolicyRole, policyRole))
 	}
 	return err
 }

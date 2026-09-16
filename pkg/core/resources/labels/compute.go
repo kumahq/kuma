@@ -1,16 +1,13 @@
 package labels
 
 import (
-	"fmt"
 	"maps"
 
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
@@ -24,12 +21,9 @@ type Namespace struct {
 var UnsetNamespace = Namespace{}
 
 // Labels the control plane used to compute and no longer does. They are
-// deleted on every write so a resource created by an older control plane stops
-// carrying them, instead of keeping a value nothing maintains.
-const (
-	legacyProxyTypeLabel = "kuma.io/proxy-type"
-	legacyGatewayLabel   = "kuma.io/gateway"
-)
+// deleted on every proxy write so a resource created by an older control plane
+// stops carrying them, instead of keeping a value nothing maintains.
+var removedLabels = []string{"kuma.io/proxy-type", "kuma.io/gateway"}
 
 func NewNamespace(value string, system bool) Namespace {
 	return Namespace{
@@ -48,191 +42,34 @@ func GetNamespace(rm core_model.ResourceMeta, systemNamespace string) Namespace 
 	return UnsetNamespace
 }
 
-type Options struct {
-	Mode           config_core.CpMode
-	IsK8s          bool
-	ZoneName       string
-	Namespace      Namespace
-	ServiceAccount string
-	Workload       string
-	// Privileged marks trusted CP-internal writes (KDS sync, GC,
-	// storage-version migrator) whose labels must not be recomputed.
-	Privileged bool
-}
-
-type Option func(*Options)
-
-func NewOptions(fs ...Option) *Options {
-	opts := &Options{}
-	for _, f := range fs {
-		f(opts)
-	}
-	return opts
-}
-
-func WithK8s(k8s bool) Option {
-	return func(opts *Options) {
-		opts.IsK8s = k8s
-	}
-}
-
-func WithNamespace(namespace Namespace) Option {
-	return func(opts *Options) {
-		opts.Namespace = namespace
-	}
-}
-
-func WithServiceAccount(name string) Option {
-	return func(opts *Options) {
-		opts.ServiceAccount = name
-	}
-}
-
-func WithWorkload(name string) Option {
-	return func(opts *Options) {
-		opts.Workload = name
-	}
-}
-
-func WithZone(name string) Option {
-	return func(opts *Options) {
-		opts.ZoneName = name
-	}
-}
-
-func WithMode(mode config_core.CpMode) Option {
-	return func(opts *Options) {
-		opts.Mode = mode
-	}
-}
-
-func WithPrivileged(privileged bool) Option {
-	return func(opts *Options) {
-		opts.Privileged = privileged
-	}
-}
-
-// Compute computes labels for a resource based on its type, spec, existing labels, namespace, mesh, mode, k8s and localZone.
-// Only use set / setIfNotExist to set labels as it makes sure the label is on the list of computed labels (that is used in another project).
-func Compute(
-	rd core_model.ResourceTypeDescriptor,
-	spec core_model.ResourceSpec,
-	existingLabels map[string]string,
-	mesh string,
-	displayName string,
-	opts ...Option,
-) (map[string]string, error) {
-	labelsOpts := NewOptions(opts...)
+// Compute returns the labels to store on a write: the supplied labels with every
+// registered rule applied. A trusted write of a resource this control plane does not
+// own (an import synced by KDS) is stored as is.
+func Compute(w Write, cp ControlPlane) (map[string]string, error) {
 	labels := map[string]string{}
-	if len(existingLabels) > 0 {
-		labels = maps.Clone(existingLabels)
-	}
-
-	// Only skip recomputation for resources imported from another CP (e.g. via
-	// KDS sync); locally-originated resources are always recomputed.
-	if labelsOpts.Privileged && !core_model.IsLocallyOriginated(labelsOpts.Mode, labels) {
+	maps.Copy(labels, w.Labels)
+	if w.TrustedWriter && !core_model.IsLocallyOriginated(cp.Mode, labels) {
 		return labels, nil
 	}
-
-	set := func(k, v string) {
-		if _, ok := AllComputedLabels[k]; !ok {
-			panic(fmt.Sprintf("label %q is not in the list of computed labels, update AllComputedLabels list as it is used in another project", k))
+	for _, d := range registry {
+		if d.Compute == nil {
+			continue
 		}
-		labels[k] = v
-	}
-
-	setIfNotExist := func(k, v string) {
-		if _, ok := labels[k]; !ok {
-			set(k, v)
-		}
-	}
-
-	getMeshOrDefault := func() string {
-		if mesh != "" {
-			return mesh
-		}
-		return core_model.DefaultMesh
-	}
-
-	set(mesh_proto.DisplayName, displayName)
-
-	if rd.Scope == core_model.ScopeMesh {
-		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
-	}
-
-	switch labelsOpts.Mode {
-	case config_core.Global:
-		set(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin))
-	case config_core.Zone:
-		set(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
-		// If resource can't be created on Zone (like Mesh), there is no point in adding
-		// 'kuma.io/zone' and 'kuma.io/env' labels even if the zone is non-federated
-		if rd.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
-			set(mesh_proto.ZoneTag, labelsOpts.ZoneName)
-			env := mesh_proto.UniversalEnvironment
-			if labelsOpts.IsK8s {
-				env = mesh_proto.KubernetesEnvironment
-			}
-			set(mesh_proto.EnvTag, env)
-		}
-	}
-
-	// k8s.kuma.io/namespace and kuma.io/policy-role below are computed by the control
-	// plane, not supplied by the user: they drive namespaced policy matching and
-	// workload identity (SPIFFE ID, KRI), so they must always describe the namespace
-	// the object really lives in. Set them, overwriting whatever the object carried.
-	if labelsOpts.Namespace.value != "" && labelsOpts.IsK8s && core_model.IsLocallyOriginated(labelsOpts.Mode, labels) {
-		set(mesh_proto.KubeNamespaceTag, labelsOpts.Namespace.value)
-	}
-	if !labelsOpts.IsK8s && core_model.IsLocallyOriginated(labelsOpts.Mode, labels) {
-		delete(labels, mesh_proto.KubeNamespaceTag)
-		delete(labels, metadata.KumaServiceAccount)
-	}
-
-	if labelsOpts.Namespace.value != "" && rd.IsPolicy && rd.IsPluginOriginated && core_model.IsLocallyOriginated(labelsOpts.Mode, labels) {
-		role, err := ComputePolicyRole(spec.(core_model.Policy), labelsOpts.Namespace)
+		v, ok, err := d.Compute(w, cp)
 		if err != nil {
 			return nil, err
 		}
-		set(mesh_proto.PolicyRoleLabel, string(role))
-	}
-
-	if rd.IsProxy {
-		delete(labels, legacyProxyTypeLabel)
-		delete(labels, legacyGatewayLabel)
-		if dp, ok := spec.(*mesh_proto.Dataplane); ok {
-			hasIngress, hasEgress := false, false
-			for _, l := range dp.GetNetworking().GetListeners() {
-				switch l.Type {
-				case mesh_proto.Dataplane_Networking_Listener_ZoneIngress:
-					hasIngress = true
-				case mesh_proto.Dataplane_Networking_Listener_ZoneEgress:
-					hasEgress = true
-				}
-			}
-			if hasIngress {
-				set(mesh_proto.ListenerZoneIngressLabel, "enabled")
-			} else {
-				delete(labels, mesh_proto.ListenerZoneIngressLabel)
-			}
-			if hasEgress {
-				set(mesh_proto.ListenerZoneEgressLabel, "enabled")
-			} else {
-				delete(labels, mesh_proto.ListenerZoneEgressLabel)
-			}
+		if ok {
+			labels[d.Key] = v
+		} else {
+			delete(labels, d.Key)
 		}
 	}
-
-	if labelsOpts.IsK8s {
-		if labelsOpts.ServiceAccount != "" {
-			set(metadata.KumaServiceAccount, labelsOpts.ServiceAccount)
+	if w.Descriptor.IsProxy {
+		for _, k := range removedLabels {
+			delete(labels, k)
 		}
 	}
-
-	if labelsOpts.Workload != "" {
-		set(metadata.KumaWorkload, labelsOpts.Workload)
-	}
-
 	return labels, nil
 }
 

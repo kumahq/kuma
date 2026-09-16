@@ -9,27 +9,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/core"
-	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
-// managedIdentityLabels are computed by the control plane from the Pod and feed the
-// SPIFFE ID. kuma.io/workload is excluded: on Universal it is user-set.
-var managedIdentityLabels = []string{
-	metadata.KumaServiceAccount,
-}
-
 type ResourceAdmissionChecker struct {
 	AllowedUsers    []string
-	Mode            core.CpMode
-	FederatedZone   bool
+	ControlPlane    resource_labels.ControlPlane
 	SystemNamespace string
-	ZoneName        string
 }
 
 const (
@@ -42,10 +31,6 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		return admission.Allowed("")
 	}
 
-	if resp := c.validateManagedIdentityLabels(r); resp != nil {
-		return *resp
-	}
-
 	if ns != "" {
 		// check only namespace-scoped resources
 		if resp := c.isNamespaceAllowed(r, ns); !resp.Allowed {
@@ -53,19 +38,26 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		}
 	}
 
-	if r.Descriptor().IsReadOnly(c.Mode == core.Global, c.FederatedZone) {
-		return *forbiddenResponse(resourceTypeNotAllowedMsg(r.Descriptor().Name, c.Mode))
+	if err := resource_labels.ValidateOwnership(resource_labels.Write{
+		Descriptor:  r.Descriptor(),
+		Spec:        r.GetSpec(),
+		Namespace:   resource_labels.NewNamespace(ns, ns == c.SystemNamespace),
+		Mesh:        r.GetMeta().GetMesh(),
+		DisplayName: r.GetMeta().GetName(),
+		Labels:      r.GetMeta().GetLabels(),
+	}, c.ControlPlane); err.HasViolations() {
+		return *forbiddenResponse("Operation not allowed. " + err.Violations[0].Message)
 	}
 
-	if errResponse := c.isResourceAllowed(r, ns); errResponse != nil {
-		return *errResponse
+	if r.Descriptor().IsReadOnly(c.ControlPlane.Mode == core.Global, c.ControlPlane.FederatedZone) {
+		return *forbiddenResponse(resourceTypeNotAllowedMsg(r.Descriptor().Name, c.ControlPlane.Mode))
 	}
 
 	return admission.Allowed("")
 }
 
 func (c *ResourceAdmissionChecker) isNamespaceAllowed(r core_model.Resource, ns string) admission.Response {
-	switch c.Mode {
+	switch c.ControlPlane.Mode {
 	case core.Global:
 		if ns != c.SystemNamespace {
 			return admission.Denied(fmt.Sprintf("on Global CP the policy can be created only in the system namespace:%s", c.SystemNamespace))
@@ -78,29 +70,6 @@ func (c *ResourceAdmissionChecker) isNamespaceAllowed(r core_model.Resource, ns 
 	return admission.Allowed("")
 }
 
-func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns string) *admission.Response {
-	// we don't need to validate non fedarated zone and legacy policies
-	if (c.Mode != core.Global && !c.FederatedZone) || !r.Descriptor().IsPluginOriginated {
-		return nil
-	}
-	return c.validateLabels(r, ns)
-}
-
-// Privileged writers are short-circuited earlier, so any managed label here is user-supplied.
-func (c *ResourceAdmissionChecker) validateManagedIdentityLabels(r core_model.Resource) *admission.Response {
-	if r.Descriptor().Name != core_mesh.DataplaneType {
-		return nil
-	}
-	labels := r.GetMeta().GetLabels()
-	for _, key := range managedIdentityLabels {
-		if _, ok := labels[key]; ok {
-			return forbiddenResponse(fmt.Sprintf(
-				"Operation not allowed. Label %q is managed by %s and cannot be set manually.", key, version.Product))
-		}
-	}
-	return nil
-}
-
 func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userInfo authenticationv1.UserInfo) bool {
 	// Assume this means one of the following:
 	// - sync from another zone
@@ -108,37 +77,6 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 	// - storage-version migration
 	// Not security; protecting user from self.
 	return slices.Contains(allowedUsers, userInfo.Username)
-}
-
-func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string) *admission.Response {
-	if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy && c.Mode == core.Zone {
-		if _, err := resource_labels.ComputePolicyRole(r.GetSpec().(core_model.Policy), resource_labels.NewNamespace(ns, ns == c.SystemNamespace)); err != nil {
-			return forbiddenResponse(err.Error())
-		}
-	}
-	switch c.Mode {
-	case core.Global:
-		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
-		if originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
-			return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin), string(resourceOrigin)))
-		}
-	case core.Zone:
-		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
-		if originPresent && ns == c.SystemNamespace && resourceOrigin != mesh_proto.ZoneResourceOrigin {
-			return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin), string(resourceOrigin)))
-		}
-		if originPresent && resourceOrigin == mesh_proto.ZoneResourceOrigin {
-			zoneTag, ok := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-			if ok && zoneTag != c.ZoneName {
-				return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ZoneTag, c.ZoneName, zoneTag))
-			}
-		}
-	}
-	return nil
-}
-
-func labelsNotAllowedMsg(label, correctValue, actual string) string {
-	return fmt.Sprintf("Operation not allowed. '%s' label should have '%s' value, got '%s'", label, correctValue, actual)
 }
 
 func resourceTypeNotAllowedMsg(resType core_model.ResourceType, mode core.CpMode) string {
