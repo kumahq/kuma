@@ -20,8 +20,10 @@ import (
 const systemNamespaceForTest = "kuma-system"
 
 var _ = Describe("newMetaAdapter", func() {
+	zoneCP := labels.ControlPlane{Mode: config_core.Zone, Zone: "zone-1"}
+
 	DescribeTable("namespace label",
-		func(namespace string, stored map[string]string, expected string) {
+		func(namespace string, stored map[string]string, cp labels.ControlPlane, expected string) {
 			obj := &workload_k8s.Workload{
 				Name: "res-1", Namespace: namespace, Labels: stored,
 				Spec: &workload_api.Workload{},
@@ -29,22 +31,24 @@ var _ = Describe("newMetaAdapter", func() {
 			out := workload_api.NewWorkloadResource()
 			Expect(out.SetSpec(obj.Spec)).To(Succeed())
 
-			adapter := newMetaAdapter(obj, out, systemNamespaceForTest, labels.ControlPlane{})
+			adapter := newMetaAdapter(obj, out, systemNamespaceForTest, cp)
 
 			Expect(adapter.GetLabels()).To(HaveKeyWithValue(v1alpha1.KubeNamespaceTag, expected))
 		},
 		Entry("overwrites a stored label that disagrees with the namespace",
 			"app-ns",
 			map[string]string{v1alpha1.KubeNamespaceTag: "other-ns"},
+			labels.ControlPlane{},
 			"app-ns"),
 		Entry("sets the label when it is absent (pre-2.9 resource)",
-			"app-ns", nil, "app-ns"),
+			"app-ns", nil, labels.ControlPlane{}, "app-ns"),
 		Entry("overwrites a stored label even when the origin label says global",
 			"app-ns",
 			map[string]string{
 				v1alpha1.KubeNamespaceTag:    "other-ns",
 				v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
 			},
+			labels.ControlPlane{},
 			"app-ns"),
 		Entry("keeps the label of a resource imported over KDS",
 			systemNamespaceForTest,
@@ -52,6 +56,27 @@ var _ = Describe("newMetaAdapter", func() {
 				v1alpha1.KubeNamespaceTag:    "app-ns-on-the-other-cp",
 				v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
 			},
+			zoneCP,
+			"app-ns-on-the-other-cp"),
+		Entry("overwrites a stored label on a local resource in the system namespace",
+			systemNamespaceForTest,
+			map[string]string{
+				v1alpha1.KubeNamespaceTag:    "other-ns",
+				v1alpha1.ResourceOriginLabel: string(v1alpha1.ZoneResourceOrigin),
+			},
+			zoneCP,
+			systemNamespaceForTest),
+		Entry("sets the label when it is absent on a local resource in the system namespace",
+			systemNamespaceForTest, nil, zoneCP, systemNamespaceForTest),
+		// The admission webhooks' converter has no mode, so it cannot tell a local
+		// resource in the system namespace from a KDS import and leaves both alone.
+		Entry("keeps the stored label in the system namespace without a mode",
+			systemNamespaceForTest,
+			map[string]string{
+				v1alpha1.KubeNamespaceTag:    "app-ns-on-the-other-cp",
+				v1alpha1.ResourceOriginLabel: string(v1alpha1.ZoneResourceOrigin),
+			},
+			labels.ControlPlane{},
 			"app-ns-on-the-other-cp"),
 	)
 
@@ -96,11 +121,21 @@ var _ = Describe("enforced label derivation through the converters", func() {
 	caching := func() k8s_common.Converter {
 		return NewCachingConverter(5*time.Minute, systemNamespaceForTest, labels.ControlPlane{})
 	}
+	zoneCP := labels.ControlPlane{Mode: config_core.Zone, Zone: "zone-1"}
+	simpleOnZone := func() k8s_common.Converter { return NewSimpleConverter(systemNamespaceForTest, zoneCP) }
+	cachingOnZone := func() k8s_common.Converter {
+		return NewCachingConverter(5*time.Minute, systemNamespaceForTest, zoneCP)
+	}
 
 	stale := map[string]string{
 		v1alpha1.KubeNamespaceTag:    "other-ns",
 		v1alpha1.PolicyRoleLabel:     string(v1alpha1.SystemPolicyRole),
 		v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
+	}
+	staleLocalOnZone := map[string]string{
+		v1alpha1.KubeNamespaceTag:    "other-ns",
+		v1alpha1.PolicyRoleLabel:     string(v1alpha1.ConsumerPolicyRole),
+		v1alpha1.ResourceOriginLabel: string(v1alpha1.ZoneResourceOrigin),
 	}
 
 	DescribeTable("should derive both labels from the object namespace",
@@ -126,13 +161,37 @@ var _ = Describe("enforced label derivation through the converters", func() {
 			v1alpha1.KubeNamespaceTag: "app-ns",
 			v1alpha1.PolicyRoleLabel:  string(v1alpha1.WorkloadOwnerPolicyRole),
 		}),
-		Entry("SimpleConverter keeps the stored labels in the system namespace", simple, systemNamespaceForTest, stale, map[string]string{
+		Entry("SimpleConverter keeps the stored labels of an import in the system namespace", simpleOnZone, systemNamespaceForTest, stale, map[string]string{
 			v1alpha1.KubeNamespaceTag: "other-ns",
 			v1alpha1.PolicyRoleLabel:  string(v1alpha1.SystemPolicyRole),
 		}),
-		Entry("CachingConverter keeps the stored labels in the system namespace", caching, systemNamespaceForTest, stale, map[string]string{
+		Entry("CachingConverter keeps the stored labels of an import in the system namespace", cachingOnZone, systemNamespaceForTest, stale, map[string]string{
 			v1alpha1.KubeNamespaceTag: "other-ns",
 			v1alpha1.PolicyRoleLabel:  string(v1alpha1.SystemPolicyRole),
+		}),
+		Entry("SimpleConverter overwrites stale labels on a local policy in the system namespace", simpleOnZone, systemNamespaceForTest, staleLocalOnZone, map[string]string{
+			v1alpha1.KubeNamespaceTag: systemNamespaceForTest,
+			v1alpha1.PolicyRoleLabel:  string(v1alpha1.SystemPolicyRole),
+		}),
+		Entry("CachingConverter overwrites stale labels on a local policy in the system namespace", cachingOnZone, systemNamespaceForTest, staleLocalOnZone, map[string]string{
+			v1alpha1.KubeNamespaceTag: systemNamespaceForTest,
+			v1alpha1.PolicyRoleLabel:  string(v1alpha1.SystemPolicyRole),
+		}),
+		Entry("SimpleConverter derives labels a missing webhook never wrote in the system namespace", simpleOnZone, systemNamespaceForTest, nil, map[string]string{
+			v1alpha1.KubeNamespaceTag: systemNamespaceForTest,
+			v1alpha1.PolicyRoleLabel:  string(v1alpha1.SystemPolicyRole),
+		}),
+		Entry("CachingConverter derives labels a missing webhook never wrote in the system namespace", cachingOnZone, systemNamespaceForTest, nil, map[string]string{
+			v1alpha1.KubeNamespaceTag: systemNamespaceForTest,
+			v1alpha1.PolicyRoleLabel:  string(v1alpha1.SystemPolicyRole),
+		}),
+		Entry("SimpleConverter keeps the stored labels in the system namespace without a mode", simple, systemNamespaceForTest, staleLocalOnZone, map[string]string{
+			v1alpha1.KubeNamespaceTag: "other-ns",
+			v1alpha1.PolicyRoleLabel:  string(v1alpha1.ConsumerPolicyRole),
+		}),
+		Entry("CachingConverter keeps the stored labels in the system namespace without a mode", caching, systemNamespaceForTest, staleLocalOnZone, map[string]string{
+			v1alpha1.KubeNamespaceTag: "other-ns",
+			v1alpha1.PolicyRoleLabel:  string(v1alpha1.ConsumerPolicyRole),
 		}),
 	)
 
@@ -150,11 +209,6 @@ var _ = Describe("enforced label derivation through the converters", func() {
 		Expect(hit).To(Equal(miss))
 	})
 
-	zoneCP := labels.ControlPlane{Mode: config_core.Zone, Zone: "zone-1"}
-	simpleOnZone := func() k8s_common.Converter { return NewSimpleConverter(systemNamespaceForTest, zoneCP) }
-	cachingOnZone := func() k8s_common.Converter {
-		return NewCachingConverter(5*time.Minute, systemNamespaceForTest, zoneCP)
-	}
 	importedFromGlobal := map[string]string{
 		v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
 		v1alpha1.ZoneTag:             "other-zone",

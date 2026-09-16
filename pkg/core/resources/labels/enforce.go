@@ -55,12 +55,13 @@ type StoredResource struct {
 // NewStoredResource derives IsLocal: KDS only writes into the system namespace, so
 // anything outside it is local; inside it, and on Universal, the stored origin is trusted
 // because the API server recomputes it on every write and the CP is the only other writer.
+// Without a mode the stored origin cannot be read, so nothing there counts as local.
 func NewStoredResource(res core_model.Resource, ns Namespace, storedLabels map[string]string, cp ControlPlane) StoredResource {
 	return StoredResource{
 		Descriptor: res.Descriptor(),
 		Spec:       res.GetSpec(),
 		Namespace:  ns,
-		IsLocal:    (ns.value != "" && !ns.system) || core_model.IsLocallyOriginated(cp.Mode, storedLabels),
+		IsLocal:    (ns.value != "" && !ns.system) || (cp.Mode != "" && core_model.IsLocallyOriginated(cp.Mode, storedLabels)),
 	}
 }
 

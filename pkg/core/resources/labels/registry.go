@@ -208,7 +208,7 @@ var registry = []Descriptor{
 			return string(role), true, nil
 		},
 		EnforceOnRead: func(r StoredResource, _ ControlPlane) (string, bool) {
-			if r.Namespace.value == "" || r.Namespace.system || !r.Descriptor.IsPolicy || !r.Descriptor.IsPluginOriginated {
+			if r.Namespace.value == "" || !r.IsLocal || !r.Descriptor.IsPolicy || !r.Descriptor.IsPluginOriginated {
 				return "", false
 			}
 			policy, ok := r.Spec.(core_model.Policy)
@@ -268,7 +268,7 @@ var registry = []Descriptor{
 			return keep(w, mesh_proto.KubeNamespaceTag)
 		},
 		EnforceOnRead: func(r StoredResource, _ ControlPlane) (string, bool) {
-			if r.Namespace.value != "" && !r.Namespace.system {
+			if r.Namespace.value != "" && r.IsLocal {
 				return r.Namespace.value, true
 			}
 			return "", false

@@ -114,12 +114,24 @@ var _ = Describe("EnforcedReadLabels", func() {
 				mesh_proto.PolicyRoleLabel:  string(mesh_proto.WorkloadOwnerPolicyRole),
 			},
 		}),
-		Entry("nothing is enforced in the system namespace without a mode", testCase{
-			r:        meshWideTimeout(),
-			ns:       systemNamespace,
-			isLocal:  true,
-			cp:       noCP,
-			expected: nil,
+		Entry("local policy in the system namespace gets the namespace and the system role", testCase{
+			r:       meshWideTimeout(),
+			ns:      systemNamespace,
+			isLocal: true,
+			cp:      noCP,
+			expected: map[string]string{
+				mesh_proto.KubeNamespaceTag: "kuma-system",
+				mesh_proto.PolicyRoleLabel:  string(mesh_proto.SystemPolicyRole),
+			},
+		}),
+		Entry("import in the system namespace keeps its stored namespace and role", testCase{
+			r:       meshWideTimeout(),
+			ns:      systemNamespace,
+			isLocal: false,
+			cp:      zoneCP,
+			expected: map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+			},
 		}),
 		Entry("nothing is enforced on Universal without a mode", testCase{
 			r:        meshWideTimeout(),
@@ -224,6 +236,8 @@ var _ = Describe("EnforcedReadLabels", func() {
 		Entry("Universal follows the stored origin: import", universal, fromZone, globalCP, false),
 		Entry("Universal follows the stored origin: local", universal, fromGlobal, globalCP, true),
 		Entry("no stored origin is local", universal, nil, zoneCP, true),
-		Entry("without a mode everything is local", systemNamespace, fromGlobal, noCP, true),
+		Entry("without a mode an app namespace is local", appNamespace, fromGlobal, noCP, true),
+		Entry("without a mode the system namespace is not local", systemNamespace, fromZone, noCP, false),
+		Entry("without a mode Universal is not local", universal, nil, noCP, false),
 	)
 })
