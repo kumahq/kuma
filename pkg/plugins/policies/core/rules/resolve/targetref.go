@@ -1,7 +1,10 @@
 package resolve
 
 import (
+	"maps"
+
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -60,7 +63,7 @@ func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, re
 
 	// targetRef to query
 	q := query{
-		byLabels:    pointer.Deref(targetRef.Labels),
+		byLabels:    selectorLabels(targetRef, tMeta),
 		sectionName: pointer.Deref(targetRef.SectionName),
 	}
 
@@ -105,4 +108,21 @@ func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, re
 	}
 
 	return result
+}
+
+// selectorLabels pins a producer policy's display-name selector to the policy's
+// own namespace. ComputePolicyRole grants the producer role, and with it mesh-wide
+// reach, on the premise that an omitted k8s.kuma.io/namespace means "mine".
+func selectorLabels(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta) map[string]string {
+	labels := pointer.Deref(targetRef.Labels)
+	if core_model.PolicyRole(tMeta) != mesh_proto.ProducerPolicyRole {
+		return labels
+	}
+	ns := tMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
+	if ns == "" || labels[mesh_proto.DisplayName] == "" || labels[mesh_proto.KubeNamespaceTag] != "" {
+		return labels
+	}
+	pinned := maps.Clone(labels)
+	pinned[mesh_proto.KubeNamespaceTag] = ns
+	return pinned
 }

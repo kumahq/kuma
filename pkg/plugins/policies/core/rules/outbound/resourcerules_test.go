@@ -5,9 +5,11 @@ import (
 	"maps"
 	"path/filepath"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
@@ -18,6 +20,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/kds/hash"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/outbound"
+	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test"
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -446,5 +449,52 @@ var _ = Describe("Compute", func() {
 
 		// then
 		Expect(rule).To(BeNil())
+	})
+})
+
+var _ = Describe("BuildRules across namespaces", func() {
+	It("should not attach a producer policy to a same-named MeshService in another namespace", func() {
+		// given
+		meshService := func(namespace string) *meshservice_api.MeshServiceResource {
+			return builders.MeshService().
+				WithName("backend." + namespace).
+				WithMesh("mesh-1").
+				WithLabels(map[string]string{
+					mesh_proto.KubeNamespaceTag: namespace,
+					mesh_proto.DisplayName:      "backend",
+				}).
+				Build()
+		}
+		own := meshService("ns-a")
+		foreign := meshService("ns-b")
+
+		policy := builders.MeshTimeout().
+			WithName("timeout-1").
+			WithMesh("mesh-1").
+			WithTargetRef(builders.TargetRefMesh()).
+			AddTo(builders.TargetRefMeshService("backend", "", ""), meshtimeout_api.Conf{
+				IdleTimeout: &kube_meta.Duration{Duration: 10 * time.Second},
+			}).
+			Build()
+		policy.SetMeta(&model.ResourceMeta{
+			Name: "timeout-1.ns-a",
+			Mesh: "mesh-1",
+			Labels: map[string]string{
+				mesh_proto.KubeNamespaceTag: "ns-a",
+				mesh_proto.PolicyRoleLabel:  string(mesh_proto.ProducerPolicyRole),
+			},
+		})
+		meshCtx := xds_builders.Context().WithMeshLocalResources([]core_model.Resource{own, foreign}).Build()
+
+		// when
+		rules, err := outbound.BuildRules(
+			&meshtimeout_api.MeshTimeoutResourceList{Items: []*meshtimeout_api.MeshTimeoutResource{policy}},
+			meshCtx.Mesh.Resources,
+		)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(rules).To(HaveKey(kri.From(own)))
+		Expect(rules).ToNot(HaveKey(kri.From(foreign)))
 	})
 })

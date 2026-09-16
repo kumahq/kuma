@@ -260,3 +260,88 @@ var _ = Describe("Resolve TargetRef", func() {
 		Expect(resolved[0].Identifier().String()).To(Equal("kri_extsvc_mesh-1__kuma-demo_mes_"))
 	})
 })
+
+var _ = Describe("Resolve TargetRef across namespaces", func() {
+	var resources context.Resources
+	BeforeEach(func() {
+		resources = context.NewResources()
+	})
+
+	policyMeta := func(role mesh_proto.PolicyRole) core_model.ResourceMeta {
+		return &test_model.ResourceMeta{
+			Name: "policy-1",
+			Mesh: "mesh-1",
+			Labels: map[string]string{
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+				mesh_proto.PolicyRoleLabel:  string(role),
+			},
+		}
+	}
+
+	addMeshService := func(name, namespace string) {
+		ms := builders.MeshService().
+			WithName(name+"."+namespace).
+			WithMesh("mesh-1").
+			WithLabels(map[string]string{
+				mesh_proto.KubeNamespaceTag: namespace,
+				mesh_proto.DisplayName:      name,
+			}).
+			AddIntPort(8080, 8081, core_meta.ProtocolTCP).
+			Build()
+		if _, ok := resources.MeshLocalResources[ms.Descriptor().Name]; !ok {
+			list, err := registry.Global().NewList(ms.Descriptor().Name)
+			Expect(err).ToNot(HaveOccurred())
+			resources.MeshLocalResources[ms.Descriptor().Name] = list
+		}
+		Expect(resources.MeshLocalResources[ms.Descriptor().Name].AddItem(ms)).To(Succeed())
+	}
+
+	displayNameOnly := common_api.TargetRef{
+		Kind:   common_api.MeshService,
+		Labels: &map[string]string{mesh_proto.DisplayName: "backend"},
+	}
+
+	It("should pin a producer policy's display-name selector to the policy's namespace", func() {
+		addMeshService("backend", "kuma-demo")
+		addMeshService("backend", "other-ns")
+
+		resolved := resolve.TargetRef(displayNameOnly, policyMeta(mesh_proto.ProducerPolicyRole), resources)
+
+		Expect(resolved).To(HaveLen(1))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_msvc_mesh-1__kuma-demo_backend_"))
+	})
+
+	It("should not resolve a producer policy's display-name selector to another namespace", func() {
+		addMeshService("backend", "other-ns")
+
+		resolved := resolve.TargetRef(displayNameOnly, policyMeta(mesh_proto.ProducerPolicyRole), resources)
+
+		Expect(resolved).To(BeEmpty())
+	})
+
+	It("should keep an explicit namespace on a producer policy's selector", func() {
+		addMeshService("backend", "kuma-demo")
+		addMeshService("backend", "other-ns")
+		targetRef := common_api.TargetRef{
+			Kind: common_api.MeshService,
+			Labels: &map[string]string{
+				mesh_proto.DisplayName:      "backend",
+				mesh_proto.KubeNamespaceTag: "other-ns",
+			},
+		}
+
+		resolved := resolve.TargetRef(targetRef, policyMeta(mesh_proto.ProducerPolicyRole), resources)
+
+		Expect(resolved).To(HaveLen(1))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_msvc_mesh-1__other-ns_backend_"))
+	})
+
+	It("should resolve a system policy's display-name selector across namespaces", func() {
+		addMeshService("backend", "kuma-demo")
+		addMeshService("backend", "other-ns")
+
+		resolved := resolve.TargetRef(displayNameOnly, policyMeta(mesh_proto.SystemPolicyRole), resources)
+
+		Expect(resolved).To(HaveLen(2))
+	})
+})
