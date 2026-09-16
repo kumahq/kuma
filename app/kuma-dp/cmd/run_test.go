@@ -23,6 +23,7 @@ import (
 	kuma_cmd "github.com/kumahq/kuma/v3/pkg/cmd"
 	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
 	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -176,7 +177,8 @@ var _ = Describe("run", func() {
 			// given
 			rootCtx := DefaultRootContext()
 
-			rootCtx.BootstrapClient = fakeBootstrapClient{}
+			var advertisedFeatures []string
+			rootCtx.BootstrapClient = fakeBootstrapClient{features: &advertisedFeatures}
 
 			reader, writer := io.Pipe()
 			go func() {
@@ -218,6 +220,13 @@ var _ = Describe("run", func() {
 			// then
 			err := <-errCh
 			Expect(err).ToNot(HaveOccurred())
+
+			// Receiving from errCh orders this read after the bootstrap fetch.
+			// Advertised for a 2.14 control plane only, see pkg/core/xds/types/features.go.
+			Expect(advertisedFeatures).To(ContainElements(
+				xds_types.FeatureReusePort,
+				xds_types.FeatureStrictInboundPorts,
+			))
 
 			By("waiting for dataplane (Envoy) to get stopped")
 			Eventually(func() bool {
@@ -426,9 +435,15 @@ func verifyComponentProcess(processDescription, pidfile string, cmdlinefile stri
 	return pid
 }
 
-type fakeBootstrapClient struct{}
+type fakeBootstrapClient struct {
+	// features records what kuma-dp advertised, so a test can assert on it.
+	features *[]string
+}
 
-func (g fakeBootstrapClient) Fetch(_ context.Context, _ envoy.Opts, _ map[string]string, _ *core_xds.OtelBootstrapInventory, _ []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
+func (g fakeBootstrapClient) Fetch(_ context.Context, _ envoy.Opts, _ map[string]string, _ *core_xds.OtelBootstrapInventory, features []string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
+	if g.features != nil {
+		*g.features = features
+	}
 	bs, err := os.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 	if err != nil {
 		return nil, nil, err
