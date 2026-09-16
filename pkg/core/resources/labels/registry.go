@@ -41,6 +41,10 @@ type Descriptor struct {
 	// ValidateFormat checks the value's syntax for any writer.
 	ValidateFormat func(value string) []string
 
+	// ValidateUpdate checks the value an untrusted update stores against the one
+	// stored before it.
+	ValidateUpdate func(previous, value string, w Write, cp ControlPlane) []string
+
 	// StoredAsAnnotation marks labels whose values carry a resource name and therefore
 	// can be up to 253 characters, which does not fit the 63-character Kubernetes label
 	// value limit. They are stored as annotations on Kubernetes and validated as names.
@@ -139,6 +143,22 @@ var registry = []Descriptor{
 				return []string{err.Error()}
 			}
 			return nil
+		},
+		// Without this a zone user could take over a Global-synced policy by re-applying
+		// it: the write recomputes the origin as local and the Global->Zone KDS stream
+		// then wedges on AlreadyExists.
+		ValidateUpdate: func(previous, v string, _ Write, cp ControlPlane) []string {
+			if v == previous {
+				return nil
+			}
+			if cp.IsK8s {
+				// a non-federated zone owns everything in its store
+				if cp.Mode != config_core.Global && !cp.FederatedZone {
+					return nil
+				}
+				return []string{fmt.Sprintf("'%s' label is immutable, cannot be changed from '%s' to '%s'", mesh_proto.ResourceOriginLabel, previous, v)}
+			}
+			return []string{fmt.Sprintf("is immutable, cannot be changed from %q to %q", previous, v)}
 		},
 	},
 	{

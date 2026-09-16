@@ -48,6 +48,29 @@ func Validate(w Write, cp ControlPlane) validators.ValidationError {
 	return err
 }
 
+// ValidateUpdate rejects labels an untrusted update would change although the
+// control plane keeps them fixed for the life of the object. Previous must hold the
+// stored labels and Labels the ones the update stores.
+func ValidateUpdate(w Write, cp ControlPlane) validators.ValidationError {
+	var err validators.ValidationError
+	if w.TrustedWriter {
+		return err
+	}
+	for _, d := range registry {
+		if d.ValidateUpdate == nil {
+			continue
+		}
+		previous, ok := w.Previous[d.Key]
+		if !ok {
+			continue
+		}
+		for _, msg := range d.ValidateUpdate(previous, w.Labels[d.Key], w, cp) {
+			err.AddViolationAt(validators.Root().Key(d.Key), msg)
+		}
+	}
+	return err
+}
+
 func validateRegisteredFormat(w Write) validators.ValidationError {
 	var err validators.ValidationError
 	for _, d := range registry {
