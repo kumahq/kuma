@@ -86,7 +86,7 @@ var registry = []Descriptor{
 			case config_core.Zone:
 				return string(mesh_proto.ZoneResourceOrigin), true, nil
 			default:
-				return keep(w, mesh_proto.ResourceOriginLabel)
+				return "", false, nil
 			}
 		},
 		EnforceOnRead: func(r StoredResource, cp ControlPlane) (string, bool) {
@@ -145,10 +145,17 @@ var registry = []Descriptor{
 		Key:   mesh_proto.ZoneTag,
 		Owner: OwnerControlPlane,
 		Compute: func(w Write, cp ControlPlane) (string, bool, error) {
-			if cp.Mode == config_core.Zone && w.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
-				return cp.Zone, true, nil
+			switch cp.Mode {
+			case config_core.Zone:
+				if w.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
+					return cp.Zone, true, nil
+				}
+				return keep(w, mesh_proto.ZoneTag)
+			case config_core.Global:
+				return keep(w, mesh_proto.ZoneTag)
+			default:
+				return "", false, nil
 			}
-			return keep(w, mesh_proto.ZoneTag)
 		},
 		EnforceOnRead: func(r StoredResource, cp ControlPlane) (string, bool) {
 			if cp.Mode == config_core.Zone && r.IsLocal && cp.Zone != "" && r.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
@@ -246,13 +253,20 @@ var registry = []Descriptor{
 		Key:   mesh_proto.EnvTag,
 		Owner: OwnerControlPlane,
 		Compute: func(w Write, cp ControlPlane) (string, bool, error) {
-			if cp.Mode != config_core.Zone || !w.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
+			switch cp.Mode {
+			case config_core.Zone:
+				if !w.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
+					return keep(w, mesh_proto.EnvTag)
+				}
+				if cp.IsK8s {
+					return mesh_proto.KubernetesEnvironment, true, nil
+				}
+				return mesh_proto.UniversalEnvironment, true, nil
+			case config_core.Global:
 				return keep(w, mesh_proto.EnvTag)
+			default:
+				return "", false, nil
 			}
-			if cp.IsK8s {
-				return mesh_proto.KubernetesEnvironment, true, nil
-			}
-			return mesh_proto.UniversalEnvironment, true, nil
 		},
 	},
 	{

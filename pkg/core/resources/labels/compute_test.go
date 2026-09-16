@@ -471,6 +471,39 @@ var _ = Describe("Compute", func() {
 				"kuma.io/listener-zoneegress":  "enabled",
 			},
 		}),
+		Entry("user-supplied origin, zone and env are removed when the control plane has no mode", testCase{
+			isK8s: true,
+			r: func() core_model.Resource {
+				r := builders.MeshTimeout().
+					WithMesh("mesh-1").
+					WithName("idle-timeout").
+					WithTargetRef(builders.TargetRefMesh()).
+					AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+						IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+					}).
+					Build()
+				r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel] = "zone"
+				r.GetMeta().GetLabels()[mesh_proto.ZoneTag] = "zone-1"
+				r.GetMeta().GetLabels()[mesh_proto.EnvTag] = "kubernetes"
+				return r
+			}(),
+			expectedLabels: map[string]string{
+				"kuma.io/display-name": "idle-timeout",
+				"kuma.io/mesh":         "mesh-1",
+			},
+		}),
+		Entry("origin, zone and env are not computed when the control plane has no mode", testCase{
+			isK8s: false,
+			r: builders.Dataplane().
+				WithName("backend-1").
+				WithServices("backend").
+				WithMesh("mesh-1").
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/display-name": "backend-1",
+				"kuma.io/mesh":         "mesh-1",
+			},
+		}),
 		Entry("stale listener labels are removed when listeners are absent", testCase{
 			mode:      core.Zone,
 			isK8s:     true,
