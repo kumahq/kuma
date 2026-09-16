@@ -21,6 +21,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -747,7 +748,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService(&meshExtSvc)
-			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, zoneEgressDataplane())
+			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, zoneEgressDataplane(), zoneEgressIdentity())
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -806,7 +807,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 			}
 
-			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, zoneEgressDataplane())
+			mc := meshContextWithResources(builders.Mesh(), dp.Build(), &meshExtSvc, zoneEgressDataplane(), zoneEgressIdentity())
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -2564,6 +2565,11 @@ func zoneEgressDataplane() *core_mesh.DataplaneResource {
 	return builders.Dataplane().
 		WithName("zone-egress-01").
 		WithAddress("127.0.0.1").
+		// The MeshIdentity renders the egress SPIFFE ID from these labels.
+		WithLabels(map[string]string{
+			mesh_proto.KubeNamespaceTag:   "kuma-system",
+			"k8s.kuma.io/service-account": "kuma-default-egress",
+		}).
 		With(func(d *core_mesh.DataplaneResource) {
 			d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
 				Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
@@ -2573,6 +2579,12 @@ func zoneEgressDataplane() *core_mesh.DataplaneResource {
 				State:   mesh_proto.Dataplane_Networking_Listener_Ready,
 			}}
 		}).Build()
+}
+
+// zoneEgressIdentity is what makes the egress advertised: the control plane only points
+// proxies at an egress once an initialized MeshIdentity gives it a certificate.
+func zoneEgressIdentity() *meshidentity_api.MeshIdentityResource {
+	return builders.MeshIdentity().WithInitializedStatus().Build()
 }
 
 func meshContextWithResources(
