@@ -2,8 +2,7 @@ Patches: null
 allowed: false
 status:
   code: 403
-  message: Operation not allowed. 'kuma.io/origin' label should have 'zone' value,
-    got 'unknownvalue'
+  message: Operation not allowed. the origin label must be set to 'zone'
   metadata: {}
   reason: Forbidden
   status: Failure

@@ -52,10 +52,6 @@ func keep(w Write, key string) (string, bool, error) {
 	return v, ok, nil
 }
 
-func k8sWrongValueMsg(key, expected, actual string) string {
-	return fmt.Sprintf("'%s' label should have '%s' value, got '%s'", key, expected, actual)
-}
-
 func listenerLabel(key string, listenerType mesh_proto.Dataplane_Networking_Listener_Type) func(w Write, cp ControlPlane) (string, bool, error) {
 	return func(w Write, _ ControlPlane) (string, bool, error) {
 		if !w.Descriptor.IsProxy {
@@ -111,23 +107,26 @@ var registry = []Descriptor{
 			}
 			global := string(mesh_proto.GlobalResourceOrigin)
 			zone := string(mesh_proto.ZoneResourceOrigin)
+			mustBe := func(expected string) []string {
+				return []string{fmt.Sprintf("the origin label must be set to '%s'", expected)}
+			}
 			if cp.IsK8s {
 				if !w.Descriptor.IsPluginOriginated || (cp.Mode != config_core.Global && !cp.FederatedZone) {
 					return nil
 				}
 				switch {
 				case cp.Mode == config_core.Global && v == zone:
-					return []string{k8sWrongValueMsg(mesh_proto.ResourceOriginLabel, global, v)}
+					return mustBe(global)
 				case cp.Mode == config_core.Zone && w.Namespace.system && v != zone:
-					return []string{k8sWrongValueMsg(mesh_proto.ResourceOriginLabel, zone, v)}
+					return mustBe(zone)
 				}
 				return nil
 			}
 			switch {
 			case cp.Mode == config_core.Global && v != global:
-				return []string{fmt.Sprintf("the origin label must be set to '%s'", global)}
+				return mustBe(global)
 			case cp.FederatedZone && v != zone:
-				return []string{fmt.Sprintf("the origin label must be set to '%s'", zone)}
+				return mustBe(zone)
 			}
 			return nil
 		},
@@ -157,12 +156,13 @@ var registry = []Descriptor{
 			return "", false
 		},
 		ValidateValue: func(v string, w Write, cp ControlPlane) []string {
+			wrongZone := []string{fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, cp.Zone)}
 			if cp.IsK8s {
 				if !w.Descriptor.IsPluginOriginated || (cp.Mode != config_core.Global && !cp.FederatedZone) {
 					return nil
 				}
 				if cp.Mode == config_core.Zone && w.Labels[mesh_proto.ResourceOriginLabel] == string(mesh_proto.ZoneResourceOrigin) && v != cp.Zone {
-					return []string{k8sWrongValueMsg(mesh_proto.ZoneTag, cp.Zone, v)}
+					return wrongZone
 				}
 				return nil
 			}
@@ -170,7 +170,7 @@ var registry = []Descriptor{
 				return []string{fmt.Sprintf("%s is not allowed on a global control plane", mesh_proto.ZoneTag)}
 			}
 			if v != cp.Zone {
-				return []string{fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, cp.Zone)}
+				return wrongZone
 			}
 			return nil
 		},
@@ -290,7 +290,7 @@ var registry = []Descriptor{
 			if !cp.IsK8s || w.Descriptor.Name != core_mesh.DataplaneType {
 				return nil
 			}
-			return []string{fmt.Sprintf("Label %q is managed by %s and cannot be set manually.", metadata.KumaServiceAccount, version.Product)}
+			return []string{fmt.Sprintf("%s label is managed by %s and cannot be set manually", metadata.KumaServiceAccount, version.Product)}
 		},
 		StoredAsAnnotation: true,
 	},
