@@ -73,6 +73,18 @@ default:
     - color: e11d21
       name: area/security
       description: "Related to security issues, fixes, or improvements"
+    - color: fbca04
+      name: ksai:autofix
+      description: "Ask KSAI to fix anything on this pull request: a failing build, a submitted review, a stale branch"
+    - color: fbca04
+      name: ksai:autofix:ci
+      description: "Ask KSAI to fix the failing build only, leaving reviews and conflicts to a person"
+    - color: fbca04
+      name: ksai:autofix:review
+      description: "Ask KSAI to answer the submitted review only, leaving the build and conflicts to a person"
+    - color: fbca04
+      name: ksai:autofix:conflicts
+      description: "Ask KSAI to merge the base branch only, leaving the build and reviews to a person"
     # a bunch of labels to remove
     - name: security
       delete: true
