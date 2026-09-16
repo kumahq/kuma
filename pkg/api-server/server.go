@@ -34,6 +34,7 @@ import (
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -390,10 +391,9 @@ func addResourcesEndpoints(
 			resourceCrudHandler: &resourceCrudHandler{
 				resourceEndpointsContext: endpointsCtx,
 				k8sMapper:                k8sMapperForDescriptor(definition, k8sMapper, k8sSecretMapper),
-				federatedZone:            cfg.IsFederatedZoneCP(),
+				cp:                       resource_labels.ControlPlaneFromConfig(*cfg),
 				filter:                   filters.Resource(definition),
 				systemNamespace:          cfg.Store.Kubernetes.SystemNamespace,
-				isK8s:                    cfg.Environment == config_core.KubernetesEnvironment,
 			},
 			inspect: &resourceInspectHandler{
 				resourceEndpointsContext: endpointsCtx,

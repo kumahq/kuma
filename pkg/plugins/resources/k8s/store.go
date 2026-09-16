@@ -21,7 +21,6 @@ import (
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/v3/pkg/util/k8s"
 )
 
@@ -251,31 +250,21 @@ func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, e
 	}
 }
 
-// LabelsStoredAsAnnotations are Kuma labels whose values carry a resource name and
-// therefore can be up to 253 characters, which does not fit the 63-character
-// Kubernetes label value limit. They are stored as annotations instead, so callers
-// validating them must not apply label value rules to them either.
-var LabelsStoredAsAnnotations = []string{
-	v1alpha1.DisplayName,
-	metadata.KumaServiceAccount,
-	metadata.KumaWorkload,
-}
-
-// Kuma resource labels are generally stored on Kubernetes as labels, except the ones
-// listed in LabelsStoredAsAnnotations.
+// Kuma resource labels are generally stored on Kubernetes as labels, except the
+// annotation-backed ones.
 func SplitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations map[string]string) (map[string]string, map[string]string) {
-	labels := maps.Clone(coreLabels)
+	kubeLabels := maps.Clone(coreLabels)
 	annotations := maps.Clone(currentAnnotations)
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
-	for _, key := range LabelsStoredAsAnnotations {
-		if v, ok := labels[key]; ok {
+	for _, key := range labels.AnnotationBacked() {
+		if v, ok := kubeLabels[key]; ok {
 			annotations[key] = v
-			delete(labels, key)
+			delete(kubeLabels, key)
 		}
 	}
-	return labels, annotations
+	return kubeLabels, annotations
 }
 
 var _ core_model.ResourceMeta = &KubernetesMetaAdapter{}
@@ -303,16 +292,11 @@ func newMetaAdapter(obj k8s_model.KubernetesObject, out core_model.Resource, sys
 	if computed == nil {
 		computed = map[string]string{}
 	}
-	if displayName, ok := objMeta.GetAnnotations()[v1alpha1.DisplayName]; ok {
-		computed[v1alpha1.DisplayName] = displayName
-	} else {
-		computed[v1alpha1.DisplayName] = objMeta.GetName()
-	}
-	if sa, ok := objMeta.GetAnnotations()[metadata.KumaServiceAccount]; ok {
-		computed[metadata.KumaServiceAccount] = sa
-	}
-	if workload, ok := objMeta.GetAnnotations()[metadata.KumaWorkload]; ok {
-		computed[metadata.KumaWorkload] = workload
+	computed[v1alpha1.DisplayName] = objMeta.GetName()
+	for _, key := range labels.AnnotationBacked() {
+		if v, ok := objMeta.GetAnnotations()[key]; ok {
+			computed[key] = v
+		}
 	}
 	maps.Copy(computed, labels.EnforcedReadLabels(r, cp))
 

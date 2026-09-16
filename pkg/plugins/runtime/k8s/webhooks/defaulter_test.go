@@ -35,8 +35,7 @@ var _ = Describe("Defaulter", func() {
 	globalChecker := func() ResourceAdmissionChecker {
 		return ResourceAdmissionChecker{
 			AllowedUsers:    allowedUsers,
-			Mode:            core.Global,
-			FederatedZone:   false,
+			ControlPlane:    resource_labels.ControlPlane{Mode: core.Global, IsK8s: true},
 			SystemNamespace: "kuma-system",
 		}
 	}
@@ -44,10 +43,8 @@ var _ = Describe("Defaulter", func() {
 	zoneChecker := func() ResourceAdmissionChecker {
 		return ResourceAdmissionChecker{
 			AllowedUsers:    allowedUsers,
-			Mode:            core.Zone,
-			FederatedZone:   true,
+			ControlPlane:    resource_labels.ControlPlane{Mode: core.Zone, Zone: "zone-1", IsK8s: true, FederatedZone: true},
 			SystemNamespace: "kuma-system",
-			ZoneName:        "zone-1",
 		}
 	}
 
