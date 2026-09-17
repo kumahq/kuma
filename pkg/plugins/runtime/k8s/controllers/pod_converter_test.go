@@ -159,6 +159,13 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "08.services-for-pod.yaml",
 			dataplane:      "08.dataplane.yaml",
 		}),
+		// A pod the 2.14 injector produced. Its sidecar reports no transparent
+		// proxy of its own, so the ports have to reach the Dataplane from here.
+		Entry("Pod carrying the 2.14 injector's transparent proxy annotations", testCase{
+			pod:            "legacy-tproxy-annotations.pod.yaml",
+			servicesForPod: "legacy-tproxy-annotations.services-for-pod.yaml",
+			dataplane:      "legacy-tproxy-annotations.dataplane.yaml",
+		}),
 		Entry("09. Pod with Kuma Ingress", testCase{
 			pod:            "09.pod.yaml",
 			servicesForPod: "09.services-for-pod.yaml",
