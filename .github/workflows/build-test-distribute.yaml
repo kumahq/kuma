@@ -140,6 +140,7 @@ jobs:
       RUN_CONTAINER_STRUCTURE_TEST: ${{ !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-container-structure-test') }}
       BUILD: ${{ !github.event.pull_request.draft && (github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-build') || contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish')) }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
+      FORCE_PUBLISH_FROM_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
       # Per-arch lookup, each side independent. See .github/workflows/README.md.
       #   1. fork PR                            -> free GitHub-hosted runners (security)
       #   2. master (push, or PR targeting it)  -> free GitHub-hosted runners
@@ -179,9 +180,13 @@ jobs:
           [[ -n "${json}" ]] || json='[]'
           printf 'json=%s\n' "${json}" >> "${GITHUB_OUTPUT}"
           echo "labels: ${json}"
-      - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
-        run: |
+  refuse_fork_publish:
+    needs: ["meta"]
+    if: ${{ fromJSON(needs.meta.outputs.FORCE_PUBLISH_FROM_FORK || 'false') }}
+    timeout-minutes: 5
+    runs-on: ubuntu-24.04
+    steps:
+      - run: |
           echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
           exit 1
   build_check:
@@ -432,7 +437,7 @@ jobs:
       NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
       IMAGE_DIGESTS: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
   distributions:
-    needs: ["release_sha_gate", "meta", "build_check", "build_publish", "check", "test", "provenance"]
+    needs: ["release_sha_gate", "meta", "refuse_fork_publish", "build_check", "build_publish", "check", "test", "provenance"]
     permissions:
       id-token: write
     timeout-minutes: 10
