@@ -138,8 +138,8 @@ jobs:
       RUN_UNIT: ${{ !github.event.pull_request.draft && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') }}
       RUN_E2E: ${{ !github.event.pull_request.draft && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-e2e-test') }}
       RUN_CONTAINER_STRUCTURE_TEST: ${{ !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-container-structure-test') }}
-      BUILD: ${{ !github.event.pull_request.draft && (github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-build') || contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish')) }}
-      ALLOW_PUSH: ${{ github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
+      BUILD: ${{ !github.event.pull_request.draft && (github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-build') || (contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') && github.event.pull_request.head.repo.full_name == github.repository)) }}
+      ALLOW_PUSH: ${{ github.event_name == 'push' || (contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') && github.event.pull_request.head.repo.full_name == github.repository) }}
       FORCE_PUBLISH_FROM_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
       # Per-arch lookup, each side independent. See .github/workflows/README.md.
       #   1. fork PR                            -> free GitHub-hosted runners (security)
@@ -177,12 +177,11 @@ jobs:
           if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
             json="$(gh pr view "${PR}" --json labels --jq '[.labels[].name]')"
           fi
-          [[ -n "${json}" ]] || json='[]'
           printf 'json=%s\n' "${json}" >> "${GITHUB_OUTPUT}"
           echo "labels: ${json}"
   refuse_fork_publish:
     needs: ["meta"]
-    if: ${{ fromJSON(needs.meta.outputs.FORCE_PUBLISH_FROM_FORK || 'false') }}
+    if: ${{ needs.meta.outputs.FORCE_PUBLISH_FROM_FORK == 'true' }}
     timeout-minutes: 5
     runs-on: ubuntu-24.04
     steps:
@@ -407,7 +406,7 @@ jobs:
       id-token: write # Required for image signing
     needs: ["check", "meta", "test"]
     uses: ./.github/workflows/_build_publish.yaml
-    if: ${{ fromJSON(needs.meta.outputs.BUILD || 'false') }}
+    if: ${{ needs.meta.outputs.BUILD == 'true' }}
     with:
       FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
       ALLOW_PUSH: ${{ needs.meta.outputs.ALLOW_PUSH }}
