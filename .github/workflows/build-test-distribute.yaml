@@ -134,7 +134,7 @@ jobs:
       contents: read
       pull-requests: read # the decision step reads the labels this pull request carries now
     env:
-      READY: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+      READY: ${{ !github.event.pull_request.draft }}
     outputs:
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-full-matrix') }}
       RUN_UNIT: ${{ env.READY == 'true' && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') }}

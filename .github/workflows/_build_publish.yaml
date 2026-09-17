@@ -29,9 +29,8 @@ on:
         required: true
         type: string
       RUN_CONTAINER_STRUCTURE_TEST:
-        required: false
+        required: true
         type: string
-        default: "true"
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64:
         value: ${{ jobs.publish-binaries.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}

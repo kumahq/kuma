@@ -14,13 +14,11 @@ on:
         required: true
         type: boolean
       RUN_UNIT:
-        required: false
+        required: true
         type: string
-        default: "true"
       RUN_E2E:
-        required: false
+        required: true
         type: string
-        default: "true"
 permissions:
   contents: read
 env:
