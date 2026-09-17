@@ -261,6 +261,34 @@ var _ = Describe("RBAC", func() {
 				}},
 				golden: "apply-merge-catch-all-from-deny.golden.yaml",
 			}),
+			// A mesh-wide 'kind: Mesh' deny plus a multi-tag MeshSubset allow: the rule
+			// partition shatters the catch-all deny into '{a, !b}' fragments that each
+			// carry a positive tag, so they survive the catch-all check and are emitted
+			// as explicit denies ahead of the 'rules' allow. A legacy peer matching one
+			// tag but not the other is denied even though 'rules' allows it.
+			Entry("multi-tag 'from' allow under a mesh-wide deny shadows 'rules'", mergeTestCase{
+				legacyRules: slices.Concat(
+					legacyRule(policies_api.Deny, "mtp-from"),
+					legacyRule(policies_api.Deny, "mtp-from",
+						subsetutils.Tag{Key: "app.kubernetes.io/component", Value: "app", Not: true},
+						subsetutils.Tag{Key: "app.kubernetes.io/name", Value: "kong"},
+					),
+					legacyRule(policies_api.Deny, "mtp-from",
+						subsetutils.Tag{Key: "app.kubernetes.io/component", Value: "app"},
+						subsetutils.Tag{Key: "app.kubernetes.io/name", Value: "kong", Not: true},
+					),
+					legacyRule(policies_api.Allow, "mtp-from",
+						subsetutils.Tag{Key: "app.kubernetes.io/component", Value: "app"},
+						subsetutils.Tag{Key: "app.kubernetes.io/name", Value: "kong"},
+					),
+				),
+				inboundRules: []*inbound.Rule{{
+					// allows every mesh CA peer, yet the fragments above deny a subset of them
+					Conf:   policies_api.RuleConf{Allow: &[]common_api.Match{spiffePrefix("spiffe://mesh-1/")}},
+					Origin: common.Origin{Resource: mtpMeta("mtp-rules")},
+				}},
+				golden: "apply-merge-multi-tag-from-under-mesh-deny.golden.yaml",
+			}),
 			Entry("'kind: Mesh' 'from' allow with 'rules' deny under WorkloadIdentity", mergeTestCase{
 				workloadIdentity: true,
 				legacyRules:      legacyRule(policies_api.Allow, "mtp-from-mesh"),
