@@ -134,6 +134,20 @@ var _ = Describe("OwnerReferenceMutator", func() {
             }`,
 			expectedMessage: "ignored. MeshService has a reference for Service",
 		}),
+		Entry("should not add patches to MeshZoneAddress", testCase{
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshZoneAddress",
+              "mesh": "default",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null
+              }
+            }`,
+			expectedMessage: "ignored. MeshZoneAddress has a reference for Service",
+		}),
 		Entry("should add owner reference to resource owned by Dataplane", testCase{
 			inputObject: `
             {
