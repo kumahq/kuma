@@ -133,14 +133,12 @@ jobs:
     permissions:
       contents: read
       pull-requests: read # the decision step reads the labels this pull request carries now
-    env:
-      READY: ${{ !github.event.pull_request.draft }}
     outputs:
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-full-matrix') }}
-      RUN_UNIT: ${{ env.READY == 'true' && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') }}
-      RUN_E2E: ${{ env.READY == 'true' && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-e2e-test') }}
+      RUN_UNIT: ${{ !github.event.pull_request.draft && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') }}
+      RUN_E2E: ${{ !github.event.pull_request.draft && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-e2e-test') }}
       RUN_CONTAINER_STRUCTURE_TEST: ${{ !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-container-structure-test') }}
-      BUILD: ${{ env.READY == 'true' && (github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-build') || contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish')) }}
+      BUILD: ${{ !github.event.pull_request.draft && (github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-build') || contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish')) }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
       # Per-arch lookup, each side independent. See .github/workflows/README.md.
       #   1. fork PR                            -> free GitHub-hosted runners (security)

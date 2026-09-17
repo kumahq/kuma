@@ -95,17 +95,17 @@ Variable names cannot contain `-` or `.`, and an inline expression cannot saniti
 
 ## Draft state
 
-Two consequences worth knowing. A pull request a bot opens as a draft gets the same treatment - a backport whose cherry-pick conflicted is opened as a draft, so it runs nothing until whoever resolves the conflict marks it ready, which is also the only state it can merge from. And GitHub disables auto-merge when a pull request becomes a draft, so `auto-merge.yaml` listens for `ready_for_review` to arm it again.
-
 A draft runs nothing expensive: `build_check`, `check`, `test_unit`, the whole e2e matrix, and `build_publish` with the container-structure test inside it are all skipped. Press **Ready for review** to run them - `ready_for_review` starts a fresh run - and converting back to a draft cancels the run in flight and replaces it with one that skips.
+
+Two consequences worth knowing. A pull request a bot opens as a draft gets the same treatment - a backport whose cherry-pick conflicted is opened as a draft, so it runs nothing until whoever resolves the conflict marks it ready. And GitHub disables auto-merge when a pull request becomes a draft, so `auto-merge.yaml` listens for `ready_for_review` to arm it again.
 
 The gate is always a job-level condition, never a narrowed trigger. A job skipped by a condition reports Success and satisfies a required status check, while a workflow that never fires leaves that check waiting for a report and blocks the pull request for good. One exception is worth knowing: a *matrix* job skipped this way reports under its unexpanded name - `test / e2e (default, ${{ matrix.k8sVersion }}, ${{ matrix.arch }})` - so the per-leg e2e names do not report at all while a pull request is a draft. They come back when it is marked ready, which is also the only state it can be merged from.
 
-Two rules follow from that, and a change here has to keep both. `distributions` is the fan-in: it lists every job in its `needs`, because a job it does not need is a job whose failure it cannot see, and nothing else catches it - it runs on `!cancelled()` rather than on its needs having succeeded. And every decision `meta` publishes is read through `fromJSON`, so it must always publish something parseable - an empty value there is an evaluation error, not a false, and it breaks every gate at once.
+Two rules follow from that, and a change here has to keep both. `distributions` is the fan-in: it lists every job in its `needs`, because a job it does not need is a job whose failure it cannot see, and nothing else catches it - it runs on `!cancelled()` rather than on its needs having succeeded. And each gate compares a decision against the value that turns work off, so a decision that never arrived falls on the safe side: the tests run and publishing does not.
 
 ## Labels
 
-`meta` reads the labels the pull request carries at the moment it runs, through the API, rather than the set the webhook carried - a pull request cannot be created with labels, so they always arrive in a second call and the webhook's copy is routinely empty. A label added before `meta` runs counts; one added after it takes effect on the next run. That holds for the labels `meta` decides, marked below; the rest are read by other workflows from the event payload, so they have to be set before the run starts.
+`meta` reads the labels the pull request carries at the moment it runs, through the API, rather than the set the webhook carried - a pull request cannot be created with labels, so they always arrive in a second call and the webhook's copy is routinely empty. A label added before `meta` runs counts; one added after it takes effect on the next run. The exception is `ci/auto-merge`, which `auto-merge.yaml` reads from the event payload - it triggers on `labeled`, so applying it is itself the event.
 
 | label | what it does |
 | --- | --- |
@@ -115,8 +115,8 @@ Two rules follow from that, and a change here has to keep both. `distributions` 
 | `ci/run-full-matrix` | runs the full matrix instead of the reduced pull-request one |
 | `ci/run-build` | builds the artifacts a pull request does not build by default |
 | `ci/force-publish` | builds and publishes them; refused on a pull request from a fork |
-| `ci/auto-merge` | approves and enables auto-merge - read by `auto-merge.yaml` from the event payload |
-| `ci/verify-stability` | reruns CI to find flakes, removed after several consecutive green runs - read by `ci-stability.yaml`, which ignores drafts |
-| `ci/verify-stability-merge-master` | the same, merging master before each rerun - read by `ci-stability.yaml` |
+| `ci/auto-merge` | approves and enables auto-merge, and re-arms when a draft is marked ready |
+| `ci/verify-stability` | reruns CI to find flakes, removed after several consecutive green runs; drafts are ignored |
+| `ci/verify-stability-merge-master` | the same, merging master before each rerun |
 
 Every one of them is declared in `meta_repo.yml`.
