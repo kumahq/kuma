@@ -390,12 +390,12 @@ jobs:
           upload-sbom-release-assets: true
   test:
     needs: ["meta", "build_check"]
-    if: ${{ !cancelled() && needs.meta.result == 'success' && needs.build_check.result != 'failure' }}
+    if: ${{ !cancelled() && needs.meta.result == 'success' }}
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
-      RUN_UNIT: ${{ needs.meta.outputs.RUN_UNIT }}
-      RUN_E2E: ${{ needs.meta.outputs.RUN_E2E }}
+      RUN_UNIT: ${{ format('{0}', needs.meta.outputs.RUN_UNIT == 'true' && needs.build_check.result == 'success') }}
+      RUN_E2E: ${{ format('{0}', needs.meta.outputs.RUN_E2E == 'true' && needs.build_check.result == 'success') }}
       IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
       IS_RELEASE_TAG: ${{ github.ref_type == 'tag' }}
       RUNNERS_BY_ARCH: ${{ needs.meta.outputs.RUNNERS_BY_ARCH }}
