@@ -4,7 +4,7 @@ concurrency:
   group: ${{github.workflow}}-${{github.event.pull_request.number}}
 on:
   pull_request:
-    types: [labeled, opened, reopened, synchronize]
+    types: [labeled, opened, reopened, synchronize, ready_for_review]
     branches:
       - 'master'
       - 'release-*'

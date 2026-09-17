@@ -95,6 +95,8 @@ Variable names cannot contain `-` or `.`, and an inline expression cannot saniti
 
 ## Draft state
 
+Two consequences worth knowing. A pull request a bot opens as a draft gets the same treatment - a backport whose cherry-pick conflicted is opened as a draft, so it runs nothing until whoever resolves the conflict marks it ready, which is also the only state it can merge from. And GitHub disables auto-merge when a pull request becomes a draft, so `auto-merge.yaml` listens for `ready_for_review` to arm it again.
+
 A draft runs nothing expensive: `build_check`, `check`, `test_unit`, the whole e2e matrix, and `build_publish` with the container-structure test inside it are all skipped. Press **Ready for review** to run them - `ready_for_review` starts a fresh run - and converting back to a draft cancels the run in flight and replaces it with one that skips.
 
 The gate is always a job-level condition, never a narrowed trigger. A job skipped by a condition reports Success and satisfies a required status check, while a workflow that never fires leaves that check waiting for a report and blocks the pull request for good. One exception is worth knowing: a *matrix* job skipped this way reports under its unexpanded name - `test / e2e (default, ${{ matrix.k8sVersion }}, ${{ matrix.arch }})` - so the per-leg e2e names do not report at all while a pull request is a draft. They come back when it is marked ready, which is also the only state it can be merged from.
