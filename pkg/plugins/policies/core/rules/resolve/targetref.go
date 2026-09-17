@@ -63,7 +63,7 @@ func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, re
 
 	// targetRef to query
 	q := query{
-		byLabels:    selectorLabels(targetRef, tMeta),
+		byLabels:    pinProducerNamespace(targetRef, tMeta),
 		sectionName: pointer.Deref(targetRef.SectionName),
 	}
 
@@ -110,10 +110,7 @@ func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, re
 	return result
 }
 
-// selectorLabels pins a producer policy's display-name selector to the policy's
-// own namespace. ComputePolicyRole grants the producer role, and with it mesh-wide
-// reach, on the premise that an omitted k8s.kuma.io/namespace means "mine".
-func selectorLabels(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta) map[string]string {
+func pinProducerNamespace(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta) map[string]string {
 	labels := pointer.Deref(targetRef.Labels)
 	if core_model.PolicyRole(tMeta) != mesh_proto.ProducerPolicyRole {
 		return labels
