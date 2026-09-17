@@ -71,18 +71,18 @@ git push --no-verify <remote> branch-name    # ALWAYS use --no-verify
 
 ### Behavior-changing CI labels
 
-Apply these deliberately. **A draft runs none of the expensive jobs** — `build_check`, `check`, the unit tests and the whole e2e matrix are skipped until the PR is marked Ready for review, which is also how you start them.
+**A draft runs none of the expensive jobs** - `build_check`, `check`, the unit tests and the whole e2e matrix are skipped until the PR is marked Ready for review, which is also how you start them.
 
+What each `ci/` label does is in [`.github/workflows/README.md`](.github/workflows/README.md#labels), which is the one list; this is only when to reach for one.
 
-
-| Label | Effect | When to use |
-|-------|--------|-------------|
-| `ci/skip-test` | Skips **all** tests (unit + e2e + container-structure) | Docs-only, comment-only, or non-code PRs where no test can be affected. Never on code changes |
-| `ci/skip-e2e-test` | Skips only e2e tests (unit tests still run) | Changes fully covered by unit tests where slow e2e adds no signal (e.g. isolated pkg refactor, config/CLI text). Don't use if touching xDS gen, policies, KDS, or transparent proxy |
-| `ci/run-full-matrix` | Runs full OS/arch/k8s test matrix instead of the reduced PR matrix | Changes with cross-platform/version risk: transparent proxy, CNI, install/bootstrap, k8s-version-sensitive code, build/packaging. Costly — don't add by default |
-| `ci/skip-container-structure-test` | Skips the container-structure test inside `build_publish` | Image-layout changes you are iterating on, where the structure assertions are the thing under edit |
-| `ci/run-build` / `ci/force-publish` | Build (and publish) the artifacts a PR does not build by default | Preview images for a downstream test. `ci/force-publish` is refused on a fork PR |
-| `ci/verify-stability` | Reruns CI repeatedly to detect flakiness; auto-removed after N consecutive green runs | Suspected flaky test, or a change to e2e/timing-sensitive code where you want confidence it's stable before merge. Add on the PR, let the scheduled stability workflow drive it |
+| Label | When to use |
+|-------|-------------|
+| `ci/skip-test` | Docs-only, comment-only, or non-code PRs where no test can be affected. Never on code changes |
+| `ci/skip-e2e-test` | Changes fully covered by unit tests where slow e2e adds no signal (e.g. isolated pkg refactor, config/CLI text). Don't use if touching xDS gen, policies, KDS, or transparent proxy |
+| `ci/run-full-matrix` | Changes with cross-platform/version risk: transparent proxy, CNI, install/bootstrap, k8s-version-sensitive code, build/packaging. Costly - don't add by default |
+| `ci/skip-container-structure-test` | Image-layout changes you are iterating on, where the structure assertions are the thing under edit |
+| `ci/run-build` / `ci/force-publish` | Preview images for a downstream test. `ci/force-publish` is refused on a fork PR |
+| `ci/verify-stability` | Suspected flaky test, or a change to e2e/timing-sensitive code where you want confidence it's stable before merge. Add on the PR, let the scheduled stability workflow drive it |
 
 Default (no labels) is correct for most code PRs. Reach for `skip-*` only to save CI on genuinely test-irrelevant changes; reach for `run-full-matrix`/`verify-stability` to add coverage/confidence when the change warrants it.
 
