@@ -82,10 +82,20 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 
 		Expect(group.Wait()).To(Succeed())
 
+		Expect(WaitForZoneOnline(global, Kuma1)).To(Succeed())
+		Expect(WaitForZoneOnline(global, Kuma4)).To(Succeed())
+		Expect(WaitForMesh(defaultMesh, []Cluster{zone1, zone4})).To(Succeed())
+
 		Expect(NewClusterSetup().
 			Install(YamlUniversal(zoneExternalService(defaultMesh, zone4.GetApp("external-service-in-zone1").GetIP(), "external-service-in-zone1", "kuma-1"))).
 			Setup(global),
 		).To(Succeed())
+	})
+
+	AfterEachFailure(func() {
+		DebugUniversal(global, defaultMesh)
+		DebugUniversal(zone4, defaultMesh)
+		DebugKube(zone1, defaultMesh, TestNamespace)
 	})
 
 	AfterAll(func() {
