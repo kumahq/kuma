@@ -2,6 +2,8 @@ package context_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net"
 	"os"
 	"strconv"
@@ -13,8 +15,10 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/config/manager"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/dns/vips"
+	meshaccesslog_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v2/pkg/test"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
@@ -298,5 +302,60 @@ status:
 		ctx3, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", ctx2)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(ctx3.Hash).ToNot(Equal(ctx2.Hash), "VIP allocation must invalidate the mesh context")
+	})
+
+	It("picks up a policy deleted and recreated with the same name", func() {
+		resourceManager := core_manager.NewResourceManager(resourceStore)
+		createMeshAccessLog := func(address string) {
+			mal, err := rest.YAML.UnmarshalCore(fmt.Appendf(nil, `
+type: MeshAccessLog
+name: client-outgoing
+mesh: mesh-1
+spec:
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: Tcp
+            tcp:
+              address: %q
+`, address))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resourceManager.Create(context.Background(), mal, store.CreateByKey("client-outgoing", "mesh-1"))).To(Succeed())
+		}
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+---
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/service: backend
+`)).To(Succeed())
+		createMeshAccessLog("old:9999")
+
+		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when the policy is deleted and recreated, the store restarts its version
+		Expect(resourceManager.Delete(context.Background(), meshaccesslog_api.NewMeshAccessLogResource(), store.DeleteByKey("client-outgoing", "mesh-1"))).To(Succeed())
+		createMeshAccessLog("new:9999")
+
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the recreated policy is used
+		Expect(after.Hash).ToNot(Equal(before.Hash))
+		items := after.Resources.MeshLocalResources[meshaccesslog_api.MeshAccessLogType].GetItems()
+		Expect(items).To(HaveLen(1))
+		spec, err := json.Marshal(items[0].GetSpec())
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(spec)).To(ContainSubstring("new:9999"))
 	})
 })
