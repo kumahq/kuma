@@ -2,34 +2,30 @@
   "diff": [
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_zoneegress_dp_zone-proxy-egress/filterChains/0/filters/0/typedConfig/httpFilters/0/typedConfig/matcher/matcherList",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/self_zoneegress_dp_zone-proxy-egress/filterChains/0/filters/0/typedConfig/httpFilters/0/typedConfig/matcher/matcherList/matchers/1",
       "value": {
-        "matchers": [
-          {
-            "onMatch": {
-              "action": {
-                "name": "envoy.filters.rbac.action",
-                "typedConfig": {
-                  "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
-                  "name": "kri_mtp_envoyconfig-zoneproxies_kuma-3__mtp-zone-proxy_"
-                }
-              }
-            },
-            "predicate": {
-              "singlePredicate": {
-                "input": {
-                  "name": "envoy.matching.inputs.server_name",
-                  "typedConfig": {
-                    "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ServerNameInput"
-                  }
-                },
-                "valueMatch": {
-                  "exact": "sni.extsvc.envoyconfig-zoneproxies.kuma-3.mes-zone-proxy.80"
-                }
-              }
+        "onMatch": {
+          "action": {
+            "name": "envoy.filters.rbac.action",
+            "typedConfig": {
+              "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
+              "name": "kri_mtp_envoyconfig-zoneproxies_kuma-3__mtp-zone-proxy_"
             }
           }
-        ]
+        },
+        "predicate": {
+          "singlePredicate": {
+            "input": {
+              "name": "envoy.matching.inputs.server_name",
+              "typedConfig": {
+                "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.network.v3.ServerNameInput"
+              }
+            },
+            "valueMatch": {
+              "exact": "sni.extsvc.envoyconfig-zoneproxies.kuma-3.mes-zone-proxy.80"
+            }
+          }
+        }
       }
     }
   ],
@@ -362,6 +358,30 @@
                         "matcher": {
                           "matcherList": {
                             "matchers": [
+                              {
+                                "onMatch": {
+                                  "action": {
+                                    "name": "envoy.filters.rbac.action",
+                                    "typedConfig": {
+                                      "@type": "type.googleapis.com/envoy.config.rbac.v3.Action",
+                                      "name": "kri_mtp_envoyconfig-zoneproxies_kuma-3__allow-all-envoyconfig-zoneproxies-0_"
+                                    }
+                                  }
+                                },
+                                "predicate": {
+                                  "singlePredicate": {
+                                    "input": {
+                                      "name": "envoy.matching.inputs.uri_san",
+                                      "typedConfig": {
+                                        "@type": "type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput"
+                                      }
+                                    },
+                                    "valueMatch": {
+                                      "prefix": "spiffe://envoyconfig-zoneproxies.kuma-3.mesh.local"
+                                    }
+                                  }
+                                }
+                              },
                               {
                                 "onMatch": {
                                   "action": {
