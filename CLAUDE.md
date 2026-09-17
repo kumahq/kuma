@@ -71,7 +71,7 @@ git push --no-verify <remote> branch-name    # ALWAYS use --no-verify
 
 ### Behavior-changing CI labels
 
-**A draft runs none of the expensive jobs** - `build_check`, `check`, the unit tests and the whole e2e matrix are skipped until the PR is marked Ready for review, which is also how you start them.
+**A draft runs none of the expensive jobs**, and Ready for review is how you start them - see [draft state](.github/workflows/README.md#draft-state).
 
 What each `ci/` label does is in [`.github/workflows/README.md`](.github/workflows/README.md#labels), which is the one list; this is only when to reach for one.
 

@@ -95,7 +95,7 @@ Variable names cannot contain `-` or `.`, and an inline expression cannot saniti
 
 ## Draft state
 
-A draft runs nothing expensive: `build_check`, `check`, `test_unit` and the whole e2e matrix are skipped. Press **Ready for review** to run them - `ready_for_review` starts a fresh run - and converting back to a draft cancels the run in flight and replaces it with one that skips.
+A draft runs nothing expensive: `build_check`, `check`, `test_unit`, the whole e2e matrix, and `build_publish` with the container-structure test inside it are all skipped. Press **Ready for review** to run them - `ready_for_review` starts a fresh run - and converting back to a draft cancels the run in flight and replaces it with one that skips.
 
 The gate is always a job-level condition, never a narrowed trigger. A job skipped by a condition reports Success and satisfies a required status check, while a workflow that never fires leaves that check waiting for a report and blocks the pull request for good.
 

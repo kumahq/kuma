@@ -162,7 +162,6 @@ jobs:
           if [[ "$FULL_MATRIX" != "true" ]]; then
             BASE_MATRIX_ALL=$(echo "$BASE_MATRIX_ALL" | jq -r "$OVERRIDE_JQ_CMD")
           fi
-          # Skip e2e tests if the PR has the label "ci/skip-e2e-test" or "ci/skip-test"
           if [[ "$SKIP_E2E_TESTS" == "true" ]]; then
             BASE_MATRIX_ALL='{}'
           fi
