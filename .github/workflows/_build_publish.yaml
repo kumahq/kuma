@@ -28,7 +28,6 @@ on:
       RUNNERS_BY_ARCH:
         required: true
         type: string
-      # Decided by the caller's `meta` job from the labels the pull request carries now.
       RUN_CONTAINER_STRUCTURE_TEST:
         required: false
         type: string

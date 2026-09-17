@@ -13,12 +13,6 @@ on:
       IS_RELEASE_TAG:
         required: true
         type: boolean
-      # Decided once by the caller's `meta` job, which reads the labels the pull request
-      # carries now rather than the set the webhook snapshotted when it opened. Optional and
-      # defaulting to "true" on purpose: a caller that has not been updated yet runs the
-      # tests rather than silently skipping them, and a required input would be a hard
-      # "Invalid workflow file" instead. Compared with `== 'true'` everywhere, because the
-      # string "false" is truthy to `if:`.
       RUN_UNIT:
         required: false
         type: string

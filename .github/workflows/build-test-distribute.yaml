@@ -5,9 +5,6 @@ on:
     tags: ["*"]
   pull_request:
     branches: ["master", "release-*"]
-    # `ready_for_review` is what starts the suite a draft did not run, and
-    # `converted_to_draft` replaces a running suite with a cheap one that skips.
-    # The three defaults have to be spelled out once `types` is present.
     types: [opened, reopened, synchronize, ready_for_review, converted_to_draft]
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI or via REST call
 permissions:
@@ -93,8 +90,6 @@ jobs:
               def has_success($jobs; $pattern):
                 ($jobs | any(.[]; (.name | test($pattern)) and .conclusion == "success"));
 
-              # A pattern that matches a matrix matches every leg of it, and one green leg
-              # used to satisfy the whole requirement while the rest were never looked at.
               def none_unsuccessful($jobs; $pattern):
                 ($jobs | all(.[]; ((.name | test($pattern)) | not)
                                   or (.conclusion == "success" or .conclusion == "skipped")));
@@ -139,8 +134,6 @@ jobs:
       contents: read
       pull-requests: read # the decision step reads the labels this pull request carries now
     env:
-      # A draft is not ready. Anything that is not a pull request always is, because
-      # `github.event.pull_request` is null there and `!null` is true.
       READY: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     outputs:
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-full-matrix') }}
@@ -173,15 +166,6 @@ jobs:
         (github.event_name == 'pull_request' && vars.RUNNERS_PR_ARM64)
         || vars.RUNNERS_MASTER_ARM64 || vars.RUNNERS_ARM64 || '{}') }}
     steps:
-      # Every gate here used to read `github.event.pull_request.labels`, the set the webhook
-      # snapshotted when the pull request opened. `POST /repos/{owner}/{repo}/pulls` takes no
-      # labels, so a label is always a second call afterwards and that snapshot is routinely
-      # empty - which is why `ci/skip-test` from a tool so often did nothing. Read what the
-      # pull request carries now; the decisions above are the same expressions as before,
-      # asked of this list instead. `contains` over an array matches an element exactly, so
-      # neither `ci/skip-test-foo` nor a label named `something,ci/skip-test` matches.
-      # This step has no `if`: every event needs `json` to exist, or `fromJSON` above is
-      # handed an empty string and fails to evaluate.
       - name: Read the labels this pull request carries now
         id: labels
         env:
@@ -194,14 +178,9 @@ jobs:
           if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
             json="$(gh pr view "${PR}" --json labels --jq '[.labels[].name]')"
           fi
-          # Never publish an empty value here: every decision above is `fromJSON(...)` of it,
-          # and `fromJSON('')` is an evaluation error rather than a false, so one odd read
-          # would break all of them at once instead of deciding nothing.
           [[ -n "${json}" ]] || json='[]'
           printf 'json=%s\n' "${json}" >> "${GITHUB_OUTPUT}"
           echo "labels: ${json}"
-      # Here rather than in `check`: this is where the labels are, and a fork pull request
-      # asking to publish now fails in seconds instead of after a forty-minute job.
       - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
         run: |
@@ -209,8 +188,6 @@ jobs:
           exit 1
   build_check:
     needs: ["release_sha_gate"]
-    # Straight from the payload: unlike a label, draft state is never stale there, so this
-    # job does not queue behind the job that reads labels.
     if: ${{ !github.event.pull_request.draft }}
     timeout-minutes: 20
     runs-on: >-
@@ -411,11 +388,6 @@ jobs:
           upload-sbom-release-assets: true
   test:
     needs: ["meta", "build_check"]
-    # `build_check` is skipped on a draft, and a skipped `needs` skips this job by default -
-    # which would take the whole called workflow with it, so `test / test_unit` and the e2e
-    # names would not exist rather than report skipped, and a required check would wait
-    # forever. This runs it instead and lets the jobs inside do the skipping. It is not
-    # `always()`: a build that actually failed must still stop the tests.
     if: ${{ !cancelled() && needs.meta.result == 'success' && needs.build_check.result != 'failure' }}
     uses: ./.github/workflows/_test.yaml
     with:
@@ -432,8 +404,6 @@ jobs:
       id-token: write # Required for image signing
     needs: ["check", "meta", "test"]
     uses: ./.github/workflows/_build_publish.yaml
-    # From `meta` rather than `check`, which a draft skips - a skipped job's outputs are the
-    # empty string and `fromJSON('')` is an error, not a false.
     if: ${{ fromJSON(needs.meta.outputs.BUILD || 'false') }}
     with:
       FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
@@ -464,9 +434,6 @@ jobs:
       NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
       IMAGE_DIGESTS: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
   distributions:
-    # `meta` and `build_check` belong here even though nothing reads their outputs: this job is
-    # the fan-in that turns an upstream failure into a red check, and a job it does not need is
-    # a job whose failure it cannot see.
     needs: ["release_sha_gate", "meta", "build_check", "build_publish", "check", "test", "provenance"]
     permissions:
       id-token: write
@@ -488,12 +455,6 @@ jobs:
       - name: "Halt due to previous failures"
         run: |-
           echo "results: ${{ toJson(needs.*.result) }}"
-          # `if: always()` above removes the implicit success(), so GitHub starts this job
-          # even when a job it needs failed. An example could be found here:
-          # https://github.com/kumahq/kuma/actions/runs/7044980149
-          # This is an `if` block rather than `[[ … ]] && exit 1`: under `set -e` that form
-          # returns non-zero when the test is false, and only the `echo` after it kept the
-          # step green. Deleting or reordering that line turned every failure into a pass.
           if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
             echo "::error title=distributions::a job this one depends on failed or was cancelled"
             exit 1

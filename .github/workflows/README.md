@@ -99,6 +99,8 @@ A draft runs nothing expensive: `build_check`, `check`, `test_unit` and the whol
 
 The gate is always a job-level condition, never a narrowed trigger. A job skipped by a condition reports Success and satisfies a required status check, while a workflow that never fires leaves that check waiting for a report and blocks the pull request for good.
 
+Two rules follow from that, and a change here has to keep both. `distributions` is the fan-in: it lists every job in its `needs`, because a job it does not need is a job whose failure it cannot see, and `if: always()` means nothing else would catch it. And every decision `meta` publishes is read through `fromJSON`, so it must always publish something parseable - an empty value there is an evaluation error, not a false, and it breaks every gate at once.
+
 ## Labels
 
 `meta` reads the labels the pull request carries at the moment it runs, through the API, rather than the set the webhook carried. `POST /repos/{owner}/{repo}/pulls` takes no labels, so every tool attaches them in a second call after the pull request exists - which is why a label used to have to be there at creation and often was not. A label added before `meta` runs counts; one added after it takes effect on the next run.
