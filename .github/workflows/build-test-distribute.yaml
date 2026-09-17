@@ -434,9 +434,16 @@ jobs:
       - name: "Halt due to previous failures"
         run: |-
           echo "results: ${{ toJson(needs.*.result) }}"
-          # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
-          # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
-          [[ ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }} == "true" ]] && exit 1
+          # `if: always()` above removes the implicit success(), so GitHub starts this job
+          # even when a job it needs failed. An example could be found here:
+          # https://github.com/kumahq/kuma/actions/runs/7044980149
+          # This is an `if` block rather than `[[ … ]] && exit 1`: under `set -e` that form
+          # returns non-zero when the test is false, and only the `echo` after it kept the
+          # step green. Deleting or reordering that line turned every failure into a pass.
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "::error title=distributions::a job this one depends on failed or was cancelled"
+            exit 1
+          fi
           echo "All dependent jobs succeeded"
       - name: "Download all SBOM assets"
         id: collect_sbom
