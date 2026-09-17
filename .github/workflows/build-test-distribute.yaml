@@ -5,6 +5,10 @@ on:
     tags: ["*"]
   pull_request:
     branches: ["master", "release-*"]
+    # `ready_for_review` is what starts the suite a draft did not run, and
+    # `converted_to_draft` replaces a running suite with a cheap one that skips.
+    # The three defaults have to be spelled out once `types` is present.
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft]
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI or via REST call
 permissions:
   contents: read
