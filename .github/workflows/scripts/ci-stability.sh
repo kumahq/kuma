@@ -414,8 +414,8 @@ main() {
   summary "## Processed PRs"
 
   local prs_stability prs_merge
-  prs_stability=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability") | .number' "$OPEN_PRS_FILE")
-  prs_merge=$(jq     -r '.[] | select(.labels[]?.name == "ci/verify-stability-merge-master") | .number' "$OPEN_PRS_FILE")
+  prs_stability=$(jq -r '.[] | select(.isDraft != true) | select(.labels[]?.name == "ci/verify-stability") | .number' "$OPEN_PRS_FILE")
+  prs_merge=$(jq     -r '.[] | select(.isDraft != true) | select(.labels[]?.name == "ci/verify-stability-merge-master") | .number' "$OPEN_PRS_FILE")
 
   if [[ -z "$prs_stability" ]]; then
     log "No PRs with ci/verify-stability label"

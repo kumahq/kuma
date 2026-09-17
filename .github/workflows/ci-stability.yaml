@@ -55,7 +55,7 @@ jobs:
           gh pr list \
             --state open \
             --limit 200 \
-            --json number,labels,headRefName,headRepositoryOwner,state \
+            --json number,labels,headRefName,headRepositoryOwner,state,isDraft \
             > open_prs.json
       - name: Process PRs with ci/verify-stability label
         env:

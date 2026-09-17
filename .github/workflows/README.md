@@ -97,7 +97,7 @@ Variable names cannot contain `-` or `.`, and an inline expression cannot saniti
 
 A draft runs nothing expensive: `build_check`, `check`, `test_unit`, the whole e2e matrix, and `build_publish` with the container-structure test inside it are all skipped. Press **Ready for review** to run them - `ready_for_review` starts a fresh run - and converting back to a draft cancels the run in flight and replaces it with one that skips.
 
-The gate is always a job-level condition, never a narrowed trigger. A job skipped by a condition reports Success and satisfies a required status check, while a workflow that never fires leaves that check waiting for a report and blocks the pull request for good.
+The gate is always a job-level condition, never a narrowed trigger. A job skipped by a condition reports Success and satisfies a required status check, while a workflow that never fires leaves that check waiting for a report and blocks the pull request for good. One exception is worth knowing: a *matrix* job skipped this way reports under its unexpanded name - `test / e2e (default, ${{ matrix.k8sVersion }}, ${{ matrix.arch }})` - so the per-leg e2e names do not report at all while a pull request is a draft. They come back when it is marked ready, which is also the only state it can be merged from.
 
 Two rules follow from that, and a change here has to keep both. `distributions` is the fan-in: it lists every job in its `needs`, because a job it does not need is a job whose failure it cannot see, and `if: always()` means nothing else would catch it. And every decision `meta` publishes is read through `fromJSON`, so it must always publish something parseable - an empty value there is an evaluation error, not a false, and it breaks every gate at once.
 

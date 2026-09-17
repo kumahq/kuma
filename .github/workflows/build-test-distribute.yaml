@@ -438,7 +438,7 @@ jobs:
     permissions:
       id-token: write
     timeout-minutes: 10
-    if: ${{ always() }}
+    if: ${{ !cancelled() }}
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name != github.repository)

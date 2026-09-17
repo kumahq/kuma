@@ -337,7 +337,7 @@ jobs:
       - run: |
           make docker/save/${{ matrix.image }}
       - name: Run container structure test
-        if: ${{ inputs.RUN_CONTAINER_STRUCTURE_TEST == 'true' }}
+        if: ${{ inputs.RUN_CONTAINER_STRUCTURE_TEST != 'false' }}
         run: |
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
