@@ -243,7 +243,7 @@ jobs:
             "${ready}" "${run_unit}" "${run_e2e}" "${full_matrix}" "${build}" "${allow_push}"
   build_check:
     needs: ["release_sha_gate", "meta"]
-    if: ${{ fromJSON(needs.meta.outputs.READY) }}
+    if: ${{ fromJSON(needs.meta.outputs.READY || 'false') }}
     timeout-minutes: 20
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
@@ -290,7 +290,7 @@ jobs:
           key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
   check:
     needs: ["release_sha_gate", "meta"]
-    if: ${{ fromJSON(needs.meta.outputs.READY) }}
+    if: ${{ fromJSON(needs.meta.outputs.READY || 'false') }}
     permissions:
       contents: write # needed to upload SBOM assets to GitHub releases
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
@@ -479,7 +479,7 @@ jobs:
     uses: ./.github/workflows/_build_publish.yaml
     # From `meta` rather than `check`, which a draft skips - a skipped job's outputs are the
     # empty string and `fromJSON('')` is an error, not a false.
-    if: ${{ fromJSON(needs.meta.outputs.BUILD) }}
+    if: ${{ fromJSON(needs.meta.outputs.BUILD || 'false') }}
     with:
       FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
       ALLOW_PUSH: ${{ needs.meta.outputs.ALLOW_PUSH }}
