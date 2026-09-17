@@ -307,14 +307,8 @@ jobs:
       || '{}').lg
       || 'ubuntu-24.04' }}
     env:
-      FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
-      ALLOW_PUSH: ${{ needs.meta.outputs.ALLOW_PUSH }}
-      BUILD: ${{ needs.meta.outputs.BUILD }}
       FORCE_PUBLISH_FROM_FORK: ${{ needs.meta.outputs.FORCE_PUBLISH_FROM_FORK }}
     outputs:
-      FULL_MATRIX: ${{ env.FULL_MATRIX }}
-      ALLOW_PUSH: ${{ env.ALLOW_PUSH }}
-      BUILD: ${{ env.BUILD }}
       IMAGES: ${{ steps.metadata.outputs.images }}
       REGISTRY: ${{ steps.metadata.outputs.registry }}
       VERSION_NAME: ${{ steps.metadata.outputs.version }}
