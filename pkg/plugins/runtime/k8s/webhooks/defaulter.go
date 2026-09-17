@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
 func DefaultingWebhookFor(scheme *runtime.Scheme, converter k8s_common.Converter, checker ResourceAdmissionChecker) *admission.Webhook {
@@ -63,7 +65,14 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	if resp := h.IsOperationAllowed(req.UserInfo, resource, obj, req.Namespace); !resp.Allowed {
+	var previous k8s_model.KubernetesObject
+	if req.Operation == admissionv1.Update {
+		previous, err = h.decodeObject(req.Kind.Kind, req.OldObject)
+		if err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+	}
+	if resp := h.IsOperationAllowed(req.UserInfo, resource, obj, previous, req.Namespace); !resp.Allowed {
 		return resp
 	}
 
@@ -96,4 +105,19 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 	}
 
 	return admission.PatchResponseFromRaw(req.Object.Raw, marshaled)
+}
+
+func (h *defaultingHandler) decodeObject(kind string, raw runtime.RawExtension) (k8s_model.KubernetesObject, error) {
+	resource, err := registry.Global().NewObject(core_model.ResourceType(kind))
+	if err != nil {
+		return nil, err
+	}
+	obj, err := h.converter.ToKubernetesObject(resource)
+	if err != nil {
+		return nil, err
+	}
+	if err := h.decoder.DecodeRaw(raw, obj); err != nil {
+		return nil, err
+	}
+	return obj, nil
 }

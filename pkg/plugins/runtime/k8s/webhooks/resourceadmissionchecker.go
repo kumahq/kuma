@@ -30,7 +30,8 @@ const (
 
 // IsOperationAllowed validates the labels as obj carries them, not as r.GetMeta()
 // reports them: the converter has already overlaid the read-time enforced values there.
-func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, obj k8s_model.KubernetesObject, ns string) admission.Response {
+// previous is the stored object an update replaces, nil otherwise.
+func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, obj, previous k8s_model.KubernetesObject, ns string) admission.Response {
 	if c.isPrivilegedUser(c.AllowedUsers, userInfo) {
 		return admission.Allowed("")
 	}
@@ -42,6 +43,10 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		}
 	}
 
+	var previousLabels map[string]string
+	if previous != nil {
+		previousLabels = k8s.SuppliedLabels(previous)
+	}
 	if err := resource_labels.ValidateOwnership(resource_labels.Write{
 		Descriptor:  r.Descriptor(),
 		Spec:        r.GetSpec(),
@@ -49,6 +54,7 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		Mesh:        r.GetMeta().GetMesh(),
 		DisplayName: obj.GetName(),
 		Labels:      k8s.SuppliedLabels(obj),
+		Previous:    previousLabels,
 	}, c.ControlPlane); err.HasViolations() {
 		return *forbiddenResponse("Operation not allowed. " + err.Violations[0].Message)
 	}

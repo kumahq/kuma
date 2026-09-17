@@ -37,14 +37,17 @@ func (r *resourceCrudHandler) createOrUpdateResource(request *restful.Request) (
 	}
 
 	create := false
+	var previousLabels map[string]string
 	resource := r.descriptor.NewObject()
 	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil && store.IsNotFound(err) {
 		create = true
 	} else if err != nil {
 		return nil, withTitle(err, "Failed to find a resource")
+	} else {
+		previousLabels = resource.GetMeta().GetLabels()
 	}
 
-	if err := r.validateResourceRequest(name, meshName, resourceRest); err != nil {
+	if err := r.validateResourceRequest(name, meshName, resourceRest, previousLabels); err != nil {
 		return nil, withTitle(err, "Could not process a resource")
 	}
 

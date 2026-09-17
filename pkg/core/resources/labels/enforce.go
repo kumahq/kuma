@@ -35,6 +35,10 @@ type Write struct {
 	DisplayName string
 	// Labels as submitted. Read-only.
 	Labels map[string]string
+	// Previous: the labels stored for the object an update replaces; nil on a create.
+	// A submitted value equal to the stored one is the object round-tripping through
+	// the writer, not a value the writer chose, so ValidateOwnership skips it.
+	Previous map[string]string
 	// TrustedWriter: the labels come from a control plane (the store, KDS, GC, the
 	// storage-version migrator, the CP's own k8s controllers), not from a user.
 	TrustedWriter bool

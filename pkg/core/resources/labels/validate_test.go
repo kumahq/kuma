@@ -83,6 +83,7 @@ var _ = Describe("Validate", func() {
 		r        core_model.Resource
 		ns       resource_labels.Namespace
 		labels   map[string]string
+		previous map[string]string
 		trusted  bool
 		cp       resource_labels.ControlPlane
 		expected []validators.Violation
@@ -107,6 +108,7 @@ var _ = Describe("Validate", func() {
 				Mesh:          given.r.GetMeta().GetMesh(),
 				DisplayName:   given.r.GetMeta().GetName(),
 				Labels:        given.labels,
+				Previous:      given.previous,
 				TrustedWriter: given.trusted,
 			}
 			err := resource_labels.Validate(w, given.cp)
@@ -131,6 +133,23 @@ var _ = Describe("Validate", func() {
 				mesh_proto.KubeNamespaceTag:    "other-ns",
 				metadata.KumaServiceAccount:    "victim-sa",
 			},
+		}),
+		Entry("update: a label unchanged from the stored value is not checked", testCase{
+			r: timeout(), ns: appNamespace, cp: k8sFederated,
+			previous: map[string]string{mesh_proto.PolicyRoleLabel: "producer", mesh_proto.ZoneTag: "zone-1"},
+			labels:   map[string]string{mesh_proto.PolicyRoleLabel: "producer", mesh_proto.ZoneTag: "zone-1"},
+		}),
+		Entry("update: a label changed from the stored value is checked", testCase{
+			r: timeout(), ns: appNamespace, cp: k8sFederated,
+			previous: map[string]string{mesh_proto.ZoneTag: "zone-1"},
+			labels:   map[string]string{mesh_proto.ZoneTag: "zone-2"},
+			expected: []validators.Violation{differs(mesh_proto.ZoneTag, "zone-2", "zone-1")},
+		}),
+		Entry("update: a label not stored before is checked", testCase{
+			r: timeout(), ns: appNamespace, cp: k8sFederated,
+			previous: map[string]string{},
+			labels:   map[string]string{mesh_proto.ZoneTag: "zone-2"},
+			expected: []validators.Violation{differs(mesh_proto.ZoneTag, "zone-2", "zone-1")},
 		}),
 		Entry("violations are reported in registry order", testCase{
 			r: timeout(), labels: map[string]string{mesh_proto.ZoneTag: "zone-2", metadata.KumaMeshLabel: "mesh-2", mesh_proto.ResourceOriginLabel: "global"}, cp: universalFederated,

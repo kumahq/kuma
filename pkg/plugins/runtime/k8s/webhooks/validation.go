@@ -67,7 +67,15 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
-	if resp := h.IsOperationAllowed(req.UserInfo, coreRes, k8sObj, req.Namespace); !resp.Allowed {
+	var previousRes core_model.Resource
+	var previousObj k8s_model.KubernetesObject
+	if req.Operation == v1.Update {
+		previousRes, previousObj, err = h.decode(req.Kind.Kind, req.OldObject)
+		if err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+	}
+	if resp := h.IsOperationAllowed(req.UserInfo, coreRes, k8sObj, previousObj, req.Namespace); !resp.Allowed {
 		return resp
 	}
 
@@ -103,10 +111,6 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 		// new value upstream must not be wedged by a guard that exists to protect the
 		// user from an in-place edit.
 		if req.Operation == v1.Update && !h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) {
-			previousRes, previousObj, err := h.decode(req.Kind.Kind, req.OldObject)
-			if err != nil {
-				return admission.Errored(http.StatusBadRequest, err)
-			}
 			if resp := h.validateOriginNotChanged(previousObj, k8sObj); resp != nil {
 				return *resp
 			}

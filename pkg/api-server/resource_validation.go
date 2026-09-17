@@ -12,7 +12,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
-func (r *resourceCrudHandler) validateResourceRequest(name string, meshName string, resource rest.Resource) error {
+func (r *resourceCrudHandler) validateResourceRequest(name string, meshName string, resource rest.Resource, previous map[string]string) error {
 	var err validators.ValidationError
 	if name != resource.GetMeta().Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
@@ -34,6 +34,7 @@ func (r *resourceCrudHandler) validateResourceRequest(name string, meshName stri
 		Mesh:        resource.GetMeta().GetMesh(),
 		DisplayName: resource.GetMeta().GetName(),
 		Labels:      resource.GetMeta().GetLabels(),
+		Previous:    previous,
 	}, r.cp))
 	err.AddError("", core_mesh.ValidateMeta(resource.GetMeta(), r.descriptor.Scope))
 

@@ -19,7 +19,11 @@ was, depending on the label and the platform, either rejected or silently
 replaced. Both platforms now apply one rule: a supplied value that differs from
 the one the control plane computes for that write is rejected, on Kubernetes by
 the admission webhook and on Universal by the API server; an equal value is
-accepted and an absent one is filled in. Writes coming from the control plane
+accepted and an absent one is filled in. On an update, a value equal to the one
+already stored is the object round-tripping through `kubectl apply`, `kubectl
+edit` or `kumactl apply`, not a value you chose: it is recomputed, never
+rejected, so re-applying a stored resource keeps working even when the edit
+changes what the control plane computes. Writes coming from the control plane
 itself (KDS, the Kubernetes controllers, the garbage collector) are not
 validated.
 

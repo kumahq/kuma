@@ -11,8 +11,9 @@ import (
 )
 
 // ValidateOwnership rejects control-plane-owned labels an untrusted writer supplied
-// with a value other than the one Compute stores for this write. Violations are keyed
-// by label in registry order. A label whose Compute fails is left to Compute to reject.
+// with a value other than the one Compute stores for this write, unless the value is
+// the one already stored (Previous), which Compute replaces. Violations are keyed by
+// label in registry order. A label whose Compute fails is left to Compute to reject.
 func ValidateOwnership(w Write, cp ControlPlane) validators.ValidationError {
 	var err validators.ValidationError
 	if w.TrustedWriter {
@@ -24,6 +25,9 @@ func ValidateOwnership(w Write, cp ControlPlane) validators.ValidationError {
 		}
 		supplied, ok := w.Labels[d.Key]
 		if !ok {
+			continue
+		}
+		if previous, ok := w.Previous[d.Key]; ok && previous == supplied {
 			continue
 		}
 		computed, ok, computeErr := d.Compute(w, cp)
