@@ -463,7 +463,7 @@ A `Dataplane` still carrying `type: BUILTIN` keeps loading after the upgrade, be
 
 ### The dataplane and zone proxy breakdowns are removed from the insights
 
-`MeshInsight.dataplanesByType` is removed. `MeshInsight.dataplanes` already carries the same totals across every proxy in the mesh, and once gateways stopped being marked (see [`kuma.io/gateway` is removed](#kumaiogateway-is-removed)) `standard` was the only split left, repeating those totals. Field 7 is reserved, so a Zone control plane on an older version still syncs to a Global control plane on this one.
+`MeshInsight.dataplanesByType` is removed. `MeshInsight.dataplanes` already carries the same totals across every proxy in the mesh, and once gateways stopped being marked (see [`kuma.io/gateway` is removed](#kumaiogateway-is-removed)) `standard` was the only split left, repeating those totals.
 
 The `/global-insight` response changes with it:
 
