@@ -187,7 +187,7 @@ process_pr() {
 
   local pr_json
   if ! pr_json=$(gh pr view "$pr" \
-      --json headRefName,headRepositoryOwner,state,headRefOid 2>/dev/null); then
+      --json headRefName,headRepositoryOwner,state,headRefOid,isDraft 2>/dev/null); then
     warn "PR #${pr}: could not fetch PR details"
     summary "- ⚠️ PR #${pr}: details fetch failed"
     return
@@ -195,6 +195,11 @@ process_pr() {
 
   if [[ "$(jq -r '.state' <<<"$pr_json")" != "OPEN" ]]; then
     log "PR #${pr}: not open, skipping"
+    return
+  fi
+
+  if [[ "$(jq -r '.isDraft' <<<"$pr_json")" == "true" ]]; then
+    log "PR #${pr}: draft, skipping"
     return
   fi
 
