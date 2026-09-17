@@ -28,6 +28,11 @@ on:
       RUNNERS_BY_ARCH:
         required: true
         type: string
+      # Decided by the caller's `meta` job from the labels the pull request carries now.
+      RUN_CONTAINER_STRUCTURE_TEST:
+        required: false
+        type: string
+        default: "true"
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64:
         value: ${{ jobs.publish-binaries.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
@@ -333,7 +338,7 @@ jobs:
       - run: |
           make docker/save/${{ matrix.image }}
       - name: Run container structure test
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+        if: ${{ inputs.RUN_CONTAINER_STRUCTURE_TEST == 'true' }}
         run: |
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image

@@ -135,10 +135,18 @@ jobs:
       || vars.RUNNERS_AMD64
       || '{}').sm
       || 'ubuntu-24.04' }}
-    env:
-      FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+    permissions:
+      contents: read
+      pull-requests: read # the decision step reads the labels this pull request carries now
     outputs:
-      FULL_MATRIX: ${{ env.FULL_MATRIX }}
+      FULL_MATRIX: ${{ steps.decide.outputs.full_matrix }}
+      READY: ${{ steps.decide.outputs.ready }}
+      RUN_UNIT: ${{ steps.decide.outputs.run_unit }}
+      RUN_E2E: ${{ steps.decide.outputs.run_e2e }}
+      RUN_CONTAINER_STRUCTURE_TEST: ${{ steps.decide.outputs.run_container_structure_test }}
+      BUILD: ${{ steps.decide.outputs.build }}
+      ALLOW_PUSH: ${{ steps.decide.outputs.allow_push }}
+      FORCE_PUBLISH_FROM_FORK: ${{ steps.decide.outputs.force_publish_from_fork }}
       # Per-arch lookup, each side independent. See .github/workflows/README.md.
       #   1. fork PR                            -> free GitHub-hosted runners (security)
       #   2. master (push, or PR targeting it)  -> free GitHub-hosted runners
@@ -163,9 +171,79 @@ jobs:
         (github.event_name == 'pull_request' && vars.RUNNERS_PR_ARM64)
         || vars.RUNNERS_MASTER_ARM64 || vars.RUNNERS_ARM64 || '{}') }}
     steps:
-      - run: echo "FULL_MATRIX=${{ env.FULL_MATRIX }}"
+      # Every gate in this workflow used to read `github.event.pull_request.labels`, which is
+      # the set the webhook snapshotted when the pull request opened. `POST /repos/{owner}/{repo}/pulls`
+      # takes no labels, so a label is always a second call afterwards and that snapshot is
+      # routinely empty - which is why `ci/skip-test` from a tool so often did nothing. Read the
+      # set the pull request carries now, decide once here, and let every other job read the
+      # decision rather than the labels.
+      - name: Decide what this run does
+        id: decide
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          PR: ${{ github.event.pull_request.number }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          set -euo pipefail
+
+          names=","
+          if [[ "${EVENT}" == "pull_request" ]]; then
+            names=",$(gh api "repos/${REPO}/issues/${PR}/labels" --paginate --jq '[.[].name] | join(",")'),"
+          fi
+          echo "labels: ${names}"
+
+          # Wrapped in commas on both sides so `ci/skip-test` cannot match `ci/skip-test-foo`.
+          has() {
+            if [[ "${names}" == *",$1,"* ]]; then echo "true"; else echo "false"; fi
+          }
+          either() {
+            if [[ "$1" == "true" || "$2" == "true" ]]; then echo "true"; else echo "false"; fi
+          }
+          both() {
+            if [[ "$1" == "true" && "$2" == "true" ]]; then echo "true"; else echo "false"; fi
+          }
+
+          # A draft is not ready. Anything that is not a pull request always is.
+          ready="true"
+          if [[ "${EVENT}" == "pull_request" && "${DRAFT}" == "true" ]]; then
+            ready="false"
+          fi
+
+          skip_test="$(has ci/skip-test)"
+          run_unit="$(both "${ready}" "$(if [[ "${skip_test}" == "true" ]]; then echo false; else echo true; fi)")"
+          skip_e2e="$(either "${skip_test}" "$(has ci/skip-e2e-test)")"
+          run_e2e="$(both "${ready}" "$(if [[ "${skip_e2e}" == "true" ]]; then echo false; else echo true; fi)")"
+          skip_cst="$(either "${skip_test}" "$(has ci/skip-container-structure-test)")"
+          run_cst="$(if [[ "${skip_cst}" == "true" ]]; then echo false; else echo true; fi)"
+
+          on_push="$(if [[ "${EVENT}" == "push" ]]; then echo true; else echo false; fi)"
+          on_dispatch="$(if [[ "${EVENT}" == "workflow_dispatch" ]]; then echo true; else echo false; fi)"
+          force_publish="$(has ci/force-publish)"
+
+          full_matrix="$(either "$(either "${on_push}" "${on_dispatch}")" "$(has ci/run-full-matrix)")"
+          allow_push="$(either "${on_push}" "${force_publish}")"
+          build="$(both "${ready}" "$(either "${on_push}" "$(either "$(has ci/run-build)" "${force_publish}")")")"
+          force_publish_from_fork="$(both "${FORK}" "${force_publish}")"
+
+          {
+            printf 'ready=%s\n' "${ready}"
+            printf 'run_unit=%s\n' "${run_unit}"
+            printf 'run_e2e=%s\n' "${run_e2e}"
+            printf 'run_container_structure_test=%s\n' "${run_cst}"
+            printf 'full_matrix=%s\n' "${full_matrix}"
+            printf 'allow_push=%s\n' "${allow_push}"
+            printf 'build=%s\n' "${build}"
+            printf 'force_publish_from_fork=%s\n' "${force_publish_from_fork}"
+          } >> "${GITHUB_OUTPUT}"
+
+          printf 'ready=%s run_unit=%s run_e2e=%s full_matrix=%s build=%s allow_push=%s\n' \
+            "${ready}" "${run_unit}" "${run_e2e}" "${full_matrix}" "${build}" "${allow_push}"
   build_check:
-    needs: ["release_sha_gate"]
+    needs: ["release_sha_gate", "meta"]
+    if: ${{ fromJSON(needs.meta.outputs.READY) }}
     timeout-minutes: 20
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
@@ -211,7 +289,8 @@ jobs:
           path: ~/.cache/go-build
           key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
   check:
-    needs: ["release_sha_gate"]
+    needs: ["release_sha_gate", "meta"]
+    if: ${{ fromJSON(needs.meta.outputs.READY) }}
     permissions:
       contents: write # needed to upload SBOM assets to GitHub releases
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
@@ -227,10 +306,10 @@ jobs:
       || '{}').lg
       || 'ubuntu-24.04' }}
     env:
-      FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
-      ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
-      BUILD: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-build') || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
-      FORCE_PUBLISH_FROM_FORK: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci/force-publish') && github.event.pull_request.head.repo.full_name != github.repository }}
+      FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
+      ALLOW_PUSH: ${{ needs.meta.outputs.ALLOW_PUSH }}
+      BUILD: ${{ needs.meta.outputs.BUILD }}
+      FORCE_PUBLISH_FROM_FORK: ${{ needs.meta.outputs.FORCE_PUBLISH_FROM_FORK }}
     outputs:
       FULL_MATRIX: ${{ env.FULL_MATRIX }}
       ALLOW_PUSH: ${{ env.ALLOW_PUSH }}
@@ -377,9 +456,17 @@ jobs:
           upload-sbom-release-assets: true
   test:
     needs: ["meta", "build_check"]
+    # `build_check` is skipped on a draft, and a skipped `needs` skips this job by default -
+    # which would take the whole called workflow with it, so `test / test_unit` and the e2e
+    # names would not exist rather than report skipped, and a required check would wait
+    # forever. This runs it instead and lets the jobs inside do the skipping. It is not
+    # `always()`: a build that actually failed must still stop the tests.
+    if: ${{ !cancelled() && needs.meta.result == 'success' && needs.build_check.result != 'failure' }}
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
+      RUN_UNIT: ${{ needs.meta.outputs.RUN_UNIT }}
+      RUN_E2E: ${{ needs.meta.outputs.RUN_E2E }}
       IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
       IS_RELEASE_TAG: ${{ github.ref_type == 'tag' }}
       RUNNERS_BY_ARCH: ${{ needs.meta.outputs.RUNNERS_BY_ARCH }}
@@ -390,10 +477,13 @@ jobs:
       id-token: write # Required for image signing
     needs: ["check", "meta", "test"]
     uses: ./.github/workflows/_build_publish.yaml
-    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
+    # From `meta` rather than `check`, which a draft skips - a skipped job's outputs are the
+    # empty string and `fromJSON('')` is an error, not a false.
+    if: ${{ fromJSON(needs.meta.outputs.BUILD) }}
     with:
-      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
+      FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
+      ALLOW_PUSH: ${{ needs.meta.outputs.ALLOW_PUSH }}
+      RUN_CONTAINER_STRUCTURE_TEST: ${{ needs.meta.outputs.RUN_CONTAINER_STRUCTURE_TEST }}
       IMAGE_ARTIFACT_NAME: "image_artifacts"
       BINARY_ARTIFACT_NAME: "binary_artifacts"
       IMAGES: ${{ needs.check.outputs.IMAGES }}

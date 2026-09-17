@@ -13,6 +13,20 @@ on:
       IS_RELEASE_TAG:
         required: true
         type: boolean
+      # Decided once by the caller's `meta` job, which reads the labels the pull request
+      # carries now rather than the set the webhook snapshotted when it opened. Optional and
+      # defaulting to "true" on purpose: a caller that has not been updated yet runs the
+      # tests rather than silently skipping them, and a required input would be a hard
+      # "Invalid workflow file" instead. Compared with `== 'true'` everywhere, because the
+      # string "false" is truthy to `if:`.
+      RUN_UNIT:
+        required: false
+        type: string
+        default: "true"
+      RUN_E2E:
+        required: false
+        type: string
+        default: "true"
 permissions:
   contents: read
 env:
@@ -24,7 +38,7 @@ env:
 jobs:
   test_unit:
     timeout-minutes: 30
-    if: ${{ !(contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || github.event.pull_request.draft || inputs.IS_RELEASE_TAG) }}
+    if: ${{ inputs.RUN_UNIT == 'true' && !inputs.IS_RELEASE_TAG }}
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name != github.repository)
@@ -148,7 +162,7 @@ jobs:
             | .test_e2e_env.parallelism = [4]
             | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
           FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
-          SKIP_E2E_TESTS: ${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || github.event.pull_request.draft || inputs.IS_RELEASE_TAG }}
+          SKIP_E2E_TESTS: ${{ inputs.RUN_E2E != 'true' || inputs.IS_RELEASE_TAG }}
         run: |-
           BASE_MATRIX_ALL="$BASE_MATRIX"
           if [[ "$FULL_MATRIX" != "true" ]]; then
