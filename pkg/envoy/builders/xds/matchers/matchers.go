@@ -1,6 +1,8 @@
 package matchers
 
 import (
+	"regexp"
+
 	xds_config "github.com/cncf/xds/go/xds/core/v3"
 	matcher_config "github.com/cncf/xds/go/xds/type/matcher/v3"
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -186,6 +188,41 @@ func SpiffeIDPredicate(spiffeID *common_api.SpiffeIDMatch) Configurer[matcher_co
 				},
 				Matcher: &matcher_config.Matcher_MatcherList_Predicate_SinglePredicate_ValueMatch{
 					ValueMatch: &stringMatcher,
+				},
+			},
+		}
+		return nil
+	}
+}
+
+// URISANPredicate matches when uri is one of the peer's URI SANs. Envoy's uri_san input
+// joins all URI SANs with commas, so an exact match only works for single-SAN certificates.
+func URISANPredicate(uri string) Configurer[matcher_config.Matcher_MatcherList_Predicate] {
+	return uriSANRegexPredicate(`^(?:.*,)?` + regexp.QuoteMeta(uri) + `(?:,.*)?$`)
+}
+
+// AnyURISANPredicate matches every peer that presents at least one URI SAN.
+func AnyURISANPredicate() Configurer[matcher_config.Matcher_MatcherList_Predicate] {
+	return uriSANRegexPredicate(`.*`)
+}
+
+func uriSANRegexPredicate(regex string) Configurer[matcher_config.Matcher_MatcherList_Predicate] {
+	return func(predicate *matcher_config.Matcher_MatcherList_Predicate) error {
+		predicate.MatchType = &matcher_config.Matcher_MatcherList_Predicate_SinglePredicate_{
+			SinglePredicate: &matcher_config.Matcher_MatcherList_Predicate_SinglePredicate{
+				Input: &xds_config.TypedExtensionConfig{
+					Name:        "envoy.matching.inputs.uri_san",
+					TypedConfig: util_proto.MustMarshalAny(&sslv3.UriSanInput{}),
+				},
+				Matcher: &matcher_config.Matcher_MatcherList_Predicate_SinglePredicate_ValueMatch{
+					ValueMatch: &matcher_config.StringMatcher{
+						MatchPattern: &matcher_config.StringMatcher_SafeRegex{
+							SafeRegex: &matcher_config.RegexMatcher{
+								EngineType: &matcher_config.RegexMatcher_GoogleRe2{GoogleRe2: &matcher_config.RegexMatcher_GoogleRE2{}},
+								Regex:      regex,
+							},
+						},
+					},
 				},
 			},
 		}
