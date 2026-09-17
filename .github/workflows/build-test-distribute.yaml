@@ -194,6 +194,10 @@ jobs:
           if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
             json="$(gh pr view "${PR}" --json labels --jq '[.labels[].name]')"
           fi
+          # Never publish an empty value here: every decision above is `fromJSON(...)` of it,
+          # and `fromJSON('')` is an evaluation error rather than a false, so one odd read
+          # would break all of them at once instead of deciding nothing.
+          [[ -n "${json}" ]] || json='[]'
           printf 'json=%s\n' "${json}" >> "${GITHUB_OUTPUT}"
           echo "labels: ${json}"
       # Here rather than in `check`: this is where the labels are, and a fork pull request
