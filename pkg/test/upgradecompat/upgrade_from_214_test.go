@@ -111,6 +111,16 @@ var _ = Describe("upgrade from 2.14", func() {
 		Expect(cfg.Redirect.Inbound.Port).To(Equal(tproxy_config.Port(25006)))
 	})
 
+	// Zone proxies reach this with a typed nil Dataplane, which is not the same
+	// as a nil interface.
+	It("leaves transparent proxy off for a proxy with no Dataplane", func() {
+		var dp *core_mesh.DataplaneResource
+
+		cfg := tproxy_dp.GetDataplaneConfig(dp, &core_xds.DataplaneMetadata{})
+
+		Expect(cfg.Enabled()).To(BeFalse())
+	})
+
 	It("leaves transparent proxy off for a proxy that reports none", func() {
 		cfg := tproxy_dp.GetDataplaneConfig(parse(dataplane30), &core_xds.DataplaneMetadata{})
 

@@ -1,6 +1,7 @@
 package helm
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -234,7 +235,8 @@ spec:
 			// plane has stopped producing these listeners.
 			By("Upgraded control plane still generates the transparent proxy listeners")
 			Eventually(func(g Gomega) {
-				pod, err := k8s.RunKubectlAndGetOutputE(GinkgoT(), zoneK8s.GetKubectlOptions(namespace),
+				pod, err := k8s.RunKubectlAndGetOutputContextE(GinkgoT(), context.Background(),
+					zoneK8s.GetKubectlOptions(namespace),
 					"get", "pods", "-l", "app=test-server", "-o", "jsonpath={.items[0].metadata.name}")
 				g.Expect(err).ToNot(HaveOccurred())
 				cfg, err := zoneK8s.GetKumactlOptions().RunKumactlAndGetOutput(

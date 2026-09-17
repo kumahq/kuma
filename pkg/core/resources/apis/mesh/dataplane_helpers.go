@@ -88,7 +88,11 @@ func (d *DataplaneResource) GetAddress() string {
 // port fields, which is all a sidecar injected before 3.0 leaves behind. The
 // IP family mode is left unset: the caller takes it from the proxy's metadata.
 func (d *DataplaneResource) GetLegacyTransparentProxy() *tproxy_dp.DataplaneConfig {
-	tp := d.GetSpec().(*mesh_proto.Dataplane).GetNetworking().GetTransparentProxying()
+	if d == nil || d.Spec == nil {
+		return nil
+	}
+
+	tp := d.Spec.GetNetworking().GetTransparentProxying()
 	if tp == nil {
 		return nil
 	}
