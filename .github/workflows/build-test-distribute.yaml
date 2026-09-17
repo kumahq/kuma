@@ -460,7 +460,10 @@ jobs:
       NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
       IMAGE_DIGESTS: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
   distributions:
-    needs: ["release_sha_gate", "build_publish", "check", "test", "provenance"]
+    # `meta` and `build_check` belong here even though nothing reads their outputs: this job is
+    # the fan-in that turns an upstream failure into a red check, and a job it does not need is
+    # a job whose failure it cannot see.
+    needs: ["release_sha_gate", "meta", "build_check", "build_publish", "check", "test", "provenance"]
     permissions:
       id-token: write
     timeout-minutes: 10
