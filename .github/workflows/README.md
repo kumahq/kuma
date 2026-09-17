@@ -88,3 +88,31 @@ Today that means the arm64 e2e legs in `_test.yaml` and the `linux/arm64` leg of
 ## Cutting a release branch
 
 Variable names cannot contain `-` or `.`, and an inline expression cannot sanitize `github.ref_name`, so the branch slug is written into the workflows by hand. After cutting `release-X.Y`, replace `RUNNERS_MASTER_` with `RUNNERS_RELEASE_X_Y_` across `.github/workflows/` on the new branch, comments included, and set the matching variables. A missed rename would silently fall back to the global variable, so `validate-workflows-and-scripts.yaml` fails when a slug in the workflows does not match the branch. `PR` is exempt, since it names a tier rather than a branch.
+
+# What decides how much CI a pull request runs
+
+`build-test-distribute` decides once, in its `meta` job, and every other job reads that decision. Two things feed it.
+
+## Draft state
+
+A draft runs nothing expensive: `build_check`, `check`, `test_unit` and the whole e2e matrix are skipped. Press **Ready for review** to run them - `ready_for_review` starts a fresh run - and converting back to a draft cancels the run in flight and replaces it with one that skips.
+
+The gate is always a job-level condition, never a narrowed trigger. A job skipped by a condition reports Success and satisfies a required status check, while a workflow that never fires leaves that check waiting for a report and blocks the pull request for good.
+
+## Labels
+
+`meta` reads the labels the pull request carries at the moment it runs, through the API, rather than the set the webhook carried. `POST /repos/{owner}/{repo}/pulls` takes no labels, so every tool attaches them in a second call after the pull request exists - which is why a label used to have to be there at creation and often was not. A label added before `meta` runs counts; one added after it takes effect on the next run.
+
+| label | what it does |
+| --- | --- |
+| `ci/skip-test` | skips the unit tests, the e2e matrix and the container-structure test |
+| `ci/skip-e2e-test` | skips the e2e matrix only |
+| `ci/skip-container-structure-test` | skips the container-structure test inside `build_publish` |
+| `ci/run-full-matrix` | runs the full matrix instead of the reduced pull-request one |
+| `ci/run-build` | builds the artifacts a pull request does not build by default |
+| `ci/force-publish` | builds and publishes them; refused on a pull request from a fork |
+| `ci/auto-merge` | approves and enables auto-merge |
+| `ci/verify-stability` | reruns CI to find flakes, removed after several consecutive green runs |
+| `ci/verify-stability-merge-master` | the same, merging master before each rerun |
+
+Every one of them is declared in `meta_repo.yml`.
