@@ -143,14 +143,12 @@ jobs:
       # `github.event.pull_request` is null there and `!null` is true.
       READY: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     outputs:
-      READY: ${{ env.READY }}
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-full-matrix') }}
       RUN_UNIT: ${{ env.READY == 'true' && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') }}
       RUN_E2E: ${{ env.READY == 'true' && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-e2e-test') }}
       RUN_CONTAINER_STRUCTURE_TEST: ${{ !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-container-structure-test') }}
       BUILD: ${{ env.READY == 'true' && (github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-build') || contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish')) }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
-      FORCE_PUBLISH_FROM_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
       # Per-arch lookup, each side independent. See .github/workflows/README.md.
       #   1. fork PR                            -> free GitHub-hosted runners (security)
       #   2. master (push, or PR targeting it)  -> free GitHub-hosted runners
@@ -198,9 +196,18 @@ jobs:
           fi
           printf 'json=%s\n' "${json}" >> "${GITHUB_OUTPUT}"
           echo "labels: ${json}"
+      # Here rather than in `check`: this is where the labels are, and a fork pull request
+      # asking to publish now fails in seconds instead of after a forty-minute job.
+      - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
+        run: |
+          echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
+          exit 1
   build_check:
-    needs: ["release_sha_gate", "meta"]
-    if: ${{ fromJSON(needs.meta.outputs.READY || 'false') }}
+    needs: ["release_sha_gate"]
+    # Straight from the payload: unlike a label, draft state is never stale there, so this
+    # job does not queue behind the job that reads labels.
+    if: ${{ !github.event.pull_request.draft }}
     timeout-minutes: 20
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
@@ -246,8 +253,8 @@ jobs:
           path: ~/.cache/go-build
           key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
   check:
-    needs: ["release_sha_gate", "meta"]
-    if: ${{ fromJSON(needs.meta.outputs.READY || 'false') }}
+    needs: ["release_sha_gate"]
+    if: ${{ !github.event.pull_request.draft }}
     permissions:
       contents: write # needed to upload SBOM assets to GitHub releases
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
@@ -262,8 +269,6 @@ jobs:
       || vars.RUNNERS_AMD64
       || '{}').lg
       || 'ubuntu-24.04' }}
-    env:
-      FORCE_PUBLISH_FROM_FORK: ${{ needs.meta.outputs.FORCE_PUBLISH_FROM_FORK }}
     outputs:
       IMAGES: ${{ steps.metadata.outputs.images }}
       REGISTRY: ${{ steps.metadata.outputs.registry }}
@@ -271,11 +276,6 @@ jobs:
       NOTARY_REPOSITORY: ${{ (contains(steps.metadata.outputs.version, 'preview') && 'notary-internal') || 'notary' }}
       CLOUDSMITH_REPOSITORY: ${{ steps.metadata.outputs.distribution_repository }}
     steps:
-      - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
-        if: ${{ fromJSON(env.FORCE_PUBLISH_FROM_FORK) }}
-        run: |
-          echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
-          exit 1
       - name: "Free up disk space for the Runner"
         uses: endersonmenezes/free-disk-space@2a22f8c59cae9cddae7194b33e6b92d023b2b4b8 # v4.0.0
         with:
