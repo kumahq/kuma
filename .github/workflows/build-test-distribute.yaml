@@ -192,7 +192,7 @@ jobs:
           set -euo pipefail
           json='[]'
           if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
-            json="$(gh pr view "${PR}" --json labels --jq '[.labels[].name]' | jq -c .)"
+            json="$(gh pr view "${PR}" --json labels --jq '[.labels[].name]')"
           fi
           printf 'json=%s\n' "${json}" >> "${GITHUB_OUTPUT}"
           echo "labels: ${json}"
