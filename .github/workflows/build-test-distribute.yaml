@@ -189,15 +189,16 @@ jobs:
         run: |
           set -euo pipefail
 
-          names=","
+          labels='[]'
           if [[ "${EVENT}" == "pull_request" ]]; then
-            names=",$(gh api "repos/${REPO}/issues/${PR}/labels" --paginate --jq '[.[].name] | join(",")'),"
+            labels="$(gh api "repos/${REPO}/issues/${PR}/labels" --paginate --jq '[.[].name]' | jq -s -c 'add // []')"
           fi
-          echo "labels: ${names}"
+          echo "labels: ${labels}"
 
-          # Wrapped in commas on both sides so `ci/skip-test` cannot match `ci/skip-test-foo`.
+          # Exact membership, asked of the JSON itself: a label may contain a comma, so any
+          # joined-string match can be spoofed by naming a label `something,ci/skip-test`.
           has() {
-            if [[ "${names}" == *",$1,"* ]]; then echo "true"; else echo "false"; fi
+            if jq -e --arg n "$1" 'index($n) != null' >/dev/null <<<"${labels}"; then echo "true"; else echo "false"; fi
           }
           either() {
             if [[ "$1" == "true" || "$2" == "true" ]]; then echo "true"; else echo "false"; fi
