@@ -345,6 +345,22 @@ var _ = Describe("Compute", func() {
 				"kuma.io/env":          "universal",
 			},
 		}),
+		Entry("zone label is omitted when the zone has no name", testCase{
+			mode:  core.Zone,
+			isK8s: false,
+			r: builders.Dataplane().
+				WithName("backend-1").
+				WithServices("backend").
+				WithMesh("mesh-1").
+				WithLabels(map[string]string{mesh_proto.ZoneTag: "other-zone"}).
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/display-name": "backend-1",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/env":          "universal",
+			},
+		}),
 		Entry("namespace and service-account labels are kept on k8s zone", testCase{
 			mode:      core.Zone,
 			isK8s:     true,

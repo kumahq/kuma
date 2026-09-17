@@ -146,7 +146,7 @@ var registry = []Descriptor{
 		Owner: OwnerControlPlane,
 		Compute: func(w Write, cp ControlPlane) (string, bool, error) {
 			if cp.Mode == config_core.Zone && w.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
-				return cp.Zone, true, nil
+				return cp.Zone, cp.Zone != "", nil
 			}
 			return keep(w, mesh_proto.ZoneTag)
 		},
