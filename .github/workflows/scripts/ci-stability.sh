@@ -235,7 +235,7 @@ process_pr() {
   # --- observe current check status ---
   # fetch_checks returns non-zero on API failure; skip this PR rather than
   # silently proceeding and bypassing the pending-check guard.
-  local checks has_pending=0 has_failed=0
+  local checks has_pending=0 has_failed=0 has_passed=0
   local -a failed_jobs=()
   if ! checks=$(fetch_checks "$pr"); then
     warn "PR #${pr}: could not fetch check status"
@@ -249,7 +249,8 @@ process_pr() {
         pending)       has_pending=1 ;;
         fail)          has_failed=1; failed_jobs+=("$name") ;;
         cancel)        has_failed=1; failed_jobs+=("$name (cancelled)") ;;
-        pass|skipping) ;;
+        pass)          has_passed=1 ;;
+        skipping)      ;;
       esac
     done <<<"$checks"
   fi
@@ -280,7 +281,7 @@ process_pr() {
   # --- record observation if definitive ---
   local result="none"
   if [[ -n "$checks" ]]; then
-    if (( has_failed )); then result="fail"; else result="pass"; fi
+    if (( has_failed )); then result="fail"; elif (( has_passed )); then result="pass"; fi
   fi
   if [[ "$result" != "none" ]]; then
     local now_utc failed_json run_number observation

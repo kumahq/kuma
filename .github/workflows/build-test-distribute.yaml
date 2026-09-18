@@ -89,7 +89,7 @@ jobs:
           if ! missing="$(jq -s -r '
               def all_green($jobs; $pattern):
                 [$jobs[] | select(.name | test($pattern)) | .conclusion] as $c
-                | ($c | any(. == "success")) and ($c | all(. == "success" or . == "skipped"));
+                | ($c | length > 0) and ($c | all(. == "success"));
 
               . as $jobs
               | [
