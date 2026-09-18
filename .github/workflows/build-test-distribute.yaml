@@ -177,7 +177,7 @@ jobs:
           draft=''
           if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
             for attempt in 1 2 3; do
-              if seen="$(gh pr view "${PR}" --json labels,isDraft)"; then
+              if seen="$(gh pr view "${PR}" --json labels,isDraft)" && jq -e . >/dev/null 2>&1 <<<"${seen}"; then
                 break
               fi
               if [[ "${attempt}" -eq 3 ]]; then
