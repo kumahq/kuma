@@ -162,7 +162,7 @@ jobs:
           pattern: "*.sh"
 
   scripts:
-    name: "Test CI Tools"
+    name: "Test the CI gate"
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name != github.repository)
@@ -185,6 +185,6 @@ jobs:
 
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
 
-      - name: "Run the CI tool tests"
+      - name: "Run the CI gate tests"
         working-directory: tools/ci/cigate
         run: go test ./...

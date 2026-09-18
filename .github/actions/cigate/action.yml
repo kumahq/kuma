@@ -1,0 +1,61 @@
+name: "Kuma CI gate"
+description: >-
+  Decides what a run does, holds the required check, and refuses a tag whose CI
+  did not run. One static binary in a scratch image, so a job pays a pull rather
+  than a toolchain.
+
+inputs:
+  command:
+    description: "release-gate, meta or halt"
+    required: true
+  token:
+    description: "Token the decision reads the API with"
+    required: true
+  repository:
+    description: "owner/repo the decision is about"
+    required: true
+  pull-request:
+    description: "Pull request number, for the meta command"
+    required: false
+    default: ""
+  head-sha:
+    description: "Head commit of the pull request, for the meta command"
+    required: false
+    default: ""
+  sha:
+    description: "Tagged commit, for the release-gate command"
+    required: false
+    default: ""
+  workflow:
+    description: "Workflow file the release gate looks for runs of"
+    required: false
+    default: ""
+  needs:
+    description: "toJson(needs), for the halt command"
+    required: false
+    default: "{}"
+  is-draft:
+    description: "Whether the pull request is a draft now, for the halt command"
+    required: false
+    default: ""
+
+outputs:
+  json:
+    description: "The labels the pull request carries now, as a JSON array"
+  draft:
+    description: "Whether the pull request is a draft now"
+
+runs:
+  using: docker
+  image: docker://ghcr.io/kumahq/cigate:v1
+  args:
+    - ${{ inputs.command }}
+  env:
+    GH_TOKEN: ${{ inputs.token }}
+    GH_REPO: ${{ inputs.repository }}
+    PR: ${{ inputs.pull-request }}
+    HEAD_SHA: ${{ inputs.head-sha }}
+    SHA: ${{ inputs.sha }}
+    WORKFLOW: ${{ inputs.workflow }}
+    NEEDS: ${{ inputs.needs }}
+    IS_DRAFT: ${{ inputs.is-draft }}

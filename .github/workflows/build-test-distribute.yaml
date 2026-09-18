@@ -35,23 +35,21 @@ jobs:
       actions: read
       contents: read
     steps:
-      - name: "Check out the CI tools"
+      - name: "Check out the CI gate action"
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: ${{ github.ref_type == 'tag' }}
         with:
-          sparse-checkout: tools/ci/cigate
+          sparse-checkout: .github/actions/cigate
           sparse-checkout-cone-mode: false
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
-        if: ${{ github.ref_type == 'tag' }}
       - name: "Verify tagged SHA has a trusted green push run"
         if: ${{ github.ref_type == 'tag' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          SHA: ${{ github.sha }}
-          WORKFLOW: build-test-distribute.yaml
-        working-directory: tools/ci/cigate
-        run: go run . release-gate
+        uses: ./.github/actions/cigate
+        with:
+          command: release-gate
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          sha: ${{ github.sha }}
+          workflow: build-test-distribute.yaml
 
   meta:
     needs: ["release_sha_gate"]
@@ -104,21 +102,20 @@ jobs:
         (github.event_name == 'pull_request' && vars.RUNNERS_PR_ARM64)
         || vars.RUNNERS_MASTER_ARM64 || vars.RUNNERS_ARM64 || '{}') }}
     steps:
-      - name: "Check out the CI tools"
+      - name: "Check out the CI gate action"
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: tools/ci/cigate
+          sparse-checkout: .github/actions/cigate
           sparse-checkout-cone-mode: false
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: "Decide what this run does, and hold the required check"
         id: labels
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          PR: ${{ github.event.pull_request.number }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        working-directory: tools/ci/cigate
-        run: go run . meta
+        uses: ./.github/actions/cigate
+        with:
+          command: meta
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          pull-request: ${{ github.event.pull_request.number }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
 
   refuse_fork_publish:
     needs: ["meta"]
@@ -402,18 +399,19 @@ jobs:
       SECURITY_ASSETS_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets"
       SECURITY_ASSETS_PACKAGE_NAME: "security-assets" # Cloudsmith package for hosting security assets
     steps:
-      - name: "Check out the CI tools"
+      - name: "Check out the CI gate action"
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: tools/ci/cigate
+          sparse-checkout: .github/actions/cigate
           sparse-checkout-cone-mode: false
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: "Halt due to previous failures"
-        env:
-          IS_DRAFT: ${{ needs.meta.outputs.DRAFT_NOW }}
-          NEEDS: ${{ toJson(needs) }}
-        working-directory: tools/ci/cigate
-        run: go run . halt
+        uses: ./.github/actions/cigate
+        with:
+          command: halt
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          needs: ${{ toJson(needs) }}
+          is-draft: ${{ needs.meta.outputs.DRAFT_NOW }}
       - name: "Download all SBOM assets"
         id: collect_sbom
         if: ${{ needs.build_publish.result == 'success' }}
