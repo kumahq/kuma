@@ -126,10 +126,12 @@ spec:
 		// Names after KDS sync:
 		//   global -> zones: hash(mesh, name) on Universal; same + ".<ns>" in the
 		//     kuma-API on K8s; the raw K8s object name is just the hash.
-		//   zones -> global: hash(mesh, name, zoneName).
+		//   zones -> global: hash(mesh, name, zoneName). A policy in the system
+		//     namespace carries no namespace label, so the K8s zone hashes like a
+		//     Universal one.
 		nameFromGlobal := hash.HashedName(mesh, mtName)
 		nameOnGlobalFromUni := hash.HashedName(mesh, mtName, Kuma4)
-		nameOnGlobalFromK8s := hash.HashedName(mesh, mtName, Kuma1, Config.KumaNamespace)
+		nameOnGlobalFromK8s := hash.HashedName(mesh, mtName, Kuma1)
 		nameOnK8sZone := fmt.Sprintf("%s.%s", nameFromGlobal, Config.KumaNamespace)
 
 		deleteFromK8sZone := func(k8sName string) (string, error) {
