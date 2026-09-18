@@ -495,13 +495,13 @@ jobs:
             echo "::error title=distributions::these jobs failed or were cancelled: ${broken}"
             exit 1
           fi
-          if [[ "${IS_DRAFT}" == "true" ]]; then
-            echo "::error title=distributions::this pull request is a draft, so the expensive jobs did not run and this check has tested nothing. Mark it ready for review."
-            exit 1
-          fi
           gated="$(jq -r '{build_check, check, test} | with_entries(select(.value.result == "skipped")) | keys | join(", ")' <<<"${NEEDS}")"
           if [[ -n "${gated}" ]]; then
-            echo "::error title=distributions::this run was gated as a draft and skipped ${gated}, but the pull request is not a draft any more, so these results do not describe it. Re-run the newest run for this commit, or push again."
+            if [[ "${IS_DRAFT}" == "true" ]]; then
+              echo "::error title=distributions::this pull request is a draft, so ${gated} did not run and this check has tested nothing. Mark it ready for review to test it."
+            else
+              echo "::error title=distributions::this run skipped ${gated}, but the pull request is not a draft, so these results do not describe it. Re-run the newest run for this commit, or push again."
+            fi
             exit 1
           fi
           echo "All dependent jobs succeeded"
