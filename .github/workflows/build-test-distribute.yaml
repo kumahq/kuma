@@ -60,61 +60,64 @@ jobs:
             exit 1
           fi
 
-          if ! selected_run="$(jq -s -r '
+          if ! candidates="$(jq -s -r '
               map(select(.conclusion == "success"))
               | sort_by(.created_at)
-              | last
-              // empty
+              | reverse
+              | .[]
+              | "\(.id) \(.html_url)"
             ' "${runs_ndjson}" 2>gate_runs_jq_err.log)"; then
             echo "::error title=release_sha_gate::gate could not parse GitHub Actions run data for ${WORKFLOW} on SHA ${SHA}: $(cat gate_runs_jq_err.log)"
             exit 1
           fi
 
-          if [[ -z "${selected_run}" ]]; then
+          if [[ -z "${candidates}" ]]; then
             echo "::error title=release_sha_gate::No successful completed push run of ${WORKFLOW} found for tagged SHA ${SHA}. Every tag push requires a prior green branch push CI run for the tagged commit. Recovery: re-run the branch push CI on this SHA (re-tests and re-publishes the preview), then re-tag."
             exit 1
           fi
 
-          run_id="$(jq -r '.id' <<<"${selected_run}")"
-          run_url="$(jq -r '.html_url' <<<"${selected_run}")"
+          while read -r run_id run_url; do
+            jobs_ndjson="$(mktemp)"
+            if ! gh api --method GET "/repos/${REPO}/actions/runs/${run_id}/jobs" -f per_page=100 --paginate \
+                --jq '.jobs[] | {name, conclusion}' \
+                > "${jobs_ndjson}" 2>gate_jobs_err.log; then
+              echo "::warning title=release_sha_gate::gate could not query GitHub Actions for jobs of run ${run_url}: $(cat gate_jobs_err.log)"
+              continue
+            fi
 
-          jobs_ndjson="$(mktemp)"
-          if ! gh api --method GET "/repos/${REPO}/actions/runs/${run_id}/jobs" -f per_page=100 --paginate \
-              --jq '.jobs[] | {name, conclusion}' \
-              > "${jobs_ndjson}" 2>gate_jobs_err.log; then
-            echo "::error title=release_sha_gate::gate could not query GitHub Actions for jobs of run ${run_url}: $(cat gate_jobs_err.log)"
-            exit 1
-          fi
+            if ! missing="$(jq -s -r '
+                def all_green($jobs; $pattern):
+                  [$jobs[] | select(.name | test($pattern)) | .conclusion] as $c
+                  | ($c | length > 0) and ($c | all(. == "success"));
 
-          if ! missing="$(jq -s -r '
-              def all_green($jobs; $pattern):
-                [$jobs[] | select(.name | test($pattern)) | .conclusion] as $c
-                | ($c | length > 0) and ($c | all(. == "success"));
+                . as $jobs
+                | [
+                    {label: "test / test_unit", pattern: "^test / test_unit$"},
+                    {label: "test / e2e ...", pattern: "^test / e2e"},
+                    {label: "build_publish / digest-images", pattern: "^build_publish / digest-images$"},
+                    {label: "build_publish / build-binaries", pattern: "^build_publish / build-binaries"},
+                    {label: "build_publish / publish-binaries", pattern: "^build_publish / publish-binaries$"},
+                    {label: "build_publish / build-images ...", pattern: "^build_publish / build-images"},
+                    {label: "build_publish / publish-helm", pattern: "^build_publish / publish-helm$"}
+                  ]
+                | map(select(all_green($jobs; .pattern) | not))
+                | map(.label)
+                | join(", ")
+              ' "${jobs_ndjson}" 2>gate_jobs_jq_err.log)"; then
+              echo "::warning title=release_sha_gate::gate could not parse GitHub Actions job data for run ${run_url}: $(cat gate_jobs_jq_err.log)"
+              continue
+            fi
 
-              . as $jobs
-              | [
-                  {label: "test / test_unit", pattern: "^test / test_unit$"},
-                  {label: "test / e2e ...", pattern: "^test / e2e"},
-                  {label: "build_publish / digest-images", pattern: "^build_publish / digest-images$"},
-                  {label: "build_publish / build-binaries", pattern: "^build_publish / build-binaries"},
-                  {label: "build_publish / publish-binaries", pattern: "^build_publish / publish-binaries$"},
-                  {label: "build_publish / build-images ...", pattern: "^build_publish / build-images"},
-                  {label: "build_publish / publish-helm", pattern: "^build_publish / publish-helm$"}
-                ]
-              | map(select(all_green($jobs; .pattern) | not))
-              | map(.label)
-              | join(", ")
-            ' "${jobs_ndjson}" 2>gate_jobs_jq_err.log)"; then
-            echo "::error title=release_sha_gate::gate could not parse GitHub Actions job data for run ${run_url}: $(cat gate_jobs_jq_err.log)"
-            exit 1
-          fi
+            if [[ -z "${missing}" ]]; then
+              echo "Trusted source run: ${run_url}"
+              exit 0
+            fi
 
-          if [[ -n "${missing}" ]]; then
-            echo "::error title=release_sha_gate::Selected run ${run_url} is missing required successful job(s): ${missing}. Recovery: re-run the branch push CI on SHA ${SHA}, then re-tag."
-            exit 1
-          fi
+            echo "Run ${run_url} is missing required successful job(s): ${missing}"
+          done <<<"${candidates}"
 
-          echo "Trusted source run: ${run_url}"
+          echo "::error title=release_sha_gate::No push run of ${WORKFLOW} on SHA ${SHA} has every required job green. Recovery: re-run the branch push CI on this SHA, then re-tag."
+          exit 1
   meta:
     needs: ["release_sha_gate"]
     timeout-minutes: 5
@@ -482,6 +485,10 @@ jobs:
           broken="$(jq -r 'with_entries(select(.value.result == "failure" or .value.result == "cancelled")) | keys | join(", ")' <<<"${NEEDS}")"
           if [[ -n "${broken}" ]]; then
             echo "::error title=distributions::these jobs failed or were cancelled: ${broken}"
+            exit 1
+          fi
+          if [[ "${IS_DRAFT}" == "true" ]]; then
+            echo "::error title=distributions::this pull request is a draft, so the expensive jobs did not run and this check has tested nothing. Mark it ready for review."
             exit 1
           fi
           gated="$(jq -r '{build_check, check, test} | with_entries(select(.value.result == "skipped")) | keys | join(", ")' <<<"${NEEDS}")"
