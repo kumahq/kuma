@@ -278,7 +278,7 @@ var _ = Describe("Server interceptors", func() {
 	})
 
 	It("should authenticate with a type a distribution registered", func() {
-		stream, _, err := kds_auth.ServerInterceptors("konnect", funcAuthenticator(nil))
+		stream, _, err := kds_auth.ServerInterceptors("custom", funcAuthenticator(nil))
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stream).To(HaveLen(1))
@@ -299,7 +299,7 @@ var _ = Describe("Server interceptors", func() {
 			Expect(err).To(MatchError(ContainSubstring("is not supported by this control plane")))
 		},
 		Entry("zoneToken without an authenticator", multizone.KDSAuthZoneToken),
-		Entry("a type of a distribution that is not installed", multizone.KDSAuthType("konnect")),
+		Entry("a type of a distribution that is not installed", multizone.KDSAuthType("custom")),
 		Entry("a typo", multizone.KDSAuthType("zonetoken")),
 	)
 })
