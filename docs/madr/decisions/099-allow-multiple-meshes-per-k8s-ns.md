@@ -1,3 +1,12 @@
+---
+title: Allow Multiple Meshes per Kubernetes Namespace
+status: accepted
+date: 2026-03-05
+tags: [kubernetes, mesh, workload, namespace, zone-proxy]
+summary: Reverts MADR 093 so mesh-scoped zone proxies for several meshes can live in kuma-system; Workload name collisions surface as controller errors and the `disallowMultipleMeshesPerNamespace` flag is removed.
+related: [093-disallow-multiple-meshes-per-k8s-ns, 094-zone-proxy-deployment-model, 092-workload-identifier]
+---
+
 # Allow Multiple Meshes per Kubernetes Namespace
 
 * Status: accepted
