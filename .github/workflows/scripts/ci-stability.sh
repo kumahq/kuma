@@ -70,7 +70,7 @@ fetch_sticky_comment() {
 }
 
 next_run_number() {
-  echo $(( $(jq '[.runs[].number // 0] | max // 0' <<<"$1") + 1 ))
+  jq '([.runs[].number // 0] | max // 0) + 1' <<<"$1"
 }
 
 extract_state() {
@@ -101,8 +101,7 @@ render_comment() {
     jq -R 'split(",") | map(select(length > 0))') || return 1
   flaky=$(jq -r --argjson total "$run_count" --argjson exclude "$exclude_json" '
     [.runs[] | select(.result == "fail") | .failed_jobs[]?]
-    | map(sub(" \\(cancelled\\)$"; ""))
-    | map(select(. as $j | $exclude | index($j) | not))
+    | map(sub(" \\(cancelled\\)$"; "")) - $exclude
     | sort
     | group_by(.)
     | map({job: .[0], count: length})
@@ -198,27 +197,25 @@ process_pr() {
     return
   fi
 
-  if [[ "$(jq -r '.state' <<<"$pr_json")" != "OPEN" ]]; then
+  local pr_state is_draft head_owner branch head_sha
+  IFS=$'\t' read -r pr_state is_draft head_owner branch head_sha < <(
+    jq -r '[.state, .isDraft, .headRepositoryOwner.login, .headRefName, .headRefOid] | @tsv' <<<"$pr_json")
+
+  if [[ "$pr_state" != "OPEN" ]]; then
     log "PR #${pr}: not open, skipping"
     return
   fi
 
-  if [[ "$(jq -r '.isDraft' <<<"$pr_json")" == "true" ]]; then
+  if [[ "$is_draft" == "true" ]]; then
     log "PR #${pr}: draft, skipping"
     return
   fi
 
-  local head_owner
-  head_owner=$(jq -r '.headRepositoryOwner.login' <<<"$pr_json")
   if [[ "$head_owner" != "$OWNER" ]]; then
     warn "PR #${pr}: head repo is fork \`${head_owner}\`, cannot push"
     summary "- ⏭️ PR #${pr}: skipped (fork \`${head_owner}\`)"
     return
   fi
-
-  local branch head_sha
-  branch=$(jq   -r '.headRefName' <<<"$pr_json")
-  head_sha=$(jq -r '.headRefOid'  <<<"$pr_json")
 
   # --- fresh-commit grace period ---
   # Skip if HEAD was committed less than FRESH_COMMIT_GRACE_SECS ago. Without
@@ -285,9 +282,7 @@ process_pr() {
 
   # --- record observation if definitive ---
   local result="none"
-  if [[ -n "$checks" ]]; then
-    if (( has_failed )); then result="fail"; elif (( has_passed )); then result="pass"; fi
-  fi
+  if (( has_failed )); then result="fail"; elif (( has_passed )); then result="pass"; fi
   if [[ "$result" != "none" ]]; then
     local now_utc failed_json run_number observation
     now_utc=$(date -u +"%Y-%m-%d %H:%M")
