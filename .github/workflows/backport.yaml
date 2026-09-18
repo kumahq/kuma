@@ -166,7 +166,8 @@ jobs:
           else
             # A conflicted cherry-pick drops the paths it could not resolve, so
             # this is no longer the change whoever labelled the original judged.
-            echo "LABELS=$(printf '%s' "${BASE_LABELS},conflict" | tr ',' '\n' | grep -vxE 'ci/skip-test|ci/skip-e2e-test|ci/skip-container-structure-test' | paste -sd, -)" >> "$GITHUB_ENV"
+            echo "LABELS=$(jq -rn --arg l "${BASE_LABELS},conflict" '
+              $l | split(",") - ["ci/skip-test", "ci/skip-e2e-test", "ci/skip-container-structure-test"] | join(",")')" >> "$GITHUB_ENV"
             # A path the target branch does not have, modified by the commit,
             # cannot be resolved by staging it: that writes a whole file this
             # branch never carried, and the result reads like a real backport.

@@ -166,16 +166,9 @@ fetch_checks() {
 # Returns the age (in seconds) of a commit on stdout, or non-zero on failure.
 commit_age_secs() {
   local sha=$1 committed_at committed_epoch now_epoch
-  if ! committed_at=$(gh api "repos/${OWNER}/${REPO}/commits/${sha}" \
-      --jq '.commit.committer.date' 2>/dev/null); then
-    return 1
-  fi
-  if [[ -z "$committed_at" ]]; then
-    return 1
-  fi
-  if ! committed_epoch=$(date -u -d "$committed_at" +%s 2>/dev/null); then
-    return 1
-  fi
+  committed_at=$(gh api "repos/${OWNER}/${REPO}/commits/${sha}" --jq '.commit.committer.date' 2>/dev/null) || return 1
+  [[ -n "$committed_at" ]] || return 1
+  committed_epoch=$(date -u -d "$committed_at" +%s 2>/dev/null) || return 1
   now_epoch=$(date -u +%s)
   printf '%s' "$(( now_epoch - committed_epoch ))"
 }
@@ -417,32 +410,28 @@ main() {
   summary ""
   summary "## Processed PRs"
 
-  local prs_stability prs_merge
+  local wanted
   if ! jq -e 'type == "array"' "$OPEN_PRS_FILE" >/dev/null 2>&1 \
-    || ! prs_stability=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability") | .number' "$OPEN_PRS_FILE") \
-    || ! prs_merge=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability-merge-master") | .number' "$OPEN_PRS_FILE"); then
+    || ! wanted=$(jq -r '
+        .[]
+        | select(any(.labels[]?.name; . == "ci/verify-stability"))
+        | "\(.number) \(if ([.labels[]?.name] | index("ci/verify-stability-merge-master")) then 1 else 0 end)"
+      ' "$OPEN_PRS_FILE"); then
     err "could not read ${OPEN_PRS_FILE}"
     summary "- ⚠️ could not read the open pull request list"
     return 1
   fi
 
-  if [[ -z "$prs_stability" ]]; then
+  if [[ -z "$wanted" ]]; then
     log "No PRs with ci/verify-stability label"
     summary "_No PRs with \`ci/verify-stability\` label._"
     return 0
   fi
 
-  declare -A merge_set=()
-  while read -r p; do
-    [[ -n "$p" ]] && merge_set["$p"]=1
-  done <<<"$prs_merge"
-
-  while read -r pr; do
+  while read -r pr do_merge; do
     [[ -z "$pr" ]] && continue
-    local do_merge=0
-    [[ -n "${merge_set[$pr]:-}" ]] && do_merge=1
     process_pr "$pr" "$do_merge" || warn "PR #${pr}: processing error (continuing)"
-  done <<<"$prs_stability"
+  done <<<"$wanted"
 }
 
 main "$@"

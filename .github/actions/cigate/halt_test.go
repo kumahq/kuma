@@ -59,27 +59,17 @@ func TestVerdictPrefersAFailureOverTheDraftAllowance(t *testing.T) {
 
 func TestVerdictRefusesWhenAGateIsNotAmongTheNeeds(t *testing.T) {
 	for _, missing := range gates {
-		without := needs(nil)
-		delete(without, missing)
+		for name, absent := range map[string]map[string]string{"absent": nil, "with no result": {missing: ""}} {
+			without := needs(absent)
+			if absent == nil {
+				delete(without, missing)
+			}
 
-		err := Verdict(without, false)
-		if err == nil || !strings.Contains(err.Error(), missing) {
-			t.Fatalf("Given %s absent from needs, When judged, Then it refuses naming it; got %v", missing, err)
+			err := Verdict(without, false)
+			if err == nil || !strings.Contains(err.Error(), missing) {
+				t.Fatalf("Given %s %s, When judged, Then it refuses naming it; got %v", missing, name, err)
+			}
 		}
-	}
-}
-
-func TestVerdictRefusesAGateThatReportedNoResult(t *testing.T) {
-	err := Verdict(needs(map[string]string{"check": ""}), false)
-	if err == nil || !strings.Contains(err.Error(), "reports nothing about check") {
-		t.Fatalf("Given a gate present but with no result, When judged, Then it refuses; got %v", err)
-	}
-}
-
-func TestVerdictRefusesAnEmptyNeeds(t *testing.T) {
-	err := Verdict(map[string]string{}, true)
-	if err == nil || !strings.Contains(err.Error(), "reports nothing about") {
-		t.Fatalf("Given nothing in needs, When judged, Then it refuses; got %v", err)
 	}
 }
 

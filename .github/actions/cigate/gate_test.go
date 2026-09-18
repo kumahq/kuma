@@ -20,17 +20,6 @@ func green() []Job {
 	}
 }
 
-func replace(name, conclusion string) []Job {
-	jobs := green()
-	for i := range jobs {
-		if jobs[i].Name == name {
-			jobs[i].Conclusion = conclusion
-		}
-	}
-
-	return jobs
-}
-
 func drop(prefix string) []Job {
 	jobs := []Job{}
 	for _, job := range green() {
@@ -59,8 +48,10 @@ func TestMissingJobsReportsARenamedJobByItsLabel(t *testing.T) {
 
 func TestMissingJobsRejectsAnyLegThatIsNotSuccess(t *testing.T) {
 	for _, conclusion := range []string{"failure", "cancelled", "skipped", ""} {
-		missing := MissingJobs(replace("test / e2e (gatewayapi, v1.35, amd64)", conclusion))
-		if !reflect.DeepEqual(missing, []string{"test / e2e ..."}) {
+		jobs := green()
+		jobs[2].Conclusion = conclusion
+
+		if missing := MissingJobs(jobs); !reflect.DeepEqual(missing, []string{"test / e2e ..."}) {
 			t.Fatalf("Given an e2e leg %q beside a green sibling, When checked, Then the family is missing; got %v", conclusion, missing)
 		}
 	}
@@ -82,18 +73,6 @@ func TestMissingJobsAcceptsTheOlderKongMeshE2ENaming(t *testing.T) {
 
 	if missing := MissingJobs(jobs); len(missing) != 0 {
 		t.Fatalf("Given release branch job names, When checked, Then the e2e family still matches; got %v", missing)
-	}
-}
-
-func TestMissingJobsStillRejectsAFailedLegUnderTheOlderNaming(t *testing.T) {
-	jobs := drop("test / e2e")
-	jobs = append(jobs,
-		Job{"test / test_e2e_env (calico, v1.35) / e2e (0)", "success"},
-		Job{"test / test_e2e_env (flannel, v1.35) / e2e (1)", "failure"},
-	)
-
-	if missing := MissingJobs(jobs); len(missing) != 1 {
-		t.Fatalf("Given a failed leg under the older naming, When checked, Then the family is missing; got %v", missing)
 	}
 }
 

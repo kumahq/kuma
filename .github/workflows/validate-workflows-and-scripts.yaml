@@ -8,8 +8,8 @@ run-name: >-
       inputs.run_actionlint && 'actionlint' || '',
       inputs.run_actionlint && inputs.run_shellcheck && ' + ' || '',
       inputs.run_shellcheck && 'shellcheck' || '',
-      (inputs.run_actionlint || inputs.run_shellcheck) && inputs.run_script_tests && ' + ' || '',
-      inputs.run_script_tests && 'CI tool tests' || ''
+      (inputs.run_actionlint || inputs.run_shellcheck) && inputs.run_cigate_checks && ' + ' || '',
+      inputs.run_cigate_checks && 'CI tool tests' || ''
     ) ||
     github.event_name
   }}
@@ -27,8 +27,8 @@ on:
         description: 'Run shellcheck'
         type: boolean
         default: true
-      run_script_tests:
-        description: 'Run the CI tool tests'
+      run_cigate_checks:
+        description: 'Run the CI gate tests and check its pinned image'
         type: boolean
         default: true
 
@@ -174,7 +174,7 @@ jobs:
       || 'ubuntu-24.04' }}
     timeout-minutes: 10
     if: >-
-      github.event_name == 'workflow_dispatch' && inputs.run_script_tests ||
+      github.event_name == 'workflow_dispatch' && inputs.run_cigate_checks ||
       github.event_name == 'pull_request' && !github.event.pull_request.draft
     permissions:
       contents: read
@@ -204,7 +204,7 @@ jobs:
       || 'ubuntu-24.04' }}
     timeout-minutes: 10
     if: >-
-      github.event_name == 'workflow_dispatch' && inputs.run_script_tests ||
+      github.event_name == 'workflow_dispatch' && inputs.run_cigate_checks ||
       github.event_name == 'pull_request' && !github.event.pull_request.draft
     permissions:
       contents: read

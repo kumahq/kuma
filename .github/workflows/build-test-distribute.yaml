@@ -39,6 +39,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: ${{ github.ref_type == 'tag' }}
         with:
+          persist-credentials: false
           sparse-checkout: .github/actions/cigate
           sparse-checkout-cone-mode: false
       - name: "Verify tagged SHA has a trusted green push run"
@@ -104,6 +105,7 @@ jobs:
       - name: "Check out the CI gate action"
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           sparse-checkout: .github/actions/cigate
           sparse-checkout-cone-mode: false
       - name: "Decide what this run does, and hold the required check"
@@ -401,6 +403,7 @@ jobs:
       - name: "Check out the CI gate action"
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           sparse-checkout: .github/actions/cigate
           sparse-checkout-cone-mode: false
       - name: "Halt due to previous failures"
