@@ -105,8 +105,6 @@ Gate with a job-level `if:`, never a narrowed trigger. A job skipped by a condit
 
 An automation that marks a pull request ready must use an app token. GitHub raises no workflow run for an event its own token caused, so `ready_for_review` would not fire and the draft's results would stand.
 
-Two cases cost more than before. Ready to draft and back with no push runs the suite twice, because the cheap run overwrote the first one's results. `ci/force-publish` from a fork costs the rest of `check`, now that the refusal is its own job rather than a step that aborted it.
-
 ## Labels
 
 `meta` asks the API rather than trusting the webhook, whose copy is routinely empty: a pull request cannot be created with labels, so they always arrive in a second call. A label counts if it lands before `meta` reads, twenty to forty seconds into the run - ample for `gh pr create --label`, Renovate or `backport.yaml`, no use to someone clicking. Otherwise it takes effect on the next run, or on a re-run of this one.
