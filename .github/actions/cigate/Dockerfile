@@ -17,8 +17,6 @@ LABEL org.opencontainers.image.description="Decides what a Kuma CI run does, and
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=build /cigate /usr/local/bin/cigate
+COPY --from=build /cigate /cigate
 
-ENV PATH="/usr/local/bin:${PATH}"
-
-ENTRYPOINT ["cigate"]
+ENTRYPOINT ["/cigate"]

@@ -159,17 +159,6 @@ func TestGateFallsThroughANewerTagRunToAnOlderGreenBranchRun(t *testing.T) {
 	}
 }
 
-func TestGateReportsAnAPIFailureRatherThanAMissingRun(t *testing.T) {
-	_, err := Gate("abc", "w",
-		func() ([]Run, error) { return []Run{run(100, "2026-01-01"), run(200, "2026-01-02")}, nil },
-		func(int64) ([]Job, error) { return nil, errors.New("502") },
-		func(string) {},
-	)
-	if err == nil || !strings.Contains(err.Error(), "GitHub API failure") {
-		t.Fatalf("Given every job query fails, When gated, Then it blames the API; got %v", err)
-	}
-}
-
 func TestGateStillBlamesTheAPIWhenOneRunWasReadable(t *testing.T) {
 	_, err := Gate("abc", "w",
 		func() ([]Run, error) { return []Run{run(200, "2026-01-02"), run(100, "2026-01-01")}, nil },

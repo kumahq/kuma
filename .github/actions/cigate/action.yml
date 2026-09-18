@@ -10,10 +10,12 @@ inputs:
     required: true
   token:
     description: "Token the decision reads the API with"
-    required: true
+    required: false
+    default: ""
   repository:
     description: "owner/repo the decision is about"
-    required: true
+    required: false
+    default: ""
   pull-request:
     description: "Pull request number, for the meta command"
     required: false

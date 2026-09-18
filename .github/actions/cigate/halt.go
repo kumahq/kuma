@@ -16,18 +16,13 @@ var gates = []string{"build_check", "check", "test"}
 
 func join(parts []string) string { return strings.Join(parts, ", ") }
 
-func Verdict(needs map[string]Need, isDraft bool) (map[string]string, error) {
-	results := map[string]string{}
-	for job, need := range needs {
-		results[job] = need.Result
-	}
-
+func Verdict(results map[string]string, isDraft bool) error {
 	broken := slices.DeleteFunc(slices.Sorted(maps.Keys(results)), func(job string) bool {
 		return results[job] != "failure" && results[job] != "cancelled"
 	})
 
 	if len(broken) > 0 {
-		return results, fmt.Errorf("these jobs failed or were cancelled: %s", join(broken))
+		return fmt.Errorf("these jobs failed or were cancelled: %s", join(broken))
 	}
 
 	absent := slices.DeleteFunc(slices.Clone(gates), func(job string) bool {
@@ -36,20 +31,20 @@ func Verdict(needs map[string]Need, isDraft bool) (map[string]string, error) {
 		return present
 	})
 	if len(absent) > 0 {
-		return results, fmt.Errorf("this run reports nothing about %s, which it has to check before it can pass. They belong in this job's needs.", join(absent))
+		return fmt.Errorf("this run reports nothing about %s, which it has to check before it can pass. They belong in this job's needs.", join(absent))
 	}
 
 	skipped := slices.DeleteFunc(slices.Clone(gates), func(job string) bool { return results[job] != "skipped" })
 
 	if len(skipped) > 0 {
 		if isDraft {
-			return results, fmt.Errorf("this pull request is a draft, so %s did not run and this check has tested nothing. Mark it ready for review to test it.", join(skipped))
+			return fmt.Errorf("this pull request is a draft, so %s did not run and this check has tested nothing. Mark it ready for review to test it.", join(skipped))
 		}
 
-		return results, fmt.Errorf("this run skipped %s, but the pull request is not a draft, so these results do not describe it. Push a commit to start a run that tests it - re-running this one replays the event it was started with and skips them again.", join(skipped))
+		return fmt.Errorf("this run skipped %s, but the pull request is not a draft, so these results do not describe it. Push a commit to start a run that tests it - re-running this one replays the event it was started with and skips them again.", join(skipped))
 	}
 
-	return results, nil
+	return nil
 }
 
 func Halt(rawNeeds, isDraft string, log func(string)) int {
@@ -60,12 +55,15 @@ func Halt(rawNeeds, isDraft string, log func(string)) int {
 		return 1
 	}
 
-	results, err := Verdict(needs, isDraft == "true")
+	results := map[string]string{}
+	for job, need := range needs {
+		results[job] = need.Result
+	}
 
 	encoded, _ := json.Marshal(results)
 	log(fmt.Sprintf("results: %s", encoded))
 
-	if err != nil {
+	if err := Verdict(results, isDraft == "true"); err != nil {
 		log(fmt.Sprintf("::error title=distributions::%s", err))
 
 		return 1

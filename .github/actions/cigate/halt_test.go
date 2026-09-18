@@ -1,43 +1,37 @@
 package main
 
 import (
+	"maps"
 	"strings"
 	"testing"
 )
 
-func needs(over map[string]string) map[string]Need {
+func needs(over map[string]string) map[string]string {
 	base := map[string]string{
 		"release_sha_gate": "success", "meta": "success", "refuse_fork_publish": "skipped",
 		"build_check": "success", "build_publish": "skipped", "check": "success",
 		"test": "success", "provenance": "skipped",
 	}
-	for job, result := range over {
-		base[job] = result
-	}
+	maps.Copy(base, over)
 
-	built := map[string]Need{}
-	for job, result := range base {
-		built[job] = Need{Result: result}
-	}
-
-	return built
+	return base
 }
 
 func TestVerdictPassesWhenEveryDependencySucceededOrSkipped(t *testing.T) {
-	if _, err := Verdict(needs(nil), false); err != nil {
+	if err := Verdict(needs(nil), false); err != nil {
 		t.Fatalf("Given a healthy run, When judged, Then it passes; got %v", err)
 	}
 }
 
 func TestVerdictNamesEveryBrokenDependencyInOrder(t *testing.T) {
-	_, err := Verdict(needs(map[string]string{"check": "failure", "test": "cancelled"}), false)
+	err := Verdict(needs(map[string]string{"check": "failure", "test": "cancelled"}), false)
 	if err == nil || err.Error() != "these jobs failed or were cancelled: check, test" {
 		t.Fatalf("Given a failure and a cancellation, When judged, Then both are named in order; got %v", err)
 	}
 }
 
 func TestVerdictRefusesADraftThatSkippedItsGates(t *testing.T) {
-	_, err := Verdict(needs(map[string]string{"build_check": "skipped", "check": "skipped"}), true)
+	err := Verdict(needs(map[string]string{"build_check": "skipped", "check": "skipped"}), true)
 	if err == nil || !strings.Contains(err.Error(), "this pull request is a draft") {
 		t.Fatalf("Given a draft that skipped its gates, When judged, Then it refuses; got %v", err)
 	}
@@ -47,7 +41,7 @@ func TestVerdictRefusesADraftThatSkippedItsGates(t *testing.T) {
 }
 
 func TestVerdictRefusesSkippedGatesOnAPullRequestThatIsNoLongerADraft(t *testing.T) {
-	_, err := Verdict(needs(map[string]string{"build_check": "skipped", "check": "skipped"}), false)
+	err := Verdict(needs(map[string]string{"build_check": "skipped", "check": "skipped"}), false)
 	if err == nil || !strings.Contains(err.Error(), "skipped build_check, check") {
 		t.Fatalf("Given a ready pull request whose gates skipped, When judged, Then it refuses; got %v", err)
 	}
@@ -57,7 +51,7 @@ func TestVerdictRefusesSkippedGatesOnAPullRequestThatIsNoLongerADraft(t *testing
 }
 
 func TestVerdictPrefersAFailureOverTheDraftAllowance(t *testing.T) {
-	_, err := Verdict(needs(map[string]string{"build_check": "skipped", "check": "failure"}), true)
+	err := Verdict(needs(map[string]string{"build_check": "skipped", "check": "failure"}), true)
 	if err == nil || !strings.Contains(err.Error(), "failed or were cancelled: check") {
 		t.Fatalf("Given a failure on a draft, When judged, Then the failure wins; got %v", err)
 	}
@@ -68,7 +62,7 @@ func TestVerdictRefusesWhenAGateIsNotAmongTheNeeds(t *testing.T) {
 		without := needs(nil)
 		delete(without, missing)
 
-		_, err := Verdict(without, false)
+		err := Verdict(without, false)
 		if err == nil || !strings.Contains(err.Error(), missing) {
 			t.Fatalf("Given %s absent from needs, When judged, Then it refuses naming it; got %v", missing, err)
 		}
@@ -76,7 +70,7 @@ func TestVerdictRefusesWhenAGateIsNotAmongTheNeeds(t *testing.T) {
 }
 
 func TestVerdictRefusesAnEmptyNeeds(t *testing.T) {
-	_, err := Verdict(map[string]Need{}, true)
+	err := Verdict(map[string]string{}, true)
 	if err == nil || !strings.Contains(err.Error(), "reports nothing about") {
 		t.Fatalf("Given nothing in needs, When judged, Then it refuses; got %v", err)
 	}

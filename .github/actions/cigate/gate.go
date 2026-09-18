@@ -67,7 +67,7 @@ func Gate(sha, workflow string, listRuns func() ([]Run, error), listJobs func(in
 		return Run{}, fmt.Errorf("No successful completed push run of %s found for tagged SHA %s. Every tag push requires a prior green branch push CI run for the tagged commit. Recovery: re-run the branch push CI on this SHA (re-tests and re-publishes the preview), then re-tag.", workflow, sha)
 	}
 
-	unread, inspected := 0, 0
+	unread := 0
 
 	for _, run := range candidates {
 		jobs, err := listJobs(run.ID)
@@ -78,7 +78,6 @@ func Gate(sha, workflow string, listRuns func() ([]Run, error), listJobs func(in
 			continue
 		}
 
-		inspected++
 		missing := MissingJobs(jobs)
 		if len(missing) == 0 {
 			return run, nil
@@ -88,7 +87,7 @@ func Gate(sha, workflow string, listRuns func() ([]Run, error), listJobs func(in
 	}
 
 	if unread > 0 {
-		return Run{}, fmt.Errorf("gate could not read the jobs of %d run(s) for SHA %s and found no green run among the %d it did read. Some of this is a GitHub API failure rather than a missing run. Recovery: re-run this job.", unread, sha, inspected)
+		return Run{}, fmt.Errorf("gate could not read the jobs of %d run(s) for SHA %s and found no green run among the %d it did read. Some of this is a GitHub API failure rather than a missing run. Recovery: re-run this job.", unread, sha, len(candidates)-unread)
 	}
 
 	return Run{}, fmt.Errorf("No push run of %s on SHA %s has every required job green. Recovery: re-run the branch push CI on this SHA, then re-tag.", workflow, sha)
