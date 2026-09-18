@@ -66,8 +66,8 @@ func Halt(rawNeeds, isDraft, base string, liveBase func() (string, error), log f
 
 			return 1
 		}
-		if now != base {
-			log(fmt.Sprintf("::error title=distributions::this run was started against %s and the pull request now targets %s, so nothing it did describes it. Push a commit to start a run against %s.", base, now, now))
+		if err := BaseHeld(base, now); err != nil {
+			log(fmt.Sprintf("::error title=distributions::%s", err))
 
 			return 1
 		}

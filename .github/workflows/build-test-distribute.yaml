@@ -71,8 +71,8 @@ jobs:
       SAME_REPO: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     outputs:
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-full-matrix') }}
-      RUN_UNIT: ${{ github.ref_type != 'tag' && !github.event.pull_request.draft && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') }}
-      RUN_E2E: ${{ github.ref_type != 'tag' && !github.event.pull_request.draft && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-e2e-test') }}
+      RUN_UNIT: ${{ github.ref_type != 'tag' && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') }}
+      RUN_E2E: ${{ github.ref_type != 'tag' && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-e2e-test') }}
       RUN_CONTAINER_STRUCTURE_TEST: ${{ !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-container-structure-test') }}
       BUILD: ${{ !github.event.pull_request.draft && !(env.SAME_REPO == 'false' && contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish')) && (github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-build') || contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish')) }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || (contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') && env.SAME_REPO == 'true') }}

@@ -119,7 +119,7 @@ func main() {
 	switch os.Args[1] {
 	case "halt":
 		os.Exit(Halt(os.Getenv("NEEDS"), os.Getenv("IS_DRAFT"), os.Getenv("BASE_REF"), func() (string, error) {
-			pull, err := readPullRequest(repo, token, os.Getenv("PR"))()
+			pull, err := ReadPullRequest(readPullRequest(repo, token, os.Getenv("PR")), time.Sleep)
 			if err != nil {
 				return "", err
 			}
@@ -143,16 +143,7 @@ func main() {
 
 		os.Exit(Meta(
 			os.Getenv("GITHUB_EVENT_NAME"), number, sha, os.Getenv("BASE_REF"),
-			func() (*PullRequest, error) {
-				response, err := send(fmt.Sprintf("https://api.github.com/repos/%s/pulls/%s", repo, number))
-				if err != nil {
-					return nil, err
-				}
-				defer response.Body.Close()
-				pull := &PullRequest{}
-
-				return pull, json.NewDecoder(response.Body).Decode(pull)
-			},
+			readPullRequest(repo, token, number),
 			postCheckRun(repo, token),
 			time.Sleep,
 			func(decided string) { fmt.Fprintln(output, decided) },

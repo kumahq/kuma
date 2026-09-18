@@ -213,7 +213,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 0
 
       - name: "The image the action pins must come from a commit in this repository"
         run: |
@@ -221,7 +220,7 @@ jobs:
           reference="$(grep -oE 'ghcr\.io/kumahq/cigate@sha256:[a-f0-9]+' .github/actions/cigate/action.yml | head -n1)"
           docker pull --quiet "${reference}" >/dev/null
           revision="$(docker image inspect "${reference}" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
-          if ! git cat-file -e "${revision}^{commit}" 2>/dev/null; then
+          if ! git fetch --quiet --depth=1 origin "${revision}" 2>/dev/null; then
             echo "::error title=cigate::${reference} says it was built from ${revision}, which is not a commit in this repository"
             exit 1
           fi

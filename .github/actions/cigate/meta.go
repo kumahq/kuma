@@ -49,6 +49,14 @@ func ReadPullRequest(get func() (*PullRequest, error), wait func(time.Duration))
 	return nil, last
 }
 
+func BaseHeld(base, now string) error {
+	if now == base {
+		return nil
+	}
+
+	return fmt.Errorf("this run was started against %s and the pull request now targets %s, so nothing it did describes it. Push a commit to start a run against %s.", base, now, now)
+}
+
 func Hold(post func(string) error, sha string, log func(string)) error {
 	if err := post(sha); err != nil {
 		return err
@@ -75,10 +83,12 @@ func Meta(event, number, sha, base string, get func() (*PullRequest, error), pos
 		return 1
 	}
 
-	if base != "" && pull.Base.Ref != base {
-		log(fmt.Sprintf("::error title=meta::this run was started against %s and pull request %s now targets %s, so nothing it produces describes it. Push a commit to start a run against %s.", base, number, pull.Base.Ref, pull.Base.Ref))
+	if base != "" {
+		if err := BaseHeld(base, pull.Base.Ref); err != nil {
+			log(fmt.Sprintf("::error title=meta::%s", err))
 
-		return 1
+			return 1
+		}
 	}
 
 	names := make([]string, 0, len(pull.Labels))

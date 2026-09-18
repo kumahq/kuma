@@ -84,6 +84,7 @@ Today that means the arm64 e2e legs in `_test.yaml` and the `linux/arm64` leg of
 - `scorecard.yml` must keep a literal label, because `scorecard-action` rejects an expression-based `runs-on` during workflow verification.
 - `pr-comments.yaml` must stay GitHub-hosted. It checks out the head of the PR a maintainer commented on, which is a fork on most pull requests, and runs `make` against it. `runs-on` cannot read the step that resolves `isCrossRepository`, so the runner is chosen before the workflow knows whose code it is about to run.
 - `_provenance.yaml` and `lifecycle.yml` have no `runs-on`. They call reusable workflows that choose their own runner.
+- `pr-retarget.yaml` has no fork carve-out. `pull_request_target` runs the base branch's own code, so a fork cannot reach the runner through it.
 
 ## Cutting a release branch
 
