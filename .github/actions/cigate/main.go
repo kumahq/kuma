@@ -134,7 +134,7 @@ func main() {
 		}
 
 	case "meta":
-		number, sha := os.Getenv("PR"), os.Getenv("HEAD_SHA")
+		number := os.Getenv("PR")
 		output, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0o644)
 		if err != nil {
 			log(fmt.Sprintf("::error title=meta::could not open GITHUB_OUTPUT: %s", err))
@@ -142,7 +142,7 @@ func main() {
 		}
 
 		os.Exit(Meta(
-			os.Getenv("GITHUB_EVENT_NAME"), number, sha, os.Getenv("BASE_REF"),
+			os.Getenv("GITHUB_EVENT_NAME"), number, os.Getenv("HEAD_SHA"), os.Getenv("BASE_REF"),
 			readPullRequest(repo, token, number),
 			postCheckRun(repo, token),
 			time.Sleep,

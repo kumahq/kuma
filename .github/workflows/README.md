@@ -96,7 +96,7 @@ Draft state and labels. `meta` reads both, and every job that gates on either re
 
 ## Draft state
 
-A draft skips `build_check`, `check`, `test_unit`, the e2e matrix and `build_publish`, and the workflow and script linters with them. Ready for review runs them; converting back to a draft cancels the run in flight and replaces it with a cheap one. A backport whose cherry-pick conflicted opens as a draft, so it runs nothing until someone resolves it.
+A draft skips `build_check`, `check`, `test_unit`, the e2e matrix and `build_publish`, and every job in `validate-workflows-and-scripts.yaml` with them. Ready for review runs them; converting back to a draft cancels the run in flight and replaces it with a cheap one. A backport whose cherry-pick conflicted opens as a draft, so it runs nothing until someone resolves it.
 
 Gate with a job-level `if:`, never a narrowed trigger. A job skipped by a condition reports Success and satisfies a required check, while a workflow that never fires leaves that check waiting for a report and blocks the pull request for good. A skipped *matrix* job reports under its unexpanded name, so the per-leg e2e names disappear whenever the matrix comes out empty.
 
@@ -104,7 +104,7 @@ Gate with a job-level `if:`, never a narrowed trigger. A job skipped by a condit
 
 `meta` also posts a `distributions` check of its own, `in_progress`, as soon as it has read the pull request, so a green result from an earlier run of the same commit cannot satisfy the requirement while this one is still deciding. A newer check run of the same name replaces the older one outright. A fork's token is read-only, so that hold fails there and the step says so.
 
-`meta` refuses a run whose pull request has moved under it. If the draft state or the base branch it reads live differs from the one the run was started with, it fails rather than publishing decisions that describe something else - which is what stops a re-run of an older run standing in for the current state. Changing the base fires no event on the main workflow, so `pr-retarget.yaml` watches for it and posts the same hold, leaving the required check pending until a run happens against the branch the pull request now aims at. Recovery in both cases is a push. A release branch requires `distributions` too but has no `pr-retarget.yaml` until this is backported to it, so a pull request moved onto one keeps whatever result it already had.
+`meta` refuses a run started against a base the pull request no longer targets, rather than publishing decisions that describe something else, and `distributions` reads the base again at fan-in so a retarget ten minutes in cannot be overwritten by the run it interrupted. Changing the base fires no event on the main workflow, so `pr-retarget.yaml` watches for it and posts the same hold, leaving the required check pending until a run happens against the branch the pull request now aims at. Recovery in every case is a push. A release branch requires `distributions` too but has no `pr-retarget.yaml` until this is backported to it, so a pull request moved onto one keeps whatever result it already had.
 
 An automation that marks a pull request ready must use an app token. GitHub raises no workflow run for an event its own token caused, so `ready_for_review` would not fire and the draft's results would stand.
 

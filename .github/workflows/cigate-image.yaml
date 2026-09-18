@@ -45,19 +45,6 @@ jobs:
           tags: ghcr.io/kumahq/cigate:${{ github.sha }}
           labels: org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: "Say which digest the action should pin"
-        env:
-          DIGEST: ${{ steps.build.outputs.digest }}
-        run: |
-          set -euo pipefail
-          {
-            echo "Pin this in \`.github/actions/cigate/action.yml\`:"
-            echo
-            echo '```yaml'
-            echo "  image: docker://ghcr.io/kumahq/cigate@${DIGEST}"
-            echo '```'
-          } >> "${GITHUB_STEP_SUMMARY}"
-
       - name: "Point the action at the image just published"
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
