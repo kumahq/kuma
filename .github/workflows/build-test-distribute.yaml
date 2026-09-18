@@ -76,6 +76,7 @@ jobs:
             exit 1
           fi
 
+          inspected=0
           while read -r run_id run_url; do
             jobs_ndjson="$(mktemp)"
             if ! gh api --method GET "/repos/${REPO}/actions/runs/${run_id}/jobs" -f per_page=100 --paginate \
@@ -108,6 +109,8 @@ jobs:
               continue
             fi
 
+            inspected=$((inspected + 1))
+
             if [[ -z "${missing}" ]]; then
               echo "Trusted source run: ${run_url}"
               exit 0
@@ -115,6 +118,11 @@ jobs:
 
             echo "Run ${run_url} is missing required successful job(s): ${missing}"
           done <<<"${candidates}"
+
+          if [[ "${inspected}" -eq 0 ]]; then
+            echo "::error title=release_sha_gate::gate could not read the jobs of any run for SHA ${SHA}, so it inspected nothing. This is a GitHub API failure rather than a missing run. Recovery: re-run this job."
+            exit 1
+          fi
 
           echo "::error title=release_sha_gate::No push run of ${WORKFLOW} on SHA ${SHA} has every required job green. Recovery: re-run the branch push CI on this SHA, then re-tag."
           exit 1
@@ -492,7 +500,7 @@ jobs:
             exit 1
           fi
           gated="$(jq -r '{build_check, check, test} | with_entries(select(.value.result == "skipped")) | keys | join(", ")' <<<"${NEEDS}")"
-          if [[ "${IS_DRAFT}" != "true" && -n "${gated}" ]]; then
+          if [[ -n "${gated}" ]]; then
             echo "::error title=distributions::this run was gated as a draft and skipped ${gated}, but the pull request is not a draft any more, so these results do not describe it. Re-run the newest run for this commit, or push again."
             exit 1
           fi

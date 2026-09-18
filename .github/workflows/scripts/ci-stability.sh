@@ -101,7 +101,8 @@ render_comment() {
     jq -R 'split(",") | map(select(length > 0))') || return 1
   flaky=$(jq -r --argjson total "$run_count" --argjson exclude "$exclude_json" '
     [.runs[] | select(.result == "fail") | .failed_jobs[]?]
-    | map(select(sub(" \\(cancelled\\)$"; "") as $bare | $exclude | index($bare) | not))
+    | map(sub(" \\(cancelled\\)$"; ""))
+    | map(select(. as $j | $exclude | index($j) | not))
     | sort
     | group_by(.)
     | map({job: .[0], count: length})
