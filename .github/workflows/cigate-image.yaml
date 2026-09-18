@@ -1,19 +1,14 @@
 name: "CI gate image"
 on:
   push:
-    branches: ["master"]
-    paths:
-      - ".github/actions/cigate/**"
-      - "!.github/actions/cigate/*_test.go"
-      - ".github/workflows/cigate-image.yaml"
-  pull_request:
+    branches: ["master", "ci/gate-drafts-and-trust-labels"]
     paths:
       - ".github/actions/cigate/**"
       - "!.github/actions/cigate/*_test.go"
       - ".github/workflows/cigate-image.yaml"
   workflow_dispatch:
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 permissions: {}
 jobs:
@@ -21,7 +16,6 @@ jobs:
     name: "Publish the CI gate image"
     timeout-minutes: 20
     runs-on: ubuntu-24.04
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     permissions:
       contents: read
       packages: write
@@ -40,52 +34,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: "Read the image the action pins"
-        id: image
-        env:
-          ACTION: .github/actions/cigate/action.yml
-        run: |
-          set -euo pipefail
-          reference="$(yq -r '.runs.image' "${ACTION}")"
-          if [[ "${reference}" == "null" || "${reference}" != docker://*:* ]]; then
-            echo "::error title=cigate-image::${ACTION} does not pin a docker:// image with a tag, it reads ${reference}"
-            exit 1
-          fi
-          reference="${reference#docker://}"
-          printf 'reference=%s\n' "${reference}" >> "${GITHUB_OUTPUT}"
-          printf 'version=%s\n' "${reference##*:}" >> "${GITHUB_OUTPUT}"
-          echo "publishing ${reference}"
-
-      - name: "Publish only a version that does not exist yet"
-        id: existing
-        env:
-          REFERENCE: ${{ steps.image.outputs.reference }}
-        run: |
-          set -uo pipefail
-          looked="$(docker buildx imagetools inspect "${REFERENCE}" 2>&1)"
-          status=$?
-
-          if [[ "${status}" -eq 0 ]]; then
-            echo "::notice title=cigate-image::${REFERENCE} is already published and a published version never changes. Raise the version in .github/actions/cigate/action.yml to publish this build."
-            printf 'publish=false\n' >> "${GITHUB_OUTPUT}"
-            exit 0
-          fi
-
-          if [[ "${looked}" != *"not found"* ]]; then
-            echo "::error title=cigate-image::could not tell whether ${REFERENCE} is published: ${looked}"
-            exit 1
-          fi
-
-          echo "${REFERENCE} is not published yet"
-          printf 'publish=true\n' >> "${GITHUB_OUTPUT}"
-
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        if: ${{ steps.existing.outputs.publish == 'true' }}
+        id: build
         with:
           context: .github/actions/cigate
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.image.outputs.reference }}
-          labels: |
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=${{ steps.image.outputs.version }}
+          tags: ghcr.io/kumahq/cigate:${{ github.sha }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: "Say which digest the action should pin"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          {
+            echo "Pin this in \`.github/actions/cigate/action.yml\`:"
+            echo
+            echo '```yaml'
+            echo "  image: docker://ghcr.io/kumahq/cigate@${DIGEST}"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
