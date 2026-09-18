@@ -235,18 +235,16 @@ process_pr() {
     summary "- ⚠️ PR #${pr}: checks fetch failed"
     return
   fi
-  if [[ -n "$checks" ]]; then
-    while read -r bucket name; do
-      [[ -z "$bucket" ]] && continue
-      case "$bucket" in
-        pending)       has_pending=1 ;;
-        fail)          has_failed=1; failed_jobs+=("$name") ;;
-        cancel)        has_failed=1; failed_jobs+=("$name (cancelled)") ;;
-        pass)          has_passed=1 ;;
-        skipping)      ;;
-      esac
-    done <<<"$checks"
-  fi
+  while read -r bucket name; do
+    [[ -z "$bucket" ]] && continue
+    case "$bucket" in
+      pending)       has_pending=1 ;;
+      fail)          has_failed=1; failed_jobs+=("$name") ;;
+      cancel)        has_failed=1; failed_jobs+=("$name (cancelled)") ;;
+      pass)          has_passed=1 ;;
+      skipping)      ;;
+    esac
+  done <<<"$checks"
 
   if (( has_pending )); then
     log "PR #${pr}: checks pending on ${head_sha:0:7}, not triggering"

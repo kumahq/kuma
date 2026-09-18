@@ -108,8 +108,8 @@ func main() {
 		os.Exit(Halt(os.Getenv("NEEDS"), os.Getenv("IS_DRAFT"), log))
 
 	case "hold":
-		sha := os.Getenv("HEAD_SHA")
-		if !Hold(postCheckRun(repo, token), sha, log) {
+		if err := Hold(postCheckRun(repo, token), os.Getenv("HEAD_SHA"), log); err != nil {
+			log(fmt.Sprintf("::error title=hold::could not hold the distributions check, so this pull request would keep a result that no longer describes it: %s", err))
 			os.Exit(1)
 		}
 

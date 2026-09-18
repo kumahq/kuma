@@ -22,10 +22,7 @@ type PullRequest struct {
 const attempts = 3
 
 func Decisions(labels []string, draft string) string {
-	if labels == nil {
-		labels = []string{}
-	}
-	encoded, _ := json.Marshal(labels)
+	encoded, _ := json.Marshal(append([]string{}, labels...))
 
 	return fmt.Sprintf("json=%s\ndraft=%s", encoded, draft)
 }
@@ -52,16 +49,14 @@ func ReadPullRequest(get func() (*PullRequest, error), wait func(time.Duration))
 	return nil, last
 }
 
-func Hold(post func(string) error, sha string, log func(string)) bool {
+func Hold(post func(string) error, sha string, log func(string)) error {
 	if err := post(sha); err != nil {
-		log(fmt.Sprintf("::warning title=meta::could not hold the distributions check on %s, so a result from an earlier run stands until this one finishes: %s", sha, err))
-
-		return false
+		return err
 	}
 
 	log(fmt.Sprintf("held distributions on %s until this run reports", sha))
 
-	return true
+	return nil
 }
 
 func Meta(event, number, sha, base string, get func() (*PullRequest, error), post func(string) error, wait func(time.Duration), write func(string), log func(string)) int {
@@ -94,7 +89,10 @@ func Meta(event, number, sha, base string, get func() (*PullRequest, error), pos
 	decided := Decisions(names, strconv.FormatBool(*pull.Draft))
 	write(decided)
 	log(decided)
-	Hold(post, sha, log)
+
+	if err := Hold(post, sha, log); err != nil {
+		log(fmt.Sprintf("::warning title=meta::could not hold the distributions check on %s, so a result from an earlier run stands until this one finishes: %s", sha, err))
+	}
 
 	return 0
 }

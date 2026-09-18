@@ -95,13 +95,15 @@ Draft state and labels. `meta` reads both, and every job that gates on either re
 
 ## Draft state
 
-A draft skips `build_check`, `check`, `test_unit`, the e2e matrix and `build_publish`. Ready for review runs them; converting back to a draft cancels the run in flight and replaces it with a cheap one. A backport whose cherry-pick conflicted opens as a draft, so it runs nothing until someone resolves it.
+A draft skips `build_check`, `check`, `test_unit`, the e2e matrix and `build_publish`, and the workflow and script linters with them. Ready for review runs them; converting back to a draft cancels the run in flight and replaces it with a cheap one. A backport whose cherry-pick conflicted opens as a draft, so it runs nothing until someone resolves it.
 
 Gate with a job-level `if:`, never a narrowed trigger. A job skipped by a condition reports Success and satisfies a required check, while a workflow that never fires leaves that check waiting for a report and blocks the pull request for good. A skipped *matrix* job reports under its unexpanded name, so the per-leg e2e names disappear whenever the matrix comes out empty.
 
 `distributions` is the only required check covering CI, and it publishes nothing until every one of its `needs` finishes. So it fails on a draft rather than passing: a green one would stay newest for the forty minutes the ready run takes, and a pull request is merged out of that window by `auto-merge.yaml`, by a fork whose read-only token no hold can cover, or by a bot marking it ready with `github.token` and raising no run at all. A draft carries one red check saying it has tested nothing, which costs nothing, because GitHub refuses to merge a draft anyway.
 
 `meta` also posts a `distributions` check of its own, `in_progress`, as soon as it has read the pull request, so a green result from an earlier run of the same commit cannot satisfy the requirement while this one is still deciding. A newer check run of the same name replaces the older one outright. A fork's token is read-only, so that hold fails there and the step says so.
+
+`meta` refuses a run whose pull request has moved under it. If the draft state or the base branch it reads live differs from the one the run was started with, it fails rather than publishing decisions that describe something else - which is what stops a re-run of an older run standing in for the current state. Changing the base fires no event on the main workflow, so `pr-retarget.yaml` watches for it and posts the same hold, leaving the required check pending until a run happens against the branch the pull request now aims at. Recovery in both cases is a push.
 
 An automation that marks a pull request ready must use an app token. GitHub raises no workflow run for an event its own token caused, so `ready_for_review` would not fire and the draft's results would stand.
 

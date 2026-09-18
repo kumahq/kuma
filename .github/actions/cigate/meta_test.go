@@ -97,20 +97,17 @@ func TestReadPullRequestBacksOffLongerEachTime(t *testing.T) {
 	}
 }
 
-func TestHoldWarnsAndCarriesOnWhenRefused(t *testing.T) {
-	lines := []string{}
-	if Hold(func(string) error { return errors.New("403 Forbidden") }, "abc", func(l string) { lines = append(lines, l) }) {
-		t.Fatal("Given a refused hold, as on a fork, When held, Then it reports failure")
-	}
-	if !strings.Contains(lines[0], "::warning title=meta::could not hold") || !strings.Contains(lines[0], "403 Forbidden") {
-		t.Fatalf("Then it warns with the cause; got %v", lines)
+func TestHoldReturnsTheCauseWhenRefused(t *testing.T) {
+	err := Hold(func(string) error { return errors.New("403 Forbidden") }, "abc", func(string) {})
+	if err == nil || !strings.Contains(err.Error(), "403 Forbidden") {
+		t.Fatalf("Given a refused hold, as on a fork, When held, Then it returns the cause; got %v", err)
 	}
 }
 
-func meta(t *testing.T, event string, get func() (*PullRequest, error), post func(string) error) (int, []string, []string) {
+func meta(t *testing.T, event, base string, get func() (*PullRequest, error), post func(string) error) (int, []string, []string) {
 	t.Helper()
 	written, logs := []string{}, []string{}
-	code := Meta(event, "7", "abc", "master", get, post, func(time.Duration) {},
+	code := Meta(event, "7", "abc", base, get, post, func(time.Duration) {},
 		func(d string) { written = append(written, d) },
 		func(l string) { logs = append(logs, l) })
 
@@ -118,12 +115,9 @@ func meta(t *testing.T, event string, get func() (*PullRequest, error), post fun
 }
 
 func TestMetaRefusesARunStartedAgainstAnotherBase(t *testing.T) {
-	written, logs := []string{}, []string{}
-	code := Meta("pull_request", "7", "abc", "release-2.14",
+	code, written, logs := meta(t, "pull_request", "release-2.14",
 		func() (*PullRequest, error) { return pull(nil, false), nil },
-		func(string) error { return nil }, func(time.Duration) {},
-		func(d string) { written = append(written, d) },
-		func(l string) { logs = append(logs, l) })
+		func(string) error { return nil })
 
 	if code != 1 || len(written) != 0 {
 		t.Fatalf("Given the pull request now targets another base, When decided, Then it writes nothing and exits 1; got %d %v", code, written)
@@ -135,7 +129,7 @@ func TestMetaRefusesARunStartedAgainstAnotherBase(t *testing.T) {
 
 func TestMetaWritesTheDecisionsAndHoldsTheCheck(t *testing.T) {
 	posted := ""
-	code, written, _ := meta(t, "pull_request",
+	code, written, _ := meta(t, "pull_request", "master",
 		func() (*PullRequest, error) { return pull([]string{"ci/skip-test"}, true), nil },
 		func(sha string) error { posted = sha; return nil })
 
@@ -146,7 +140,7 @@ func TestMetaWritesTheDecisionsAndHoldsTheCheck(t *testing.T) {
 
 func TestMetaOnAPushWritesEmptyDecisionsAndHoldsNothing(t *testing.T) {
 	held := false
-	code, written, _ := meta(t, "push", nil, func(string) error { held = true; return nil })
+	code, written, _ := meta(t, "push", "master", nil, func(string) error { held = true; return nil })
 
 	if code != 0 || written[0] != "json=[]\ndraft=" || held {
 		t.Fatalf("Given a push, When decided, Then nothing is held; got %d %v %v", code, written, held)
@@ -154,7 +148,7 @@ func TestMetaOnAPushWritesEmptyDecisionsAndHoldsNothing(t *testing.T) {
 }
 
 func TestMetaWritesNoOutputsWhenTheReadNeverSucceeds(t *testing.T) {
-	code, written, logs := meta(t, "pull_request",
+	code, written, logs := meta(t, "pull_request", "master",
 		func() (*PullRequest, error) { return nil, errors.New("503") }, nil)
 
 	if code != 1 || len(written) != 0 {
@@ -166,7 +160,7 @@ func TestMetaWritesNoOutputsWhenTheReadNeverSucceeds(t *testing.T) {
 }
 
 func TestMetaKeepsTheDecisionsWhenTheHoldFails(t *testing.T) {
-	code, written, logs := meta(t, "pull_request",
+	code, written, logs := meta(t, "pull_request", "master",
 		func() (*PullRequest, error) { return pull(nil, false), nil },
 		func(string) error { return errors.New("403") })
 
