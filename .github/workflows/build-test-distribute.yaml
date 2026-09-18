@@ -35,12 +35,14 @@ jobs:
       actions: read
       contents: read
     steps:
-      - name: "Check out the workflow scripts"
+      - name: "Check out the CI tools"
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: ${{ github.ref_type == 'tag' }}
         with:
-          sparse-checkout: .github/workflows/scripts
+          sparse-checkout: tools/ci/cigate
           sparse-checkout-cone-mode: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        if: ${{ github.ref_type == 'tag' }}
       - name: "Verify tagged SHA has a trusted green push run"
         if: ${{ github.ref_type == 'tag' }}
         env:
@@ -48,7 +50,8 @@ jobs:
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
           WORKFLOW: build-test-distribute.yaml
-        run: node .github/workflows/scripts/release-sha-gate.mjs
+        working-directory: tools/ci/cigate
+        run: go run . release-gate
 
   meta:
     needs: ["release_sha_gate"]
@@ -101,11 +104,12 @@ jobs:
         (github.event_name == 'pull_request' && vars.RUNNERS_PR_ARM64)
         || vars.RUNNERS_MASTER_ARM64 || vars.RUNNERS_ARM64 || '{}') }}
     steps:
-      - name: "Check out the workflow scripts"
+      - name: "Check out the CI tools"
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: .github/workflows/scripts
+          sparse-checkout: tools/ci/cigate
           sparse-checkout-cone-mode: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: "Decide what this run does, and hold the required check"
         id: labels
         env:
@@ -113,7 +117,8 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: node .github/workflows/scripts/meta-decide.mjs
+        working-directory: tools/ci/cigate
+        run: go run . meta
 
   refuse_fork_publish:
     needs: ["meta"]
@@ -397,16 +402,18 @@ jobs:
       SECURITY_ASSETS_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets"
       SECURITY_ASSETS_PACKAGE_NAME: "security-assets" # Cloudsmith package for hosting security assets
     steps:
-      - name: "Check out the workflow scripts"
+      - name: "Check out the CI tools"
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: .github/workflows/scripts
+          sparse-checkout: tools/ci/cigate
           sparse-checkout-cone-mode: false
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
       - name: "Halt due to previous failures"
         env:
           IS_DRAFT: ${{ needs.meta.outputs.DRAFT_NOW }}
           NEEDS: ${{ toJson(needs) }}
-        run: node .github/workflows/scripts/distributions-halt.mjs
+        working-directory: tools/ci/cigate
+        run: go run . halt
       - name: "Download all SBOM assets"
         id: collect_sbom
         if: ${{ needs.build_publish.result == 'success' }}

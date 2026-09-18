@@ -287,7 +287,7 @@ process_pr() {
     local now_utc failed_json run_number observation
     now_utc=$(date -u +"%Y-%m-%d %H:%M")
     if (( ${#failed_jobs[@]} > 0 )); then
-      failed_json=$(printf '%s\n' "${failed_jobs[@]}" | jq -R . | jq -s .)
+      failed_json=$(printf '%s\n' "${failed_jobs[@]}" | jq -Rn '[inputs]')
     else
       failed_json='[]'
     fi

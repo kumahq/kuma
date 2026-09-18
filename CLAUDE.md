@@ -66,14 +66,13 @@ git push --no-verify <remote> branch-name    # ALWAYS use --no-verify
 - **PR template**: `.github/PULL_REQUEST_TEMPLATE.md`
 - **Changelog**: from PR title or `> Changelog: {<desc>,skip}`
 - **CI labels**: set them whenever - CI reads the labels the PR carries, not the ones the opening event carried. See [labels](.github/workflows/README.md#labels)
+- **Drafts**: a draft runs none of the expensive jobs; Ready for review starts them. See [draft state](.github/workflows/README.md#draft-state)
 - **MADR**: `docs/madr/decisions/000-template.md` for features/architecture decisions
 - **Downstream refs**: say "downstream project" or "enterprise fork". Never mention Kong Mesh in PRs/commits (private repo)
 
 ### Behavior-changing CI labels
 
-**A draft runs none of the expensive jobs**, and Ready for review is how you start them - see [draft state](.github/workflows/README.md#draft-state).
-
-What each `ci/` label does is in [`.github/workflows/README.md`](.github/workflows/README.md#labels), which is the one list; this is only when to reach for one.
+When to reach for each label. What they do is in [the one list](.github/workflows/README.md#labels).
 
 | Label | When to use |
 |-------|-------------|

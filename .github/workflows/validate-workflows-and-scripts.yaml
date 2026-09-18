@@ -4,10 +4,12 @@ name: "Workflows & Scripts"
 run-name: >-
   ${{
     github.event_name == 'workflow_dispatch' &&
-    format('Validate: {0}{1}{2}',
+    format('Validate: {0}{1}{2}{3}{4}',
       inputs.run_actionlint && 'actionlint' || '',
       inputs.run_actionlint && inputs.run_shellcheck && ' + ' || '',
-      inputs.run_shellcheck && 'shellcheck' || ''
+      inputs.run_shellcheck && 'shellcheck' || '',
+      (inputs.run_actionlint || inputs.run_shellcheck) && inputs.run_script_tests && ' + ' || '',
+      inputs.run_script_tests && 'CI tool tests' || ''
     ) ||
     github.event_name
   }}
@@ -23,6 +25,10 @@ on:
         default: true
       run_shellcheck:
         description: 'Run shellcheck'
+        type: boolean
+        default: true
+      run_script_tests:
+        description: 'Run the CI tool tests'
         type: boolean
         default: true
 
@@ -156,7 +162,7 @@ jobs:
           pattern: "*.sh"
 
   scripts:
-    name: "Test Workflow Scripts"
+    name: "Test CI Tools"
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name != github.repository)
@@ -168,7 +174,7 @@ jobs:
       || 'ubuntu-24.04' }}
     timeout-minutes: 10
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_dispatch' && inputs.run_script_tests ||
       github.event_name == 'pull_request' && !github.event.pull_request.draft
     permissions:
       contents: read
@@ -177,5 +183,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: "Run the workflow script tests"
-        run: node --test .github/workflows/scripts/*.test.mjs
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+
+      - name: "Run the CI tool tests"
+        working-directory: tools/ci/cigate
+        run: go test ./...
