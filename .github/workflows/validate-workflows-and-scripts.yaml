@@ -204,8 +204,9 @@ jobs:
       || 'ubuntu-24.04' }}
     timeout-minutes: 10
     if: >-
-      github.event_name == 'workflow_dispatch' && inputs.run_cigate_checks ||
-      github.event_name == 'pull_request' && !github.event.pull_request.draft
+      github.repository == 'kumahq/kuma' &&
+      (github.event_name == 'workflow_dispatch' && inputs.run_cigate_checks ||
+      github.event_name == 'pull_request' && !github.event.pull_request.draft)
     permissions:
       contents: read
     steps:
@@ -217,8 +218,7 @@ jobs:
       - name: "The image the action pins must come from a commit in this repository"
         run: |
           set -euo pipefail
-          reference="$(yq -r '.runs.image' .github/actions/cigate/action.yml)"
-          reference="${reference#docker://}"
+          reference="$(grep -oE 'ghcr\.io/[^ ]+' .github/actions/cigate/action.yml)"
           docker pull --quiet "${reference}" >/dev/null
           revision="$(docker image inspect "${reference}" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
           if ! git cat-file -e "${revision}^{commit}" 2>/dev/null; then
