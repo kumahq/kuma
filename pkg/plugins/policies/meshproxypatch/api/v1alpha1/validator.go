@@ -11,9 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	jsonpatch_validators "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/jsonpatch/validators"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -36,22 +34,12 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TopLevelTarge
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
-	switch core_model.PolicyRole(r.GetMeta()) {
-	case mesh_proto.SystemPolicyRole:
-		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.Mesh,
-				common_api.Dataplane,
-			},
-		})
-	default:
-		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.Mesh,
-				common_api.Dataplane,
-			},
-		})
-	}
+	return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
+		SupportedKinds: []common_api.TargetRefKind{
+			common_api.Mesh,
+			common_api.Dataplane,
+		},
+	})
 }
 
 func validateDefault(conf Conf) validators.ValidationError {

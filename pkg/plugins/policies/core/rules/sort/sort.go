@@ -25,7 +25,7 @@ func CompareByPolicyAttributes[T common.PolicyAttributes](a, b T) int {
 		return less
 	}
 
-	if less := core_model.PolicyRole(a.GetResourceMeta()).Compare(core_model.PolicyRole(b.GetResourceMeta())); less != 0 {
+	if less := core_model.ComparePolicyScope(a.GetResourceMeta(), b.GetResourceMeta()); less != 0 {
 		return less
 	}
 

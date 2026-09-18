@@ -3,12 +3,7 @@ package labels
 import (
 	"maps"
 
-	"github.com/pkg/errors"
-
-	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 // Namespace type allows to avoid carrying both 'namespace' and 'systemNamespace' around the code base
@@ -20,10 +15,13 @@ type Namespace struct {
 
 var UnsetNamespace = Namespace{}
 
-// Labels the control plane used to compute and no longer does. They are
-// deleted on every proxy write so a resource created by an older control plane
-// stops carrying them, instead of keeping a value nothing maintains.
-var removedLabels = []string{"kuma.io/proxy-type", "kuma.io/gateway"}
+// Labels the control plane used to compute and no longer does. They are deleted on
+// every write of the kinds they were computed for, so a resource created by an older
+// control plane stops carrying them, instead of keeping a value nothing maintains.
+var (
+	removedProxyLabels  = []string{"kuma.io/proxy-type", "kuma.io/gateway"}
+	removedPolicyLabels = []string{"kuma.io/policy-role"}
+)
 
 func NewNamespace(value string, system bool) Namespace {
 	return Namespace{
@@ -65,73 +63,15 @@ func Compute(w Write, cp ControlPlane) (map[string]string, error) {
 			delete(labels, d.Key)
 		}
 	}
-	if w.Descriptor.IsProxy {
-		for _, k := range removedLabels {
-			delete(labels, k)
-		}
+	var removed []string
+	switch {
+	case w.Descriptor.IsProxy:
+		removed = removedProxyLabels
+	case w.Descriptor.IsPolicy:
+		removed = removedPolicyLabels
+	}
+	for _, k := range removed {
+		delete(labels, k)
 	}
 	return labels, nil
-}
-
-func ComputePolicyRole(p core_model.Policy, ns Namespace) (mesh_proto.PolicyRole, error) {
-	if ns.system || ns == UnsetNamespace {
-		// on Universal the value is always empty
-		return mesh_proto.SystemPolicyRole, nil
-	}
-
-	hasTo := false
-	if pwtl, ok := p.(core_model.PolicyWithToList); ok && len(pwtl.GetToList()) > 0 {
-		hasTo = true
-	}
-
-	if !hasTo {
-		// single-item and rules-based inbound policies remain workload-owner scoped
-		return mesh_proto.WorkloadOwnerPolicyRole, nil
-	}
-
-	hasSameOrOmittedNamespace := func(tr common_api.TargetRef) bool {
-		labelNamespace := pointer.Deref(tr.Labels)[mesh_proto.KubeNamespaceTag]
-		return labelNamespace == "" || labelNamespace == ns.value
-	}
-
-	// selectsSingleResourceByDisplayName reports whether ref identifies a single
-	// resource by display-name (+ optional namespace) rather than an arbitrary
-	// subset of resources via other label selectors.
-	selectsSingleResourceByDisplayName := func(tr common_api.TargetRef) bool {
-		labels := pointer.Deref(tr.Labels)
-		if labels[mesh_proto.DisplayName] == "" {
-			return false
-		}
-		for k := range labels {
-			if k != mesh_proto.DisplayName && k != mesh_proto.KubeNamespaceTag {
-				return false
-			}
-		}
-		return true
-	}
-
-	isProducerItem := func(tr common_api.TargetRef) bool {
-		switch tr.Kind {
-		case common_api.MeshService, common_api.MeshHTTPRoute:
-			return selectsSingleResourceByDisplayName(tr) && hasSameOrOmittedNamespace(tr)
-		default:
-			return false
-		}
-	}
-
-	producerItems := 0
-	for _, item := range p.(core_model.PolicyWithToList).GetToList() {
-		if isProducerItem(item.GetTargetRef()) {
-			producerItems++
-		}
-	}
-
-	switch {
-	case producerItems == len(p.(core_model.PolicyWithToList).GetToList()):
-		return mesh_proto.ProducerPolicyRole, nil
-	case producerItems == 0:
-		return mesh_proto.ConsumerPolicyRole, nil
-	default:
-		return "", errors.New("it's not allowed to mix producer and consumer items in the same policy")
-	}
 }

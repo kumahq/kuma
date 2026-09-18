@@ -529,11 +529,26 @@ func resourceOrigin(labels map[string]string) (mesh_proto.ResourceOrigin, bool) 
 	return "", false
 }
 
-func PolicyRole(rm ResourceMeta) mesh_proto.PolicyRole {
-	if rm == nil || rm.GetLabels() == nil || rm.GetLabels()[mesh_proto.PolicyRoleLabel] == "" {
-		return mesh_proto.SystemPolicyRole
+// PolicyNamespace returns the Kubernetes namespace a policy is scoped to. It is empty
+// for a policy that applies mesh-wide: one on Universal, on global, or in the system
+// namespace.
+func PolicyNamespace(rm ResourceMeta) string {
+	if rm == nil {
+		return ""
 	}
-	return mesh_proto.PolicyRole(rm.GetLabels()[mesh_proto.PolicyRoleLabel])
+	return rm.GetLabels()[mesh_proto.KubeNamespaceTag]
+}
+
+// ComparePolicyScope orders a mesh-wide policy before a namespaced one, so the
+// namespaced policy wins when the two are merged.
+func ComparePolicyScope(a, b ResourceMeta) int {
+	rank := func(rm ResourceMeta) int {
+		if PolicyNamespace(rm) == "" {
+			return 0
+		}
+		return 1
+	}
+	return rank(a) - rank(b)
 }
 
 // ZoneOfResource returns zone from which the resource was synced to Global CP

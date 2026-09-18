@@ -485,6 +485,9 @@ func (r *pgxResourceStore) newMeta(
 		}
 		maps.Copy(stored, enforced)
 	}
+	for _, key := range resource_labels.RemovedReadLabels(sr, r.cp) {
+		delete(stored, key)
+	}
 	return &resourceMetaObject{
 		Name:             name,
 		Mesh:             mesh,

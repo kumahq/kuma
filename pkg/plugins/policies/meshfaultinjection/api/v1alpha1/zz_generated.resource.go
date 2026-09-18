@@ -181,7 +181,7 @@ var MeshFaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshFaultInjectionResource(),
 	ResourceList:                 &MeshFaultInjectionResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:                       "meshfaultinjections",
 	KumactlArg:                   "meshfaultinjection",
 	KumactlListArg:               "meshfaultinjections",

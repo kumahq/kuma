@@ -74,10 +74,6 @@ const (
 	// observed using the Inspect API.
 	EffectLabel = "kuma.io/effect"
 
-	// PolicyRoleLabel is a standard label that reflects the role of the policy. The value is automatically set by the
-	// Kuma CP based on the policy spec. Supported values are "producer", "consumer", "system" and "workload-owner".
-	PolicyRoleLabel = "kuma.io/policy-role"
-
 	// ManagedByLabel is used when a MeshService is auto-generated
 	ManagedByLabel = "kuma.io/managed-by"
 
@@ -130,26 +126,6 @@ func (o ResourceOrigin) IsValid() error {
 	default:
 		return errors.Errorf("unknown resource origin %q", o)
 	}
-}
-
-type PolicyRole string
-
-const (
-	SystemPolicyRole        PolicyRole = "system"
-	ProducerPolicyRole      PolicyRole = "producer"
-	ConsumerPolicyRole      PolicyRole = "consumer"
-	WorkloadOwnerPolicyRole PolicyRole = "workload-owner"
-)
-
-var roleOrder = map[PolicyRole]int{
-	SystemPolicyRole:        1,
-	ProducerPolicyRole:      2,
-	ConsumerPolicyRole:      3,
-	WorkloadOwnerPolicyRole: 4,
-}
-
-func (r PolicyRole) Compare(o PolicyRole) int {
-	return roleOrder[r] - roleOrder[o]
 }
 
 type ProxyType string

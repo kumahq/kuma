@@ -3,7 +3,8 @@ type: MeshTimeout
 name: matched-for-rules-ddd
 mesh: mesh-1
 labels:
-  kuma.io/policy-role: consumer
+  kuma.io/origin: zone
+  k8s.kuma.io/namespace: kuma-demo
 spec:
   targetRef:
     kind: Dataplane
@@ -20,9 +21,8 @@ type: MeshTimeout
 name: matched-for-rules-ccc
 mesh: mesh-1
 labels:
-  kuma.io/policy-role: producer
   kuma.io/origin: zone
-  kuma.io/zone: another-zone
+  k8s.kuma.io/namespace: kuma-demo
 spec:
   targetRef:
     kind: Mesh
@@ -40,7 +40,6 @@ type: MeshTimeout
 name: matched-for-rules-bbb
 mesh: mesh-1
 labels:
-  kuma.io/policy-role: system
   kuma.io/origin: zone
 spec:
   targetRef:
@@ -57,7 +56,6 @@ type: MeshTimeout
 name: matched-for-rules-aaa
 mesh: mesh-1
 labels:
-  kuma.io/policy-role: system
   kuma.io/origin: global
 spec:
   targetRef:

@@ -535,30 +535,4 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		defer resp.Body.Close()
 		Expect(resp.StatusCode).To(Equal(http.StatusInternalServerError))
 	})
-
-	It("should return 400 when a policy carries a non-system policy-role label", func() {
-		// given
-		apiServer, store, stop := createServer(false)
-		defer stop()
-		createMesh(store)
-
-		// when: PUT a MeshTrafficPermission with a non-system kuma.io/policy-role
-		res := &rest_v1alpha1.Resource{
-			Name: "mtp-role",
-			Mesh: mesh,
-			Type: string(v1alpha1.MeshTrafficPermissionType),
-			Labels: map[string]string{
-				mesh_proto.PolicyRoleLabel: string(mesh_proto.WorkloadOwnerPolicyRole),
-			},
-			Spec: builders.MeshTrafficPermission().
-				WithTargetRef(builders.TargetRefMesh()).
-				AddRule(v1alpha1.Allow).
-				Build().Spec,
-		}
-		resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-role", res)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
-	})
 })

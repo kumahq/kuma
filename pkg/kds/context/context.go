@@ -20,11 +20,9 @@ import (
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
-	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	hostnamegenerator_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
-	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -102,7 +100,6 @@ func DefaultContext(
 			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
 			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
 			util.WithoutLabel(mesh_proto.DeletionGracePeriodStartedLabel),
-			util.If(util.IsKubernetes(cfg.Store.Type), util.PopulateNamespaceLabelFromNameExtension()),
 			util.WithoutLabelPrefixes(cfg.Multizone.Zone.KDS.Labels.SkipPrefixes...),
 		),
 		MapInsightResourcesZeroGeneration,
@@ -263,7 +260,7 @@ func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) kds_reconcile.ResourceM
 }
 
 func GlobalProvidedFilter(rm manager.ReadOnlyResourceManager) kds_reconcile.ResourceFilter {
-	return func(ctx context.Context, zoneName string, features kds.Features, r core_model.Resource) bool {
+	return func(ctx context.Context, zoneName string, _ kds.Features, r core_model.Resource) bool {
 		// There's explicit flag to disable KDS for a resource
 		if r.Descriptor().HasKDSDisabled(zoneName, r.GetMeta().GetLabels()) {
 			return false
@@ -291,28 +288,6 @@ func GlobalProvidedFilter(rm manager.ReadOnlyResourceManager) kds_reconcile.Reso
 		case isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToZonesFlag):
 			return true
 		case !isGlobal && r.Descriptor().KDSFlags.Has(core_model.SyncedAcrossZonesFlag):
-			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
-				if !features.HasFeature(kds.FeatureProducerPolicyFlow) {
-					return false
-				}
-				policy := r.GetSpec().(core_model.Policy)
-				// if declared role is not 'producer' then no syncing
-				if core_model.PolicyRole(r.GetMeta()) != mesh_proto.ProducerPolicyRole {
-					return false
-				}
-				// otherwise we're testing the role in Global CP in case Zone had the validation webhook turned off
-				role, err := resource_labels.ComputePolicyRole(policy, resource_labels.NewNamespace(r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag], false))
-				if err != nil {
-					ri := kri.From(r)
-					log.V(1).Info(err.Error(), "name", ri.Name, "mesh", ri.Mesh, "zone", ri.Zone, "namespace", ri.Namespace)
-					return false
-				}
-				// if the actual role is not 'producer' then no syncing
-				if role != mesh_proto.ProducerPolicyRole {
-					return false
-				}
-			}
-
 			zoneTag := core_model.ZoneOfResource(r)
 
 			// don't need to sync resource to the zone where resource is originating from

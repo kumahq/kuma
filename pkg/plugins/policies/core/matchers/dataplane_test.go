@@ -12,6 +12,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
@@ -291,16 +292,6 @@ var _ = Describe("MatchedPolicies", func() {
 				policyMeta:    test_resources.SystemPolicy(test_resources.GlobalUni),
 				goldenFile:    buildGoldenFilePath("policy-global-uni-dpp-k8s-on-global", givenResources.testName),
 			}),
-			Entry("policy synced from other k8s zone", dataplaneTestCase{
-				dataplaneMeta: test_resources.ZoneUni,
-				policyMeta:    test_resources.ProducerPolicy(test_resources.SyncToUni(test_resources.ZoneK8s)),
-				goldenFile:    buildGoldenFilePath("policy-from-k8s-to-uni", givenResources.testName),
-			}),
-			Entry("policy synced from other k8s zone to k8s", dataplaneTestCase{
-				dataplaneMeta: test_resources.ZoneK8s,
-				policyMeta:    test_resources.ProducerPolicy(test_resources.SyncToK8s(test_resources.ZoneK8s)),
-				goldenFile:    buildGoldenFilePath("policy-from-k8s-to-k8s", givenResources.testName),
-			}),
 		)
 	}, generateTableEntries(filepath.Join("testdata", "matchedpolicies", "dataplane-kind")))
 })
@@ -338,39 +329,39 @@ var _ = Describe("DppSelectedByPolicy MeshHTTPRoute namespace scoping", func() {
 		},
 	}
 
-	// dpp lives in ns-a but carries app=bar, so it is only reachable through
-	// the ns-b route.
-	dpp := builders.Dataplane().
-		WithName("dp-1").
-		WithMesh("mesh-1").
-		WithLabels(map[string]string{mesh_proto.KubeNamespaceTag: "ns-a", "app": "bar"}).
-		AddInbound(builders.Inbound().WithPort(80)).
-		Build()
+	// a dpp carrying app=bar, which only the ns-b route selects
+	dataplane := func(namespace string) *core_mesh.DataplaneResource {
+		return builders.Dataplane().
+			WithName("dp-1").
+			WithMesh("mesh-1").
+			WithLabels(map[string]string{mesh_proto.KubeNamespaceTag: namespace, "app": "bar"}).
+			AddInbound(builders.Inbound().WithPort(80)).
+			Build()
+	}
 
 	ref := common_api.TargetRef{
 		Kind:   common_api.MeshHTTPRoute,
 		Labels: pointer.To(map[string]string{mesh_proto.DisplayName: "route-1"}),
 	}
 
-	It("does not leak a namespaced (consumer) policy across namespaces", func() {
+	It("does not leak a namespaced policy across namespaces", func() {
 		meta := &test_model.ResourceMeta{
 			Mesh: "mesh-1",
 			Name: "timeout-1",
 			Labels: map[string]string{
-				mesh_proto.PolicyRoleLabel:  string(mesh_proto.ConsumerPolicyRole),
 				mesh_proto.KubeNamespaceTag: "ns-a",
 			},
 		}
 
-		inbounds, _, err := matchers.DppSelectedByPolicy(meta, ref, dpp, resources)
+		inbounds, _, err := matchers.DppSelectedByPolicy(meta, ref, dataplane("ns-a"), resources)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(inbounds).To(BeEmpty())
 	})
 
-	It("selects through any matching route for a namespace-agnostic (system) policy", func() {
+	It("selects through any matching route for a mesh-wide policy", func() {
 		meta := &test_model.ResourceMeta{Mesh: "mesh-1", Name: "timeout-1"}
 
-		inbounds, _, err := matchers.DppSelectedByPolicy(meta, ref, dpp, resources)
+		inbounds, _, err := matchers.DppSelectedByPolicy(meta, ref, dataplane("ns-b"), resources)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(inbounds).ToNot(BeEmpty())
 	})

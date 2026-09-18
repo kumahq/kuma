@@ -192,7 +192,7 @@ var MeshAccessLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshAccessLogResource(),
 	ResourceList:                 &MeshAccessLogResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:                       "meshaccesslogs",
 	KumactlArg:                   "meshaccesslog",
 	KumactlListArg:               "meshaccesslogs",

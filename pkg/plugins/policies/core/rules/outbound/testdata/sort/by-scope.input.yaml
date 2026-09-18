@@ -1,9 +1,9 @@
-# MeshTimeout with targetRef to the real MeshService resource
+# should sort policies by scope: a mesh-wide policy before a namespaced one
 type: MeshTimeout
 name: matched-for-rules-bbb
 mesh: mesh-1
 labels:
-  kuma.io/policy-role: consumer
+  k8s.kuma.io/namespace: kuma-demo
 spec:
   targetRef:
     kind: Mesh
@@ -17,24 +17,6 @@ spec:
 type: MeshTimeout
 name: matched-for-rules-aaa
 mesh: mesh-1
-labels:
-  kuma.io/policy-role: producer
-spec:
-  targetRef:
-    kind: Mesh
-  to:
-    - targetRef:
-        kind: Mesh
-      default:
-        connectionTimeout: 211s
-        http:
-          requestTimeout: 212s
----
-type: MeshTimeout
-name: matched-for-rules-aaa
-mesh: mesh-1
-labels:
-  kuma.io/policy-role: system
 spec:
   targetRef:
     kind: Mesh

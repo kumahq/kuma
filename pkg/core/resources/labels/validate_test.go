@@ -169,23 +169,6 @@ var _ = Describe("Validate", func() {
 		Entry("mesh: another mesh on k8s", testCase{
 			r: timeout(), ns: appNamespace, labels: map[string]string{metadata.KumaMeshLabel: "mesh-2"}, cp: k8sNonFederated,
 		}),
-		// policy-role
-		Entry("policy-role: system", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.PolicyRoleLabel: "system"}, cp: universalNonFederated,
-		}),
-		Entry("policy-role: empty reads as system", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.PolicyRoleLabel: ""}, cp: universalNonFederated,
-		}),
-		Entry("policy-role: consumer", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.PolicyRoleLabel: "consumer"}, cp: universalNonFederated,
-			expected: []validators.Violation{violation(mesh_proto.PolicyRoleLabel, "kuma.io/policy-role label should have system value, got consumer")},
-		}),
-		Entry("policy-role: consumer on a non-policy", testCase{
-			r: dataplane(), labels: map[string]string{mesh_proto.PolicyRoleLabel: "consumer"}, cp: universalNonFederated,
-		}),
-		Entry("policy-role: invalid on k8s", testCase{
-			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.PolicyRoleLabel: "invalid"}, cp: k8sFederated,
-		}),
 		// service-account
 		Entry("service-account: on a Dataplane on Universal", testCase{
 			r: dataplane(), labels: map[string]string{metadata.KumaServiceAccount: "victim-sa"}, cp: universalNonFederated,

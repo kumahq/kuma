@@ -5,9 +5,7 @@ import (
 	"time"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
@@ -33,24 +31,13 @@ func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TopLevelTarget
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
-	switch core_model.PolicyRole(r.GetMeta()) {
-	case mesh_proto.SystemPolicyRole:
-		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.Mesh,
-				common_api.Dataplane,
-			},
-			IsInboundPolicy: isInboundPolicy,
-		})
-	default:
-		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.Mesh,
-				common_api.Dataplane,
-			},
-			IsInboundPolicy: isInboundPolicy,
-		})
-	}
+	return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
+		SupportedKinds: []common_api.TargetRefKind{
+			common_api.Mesh,
+			common_api.Dataplane,
+		},
+		IsInboundPolicy: isInboundPolicy,
+	})
 }
 
 func validateRules(topTargetRef common_api.TargetRef, rules []Rule) validators.ValidationError {

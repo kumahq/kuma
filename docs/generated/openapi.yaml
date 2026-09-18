@@ -6460,12 +6460,6 @@ components:
               description: >-
                 Namespace the object lives in. Always computed by the control
                 plane on Kubernetes.
-            ^kuma\.io/policy-role$:
-              type: string
-              readOnly: true
-              description: >-
-                Role driving namespaced policy matching. Always computed by the
-                control plane for namespaced policies on Kubernetes.
             ^k8s\.kuma\.io/service-account$:
               type: string
               readOnly: true

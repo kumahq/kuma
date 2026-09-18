@@ -9,7 +9,6 @@ labels:
   k8s.kuma.io/namespace: kuma-demo
   kuma.io/origin: zone
   kuma.io/zone: zone-1
-  kuma.io/policy-role: consumer
 spec:
   targetRef:
     kind: Mesh

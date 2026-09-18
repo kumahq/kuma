@@ -99,41 +99,19 @@ var _ = Describe("enforced label derivation through the converters", func() {
 
 	stale := map[string]string{
 		v1alpha1.KubeNamespaceTag:    "other-ns",
-		v1alpha1.PolicyRoleLabel:     string(v1alpha1.SystemPolicyRole),
 		v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
 	}
 
-	DescribeTable("should derive both labels from the object namespace",
-		func(newConverter func() k8s_common.Converter, namespace string, stored map[string]string, expected map[string]string) {
-			Expect(labelsOf(newConverter(), policyIn(namespace, stored))).To(SatisfyAll(
-				HaveKeyWithValue(v1alpha1.KubeNamespaceTag, expected[v1alpha1.KubeNamespaceTag]),
-				HaveKeyWithValue(v1alpha1.PolicyRoleLabel, expected[v1alpha1.PolicyRoleLabel]),
-			))
+	DescribeTable("should derive the namespace label from the object namespace",
+		func(newConverter func() k8s_common.Converter, namespace string, stored map[string]string, expected string) {
+			Expect(labelsOf(newConverter(), policyIn(namespace, stored))).To(HaveKeyWithValue(v1alpha1.KubeNamespaceTag, expected))
 		},
-		Entry("SimpleConverter overwrites stale labels", simple, "app-ns", stale, map[string]string{
-			v1alpha1.KubeNamespaceTag: "app-ns",
-			v1alpha1.PolicyRoleLabel:  string(v1alpha1.WorkloadOwnerPolicyRole),
-		}),
-		Entry("CachingConverter overwrites stale labels", caching, "app-ns", stale, map[string]string{
-			v1alpha1.KubeNamespaceTag: "app-ns",
-			v1alpha1.PolicyRoleLabel:  string(v1alpha1.WorkloadOwnerPolicyRole),
-		}),
-		Entry("SimpleConverter derives labels a missing webhook never wrote", simple, "app-ns", nil, map[string]string{
-			v1alpha1.KubeNamespaceTag: "app-ns",
-			v1alpha1.PolicyRoleLabel:  string(v1alpha1.WorkloadOwnerPolicyRole),
-		}),
-		Entry("CachingConverter derives labels a missing webhook never wrote", caching, "app-ns", nil, map[string]string{
-			v1alpha1.KubeNamespaceTag: "app-ns",
-			v1alpha1.PolicyRoleLabel:  string(v1alpha1.WorkloadOwnerPolicyRole),
-		}),
-		Entry("SimpleConverter keeps the stored labels in the system namespace", simple, systemNamespaceForTest, stale, map[string]string{
-			v1alpha1.KubeNamespaceTag: "other-ns",
-			v1alpha1.PolicyRoleLabel:  string(v1alpha1.SystemPolicyRole),
-		}),
-		Entry("CachingConverter keeps the stored labels in the system namespace", caching, systemNamespaceForTest, stale, map[string]string{
-			v1alpha1.KubeNamespaceTag: "other-ns",
-			v1alpha1.PolicyRoleLabel:  string(v1alpha1.SystemPolicyRole),
-		}),
+		Entry("SimpleConverter overwrites a stale label", simple, "app-ns", stale, "app-ns"),
+		Entry("CachingConverter overwrites a stale label", caching, "app-ns", stale, "app-ns"),
+		Entry("SimpleConverter derives the label a missing webhook never wrote", simple, "app-ns", nil, "app-ns"),
+		Entry("CachingConverter derives the label a missing webhook never wrote", caching, "app-ns", nil, "app-ns"),
+		Entry("SimpleConverter keeps the stored label in the system namespace", simple, systemNamespaceForTest, stale, "other-ns"),
+		Entry("CachingConverter keeps the stored label in the system namespace", caching, systemNamespaceForTest, stale, "other-ns"),
 	)
 
 	// On a cache hit the adapter is handed the labels stored on the miss, so the
@@ -146,7 +124,6 @@ var _ = Describe("enforced label derivation through the converters", func() {
 		hit := labelsOf(converter, obj)
 
 		Expect(miss).To(HaveKeyWithValue(v1alpha1.KubeNamespaceTag, "app-ns"))
-		Expect(miss).To(HaveKeyWithValue(v1alpha1.PolicyRoleLabel, string(v1alpha1.WorkloadOwnerPolicyRole)))
 		Expect(hit).To(Equal(miss))
 	})
 
@@ -187,6 +164,42 @@ var _ = Describe("enforced label derivation through the converters", func() {
 		Entry("CachingConverter without a mode leaves both labels alone", caching, "app-ns", nil, nil),
 	)
 
+	// A policy in the system namespace applies mesh-wide and carries no namespace
+	// label. One an older control plane stored would scope it to the system namespace,
+	// so the read drops it; an import keeps the namespace it came with.
+	DescribeTable("should drop a stale namespace label from a local policy in the system namespace",
+		func(newConverter func() k8s_common.Converter, stored map[string]string, expected string) {
+			got := labelsOf(newConverter(), policyIn(systemNamespaceForTest, stored))
+			if expected == "" {
+				Expect(got).NotTo(HaveKey(v1alpha1.KubeNamespaceTag))
+			} else {
+				Expect(got).To(HaveKeyWithValue(v1alpha1.KubeNamespaceTag, expected))
+			}
+		},
+		Entry("SimpleConverter drops it from a local policy", simpleOnZone, map[string]string{
+			v1alpha1.KubeNamespaceTag:    systemNamespaceForTest,
+			v1alpha1.ResourceOriginLabel: string(v1alpha1.ZoneResourceOrigin),
+		}, ""),
+		Entry("CachingConverter drops it from a local policy", cachingOnZone, map[string]string{
+			v1alpha1.KubeNamespaceTag:    systemNamespaceForTest,
+			v1alpha1.ResourceOriginLabel: string(v1alpha1.ZoneResourceOrigin),
+		}, ""),
+		Entry("SimpleConverter drops it from a local policy with no stored origin", simpleOnZone, map[string]string{
+			v1alpha1.KubeNamespaceTag: systemNamespaceForTest,
+		}, ""),
+		Entry("SimpleConverter keeps it on an import", simpleOnZone, map[string]string{
+			v1alpha1.KubeNamespaceTag:    "app-ns",
+			v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
+		}, "app-ns"),
+		Entry("CachingConverter keeps it on an import", cachingOnZone, map[string]string{
+			v1alpha1.KubeNamespaceTag:    "app-ns",
+			v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
+		}, "app-ns"),
+		Entry("SimpleConverter without a mode leaves it alone", simple, map[string]string{
+			v1alpha1.KubeNamespaceTag: systemNamespaceForTest,
+		}, systemNamespaceForTest),
+	)
+
 	It("should return the enforced origin and zone on a CachingConverter cache hit", func() {
 		converter := cachingOnZone()
 		obj := policyIn("app-ns", importedFromGlobal)
@@ -200,8 +213,7 @@ var _ = Describe("enforced label derivation through the converters", func() {
 	})
 
 	// A policy the webhook never validated can have no spec at all; GetSpec then hands
-	// back a typed nil, and deriving a role from it would dereference a nil policy on
-	// every read, panicking every conversion of that type.
+	// back a typed nil, and a read must not dereference it.
 	DescribeTable("should not panic on a stored policy with no spec",
 		func(newConverter func() k8s_common.Converter) {
 			obj := policyIn("app-ns", nil)
@@ -209,10 +221,7 @@ var _ = Describe("enforced label derivation through the converters", func() {
 			out := meshtimeout_api.NewMeshTimeoutResource()
 
 			Expect(newConverter().ToCoreResource(obj, out)).To(Succeed())
-			Expect(out.GetMeta().GetLabels()).To(SatisfyAll(
-				HaveKeyWithValue(v1alpha1.KubeNamespaceTag, "app-ns"),
-				HaveKeyWithValue(v1alpha1.PolicyRoleLabel, string(v1alpha1.WorkloadOwnerPolicyRole)),
-			))
+			Expect(out.GetMeta().GetLabels()).To(HaveKeyWithValue(v1alpha1.KubeNamespaceTag, "app-ns"))
 		},
 		Entry("SimpleConverter", simple),
 		Entry("CachingConverter", caching),

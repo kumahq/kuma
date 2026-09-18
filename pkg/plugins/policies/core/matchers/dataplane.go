@@ -231,40 +231,30 @@ func isSelectedByLabels(dpp *core_mesh.DataplaneResource, ref common_api.TargetR
 }
 
 func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
-	switch core_model.PolicyRole(meta) {
-	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
-		ns, ok := meta.GetLabels()[mesh_proto.KubeNamespaceTag]
-		return ok && ns == dpp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
-	default:
-		return true
-	}
+	ns := core_model.PolicyNamespace(meta)
+	return ns == "" || ns == dpp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
 }
 
 func dppSelectedByZone(policyMeta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
-	switch core_model.PolicyRole(policyMeta) {
-	case mesh_proto.ProducerPolicyRole:
-		return true
-	default:
-		if dpp.GetMeta() == nil {
-			return true
-		}
-		meta := dpp.GetMeta()
-		// we should return true once dpp has no origin.
-		// Resource that cannot be created on zone(global one) doesn't have it
-		origin, ok := meta.GetLabels()[mesh_proto.ResourceOriginLabel]
-		if !ok || origin == string(mesh_proto.GlobalResourceOrigin) {
-			return true
-		}
-		policyOrigin, ok := policyMeta.GetLabels()[mesh_proto.ResourceOriginLabel]
-		if ok && policyOrigin == string(mesh_proto.ZoneResourceOrigin) {
-			zone, ok := policyMeta.GetLabels()[mesh_proto.ZoneTag]
-			if !ok {
-				return true
-			}
-			return core_model.IsLocalZoneResource(meta.GetLabels(), zone)
-		}
+	if dpp.GetMeta() == nil {
 		return true
 	}
+	meta := dpp.GetMeta()
+	// we should return true once dpp has no origin.
+	// Resource that cannot be created on zone(global one) doesn't have it
+	origin, ok := meta.GetLabels()[mesh_proto.ResourceOriginLabel]
+	if !ok || origin == string(mesh_proto.GlobalResourceOrigin) {
+		return true
+	}
+	policyOrigin, ok := policyMeta.GetLabels()[mesh_proto.ResourceOriginLabel]
+	if ok && policyOrigin == string(mesh_proto.ZoneResourceOrigin) {
+		zone, ok := policyMeta.GetLabels()[mesh_proto.ZoneTag]
+		if !ok {
+			return true
+		}
+		return core_model.IsLocalZoneResource(meta.GetLabels(), zone)
+	}
+	return true
 }
 
 func resolveMeshHTTPRouteRef(policyMeta core_model.ResourceMeta, ref common_api.TargetRef, mhrs core_model.ResourceList) []*meshhttproute_api.MeshHTTPRouteResource {
@@ -292,18 +282,12 @@ func resolveMeshHTTPRouteRef(policyMeta core_model.ResourceMeta, ref common_api.
 }
 
 // policySelectsResourceByNamespace reports whether a policy may reference a
-// resource living in the given namespace. Consumer and workload-owner policies
-// are namespaced, so they can only reference resources from their own
-// namespace; producer/system policies are namespace-agnostic. Mirrors the
-// equivalent check applied when building To rules.
+// resource living in the given namespace. A namespaced policy can only reference
+// resources from its own namespace; a mesh-wide one is namespace-agnostic.
+// Mirrors the equivalent check applied when building To rules.
 func policySelectsResourceByNamespace(policyMeta, resourceMeta core_model.ResourceMeta) bool {
-	switch core_model.PolicyRole(policyMeta) {
-	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
-		ns, ok := policyMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
-		return ok && ns == resourceMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
-	default:
-		return true
-	}
+	ns := core_model.PolicyNamespace(policyMeta)
+	return ns == "" || ns == resourceMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
 }
 
 // allInboundListeners returns every inbound of the dataplane as an InboundListener
@@ -323,7 +307,6 @@ func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
 	type sortableResource struct {
 		resource    core_model.Resource
 		origin      mesh_proto.ResourceOrigin
-		role        mesh_proto.PolicyRole
 		displayName string
 	}
 	rs := rl.GetItems()
@@ -333,7 +316,6 @@ func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
 		sortable = append(sortable, sortableResource{
 			resource:    r,
 			origin:      origin,
-			role:        core_model.PolicyRole(r.GetMeta()),
 			displayName: core_model.GetDisplayName(r.GetMeta()),
 		})
 	}
@@ -357,7 +339,7 @@ func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
 			return less
 		}
 
-		if less := s1.role.Compare(s2.role); less != 0 {
+		if less := core_model.ComparePolicyScope(s1.resource.GetMeta(), s2.resource.GetMeta()); less != 0 {
 			return less
 		}
 

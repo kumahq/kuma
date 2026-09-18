@@ -157,13 +157,8 @@ func buildToListWithRoutes(meta core_model.ResourceMeta, policyWithTo core_model
 }
 
 func policySelectsByNamespace(policyMeta, resourceMeta core_model.ResourceMeta) bool {
-	switch core_model.PolicyRole(policyMeta) {
-	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
-		ns, ok := policyMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
-		return ok && ns == resourceMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
-	default:
-		return true
-	}
+	ns := core_model.PolicyNamespace(policyMeta)
+	return ns == "" || ns == resourceMeta.GetLabels()[mesh_proto.KubeNamespaceTag]
 }
 
 func toEntries(items []core_model.PolicyItem) []ToEntry {

@@ -187,7 +187,7 @@ func newPolicyConfig(pkg, name string, mainComment *ast.CommentGroup, fields map
 		Description:         description,
 		IsPolicy:            true,
 		IsDestination:       false,
-		KDSFlags:            "model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag",
+		KDSFlags:            "model.GlobalToZonesFlag | model.ZoneToGlobalFlag",
 	}
 
 	if v, ok := parseBool(markers, "kuma:policy:skip_registration"); ok {

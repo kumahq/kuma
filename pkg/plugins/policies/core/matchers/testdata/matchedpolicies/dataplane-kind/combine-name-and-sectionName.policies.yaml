@@ -2,9 +2,6 @@
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-1
-labels:
-  k8s.kuma.io/namespace: kuma-system
-  kuma.io/policy-role: system
 spec:
   targetRef:
     kind: Dataplane
@@ -20,9 +17,6 @@ spec:
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-2
-labels:
-  k8s.kuma.io/namespace: kuma-system
-  kuma.io/policy-role: system
 spec:
   targetRef:
     kind: Dataplane

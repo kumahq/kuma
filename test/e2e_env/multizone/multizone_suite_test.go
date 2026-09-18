@@ -25,7 +25,6 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/meshtls"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/meshtrafficpermission"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/ownership"
-	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/producer"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/reachablebackends"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/resilience"
 	multizone_sync "github.com/kumahq/kuma/v3/test/e2e_env/multizone/sync"
@@ -74,7 +73,6 @@ var (
 	_ = Describe("MeshMultiZoneService Connectivity", Label("job-2"), meshmultizoneservice.Connectivity, Ordered)
 	_ = Describe("MeshMultiZoneService MeshLbStrategy", Label("job-0"), localityawarelb.MeshMzService, Ordered)
 	_ = Describe("ReachableBackends", Label("job-1"), reachablebackends.ReachableBackends, Ordered)
-	_ = Describe("Producer Policy Flow", Label("job-2"), producer.ProducerPolicyFlow, Ordered)
 	_ = Describe("MeshServiceReachableBackends", Label("job-1"), reachablebackends.MeshServicesWithReachableBackendsOption, Ordered)
 	_ = Describe("MeshTLS", Label("job-3"), meshtls.MeshTLS, Ordered)
 	_ = Describe("MeshIdentity", Label("job-0"), meshidentity.Identity, Ordered)
