@@ -116,6 +116,7 @@ jobs:
           token: ${{ github.token }}
           repository: ${{ github.repository }}
           pull-request: ${{ github.event.pull_request.number }}
+          base-ref: ${{ github.event.pull_request.base.ref }}
           head-sha: ${{ github.event.pull_request.head.sha }}
 
   refuse_fork_publish:

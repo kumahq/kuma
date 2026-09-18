@@ -14,7 +14,10 @@ func pull(names []string, draft bool) *PullRequest {
 		labels = append(labels, Label{Name: name})
 	}
 
-	return &PullRequest{Labels: labels, Draft: &draft}
+	built := &PullRequest{Labels: labels, Draft: &draft}
+	built.Base.Ref = "master"
+
+	return built
 }
 
 func TestDecisionsWritesLabelsAsJSONBesideTheDraftFlag(t *testing.T) {
@@ -40,20 +43,20 @@ func TestDecisionsEscapesALabelNameThatWouldBreakTheJSON(t *testing.T) {
 
 func TestReadPullRequestDoesNotRetryAfterASuccess(t *testing.T) {
 	calls := 0
-	labels, draft, err := ReadPullRequest(func() (*PullRequest, error) {
+	got, err := ReadPullRequest(func() (*PullRequest, error) {
 		calls++
 
 		return pull([]string{"ci/run-build"}, true), nil
 	}, func(time.Duration) {})
 
-	if err != nil || calls != 1 || draft != "true" || len(labels) != 1 {
-		t.Fatalf("Given the read succeeds, When reading, Then it does not retry; got %v %v %v %d", labels, draft, err, calls)
+	if err != nil || calls != 1 || !*got.Draft || len(got.Labels) != 1 {
+		t.Fatalf("Given the read succeeds, When reading, Then it does not retry; got %v %v %d", got, err, calls)
 	}
 }
 
 func TestReadPullRequestReturnsTheThirdAnswerAfterTwoFailures(t *testing.T) {
 	calls := 0
-	_, draft, err := ReadPullRequest(func() (*PullRequest, error) {
+	got, err := ReadPullRequest(func() (*PullRequest, error) {
 		calls++
 		if calls < 3 {
 			return nil, errors.New("502")
@@ -62,15 +65,15 @@ func TestReadPullRequestReturnsTheThirdAnswerAfterTwoFailures(t *testing.T) {
 		return pull(nil, false), nil
 	}, func(time.Duration) {})
 
-	if err != nil || calls != 3 || draft != "false" {
-		t.Fatalf("Given two failures then a success, When reading, Then it returns the third; got %v %v %d", draft, err, calls)
+	if err != nil || calls != 3 || *got.Draft {
+		t.Fatalf("Given two failures then a success, When reading, Then it returns the third; got %v %v %d", got, err, calls)
 	}
 }
 
 func TestReadPullRequestRetriesABodyMissingLabelsOrDraft(t *testing.T) {
 	for _, body := range []*PullRequest{{}, {Labels: []Label{}}, nil} {
 		calls := 0
-		_, _, err := ReadPullRequest(func() (*PullRequest, error) {
+		_, err := ReadPullRequest(func() (*PullRequest, error) {
 			calls++
 
 			return body, nil
@@ -84,7 +87,7 @@ func TestReadPullRequestRetriesABodyMissingLabelsOrDraft(t *testing.T) {
 
 func TestReadPullRequestBacksOffLongerEachTime(t *testing.T) {
 	waits := []time.Duration{}
-	_, _, _ = ReadPullRequest(
+	_, _ = ReadPullRequest(
 		func() (*PullRequest, error) { return nil, errors.New("502") },
 		func(d time.Duration) { waits = append(waits, d) },
 	)
@@ -107,11 +110,27 @@ func TestHoldWarnsAndCarriesOnWhenRefused(t *testing.T) {
 func meta(t *testing.T, event string, get func() (*PullRequest, error), post func(string) error) (int, []string, []string) {
 	t.Helper()
 	written, logs := []string{}, []string{}
-	code := Meta(event, "7", "abc", get, post, func(time.Duration) {},
+	code := Meta(event, "7", "abc", "master", get, post, func(time.Duration) {},
 		func(d string) { written = append(written, d) },
 		func(l string) { logs = append(logs, l) })
 
 	return code, written, logs
+}
+
+func TestMetaRefusesARunStartedAgainstAnotherBase(t *testing.T) {
+	written, logs := []string{}, []string{}
+	code := Meta("pull_request", "7", "abc", "release-2.14",
+		func() (*PullRequest, error) { return pull(nil, false), nil },
+		func(string) error { return nil }, func(time.Duration) {},
+		func(d string) { written = append(written, d) },
+		func(l string) { logs = append(logs, l) })
+
+	if code != 1 || len(written) != 0 {
+		t.Fatalf("Given the pull request now targets another base, When decided, Then it writes nothing and exits 1; got %d %v", code, written)
+	}
+	if !strings.Contains(logs[0], "now targets master") {
+		t.Fatalf("Then it names both bases; got %v", logs)
+	}
 }
 
 func TestMetaWritesTheDecisionsAndHoldsTheCheck(t *testing.T) {

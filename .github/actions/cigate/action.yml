@@ -6,7 +6,7 @@ description: >-
 
 inputs:
   command:
-    description: "release-gate, meta or halt"
+    description: "release-gate, meta, hold or halt"
     required: true
   token:
     description: "Token the decision reads the API with"
@@ -20,8 +20,12 @@ inputs:
     description: "Pull request number, for the meta command"
     required: false
     default: ""
+  base-ref:
+    description: "Base branch the run was started against, for the meta command"
+    required: false
+    default: ""
   head-sha:
-    description: "Head commit of the pull request, for the meta command"
+    description: "Head commit of the pull request, for the meta and hold commands"
     required: false
     default: ""
   sha:
@@ -57,6 +61,7 @@ runs:
     GH_REPO: ${{ inputs.repository }}
     PR: ${{ inputs.pull-request }}
     HEAD_SHA: ${{ inputs.head-sha }}
+    BASE_REF: ${{ inputs.base-ref }}
     SHA: ${{ inputs.sha }}
     WORKFLOW: ${{ inputs.workflow }}
     NEEDS: ${{ inputs.needs }}

@@ -218,7 +218,7 @@ jobs:
       - name: "The image the action pins must come from a commit in this repository"
         run: |
           set -euo pipefail
-          reference="$(grep -oE 'ghcr\.io/[^ ]+' .github/actions/cigate/action.yml)"
+          reference="$(grep -oE 'ghcr\.io/kumahq/cigate@sha256:[a-f0-9]+' .github/actions/cigate/action.yml | head -n1)"
           docker pull --quiet "${reference}" >/dev/null
           revision="$(docker image inspect "${reference}" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
           if ! git cat-file -e "${revision}^{commit}" 2>/dev/null; then

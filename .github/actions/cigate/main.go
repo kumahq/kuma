@@ -78,11 +78,24 @@ func paged[T any](url, token, key string, send func(string) (*http.Response, err
 	return collected, nil
 }
 
+func postCheckRun(repo, token string) func(string) error {
+	return func(head string) error {
+		payload, _ := json.Marshal(map[string]string{"name": "distributions", "head_sha": head, "status": "in_progress"})
+		response, err := api(http.MethodPost, fmt.Sprintf("https://api.github.com/repos/%s/check-runs", repo), token, bytes.NewReader(payload))
+		if err != nil {
+			return err
+		}
+		defer response.Body.Close()
+
+		return nil
+	}
+}
+
 func main() {
 	log := func(line string) { fmt.Println(line) }
 
 	if len(os.Args) < 2 {
-		log("::error::cigate needs a subcommand: release-gate, halt or meta")
+		log("::error::cigate needs a subcommand: release-gate, hold, halt or meta")
 		os.Exit(1)
 	}
 
@@ -94,6 +107,12 @@ func main() {
 	case "halt":
 		os.Exit(Halt(os.Getenv("NEEDS"), os.Getenv("IS_DRAFT"), log))
 
+	case "hold":
+		sha := os.Getenv("HEAD_SHA")
+		if !Hold(postCheckRun(repo, token), sha, log) {
+			os.Exit(1)
+		}
+
 	case "meta":
 		number, sha := os.Getenv("PR"), os.Getenv("HEAD_SHA")
 		output, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_WRONLY, 0o644)
@@ -103,7 +122,7 @@ func main() {
 		}
 
 		os.Exit(Meta(
-			os.Getenv("GITHUB_EVENT_NAME"), number, sha,
+			os.Getenv("GITHUB_EVENT_NAME"), number, sha, os.Getenv("BASE_REF"),
 			func() (*PullRequest, error) {
 				response, err := send(fmt.Sprintf("https://api.github.com/repos/%s/pulls/%s", repo, number))
 				if err != nil {
@@ -114,16 +133,7 @@ func main() {
 
 				return pull, json.NewDecoder(response.Body).Decode(pull)
 			},
-			func(head string) error {
-				payload, _ := json.Marshal(map[string]string{"name": "distributions", "head_sha": head, "status": "in_progress"})
-				response, err := api(http.MethodPost, fmt.Sprintf("https://api.github.com/repos/%s/check-runs", repo), token, bytes.NewReader(payload))
-				if err != nil {
-					return err
-				}
-				defer response.Body.Close()
-
-				return nil
-			},
+			postCheckRun(repo, token),
 			time.Sleep,
 			func(decided string) { fmt.Fprintln(output, decided) },
 			log,
