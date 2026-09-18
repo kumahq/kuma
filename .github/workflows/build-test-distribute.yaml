@@ -52,7 +52,6 @@ jobs:
           workflow: build-test-distribute.yaml
 
   meta:
-    needs: ["release_sha_gate"]
     timeout-minutes: 5
     runs-on: >-
       ${{ (github.event_name == 'pull_request'

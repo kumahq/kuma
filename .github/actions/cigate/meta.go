@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -37,12 +38,12 @@ func ReadPullRequest(get func() (*PullRequest, error), wait func(time.Duration))
 		case pull == nil || pull.Labels == nil || pull.Draft == nil:
 			last = fmt.Errorf("pull request payload has no labels or draft")
 		default:
-			names := []string{}
+			names := make([]string, 0, len(pull.Labels))
 			for _, label := range pull.Labels {
 				names = append(names, label.Name)
 			}
 
-			return names, fmt.Sprintf("%t", *pull.Draft), nil
+			return names, strconv.FormatBool(*pull.Draft), nil
 		}
 
 		if attempt < attempts {

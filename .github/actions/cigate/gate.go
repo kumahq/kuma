@@ -1,9 +1,10 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"regexp"
-	"sort"
+	"slices"
 )
 
 type Job struct {
@@ -34,13 +35,8 @@ var required = []requirement{
 }
 
 func Candidates(runs []Run) []Run {
-	kept := []Run{}
-	for _, run := range runs {
-		if run.Conclusion == "success" {
-			kept = append(kept, run)
-		}
-	}
-	sort.SliceStable(kept, func(i, j int) bool { return kept[i].CreatedAt > kept[j].CreatedAt })
+	kept := slices.DeleteFunc(slices.Clone(runs), func(run Run) bool { return run.Conclusion != "success" })
+	slices.SortStableFunc(kept, func(a, b Run) int { return cmp.Compare(b.CreatedAt, a.CreatedAt) })
 
 	return kept
 }
@@ -49,16 +45,10 @@ func MissingJobs(jobs []Job) []string {
 	missing := []string{}
 
 	for _, want := range required {
-		matched, allGreen := 0, true
-		for _, job := range jobs {
-			if want.pattern.MatchString(job.Name) {
-				matched++
-				if job.Conclusion != "success" {
-					allGreen = false
-				}
-			}
-		}
-		if matched == 0 || !allGreen {
+		matching := func(job Job) bool { return want.pattern.MatchString(job.Name) }
+
+		if !slices.ContainsFunc(jobs, matching) ||
+			slices.ContainsFunc(jobs, func(job Job) bool { return matching(job) && job.Conclusion != "success" }) {
 			missing = append(missing, want.label)
 		}
 	}

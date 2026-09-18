@@ -3,7 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -21,24 +22,15 @@ func Verdict(needs map[string]Need, isDraft bool) (map[string]string, error) {
 		results[job] = need.Result
 	}
 
-	broken := []string{}
-	for job, result := range results {
-		if result == "failure" || result == "cancelled" {
-			broken = append(broken, job)
-		}
-	}
-	sort.Strings(broken)
+	broken := slices.DeleteFunc(slices.Sorted(maps.Keys(results)), func(job string) bool {
+		return results[job] != "failure" && results[job] != "cancelled"
+	})
 
 	if len(broken) > 0 {
 		return results, fmt.Errorf("these jobs failed or were cancelled: %s", join(broken))
 	}
 
-	skipped := []string{}
-	for _, job := range gates {
-		if results[job] == "skipped" {
-			skipped = append(skipped, job)
-		}
-	}
+	skipped := slices.DeleteFunc(slices.Clone(gates), func(job string) bool { return results[job] != "skipped" })
 
 	if len(skipped) > 0 {
 		if isDraft {
