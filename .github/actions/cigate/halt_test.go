@@ -63,6 +63,25 @@ func TestVerdictPrefersAFailureOverTheDraftAllowance(t *testing.T) {
 	}
 }
 
+func TestVerdictRefusesWhenAGateIsNotAmongTheNeeds(t *testing.T) {
+	for _, missing := range gates {
+		without := needs(nil)
+		delete(without, missing)
+
+		_, err := Verdict(without, false)
+		if err == nil || !strings.Contains(err.Error(), missing) {
+			t.Fatalf("Given %s absent from needs, When judged, Then it refuses naming it; got %v", missing, err)
+		}
+	}
+}
+
+func TestVerdictRefusesAnEmptyNeeds(t *testing.T) {
+	_, err := Verdict(map[string]Need{}, true)
+	if err == nil || !strings.Contains(err.Error(), "reports nothing about") {
+		t.Fatalf("Given nothing in needs, When judged, Then it refuses; got %v", err)
+	}
+}
+
 func TestHaltFailsClosedOnUnreadableNeeds(t *testing.T) {
 	for _, raw := range []string{"", "not json", "[]"} {
 		lines := []string{}
@@ -77,7 +96,7 @@ func TestHaltFailsClosedOnUnreadableNeeds(t *testing.T) {
 
 func TestHaltExitsOneAndAnnotatesASkippedGate(t *testing.T) {
 	lines := []string{}
-	code := Halt(`{"build_check":{"result":"skipped"},"check":{"result":"success"}}`, "false", func(l string) { lines = append(lines, l) })
+	code := Halt(`{"build_check":{"result":"skipped"},"check":{"result":"success"},"test":{"result":"success"}}`, "false", func(l string) { lines = append(lines, l) })
 	if code != 1 {
 		t.Fatalf("Given a skipped gate on a ready pull request, When halted, Then it exits 1; got %d", code)
 	}
@@ -88,7 +107,7 @@ func TestHaltExitsOneAndAnnotatesASkippedGate(t *testing.T) {
 
 func TestHaltExitsZeroOnAHealthyRun(t *testing.T) {
 	lines := []string{}
-	if code := Halt(`{"check":{"result":"success"}}`, "", func(l string) { lines = append(lines, l) }); code != 0 {
+	if code := Halt(`{"build_check":{"result":"success"},"check":{"result":"success"},"test":{"result":"success"}}`, "", func(l string) { lines = append(lines, l) }); code != 0 {
 		t.Fatalf("Given a healthy run, When halted, Then it exits 0; got %d", code)
 	}
 	if lines[len(lines)-1] != "All dependent jobs succeeded" {
