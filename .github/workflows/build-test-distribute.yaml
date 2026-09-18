@@ -138,6 +138,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      checks: write
     env:
       SAME_REPO: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     outputs:
@@ -197,6 +198,21 @@ jobs:
           fi
           printf '%s\n' "${decided}" >> "${GITHUB_OUTPUT}"
           echo "${decided}"
+      - name: Hold the required check until this run reports on it
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if gh api -X POST "repos/${GH_REPO}/check-runs" \
+              -f name=distributions -f head_sha="${HEAD_SHA}" -f status=in_progress \
+              --jq '.id' > /dev/null 2>hold_err.log; then
+            echo "held distributions on ${HEAD_SHA} until this run reports"
+          else
+            echo "::warning title=meta::could not hold the distributions check on ${HEAD_SHA}, so a result from an earlier run stands until this one finishes: $(cat hold_err.log)"
+          fi
   refuse_fork_publish:
     needs: ["meta"]
     if: ${{ needs.meta.outputs.FORCE_PUBLISH_FROM_FORK == 'true' }}
@@ -494,12 +510,8 @@ jobs:
             exit 1
           fi
           gated="$(jq -r '{build_check, check, test} | with_entries(select(.value == "skipped")) | keys | join(", ")' <<<"${results}")"
-          if [[ -n "${gated}" ]]; then
-            if [[ "${IS_DRAFT}" == "true" ]]; then
-              echo "::error title=distributions::this pull request is a draft, so ${gated} did not run and this check has tested nothing. Mark it ready for review to test it."
-            else
-              echo "::error title=distributions::this run skipped ${gated}, but the pull request is not a draft, so these results do not describe it. Re-run the newest run for this commit, or push again."
-            fi
+          if [[ "${IS_DRAFT}" != "true" && -n "${gated}" ]]; then
+            echo "::error title=distributions::this run skipped ${gated}, but the pull request is not a draft, so these results do not describe it. Re-run the newest run for this commit, or push again."
             exit 1
           fi
           echo "All dependent jobs succeeded"

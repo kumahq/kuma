@@ -103,10 +103,8 @@ to verify a few things:
 - If your PR doesn't need to run e2e tests or tests at all use: `ci/skip-test` or `ci/skip-e2e-test` labels on the PR.
   A label counts whenever you add it, as long as CI has not already decided for that run - see
   [labels](.github/workflows/README.md#labels).
-- A draft pull request runs none of the expensive jobs, and its `distributions` check goes red on purpose to say so -
-  a green one would let the pull request be merged before the real run finished. Mark it Ready for review to run them,
-  convert it back to a draft to stop them, and see
-  [`.github/workflows/README.md`](.github/workflows/README.md#draft-state) for what that covers.
+- A draft pull request runs none of the expensive jobs. Mark it Ready for review to run them, convert it back to a draft
+  to stop them, and see [`.github/workflows/README.md`](.github/workflows/README.md#draft-state) for what that covers.
 - If you are introducing a change which requires specific attention when
   upgrading update UPGRADE.md
 - Do not update CHANGELOG.md yourself. Your change will be included there when we release, no worries!
