@@ -65,7 +65,7 @@ fetch_sticky_comment() {
     return 1
   fi
   printf '%s' "$json" | jq -c --arg marker "$STICKY_MARKER" '
-    [.[] | select(.body | contains($marker))] | first // empty
+    [.[] | select(.user.type == "Bot" and (.body | contains($marker)))] | first // empty
   '
 }
 

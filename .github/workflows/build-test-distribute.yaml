@@ -76,12 +76,14 @@ jobs:
           fi
 
           inspected=0
+          unread=0
           jobs_ndjson="$(mktemp)"
           while read -r run_id run_url; do
             if ! gh api --method GET "/repos/${REPO}/actions/runs/${run_id}/jobs" -f per_page=100 --paginate \
                 --jq '.jobs[] | {name, conclusion}' \
                 > "${jobs_ndjson}" 2>err.log; then
               echo "::warning title=release_sha_gate::gate could not query GitHub Actions for jobs of run ${run_url}: $(cat err.log)"
+              unread=$((unread + 1))
               continue
             fi
 
@@ -103,6 +105,7 @@ jobs:
                 | join(", ")
               ' "${jobs_ndjson}" 2>err.log)"; then
               echo "::warning title=release_sha_gate::gate could not parse GitHub Actions job data for run ${run_url}: $(cat err.log)"
+              unread=$((unread + 1))
               continue
             fi
 
@@ -116,8 +119,8 @@ jobs:
             echo "Run ${run_url} is missing required successful job(s): ${missing}"
           done <<<"${candidates}"
 
-          if [[ "${inspected}" -eq 0 ]]; then
-            echo "::error title=release_sha_gate::gate could not read the jobs of any run for SHA ${SHA}, so it inspected nothing. This is a GitHub API failure rather than a missing run. Recovery: re-run this job."
+          if [[ "${unread}" -gt 0 ]]; then
+            echo "::error title=release_sha_gate::gate could not read the jobs of ${unread} run(s) for SHA ${SHA} and found no green run among the ${inspected} it did read. Some of this is a GitHub API failure rather than a missing run. Recovery: re-run this job."
             exit 1
           fi
 
@@ -500,6 +503,7 @@ jobs:
           IS_DRAFT: ${{ needs.meta.outputs.DRAFT_NOW }}
           NEEDS: ${{ toJson(needs) }}
         run: |-
+          set -euo pipefail
           results="$(jq -c 'map_values(.result)' <<<"${NEEDS}")"
           echo "results: ${results}"
           # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
@@ -511,7 +515,7 @@ jobs:
           fi
           gated="$(jq -r '{build_check, check, test} | with_entries(select(.value == "skipped")) | keys | join(", ")' <<<"${results}")"
           if [[ "${IS_DRAFT}" != "true" && -n "${gated}" ]]; then
-            echo "::error title=distributions::this run skipped ${gated}, but the pull request is not a draft, so these results do not describe it. Re-run the newest run for this commit, or push again."
+            echo "::error title=distributions::this run skipped ${gated}, but the pull request is not a draft, so these results do not describe it. Push a commit to start a run that tests it - re-running this one replays the event it was started with and skips them again."
             exit 1
           fi
           echo "All dependent jobs succeeded"
