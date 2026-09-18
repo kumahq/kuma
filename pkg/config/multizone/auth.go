@@ -21,21 +21,20 @@ const (
 
 // KDSServerAuthConfig defines how Global CP authenticates Zone CPs connecting over KDS.
 type KDSServerAuthConfig struct {
-	// Type of authentication. Available values: "none", "zoneToken".
+	// Type of authentication. Available values: "none", "zoneToken", plus the types
+	// a distribution registers on the KDS context. A type nothing authenticates with
+	// is rejected when the KDS server starts, not here.
 	Type KDSAuthType `json:"type" envconfig:"kuma_multizone_global_kds_auth_type"`
 	// Configuration for the "zoneToken" authentication type.
 	ZoneToken KDSZoneTokenAuthConfig `json:"zoneToken"`
 }
 
 func (c KDSServerAuthConfig) Validate() error {
-	switch c.Type {
-	case KDSAuthNone:
-	case KDSAuthZoneToken:
-		if err := c.ZoneToken.Validator.Validate(); err != nil {
-			return errors.Wrap(err, ".ZoneToken.Validator is not valid")
-		}
-	default:
-		return errors.Errorf(".Type has invalid value %q. Available values: %q, %q", c.Type, KDSAuthNone, KDSAuthZoneToken)
+	if c.Type == "" {
+		return errors.Errorf(".Type cannot be empty. Use %q to disable authentication of Zone CPs", KDSAuthNone)
+	}
+	if err := c.ZoneToken.Validator.Validate(); err != nil {
+		return errors.Wrap(err, ".ZoneToken.Validator is not valid")
 	}
 	return nil
 }

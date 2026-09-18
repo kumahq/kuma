@@ -591,7 +591,7 @@ multizone:
         enabled: true # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TRACING_ENABLED
       # Authentication of Zone CPs connecting to Global CP
       auth:
-        # Type of authentication. Available values: "none", "zoneToken".
+        # Type of authentication. Available values: "none", "zoneToken", plus the types a distribution adds.
         # With "zoneToken" every Zone CP has to present a Zone Token generated with `kumactl generate zone-token --zone=<zone> --scope=cp`
         type: none # ENV: KUMA_MULTIZONE_GLOBAL_KDS_AUTH_TYPE
         # Configuration of the "zoneToken" authentication type

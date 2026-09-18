@@ -3,11 +3,13 @@ package auth
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/kumahq/kuma/v3/pkg/config/multizone"
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
 )
 
@@ -42,4 +44,22 @@ func authenticate(ctx context.Context, authenticator Authenticator) error {
 		return status.Error(codes.Unauthenticated, err.Error())
 	}
 	return nil
+}
+
+// ServerInterceptors returns the interceptors authenticating Zone CPs, empty when
+// authentication is disabled. The authenticator is the one registered on the KDS
+// context, nil when nothing built one for authType. Kuma builds it for the
+// zoneToken type, distributions add types of their own, so a type left without an
+// authenticator is a configuration error rather than an open control plane.
+func ServerInterceptors(authType multizone.KDSAuthType, authenticator Authenticator) ([]grpc.StreamServerInterceptor, []grpc.UnaryServerInterceptor, error) {
+	switch {
+	case authenticator != nil:
+		return []grpc.StreamServerInterceptor{StreamServerInterceptor(authenticator)},
+			[]grpc.UnaryServerInterceptor{UnaryServerInterceptor(authenticator)},
+			nil
+	case authType == multizone.KDSAuthNone:
+		return nil, nil, nil
+	default:
+		return nil, nil, errors.Errorf("multizone.global.kds.auth.type %q is not supported by this control plane", authType)
+	}
 }
