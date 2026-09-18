@@ -1,7 +1,7 @@
 name: "CI gate image"
 on:
   push:
-    branches: ["master", "ci/gate-drafts-and-trust-labels"]
+    branches: ["master"]
     paths:
       - ".github/actions/cigate/**"
       - "!.github/actions/cigate/*_test.go"
@@ -17,7 +17,7 @@ jobs:
     name: "Publish the CI gate image"
     timeout-minutes: 20
     runs-on: ubuntu-24.04
-    if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/ci/gate-drafts-and-trust-labels' }}
+    if: ${{ github.ref == 'refs/heads/master' }}
     permissions:
       contents: read
       packages: write
@@ -59,7 +59,6 @@ jobs:
           } >> "${GITHUB_STEP_SUMMARY}"
 
       - name: "Point the action at the image just published"
-        if: ${{ github.ref == 'refs/heads/master' }}
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
@@ -68,7 +67,6 @@ jobs:
           grep -q "cigate@${DIGEST}" .github/actions/cigate/action.yml
 
       - name: "Generate GitHub app token"
-        if: ${{ github.ref == 'refs/heads/master' }}
         id: github-app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
@@ -76,7 +74,6 @@ jobs:
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       - name: "Open the pull request that pins it"
-        if: ${{ github.ref == 'refs/heads/master' }}
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ steps.github-app-token.outputs.token }}
