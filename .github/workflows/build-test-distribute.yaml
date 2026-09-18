@@ -410,8 +410,8 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
-      RUN_UNIT: ${{ format('{0}', needs.meta.outputs.RUN_UNIT == 'true' && needs.build_check.result == 'success' && github.ref_type != 'tag') }}
-      RUN_E2E: ${{ format('{0}', needs.meta.outputs.RUN_E2E == 'true' && needs.build_check.result == 'success' && github.ref_type != 'tag') }}
+      RUN_UNIT: ${{ format('{0}', needs.meta.outputs.RUN_UNIT != 'false' && needs.build_check.result == 'success' && github.ref_type != 'tag') }}
+      RUN_E2E: ${{ format('{0}', needs.meta.outputs.RUN_E2E != 'false' && needs.build_check.result == 'success' && github.ref_type != 'tag') }}
       IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
       RUNNERS_BY_ARCH: ${{ needs.meta.outputs.RUNNERS_BY_ARCH }}
     secrets: inherit
@@ -455,7 +455,7 @@ jobs:
     permissions:
       id-token: write
     timeout-minutes: 10
-    if: ${{ !cancelled() }}
+    if: ${{ always() }}
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name != github.repository)

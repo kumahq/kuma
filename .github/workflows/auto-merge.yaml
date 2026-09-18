@@ -22,7 +22,7 @@ jobs:
       || vars.RUNNERS_AMD64
       || '{}').sm
       || 'ubuntu-24.04' }}
-    if: contains(github.event.pull_request.labels.*.name, 'ci/auto-merge')
+    if: ${{ !github.event.pull_request.draft && contains(github.event.pull_request.labels.*.name, 'ci/auto-merge') }}
     permissions:
       pull-requests: write
     steps:

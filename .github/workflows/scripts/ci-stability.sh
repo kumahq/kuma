@@ -419,7 +419,8 @@ main() {
   summary "## Processed PRs"
 
   local prs_stability prs_merge
-  if ! prs_stability=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability") | .number' "$OPEN_PRS_FILE") \
+  if ! jq -e 'type == "array"' "$OPEN_PRS_FILE" >/dev/null 2>&1 \
+    || ! prs_stability=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability") | .number' "$OPEN_PRS_FILE") \
     || ! prs_merge=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability-merge-master") | .number' "$OPEN_PRS_FILE"); then
     err "could not read ${OPEN_PRS_FILE}"
     summary "- ⚠️ could not read the open pull request list"
