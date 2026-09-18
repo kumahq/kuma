@@ -299,6 +299,9 @@ func newMetaAdapter(obj k8s_model.KubernetesObject, out core_model.Resource, sys
 		}
 	}
 	maps.Copy(computed, labels.EnforcedReadLabels(r, cp))
+	for _, key := range labels.RemovedReadLabels(r, cp) {
+		delete(computed, key)
+	}
 
 	return &KubernetesMetaAdapter{
 		ObjectMeta: *objMeta,

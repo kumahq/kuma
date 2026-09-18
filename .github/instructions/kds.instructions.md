@@ -59,7 +59,7 @@ Zone → Global:
 - `IsLocallyOriginated()` check in filters
 
 **Version Compatibility:**
-- Feature flags in gRPC metadata: `kds.Features{hash-suffix, zone-ping-health, producer-policy-flow, ...}`
+- Feature flags in gRPC metadata: `kds.Features{hash-suffix, zone-ping-health, hg-mz-selector, ...}`
 - Check with `features.HasFeature(kds.FeatureX)` before applying logic
 - Graceful degradation when features absent
 - KDS version negotiation: v2 (legacy) vs v3 (current)

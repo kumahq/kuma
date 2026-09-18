@@ -31,8 +31,13 @@ type Descriptor struct {
 	Compute func(w Write, cp ControlPlane) (value string, ok bool, err error)
 
 	// EnforceOnRead recomputes the label on every read. ok=false means "produce
-	// nothing", never "remove".
+	// nothing", never "remove"; removal is RemoveOnRead's job.
 	EnforceOnRead func(r StoredResource, cp ControlPlane) (value string, ok bool)
+
+	// RemoveOnRead drops the stored label on every read, for a resource the control
+	// plane no longer writes it on, so a value an older control plane stored does not
+	// survive until the next write.
+	RemoveOnRead func(r StoredResource, cp ControlPlane) bool
 
 	// ValidateValue checks a value an untrusted writer supplied for an OwnerControlPlane
 	// label.
@@ -195,46 +200,6 @@ var registry = []Descriptor{
 		},
 	},
 	{
-		Key:   mesh_proto.PolicyRoleLabel,
-		Owner: OwnerControlPlane,
-		Compute: func(w Write, _ ControlPlane) (string, bool, error) {
-			if w.Namespace.value == "" || !w.Descriptor.IsPolicy || !w.Descriptor.IsPluginOriginated {
-				return keep(w, mesh_proto.PolicyRoleLabel)
-			}
-			role, err := ComputePolicyRole(w.Spec.(core_model.Policy), w.Namespace)
-			if err != nil {
-				return "", false, err
-			}
-			return string(role), true, nil
-		},
-		EnforceOnRead: func(r StoredResource, _ ControlPlane) (string, bool) {
-			if r.Namespace.value == "" || r.Namespace.system || !r.Descriptor.IsPolicy || !r.Descriptor.IsPluginOriginated {
-				return "", false
-			}
-			policy, ok := r.Spec.(core_model.Policy)
-			if !ok {
-				return "", false
-			}
-			role, err := ComputePolicyRole(policy, r.Namespace)
-			if err != nil {
-				// Only reachable for a policy admission never validated. Fall back to the
-				// narrowest role instead of erroring: this runs on every read and ToCoreList
-				// aborts on the first failure, so one bad object would break matching mesh-wide.
-				role = mesh_proto.WorkloadOwnerPolicyRole
-			}
-			return string(role), true
-		},
-		ValidateValue: func(v string, w Write, cp ControlPlane) []string {
-			if cp.IsK8s || !w.Descriptor.IsPluginOriginated || !w.Descriptor.IsPolicy {
-				return nil
-			}
-			if v == "" || v == string(mesh_proto.SystemPolicyRole) {
-				return nil
-			}
-			return []string{fmt.Sprintf("%s label should have %s value, got %s", mesh_proto.PolicyRoleLabel, mesh_proto.SystemPolicyRole, v)}
-		},
-	},
-	{
 		Key:   mesh_proto.DisplayName,
 		Owner: OwnerControlPlane,
 		Compute: func(w Write, _ ControlPlane) (string, bool, error) {
@@ -262,16 +227,25 @@ var registry = []Descriptor{
 			if !cp.IsK8s {
 				return "", false, nil
 			}
-			if w.Namespace.value != "" {
-				return w.Namespace.value, true, nil
+			if w.Namespace.value == "" {
+				return keep(w, mesh_proto.KubeNamespaceTag)
 			}
-			return keep(w, mesh_proto.KubeNamespaceTag)
+			// A policy in the system namespace applies mesh-wide, which is what the
+			// absence of the label means to policy matching.
+			if w.Namespace.system && w.Descriptor.IsPolicy {
+				return "", false, nil
+			}
+			return w.Namespace.value, true, nil
 		},
 		EnforceOnRead: func(r StoredResource, _ ControlPlane) (string, bool) {
 			if r.Namespace.value != "" && !r.Namespace.system {
 				return r.Namespace.value, true
 			}
 			return "", false
+		},
+		RemoveOnRead: func(r StoredResource, cp ControlPlane) bool {
+			// Only a read that knows the mode can tell a local policy from an import.
+			return cp.Mode != "" && r.Namespace.system && r.IsLocal && r.Descriptor.IsPolicy
 		},
 	},
 	{

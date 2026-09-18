@@ -181,7 +181,7 @@ var MeshLoadBalancingStrategyResourceTypeDescriptor = model.ResourceTypeDescript
 	Resource:                     NewMeshLoadBalancingStrategyResource(),
 	ResourceList:                 &MeshLoadBalancingStrategyResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:                       "meshloadbalancingstrategies",
 	KumactlArg:                   "meshloadbalancingstrategy",
 	KumactlListArg:               "meshloadbalancingstrategies",

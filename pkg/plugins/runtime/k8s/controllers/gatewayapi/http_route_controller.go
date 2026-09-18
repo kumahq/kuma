@@ -281,12 +281,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				continue
 			}
 
-			ownedNamespace := r.SystemNamespace
-			if route.Namespace == parent.GetNamespace() {
-				ownedNamespace = route.Namespace
-			}
-
-			storeMeshHTTPRoute(routes, routeSubName, ownedNamespace, labels, meshRoute)
+			storeMeshHTTPRoute(routes, routeSubName, r.SystemNamespace, labels, meshRoute)
 		case attachment.MeshService:
 			namespace := route.Namespace
 			if ref.Namespace != nil {
@@ -334,12 +329,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				continue
 			}
 
-			ownedNamespace := r.SystemNamespace
-			if route.Namespace == parent.GetNamespace() {
-				ownedNamespace = route.Namespace
-			}
-
-			storeMeshHTTPRoute(routes, routeSubName, ownedNamespace, labels, meshRoute)
+			storeMeshHTTPRoute(routes, routeSubName, r.SystemNamespace, labels, meshRoute)
 		}
 
 		conditions[ref] = prepareConditions(append(parentConditions, rulesConditions...))

@@ -9,7 +9,7 @@ rules:
       creationTime: "0001-01-01T00:00:00Z"
       kri: kri_mt_mesh-1___matched-for-rules-aaa_
       labels:
-        kuma.io/policy-role: system
+        kuma.io/origin: global
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: matched-for-rules-aaa
@@ -25,7 +25,7 @@ rules:
       creationTime: "0001-01-01T00:00:00Z"
       kri: kri_mt_mesh-1___matched-for-rules-bbb_
       labels:
-        kuma.io/policy-role: producer
+        kuma.io/origin: zone
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: matched-for-rules-bbb
@@ -38,9 +38,10 @@ rules:
   origin:
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
-      kri: kri_mt_mesh-1___matched-for-rules-ccc_
+      kri: kri_mt_mesh-1__kuma-demo_matched-for-rules-ccc_
       labels:
-        kuma.io/policy-role: consumer
+        k8s.kuma.io/namespace: kuma-demo
+        kuma.io/origin: zone
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
       name: matched-for-rules-ccc

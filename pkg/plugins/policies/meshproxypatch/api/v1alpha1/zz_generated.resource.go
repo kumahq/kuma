@@ -181,7 +181,7 @@ var MeshProxyPatchResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshProxyPatchResource(),
 	ResourceList:                 &MeshProxyPatchResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:                       "meshproxypatches",
 	KumactlArg:                   "meshproxypatch",
 	KumactlListArg:               "meshproxypatches",

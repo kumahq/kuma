@@ -181,7 +181,7 @@ var MeshCircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshCircuitBreakerResource(),
 	ResourceList:                 &MeshCircuitBreakerResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:                       "meshcircuitbreakers",
 	KumactlArg:                   "meshcircuitbreaker",
 	KumactlListArg:               "meshcircuitbreakers",

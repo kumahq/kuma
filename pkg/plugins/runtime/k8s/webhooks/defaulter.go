@@ -71,8 +71,6 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 	if name, ok := resource.GetMeta().GetNameExtensions()[core_model.K8sNameComponent]; ok && name != "" {
 		displayName = name
 	}
-	// Compute only fails on a policy the user got wrong (mixed producer and consumer
-	// items), so it is forbidden rather than an internal error.
 	computed, err := resource_labels.Compute(resource_labels.Write{
 		Descriptor:    resource.Descriptor(),
 		Spec:          resource.GetSpec(),

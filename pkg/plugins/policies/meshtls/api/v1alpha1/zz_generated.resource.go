@@ -181,7 +181,7 @@ var MeshTLSResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshTLSResource(),
 	ResourceList:                 &MeshTLSResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:                       "meshtlses",
 	KumactlArg:                   "meshtls",
 	KumactlListArg:               "meshtlses",

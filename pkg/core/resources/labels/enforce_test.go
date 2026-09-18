@@ -12,7 +12,6 @@ import (
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
-	meshaccesslog_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 )
@@ -51,67 +50,13 @@ var _ = Describe("EnforcedReadLabels", func() {
 				IsLocal:    given.isLocal,
 			}, given.cp)).To(Equal(given.expected))
 		},
-		Entry("workload-owner policy in an app namespace", testCase{
+		Entry("policy in an app namespace gets the namespace", testCase{
 			r:       meshWideTimeout(),
 			ns:      appNamespace,
 			isLocal: true,
 			cp:      noCP,
 			expected: map[string]string{
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
-				mesh_proto.PolicyRoleLabel:  string(mesh_proto.ConsumerPolicyRole),
-			},
-		}),
-		Entry("rules-based policy with no to[] is workload-owner", testCase{
-			r: builders.MeshAccessLog().
-				WithTargetRef(builders.TargetRefMesh()).
-				AddRule(builders.MeshAccessLogConf().
-					AddBackends(make([]meshaccesslog_api.Backend, 0))).
-				Build(),
-			ns:      appNamespace,
-			isLocal: true,
-			cp:      noCP,
-			expected: map[string]string{
-				mesh_proto.KubeNamespaceTag: "kuma-demo",
-				mesh_proto.PolicyRoleLabel:  string(mesh_proto.WorkloadOwnerPolicyRole),
-			},
-		}),
-		Entry("a producer policy stays producer", testCase{
-			r: builders.MeshTimeout().
-				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
-					mesh_proto.DisplayName:      "backend",
-					mesh_proto.KubeNamespaceTag: "kuma-demo",
-				}, ""), idleTimeout).
-				Build(),
-			ns:      appNamespace,
-			isLocal: true,
-			cp:      noCP,
-			expected: map[string]string{
-				mesh_proto.KubeNamespaceTag: "kuma-demo",
-				mesh_proto.PolicyRoleLabel:  string(mesh_proto.ProducerPolicyRole),
-			},
-		}),
-		// A policy that mixes producer and consumer items is rejected at admission, so
-		// it can only be stored in a namespace the webhooks never covered. Fall back to
-		// the narrowest role rather than propagating an error out of every read.
-		Entry("mixed producer and consumer to[] falls back to workload-owner", testCase{
-			r: builders.MeshTimeout().
-				WithTargetRef(builders.TargetRefMesh()).
-				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
-					mesh_proto.DisplayName:      "backend-1",
-					mesh_proto.KubeNamespaceTag: "kuma-demo",
-				}, ""), idleTimeout).
-				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
-					mesh_proto.DisplayName:      "backend-2",
-					mesh_proto.KubeNamespaceTag: "other-ns",
-				}, ""), idleTimeout).
-				Build(),
-			ns:      appNamespace,
-			isLocal: true,
-			cp:      noCP,
-			expected: map[string]string{
-				mesh_proto.KubeNamespaceTag: "kuma-demo",
-				mesh_proto.PolicyRoleLabel:  string(mesh_proto.WorkloadOwnerPolicyRole),
 			},
 		}),
 		Entry("nothing is enforced in the system namespace without a mode", testCase{
@@ -128,7 +73,7 @@ var _ = Describe("EnforcedReadLabels", func() {
 			cp:       noCP,
 			expected: nil,
 		}),
-		Entry("a non-policy resource gets no role", testCase{
+		Entry("a non-policy resource gets the namespace", testCase{
 			r:       meshservice_api.NewMeshServiceResource(),
 			ns:      appNamespace,
 			isLocal: true,
@@ -154,7 +99,6 @@ var _ = Describe("EnforcedReadLabels", func() {
 			cp:      zoneCP,
 			expected: map[string]string{
 				mesh_proto.KubeNamespaceTag:    "kuma-demo",
-				mesh_proto.PolicyRoleLabel:     string(mesh_proto.ConsumerPolicyRole),
 				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 				mesh_proto.ZoneTag:             "zone-1",
 			},
@@ -204,6 +148,31 @@ var _ = Describe("EnforcedReadLabels", func() {
 				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 			},
 		}),
+	)
+
+	// A policy in the system namespace applies mesh-wide and carries no namespace
+	// label. One an older control plane stored would scope it to the system namespace,
+	// so a read drops it; an import keeps the namespace it came with.
+	DescribeTable("RemovedReadLabels should drop the namespace label of a local policy in the system namespace",
+		func(r core_model.Resource, ns resource_labels.Namespace, isLocal bool, cp resource_labels.ControlPlane, expected []string) {
+			removed := resource_labels.RemovedReadLabels(resource_labels.StoredResource{
+				Descriptor: r.Descriptor(),
+				Spec:       r.GetSpec(),
+				Namespace:  ns,
+				IsLocal:    isLocal,
+			}, cp)
+			if len(expected) == 0 {
+				Expect(removed).To(BeEmpty())
+			} else {
+				Expect(removed).To(Equal(expected))
+			}
+		},
+		Entry("local policy in the system namespace on a zone", meshWideTimeout(), systemNamespace, true, zoneCP, []string{mesh_proto.KubeNamespaceTag}),
+		Entry("import in the system namespace on a zone", meshWideTimeout(), systemNamespace, false, zoneCP, nil),
+		Entry("local policy in an app namespace", meshWideTimeout(), appNamespace, true, zoneCP, nil),
+		Entry("non-policy in the system namespace", meshservice_api.NewMeshServiceResource(), systemNamespace, true, zoneCP, nil),
+		Entry("policy on Universal", meshWideTimeout(), universal, true, globalCP, nil),
+		Entry("nothing is removed without a mode", meshWideTimeout(), systemNamespace, true, noCP, nil),
 	)
 
 	fromGlobal := map[string]string{mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin)}

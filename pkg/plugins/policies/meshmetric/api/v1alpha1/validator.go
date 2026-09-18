@@ -5,9 +5,7 @@ import (
 	"regexp"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
@@ -23,22 +21,12 @@ func (r *MeshMetricResource) validateTop(targetRef *common_api.TopLevelTargetRef
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
-	switch core_model.PolicyRole(r.GetMeta()) {
-	case mesh_proto.SystemPolicyRole:
-		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.Mesh,
-				common_api.Dataplane,
-			},
-		})
-	default:
-		return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
-				common_api.Mesh,
-				common_api.Dataplane,
-			},
-		})
-	}
+	return mesh.ValidateTargetRef(targetRef.ToTargetRef(), &mesh.ValidateTargetRefOpts{
+		SupportedKinds: []common_api.TargetRefKind{
+			common_api.Mesh,
+			common_api.Dataplane,
+		},
+	})
 }
 
 func validateDefault(conf Conf) validators.ValidationError {

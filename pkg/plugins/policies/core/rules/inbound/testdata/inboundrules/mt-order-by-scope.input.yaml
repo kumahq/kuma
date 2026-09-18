@@ -1,9 +1,10 @@
-# should sort policies by role
+# should sort policies by origin and then by scope: global, zone system, zone namespaced
 type: MeshTimeout
 name: matched-for-rules-ccc
 mesh: mesh-1
 labels:
-  kuma.io/policy-role: consumer
+  kuma.io/origin: zone
+  k8s.kuma.io/namespace: kuma-demo
 spec:
   rules:
     - default:
@@ -14,7 +15,7 @@ type: MeshTimeout
 name: matched-for-rules-bbb
 mesh: mesh-1
 labels:
-  kuma.io/policy-role: producer
+  kuma.io/origin: zone
 spec:
   rules:
     - default:
@@ -26,7 +27,7 @@ type: MeshTimeout
 name: matched-for-rules-aaa
 mesh: mesh-1
 labels:
-  kuma.io/policy-role: system
+  kuma.io/origin: global
 spec:
   rules:
     - default:

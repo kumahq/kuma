@@ -181,7 +181,7 @@ var MeshRateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshRateLimitResource(),
 	ResourceList:                 &MeshRateLimitResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:                       "meshratelimits",
 	KumactlArg:                   "meshratelimit",
 	KumactlListArg:               "meshratelimits",

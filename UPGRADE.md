@@ -8,6 +8,28 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Producer policies and the `kuma.io/policy-role` label are removed
+
+The policy role model (`system`, `producer`, `consumer`, `workload-owner`) is gone, and with it the `kuma.io/policy-role` label the control plane computed on every policy on Kubernetes. What decides where a policy applies is only where it lives:
+
+- a policy on the global control plane, or on a Universal zone, applies to every data plane proxy in the mesh
+- a policy in the Kuma system namespace of a Kubernetes zone applies to every data plane proxy in that zone
+- a policy in any other Kubernetes namespace applies only to the data plane proxies in that namespace, and can only reference `MeshService`s and `MeshHTTPRoute`s from that namespace
+
+A namespaced policy whose `to[]` entries select a `MeshService` or `MeshHTTPRoute` in its own namespace used to be a producer policy: it applied to every client of that service in every namespace and every zone, and was synced to the other zones for that. It now behaves like any other namespaced policy: it applies to the clients in its own namespace and stays in its zone. Policies are no longer synced from one zone to the others, and the `producer-policy-flow` KDS feature is gone with them.
+
+Precedence follows the same three levels: a policy in an app namespace overrides one from the zone's system namespace, which overrides one from global. Within one level, resource name breaks ties as before.
+
+A policy in the Kuma system namespace no longer carries the `k8s.kuma.io/namespace` label, since that label now marks a policy as namespaced. A label left on a stored policy by an older control plane is ignored on read and deleted on the next write, as is a leftover `kuma.io/policy-role`.
+
+A `MeshHTTPRoute` generated from a Gateway API `HTTPRoute` is always created in the Kuma system namespace, whichever namespace the `HTTPRoute`'s parent lives in, so a route in its `Service`'s namespace keeps applying to every client of that `Service`.
+
+**Action required**
+
+Find every namespaced policy whose `to[]` selects a `MeshService` or `MeshHTTPRoute` in its own namespace and that clients in other namespaces or zones rely on. Move it to the zone's Kuma system namespace to keep it zone-wide, or to the global control plane to keep it mesh-wide. A policy left in its namespace silently stops applying to clients outside it.
+
+Remove `kuma.io/policy-role` from anything that selects policies by it, such as `kubectl` label selectors or dashboards: the label is no longer written and is deleted from existing policies as they are written.
+
 ### DPP configuration refresh interval default raised to 10s
 
 `xdsServer.dataplaneConfigurationRefreshInterval` (`KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL`) now defaults to `10s` instead of `1s`. The control plane regenerates the xDS configuration of every connected proxy on this interval, so a 1s default kept the control plane busy and scaled poorly with the number of data plane proxies.
@@ -445,20 +467,6 @@ plane `ClusterRole`.
 **Action required**
 
 Move any existing `crossZone` configuration under `to` entries whose `targetRef.kind` is `MeshMultiZoneService` before upgrading. Keep `localityAwareness.localZone`, `loadBalancer`, and other supported settings on the remaining target kinds as needed.
-
-### Generated Gateway API producer routes now win the same ties as hand-written ones
-
-A `MeshHTTPRoute` generated from a Gateway API `HTTPRoute` whose parent (a `Service` or `MeshService`) lives in the `HTTPRoute`'s own namespace is now created in that namespace, instead of always landing in the Kuma system namespace. This is what the policy role model calls a producer route, and putting it in the right namespace gives it `kuma.io/policy-role=producer`, the same role a hand-written `MeshHTTPRoute` targeting the same `Mesh` and `to` entry gets. Before this change, every generated route landed in the system namespace and was ranked `system`, so it always lost to an equivalent hand-written producer route even when the two expressed the same intent.
-
-A generated route whose parent is in a different namespace (a consumer route) still lands in the Kuma system namespace and keeps its `system` role and precedence unchanged.
-
-Because the route now lives in the `HTTPRoute`'s namespace, its `k8s.kuma.io/namespace` label changes to match, it now syncs across zones like any other namespaced policy, and it applies to dataplanes in remote zones the same way a hand-written route in that namespace would.
-
-**Action required**
-
-If a mesh has both a generated producer route and a hand-written `MeshHTTPRoute` targeting the same `Mesh` and `to` entry, check which one you expect to win: before this upgrade the hand-written route always won, after it the two tie and the outcome falls back to resource name. Remove or adjust one of them if you relied on the previous, implicit precedence.
-
-If any policy selects the generated route by its old `k8s.kuma.io/namespace: <kuma-system>` label (or your system namespace), update it to the `HTTPRoute`'s namespace instead. The control plane moves each existing generated route to its new namespace the next time its `HTTPRoute` is reconciled, so no manual migration of the `MeshHTTPRoute` object itself is needed.
 
 ### Gateway API HTTPRoute conflicts on the same parent now resolve by creationTimestamp
 

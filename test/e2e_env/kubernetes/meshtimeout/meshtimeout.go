@@ -138,7 +138,7 @@ spec:
         http:
           requestTimeout: 2s
           maxStreamDuration: 20s`, Config.KumaNamespace, mesh)),
-		Entry("consumer policy", fmt.Sprintf(`
+		Entry("namespaced inbound", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:
@@ -153,7 +153,7 @@ spec:
         http:
           requestTimeout: 2s
           maxStreamDuration: 20s`, namespace, mesh)),
-		Entry("producer policy", fmt.Sprintf(`
+		Entry("namespaced outbound to MeshService", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
 metadata:

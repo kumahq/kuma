@@ -3,7 +3,6 @@ mesh: mesh-1
 name: aaa
 labels:
   k8s.kuma.io/namespace: test-ns
-  kuma.io/policy-role: consumer
 spec:
   targetRef:
     kind: Mesh
@@ -16,13 +15,12 @@ spec:
         http:
           requestTimeout: 1s
 ---
-# 'bbb' is a also a consumer policy on the same namespace so it will be merged with 'aaa' policy
+# 'bbb' is also a policy in the same namespace so it will be merged with 'aaa' policy
 type: MeshTimeout
 mesh: mesh-1
 name: bbb
 labels:
   k8s.kuma.io/namespace: test-ns
-  kuma.io/policy-role: consumer
 spec:
   targetRef:
     kind: Mesh
@@ -35,14 +33,13 @@ spec:
         http:
           streamIdleTimeout: 3s
 ---
-# 'ccc' is a consumer policy from different namespace so it should not be applied
+# 'ccc' is a policy from a different namespace so it should not be applied
 type: MeshTimeout
 mesh: mesh-1
 name: ccc
 labels:
   kuma.io/origin: zone
   k8s.kuma.io/namespace: different-ns
-  kuma.io/policy-role: consumer
 spec:
   targetRef:
     kind: Mesh

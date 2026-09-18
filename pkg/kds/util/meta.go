@@ -6,7 +6,6 @@ import (
 	"time"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	config_store "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 )
 
@@ -36,23 +35,6 @@ func WithLabel(key, value string) CloneResourceMetaOpt {
 	}
 }
 
-// PopulateNamespaceLabelFromNameExtension on Kubernetes zones adds 'k8s.kuma.io/namespace' label to the resources
-// before syncing them to Global.
-//
-// In 2.7.x method 'GetMeta().GetLabels()' on Kubernetes returned a label map with 'k8s.kuma.io/namespace' added
-// dynamically. This behavior was changed in 2.9.x by https://github.com/kumahq/kuma/pull/11020, the namespace label is now
-// supposed to be set in labels.Compute function. But this function is called only on Create/Update of the resources.
-// This means policies that were created on 2.7.x won't have 'k8s.kuma.io/namespace' label when synced to Global.
-// Even though the lack of namespace labels affects only how resource looks in GUI on Global it's still worth setting it.
-func PopulateNamespaceLabelFromNameExtension() CloneResourceMetaOpt {
-	return func(m *resourceMeta) {
-		namespace := m.nameExtensions[model.K8sNamespaceComponent]
-		if _, ok := m.labels[mesh_proto.KubeNamespaceTag]; !ok && namespace != "" {
-			m.labels[mesh_proto.KubeNamespaceTag] = namespace
-		}
-	}
-}
-
 func WithoutLabel(key string) CloneResourceMetaOpt {
 	return func(m *resourceMeta) {
 		delete(m.labels, key)
@@ -68,20 +50,6 @@ func WithoutLabelPrefixes(prefixes ...string) CloneResourceMetaOpt {
 				}
 			}
 		}
-	}
-}
-
-func If(condition func(resource model.ResourceMeta) bool, fn CloneResourceMetaOpt) CloneResourceMetaOpt {
-	return func(meta *resourceMeta) {
-		if condition(meta) {
-			fn(meta)
-		}
-	}
-}
-
-func IsKubernetes(storeType config_store.StoreType) func(model.ResourceMeta) bool {
-	return func(_ model.ResourceMeta) bool {
-		return storeType == config_store.KubernetesStore
 	}
 }
 
