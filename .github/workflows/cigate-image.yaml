@@ -4,6 +4,7 @@ on:
     branches: ["master"]
     paths:
       - ".github/actions/cigate/**"
+      - "!.github/actions/cigate/*_test.go"
       - ".github/workflows/cigate-image.yaml"
   workflow_dispatch:
 concurrency:
@@ -46,6 +47,17 @@ jobs:
           fi
           printf 'version=%s\n' "${version}" >> "${GITHUB_OUTPUT}"
           echo "publishing ghcr.io/kumahq/cigate:${version}"
+
+      - name: "Refuse to move a version that is already published"
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if docker buildx imagetools inspect "ghcr.io/kumahq/cigate:${VERSION}" >/dev/null 2>&1; then
+            echo "::error title=cigate-image::ghcr.io/kumahq/cigate:${VERSION} is already published, and the workflows that pin it expect it never to change. Raise the version in .github/actions/cigate/action.yml to publish this build."
+            exit 1
+          fi
+          echo "ghcr.io/kumahq/cigate:${VERSION} is not published yet"
 
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
