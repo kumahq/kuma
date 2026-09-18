@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func needs(over map[string]string) map[string]Need {
 	base := map[string]string{
@@ -35,27 +38,27 @@ func TestVerdictNamesEveryBrokenDependencyInOrder(t *testing.T) {
 
 func TestVerdictRefusesADraftThatSkippedItsGates(t *testing.T) {
 	_, err := Verdict(needs(map[string]string{"build_check": "skipped", "check": "skipped"}), true)
-	if err == nil || !contains(err.Error(), "this pull request is a draft") {
+	if err == nil || !strings.Contains(err.Error(), "this pull request is a draft") {
 		t.Fatalf("Given a draft that skipped its gates, When judged, Then it refuses; got %v", err)
 	}
-	if !contains(err.Error(), "Mark it ready for review") {
+	if !strings.Contains(err.Error(), "Mark it ready for review") {
 		t.Fatalf("Then it says how to test it; got %v", err)
 	}
 }
 
 func TestVerdictRefusesSkippedGatesOnAPullRequestThatIsNoLongerADraft(t *testing.T) {
 	_, err := Verdict(needs(map[string]string{"build_check": "skipped", "check": "skipped"}), false)
-	if err == nil || !contains(err.Error(), "skipped build_check, check") {
+	if err == nil || !strings.Contains(err.Error(), "skipped build_check, check") {
 		t.Fatalf("Given a ready pull request whose gates skipped, When judged, Then it refuses; got %v", err)
 	}
-	if !contains(err.Error(), "re-running this one replays the event") {
+	if !strings.Contains(err.Error(), "re-running this one replays the event") {
 		t.Fatalf("Then it says a re-run is not the recovery; got %v", err)
 	}
 }
 
 func TestVerdictPrefersAFailureOverTheDraftAllowance(t *testing.T) {
 	_, err := Verdict(needs(map[string]string{"build_check": "skipped", "check": "failure"}), true)
-	if err == nil || !contains(err.Error(), "failed or were cancelled: check") {
+	if err == nil || !strings.Contains(err.Error(), "failed or were cancelled: check") {
 		t.Fatalf("Given a failure on a draft, When judged, Then the failure wins; got %v", err)
 	}
 }
@@ -66,7 +69,7 @@ func TestHaltFailsClosedOnUnreadableNeeds(t *testing.T) {
 		if code := Halt(raw, "false", func(l string) { lines = append(lines, l) }); code != 1 {
 			t.Fatalf("Given needs %q, When halted, Then it exits 1; got %d", raw, code)
 		}
-		if len(lines) == 0 || !contains(lines[0], "::error title=distributions::") {
+		if len(lines) == 0 || !strings.Contains(lines[0], "::error title=distributions::") {
 			t.Fatalf("Then it annotates the failure; got %v", lines)
 		}
 	}
@@ -78,7 +81,7 @@ func TestHaltExitsOneAndAnnotatesASkippedGate(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("Given a skipped gate on a ready pull request, When halted, Then it exits 1; got %d", code)
 	}
-	if !contains(lines[0], "results: ") || !contains(lines[1], "::error title=distributions::") {
+	if !strings.Contains(lines[0], "results: ") || !strings.Contains(lines[1], "::error title=distributions::") {
 		t.Fatalf("Then it prints the results and the error; got %v", lines)
 	}
 }

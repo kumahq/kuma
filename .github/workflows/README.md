@@ -101,7 +101,7 @@ Gate with a job-level `if:`, never a narrowed trigger. A job skipped by a condit
 
 `distributions` is the only required check covering CI, and it publishes nothing until all eight of its `needs` finish. So it fails on a draft rather than passing: a green one would stay newest for the forty minutes the ready run takes, and a pull request is merged out of that window by `auto-merge.yaml`, by a fork whose read-only token no hold can cover, or by a bot marking it ready with `github.token` and raising no run at all. A draft carries one red check saying it has tested nothing, which costs nothing, because GitHub refuses to merge a draft anyway.
 
-`meta` also posts a `distributions` check of its own, `in_progress`, a minute into every pull request run, so a green result from an earlier run of the same commit cannot satisfy the requirement while this one is still deciding. A newer check run of the same name replaces the older one outright. A fork's token is read-only, so that hold fails there and the step says so.
+`meta` also posts a `distributions` check of its own, `in_progress`, as soon as it has read the pull request, so a green result from an earlier run of the same commit cannot satisfy the requirement while this one is still deciding. A newer check run of the same name replaces the older one outright. A fork's token is read-only, so that hold fails there and the step says so.
 
 An automation that marks a pull request ready must use an app token. GitHub raises no workflow run for an event its own token caused, so `ready_for_review` would not fire and the draft's results would stand.
 

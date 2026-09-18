@@ -23,7 +23,17 @@ func api(method, url, token string, body io.Reader) (*http.Response, error) {
 	request.Header.Set("Authorization", "Bearer "+token)
 	request.Header.Set("Accept", "application/vnd.github+json")
 
-	return http.DefaultClient.Do(request)
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	if response.StatusCode >= http.StatusBadRequest {
+		response.Body.Close()
+
+		return nil, fmt.Errorf("%s for %s", response.Status, url)
+	}
+
+	return response, nil
 }
 
 func paged[T any](url, token, key string, send func(string) (*http.Response, error)) ([]T, error) {
@@ -44,10 +54,6 @@ func paged[T any](url, token, key string, send func(string) (*http.Response, err
 		if err != nil {
 			return nil, err
 		}
-		if response.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("%s for %s", response.Status, url)
-		}
-
 		var envelope map[string]json.RawMessage
 		if err := json.Unmarshal(body, &envelope); err != nil {
 			return nil, err
@@ -95,7 +101,6 @@ func main() {
 			log(fmt.Sprintf("::error title=meta::could not open GITHUB_OUTPUT: %s", err))
 			os.Exit(1)
 		}
-		defer output.Close()
 
 		os.Exit(Meta(
 			os.Getenv("GITHUB_EVENT_NAME"), number, sha,
@@ -105,9 +110,6 @@ func main() {
 					return nil, err
 				}
 				defer response.Body.Close()
-				if response.StatusCode != http.StatusOK {
-					return nil, fmt.Errorf("%s", response.Status)
-				}
 				pull := &PullRequest{}
 
 				return pull, json.NewDecoder(response.Body).Decode(pull)
@@ -119,9 +121,6 @@ func main() {
 					return err
 				}
 				defer response.Body.Close()
-				if response.StatusCode >= http.StatusBadRequest {
-					return fmt.Errorf("%s", response.Status)
-				}
 
 				return nil
 			},

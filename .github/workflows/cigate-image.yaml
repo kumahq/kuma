@@ -34,37 +34,39 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: "Read the version the action pins"
-        id: version
+      - name: "Read the image the action pins"
+        id: image
         env:
           ACTION: .github/actions/cigate/action.yml
         run: |
           set -euo pipefail
-          version="$(sed -n 's|.*image: docker://ghcr.io/kumahq/cigate:\(.*\)$|\1|p' "${ACTION}")"
-          if [[ -z "${version}" ]]; then
-            echo "::error title=cigate-image::could not read the image version out of ${ACTION}"
+          reference="$(yq -r '.runs.image' "${ACTION}")"
+          if [[ "${reference}" == "null" || "${reference}" != docker://*:* ]]; then
+            echo "::error title=cigate-image::${ACTION} does not pin a docker:// image with a tag, it reads ${reference}"
             exit 1
           fi
-          printf 'version=%s\n' "${version}" >> "${GITHUB_OUTPUT}"
-          echo "publishing ghcr.io/kumahq/cigate:${version}"
+          reference="${reference#docker://}"
+          printf 'reference=%s\n' "${reference}" >> "${GITHUB_OUTPUT}"
+          printf 'version=%s\n' "${reference##*:}" >> "${GITHUB_OUTPUT}"
+          echo "publishing ${reference}"
 
       - name: "Refuse to move a version that is already published"
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          REFERENCE: ${{ steps.image.outputs.reference }}
         run: |
           set -euo pipefail
-          if docker buildx imagetools inspect "ghcr.io/kumahq/cigate:${VERSION}" >/dev/null 2>&1; then
-            echo "::error title=cigate-image::ghcr.io/kumahq/cigate:${VERSION} is already published, and the workflows that pin it expect it never to change. Raise the version in .github/actions/cigate/action.yml to publish this build."
+          if docker buildx imagetools inspect "${REFERENCE}" >/dev/null 2>&1; then
+            echo "::error title=cigate-image::${REFERENCE} is already published, and the workflows that pin it expect it never to change. Raise the version in .github/actions/cigate/action.yml to publish this build."
             exit 1
           fi
-          echo "ghcr.io/kumahq/cigate:${VERSION} is not published yet"
+          echo "${REFERENCE} is not published yet"
 
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .github/actions/cigate
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/kumahq/cigate:${{ steps.version.outputs.version }}
+          tags: ${{ steps.image.outputs.reference }}
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.version=${{ steps.image.outputs.version }}

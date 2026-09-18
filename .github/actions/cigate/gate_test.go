@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -33,7 +34,7 @@ func replace(name, conclusion string) []Job {
 func drop(prefix string) []Job {
 	jobs := []Job{}
 	for _, job := range green() {
-		if len(job.Name) < len(prefix) || job.Name[:len(prefix)] != prefix {
+		if !strings.HasPrefix(job.Name, prefix) {
 			jobs = append(jobs, job)
 		}
 	}
@@ -66,15 +67,8 @@ func TestMissingJobsRejectsAnyLegThatIsNotSuccess(t *testing.T) {
 }
 
 func TestMissingJobsRejectsATagRunWhichRunsNeitherFamily(t *testing.T) {
-	jobs := []Job{}
-	for _, job := range drop("test / e2e") {
-		if job.Name != "test / test_unit" {
-			jobs = append(jobs, job)
-		}
-	}
-
 	want := []string{"test / test_unit", "test / e2e ..."}
-	if missing := MissingJobs(jobs); !reflect.DeepEqual(missing, want) {
+	if missing := MissingJobs(drop("test / ")); !reflect.DeepEqual(missing, want) {
 		t.Fatalf("Given a tag run, When checked, Then both test families are missing; got %v", missing)
 	}
 }
@@ -104,7 +98,7 @@ func TestMissingJobsStillRejectsAFailedLegUnderTheOlderNaming(t *testing.T) {
 }
 
 func TestMissingJobsRejectsAnEmptyJobList(t *testing.T) {
-	if missing := MissingJobs(nil); len(missing) != 7 {
+	if missing := MissingJobs(nil); len(missing) != len(required) {
 		t.Fatalf("Given no jobs at all, When checked, Then every requirement is missing; got %v", missing)
 	}
 }
@@ -139,7 +133,7 @@ func run(id int64, created string) Run {
 
 func TestGateRefusesWhenNoRunSucceeded(t *testing.T) {
 	_, err := Gate("abc", "w", func() ([]Run, error) { return nil, nil }, nil, func(string) {})
-	if err == nil || !contains(err.Error(), "No successful completed push run") {
+	if err == nil || !strings.Contains(err.Error(), "No successful completed push run") {
 		t.Fatalf("Given no successful run, When gated, Then it says none was found; got %v", err)
 	}
 }
@@ -160,7 +154,7 @@ func TestGateFallsThroughANewerTagRunToAnOlderGreenBranchRun(t *testing.T) {
 	if err != nil || got.ID != 100 {
 		t.Fatalf("Given a newer tag run and an older green branch run, When gated, Then it passes on the older; got %v %v", got, err)
 	}
-	if len(logged) != 1 || !contains(logged[0], "https://x/2026-01-02 is missing") {
+	if len(logged) != 1 || !strings.Contains(logged[0], "https://x/2026-01-02 is missing") {
 		t.Fatalf("Then it says what the newer run was missing; got %v", logged)
 	}
 }
@@ -171,7 +165,7 @@ func TestGateReportsAnAPIFailureRatherThanAMissingRun(t *testing.T) {
 		func(int64) ([]Job, error) { return nil, errors.New("502") },
 		func(string) {},
 	)
-	if err == nil || !contains(err.Error(), "GitHub API failure") {
+	if err == nil || !strings.Contains(err.Error(), "GitHub API failure") {
 		t.Fatalf("Given every job query fails, When gated, Then it blames the API; got %v", err)
 	}
 }
@@ -188,7 +182,7 @@ func TestGateStillBlamesTheAPIWhenOneRunWasReadable(t *testing.T) {
 		},
 		func(string) {},
 	)
-	if err == nil || !contains(err.Error(), "could not read the jobs of 1 run(s)") {
+	if err == nil || !strings.Contains(err.Error(), "could not read the jobs of 1 run(s)") {
 		t.Fatalf("Given one unreadable run and one incomplete run, When gated, Then it blames the API; got %v", err)
 	}
 }
@@ -199,24 +193,14 @@ func TestGateSaysNoRunIsGreenWhenEveryRunWasReadable(t *testing.T) {
 		func(int64) ([]Job, error) { return nil, nil },
 		func(string) {},
 	)
-	if err == nil || !contains(err.Error(), "has every required job green") {
+	if err == nil || !strings.Contains(err.Error(), "has every required job green") {
 		t.Fatalf("Given every run readable and incomplete, When gated, Then it says no run is green; got %v", err)
 	}
 }
 
 func TestGateSurfacesAFailureToListRuns(t *testing.T) {
 	_, err := Gate("abc", "w", func() ([]Run, error) { return nil, errors.New("503") }, nil, func(string) {})
-	if err == nil || !contains(err.Error(), "could not list runs") {
+	if err == nil || !strings.Contains(err.Error(), "could not list runs") {
 		t.Fatalf("Given the run list cannot be read, When gated, Then it says so; got %v", err)
 	}
-}
-
-func contains(haystack, needle string) bool {
-	for i := 0; i+len(needle) <= len(haystack); i++ {
-		if haystack[i:i+len(needle)] == needle {
-			return true
-		}
-	}
-
-	return false
 }

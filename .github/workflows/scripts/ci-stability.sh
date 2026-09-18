@@ -61,9 +61,7 @@ fetch_sticky_comment() {
   # distinguish "no such comment" from "couldn't reach GitHub" — important
   # to avoid creating duplicate sticky comments on transient errors.
   local pr=$1 json
-  if ! json=$(gh api "repos/${OWNER}/${REPO}/issues/${pr}/comments" --paginate 2>/dev/null); then
-    return 1
-  fi
+  json=$(gh api "repos/${OWNER}/${REPO}/issues/${pr}/comments" --paginate 2>/dev/null) || return 1
   printf '%s' "$json" | jq -c --arg marker "$STICKY_MARKER" '
     [.[] | select(.user.type == "Bot" and (.body | contains($marker)))] | first // empty
   '

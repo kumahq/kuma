@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -27,8 +28,9 @@ func TestDecisionsWritesLabelsAsJSONBesideTheDraftFlag(t *testing.T) {
 
 func TestDecisionsEscapesALabelNameThatWouldBreakTheJSON(t *testing.T) {
 	line := Decisions([]string{`a"b`, "c\nd"}, "false")
+	encoded, _, _ := strings.Cut(strings.TrimPrefix(line, "json="), "\ndraft=")
 	var decoded []string
-	if err := json.Unmarshal([]byte(line[len("json="):len(line)-len("\ndraft=false")]), &decoded); err != nil {
+	if err := json.Unmarshal([]byte(encoded), &decoded); err != nil {
 		t.Fatalf("Given a label needing escaping, When written, Then it survives a round trip; got %v", err)
 	}
 	if len(decoded) != 2 || decoded[0] != `a"b` {
@@ -97,7 +99,7 @@ func TestHoldWarnsAndCarriesOnWhenRefused(t *testing.T) {
 	if Hold(func(string) error { return errors.New("403 Forbidden") }, "abc", func(l string) { lines = append(lines, l) }) {
 		t.Fatal("Given a refused hold, as on a fork, When held, Then it reports failure")
 	}
-	if !contains(lines[0], "::warning title=meta::could not hold") || !contains(lines[0], "403 Forbidden") {
+	if !strings.Contains(lines[0], "::warning title=meta::could not hold") || !strings.Contains(lines[0], "403 Forbidden") {
 		t.Fatalf("Then it warns with the cause; got %v", lines)
 	}
 }
@@ -139,7 +141,7 @@ func TestMetaWritesNoOutputsWhenTheReadNeverSucceeds(t *testing.T) {
 	if code != 1 || len(written) != 0 {
 		t.Fatalf("Given the read never succeeds, When decided, Then it exits 1 writing nothing; got %d %v", code, written)
 	}
-	if !contains(logs[0], "could not read pull request 7 after 3 attempts") {
+	if !strings.Contains(logs[0], "could not read pull request 7 after 3 attempts") {
 		t.Fatalf("Then it says how many attempts it made; got %v", logs)
 	}
 }
@@ -152,7 +154,7 @@ func TestMetaKeepsTheDecisionsWhenTheHoldFails(t *testing.T) {
 	if code != 0 || len(written) != 1 {
 		t.Fatalf("Given a failed hold, When decided, Then the decisions still stand; got %d %v", code, written)
 	}
-	if !contains(logs[len(logs)-1], "::warning title=meta::") {
+	if !strings.Contains(logs[len(logs)-1], "::warning title=meta::") {
 		t.Fatalf("Then it warns; got %v", logs)
 	}
 }

@@ -7,6 +7,7 @@ ARG TARGETARCH
 
 WORKDIR /src
 COPY . .
+RUN go test ./...
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -ldflags="-s -w" -o /cigate .
 
 FROM scratch
