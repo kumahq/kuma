@@ -69,6 +69,10 @@ fetch_sticky_comment() {
   '
 }
 
+next_run_number() {
+  echo $(( $(jq '[.runs[].number // 0] | max // 0' <<<"$1") + 1 ))
+}
+
 extract_state() {
   local body=$1 encoded decoded
   encoded=$(printf '%s' "$body" |
@@ -291,7 +295,7 @@ process_pr() {
     else
       failed_json='[]'
     fi
-    run_number=$(( $(jq '[.runs[].number // 0] | max // 0' <<<"$state") + 1 ))
+    run_number=$(next_run_number "$state")
     observation=$(jq -n \
       --argjson n "$run_number" \
       --arg observed_at "$now_utc" \
@@ -379,7 +383,7 @@ Removing the \`ci/verify-stability-merge-master\` label. Rebase or merge \`maste
 
   # --- push empty trigger commit ---
   local new_run_number trigger_msg
-  new_run_number=$(( $(jq '[.runs[].number // 0] | max // 0' <<<"$state") + 1 ))
+  new_run_number=$(next_run_number "$state")
   trigger_msg="ci(stability): trigger run #${new_run_number} for PR #${pr}
 
 Workflow run: ${RUN_URL}"

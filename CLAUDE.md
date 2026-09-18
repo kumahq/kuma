@@ -81,7 +81,7 @@ What each `ci/` label does is in [`.github/workflows/README.md`](.github/workflo
 | `ci/skip-e2e-test` | Changes fully covered by unit tests where slow e2e adds no signal (e.g. isolated pkg refactor, config/CLI text). Don't use if touching xDS gen, policies, KDS, or transparent proxy |
 | `ci/run-full-matrix` | Changes with cross-platform/version risk: transparent proxy, CNI, install/bootstrap, k8s-version-sensitive code, build/packaging. Costly - don't add by default |
 | `ci/skip-container-structure-test` | Image-layout changes you are iterating on, where the structure assertions are the thing under edit |
-| `ci/run-build` / `ci/force-publish` | Preview images for a downstream test. `ci/force-publish` is refused on a fork PR |
+| `ci/run-build` / `ci/force-publish` | Preview images for a downstream test |
 | `ci/verify-stability` | Suspected flaky test, or a change to e2e/timing-sensitive code where you want confidence it's stable before merge. Add on the PR, let the scheduled stability workflow drive it |
 
 Default (no labels) is correct for most code PRs. Reach for `skip-*` only to save CI on genuinely test-irrelevant changes; reach for `run-full-matrix`/`verify-stability` to add coverage/confidence when the change warrants it.
