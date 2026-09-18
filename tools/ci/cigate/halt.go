@@ -40,7 +40,11 @@ func Verdict(needs map[string]Need, isDraft bool) (map[string]string, error) {
 		}
 	}
 
-	if !isDraft && len(skipped) > 0 {
+	if len(skipped) > 0 {
+		if isDraft {
+			return results, fmt.Errorf("this pull request is a draft, so %s did not run and this check has tested nothing. Mark it ready for review to test it.", join(skipped))
+		}
+
 		return results, fmt.Errorf("this run skipped %s, but the pull request is not a draft, so these results do not describe it. Push a commit to start a run that tests it - re-running this one replays the event it was started with and skips them again.", join(skipped))
 	}
 

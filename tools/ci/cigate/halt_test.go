@@ -33,9 +33,13 @@ func TestVerdictNamesEveryBrokenDependencyInOrder(t *testing.T) {
 	}
 }
 
-func TestVerdictAllowsADraftToSkipItsGates(t *testing.T) {
-	if _, err := Verdict(needs(map[string]string{"build_check": "skipped", "check": "skipped"}), true); err != nil {
-		t.Fatalf("Given a draft that skipped its gates, When judged, Then it passes; got %v", err)
+func TestVerdictRefusesADraftThatSkippedItsGates(t *testing.T) {
+	_, err := Verdict(needs(map[string]string{"build_check": "skipped", "check": "skipped"}), true)
+	if err == nil || !contains(err.Error(), "this pull request is a draft") {
+		t.Fatalf("Given a draft that skipped its gates, When judged, Then it refuses; got %v", err)
+	}
+	if !contains(err.Error(), "Mark it ready for review") {
+		t.Fatalf("Then it says how to test it; got %v", err)
 	}
 }
 
