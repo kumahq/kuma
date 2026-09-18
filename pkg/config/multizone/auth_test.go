@@ -42,6 +42,9 @@ func TestKDSClientAuthConfigLoadToken(t *testing.T) {
 	if err := os.WriteFile(tokenPath, []byte("file-token\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	tokenDir := filepath.Dir(tokenPath)
+	// built by hand, filepath.Join would clean the ".." away before LoadToken sees it
+	traversingPath := strings.Join([]string{tokenDir, "..", filepath.Base(tokenDir), "token"}, string(filepath.Separator))
 	emptyPath := filepath.Join(t.TempDir(), "empty")
 	if err := os.WriteFile(emptyPath, []byte("\n"), 0o600); err != nil {
 		t.Fatal(err)
@@ -59,6 +62,8 @@ func TestKDSClientAuthConfigLoadToken(t *testing.T) {
 		{name: "path over inline", cfg: KDSClientAuthConfig{TokenInline: "inline-token", TokenPath: tokenPath}, token: "file-token"},
 		{name: "empty file", cfg: KDSClientAuthConfig{TokenPath: emptyPath}, errSubstr: "is empty"},
 		{name: "missing file", cfg: KDSClientAuthConfig{TokenPath: filepath.Join(t.TempDir(), "missing")}, errSubstr: "could not read zone token"},
+		{name: "escaping path", cfg: KDSClientAuthConfig{TokenPath: filepath.Join("..", "..", "etc", "token")}, errSubstr: "traversal sequence"},
+		{name: "traversal resolving back in", cfg: KDSClientAuthConfig{TokenPath: traversingPath}, token: "file-token"},
 	}
 
 	for _, c := range cases {
