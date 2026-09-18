@@ -69,14 +69,18 @@ func Setup(rt runtime.Runtime) error {
 			return err
 		}
 	}
-	grpcStreamInterceptors := rt.KDSContext().ServerStreamInterceptors
-	grpcUnaryInterceptors := rt.KDSContext().ServerUnaryInterceptor
-	if authenticator := rt.KDSContext().GlobalZoneAuthenticator; authenticator != nil {
-		grpcStreamInterceptors = append(slices.Clone(grpcStreamInterceptors), kds_auth.StreamServerInterceptor(authenticator))
-		grpcUnaryInterceptors = append(slices.Clone(grpcUnaryInterceptors), kds_auth.UnaryServerInterceptor(authenticator))
-	} else {
+	authStreamInterceptors, authUnaryInterceptors, err := kds_auth.ServerInterceptors(
+		rt.Config().Multizone.Global.KDS.Auth.Type,
+		rt.KDSContext().GlobalZoneAuthenticator,
+	)
+	if err != nil {
+		return err
+	}
+	if len(authStreamInterceptors) == 0 {
 		kdsGlobalLog.Info("authentication of Zone CPs is disabled")
 	}
+	grpcStreamInterceptors := append(slices.Clone(rt.KDSContext().ServerStreamInterceptors), authStreamInterceptors...)
+	grpcUnaryInterceptors := append(slices.Clone(rt.KDSContext().ServerUnaryInterceptor), authUnaryInterceptors...)
 	kdsSyncServer := mux.NewKDSSyncServiceServer(rt, deltaServer, resourceSyncer, kdsMetrics)
 	return rt.Add(component.NewResilientComponent(kdsGlobalLog.WithName("kds-mux-client"), mux.NewServer(
 		grpcStreamInterceptors,
