@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"maps"
 	"strings"
 	"testing"
@@ -76,7 +77,7 @@ func TestVerdictRefusesWhenAGateIsNotAmongTheNeeds(t *testing.T) {
 func TestHaltFailsClosedOnUnreadableNeeds(t *testing.T) {
 	for _, raw := range []string{"", "not json", "[]"} {
 		lines := []string{}
-		if code := Halt(raw, "false", func(l string) { lines = append(lines, l) }); code != 1 {
+		if code := Halt(raw, "false", "", nil, func(l string) { lines = append(lines, l) }); code != 1 {
 			t.Fatalf("Given needs %q, When halted, Then it exits 1; got %d", raw, code)
 		}
 		if len(lines) == 0 || !strings.Contains(lines[0], "::error title=distributions::") {
@@ -87,7 +88,7 @@ func TestHaltFailsClosedOnUnreadableNeeds(t *testing.T) {
 
 func TestHaltExitsOneAndAnnotatesASkippedGate(t *testing.T) {
 	lines := []string{}
-	code := Halt(`{"build_check":{"result":"skipped"},"check":{"result":"success"},"test":{"result":"success"}}`, "false", func(l string) { lines = append(lines, l) })
+	code := Halt(`{"build_check":{"result":"skipped"},"check":{"result":"success"},"test":{"result":"success"}}`, "false", "", nil, func(l string) { lines = append(lines, l) })
 	if code != 1 {
 		t.Fatalf("Given a skipped gate on a ready pull request, When halted, Then it exits 1; got %d", code)
 	}
@@ -98,10 +99,44 @@ func TestHaltExitsOneAndAnnotatesASkippedGate(t *testing.T) {
 
 func TestHaltExitsZeroOnAHealthyRun(t *testing.T) {
 	lines := []string{}
-	if code := Halt(`{"build_check":{"result":"success"},"check":{"result":"success"},"test":{"result":"success"}}`, "", func(l string) { lines = append(lines, l) }); code != 0 {
+	if code := Halt(`{"build_check":{"result":"success"},"check":{"result":"success"},"test":{"result":"success"}}`, "", "", nil, func(l string) { lines = append(lines, l) }); code != 0 {
 		t.Fatalf("Given a healthy run, When halted, Then it exits 0; got %d", code)
 	}
 	if lines[len(lines)-1] != "All dependent jobs succeeded" {
 		t.Fatalf("Then it says so; got %v", lines)
+	}
+}
+
+func TestHaltRefusesWhenTheBaseMovedDuringTheRun(t *testing.T) {
+	lines := []string{}
+	code := Halt(`{"build_check":{"result":"success"},"check":{"result":"success"}}`, "false", "master",
+		func() (string, error) { return "release-2.12", nil },
+		func(l string) { lines = append(lines, l) })
+
+	if code != 1 {
+		t.Fatalf("Given the base moved while the run was going, When halted, Then it exits 1; got %d", code)
+	}
+	if !strings.Contains(lines[1], "now targets release-2.12") {
+		t.Fatalf("Then it names where the pull request went; got %v", lines)
+	}
+}
+
+func TestHaltRefusesWhenTheBaseCannotBeRead(t *testing.T) {
+	lines := []string{}
+	code := Halt(`{"build_check":{"result":"success"},"check":{"result":"success"}}`, "false", "master",
+		func() (string, error) { return "", errors.New("503") },
+		func(l string) { lines = append(lines, l) })
+
+	if code != 1 || !strings.Contains(lines[1], "could not read which branch") {
+		t.Fatalf("Given the base cannot be read, When halted, Then it fails closed; got %d %v", code, lines)
+	}
+}
+
+func TestHaltPassesWhenTheBaseHeld(t *testing.T) {
+	code := Halt(`{"build_check":{"result":"success"},"check":{"result":"success"}}`, "false", "master",
+		func() (string, error) { return "master", nil }, func(string) {})
+
+	if code != 0 {
+		t.Fatalf("Given the base did not move, When halted, Then it passes; got %d", code)
 	}
 }

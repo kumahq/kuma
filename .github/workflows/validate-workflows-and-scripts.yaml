@@ -226,3 +226,7 @@ jobs:
             exit 1
           fi
           echo "${reference} was built from ${revision}"
+
+          if ! git diff --quiet "${revision}" HEAD -- .github/actions/cigate ':!.github/actions/cigate/action.yml'; then
+            echo "::warning title=cigate::the gate source has moved since ${revision}, so this pull request would run an older binary than it carries. Merging publishes a new image and opens a pull request to pin it."
+          fi

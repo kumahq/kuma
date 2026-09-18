@@ -21,7 +21,7 @@ inputs:
     required: false
     default: ""
   base-ref:
-    description: "Base branch the run was started against, for the meta command"
+    description: "Base branch the run was started against, for the meta and halt commands"
     required: false
     default: ""
   head-sha:

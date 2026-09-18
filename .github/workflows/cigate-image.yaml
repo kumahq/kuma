@@ -57,3 +57,41 @@ jobs:
             echo "  image: docker://ghcr.io/kumahq/cigate@${DIGEST}"
             echo '```'
           } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: "Point the action at the image just published"
+        if: ${{ github.ref == 'refs/heads/master' }}
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          sed -i -E "s|(image: docker://ghcr\.io/kumahq/cigate)@sha256:[a-f0-9]+|\1@${DIGEST}|" .github/actions/cigate/action.yml
+          grep -q "cigate@${DIGEST}" .github/actions/cigate/action.yml
+
+      - name: "Generate GitHub app token"
+        if: ${{ github.ref == 'refs/heads/master' }}
+        id: github-app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: "Open the pull request that pins it"
+        if: ${{ github.ref == 'refs/heads/master' }}
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ steps.github-app-token.outputs.token }}
+          branch: ci/pin-cigate-image
+          delete-branch: true
+          signoff: true
+          title: "ci(actions): pin the CI gate image built from ${{ github.sha }}"
+          commit-message: "ci(actions): pin the CI gate image built from ${{ github.sha }}"
+          body: |
+            ## Motivation
+
+            `.github/actions/cigate/action.yml` pins the gate image by digest, so between a push to master that changes the gate source and someone updating that pin by hand, every pull request runs an older binary than it carries.
+
+            ## Implementation
+
+            Point the pin at the image built from ${{ github.sha }}.
+          committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
+          author: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>

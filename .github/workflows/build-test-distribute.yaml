@@ -411,6 +411,10 @@ jobs:
         uses: ./.github/actions/cigate
         with:
           command: halt
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          pull-request: ${{ github.event.pull_request.number }}
+          base-ref: ${{ github.event.pull_request.base.ref }}
           needs: ${{ toJson(needs) }}
           is-draft: ${{ needs.meta.outputs.DRAFT_NOW }}
       - name: "Download all SBOM assets"

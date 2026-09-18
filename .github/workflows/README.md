@@ -124,3 +124,9 @@ An automation that marks a pull request ready must use an app token. GitHub rais
 | `ci/verify-stability-merge-master` | the same, merging master before each rerun |
 
 Every one of them is declared in `meta_repo.yml`.
+
+# The gate action
+
+Every decision above - the label read, the hold, the fan-in assertion, the tag gate - is one Go program in `.github/actions/cigate`, run as a container action so a job spends about five seconds on it instead of a minute installing a toolchain.
+
+`action.yml` pins the image by digest. A push to master that changes the program republishes it and opens a pull request moving the pin, so the two never drift for more than that pull request's lifetime. Until it merges the gate still runs the older binary, which `validate-workflows-and-scripts.yaml` warns about on any pull request carrying gate changes. Publishing only from master is what stops a branch shipping itself a gate that waves it through.

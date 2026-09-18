@@ -78,6 +78,19 @@ func paged[T any](url, token, key string, send func(string) (*http.Response, err
 	return collected, nil
 }
 
+func readPullRequest(repo, token, number string) func() (*PullRequest, error) {
+	return func() (*PullRequest, error) {
+		response, err := api(http.MethodGet, fmt.Sprintf("https://api.github.com/repos/%s/pulls/%s", repo, number), token, nil)
+		if err != nil {
+			return nil, err
+		}
+		defer response.Body.Close()
+		pull := &PullRequest{}
+
+		return pull, json.NewDecoder(response.Body).Decode(pull)
+	}
+}
+
 func postCheckRun(repo, token string) func(string) error {
 	return func(head string) error {
 		payload, _ := json.Marshal(map[string]string{"name": "distributions", "head_sha": head, "status": "in_progress"})
@@ -105,7 +118,14 @@ func main() {
 
 	switch os.Args[1] {
 	case "halt":
-		os.Exit(Halt(os.Getenv("NEEDS"), os.Getenv("IS_DRAFT"), log))
+		os.Exit(Halt(os.Getenv("NEEDS"), os.Getenv("IS_DRAFT"), os.Getenv("BASE_REF"), func() (string, error) {
+			pull, err := readPullRequest(repo, token, os.Getenv("PR"))()
+			if err != nil {
+				return "", err
+			}
+
+			return pull.Base.Ref, nil
+		}, log))
 
 	case "hold":
 		if err := Hold(postCheckRun(repo, token), os.Getenv("HEAD_SHA"), log); err != nil {

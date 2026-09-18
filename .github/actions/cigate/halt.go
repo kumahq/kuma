@@ -43,7 +43,7 @@ func Verdict(results map[string]string, isDraft bool) error {
 	return nil
 }
 
-func Halt(rawNeeds, isDraft string, log func(string)) int {
+func Halt(rawNeeds, isDraft, base string, liveBase func() (string, error), log func(string)) int {
 	needs := map[string]Need{}
 	if err := json.Unmarshal([]byte(rawNeeds), &needs); err != nil {
 		log(fmt.Sprintf("::error title=distributions::could not read the results of this run's dependencies: %s", err))
@@ -58,6 +58,20 @@ func Halt(rawNeeds, isDraft string, log func(string)) int {
 
 	encoded, _ := json.Marshal(results)
 	log(fmt.Sprintf("results: %s", encoded))
+
+	if base != "" {
+		now, err := liveBase()
+		if err != nil {
+			log(fmt.Sprintf("::error title=distributions::could not read which branch this pull request targets: %s", err))
+
+			return 1
+		}
+		if now != base {
+			log(fmt.Sprintf("::error title=distributions::this run was started against %s and the pull request now targets %s, so nothing it did describes it. Push a commit to start a run against %s.", base, now, now))
+
+			return 1
+		}
+	}
 
 	if err := Verdict(results, isDraft == "true"); err != nil {
 		log(fmt.Sprintf("::error title=distributions::%s", err))
