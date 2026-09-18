@@ -101,45 +101,20 @@ jobs:
         (github.event_name == 'pull_request' && vars.RUNNERS_PR_ARM64)
         || vars.RUNNERS_MASTER_ARM64 || vars.RUNNERS_ARM64 || '{}') }}
     steps:
-      - name: Read the labels this pull request carries now
+      - name: "Check out the workflow scripts"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/workflows/scripts
+          sparse-checkout-cone-mode: false
+      - name: "Decide what this run does, and hold the required check"
         id: labels
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
-        run: |
-          set -euo pipefail
-          read_pr='"json=\([.labels[].name]|tojson)","draft=\(.isDraft)"'
-          decided=$'json=[]\ndraft='
-          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
-            for attempt in 1 2 3; do
-              if seen="$(gh pr view "${PR}" --json labels,isDraft)" && decided="$(jq -e -r "${read_pr}" <<<"${seen}")"; then
-                break
-              fi
-              if [[ "${attempt}" -eq 3 ]]; then
-                echo "::error title=meta::could not read pull request ${PR} after ${attempt} attempts"
-                exit 1
-              fi
-              sleep "$((attempt * 5))"
-            done
-          fi
-          printf '%s\n' "${decided}" >> "${GITHUB_OUTPUT}"
-          echo "${decided}"
-      - name: Hold the required check until this run reports on it
-        if: ${{ github.event_name == 'pull_request' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -euo pipefail
-          if gh api -X POST "repos/${GH_REPO}/check-runs" \
-              -f name=distributions -f head_sha="${HEAD_SHA}" -f status=in_progress \
-              --jq '.id' > /dev/null 2>hold_err.log; then
-            echo "held distributions on ${HEAD_SHA} until this run reports"
-          else
-            echo "::warning title=meta::could not hold the distributions check on ${HEAD_SHA}, so a result from an earlier run stands until this one finishes: $(cat hold_err.log)"
-          fi
+        run: node .github/workflows/scripts/meta-decide.mjs
+
   refuse_fork_publish:
     needs: ["meta"]
     if: ${{ needs.meta.outputs.FORCE_PUBLISH_FROM_FORK == 'true' }}
