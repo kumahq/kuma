@@ -35,97 +35,21 @@ jobs:
       actions: read
       contents: read
     steps:
+      - name: "Check out the workflow scripts"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ github.ref_type == 'tag' }}
+        with:
+          sparse-checkout: .github/workflows/scripts
+          sparse-checkout-cone-mode: false
       - name: "Verify tagged SHA has a trusted green push run"
+        if: ${{ github.ref_type == 'tag' }}
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           SHA: ${{ github.sha }}
-          REF_TYPE: ${{ github.ref_type }}
-        run: |
-          set -euo pipefail
+          WORKFLOW: build-test-distribute.yaml
+        run: node .github/workflows/scripts/release-sha-gate.mjs
 
-          if [[ "${REF_TYPE}" != "tag" ]]; then
-            echo "Not a tag push; skipping release SHA gate."
-            exit 0
-          fi
-
-          WORKFLOW="build-test-distribute.yaml"
-
-          runs_ndjson="$(mktemp)"
-          if ! gh api --method GET "/repos/${REPO}/actions/workflows/${WORKFLOW}/runs" \
-              -f head_sha="${SHA}" -f status=completed -f event=push -f per_page=100 --paginate \
-              --jq '.workflow_runs[] | {id, conclusion, created_at, html_url}' \
-              > "${runs_ndjson}" 2>err.log; then
-            echo "::error title=release_sha_gate::gate could not query GitHub Actions for prior runs of ${WORKFLOW} on SHA ${SHA}: $(cat err.log)"
-            exit 1
-          fi
-
-          if ! candidates="$(jq -s -r '
-              map(select(.conclusion == "success"))
-              | sort_by(.created_at)
-              | reverse[]
-              | "\(.id) \(.html_url)"
-            ' "${runs_ndjson}" 2>err.log)"; then
-            echo "::error title=release_sha_gate::gate could not parse GitHub Actions run data for ${WORKFLOW} on SHA ${SHA}: $(cat err.log)"
-            exit 1
-          fi
-
-          if [[ -z "${candidates}" ]]; then
-            echo "::error title=release_sha_gate::No successful completed push run of ${WORKFLOW} found for tagged SHA ${SHA}. Every tag push requires a prior green branch push CI run for the tagged commit. Recovery: re-run the branch push CI on this SHA (re-tests and re-publishes the preview), then re-tag."
-            exit 1
-          fi
-
-          inspected=0
-          unread=0
-          jobs_ndjson="$(mktemp)"
-          while read -r run_id run_url; do
-            if ! gh api --method GET "/repos/${REPO}/actions/runs/${run_id}/jobs" -f per_page=100 --paginate \
-                --jq '.jobs[] | {name, conclusion}' \
-                > "${jobs_ndjson}" 2>err.log; then
-              echo "::warning title=release_sha_gate::gate could not query GitHub Actions for jobs of run ${run_url}: $(cat err.log)"
-              unread=$((unread + 1))
-              continue
-            fi
-
-            if ! missing="$(jq -s -r '
-                . as $jobs
-                | def all_green($pattern):
-                    [$jobs[] | select(.name | test($pattern)) | .conclusion]
-                    | (length > 0) and all(. == "success");
-                [
-                    {label: "test / test_unit", pattern: "^test / test_unit$"},
-                    {label: "test / e2e ...", pattern: "^test / e2e"},
-                    {label: "build_publish / digest-images", pattern: "^build_publish / digest-images$"},
-                    {label: "build_publish / build-binaries", pattern: "^build_publish / build-binaries"},
-                    {label: "build_publish / publish-binaries", pattern: "^build_publish / publish-binaries$"},
-                    {label: "build_publish / build-images ...", pattern: "^build_publish / build-images"},
-                    {label: "build_publish / publish-helm", pattern: "^build_publish / publish-helm$"}
-                  ]
-                | map(select(all_green(.pattern) | not) | .label)
-                | join(", ")
-              ' "${jobs_ndjson}" 2>err.log)"; then
-              echo "::warning title=release_sha_gate::gate could not parse GitHub Actions job data for run ${run_url}: $(cat err.log)"
-              unread=$((unread + 1))
-              continue
-            fi
-
-            inspected=$((inspected + 1))
-
-            if [[ -z "${missing}" ]]; then
-              echo "Trusted source run: ${run_url}"
-              exit 0
-            fi
-
-            echo "Run ${run_url} is missing required successful job(s): ${missing}"
-          done <<<"${candidates}"
-
-          if [[ "${unread}" -gt 0 ]]; then
-            echo "::error title=release_sha_gate::gate could not read the jobs of ${unread} run(s) for SHA ${SHA} and found no green run among the ${inspected} it did read. Some of this is a GitHub API failure rather than a missing run. Recovery: re-run this job."
-            exit 1
-          fi
-
-          echo "::error title=release_sha_gate::No push run of ${WORKFLOW} on SHA ${SHA} has every required job green. Recovery: re-run the branch push CI on this SHA, then re-tag."
-          exit 1
   meta:
     needs: ["release_sha_gate"]
     timeout-minutes: 5
@@ -498,27 +422,16 @@ jobs:
       SECURITY_ASSETS_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets"
       SECURITY_ASSETS_PACKAGE_NAME: "security-assets" # Cloudsmith package for hosting security assets
     steps:
+      - name: "Check out the workflow scripts"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/workflows/scripts
+          sparse-checkout-cone-mode: false
       - name: "Halt due to previous failures"
         env:
           IS_DRAFT: ${{ needs.meta.outputs.DRAFT_NOW }}
           NEEDS: ${{ toJson(needs) }}
-        run: |-
-          set -euo pipefail
-          results="$(jq -c 'map_values(.result)' <<<"${NEEDS}")"
-          echo "results: ${results}"
-          # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
-          # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
-          broken="$(jq -r 'with_entries(select(.value == "failure" or .value == "cancelled")) | keys | join(", ")' <<<"${results}")"
-          if [[ -n "${broken}" ]]; then
-            echo "::error title=distributions::these jobs failed or were cancelled: ${broken}"
-            exit 1
-          fi
-          gated="$(jq -r '{build_check, check, test} | with_entries(select(.value == "skipped")) | keys | join(", ")' <<<"${results}")"
-          if [[ "${IS_DRAFT}" != "true" && -n "${gated}" ]]; then
-            echo "::error title=distributions::this run skipped ${gated}, but the pull request is not a draft, so these results do not describe it. Push a commit to start a run that tests it - re-running this one replays the event it was started with and skips them again."
-            exit 1
-          fi
-          echo "All dependent jobs succeeded"
+        run: node .github/workflows/scripts/distributions-halt.mjs
       - name: "Download all SBOM assets"
         id: collect_sbom
         if: ${{ needs.build_publish.result == 'success' }}
