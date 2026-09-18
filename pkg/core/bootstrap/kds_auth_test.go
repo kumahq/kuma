@@ -1,6 +1,9 @@
 package bootstrap
 
 import (
+	"context"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -8,8 +11,12 @@ import (
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/config/multizone"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
+	"github.com/kumahq/kuma/v3/pkg/core/tokens"
 	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone"
 )
 
 var _ = Describe("KDS authentication", func() {
@@ -91,5 +98,33 @@ var _ = Describe("KDS authentication", func() {
 		_, err := configure(cfg)
 
 		Expect(err).To(MatchError(ContainSubstring("could not read zone token")))
+	})
+})
+
+var _ = Describe("Zone Token issuer", func() {
+	issuerFor := func(enabled bool) builtin.TokenIssuers {
+		cfg := kuma_cp.DefaultConfig()
+		cfg.Multizone.Global.KDS.Auth.ZoneToken.EnableIssuer = enabled
+		builder, err := core_runtime.BuilderFor(context.Background(), cfg)
+		Expect(err).ToNot(HaveOccurred())
+		builder.WithResourceManager(core_manager.NewCustomizableResourceManager(core_manager.NewResourceManager(memory.NewStore()), nil))
+		initializeTokenIssuers(builder)
+		return builder.TokenIssuers()
+	}
+
+	It("should be enabled by default", func() {
+		Expect(kuma_cp.DefaultConfig().Multizone.Global.KDS.Auth.ZoneToken.EnableIssuer).To(BeTrue())
+	})
+
+	It("should refuse to issue when disabled", func() {
+		_, err := issuerFor(false).ZoneToken.Generate(context.Background(), zone.Identity{Zone: "zone-1", Scope: []string{zone.CPScope}}, time.Hour)
+
+		Expect(err).To(MatchError(tokens.IssuerDisabled))
+	})
+
+	It("should issue when enabled", func() {
+		issuers := issuerFor(true)
+
+		Expect(issuers.ZoneToken).ToNot(BeAssignableToTypeOf(zone.DisabledIssuer{}))
 	})
 })

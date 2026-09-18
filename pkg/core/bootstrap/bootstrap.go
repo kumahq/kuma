@@ -504,7 +504,7 @@ func initializeTokenIssuers(builder *core_runtime.Builder) {
 	} else {
 		issuers.DataplaneToken = issuer.DisabledIssuer{}
 	}
-	if builder.Config().DpServer.Authn.ZoneProxy.ZoneToken.EnableIssuer {
+	if builder.Config().Multizone.Global.KDS.Auth.ZoneToken.EnableIssuer {
 		issuers.ZoneToken = builtin.NewZoneTokenIssuer(builder.ResourceManager())
 	} else {
 		issuers.ZoneToken = zone2.DisabledIssuer{}
