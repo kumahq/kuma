@@ -25,13 +25,9 @@ func Verdict(results map[string]string, isDraft bool) error {
 		return fmt.Errorf("these jobs failed or were cancelled: %s", join(broken))
 	}
 
-	absent := slices.DeleteFunc(slices.Clone(gates), func(job string) bool {
-		_, present := results[job]
-
-		return present
-	})
-	if len(absent) > 0 {
-		return fmt.Errorf("this run reports nothing about %s, which it has to check before it can pass. They belong in this job's needs.", join(absent))
+	silent := slices.DeleteFunc(slices.Clone(gates), func(job string) bool { return results[job] != "" })
+	if len(silent) > 0 {
+		return fmt.Errorf("this run reports nothing about %s, which it has to check before it can pass. They belong in this job's needs.", join(silent))
 	}
 
 	skipped := slices.DeleteFunc(slices.Clone(gates), func(job string) bool { return results[job] != "skipped" })

@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/actions/cigate/**"
       - "!.github/actions/cigate/*_test.go"
+      - "!.github/actions/cigate/action.yml"
       - ".github/workflows/cigate-image.yaml"
   workflow_dispatch:
 concurrency:
@@ -16,6 +17,7 @@ jobs:
     name: "Publish the CI gate image"
     timeout-minutes: 20
     runs-on: ubuntu-24.04
+    if: ${{ github.ref == 'refs/heads/master' }}
     permissions:
       contents: read
       packages: write

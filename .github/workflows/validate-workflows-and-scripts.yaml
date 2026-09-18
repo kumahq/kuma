@@ -190,3 +190,39 @@ jobs:
       - name: "Run the CI gate tests"
         working-directory: .github/actions/cigate
         run: go test ./...
+
+  pin:
+    name: "Check the pinned gate image"
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
+    timeout-minutes: 10
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.run_script_tests ||
+      github.event_name == 'pull_request' && !github.event.pull_request.draft
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: "The image the action pins must come from a commit in this repository"
+        run: |
+          set -euo pipefail
+          reference="$(yq -r '.runs.image' .github/actions/cigate/action.yml)"
+          reference="${reference#docker://}"
+          docker pull --quiet "${reference}" >/dev/null
+          revision="$(docker image inspect "${reference}" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+          if ! git cat-file -e "${revision}^{commit}" 2>/dev/null; then
+            echo "::error title=cigate::${reference} says it was built from ${revision}, which is not a commit in this repository"
+            exit 1
+          fi
+          echo "${reference} was built from ${revision}"

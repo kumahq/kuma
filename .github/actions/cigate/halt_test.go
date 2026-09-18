@@ -69,6 +69,13 @@ func TestVerdictRefusesWhenAGateIsNotAmongTheNeeds(t *testing.T) {
 	}
 }
 
+func TestVerdictRefusesAGateThatReportedNoResult(t *testing.T) {
+	err := Verdict(needs(map[string]string{"check": ""}), false)
+	if err == nil || !strings.Contains(err.Error(), "reports nothing about check") {
+		t.Fatalf("Given a gate present but with no result, When judged, Then it refuses; got %v", err)
+	}
+}
+
 func TestVerdictRefusesAnEmptyNeeds(t *testing.T) {
 	err := Verdict(map[string]string{}, true)
 	if err == nil || !strings.Contains(err.Error(), "reports nothing about") {
