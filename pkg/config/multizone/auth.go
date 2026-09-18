@@ -2,6 +2,7 @@ package multizone
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"unicode"
 
@@ -80,7 +81,11 @@ func (c KDSClientAuthConfig) HasToken() bool {
 func (c KDSClientAuthConfig) LoadToken() (string, error) {
 	token := c.TokenInline
 	if c.TokenPath != "" {
-		bytes, err := os.ReadFile(c.TokenPath)
+		path, err := tokenFilePath(c.TokenPath)
+		if err != nil {
+			return "", err
+		}
+		bytes, err := os.ReadFile(path)
 		if err != nil {
 			return "", errors.Wrapf(err, "could not read zone token from file %s", c.TokenPath)
 		}
@@ -94,4 +99,19 @@ func (c KDSClientAuthConfig) LoadToken() (string, error) {
 		return "", errors.Errorf("zone token in file %s is empty", c.TokenPath)
 	}
 	return token, nil
+}
+
+// tokenFilePath resolves the configured path to an absolute one and refuses a path
+// escaping the working directory, so a token path taken from the environment cannot
+// walk the filesystem.
+func tokenFilePath(path string) (string, error) {
+	cleaned := filepath.Clean(path)
+	if cleaned == ".." || strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
+		return "", errors.Errorf("invalid zone token path %s: the path contains a traversal sequence", path)
+	}
+	abs, err := filepath.Abs(cleaned)
+	if err != nil {
+		return "", errors.Wrapf(err, "invalid zone token path %s", path)
+	}
+	return abs, nil
 }
