@@ -25,7 +25,7 @@ type requirement struct {
 
 var required = []requirement{
 	{"test / test_unit", regexp.MustCompile(`^test / test_unit$`)},
-	{"test / e2e ...", regexp.MustCompile(`^test / e2e`)},
+	{"test / e2e ...", regexp.MustCompile(`^test / (test_)?e2e`)},
 	{"build_publish / digest-images", regexp.MustCompile(`^build_publish / digest-images$`)},
 	{"build_publish / build-binaries", regexp.MustCompile(`^build_publish / build-binaries`)},
 	{"build_publish / publish-binaries", regexp.MustCompile(`^build_publish / publish-binaries$`)},

@@ -79,6 +79,30 @@ func TestMissingJobsRejectsATagRunWhichRunsNeitherFamily(t *testing.T) {
 	}
 }
 
+func TestMissingJobsAcceptsTheOlderKongMeshE2ENaming(t *testing.T) {
+	jobs := drop("test / e2e")
+	jobs = append(jobs,
+		Job{"test / test_e2e_env (calico, v1.35) / e2e (0)", "success"},
+		Job{"test / test_e2e (default) / e2e (1)", "success"},
+	)
+
+	if missing := MissingJobs(jobs); len(missing) != 0 {
+		t.Fatalf("Given release branch job names, When checked, Then the e2e family still matches; got %v", missing)
+	}
+}
+
+func TestMissingJobsStillRejectsAFailedLegUnderTheOlderNaming(t *testing.T) {
+	jobs := drop("test / e2e")
+	jobs = append(jobs,
+		Job{"test / test_e2e_env (calico, v1.35) / e2e (0)", "success"},
+		Job{"test / test_e2e_env (flannel, v1.35) / e2e (1)", "failure"},
+	)
+
+	if missing := MissingJobs(jobs); len(missing) != 1 {
+		t.Fatalf("Given a failed leg under the older naming, When checked, Then the family is missing; got %v", missing)
+	}
+}
+
 func TestMissingJobsRejectsAnEmptyJobList(t *testing.T) {
 	if missing := MissingJobs(nil); len(missing) != 7 {
 		t.Fatalf("Given no jobs at all, When checked, Then every requirement is missing; got %v", missing)
