@@ -178,12 +178,14 @@ jobs:
       github.event_name == 'pull_request' && !github.event.pull_request.draft
     permissions:
       contents: read
+    container:
+      image: golang:1.27-alpine@sha256:4cb7ac979db5fcc41cae44b2227ba5ab8a51e8807f40d9ba4dee20a0ad960b5b
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+          sparse-checkout: .github/actions/cigate
+          sparse-checkout-cone-mode: false
 
       - name: "Run the CI gate tests"
         working-directory: .github/actions/cigate
