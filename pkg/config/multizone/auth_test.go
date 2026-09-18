@@ -16,9 +16,7 @@ func TestKDSServerAuthConfigValidate(t *testing.T) {
 		{name: "none", authType: KDSAuthNone},
 		{name: "zoneToken", authType: KDSAuthZoneToken},
 		{name: "empty", authType: "", errSubstr: ".Type cannot be empty"},
-		// a distribution registers its own types, the KDS server rejects a type
-		// nothing authenticates with
-		{name: "unknown", authType: "custom"},
+		{name: "type a distribution registers", authType: "custom"},
 	}
 
 	for _, c := range cases {
