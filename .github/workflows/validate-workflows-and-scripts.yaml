@@ -217,7 +217,7 @@ jobs:
       - name: "The image the action pins must come from a commit in this repository"
         run: |
           set -euo pipefail
-          reference="$(grep -oE 'ghcr\.io/kumahq/cigate@sha256:[a-f0-9]+' .github/actions/cigate/action.yml | head -n1)"
+          reference="$(grep -oE 'ghcr\.io/kumahq/cigate@sha256:[a-f0-9]+' .github/actions/cigate/action.yml | head -n1 || true)"
           if [[ -z "${reference}" ]]; then
             echo "The action builds the gate from its Dockerfile, so there is no pin to check."
             exit 0

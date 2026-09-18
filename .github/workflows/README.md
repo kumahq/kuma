@@ -108,6 +108,8 @@ Gate with a job-level `if:`, never a narrowed trigger. A job skipped by a condit
 
 An automation that marks a pull request ready must use an app token. GitHub raises no workflow run for an event its own token caused, so `ready_for_review` would not fire and the draft's results would stand.
 
+A dispatched run is not judged against the pull request at all, because `ci-stability-master.yaml` dispatches this workflow to hunt flakes and needs it to go green. Someone with write access can therefore dispatch on a draft's branch and get `distributions` green from a run of the branch tip rather than the merge.
+
 ## Labels
 
 `meta` asks the API rather than trusting the webhook, whose copy is routinely empty: a pull request cannot be created with labels, so they always arrive in a second call. A label counts if it lands before `meta` reads, twenty to forty seconds into the run - ample for `gh pr create --label`, Renovate or `backport.yaml`, no use to someone clicking. Otherwise it takes effect on the next run, or on a re-run of this one.
