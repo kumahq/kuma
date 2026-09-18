@@ -1,7 +1,7 @@
 name: "CI gate image"
 on:
   push:
-    branches: ["master", "ci/gate-drafts-and-trust-labels"]
+    branches: ["master"]
     paths:
       - ".github/actions/cigate/**"
       - ".github/workflows/cigate-image.yaml"
