@@ -133,14 +133,16 @@ jobs:
     permissions:
       contents: read
       pull-requests: read # the decision step reads the labels this pull request carries now
+    env:
+      SAME_REPO: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     outputs:
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-full-matrix') }}
       RUN_UNIT: ${{ !github.event.pull_request.draft && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') }}
       RUN_E2E: ${{ !github.event.pull_request.draft && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-e2e-test') }}
       RUN_CONTAINER_STRUCTURE_TEST: ${{ !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-container-structure-test') }}
-      BUILD: ${{ !github.event.pull_request.draft && (github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-build') || (contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') && github.event.pull_request.head.repo.full_name == github.repository)) }}
-      ALLOW_PUSH: ${{ github.event_name == 'push' || (contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') && github.event.pull_request.head.repo.full_name == github.repository) }}
-      FORCE_PUBLISH_FROM_FORK: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
+      BUILD: ${{ !github.event.pull_request.draft && (github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-build') || (contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') && env.SAME_REPO == 'true')) }}
+      ALLOW_PUSH: ${{ github.event_name == 'push' || (contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') && env.SAME_REPO == 'true') }}
+      FORCE_PUBLISH_FROM_FORK: ${{ env.SAME_REPO == 'false' && contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
       # Per-arch lookup, each side independent. See .github/workflows/README.md.
       #   1. fork PR                            -> free GitHub-hosted runners (security)
       #   2. master (push, or PR targeting it)  -> free GitHub-hosted runners
@@ -175,7 +177,16 @@ jobs:
           set -euo pipefail
           json='[]'
           if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
-            json="$(gh pr view "${PR}" --json labels --jq '[.labels[].name]')"
+            for attempt in 1 2 3; do
+              if json="$(gh pr view "${PR}" --json labels --jq '[.labels[].name]')"; then
+                break
+              fi
+              if [[ "${attempt}" -eq 3 ]]; then
+                echo "::error title=meta::could not read the labels of pull request ${PR} after ${attempt} attempts"
+                exit 1
+              fi
+              sleep "$((attempt * 5))"
+            done
           fi
           printf 'json=%s\n' "${json}" >> "${GITHUB_OUTPUT}"
           echo "labels: ${json}"
@@ -455,12 +466,23 @@ jobs:
       SECURITY_ASSETS_PACKAGE_NAME: "security-assets" # Cloudsmith package for hosting security assets
     steps:
       - name: "Halt due to previous failures"
+        env:
+          IS_DRAFT: ${{ github.event.pull_request.draft }}
+          SKIPPED_GATES: >-
+            ${{ format('{0}{1}{2}',
+            needs.build_check.result == 'skipped' && 'build_check ' || '',
+            needs.check.result == 'skipped' && 'check ' || '',
+            needs.test.result == 'skipped' && 'test ' || '') }}
         run: |-
           echo "results: ${{ toJson(needs.*.result) }}"
           # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
           # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
           if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
             echo "::error title=distributions::a job this one depends on failed or was cancelled"
+            exit 1
+          fi
+          if [[ "${IS_DRAFT}" != "true" && -n "${SKIPPED_GATES// /}" ]]; then
+            echo "::error title=distributions::this run was not gated as a draft yet skipped: ${SKIPPED_GATES}"
             exit 1
           fi
           echo "All dependent jobs succeeded"
