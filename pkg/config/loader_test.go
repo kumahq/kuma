@@ -274,6 +274,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.Labels.SkipPrefixes).To(Equal([]string{"argocd.argoproj.io"}))
 			Expect(cfg.Multizone.Global.KDS.Auth.Type).To(Equal(multizone.KDSAuthZoneToken))
 			Expect(cfg.Multizone.Global.KDS.Auth.ZoneToken.Validator.UseSecrets).To(BeFalse())
+			Expect(cfg.Multizone.Global.KDS.Auth.ZoneToken.EnableIssuer).To(BeFalse())
 			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
@@ -326,9 +327,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Authn.DpProxy.Type).To(Equal("dpToken"))
 			Expect(cfg.DpServer.Authn.DpProxy.DpToken.EnableIssuer).To(BeFalse())
 			Expect(cfg.DpServer.Authn.DpProxy.DpToken.Validator.UseSecrets).To(BeFalse())
-			Expect(cfg.DpServer.Authn.ZoneProxy.Type).To(Equal("zoneToken"))
-			Expect(cfg.DpServer.Authn.ZoneProxy.ZoneToken.EnableIssuer).To(BeFalse())
-			Expect(cfg.DpServer.Authn.ZoneProxy.ZoneToken.Validator.UseSecrets).To(BeFalse())
 			Expect(cfg.DpServer.Authn.EnableReloadableTokens).To(BeTrue())
 			Expect(cfg.DpServer.Port).To(Equal(9876))
 			Expect(cfg.DpServer.TlsMinVersion).To(Equal("TLSv1_3"))
@@ -658,6 +656,7 @@ multizone:
       auth:
         type: zoneToken
         zoneToken:
+          enableIssuer: false
           validator:
             useSecrets: false
   zone:
@@ -733,12 +732,6 @@ dpServer:
     dpProxy:
       type: dpToken
       dpToken:
-        enableIssuer: false
-        validator:
-          useSecrets: false
-    zoneProxy:
-      type: zoneToken
-      zoneToken:
         enableIssuer: false
         validator:
           useSecrets: false
@@ -1033,6 +1026,7 @@ meshService:
 				"KUMA_MULTIZONE_ZONE_KDS_LABELS_SKIP_PREFIXES":                                             "argocd.argoproj.io",
 				"KUMA_MULTIZONE_GLOBAL_KDS_AUTH_TYPE":                                                      "zoneToken",
 				"KUMA_MULTIZONE_GLOBAL_KDS_AUTH_ZONE_TOKEN_VALIDATOR_USE_SECRETS":                          "false",
+				"KUMA_MULTIZONE_GLOBAL_KDS_AUTH_ZONE_TOKEN_ENABLE_ISSUER":                                  "false",
 				"KUMA_MULTIZONE_ZONE_KDS_AUTH_TOKEN_INLINE":                                                "zone-token",
 				"KUMA_MULTIZONE_ZONE_KDS_AUTH_TOKEN_PATH":                                                  "/zone-token",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
@@ -1074,9 +1068,6 @@ meshService:
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_TYPE":                                                       "dpToken",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_DP_TOKEN_ENABLE_ISSUER":                                     "false",
 				"KUMA_DP_SERVER_AUTHN_DP_PROXY_DP_TOKEN_VALIDATOR_USE_SECRETS":                             "false",
-				"KUMA_DP_SERVER_AUTHN_ZONE_PROXY_TYPE":                                                     "zoneToken",
-				"KUMA_DP_SERVER_AUTHN_ZONE_PROXY_ZONE_TOKEN_ENABLE_ISSUER":                                 "false",
-				"KUMA_DP_SERVER_AUTHN_ZONE_PROXY_ZONE_TOKEN_VALIDATOR_USE_SECRETS":                         "false",
 				"KUMA_DP_SERVER_AUTHN_ENABLE_RELOADABLE_TOKENS":                                            "true",
 				"KUMA_DP_SERVER_PORT":                                                                      "9876",
 				"KUMA_DP_SERVER_HDS_ENABLED":                                                               "false",

@@ -41,6 +41,9 @@ func (c KDSServerAuthConfig) Validate() error {
 }
 
 type KDSZoneTokenAuthConfig struct {
+	// If true the Global CP issues Zone Tokens over its API. Set it to false when
+	// all the tokens are signed offline with the private key.
+	EnableIssuer bool `json:"enableIssuer" envconfig:"kuma_multizone_global_kds_auth_zone_token_enable_issuer"`
 	// Zone Token validator configuration
 	Validator KDSZoneTokenValidatorConfig `json:"validator"`
 }

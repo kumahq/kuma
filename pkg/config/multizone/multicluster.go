@@ -58,6 +58,7 @@ func DefaultGlobalConfig() *GlobalConfig {
 			Auth: KDSServerAuthConfig{
 				Type: KDSAuthNone,
 				ZoneToken: KDSZoneTokenAuthConfig{
+					EnableIssuer: true,
 					Validator: KDSZoneTokenValidatorConfig{
 						UseSecrets: true,
 						PublicKeys: []config_types.PublicKey{},

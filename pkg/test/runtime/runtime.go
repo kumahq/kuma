@@ -57,9 +57,6 @@ func BuilderFor(appCtx context.Context, cfg kuma_cp.Config) (*core_runtime.Build
 	if cfg.DpServer.Authn.DpProxy.Type == "" {
 		cfg.DpServer.Authn.DpProxy.Type = dp_server.DpServerAuthDpToken
 	}
-	if cfg.DpServer.Authn.ZoneProxy.Type == "" {
-		cfg.DpServer.Authn.ZoneProxy.Type = dp_server.DpServerAuthZoneToken
-	}
 	builder, err := core_runtime.BuilderFor(appCtx, cfg)
 	if err != nil {
 		return nil, err
