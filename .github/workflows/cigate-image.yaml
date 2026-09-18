@@ -50,7 +50,7 @@ jobs:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           set -euo pipefail
-          sed -i -E "s|(image: docker://ghcr\.io/kumahq/cigate)@sha256:[a-f0-9]+|\1@${DIGEST}|" .github/actions/cigate/action.yml
+          sed -i -E "s|^  image: .*|  image: docker://ghcr.io/kumahq/cigate@${DIGEST}|" .github/actions/cigate/action.yml
           grep -q "cigate@${DIGEST}" .github/actions/cigate/action.yml
 
       - name: "Generate GitHub app token"

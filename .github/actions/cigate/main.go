@@ -30,7 +30,7 @@ func api(method, url, token string, body io.Reader) (*http.Response, error) {
 	if response.StatusCode >= http.StatusBadRequest {
 		response.Body.Close()
 
-		return nil, fmt.Errorf("%s for %s", response.Status, url)
+		return nil, Refusal{Status: response.Status, Code: response.StatusCode, URL: url}
 	}
 
 	return response, nil
@@ -128,7 +128,7 @@ func main() {
 		}, log))
 
 	case "hold":
-		if err := Hold(postCheckRun(repo, token), os.Getenv("HEAD_SHA"), log); err != nil {
+		if err := Hold(postCheckRun(repo, token), os.Getenv("HEAD_SHA"), time.Sleep, log); err != nil {
 			log(fmt.Sprintf("::error title=hold::could not hold the distributions check, so this pull request would keep a result that no longer describes it: %s", err))
 			os.Exit(1)
 		}

@@ -386,6 +386,7 @@ jobs:
     needs: ["release_sha_gate", "meta", "refuse_fork_publish", "build_check", "build_publish", "check", "test", "provenance"]
     permissions:
       id-token: write
+      pull-requests: read
     timeout-minutes: 10
     if: ${{ always() }}
     runs-on: >-

@@ -97,10 +97,32 @@ func TestReadPullRequestBacksOffLongerEachTime(t *testing.T) {
 	}
 }
 
-func TestHoldReturnsTheCauseWhenRefused(t *testing.T) {
-	err := Hold(func(string) error { return errors.New("403 Forbidden") }, "abc", func(string) {})
-	if err == nil || !strings.Contains(err.Error(), "403 Forbidden") {
-		t.Fatalf("Given a refused hold, as on a fork, When held, Then it returns the cause; got %v", err)
+func TestHoldReturnsTheCauseWithoutRetryingAFork(t *testing.T) {
+	calls, waits := 0, 0
+	err := Hold(func(string) error {
+		calls++
+
+		return Refusal{Status: "403 Forbidden", Code: 403, URL: "/check-runs"}
+	}, "abc", func(time.Duration) { waits++ }, func(string) {})
+
+	if err == nil || !strings.Contains(err.Error(), "403 Forbidden") || calls != 1 || waits != 0 {
+		t.Fatalf("Given a refused hold, as on a fork, When held, Then it returns the cause at once; got %v after %d calls", err, calls)
+	}
+}
+
+func TestHoldRetriesATransientRefusal(t *testing.T) {
+	calls := 0
+	err := Hold(func(string) error {
+		calls++
+		if calls < 3 {
+			return Refusal{Status: "502 Bad Gateway", Code: 502, URL: "/check-runs"}
+		}
+
+		return nil
+	}, "abc", func(time.Duration) {}, func(string) {})
+
+	if err != nil || calls != 3 {
+		t.Fatalf("Given two bad gateways then a success, When held, Then it holds on the third; got %v after %d calls", err, calls)
 	}
 }
 

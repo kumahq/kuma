@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -41,6 +43,10 @@ func ReadPullRequest(get func() (*PullRequest, error), wait func(time.Duration))
 			return pull, nil
 		}
 
+		if !Transient(last) {
+			return nil, last
+		}
+
 		if attempt < attempts {
 			wait(time.Duration(attempt) * 5 * time.Second)
 		}
@@ -57,14 +63,43 @@ func BaseHeld(base, now string) error {
 	return fmt.Errorf("this run was started against %s and the pull request now targets %s, so nothing it did describes it. Push a commit to start a run against %s.", base, now, now)
 }
 
-func Hold(post func(string) error, sha string, log func(string)) error {
-	if err := post(sha); err != nil {
-		return err
+type Refusal struct {
+	Status string
+	Code   int
+	URL    string
+}
+
+func (r Refusal) Error() string { return fmt.Sprintf("%s for %s", r.Status, r.URL) }
+
+func Transient(err error) bool {
+	refusal := Refusal{}
+	if !errors.As(err, &refusal) {
+		return true
 	}
 
-	log(fmt.Sprintf("held distributions on %s until this run reports", sha))
+	return refusal.Code >= 500 || refusal.Code == http.StatusTooManyRequests
+}
 
-	return nil
+func Hold(post func(string) error, sha string, wait func(time.Duration), log func(string)) error {
+	var last error
+
+	for attempt := 1; attempt <= attempts; attempt++ {
+		last = post(sha)
+		switch {
+		case last == nil:
+			log(fmt.Sprintf("held distributions on %s until this run reports", sha))
+
+			return nil
+		case !Transient(last):
+			return last
+		}
+
+		if attempt < attempts {
+			wait(time.Duration(attempt) * 5 * time.Second)
+		}
+	}
+
+	return last
 }
 
 func Meta(event, number, sha, base string, get func() (*PullRequest, error), post func(string) error, wait func(time.Duration), write func(string), log func(string)) int {
@@ -100,7 +135,7 @@ func Meta(event, number, sha, base string, get func() (*PullRequest, error), pos
 	write(decided)
 	log(decided)
 
-	if err := Hold(post, sha, log); err != nil {
+	if err := Hold(post, sha, wait, log); err != nil {
 		log(fmt.Sprintf("::warning title=meta::could not hold the distributions check on %s, so a result from an earlier run stands until this one finishes: %s", sha, err))
 	}
 

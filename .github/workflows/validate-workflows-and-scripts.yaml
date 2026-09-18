@@ -218,6 +218,10 @@ jobs:
         run: |
           set -euo pipefail
           reference="$(grep -oE 'ghcr\.io/kumahq/cigate@sha256:[a-f0-9]+' .github/actions/cigate/action.yml | head -n1)"
+          if [[ -z "${reference}" ]]; then
+            echo "The action builds the gate from its Dockerfile, so there is no pin to check."
+            exit 0
+          fi
           docker pull --quiet "${reference}" >/dev/null
           revision="$(docker image inspect "${reference}" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
           if ! git fetch --quiet --depth=1 origin "${revision}" 2>/dev/null; then
