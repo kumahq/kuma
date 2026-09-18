@@ -65,7 +65,7 @@ git push --no-verify <remote> branch-name    # ALWAYS use --no-verify
 - **Base branch**: `master`
 - **PR template**: `.github/PULL_REQUEST_TEMPLATE.md`
 - **Changelog**: from PR title or `> Changelog: {<desc>,skip}`
-- **CI labels**: set them whenever — `build-test-distribute` reads the labels the PR carries when its `meta` job runs, not the set the webhook snapshotted, so a label attached right after `gh pr create` counts. One added after `meta` has run takes effect on the next run. See label table below
+- **CI labels**: set them whenever - CI reads the labels the PR carries, not the ones the opening event carried. See [labels](.github/workflows/README.md#labels)
 - **MADR**: `docs/madr/decisions/000-template.md` for features/architecture decisions
 - **Downstream refs**: say "downstream project" or "enterprise fork". Never mention Kong Mesh in PRs/commits (private repo)
 

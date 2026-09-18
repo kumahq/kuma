@@ -101,8 +101,8 @@ to verify a few things:
 - If you are introducing a change that might break on ipv6 or old k8s kubernetes (v1.19.16-k3s1)
   consider creating PR with a label `ci/run-full-matrix` that will trigger the full test matrix
 - If your PR doesn't need to run e2e tests or tests at all use: `ci/skip-test` or `ci/skip-e2e-test` labels on the PR.
-  A label counts whenever you add it, as long as CI has not already decided for that run - it reads the labels the PR
-  carries rather than the ones the opening event carried.
+  A label counts whenever you add it, as long as CI has not already decided for that run - see
+  [labels](.github/workflows/README.md#labels).
 - A draft pull request runs none of the expensive jobs. Mark it Ready for review to run them, convert it back to a draft
   to stop them, and see [`.github/workflows/README.md`](.github/workflows/README.md#draft-state) for what that covers.
 - If you are introducing a change which requires specific attention when
