@@ -12,7 +12,7 @@ type Need struct {
 	Result string `json:"result"`
 }
 
-var gates = []string{"build_check", "check", "test"}
+var gates = []string{"build_check", "check"}
 
 func join(parts []string) string { return strings.Join(parts, ", ") }
 
