@@ -486,7 +486,7 @@ jobs:
             exit 1
           fi
           if [[ "${IS_DRAFT}" != "true" && -n "${SKIPPED_GATES}" ]]; then
-            echo "::error title=distributions::this pull request is not a draft, yet this run skipped: ${SKIPPED_GATES}"
+            echo "::error title=distributions::this run was gated as a draft and skipped ${SKIPPED_GATES}, but the pull request is not a draft any more, so these results do not describe it. Re-run the newest run for this commit, or push again."
             exit 1
           fi
           echo "All dependent jobs succeeded"
