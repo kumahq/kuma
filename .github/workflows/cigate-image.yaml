@@ -17,7 +17,7 @@ jobs:
     name: "Publish the CI gate image"
     timeout-minutes: 20
     runs-on: ubuntu-24.04
-    if: ${{ github.ref == 'refs/heads/master' }}
+    if: ${{ github.ref == 'refs/heads/master' || github.ref == 'refs/heads/ci/gate-drafts-and-trust-labels' }}
     permissions:
       contents: read
       packages: write
