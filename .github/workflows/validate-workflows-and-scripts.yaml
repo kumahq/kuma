@@ -4,16 +4,19 @@ name: "Workflows & Scripts"
 run-name: >-
   ${{
     github.event_name == 'workflow_dispatch' &&
-    format('Validate: {0}{1}{2}',
+    format('Validate: {0}{1}{2}{3}{4}',
       inputs.run_actionlint && 'actionlint' || '',
       inputs.run_actionlint && inputs.run_shellcheck && ' + ' || '',
-      inputs.run_shellcheck && 'shellcheck' || ''
+      inputs.run_shellcheck && 'shellcheck' || '',
+      (inputs.run_actionlint || inputs.run_shellcheck) && inputs.run_cigate_checks && ' + ' || '',
+      inputs.run_cigate_checks && 'CI tool tests' || ''
     ) ||
     github.event_name
   }}
 
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft]
   workflow_dispatch:
     inputs:
       run_actionlint:
@@ -22,6 +25,10 @@ on:
         default: true
       run_shellcheck:
         description: 'Run shellcheck'
+        type: boolean
+        default: true
+      run_cigate_checks:
+        description: 'Run the CI gate tests and check its pinned image'
         type: boolean
         default: true
 
@@ -55,7 +62,7 @@ jobs:
     timeout-minutes: 10
     if: >-
       github.event_name == 'workflow_dispatch' && inputs.run_actionlint ||
-      github.event_name == 'pull_request'
+      github.event_name == 'pull_request' && !github.event.pull_request.draft
     permissions:
       contents: read
       pull-requests: write
@@ -125,7 +132,7 @@ jobs:
     timeout-minutes: 10
     if: >-
       github.event_name == 'workflow_dispatch' && inputs.run_shellcheck ||
-      github.event_name == 'pull_request'
+      github.event_name == 'pull_request' && !github.event.pull_request.draft
     permissions:
       contents: read
       pull-requests: write
@@ -154,3 +161,75 @@ jobs:
           shellcheck_flags: "-P SCRIPTDIR -x"
           pattern: "*.sh"
 
+  scripts:
+    name: "Test the CI gate"
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
+    timeout-minutes: 10
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.run_cigate_checks ||
+      github.event_name == 'pull_request' && !github.event.pull_request.draft
+    permissions:
+      contents: read
+    container:
+      image: golang:1.27-alpine@sha256:4cb7ac979db5fcc41cae44b2227ba5ab8a51e8807f40d9ba4dee20a0ad960b5b
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions/cigate
+          sparse-checkout-cone-mode: false
+
+      - name: "Run the CI gate tests"
+        working-directory: .github/actions/cigate
+        run: go test ./...
+
+  pin:
+    name: "Check the pinned gate image"
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
+    timeout-minutes: 10
+    if: >-
+      github.repository == 'kumahq/kuma' &&
+      (github.event_name == 'workflow_dispatch' && inputs.run_cigate_checks ||
+      github.event_name == 'pull_request' && !github.event.pull_request.draft)
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: "The image the action pins must come from a commit in this repository"
+        run: |
+          set -euo pipefail
+          reference="$(grep -oE 'ghcr\.io/kumahq/cigate@sha256:[a-f0-9]+' .github/actions/cigate/action.yml | head -n1 || true)"
+          if [[ -z "${reference}" ]]; then
+            echo "The action builds the gate from its Dockerfile, so there is no pin to check."
+            exit 0
+          fi
+          docker pull --quiet "${reference}" >/dev/null
+          revision="$(docker image inspect "${reference}" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')"
+          if ! git fetch --quiet --depth=1 origin "${revision}" 2>/dev/null; then
+            echo "::error title=cigate::${reference} says it was built from ${revision}, which is not a commit in this repository"
+            exit 1
+          fi
+          echo "${reference} was built from ${revision}"
+
+          if ! git diff --quiet "${revision}" HEAD -- .github/actions/cigate ':!.github/actions/cigate/action.yml'; then
+            echo "::warning title=cigate::the gate source has moved since ${revision}, so this pull request would run an older binary than it carries. Merging publishes a new image and opens a pull request to pin it."
+          fi

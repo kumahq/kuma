@@ -5,6 +5,7 @@ on:
     tags: ["*"]
   pull_request:
     branches: ["master", "release-*"]
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft]
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI or via REST call
 permissions:
   contents: read
@@ -17,7 +18,7 @@ env:
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 concurrency:
   group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.event_name == 'push' && github.sha || github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.ref_name) }}
-  cancel-in-progress: ${{ github.event_name == 'push' && false || true }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 jobs:
   release_sha_gate:
     timeout-minutes: 5
@@ -34,87 +35,24 @@ jobs:
       actions: read
       contents: read
     steps:
+      - name: "Check out the CI gate action"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ github.ref_type == 'tag' }}
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions/cigate
+          sparse-checkout-cone-mode: false
       - name: "Verify tagged SHA has a trusted green push run"
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          SHA: ${{ github.sha }}
-          REF_TYPE: ${{ github.ref_type }}
-        run: |
-          set -euo pipefail
+        if: ${{ github.ref_type == 'tag' }}
+        uses: ./.github/actions/cigate
+        with:
+          command: release-gate
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          sha: ${{ github.sha }}
+          workflow: build-test-distribute.yaml
 
-          if [[ "${REF_TYPE}" != "tag" ]]; then
-            echo "Not a tag push; skipping release SHA gate."
-            exit 0
-          fi
-
-          WORKFLOW="build-test-distribute.yaml"
-
-          runs_ndjson="$(mktemp)"
-          if ! gh api --method GET "/repos/${REPO}/actions/workflows/${WORKFLOW}/runs" \
-              -f head_sha="${SHA}" -f status=completed -f event=push -f per_page=100 --paginate \
-              --jq '.workflow_runs[] | {id, conclusion, created_at, html_url}' \
-              > "${runs_ndjson}" 2>gate_runs_err.log; then
-            echo "::error title=release_sha_gate::gate could not query GitHub Actions for prior runs of ${WORKFLOW} on SHA ${SHA}: $(cat gate_runs_err.log)"
-            exit 1
-          fi
-
-          if ! selected_run="$(jq -s -r '
-              map(select(.conclusion == "success"))
-              | sort_by(.created_at)
-              | last
-              // empty
-            ' "${runs_ndjson}" 2>gate_runs_jq_err.log)"; then
-            echo "::error title=release_sha_gate::gate could not parse GitHub Actions run data for ${WORKFLOW} on SHA ${SHA}: $(cat gate_runs_jq_err.log)"
-            exit 1
-          fi
-
-          if [[ -z "${selected_run}" ]]; then
-            echo "::error title=release_sha_gate::No successful completed push run of ${WORKFLOW} found for tagged SHA ${SHA}. Every tag push requires a prior green branch push CI run for the tagged commit. Recovery: re-run the branch push CI on this SHA (re-tests and re-publishes the preview), then re-tag."
-            exit 1
-          fi
-
-          run_id="$(jq -r '.id' <<<"${selected_run}")"
-          run_url="$(jq -r '.html_url' <<<"${selected_run}")"
-
-          jobs_ndjson="$(mktemp)"
-          if ! gh api --method GET "/repos/${REPO}/actions/runs/${run_id}/jobs" -f per_page=100 --paginate \
-              --jq '.jobs[] | {name, conclusion}' \
-              > "${jobs_ndjson}" 2>gate_jobs_err.log; then
-            echo "::error title=release_sha_gate::gate could not query GitHub Actions for jobs of run ${run_url}: $(cat gate_jobs_err.log)"
-            exit 1
-          fi
-
-          if ! missing="$(jq -s -r '
-              def has_success($jobs; $pattern):
-                ($jobs | any(.[]; (.name | test($pattern)) and .conclusion == "success"));
-
-              . as $jobs
-              | [
-                  {label: "test / test_unit", pattern: "^test / test_unit$"},
-                  {label: "test / e2e ...", pattern: "^test / e2e"},
-                  {label: "build_publish / digest-images", pattern: "^build_publish / digest-images$"},
-                  {label: "build_publish / build-binaries", pattern: "^build_publish / build-binaries"},
-                  {label: "build_publish / publish-binaries", pattern: "^build_publish / publish-binaries$"},
-                  {label: "build_publish / build-images ...", pattern: "^build_publish / build-images"},
-                  {label: "build_publish / publish-helm", pattern: "^build_publish / publish-helm$"}
-                ]
-              | map(select(has_success($jobs; .pattern) | not))
-              | map(.label)
-              | join(", ")
-            ' "${jobs_ndjson}" 2>gate_jobs_jq_err.log)"; then
-            echo "::error title=release_sha_gate::gate could not parse GitHub Actions job data for run ${run_url}: $(cat gate_jobs_jq_err.log)"
-            exit 1
-          fi
-
-          if [[ -n "${missing}" ]]; then
-            echo "::error title=release_sha_gate::Selected run ${run_url} is missing required successful job(s): ${missing}. Recovery: re-run the branch push CI on SHA ${SHA}, then re-tag."
-            exit 1
-          fi
-
-          echo "Trusted source run: ${run_url}"
   meta:
-    needs: ["release_sha_gate"]
     timeout-minutes: 5
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
@@ -125,10 +63,21 @@ jobs:
       || vars.RUNNERS_AMD64
       || '{}').sm
       || 'ubuntu-24.04' }}
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: write
     env:
-      FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+      SAME_REPO: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     outputs:
-      FULL_MATRIX: ${{ env.FULL_MATRIX }}
+      FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-full-matrix') }}
+      RUN_UNIT: ${{ github.ref_type != 'tag' && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') }}
+      RUN_E2E: ${{ github.ref_type != 'tag' && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-e2e-test') }}
+      RUN_CONTAINER_STRUCTURE_TEST: ${{ !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-test') && !contains(fromJSON(steps.labels.outputs.json), 'ci/skip-container-structure-test') }}
+      BUILD: ${{ !github.event.pull_request.draft && !(env.SAME_REPO == 'false' && contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish')) && (github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-build') || contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish')) }}
+      ALLOW_PUSH: ${{ github.event_name == 'push' || (contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') && env.SAME_REPO == 'true') }}
+      FORCE_PUBLISH_FROM_FORK: ${{ env.SAME_REPO == 'false' && contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
+      DRAFT_NOW: ${{ steps.labels.outputs.draft }}
       # Per-arch lookup, each side independent. See .github/workflows/README.md.
       #   1. fork PR                            -> free GitHub-hosted runners (security)
       #   2. master (push, or PR targeting it)  -> free GitHub-hosted runners
@@ -153,9 +102,43 @@ jobs:
         (github.event_name == 'pull_request' && vars.RUNNERS_PR_ARM64)
         || vars.RUNNERS_MASTER_ARM64 || vars.RUNNERS_ARM64 || '{}') }}
     steps:
-      - run: echo "FULL_MATRIX=${{ env.FULL_MATRIX }}"
+      - name: "Check out the CI gate action"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions/cigate
+          sparse-checkout-cone-mode: false
+      - name: "Decide what this run does, and hold the required check"
+        id: labels
+        uses: ./.github/actions/cigate
+        with:
+          command: meta
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          pull-request: ${{ github.event.pull_request.number }}
+          base-ref: ${{ github.event.pull_request.base.ref }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
+
+  refuse_fork_publish:
+    needs: ["meta"]
+    if: ${{ needs.meta.outputs.FORCE_PUBLISH_FROM_FORK == 'true' }}
+    timeout-minutes: 5
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}
+    steps:
+      - run: |
+          echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
+          exit 1
   build_check:
     needs: ["release_sha_gate"]
+    if: ${{ !github.event.pull_request.draft }}
     timeout-minutes: 20
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
@@ -202,6 +185,7 @@ jobs:
           key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
   check:
     needs: ["release_sha_gate"]
+    if: ${{ !github.event.pull_request.draft }}
     permissions:
       contents: write # needed to upload SBOM assets to GitHub releases
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
@@ -216,26 +200,13 @@ jobs:
       || vars.RUNNERS_AMD64
       || '{}').lg
       || 'ubuntu-24.04' }}
-    env:
-      FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
-      ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
-      BUILD: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-build') || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
-      FORCE_PUBLISH_FROM_FORK: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci/force-publish') && github.event.pull_request.head.repo.full_name != github.repository }}
     outputs:
-      FULL_MATRIX: ${{ env.FULL_MATRIX }}
-      ALLOW_PUSH: ${{ env.ALLOW_PUSH }}
-      BUILD: ${{ env.BUILD }}
       IMAGES: ${{ steps.metadata.outputs.images }}
       REGISTRY: ${{ steps.metadata.outputs.registry }}
       VERSION_NAME: ${{ steps.metadata.outputs.version }}
       NOTARY_REPOSITORY: ${{ (contains(steps.metadata.outputs.version, 'preview') && 'notary-internal') || 'notary' }}
       CLOUDSMITH_REPOSITORY: ${{ steps.metadata.outputs.distribution_repository }}
     steps:
-      - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
-        if: ${{ fromJSON(env.FORCE_PUBLISH_FROM_FORK) }}
-        run: |
-          echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
-          exit 1
       - name: "Free up disk space for the Runner"
         uses: endersonmenezes/free-disk-space@2a22f8c59cae9cddae7194b33e6b92d023b2b4b8 # v4.0.0
         with:
@@ -367,11 +338,13 @@ jobs:
           upload-sbom-release-assets: true
   test:
     needs: ["meta", "build_check"]
+    if: ${{ !cancelled() && needs.meta.result == 'success' }}
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
+      RUN_UNIT: ${{ format('{0}', needs.meta.outputs.RUN_UNIT != 'false' && needs.build_check.result == 'success') }}
+      RUN_E2E: ${{ format('{0}', needs.meta.outputs.RUN_E2E != 'false' && needs.build_check.result == 'success') }}
       IS_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-      IS_RELEASE_TAG: ${{ github.ref_type == 'tag' }}
       RUNNERS_BY_ARCH: ${{ needs.meta.outputs.RUNNERS_BY_ARCH }}
     secrets: inherit
   build_publish:
@@ -380,10 +353,11 @@ jobs:
       id-token: write # Required for image signing
     needs: ["check", "meta", "test"]
     uses: ./.github/workflows/_build_publish.yaml
-    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
+    if: ${{ needs.meta.outputs.BUILD == 'true' }}
     with:
-      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
+      FULL_MATRIX: ${{ needs.meta.outputs.FULL_MATRIX }}
+      ALLOW_PUSH: ${{ needs.meta.outputs.ALLOW_PUSH }}
+      RUN_CONTAINER_STRUCTURE_TEST: ${{ needs.meta.outputs.RUN_CONTAINER_STRUCTURE_TEST }}
       IMAGE_ARTIFACT_NAME: "image_artifacts"
       BINARY_ARTIFACT_NAME: "binary_artifacts"
       IMAGES: ${{ needs.check.outputs.IMAGES }}
@@ -409,9 +383,10 @@ jobs:
       NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
       IMAGE_DIGESTS: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
   distributions:
-    needs: ["release_sha_gate", "build_publish", "check", "test", "provenance"]
+    needs: ["release_sha_gate", "meta", "refuse_fork_publish", "build_check", "build_publish", "check", "test", "provenance"]
     permissions:
       id-token: write
+      pull-requests: read
     timeout-minutes: 10
     if: ${{ always() }}
     runs-on: >-
@@ -427,13 +402,22 @@ jobs:
       SECURITY_ASSETS_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets"
       SECURITY_ASSETS_PACKAGE_NAME: "security-assets" # Cloudsmith package for hosting security assets
     steps:
+      - name: "Check out the CI gate action"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions/cigate
+          sparse-checkout-cone-mode: false
       - name: "Halt due to previous failures"
-        run: |-
-          echo "results: ${{ toJson(needs.*.result) }}"
-          # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
-          # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
-          [[ ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }} == "true" ]] && exit 1
-          echo "All dependent jobs succeeded"
+        uses: ./.github/actions/cigate
+        with:
+          command: halt
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          pull-request: ${{ github.event.pull_request.number }}
+          base-ref: ${{ github.event.pull_request.base.ref }}
+          needs: ${{ toJson(needs) }}
+          is-draft: ${{ needs.meta.outputs.DRAFT_NOW }}
       - name: "Download all SBOM assets"
         id: collect_sbom
         if: ${{ needs.build_publish.result == 'success' }}

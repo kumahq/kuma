@@ -65,20 +65,23 @@ git push --no-verify <remote> branch-name    # ALWAYS use --no-verify
 - **Base branch**: `master`
 - **PR template**: `.github/PULL_REQUEST_TEMPLATE.md`
 - **Changelog**: from PR title or `> Changelog: {<desc>,skip}`
-- **CI labels**: MUST set with `gh pr create --label "ci/..."`. Most gate on `pull_request` `opened/reopened/synchronize` events, so labels added after creation only take effect on the next new run (usually the next push) — set them at creation time. See label table below
+- **CI labels**: set them whenever - CI reads the labels the PR carries, not the ones the opening event carried. See [labels](.github/workflows/README.md#labels)
+- **Drafts**: a draft runs none of the expensive jobs; Ready for review starts them. See [draft state](.github/workflows/README.md#draft-state)
 - **MADR**: `docs/madr/decisions/000-template.md` for features/architecture decisions
 - **Downstream refs**: say "downstream project" or "enterprise fork". Never mention Kong Mesh in PRs/commits (private repo)
 
 ### Behavior-changing CI labels
 
-Set at creation with `--label`. When opening PRs, apply these deliberately:
+When to reach for each label. What they do is in [the one list](.github/workflows/README.md#labels).
 
-| Label | Effect | When to use |
-|-------|--------|-------------|
-| `ci/skip-test` | Skips **all** tests (unit + e2e + container-structure) | Docs-only, comment-only, or non-code PRs where no test can be affected. Never on code changes |
-| `ci/skip-e2e-test` | Skips only e2e tests (unit tests still run) | Changes fully covered by unit tests where slow e2e adds no signal (e.g. isolated pkg refactor, config/CLI text). Don't use if touching xDS gen, policies, KDS, or transparent proxy |
-| `ci/run-full-matrix` | Runs full OS/arch/k8s test matrix instead of the reduced PR matrix | Changes with cross-platform/version risk: transparent proxy, CNI, install/bootstrap, k8s-version-sensitive code, build/packaging. Costly — don't add by default |
-| `ci/verify-stability` | Reruns CI repeatedly to detect flakiness; auto-removed after N consecutive green runs | Suspected flaky test, or a change to e2e/timing-sensitive code where you want confidence it's stable before merge. Add on the PR, let the scheduled stability workflow drive it |
+| Label | When to use |
+|-------|-------------|
+| `ci/skip-test` | Docs-only, comment-only, or non-code PRs where no test can be affected. Never on code changes |
+| `ci/skip-e2e-test` | Changes fully covered by unit tests where slow e2e adds no signal (e.g. isolated pkg refactor, config/CLI text). Don't use if touching xDS gen, policies, KDS, or transparent proxy |
+| `ci/run-full-matrix` | Changes with cross-platform/version risk: transparent proxy, CNI, install/bootstrap, k8s-version-sensitive code, build/packaging. Costly - don't add by default |
+| `ci/skip-container-structure-test` | Image-layout changes you are iterating on, where the structure assertions are the thing under edit |
+| `ci/run-build` / `ci/force-publish` | Preview images for a downstream test |
+| `ci/verify-stability` | Suspected flaky test, or a change to e2e/timing-sensitive code where you want confidence it's stable before merge. Add on the PR, let the scheduled stability workflow drive it |
 
 Default (no labels) is correct for most code PRs. Reach for `skip-*` only to save CI on genuinely test-irrelevant changes; reach for `run-full-matrix`/`verify-stability` to add coverage/confidence when the change warrants it.
 
