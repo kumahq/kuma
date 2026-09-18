@@ -103,9 +103,17 @@ The gate is always a job-level condition, never a narrowed trigger. A job skippe
 
 Two rules follow from that, and a change here has to keep both. `distributions` is the fan-in: it lists every job in its `needs`, because a job it does not need is a job whose failure it cannot see, and nothing else catches it - it runs on `!cancelled()` rather than on its needs having succeeded. And each gate compares a decision as a string against the value that turns work off, so a decision that never arrived falls on the safe side: the tests run and publishing does not.
 
+### What the gate costs
+
+Every ordinary case runs less CI than it did, and a draft push runs about 97% less - four jobs, each under a minute, against twenty jobs and 180 runner-minutes. Two cases cost more, both bounded and both deliberate.
+
+Marking a draft ready runs the suite, and it runs it even when the head commit already had a green run - open ready, convert to draft, mark ready again without pushing, and the suite runs twice. It has to: the draft run wrote its skips over the first run's results, so the answer is no longer on the commit. Short-circuiting that would mean letting a row of skips satisfy a pull request that is no longer a draft, which is the thing the fan-in check exists to refuse.
+
+`ci/force-publish` on a pull request from a fork used to abort `check` at its first step. The refusal is its own job now, so it reports in seconds while `check` runs on for its usual thirteen minutes. That is thirteen minutes of GitHub-hosted runner, not of the Kong pool, which every fork pull request uses anyway.
+
 ## Labels
 
-`meta` reads the labels the pull request carries at the moment it runs, through the API, rather than the set the webhook carried - a pull request cannot be created with labels, so they always arrive in a second call and the webhook's copy is routinely empty. A label added before `meta` runs counts; one added after it takes effect on the next run, or on a re-run of this one - the read goes to the API rather than replaying the webhook's copy, so **Re-run all jobs** picks up a label the original run never saw. The exception is `ci/auto-merge`, which `auto-merge.yaml` reads from the event payload - it triggers on `labeled`, so applying it is itself the event.
+`meta` reads the labels the pull request carries at the moment it runs, through the API, rather than the set the webhook carried - a pull request cannot be created with labels, so they always arrive in a second call and the webhook's copy is routinely empty. A label added before `meta` runs counts; one added after it takes effect on the next run, or on a re-run of this one - the read goes to the API rather than replaying the webhook's copy, so **Re-run all jobs** picks up a label the original run never saw. `meta` reaches that step twenty to forty seconds into a run, which is worlds more than a tool needs - `gh pr create --label`, Renovate, `release.yaml` and `backport.yaml` all attach within a second of opening - and not long enough for someone clicking a label by hand. For them the label lands on the next push or a re-run. The exception is `ci/auto-merge`, which `auto-merge.yaml` reads from the event payload - it triggers on `labeled`, so applying it is itself the event.
 
 | label | what it does |
 | --- | --- |
