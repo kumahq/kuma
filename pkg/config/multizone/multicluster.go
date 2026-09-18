@@ -55,6 +55,15 @@ func DefaultGlobalConfig() *GlobalConfig {
 			Tracing: KDSServerTracing{
 				Enabled: true,
 			},
+			Auth: KDSServerAuthConfig{
+				Type: KDSAuthNone,
+				ZoneToken: KDSZoneTokenAuthConfig{
+					Validator: KDSZoneTokenValidatorConfig{
+						UseSecrets: true,
+						PublicKeys: []config_types.PublicKey{},
+					},
+				},
+			},
 		},
 	}
 }

@@ -11,6 +11,7 @@ import (
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/config/multizone"
 	"github.com/kumahq/kuma/v3/pkg/config/plugins/resources/postgres"
 	util_maps "github.com/kumahq/kuma/v3/pkg/util/maps"
 	"github.com/kumahq/kuma/v3/test/testenvconfig"
@@ -271,6 +272,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.ZoneHealthCheck.CloseStaleConn).To(BeTrue())
 			Expect(cfg.Multizone.Global.KDS.Tracing.Enabled).To(BeFalse())
 			Expect(cfg.Multizone.Global.KDS.Labels.SkipPrefixes).To(Equal([]string{"argocd.argoproj.io"}))
+			Expect(cfg.Multizone.Global.KDS.Auth.Type).To(Equal(multizone.KDSAuthZoneToken))
+			Expect(cfg.Multizone.Global.KDS.Auth.ZoneToken.Validator.UseSecrets).To(BeFalse())
 			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
@@ -281,6 +284,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.KDS.LogPayloads).To(BeTrue())
 			Expect(cfg.Multizone.Zone.KDS.TlsSkipVerify).To(BeTrue())
 			Expect(cfg.Multizone.Zone.KDS.Labels.SkipPrefixes).To(Equal([]string{"argocd.argoproj.io"}))
+			Expect(cfg.Multizone.Zone.KDS.Auth.TokenInline).To(Equal("zone-token"))
+			Expect(cfg.Multizone.Zone.KDS.Auth.TokenPath).To(Equal("/zone-token"))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
@@ -649,6 +654,11 @@ multizone:
         enabled: false
       labels:
         skipPrefixes: ["argocd.argoproj.io"]
+      auth:
+        type: zoneToken
+        zoneToken:
+          validator:
+            useSecrets: false
   zone:
     globalAddress: "grpc://1.1.1.1:5685"
     name: "zone-1"
@@ -666,6 +676,9 @@ multizone:
       tlsSkipVerify: true
       labels:
         skipPrefixes: ["argocd.argoproj.io"]
+      auth:
+        tokenInline: zone-token
+        tokenPath: /zone-token
 dnsServer:
   domain: test-domain
   serviceVipPort: 9090
@@ -1016,6 +1029,10 @@ meshService:
 				"KUMA_MULTIZONE_ZONE_KDS_LOG_PAYLOADS":                                                     "true",
 				"KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY":                                                  "true",
 				"KUMA_MULTIZONE_ZONE_KDS_LABELS_SKIP_PREFIXES":                                             "argocd.argoproj.io",
+				"KUMA_MULTIZONE_GLOBAL_KDS_AUTH_TYPE":                                                      "zoneToken",
+				"KUMA_MULTIZONE_GLOBAL_KDS_AUTH_ZONE_TOKEN_VALIDATOR_USE_SECRETS":                          "false",
+				"KUMA_MULTIZONE_ZONE_KDS_AUTH_TOKEN_INLINE":                                                "zone-token",
+				"KUMA_MULTIZONE_ZONE_KDS_AUTH_TOKEN_PATH":                                                  "/zone-token",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS":                                                   "true",

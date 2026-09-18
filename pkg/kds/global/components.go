@@ -1,6 +1,7 @@
 package global
 
 import (
+	"slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -9,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	kds_auth "github.com/kumahq/kuma/v3/pkg/kds/auth"
 	"github.com/kumahq/kuma/v3/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/v3/pkg/kds/server"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
@@ -67,10 +69,18 @@ func Setup(rt runtime.Runtime) error {
 			return err
 		}
 	}
+	grpcStreamInterceptors := rt.KDSContext().ServerStreamInterceptors
+	grpcUnaryInterceptors := rt.KDSContext().ServerUnaryInterceptor
+	if authenticator := rt.KDSContext().GlobalZoneAuthenticator; authenticator != nil {
+		grpcStreamInterceptors = append(slices.Clone(grpcStreamInterceptors), kds_auth.StreamServerInterceptor(authenticator))
+		grpcUnaryInterceptors = append(slices.Clone(grpcUnaryInterceptors), kds_auth.UnaryServerInterceptor(authenticator))
+	} else {
+		kdsGlobalLog.Info("authentication of Zone CPs is disabled")
+	}
 	kdsSyncServer := mux.NewKDSSyncServiceServer(rt, deltaServer, resourceSyncer, kdsMetrics)
 	return rt.Add(component.NewResilientComponent(kdsGlobalLog.WithName("kds-mux-client"), mux.NewServer(
-		rt.KDSContext().ServerStreamInterceptors,
-		rt.KDSContext().ServerUnaryInterceptor,
+		grpcStreamInterceptors,
+		grpcUnaryInterceptors,
 		*rt.Config().Multizone.Global.KDS,
 		rt.CertWatchers(),
 		rt.Metrics(),
