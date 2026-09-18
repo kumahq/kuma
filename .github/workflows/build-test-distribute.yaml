@@ -132,7 +132,7 @@ jobs:
       || 'ubuntu-24.04' }}
     permissions:
       contents: read
-      pull-requests: read # the decision step reads the labels this pull request carries now
+      pull-requests: read
     env:
       SAME_REPO: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     outputs:
@@ -485,7 +485,7 @@ jobs:
             echo "::error title=distributions::a job this one depends on failed or was cancelled"
             exit 1
           fi
-          if [[ "${IS_DRAFT}" != "true" && -n "${SKIPPED_GATES// /}" ]]; then
+          if [[ "${IS_DRAFT}" != "true" && -n "${SKIPPED_GATES}" ]]; then
             echo "::error title=distributions::this pull request is not a draft, yet this run skipped: ${SKIPPED_GATES}"
             exit 1
           fi
