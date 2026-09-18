@@ -47,7 +47,7 @@ outputs:
 
 runs:
   using: docker
-  image: Dockerfile
+  image: docker://ghcr.io/kumahq/cigate:1.0.0
   args:
     - ${{ inputs.command }}
   env:
