@@ -143,6 +143,7 @@ jobs:
       BUILD: ${{ !github.event.pull_request.draft && (github.event_name == 'push' || contains(fromJSON(steps.labels.outputs.json), 'ci/run-build') || (contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') && env.SAME_REPO == 'true')) }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || (contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') && env.SAME_REPO == 'true') }}
       FORCE_PUBLISH_FROM_FORK: ${{ env.SAME_REPO == 'false' && contains(fromJSON(steps.labels.outputs.json), 'ci/force-publish') }}
+      DRAFT_NOW: ${{ steps.labels.outputs.draft }}
       # Per-arch lookup, each side independent. See .github/workflows/README.md.
       #   1. fork PR                            -> free GitHub-hosted runners (security)
       #   2. master (push, or PR targeting it)  -> free GitHub-hosted runners
@@ -176,20 +177,24 @@ jobs:
         run: |
           set -euo pipefail
           json='[]'
+          draft=''
           if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
             for attempt in 1 2 3; do
-              if json="$(gh pr view "${PR}" --json labels --jq '[.labels[].name]')"; then
+              if seen="$(gh pr view "${PR}" --json labels,isDraft)"; then
                 break
               fi
               if [[ "${attempt}" -eq 3 ]]; then
-                echo "::error title=meta::could not read the labels of pull request ${PR} after ${attempt} attempts"
+                echo "::error title=meta::could not read pull request ${PR} after ${attempt} attempts"
                 exit 1
               fi
               sleep "$((attempt * 5))"
             done
+            json="$(jq -c '[.labels[].name]' <<<"${seen}")"
+            draft="$(jq -r '.isDraft' <<<"${seen}")"
           fi
           printf 'json=%s\n' "${json}" >> "${GITHUB_OUTPUT}"
-          echo "labels: ${json}"
+          printf 'draft=%s\n' "${draft}" >> "${GITHUB_OUTPUT}"
+          echo "labels: ${json} draft: ${draft}"
   refuse_fork_publish:
     needs: ["meta"]
     if: ${{ needs.meta.outputs.FORCE_PUBLISH_FROM_FORK == 'true' }}
@@ -467,7 +472,7 @@ jobs:
     steps:
       - name: "Halt due to previous failures"
         env:
-          IS_DRAFT: ${{ github.event.pull_request.draft }}
+          IS_DRAFT: ${{ needs.meta.outputs.DRAFT_NOW }}
           SKIPPED_GATES: >-
             ${{ format('{0}{1}{2}',
             needs.build_check.result == 'skipped' && 'build_check ' || '',
@@ -482,7 +487,7 @@ jobs:
             exit 1
           fi
           if [[ "${IS_DRAFT}" != "true" && -n "${SKIPPED_GATES// /}" ]]; then
-            echo "::error title=distributions::this run was not gated as a draft yet skipped: ${SKIPPED_GATES}"
+            echo "::error title=distributions::this pull request is not a draft, yet this run skipped: ${SKIPPED_GATES}"
             exit 1
           fi
           echo "All dependent jobs succeeded"
