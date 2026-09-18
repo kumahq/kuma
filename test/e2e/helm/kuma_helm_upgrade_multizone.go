@@ -1,11 +1,13 @@
 package helm
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/random"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -17,6 +19,8 @@ import (
 	meshtimeout "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/api"
+	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/v3/test/framework/deployments/zoneproxy"
 )
@@ -40,6 +44,7 @@ const vipOutboundNack = "2.14 zones send VIP outbounds without backendRef, fixed
 
 func UpgradingZoneWithHelmChart() {
 	namespace := "helm-upgrade-ns"
+	testServerURL := "test-server_helm-upgrade-ns_svc_80.mesh"
 	var global, zoneK8s, zoneUniversal Cluster
 	var globalCP ControlPlane
 
@@ -106,6 +111,11 @@ func UpgradingZoneWithHelmChart() {
 					// The chart defaults the ingress Service to LoadBalancer,
 					// which never gets an address on k3d.
 					WithHelmOpt("meshes[0].ingress.service.type", "NodePort"),
+					// Kuma 3.0 serves only Delta ADS, so the documented upgrade path
+					// turns Delta on here first. Without it every sidecar injected
+					// below keeps a SOTW bootstrap, the upgraded control plane refuses
+					// its stream, and nothing after the upgrade reaches the proxy.
+					WithHelmOpt("experimental.deltaXds", "true"),
 					WithoutHelmOpt("global.image.tag"),
 				)).
 				Install(WaitNumPods(Config.KumaNamespace, 1, meshZoneIngressApp)).
@@ -137,8 +147,18 @@ spec:
 			By("Sync DPPs from Zone to Global")
 			err = NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(testserver.Install(testserver.WithNamespace(namespace))).Setup(zoneK8s)
+				Install(testserver.Install(testserver.WithNamespace(namespace))).
+				Install(democlient.Install(democlient.WithNamespace(namespace))).
+				Setup(zoneK8s)
 			Expect(err).ToNot(HaveOccurred())
+
+			By("Send traffic before the upgrade")
+			Eventually(func(g Gomega) {
+				g.Expect(client.CollectEchoResponse(
+					zoneK8s, "demo-client", testServerURL,
+					client.FromKubernetesPod(namespace, "demo-client"),
+				)).To(HaveField("Instance", ContainSubstring("test-server")))
+			}, "60s", "1s").Should(Succeed())
 
 			// Only the zone's own mesh zone ingress is asserted here. Whether
 			// the test server's Dataplane also makes it across is a race while
@@ -203,6 +223,29 @@ spec:
 				g.Expect(newZoneConnected).To(BeTrue())
 			}, "60s", "1s").Should(Succeed())
 
+			// The workloads never restarted, so they still run the sidecar the
+			// 2.14 control plane injected, which reports no transparent proxy
+			// configuration of its own. The upgraded control plane has to fall back
+			// to the deprecated redirect port fields to keep generating the
+			// passthrough listeners their iptables rules still point at.
+			//
+			// Asserted against the config the control plane generates, not against
+			// traffic: a sidecar injected before the upgrade still keeps whatever
+			// config it last received, so traffic keeps flowing even when the control
+			// plane has stopped producing these listeners.
+			By("Upgraded control plane still generates the transparent proxy listeners")
+			Eventually(func(g Gomega) {
+				pod, err := k8s.RunKubectlAndGetOutputContextE(GinkgoT(), context.Background(),
+					zoneK8s.GetKubectlOptions(namespace),
+					"get", "pods", "-l", "app=test-server", "-o", "jsonpath={.items[0].metadata.name}")
+				g.Expect(err).ToNot(HaveOccurred())
+				cfg, err := zoneK8s.GetKumactlOptions().RunKumactlAndGetOutput(
+					"inspect", "dataplane", pod+"."+namespace, "--type", "config", "--mesh", "default")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(cfg).To(ContainSubstring("self_transparentproxy_passthrough_inbound"))
+				g.Expect(cfg).To(ContainSubstring("self_transparentproxy_passthrough_outbound"))
+			}, "60s", "2s").Should(Succeed())
+
 			By("start zone ingress after upgrade")
 			Expect(zoneK8s.(*K8sCluster).ScaleApp(Config.KumaNamespace, meshZoneIngressApp, 1)).To(Succeed())
 
@@ -230,10 +273,10 @@ spec:
 			Eventually(func(g Gomega) {
 				dppsK8sZone, err := NumberOfResources(zoneK8s, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(dppsK8sZone).To(Equal(2))
+				g.Expect(dppsK8sZone).To(Equal(3))
 				dppsGlobal, err := NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(dppsGlobal).To(Equal(3))
+				g.Expect(dppsGlobal).To(Equal(4))
 			}, "3m", "1s").Should(Succeed())
 
 			Consistently(func(g Gomega) {
@@ -247,13 +290,13 @@ spec:
 
 				dppsK8sZone, err := NumberOfResources(zoneK8s, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(dppsK8sZone).To(Equal(2))
+				g.Expect(dppsK8sZone).To(Equal(3))
 				dppsUniversalZone, err := NumberOfResources(zoneUniversal, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(dppsUniversalZone).To(Equal(1))
 				dppsGlobal, err := NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(dppsGlobal).To(Equal(3))
+				g.Expect(dppsGlobal).To(Equal(4))
 
 				addressesGlobal, err := NumberOfResources(global, meshzoneaddress_api.MeshZoneAddressResourceTypeDescriptor)
 				g.Expect(err).ToNot(HaveOccurred())

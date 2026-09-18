@@ -557,6 +557,19 @@ func (x *Dataplane_Networking_Outbound) GetBackendRef() *Dataplane_Networking_Ou
 // TransparentProxying describes configuration for transparent proxying.
 type Dataplane_Networking_TransparentProxying struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// Port on which all inbound traffic is being transparently redirected.
+	//
+	// Deprecated: read only for a proxy that sends no transparent proxy
+	// metadata, which means a sidecar injected before 3.0. Gone in 3.1.
+	//
+	// Deprecated: Marked as deprecated in api/mesh/v1alpha1/dataplane.proto.
+	RedirectPortInbound uint32 `protobuf:"varint,1,opt,name=redirect_port_inbound,json=redirectPortInbound,proto3" json:"redirect_port_inbound,omitempty"`
+	// Port on which all outbound traffic is being transparently redirected.
+	//
+	// Deprecated: see `redirect_port_inbound`.
+	//
+	// Deprecated: Marked as deprecated in api/mesh/v1alpha1/dataplane.proto.
+	RedirectPortOutbound uint32 `protobuf:"varint,2,opt,name=redirect_port_outbound,json=redirectPortOutbound,proto3" json:"redirect_port_outbound,omitempty"`
 	// List of services that will be accessed directly via IP:PORT
 	// Use `*` to indicate direct access to every service in the Mesh.
 	// Using `*` to directly access every service is a resource-intensive
@@ -599,6 +612,22 @@ func (x *Dataplane_Networking_TransparentProxying) ProtoReflect() protoreflect.M
 // Deprecated: Use Dataplane_Networking_TransparentProxying.ProtoReflect.Descriptor instead.
 func (*Dataplane_Networking_TransparentProxying) Descriptor() ([]byte, []int) {
 	return file_api_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 2}
+}
+
+// Deprecated: Marked as deprecated in api/mesh/v1alpha1/dataplane.proto.
+func (x *Dataplane_Networking_TransparentProxying) GetRedirectPortInbound() uint32 {
+	if x != nil {
+		return x.RedirectPortInbound
+	}
+	return 0
+}
+
+// Deprecated: Marked as deprecated in api/mesh/v1alpha1/dataplane.proto.
+func (x *Dataplane_Networking_TransparentProxying) GetRedirectPortOutbound() uint32 {
+	if x != nil {
+		return x.RedirectPortOutbound
+	}
+	return 0
 }
 
 func (x *Dataplane_Networking_TransparentProxying) GetDirectAccessServices() []string {
@@ -1083,11 +1112,11 @@ var File_api_mesh_v1alpha1_dataplane_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\n" +
-	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\x95\x18\n" +
+	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xcc\x18\n" +
 	"\tDataplane\x12H\n" +
 	"\n" +
 	"networking\x18\x01 \x01(\v2(.kuma.mesh.v1alpha1.Dataplane.NetworkingR\n" +
-	"networking\x1a\xbf\x16\n" +
+	"networking\x1a\xf6\x16\n" +
 	"\n" +
 	"Networking\x12\x18\n" +
 	"\aaddress\x18\x05 \x01(\tR\aaddress\x12J\n" +
@@ -1134,8 +1163,10 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\x06labels\x18\x04 \x03(\v2H.kuma.mesh.v1alpha1.Dataplane.Networking.Outbound.BackendRef.LabelsEntryR\x06labels\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x05\x10\x06R\x04tags\x1a\x91\x06\n" +
-	"\x13TransparentProxying\x124\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01J\x04\b\x05\x10\x06R\x04tags\x1a\xc8\x06\n" +
+	"\x13TransparentProxying\x126\n" +
+	"\x15redirect_port_inbound\x18\x01 \x01(\rB\x02\x18\x01R\x13redirectPortInbound\x128\n" +
+	"\x16redirect_port_outbound\x18\x02 \x01(\rB\x02\x18\x01R\x14redirectPortOutbound\x124\n" +
 	"\x16direct_access_services\x18\x03 \x03(\tR\x14directAccessServices\x12}\n" +
 	"\x12reachable_backends\x18\a \x01(\v2N.kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendsR\x11reachableBackends\x1a\xbe\x02\n" +
 	"\x13ReachableBackendRef\x12\x12\n" +
@@ -1148,7 +1179,7 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1ay\n" +
 	"\x11ReachableBackends\x12d\n" +
-	"\x04refs\x18\x01 \x03(\v2P.kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRefR\x04refsJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\x15redirect_port_inboundR\x16redirect_port_outboundR\x18redirect_port_inbound_v6R\x12reachable_servicesR\x0eip_family_mode\x1a\xc3\x02\n" +
+	"\x04refs\x18\x01 \x03(\v2P.kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRefR\x04refsJ\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\x18redirect_port_inbound_v6R\x12reachable_servicesR\x0eip_family_mode\x1a\xc3\x02\n" +
 	"\bListener\x12J\n" +
 	"\x04type\x18\x01 \x01(\x0e26.kuma.mesh.v1alpha1.Dataplane.Networking.Listener.TypeR\x04type\x12\x18\n" +
 	"\aaddress\x18\x02 \x01(\tR\aaddress\x12\x12\n" +

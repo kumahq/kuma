@@ -8,6 +8,14 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### DPP configuration refresh interval default raised to 10s
+
+`xdsServer.dataplaneConfigurationRefreshInterval` (`KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL`) now defaults to `10s` instead of `1s`. The control plane regenerates the xDS configuration of every connected proxy on this interval, so a 1s default kept the control plane busy and scaled poorly with the number of data plane proxies.
+
+**Action required**
+
+None. Changes to meshes, policies, and services now take up to 10 seconds to reach data plane proxies instead of up to 1 second. The same applies to trust bundles, so a CA rotation must leave the old CA in place for at least one refresh interval after the new one is added, otherwise proxies that have not yet been refreshed will fail mTLS. If your deployment needs faster propagation, set `xdsServer.dataplaneConfigurationRefreshInterval` back to the previous value, keeping in mind the control plane CPU cost.
+
 ### `MeshIdentity.spec.spiffeID` is immutable and its trust domain no longer follows the zone
 
 A trust domain is an identity namespace, so moving one is a migration rather
@@ -134,11 +142,13 @@ None unless you set either setting to `false`. The control plane and `kuma-dp` n
 
 ### Redirect ports and IP family mode removed from `Dataplane`
 
-Kuma 3.0 removes `redirectPortInbound`, `redirectPortOutbound`, and `ipFamilyMode` from `Dataplane.networking.transparentProxying` and reserves their field numbers. `directAccessServices` and `reachableBackends` stay. The control plane reads redirect ports and the IP family mode only from `kuma-dp`, which sends them when it runs with `--transparent-proxy` or `--transparent-proxy-config`.
+Kuma 3.0 removes `ipFamilyMode` from `Dataplane.networking.transparentProxying` and deprecates `redirectPortInbound` and `redirectPortOutbound`. `directAccessServices` and `reachableBackends` stay. The control plane reads the redirect ports and the IP family mode from `kuma-dp`, which sends them when it runs with `--transparent-proxy` or `--transparent-proxy-config`.
 
-On Kubernetes, sidecars injected by a 3.0 control plane always pass the transparent proxy configuration to `kuma-dp`. Sidecars injected by 2.14 with `transparentProxy.configMap.enabled` set to `false`, the 2.14 default, do not. After you upgrade the control plane, they get no transparent proxy listeners until they restart.
+A proxy that sends none, which means a sidecar injected before 3.0, still gets its redirect ports from the two deprecated fields, so upgrading the control plane does not take transparent proxying away from workloads that have not restarted yet. The IP family comes from what the proxy reports about its machine rather than from the removed `ipFamilyMode` field. Both fields go away in 3.1, so restart your workloads on 3.0 rather than leaving them on a pre-3.0 sidecar.
 
-On Universal this is a breaking change. The control plane ignores the removed fields on input, so a `Dataplane` that still sets them loads without an error but gets no transparent proxy listeners. Envoy then has no listener on the redirect ports, and the traffic iptables sends there fails.
+On Kubernetes, sidecars injected by a 3.0 control plane always pass the transparent proxy configuration to `kuma-dp`, and the control plane keeps writing the redirect ports onto the `Dataplane` of a pod injected by 2.14 for as long as that pod lives.
+
+On Universal, a `Dataplane` that still sets the deprecated fields keeps working on 3.0 and stops working on 3.1.
 
 Before:
 
@@ -171,7 +181,7 @@ kuma-dp run --dataplane-file=backend.yaml --transparent-proxy
 
 **Action required**
 
-On Universal, drop `redirectPortInbound`, `redirectPortOutbound`, and `ipFamilyMode` from your `Dataplane` manifests and `kuma-dp` dataplane files, and start `kuma-dp` with `--transparent-proxy`. If you installed the transparent proxy with a non-default IP family mode, redirect ports, inbound redirection, or virtual networks, pass the same values to `kuma-dp` in a file with `--transparent-proxy-config` instead:
+Nothing on 3.0. To be ready for 3.1, on Universal drop `redirectPortInbound`, `redirectPortOutbound`, and `ipFamilyMode` from your `Dataplane` manifests and `kuma-dp` dataplane files, and start `kuma-dp` with `--transparent-proxy`. If you installed the transparent proxy with a non-default IP family mode, redirect ports, inbound redirection, or virtual networks, pass the same values to `kuma-dp` in a file with `--transparent-proxy-config` instead:
 
 ```yaml
 ipFamilyMode: ipv4
@@ -182,9 +192,9 @@ redirect:
     port: 15001
 ```
 
-Do this before you upgrade the control plane. `kuma-dp` 2.14 already supports both flags. On hosts with IPv6 disabled, `kuma-dp` 2.14 cannot start its DNS proxy in the default dual-stack mode, so use `--transparent-proxy-config` with `ipFamilyMode: ipv4` there.
+`kuma-dp` 2.14 already supports both flags, so you can do this before or after the upgrade. On hosts with IPv6 disabled, `kuma-dp` 2.14 cannot start its DNS proxy in the default dual-stack mode, so use `--transparent-proxy-config` with `ipFamilyMode: ipv4` there.
 
-On Kubernetes, if your 2.14 control plane runs with `transparentProxy.configMap.enabled` set to `false`, set it to `true` and restart your workloads before you upgrade the control plane.
+On Kubernetes, restart your workloads at some point on 3.0. Until a pod restarts, its sidecar is the one 2.14 injected.
 
 ### `Dataplane` outbounds always carry an address
 

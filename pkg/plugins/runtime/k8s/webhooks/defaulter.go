@@ -71,20 +71,19 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 	if name, ok := resource.GetMeta().GetNameExtensions()[core_model.K8sNameComponent]; ok && name != "" {
 		displayName = name
 	}
-	computed, err := resource_labels.Compute(
-		resource.Descriptor(),
-		resource.GetSpec(),
-		resource.GetMeta().GetLabels(),
-		resource.GetMeta().GetMesh(),
-		displayName,
-		resource_labels.WithNamespace(resource_labels.GetNamespace(resource.GetMeta(), h.SystemNamespace)),
-		resource_labels.WithMode(h.Mode),
-		resource_labels.WithK8s(true),
-		resource_labels.WithZone(h.ZoneName),
-		resource_labels.WithPrivileged(h.isPrivilegedUser(h.AllowedUsers, req.UserInfo)),
-	)
+	// Compute only fails on a policy the user got wrong (mixed producer and consumer
+	// items), so it is forbidden rather than an internal error.
+	computed, err := resource_labels.Compute(resource_labels.Write{
+		Descriptor:    resource.Descriptor(),
+		Spec:          resource.GetSpec(),
+		Namespace:     resource_labels.GetNamespace(resource.GetMeta(), h.SystemNamespace),
+		Mesh:          resource.GetMeta().GetMesh(),
+		DisplayName:   displayName,
+		Labels:        resource.GetMeta().GetLabels(),
+		TrustedWriter: h.isPrivilegedUser(h.AllowedUsers, req.UserInfo),
+	}, h.ControlPlane)
 	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, err)
+		return *forbiddenResponse(err.Error())
 	}
 	labels, annotations := k8s.SplitLabelsAndAnnotations(computed, obj.GetAnnotations())
 

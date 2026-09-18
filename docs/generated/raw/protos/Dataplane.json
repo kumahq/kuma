@@ -276,6 +276,14 @@
         },
         "kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying": {
             "properties": {
+                "redirect_port_inbound": {
+                    "type": "integer",
+                    "description": "Port on which all inbound traffic is being transparently redirected. Deprecated: read only for a proxy that sends no transparent proxy metadata, which means a sidecar injected before 3.0. Gone in 3.1."
+                },
+                "redirect_port_outbound": {
+                    "type": "integer",
+                    "description": "Port on which all outbound traffic is being transparently redirected. Deprecated: see `redirect_port_inbound`."
+                },
                 "direct_access_services": {
                     "items": {
                         "type": "string"

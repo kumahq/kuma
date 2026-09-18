@@ -2,6 +2,8 @@ package context_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net"
 	"os"
 	"reflect"
@@ -20,7 +22,10 @@ import (
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	meshaccesslog_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/test"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -545,6 +550,61 @@ spec:
 		Expect(ctx3.Hash).ToNot(Equal(ctx2.Hash), "VIP allocation must invalidate the mesh context")
 	})
 
+	It("picks up a policy deleted and recreated with the same name", func() {
+		resourceManager := manager.NewResourceManager(resourceStore)
+		createMeshAccessLog := func(address string) {
+			mal, err := rest.YAML.UnmarshalCore(fmt.Appendf(nil, `
+type: MeshAccessLog
+name: client-outgoing
+mesh: mesh-1
+spec:
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: Tcp
+            tcp:
+              address: %q
+`, address))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resourceManager.Create(context.Background(), mal, store.CreateByKey("client-outgoing", "mesh-1"))).To(Succeed())
+		}
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: mesh-1
+---
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      tags:
+        kuma.io/display-name: backend
+`)).To(Succeed())
+		createMeshAccessLog("old:9999")
+
+		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when the policy is deleted and recreated, the store restarts its version
+		Expect(resourceManager.Delete(context.Background(), meshaccesslog_api.NewMeshAccessLogResource(), store.DeleteByKey("client-outgoing", "mesh-1"))).To(Succeed())
+		createMeshAccessLog("new:9999")
+
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "mesh-1", before)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the recreated policy is used
+		Expect(after.Hash).ToNot(Equal(before.Hash))
+		items := after.Resources.MeshLocalResources[meshaccesslog_api.MeshAccessLogType].GetItems()
+		Expect(items).To(HaveLen(1))
+		spec, err := json.Marshal(items[0].GetSpec())
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(spec)).To(ContainSubstring("new:9999"))
+	})
+
 	It("resolves a Dataplane address that is a DNS name", func() {
 		// given a builder whose lookup resolves a hostname, as it would on AWS ECS
 		// where the Dataplane is created before the container gets its IP
@@ -737,6 +797,13 @@ func (f *failingListManager) List(context.Context, core_model.ResourceList, ...s
 	return errors.New("store unavailable")
 }
 
+// egressLabels are the labels a mesh-scoped zone egress carries on Kubernetes, which are what
+// the MeshIdentity renders its SPIFFE ID from.
+var egressLabels = map[string]string{
+	mesh_proto.KubeNamespaceTag:   "kuma-system",
+	"k8s.kuma.io/service-account": "kuma-default-egress",
+}
+
 var _ = Describe("EndpointMap", func() {
 	lookupIPFunc := func(s string) ([]net.IP, error) {
 		return []net.IP{net.ParseIP(s)}, nil
@@ -790,6 +857,10 @@ var _ = Describe("EndpointMap", func() {
 		}
 		Expect(resourceStore.Create(context.Background(), externalService, store.CreateByKey("external-svc", meshName))).To(Succeed())
 
+		// and an initialized MeshIdentity, without which the egress has no certificate to
+		// present and therefore no listener to advertise
+		Expect(builders.MeshIdentity().WithMesh(meshName).WithInitializedStatus().Create(resourceStore)).To(Succeed())
+
 		// and a ready zone egress listener so MeshExternalService endpoints are materialized
 		zoneEgress := &core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{Mesh: meshName, Name: "zone-egress-dp"},
@@ -807,7 +878,7 @@ var _ = Describe("EndpointMap", func() {
 				},
 			},
 		}
-		Expect(resourceStore.Create(context.Background(), zoneEgress, store.CreateByKey("zone-egress-dp", meshName))).To(Succeed())
+		Expect(resourceStore.Create(context.Background(), zoneEgress, store.CreateByKey("zone-egress-dp", meshName), store.CreateWithLabels(egressLabels))).To(Succeed())
 
 		// and a dataplane with no inbounds, which is not a regular service
 		inboundlessBuilder := builders.Dataplane().
@@ -836,5 +907,91 @@ var _ = Describe("EndpointMap", func() {
 
 		// and gateway dataplanes are not destinations
 		Expect(mc.EndpointMap).ToNot(HaveKey("gateway-delegated"))
+	})
+
+	// ZoneProxyListenerGenerator only builds the egress listener once the proxy has a
+	// WorkloadIdentity, so an egress advertised before its MeshIdentity is initialized points
+	// every proxy in the mesh at a port nothing serves.
+	Describe("zone egress identity", func() {
+		var esKey string
+
+		BeforeEach(func() {
+			Expect(builders.Mesh().Create(resourceStore)).To(Succeed())
+
+			externalService := &meshexternalservice_api.MeshExternalServiceResource{
+				Meta: &test_model.ResourceMeta{Mesh: core_model.DefaultMesh, Name: "external-svc"},
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Port:     80,
+						Protocol: core_meta.ProtocolHTTP,
+					},
+					Endpoints: &[]meshexternalservice_api.Endpoint{{Address: "httpbin.org", Port: 80}},
+				},
+				Status: &meshexternalservice_api.MeshExternalServiceStatus{},
+			}
+			Expect(resourceStore.Create(context.Background(), externalService, store.CreateByKey("external-svc", core_model.DefaultMesh))).To(Succeed())
+			esKey = destinationname.MustResolve(externalService, externalService.Spec.Match)
+
+			zoneEgress := &core_mesh.DataplaneResource{
+				Meta: &test_model.ResourceMeta{Mesh: core_model.DefaultMesh, Name: "zone-egress-dp"},
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.10",
+						Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+							{
+								Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+								Address: "127.0.0.10",
+								Port:    10002,
+								State:   mesh_proto.Dataplane_Networking_Listener_Ready,
+							},
+						},
+					},
+				},
+			}
+			Expect(resourceStore.Create(context.Background(), zoneEgress, store.CreateByKey("zone-egress-dp", core_model.DefaultMesh), store.CreateWithLabels(egressLabels))).To(Succeed())
+		})
+
+		It("does not advertise the egress when no MeshIdentity matches it", func() {
+			// when
+			mc, err := meshContextBuilder.Build(context.Background(), core_model.DefaultMesh)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(mc.ZoneEgresses).To(BeEmpty())
+			Expect(mc.EndpointMap).ToNot(HaveKey(esKey))
+		})
+
+		// The MeshIdentity migration first creates a SPIFFE-ID-only identity to propagate IDs to
+		// MeshServices. It yields a SPIFFE ID but never a certificate, so matching alone is not enough.
+		It("does not advertise the egress when the matching MeshIdentity is not initialized", func() {
+			// given
+			Expect(builders.MeshIdentity().WithPartiallyReadyStatus().Create(resourceStore)).To(Succeed())
+
+			// when
+			mc, err := meshContextBuilder.Build(context.Background(), core_model.DefaultMesh)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(mc.ZoneEgresses).To(BeEmpty())
+			Expect(mc.EndpointMap).ToNot(HaveKey(esKey))
+		})
+
+		It("advertises the egress with its SAN once an initialized MeshIdentity selects it", func() {
+			// given
+			Expect(builders.MeshIdentity().WithInitializedStatus().Create(resourceStore)).To(Succeed())
+
+			// when
+			mc, err := meshContextBuilder.Build(context.Background(), core_model.DefaultMesh)
+
+			// then clients get the SAN they have to verify the egress against
+			Expect(err).ToNot(HaveOccurred())
+			Expect(mc.ZoneEgresses).To(ConsistOf(core_xds.ZoneEgressInstance{
+				Address: "127.0.0.10",
+				Port:    10002,
+				SAN:     "spiffe://default.zone-1.mesh.local/ns/kuma-system/sa/kuma-default-egress",
+			}))
+			Expect(mc.EndpointMap[esKey]).ToNot(BeEmpty())
+		})
 	})
 })

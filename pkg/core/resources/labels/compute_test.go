@@ -151,17 +151,14 @@ var _ = Describe("Compute", func() {
 
 	DescribeTable("should return correct label map",
 		func(given testCase) {
-			labels, err := resource_labels.Compute(
-				given.r.Descriptor(),
-				given.r.GetSpec(),
-				given.r.GetMeta().GetLabels(),
-				given.r.GetMeta().GetMesh(),
-				given.r.GetMeta().GetName(),
-				resource_labels.WithNamespace(resource_labels.GetNamespace(given.r.GetMeta(), "kuma-system")),
-				resource_labels.WithMode(given.mode),
-				resource_labels.WithK8s(given.isK8s),
-				resource_labels.WithZone(given.localZone),
-			)
+			labels, err := resource_labels.Compute(resource_labels.Write{
+				Descriptor:  given.r.Descriptor(),
+				Spec:        given.r.GetSpec(),
+				Namespace:   resource_labels.GetNamespace(given.r.GetMeta(), "kuma-system"),
+				Mesh:        given.r.GetMeta().GetMesh(),
+				DisplayName: given.r.GetMeta().GetName(),
+				Labels:      given.r.GetMeta().GetLabels(),
+			}, resource_labels.ControlPlane{Mode: given.mode, IsK8s: given.isK8s, Zone: given.localZone})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(labels).To(Equal(given.expectedLabels))
 		},
@@ -348,6 +345,22 @@ var _ = Describe("Compute", func() {
 				"kuma.io/env":          "universal",
 			},
 		}),
+		Entry("zone label is omitted when the zone has no name", testCase{
+			mode:  core.Zone,
+			isK8s: false,
+			r: builders.Dataplane().
+				WithName("backend-1").
+				WithServices("backend").
+				WithMesh("mesh-1").
+				WithLabels(map[string]string{mesh_proto.ZoneTag: "other-zone"}).
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/display-name": "backend-1",
+				"kuma.io/mesh":         "mesh-1",
+				"kuma.io/origin":       "zone",
+				"kuma.io/env":          "universal",
+			},
+		}),
 		Entry("namespace and service-account labels are kept on k8s zone", testCase{
 			mode:      core.Zone,
 			isK8s:     true,
@@ -515,17 +528,14 @@ var _ = Describe("Compute", func() {
 			mesh_proto.DisplayName:         "name-from-origin-cp",
 		}
 
-		labels, err := resource_labels.Compute(
-			res.Descriptor(),
-			res.GetSpec(),
-			existing,
-			"mesh-1",
-			"recomputed-name",
-			resource_labels.WithMode(core.Zone),
-			resource_labels.WithK8s(true),
-			resource_labels.WithZone("zone-1"),
-			resource_labels.WithPrivileged(true),
-		)
+		labels, err := resource_labels.Compute(resource_labels.Write{
+			Descriptor:    res.Descriptor(),
+			Spec:          res.GetSpec(),
+			Mesh:          "mesh-1",
+			DisplayName:   "recomputed-name",
+			Labels:        existing,
+			TrustedWriter: true,
+		}, resource_labels.ControlPlane{Mode: core.Zone, IsK8s: true, Zone: "zone-1"})
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(labels).To(Equal(existing))
@@ -549,17 +559,14 @@ var _ = Describe("Compute", func() {
 			mesh_proto.DisplayName:         "stale-name",
 		}
 
-		labels, err := resource_labels.Compute(
-			res.Descriptor(),
-			res.GetSpec(),
-			existing,
-			"mesh-1",
-			"recomputed-name",
-			resource_labels.WithMode(core.Zone),
-			resource_labels.WithK8s(true),
-			resource_labels.WithZone("zone-1"),
-			resource_labels.WithPrivileged(true),
-		)
+		labels, err := resource_labels.Compute(resource_labels.Write{
+			Descriptor:    res.Descriptor(),
+			Spec:          res.GetSpec(),
+			Mesh:          "mesh-1",
+			DisplayName:   "recomputed-name",
+			Labels:        existing,
+			TrustedWriter: true,
+		}, resource_labels.ControlPlane{Mode: core.Zone, IsK8s: true, Zone: "zone-1"})
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(labels).To(HaveKeyWithValue(mesh_proto.DisplayName, "recomputed-name"))
