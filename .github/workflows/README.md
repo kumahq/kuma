@@ -91,11 +91,11 @@ Variable names cannot contain `-` or `.`, and an inline expression cannot saniti
 
 # What decides how much CI a pull request runs
 
-`build-test-distribute` decides once, in its `meta` job, and every other job reads that decision. Two things feed it.
+`build-test-distribute` decides in its `meta` job, and every job that reads a label reads that decision. Draft state is the exception: `build_check` and `check` read it straight from the event, because it is correct there and waiting on `meta` would put an API call in front of a forty minute job. Two things feed it.
 
 ## Draft state
 
-A draft runs nothing expensive: `build_check`, `check`, `test_unit`, the whole e2e matrix, and `build_publish` with the container-structure test inside it are all skipped. Press **Ready for review** to run them - `ready_for_review` starts a fresh run - and converting back to a draft cancels the run in flight and replaces it with one that skips. `validate-workflows-and-scripts` follows the same rule. `check` deliberately does not - it is a commit-message lint that takes seconds on the smallest runner, and a wrong title is worth catching on the first push.
+A draft runs nothing expensive: `build_check`, `check`, `test_unit`, the whole e2e matrix, and `build_publish` with the container-structure test inside it are all skipped. Press **Ready for review** to run them - `ready_for_review` starts a fresh run - and converting back to a draft cancels the run in flight and replaces it with one that skips. `validate-workflows-and-scripts` follows the same rule. `check.yaml` - the commit-message lint, not the `check` job above - deliberately does not: it takes seconds on the smallest runner, and a wrong title is worth catching on the first push.
 
 Two consequences worth knowing. A pull request a bot opens as a draft gets the same treatment - a backport whose cherry-pick conflicted is opened as a draft, so it runs nothing until whoever resolves the conflict marks it ready. And GitHub disables auto-merge when a pull request becomes a draft, so `auto-merge.yaml` listens for `ready_for_review` to arm it again.
 
