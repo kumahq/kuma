@@ -139,8 +139,6 @@ var _ = Describe("ComputePolicyRole", func() {
 })
 
 var _ = Describe("Compute", func() {
-	legacyProxyTypeLabel := "kuma.io/" + "proxy-type"
-
 	type testCase struct {
 		r              core_model.Resource
 		mode           core.CpMode
@@ -495,7 +493,6 @@ var _ = Describe("Compute", func() {
 				WithMesh("mesh-1").
 				WithServices("backend").
 				WithLabels(map[string]string{
-					legacyProxyTypeLabel:           "sidecar",
 					"kuma.io/listener-zoneingress": "enabled",
 					"kuma.io/listener-zoneegress":  "enabled",
 				}).
