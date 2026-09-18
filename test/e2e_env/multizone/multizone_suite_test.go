@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/healthcheck"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/inbound_communication"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/inspect"
+	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/kdsauth"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/localityawarelb"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/meshaccesslog"
 	"github.com/kumahq/kuma/v3/test/e2e_env/multizone/meshhttproute"
@@ -66,6 +67,7 @@ var (
 	_ = Describe("Ownership", Label("job-2"), ownership.MultizoneUniversal, Ordered)
 	_ = Describe("Resilience", Label("job-2"), resilience.ResilienceMultizoneUniversal, Ordered)
 	_ = Describe("Resilience Postgres", Label("job-2"), resilience.ResilienceMultizoneUniversalPostgres, Ordered)
+	_ = Describe("KDS Auth", Label("job-2"), kdsauth.ZoneToken, Ordered)
 	_ = Describe("MeshTimeout", Label("job-0"), meshtimeout.MeshTimeout, Ordered)
 	_ = Describe("Defaults", Label("job-3"), defaults.Defaults, Ordered)
 	_ = Describe("MeshService Sync", Label("job-1"), meshservice.Sync, Ordered)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -30,6 +31,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/kds"
+	kds_auth "github.com/kumahq/kuma/v3/pkg/kds/auth"
 	"github.com/kumahq/kuma/v3/pkg/kds/hash"
 	kds_reconcile "github.com/kumahq/kuma/v3/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
@@ -56,6 +58,12 @@ type Context struct {
 	EnvoyAdminRPCs           service.EnvoyAdminRPCs
 	ServerStreamInterceptors []grpc.StreamServerInterceptor
 	ServerUnaryInterceptor   []grpc.UnaryServerInterceptor
+
+	// GlobalZoneAuthenticator authenticates every KDS RPC received by Global CP,
+	// after ServerStreamInterceptors and ServerUnaryInterceptor. Nil disables authentication.
+	GlobalZoneAuthenticator kds_auth.Authenticator
+	// ZoneCredentials are attached to every KDS RPC sent by Zone CP. Nil sends none.
+	ZoneCredentials credentials.PerRPCCredentials
 }
 
 type Filter interface {
