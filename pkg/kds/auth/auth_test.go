@@ -3,6 +3,7 @@ package auth_test
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -14,6 +15,7 @@ import (
 
 	store_config "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/config/multizone"
+	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/v3/pkg/core/secrets/manager"
@@ -228,5 +230,40 @@ var _ = Describe("Token credentials", func() {
 		_, err := creds.GetRequestMetadata(context.Background())
 
 		Expect(err).To(MatchError("failed"))
+	})
+})
+
+var _ = Describe("Zone Token signed offline", func() {
+	keys := filepath.Join("..", "..", "..", "test", "keys")
+
+	// the same issuer as `kumactl generate zone-token --signing-key-path --kid`
+	generate := func(keyFile, kid string) string {
+		issuer := zone.NewTokenIssuer(core_tokens.NewTokenIssuer(core_tokens.NewFileSigningKeyManager(filepath.Join(keys, keyFile), kid)))
+		token, err := issuer.Generate(context.Background(), zone.Identity{Zone: "zone-1", Scope: []string{zone.CPScope}}, time.Hour)
+		Expect(err).ToNot(HaveOccurred())
+		return token
+	}
+
+	authenticate := func(token string) error {
+		// no signing key in the store, only the configured public key can validate the token
+		secretManager := secret_manager.NewGlobalSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None())
+		validator, err := builtin.NewZoneTokenValidator(secretManager, store_config.MemoryStore, multizone.KDSZoneTokenValidatorConfig{
+			UseSecrets: false,
+			PublicKeys: []config_types.PublicKey{{KID: "1", KeyFile: filepath.Join(keys, "publickey.pem")}},
+		})
+		Expect(err).ToNot(HaveOccurred())
+		return kds_auth.NewZoneTokenAuthenticator(validator).Authenticate(context.Background(), metadata.Pairs(kds_auth.TokenHeader, token), "zone-1")
+	}
+
+	It("should accept a token signed with the key matching the public key", func() {
+		Expect(authenticate(generate("samplekey.pem", "1"))).To(Succeed())
+	})
+
+	It("should reject a token signed with another key", func() {
+		Expect(status.Code(authenticate(generate("samplekey-2.pem", "1")))).To(Equal(codes.Unauthenticated))
+	})
+
+	It("should reject a token with unknown kid", func() {
+		Expect(status.Code(authenticate(generate("samplekey.pem", "2")))).To(Equal(codes.Unauthenticated))
 	})
 })
