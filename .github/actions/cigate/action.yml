@@ -49,7 +49,7 @@ outputs:
 
 runs:
   using: docker
-  image: docker://ghcr.io/kumahq/cigate@sha256:210a949c885e64858315f2e9934adb3b8e0647c92fde4cb86f94cd7c552b4bee
+  image: docker://ghcr.io/kumahq/cigate@sha256:d63e9590ee36ab25de7ce2b7c60e268020c2bdccdf0550948ba096f266d8491d
   args:
     - ${{ inputs.command }}
   env:
