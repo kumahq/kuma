@@ -1,0 +1,44 @@
+# A 'from' policy and a 'rules' policy on the same inbound: both are kept, denies come
+# before allows, so a mesh can be migrated to 'rules' one policy at a time.
+type: MeshTrafficPermission
+name: mtp-from
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Dataplane
+    name: test-server
+  from:
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          kuma.io/service: demo-client
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          kuma.io/service: legacy-client
+      default:
+        action: Deny
+---
+type: MeshTrafficPermission
+name: mtp-rules
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Dataplane
+    name: test-server
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://trust-domain.mesh/ns/migrated
+        deny:
+          - spiffeID:
+              type: Exact
+              value: spiffe://trust-domain.mesh/ns/migrated/sa/blocked

@@ -86,61 +86,46 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			Port:    dpAddress.GetPortValue(),
 		}
 
-		inboundRules, ok := mtp.FromRules.InboundRules[key]
-		if (!ok || len(inboundRules) == 0) && proxy.WorkloadIdentity == nil {
-			err := p.configureLegacyRules(mtp, key, listener, res, proxy)
-			if err != nil {
+		configurer := p.inboundConfigurer(mtp, key, res.Name, proxy)
+		if configurer == nil {
+			continue
+		}
+		for _, filterChain := range listener.FilterChains {
+			if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
+				// we only want to configure RBAC on listeners protected by Kuma's TLS
+				continue
+			}
+			if err := configurer.Configure(filterChain); err != nil {
 				return err
 			}
-		} else {
-			configurer := &v3.RBACConfigurer{
-				StatsName:    res.Name,
-				InboundRules: inboundRules,
-			}
-			for _, filterChain := range listener.FilterChains {
-				if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
-					// we only want to configure RBAC on listeners protected by Kuma's TLS
-					continue
-				}
-				if err := configurer.Configure(filterChain); err != nil {
-					return err
-				}
-			}
-			if hasSNIMatch(inboundRules) {
-				if err := ensureTLSInspector(listener); err != nil {
-					return err
-				}
+		}
+		if hasSNIMatch(mtp.FromRules.InboundRules[key]) {
+			if err := ensureTLSInspector(listener); err != nil {
+				return err
 			}
 		}
 	}
 	return nil
 }
 
-func (p plugin) configureLegacyRules(mtp core_xds.TypedMatchingPolicies, key core_rules.InboundListener, listener *envoy_listener.Listener, resource *core_xds.Resource, proxy *core_xds.Proxy) error {
-	rules, ok := mtp.FromRules.Rules[key]
-	if !ok {
-		if len(proxy.Policies.TrafficPermissions) == 0 {
-			rules = p.denyRules()
-		} else {
-			return nil
-		}
+func (p plugin) inboundConfigurer(mtp core_xds.TypedMatchingPolicies, key core_rules.InboundListener, statsName string, proxy *core_xds.Proxy) envoy_listeners_v3.FilterChainConfigurer {
+	mesh := proxy.Dataplane.GetMeta().GetMesh()
+	inboundRules := mtp.FromRules.InboundRules[key]
+	legacyRules, hasLegacyRules := mtp.FromRules.Rules[key]
+	switch {
+	case len(inboundRules) > 0:
+		// 'from' and 'rules' are merged so users can migrate policies incrementally
+		return &v3.RBACConfigurer{StatsName: statsName, InboundRules: inboundRules, LegacyRules: legacyRules, Mesh: mesh}
+	case hasLegacyRules:
+		return &v3.LegacyRBACConfigurer{StatsName: statsName, Rules: legacyRules, Mesh: mesh}
+	case proxy.WorkloadIdentity != nil:
+		// old TrafficPermissions don't apply to MeshIdentity, deny explicitly
+		return &v3.RBACConfigurer{StatsName: statsName}
+	case len(proxy.Policies.TrafficPermissions) != 0:
+		return nil
+	default:
+		return &v3.LegacyRBACConfigurer{StatsName: statsName, Rules: p.denyRules(), Mesh: mesh}
 	}
-
-	configurer := &v3.LegacyRBACConfigurer{
-		StatsName: resource.Name,
-		Rules:     rules,
-		Mesh:      proxy.Dataplane.GetMeta().GetMesh(),
-	}
-	for _, filterChain := range listener.FilterChains {
-		if filterChain.TransportSocket.GetName() != wellknown.TransportSocketTLS {
-			// we only want to configure RBAC on listeners protected by Kuma's TLS
-			continue
-		}
-		if err := configurer.Configure(filterChain); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (p plugin) configureZoneEgressListeners(rs *core_xds.ResourceSet, mtp core_xds.TypedMatchingPolicies) error {

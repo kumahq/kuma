@@ -2,6 +2,7 @@ package v1alpha1_test
 
 import (
 	"path"
+	"slices"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -141,55 +142,174 @@ var _ = Describe("RBAC", func() {
 			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "apply.golden.yaml")))
 		})
 
-		It("should ignore legacy 'from' MTP and default-deny under WorkloadIdentity", func() {
-			// given
-			rs := core_xds.NewResourceSet()
-			ctx := xds_builders.Context().
-				WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
-				Build()
+		type mergeTestCase struct {
+			workloadIdentity     bool
+			meshWithoutMTLS      bool
+			oldTrafficPermission bool
+			legacyRules          core_rules.Rules
+			inboundRules         []*inbound.Rule
+			golden               string
+		}
 
-			listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
-				WithOverwriteName("test_listener").
-				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
-					Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
-				Build()
-			Expect(err).ToNot(HaveOccurred())
-			rs.Add(&core_xds.Resource{
-				Name:     listener.GetName(),
-				Origin:   metadata.OriginInbound,
-				Resource: listener,
-			})
+		mtpMeta := func(name string) *test_model.ResourceMeta {
+			return &test_model.ResourceMeta{Mesh: "mesh-1", Name: name}
+		}
+		legacyRule := func(action policies_api.Action, origin string, tags ...subsetutils.Tag) core_rules.Rules {
+			return core_rules.Rules{{
+				Subset: tags,
+				Conf:   policies_api.Conf{Action: pointer.To(action)},
+				Origin: []core_model.ResourceMeta{mtpMeta(origin)},
+			}}
+		}
+		spiffePrefix := func(value string) common_api.Match {
+			return common_api.Match{SpiffeID: &common_api.SpiffeIDMatch{Type: common_api.PrefixMatchType, Value: value}}
+		}
 
-			proxy := xds_builders.Proxy().
-				WithDataplane(builders.Dataplane().WithName("dp1").WithMesh("mesh-1").WithServices("backend")).
-				WithWorkloadIdentity(&core_xds.WorkloadIdentity{}).
-				WithPolicies(
-					xds_builders.MatchedPolicies().
-						WithFromPolicy(policies_api.MeshTrafficPermissionType, core_rules.FromRules{
-							Rules: map[core_rules.InboundListener]core_rules.Rules{
-								{Address: "192.168.0.1", Port: 8080}: {
-									{
-										Subset: []subsetutils.Tag{{Key: mesh_proto.ServiceTag, Value: "frontend"}},
-										Conf:   policies_api.Conf{Action: pointer.To[policies_api.Action]("Allow")},
-									},
-								},
-							},
-						}),
-				).
-				Build()
+		DescribeTable("should merge 'from' and 'rules' on the same inbound",
+			func(given mergeTestCase) {
+				// given
+				rs := core_xds.NewResourceSet()
+				ctx := xds_builders.Context().
+					WithMeshBuilder(samples.MeshMTLSBuilder().WithName("mesh-1")).
+					Build()
 
-			// when
-			p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
-			Expect(p.Apply(rs, *ctx, proxy)).To(Succeed())
+				listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, core_xds.SocketAddressProtocolTCP, true).
+					WithOverwriteName("test_listener").
+					Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
+						Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil, false, false)).
+						Configure(listeners.HttpConnectionManager("test_listener", false, nil, true)))).
+					Build()
+				Expect(err).ToNot(HaveOccurred())
+				rs.Add(&core_xds.Resource{
+					Name:     listener.GetName(),
+					Origin:   metadata.OriginInbound,
+					Resource: listener,
+				})
 
-			// then
-			resp, err := rs.List().ToDeltaDiscoveryResponse()
-			Expect(err).ToNot(HaveOccurred())
-			bytes, err := util_proto.ToYAML(resp)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "apply-workload-identity-ignores-from.golden.yaml")))
-		})
+				key := core_rules.InboundListener{Address: "192.168.0.1", Port: 8080}
+				fromRules := core_rules.FromRules{
+					Rules:        map[core_rules.InboundListener]core_rules.Rules{},
+					InboundRules: map[core_rules.InboundListener][]*inbound.Rule{key: given.inboundRules},
+				}
+				if given.legacyRules != nil {
+					fromRules.Rules[key] = given.legacyRules
+				}
+				proxyBuilder := xds_builders.Proxy().
+					WithDataplane(builders.Dataplane().WithName("dp1").WithMesh("mesh-1").WithServices("backend")).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithFromPolicy(policies_api.MeshTrafficPermissionType, fromRules).
+							With(func(policies *core_xds.MatchedPolicies) {
+								if given.oldTrafficPermission {
+									policies.TrafficPermissions = core_xds.TrafficPermissionMap{
+										{DataplaneIP: "192.168.0.1", DataplanePort: 8080}: mesh.NewTrafficPermissionResource(),
+									}
+								}
+							}),
+					)
+				if given.workloadIdentity {
+					proxyBuilder = proxyBuilder.WithWorkloadIdentity(&core_xds.WorkloadIdentity{})
+				}
+				if given.meshWithoutMTLS {
+					ctx = xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder().WithName("mesh-1")).Build()
+				}
+
+				// when
+				p := meshtrafficpermission.NewPlugin().(plugins.PolicyPlugin)
+				Expect(p.Apply(rs, *ctx, proxyBuilder.Build())).To(Succeed())
+
+				// then
+				resp, err := rs.List().ToDeltaDiscoveryResponse()
+				Expect(err).ToNot(HaveOccurred())
+				bytes, err := util_proto.ToYAML(resp)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", given.golden)))
+			},
+			Entry("'from' only under WorkloadIdentity keeps the legacy RBAC", mergeTestCase{
+				workloadIdentity: true,
+				legacyRules:      legacyRule(policies_api.Allow, "mtp-from", subsetutils.Tag{Key: mesh_proto.ServiceTag, Value: "frontend"}),
+				golden:           "apply-workload-identity-from.golden.yaml",
+			}),
+			Entry("old TrafficPermission doesn't disable default-deny without Mesh mTLS", mergeTestCase{
+				workloadIdentity:     true,
+				meshWithoutMTLS:      true,
+				oldTrafficPermission: true,
+				golden:               "apply-workload-identity-old-tp.golden.yaml",
+			}),
+			Entry("'from' and 'rules' are a union where explicit deny wins", mergeTestCase{
+				legacyRules: slices.Concat(
+					legacyRule(policies_api.Deny, "mtp-from-deny", subsetutils.Tag{Key: mesh_proto.ServiceTag, Value: "legacy-denied"}),
+					legacyRule(policies_api.Allow, "mtp-from-allow", subsetutils.Tag{Key: mesh_proto.ServiceTag, Value: "legacy-denied", Not: true}),
+				),
+				inboundRules: []*inbound.Rule{{
+					Conf: policies_api.RuleConf{
+						Deny:  &[]common_api.Match{spiffePrefix("spiffe://trust-domain.mesh/ns/denied/")},
+						Allow: &[]common_api.Match{spiffePrefix("spiffe://trust-domain.mesh/")},
+					},
+					Origin: common.Origin{Resource: mtpMeta("mtp-rules")},
+				}},
+				golden: "apply-merge-from-and-rules.golden.yaml",
+			}),
+			Entry("catch-all 'from' deny doesn't shadow 'rules' allow", mergeTestCase{
+				legacyRules: slices.Concat(
+					legacyRule(policies_api.Allow, "mtp-from-allow", subsetutils.Tag{Key: mesh_proto.ServiceTag, Value: "frontend"}),
+					legacyRule(policies_api.Deny, "mtp-from-deny", subsetutils.Tag{Key: mesh_proto.ServiceTag, Value: "frontend", Not: true}),
+				),
+				inboundRules: []*inbound.Rule{{
+					Conf:   policies_api.RuleConf{Allow: &[]common_api.Match{spiffePrefix("spiffe://trust-domain.mesh/")}},
+					Origin: common.Origin{Resource: mtpMeta("mtp-rules")},
+				}},
+				golden: "apply-merge-catch-all-from-deny.golden.yaml",
+			}),
+			// A mesh-wide 'kind: Mesh' deny plus a multi-tag MeshSubset allow: the rule
+			// partition shatters the catch-all deny into '{a, !b}' fragments that each
+			// carry a positive tag, so they survive the catch-all check and are emitted
+			// as explicit denies ahead of the 'rules' allow. A legacy peer matching one
+			// tag but not the other is denied even though 'rules' allows it.
+			Entry("multi-tag 'from' allow under a mesh-wide deny shadows 'rules'", mergeTestCase{
+				legacyRules: slices.Concat(
+					legacyRule(policies_api.Deny, "mtp-from"),
+					legacyRule(policies_api.Deny, "mtp-from",
+						subsetutils.Tag{Key: "app.kubernetes.io/component", Value: "app", Not: true},
+						subsetutils.Tag{Key: "app.kubernetes.io/name", Value: "kong"},
+					),
+					legacyRule(policies_api.Deny, "mtp-from",
+						subsetutils.Tag{Key: "app.kubernetes.io/component", Value: "app"},
+						subsetutils.Tag{Key: "app.kubernetes.io/name", Value: "kong", Not: true},
+					),
+					legacyRule(policies_api.Allow, "mtp-from",
+						subsetutils.Tag{Key: "app.kubernetes.io/component", Value: "app"},
+						subsetutils.Tag{Key: "app.kubernetes.io/name", Value: "kong"},
+					),
+				),
+				inboundRules: []*inbound.Rule{{
+					// allows every mesh CA peer, yet the fragments above deny a subset of them
+					Conf:   policies_api.RuleConf{Allow: &[]common_api.Match{spiffePrefix("spiffe://mesh-1/")}},
+					Origin: common.Origin{Resource: mtpMeta("mtp-rules")},
+				}},
+				golden: "apply-merge-multi-tag-from-under-mesh-deny.golden.yaml",
+			}),
+			Entry("'kind: Mesh' 'from' allow with 'rules' deny under WorkloadIdentity", mergeTestCase{
+				workloadIdentity: true,
+				legacyRules:      legacyRule(policies_api.Allow, "mtp-from-mesh"),
+				inboundRules: []*inbound.Rule{{
+					Conf:   policies_api.RuleConf{Deny: &[]common_api.Match{spiffePrefix("spiffe://trust-domain.mesh/ns/denied/")}},
+					Origin: common.Origin{Resource: mtpMeta("mtp-rules")},
+				}},
+				golden: "apply-merge-mesh-from-allow-rules-deny.golden.yaml",
+			}),
+			Entry("multi-tag 'from' AllowWithShadowDeny goes into the shadow matcher", mergeTestCase{
+				legacyRules: legacyRule(policies_api.AllowWithShadowDeny, "mtp-from-shadow",
+					subsetutils.Tag{Key: mesh_proto.ServiceTag, Value: "frontend"},
+					subsetutils.Tag{Key: "version", Value: "v1", Not: true},
+				),
+				inboundRules: []*inbound.Rule{{
+					Conf:   policies_api.RuleConf{Allow: &[]common_api.Match{spiffePrefix("spiffe://trust-domain.mesh/")}},
+					Origin: common.Origin{Resource: mtpMeta("mtp-rules")},
+				}},
+				golden: "apply-merge-from-shadow-deny.golden.yaml",
+			}),
+		)
 
 		It("should enrich matching listener with RBAC filter using matching api", func() {
 			// given
