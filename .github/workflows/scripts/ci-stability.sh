@@ -97,7 +97,7 @@ render_comment() {
     jq -R 'split(",") | map(select(length > 0))') || return 1
   flaky=$(jq -r --argjson total "$run_count" --argjson exclude "$exclude_json" '
     [.runs[] | select(.result == "fail") | .failed_jobs[]?]
-    | map(select(. as $j | $exclude | index($j) | not))
+    | map(select(sub(" \\(cancelled\\)$"; "") as $bare | $exclude | index($bare) | not))
     | sort
     | group_by(.)
     | map({job: .[0], count: length})
@@ -291,7 +291,7 @@ process_pr() {
     else
       failed_json='[]'
     fi
-    run_number=$(( $(jq '.runs | length' <<<"$state") + 1 ))
+    run_number=$(( $(jq '[.runs[].number // 0] | max // 0' <<<"$state") + 1 ))
     observation=$(jq -n \
       --argjson n "$run_number" \
       --arg observed_at "$now_utc" \
@@ -379,7 +379,7 @@ Removing the \`ci/verify-stability-merge-master\` label. Rebase or merge \`maste
 
   # --- push empty trigger commit ---
   local new_run_number trigger_msg
-  new_run_number=$(( $(jq '.runs | length' <<<"$state") + 1 ))
+  new_run_number=$(( $(jq '[.runs[].number // 0] | max // 0' <<<"$state") + 1 ))
   trigger_msg="ci(stability): trigger run #${new_run_number} for PR #${pr}
 
 Workflow run: ${RUN_URL}"
