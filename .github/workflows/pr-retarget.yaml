@@ -1,0 +1,37 @@
+name: "Retargeted pull request"
+on:
+  pull_request:
+    types: [edited]
+permissions: {}
+jobs:
+  hold:
+    name: "Hold the required check after a base change"
+    if: ${{ github.event.changes.base }}
+    timeout-minutes: 5
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').sm
+      || 'ubuntu-24.04' }}    permissions:
+      contents: read
+      pull-requests: read
+      checks: write
+    steps:
+      - name: "Check out the CI gate action"
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions/cigate
+          sparse-checkout-cone-mode: false
+
+      - uses: ./.github/actions/cigate
+        with:
+          command: meta
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          pull-request: ${{ github.event.pull_request.number }}
+          head-sha: ${{ github.event.pull_request.head.sha }}
