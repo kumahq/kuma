@@ -475,7 +475,7 @@ None. Existing generated `MeshHTTPRoute`s are backfilled with the timestamp labe
 The built-in gateway implementation was removed over the previous releases, and the Dataplane validator has been rejecting `networking.gateway.type: BUILTIN` since then. The remaining API surface is now gone too:
 
 - `Dataplane.networking.gateway` is gone entirely, `type` and `tags` with it — see [`kuma.io/gateway` is removed](#kumaiogateway-is-removed). A `Dataplane` carrying `type: BUILTIN` no longer produces the `BUILTIN gateways are no longer supported, use DELEGATED instead` validation error; the whole message is ignored and what remains is an ordinary `Dataplane`.
-- `MeshInsight.dataplanesByType.gatewayBuiltin` and the `gateway_builtin` `ServiceInsight` service type are removed, as are `dataplanesByType.gateway` and `dataplanesByType.gatewayDelegated` — see [`kuma.io/gateway` is removed](#kumaiogateway-is-removed).
+- `MeshInsight.dataplanesByType.gatewayBuiltin` and the `gateway_builtin` `ServiceInsight` service type are removed, and so is the rest of `dataplanesByType` — see [The dataplane and zone proxy breakdowns are removed from the insights](#the-dataplane-and-zone-proxy-breakdowns-are-removed-from-the-insights).
 - `GET /meshes/{mesh}/dataplanes+insights?gateway=builtin` is no longer a valid filter. Neither is any other `gateway=` value.
 - `GET /meshes/{mesh}/service-insights?type=gateway_builtin` is no longer a valid filter and returns `400`. Use `type=gateway_delegated`.
 - The `gatewayBuiltin` object disappears from the `/global-insight` response, in both `dataplanes` and `services`.
@@ -487,6 +487,19 @@ All three protobuf ordinals are reserved, so they can never be reused for someth
 Stop consuming the `gatewayBuiltin` fields and the `gateway=builtin` / `type=gateway_builtin` filters if you query the API directly.
 
 A `Dataplane` still carrying `type: BUILTIN` keeps loading after the upgrade, because the whole `networking.gateway` message is ignored rather than parsed, so it no longer has to be deleted first. It becomes an ordinary `Dataplane` with no inbounds. Find them with `kumactl get dataplanes -o yaml` per mesh, or `kubectl get dataplanes -A -o yaml`, grep for `BUILTIN`, and delete the ones you no longer serve traffic with. Drop `type: BUILTIN` from any manifest you keep under source control.
+
+### The dataplane and zone proxy breakdowns are removed from the insights
+
+`MeshInsight.dataplanesByType` is removed. `MeshInsight.dataplanes` already carries the same totals across every proxy in the mesh, and once gateways stopped being marked (see [`kuma.io/gateway` is removed](#kumaiogateway-is-removed)) `standard` was the only split left, repeating those totals.
+
+The `/global-insight` response changes with it:
+
+- `dataplanes.standard` is replaced by a flat `dataplanes` object with `total`, `online`, `offline` and `partiallyDegraded`.
+- `zones.zoneIngresses` and `zones.zoneEgresses` are removed. They were fed by `ZoneIngressInsight` and `ZoneEgressInsight`, which went away when zone proxies became `Dataplane`s with listeners, and had been reporting zero since.
+
+**Action required**
+
+If you read `/global-insight`, take the dataplane totals from `dataplanes` instead of `dataplanes.standard`. Zone proxy counts are no longer served by the insight API; list the `Dataplane`s instead.
 
 ### Control plane RBAC is narrowed on Kubernetes
 
@@ -635,7 +648,7 @@ The standalone `ZoneIngress`, `ZoneEgress`, `ZoneIngressInsight` and `ZoneEgress
 
 The control plane ClusterRole no longer grants access to these four CRDs, and the validating webhook no longer intercepts them.
 
-`globalInsight.zones.zoneIngresses` and `globalInsight.zones.zoneEgresses` are still present in the API response but report `0` until zone proxy counts are surfaced from `MeshInsight`.
+`globalInsight.zones.zoneIngresses` and `globalInsight.zones.zoneEgresses` are removed from the API response, see [The dataplane and zone proxy breakdowns are removed from the insights](#the-dataplane-and-zone-proxy-breakdowns-are-removed-from-the-insights).
 
 **Action required**
 
@@ -1373,7 +1386,7 @@ On Universal, drop `kuma.io/gateway: "true"` from the labels of gateway `Datapla
 - A `Dataplane` may declare both inbounds and zone proxy listeners without the validator rejecting it. The messages `inbound cannot be defined for delegated gateways` and `listeners cannot be defined for delegated gateways` are gone.
 - `DataplaneOverview` status for a proxy with no inbounds and no listeners is `Online` while it is connected, which is what gateways reported before. Proxies that do declare inbounds are unaffected.
 - `MeshMetric` no longer emits `gateway` for `kuma.proxy_role`; a former gateway reports `sidecar`. Update dashboards and alerts that select on it.
-- `MeshInsight.dataplanesByType.gateway` and `.gatewayDelegated` are removed, field numbers 2 and 4 reserved. Every proxy is counted under `standard`.
+- `MeshInsight.dataplanesByType.gateway` and `.gatewayDelegated` are removed, and so is the rest of `dataplanesByType` — see [The dataplane and zone proxy breakdowns are removed from the insights](#the-dataplane-and-zone-proxy-breakdowns-are-removed-from-the-insights).
 - `dataplanes.gatewayDelegated` and `services.gatewayDelegated` are removed from the `/global-insight` response.
 - `GET /meshes/{mesh}/dataplanes/_overview?gateway=` is no longer a valid filter and is ignored, and `kumactl inspect dataplanes --gateway` is removed.
 - A `Service` or `Pod` that was skipped for carrying the annotation now gets a `MeshService` like any other workload, unless the `Service` carries `kuma.io/ignore: "true"`.

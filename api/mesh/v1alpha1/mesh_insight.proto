@@ -54,17 +54,8 @@ message MeshInsight {
   reserved 6; // formerly services
   reserved "services";
 
-  // DataplanesByType defines statistics splitted by dataplane types
-  message DataplanesByType {
-    DataplaneStat standard = 1;
-    DataplaneStat gateway = 2;
-
-    reserved 3; // formerly gatewayBuiltin, removed with the built-in gateway
-    reserved "gatewayBuiltin";
-
-    DataplaneStat gatewayDelegated = 4;
-  }
-  DataplanesByType dataplanesByType = 7;
+  reserved 7; // formerly dataplanesByType, removed with the gateway proxy split
+  reserved "dataplanesByType";
 
   message ResourceStat {
     uint32 total = 1;

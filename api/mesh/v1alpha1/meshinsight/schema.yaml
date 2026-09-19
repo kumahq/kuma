@@ -14,42 +14,6 @@ components:
             total:
               type: integer
           type: object
-        dataplanesByType:
-          properties:
-            gateway:
-              properties:
-                offline:
-                  type: integer
-                online:
-                  type: integer
-                partiallyDegraded:
-                  type: integer
-                total:
-                  type: integer
-              type: object
-            gatewayDelegated:
-              properties:
-                offline:
-                  type: integer
-                online:
-                  type: integer
-                partiallyDegraded:
-                  type: integer
-                total:
-                  type: integer
-              type: object
-            standard:
-              properties:
-                offline:
-                  type: integer
-                online:
-                  type: integer
-                partiallyDegraded:
-                  type: integer
-                total:
-                  type: integer
-              type: object
-          type: object
         dpVersions:
           properties:
             envoy:
