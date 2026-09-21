@@ -18,5 +18,12 @@
   "kuma.io/zone": "test-zone"
  },
  "listeners": [],
- "outbounds": []
+ "outbounds": [
+  {
+   "kri": "kri_msvc_default_test-zone__test-server_main-port",
+   "port": 80,
+   "protocol": "http",
+   "proxyResourceName": "kri_msvc_default_test-zone__test-server_main-port"
+  }
+ ]
 }
