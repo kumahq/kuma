@@ -217,14 +217,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.DataplaneRuntime.IPv6Enabled = false
 			}
 
-			// Advertised for a 2.14 control plane only, see features.go.
-			rootCtx.Features = []string{
-				xds_types.FeatureReusePort,
-				xds_types.FeatureStrictInboundPorts,
-			}
-			if cfg.DataplaneRuntime.TransparentProxy != nil {
-				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureTransparentProxyInDataplaneMetadata)
-			}
+			rootCtx.Features = nil
 			if cfg.DataplaneRuntime.BindOutbounds {
 				rootCtx.Features = append(rootCtx.Features, xds_types.FeatureBindOutbounds)
 			}
