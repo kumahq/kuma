@@ -106,11 +106,11 @@ var _ = Describe("Validate", func() {
 		// origin, k8s
 		Entry("origin: zone on a k8s global CP", testCase{
 			r: timeout(), ns: systemNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "zone"}, cp: k8sGlobal,
-			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "'kuma.io/origin' label should have 'global' value, got 'zone'")},
+			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "the origin label must be set to 'global'")},
 		}),
 		Entry("origin: global in the system namespace of a k8s federated zone", testCase{
 			r: timeout(), ns: systemNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: k8sFederated,
-			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "'kuma.io/origin' label should have 'zone' value, got 'global'")},
+			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "the origin label must be set to 'zone'")},
 		}),
 		Entry("origin: global in an app namespace of a k8s federated zone", testCase{
 			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: k8sFederated,
@@ -147,7 +147,7 @@ var _ = Describe("Validate", func() {
 		// zone, k8s
 		Entry("zone: another zone with a zone origin on a k8s federated zone", testCase{
 			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "zone", mesh_proto.ZoneTag: "zone-2"}, cp: k8sFederated,
-			expected: []validators.Violation{violation(mesh_proto.ZoneTag, "'kuma.io/zone' label should have 'zone-1' value, got 'zone-2'")},
+			expected: []validators.Violation{violation(mesh_proto.ZoneTag, "kuma.io/zone label should have zone-1 value")},
 		}),
 		Entry("zone: another zone without an origin on a k8s federated zone", testCase{
 			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.ZoneTag: "zone-2"}, cp: k8sFederated,
@@ -192,7 +192,7 @@ var _ = Describe("Validate", func() {
 		}),
 		Entry("service-account: on a Dataplane on k8s", testCase{
 			r: dataplane(), ns: appNamespace, labels: map[string]string{metadata.KumaServiceAccount: "victim-sa"}, cp: k8sGlobal,
-			expected: []validators.Violation{violation(metadata.KumaServiceAccount, `Label "k8s.kuma.io/service-account" is managed by Kuma and cannot be set manually.`)},
+			expected: []validators.Violation{violation(metadata.KumaServiceAccount, "k8s.kuma.io/service-account label is managed by Kuma and cannot be set manually")},
 		}),
 		Entry("service-account: on a policy on k8s", testCase{
 			r: timeout(), ns: appNamespace, labels: map[string]string{metadata.KumaServiceAccount: "victim-sa"}, cp: k8sFederated,
