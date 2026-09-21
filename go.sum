@@ -614,10 +614,10 @@ gomodules.xyz/jsonpatch/v2 v2.5.0 h1:JELs8RLM12qJGXU4u/TO3V25KW8GreMKl9pdkk14RM0
 gomodules.xyz/jsonpatch/v2 v2.5.0/go.mod h1:AH3dM2RI6uoBZxn3LVrfvJ3E0/9dG4cSrbuBJT4moAY=
 gonum.org/v1/gonum v0.17.0 h1:VbpOemQlsSMrYmn7T2OUvQ4dqxQXU+ouZFQsZOx50z4=
 gonum.org/v1/gonum v0.17.0/go.mod h1:El3tOrEuMpv2UdMrbNlKEh9vd86bmQ6vqIcDwxEOc1E=
-google.golang.org/genproto/googleapis/api v0.0.0-20260911204522-f61a6ca850bd h1:jgCQeWccunvocKNK2RjhQHNiSjSeMMuBpQ/5pbP+2lA=
-google.golang.org/genproto/googleapis/api v0.0.0-20260911204522-f61a6ca850bd/go.mod h1:r4KD2hOq82JBWpTWkJ9NZLf6EwmRvAPIFmk7hPNtd+0=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20260911204522-f61a6ca850bd h1:29LZPNIJg+GEmJwZXruJJRwqy/wnWAYZXDtROToV/aQ=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20260911204522-f61a6ca850bd/go.mod h1:DjtHYE8FKJLivXcBEjGwndXfIC23G0VpXiXKqG179uA=
+google.golang.org/genproto/googleapis/api v0.0.0-20260918162117-cecb64721679 h1:FEp7JNE32DTAwbnI/ixagnmj7Xm1eTONofGEUXFjZ4w=
+google.golang.org/genproto/googleapis/api v0.0.0-20260918162117-cecb64721679/go.mod h1:52bV8FLAQ9Qmcqaq9ECLmuEHZthk+6OPV45aKBBrsNw=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20260918162117-cecb64721679 h1:KmqdJU4vrNcxy/6qdg3JduZtalEXrJLspVltnR1cE+8=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20260918162117-cecb64721679/go.mod h1:OaIUM3+LpYcK2GXM4FTmhWoIq371Owdr+Cc7/BsYHHc=
 google.golang.org/grpc v1.84.0 h1:soMyaPJ8pAak5PIQ0DGBUir0XRo2fRoMqhNWMLlLxO0=
 google.golang.org/grpc v1.84.0/go.mod h1:ljCht0DrxQrXBDRTZp52Qxh3Ffk8CdYm2sj4O2QN2C0=
 google.golang.org/protobuf v1.36.12 h1:pJOKDDOyeXErUroCihFAd5LQuwXBSpVnKGrj5o/fwxc=
