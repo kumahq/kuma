@@ -47,6 +47,14 @@ func TestKDSClientAuthConfigLoadToken(t *testing.T) {
 	if err := os.WriteFile(emptyPath, []byte("\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	dottedDir := filepath.Join(t.TempDir(), "zone..edge")
+	if err := os.Mkdir(dottedDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	dottedPath := filepath.Join(dottedDir, "token")
+	if err := os.WriteFile(dottedPath, []byte("dotted-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	cases := []struct {
 		name      string
@@ -59,6 +67,8 @@ func TestKDSClientAuthConfigLoadToken(t *testing.T) {
 		{name: "path", cfg: KDSClientAuthConfig{TokenPath: tokenPath}, token: "file-token"},
 		{name: "path over inline", cfg: KDSClientAuthConfig{TokenInline: "inline-token", TokenPath: tokenPath}, token: "file-token"},
 		{name: "empty file", cfg: KDSClientAuthConfig{TokenPath: emptyPath}, errSubstr: "is empty"},
+		{name: "blank inline", cfg: KDSClientAuthConfig{TokenInline: "   "}, errSubstr: ".TokenInline is empty"},
+		{name: "dots in a file name", cfg: KDSClientAuthConfig{TokenPath: dottedPath}, token: "dotted-token"},
 		{name: "missing file", cfg: KDSClientAuthConfig{TokenPath: filepath.Join(t.TempDir(), "missing")}, errSubstr: "could not read zone token"},
 		{name: "escaping path", cfg: KDSClientAuthConfig{TokenPath: filepath.Join("..", "..", "etc", "token")}, errSubstr: "traversal sequence"},
 		{name: "traversal resolving back in", cfg: KDSClientAuthConfig{TokenPath: traversingPath}, token: "file-token"},

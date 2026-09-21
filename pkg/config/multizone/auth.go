@@ -83,15 +83,14 @@ func (c KDSClientAuthConfig) LoadToken() (string, error) {
 	if c.TokenPath != "" {
 		// the checks are inline rather than in a helper, SAST tools recognize them better
 		cleanPath := filepath.Clean(c.TokenPath)
-		if strings.Contains(cleanPath, "..") {
-			return "", errors.Errorf("invalid zone token path: the path contains a traversal sequence: %s", c.TokenPath)
+		for _, segment := range strings.Split(cleanPath, string(filepath.Separator)) {
+			if segment == ".." {
+				return "", errors.Errorf("invalid zone token path: the path contains a traversal sequence: %s", c.TokenPath)
+			}
 		}
 		absPath, err := filepath.Abs(cleanPath)
 		if err != nil {
 			return "", errors.Wrapf(err, "invalid zone token path: could not resolve an absolute path for: %s", c.TokenPath)
-		}
-		if strings.Contains(absPath, "..") {
-			return "", errors.Errorf("invalid zone token path: the resolved path contains a traversal sequence: %s", absPath)
 		}
 		bytes, err := os.ReadFile(absPath)
 		if err != nil {
@@ -103,8 +102,13 @@ func (c KDSClientAuthConfig) LoadToken() (string, error) {
 	token = strings.TrimFunc(token, func(r rune) bool {
 		return !unicode.IsGraphic(r) || unicode.IsSpace(r)
 	})
-	if c.TokenPath != "" && token == "" {
-		return "", errors.Errorf("zone token in file %s is empty", c.TokenPath)
+	if token == "" {
+		if c.TokenPath != "" {
+			return "", errors.Errorf("zone token in file %s is empty", c.TokenPath)
+		}
+		if c.TokenInline != "" {
+			return "", errors.New("zone token in .TokenInline is empty")
+		}
 	}
 	return token, nil
 }
