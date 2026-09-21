@@ -169,10 +169,16 @@ message Dataplane {
 
     // TransparentProxying describes configuration for transparent proxying.
     message TransparentProxying {
-      // `redirect_port_inbound` and `redirect_port_outbound` have been removed.
-      // kuma-dp sends the redirect ports to the control plane in its metadata.
-      reserved 1, 2;
-      reserved "redirect_port_inbound", "redirect_port_outbound";
+      // Port on which all inbound traffic is being transparently redirected.
+      //
+      // Deprecated: read only for a proxy that sends no transparent proxy
+      // metadata, which means a sidecar injected before 3.0. Gone in 3.1.
+      uint32 redirect_port_inbound = 1 [deprecated = true];
+
+      // Port on which all outbound traffic is being transparently redirected.
+      //
+      // Deprecated: see `redirect_port_inbound`.
+      uint32 redirect_port_outbound = 2 [deprecated = true];
 
       // List of services that will be accessed directly via IP:PORT
       // Use `*` to indicate direct access to every service in the Mesh.

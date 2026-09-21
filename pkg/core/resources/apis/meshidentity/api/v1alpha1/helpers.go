@@ -190,6 +190,9 @@ func renderTemplate(tmplStr string, meta model.ResourceMeta, data any) (string, 
 }
 
 func (s *MeshIdentityStatus) IsInitialized() bool {
+	if s == nil {
+		return false
+	}
 	for _, condition := range s.Conditions {
 		if condition.Type == ReadyConditionType && condition.Status == kube_meta.ConditionTrue {
 			return true
@@ -199,6 +202,9 @@ func (s *MeshIdentityStatus) IsInitialized() bool {
 }
 
 func (s *MeshIdentityStatus) IsPartiallyReady() bool {
+	if s == nil {
+		return false
+	}
 	for _, condition := range s.Conditions {
 		if condition.Type == ReadyConditionType && condition.Status == kube_meta.ConditionFalse && condition.Reason == "PartiallyReady" {
 			return true

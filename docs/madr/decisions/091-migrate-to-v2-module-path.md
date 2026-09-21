@@ -1,3 +1,12 @@
+---
+title: Migrate Go Module Path to `/v2` for Semantic Import Versioning
+status: accepted
+date: 2025-11-06
+tags: [go-modules, versioning, release, breaking-change]
+summary: Adds the `/v2` suffix to the Go module path across all active branches so consumers get semantic versions instead of pseudo-versions; ships in patch releases alongside the `v`-prefixed tag change.
+related: [104-rethink-releasing-pipeline]
+---
+
 # Migrate Go Module Path to `/v2` for Semantic Import Versioning
 
 * Status: accepted
