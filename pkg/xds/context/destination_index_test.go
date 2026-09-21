@@ -58,6 +58,66 @@ var _ = Describe("DestinationIndex", func() {
 			Expect(outbounds).To(HaveKey(expectedKRI))
 		})
 
+		It("should resolve every MeshExternalService matching the labels", func() {
+			var destinations []core_model.Resource
+			for _, name := range []string{"api-a", "api-b", "api-c"} {
+				destinations = append(destinations, builders.MeshExternalService().
+					WithName(name).
+					WithLabels(map[string]string{
+						mesh_proto.KubeNamespaceTag: "kuma-system",
+						"app":                       "api",
+					}).
+					Build())
+			}
+
+			dp := builders.Dataplane().
+				WithName("dp-1").
+				WithLabels(map[string]string{mesh_proto.KubeNamespaceTag: "beta"}).
+				WithAddress("127.0.0.1").
+				WithTransparentProxying(15001, 15006, "").
+				Build()
+			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
+				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{{
+					Kind:   "MeshExternalService",
+					Labels: map[string]string{"app": "api"},
+				}},
+			}
+
+			outbounds, matched := xds_context.NewDestinationIndex(destinations).GetReachableBackends(dp)
+
+			Expect(matched).To(BeTrue())
+			Expect(outbounds).To(HaveLen(3))
+			for _, mes := range destinations {
+				Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(mes), "9000")))
+			}
+		})
+
+		It("should resolve MeshExternalService by name from another namespace", func() {
+			mes := builders.MeshExternalService().
+				WithName("api-cor-beta").
+				WithLabels(map[string]string{mesh_proto.KubeNamespaceTag: "kuma-system"}).
+				Build()
+
+			dp := builders.Dataplane().
+				WithName("dp-1").
+				WithLabels(map[string]string{mesh_proto.KubeNamespaceTag: "beta"}).
+				WithAddress("127.0.0.1").
+				WithTransparentProxying(15001, 15006, "").
+				Build()
+			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
+				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{{
+					Kind: "MeshExternalService",
+					Name: "api-cor-beta",
+				}},
+			}
+
+			outbounds, matched := xds_context.NewDestinationIndex([]core_model.Resource{mes}).GetReachableBackends(dp)
+
+			Expect(matched).To(BeTrue())
+			Expect(outbounds).To(HaveLen(1))
+			Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(mes), "9000")))
+		})
+
 		It("should fallback to dataplane namespace when namespace not specified", func() {
 			ms := builders.MeshService().
 				WithName("backend-svc-hash456").

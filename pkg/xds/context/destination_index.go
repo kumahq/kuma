@@ -51,6 +51,9 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 
 	processRef := func(kind string, name string, namespace string, port *uint32, labels map[string]string) {
 		ids := di.resolveResourceIdentifiersForLabels(core_model.ResourceType(kind), labels)
+		if len(ids) == 0 && namespace == "" && isSystemNamespaced(kind) {
+			ids = di.resolveResourceIdentifiersForName(core_model.ResourceType(kind), dataplane.GetMeta().GetMesh(), name)
+		}
 		if len(ids) == 0 {
 			ids = []kri.Identifier{
 				resolve.TargetRefToKRI(
@@ -72,12 +75,12 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 
 			var dest core.Destination
 			if dest = di.getDestinationByKRI(id); dest == nil {
-				return
+				continue
 			}
 
 			if p, ok := dest.FindPortByName(id.SectionName); ok {
 				outbounds[kri.WithSectionName(id, p.GetName())] = p
-				return
+				continue
 			}
 
 			for _, p := range dest.GetPorts() {
@@ -152,6 +155,27 @@ func (di *DestinationIndex) resolveResourceIdentifiersForLabels(resType core_mod
 	reachable := di.getDestinationsForLabels(resType, labels)
 	for ri, count := range reachable {
 		if count == len(labels) {
+			result = append(result, ri)
+		}
+	}
+	return result
+}
+
+// MeshExternalService and MeshMultiZoneService live in the system namespace, so a
+// ref without a namespace must not default to the data plane proxy namespace
+func isSystemNamespaced(kind string) bool {
+	switch common_api.TargetRefKind(kind) {
+	case common_api.MeshExternalService, common_api.MeshMultiZoneService:
+		return true
+	default:
+		return false
+	}
+}
+
+func (di *DestinationIndex) resolveResourceIdentifiersForName(resType core_model.ResourceType, mesh string, name string) []kri.Identifier {
+	var result []kri.Identifier
+	for ri := range di.destinationByIdentifier {
+		if ri.ResourceType == resType && ri.Mesh == mesh && ri.Name == name {
 			result = append(result, ri)
 		}
 	}
