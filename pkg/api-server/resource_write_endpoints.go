@@ -186,7 +186,8 @@ func (r *resourceCrudHandler) deleteResource(request *restful.Request) (any, err
 		return nil, withTitle(err, "Could not delete a resource")
 	}
 
-	if verr := r.validateOriginForWrite(resource.GetMeta()); verr.HasViolations() {
+	stored := resource_labels.NewStoredResource(resource, resource_labels.GetNamespace(resource.GetMeta(), r.systemNamespace), resource.GetMeta().GetLabels(), r.cp)
+	if verr := resource_labels.ValidateDelete(stored, r.cp); verr.HasViolations() {
 		return nil, withTitle(verr.OrNil(), "Could not delete a resource")
 	}
 
