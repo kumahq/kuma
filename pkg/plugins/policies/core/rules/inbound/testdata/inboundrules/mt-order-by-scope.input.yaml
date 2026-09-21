@@ -34,3 +34,18 @@ spec:
         connectionTimeout: 11s
         http:
           requestTimeout: 12s
+---
+# a policy in the system namespace is zone-wide, so it sorts before the namespaced one
+type: MeshTimeout
+name: matched-for-rules-ddd
+mesh: mesh-1
+labels:
+  kuma.io/origin: zone
+  k8s.kuma.io/namespace: kuma-system
+  kuma.io/policy-role: system
+spec:
+  rules:
+    - default:
+        connectionTimeout: 311s
+        http:
+          requestTimeout: 309s

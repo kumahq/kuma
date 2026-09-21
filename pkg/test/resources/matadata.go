@@ -79,12 +79,22 @@ func ZoneK8s(name, mesh string, labels map[string]string) core_model.ResourceMet
 	}
 }
 
-// SystemPolicy makes the policy mesh-wide: a policy in the system namespace carries no
-// namespace label, like one on Universal.
 func SystemPolicy(fn BuildMeta) BuildMeta {
+	return WithNamespace(WithPolicyRole(fn, mesh_proto.SystemPolicyRole), "kuma-system")
+}
+
+func WithPolicyRole(fn BuildMeta, policyRole mesh_proto.PolicyRole) BuildMeta {
 	return func(name, mesh string, labels map[string]string) core_model.ResourceMeta {
 		meta := fn(name, mesh, labels)
-		delete(meta.GetLabels(), mesh_proto.KubeNamespaceTag)
+		meta.GetLabels()[mesh_proto.PolicyRoleLabel] = string(policyRole)
+		return meta
+	}
+}
+
+func WithNamespace(fn BuildMeta, namespace string) BuildMeta {
+	return func(name, mesh string, labels map[string]string) core_model.ResourceMeta {
+		meta := fn(name, mesh, labels)
+		meta.GetLabels()[mesh_proto.KubeNamespaceTag] = namespace
 		return meta
 	}
 }

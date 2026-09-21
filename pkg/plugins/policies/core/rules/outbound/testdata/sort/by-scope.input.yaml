@@ -27,3 +27,21 @@ spec:
         connectionTimeout: 11s
         http:
           requestTimeout: 12s
+---
+# a policy in the system namespace is mesh-wide too, so it sorts before the namespaced one
+type: MeshTimeout
+name: matched-for-rules-ccc
+mesh: mesh-1
+labels:
+  k8s.kuma.io/namespace: kuma-system
+  kuma.io/policy-role: system
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 211s
+        http:
+          requestTimeout: 212s

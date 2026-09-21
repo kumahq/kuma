@@ -84,15 +84,3 @@ func EnforcedReadLabels(r StoredResource, cp ControlPlane) map[string]string {
 	}
 	return enforced
 }
-
-// RemovedReadLabels lists the stored labels a read must drop: the ones the control
-// plane no longer writes on this resource, left behind by an older control plane.
-func RemovedReadLabels(r StoredResource, cp ControlPlane) []string {
-	var removed []string
-	for _, d := range registry {
-		if d.RemoveOnRead != nil && d.RemoveOnRead(r, cp) {
-			removed = append(removed, d.Key)
-		}
-	}
-	return removed
-}

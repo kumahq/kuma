@@ -16,6 +16,24 @@ rules:
       type: MeshTimeout
     RuleIndex: 0
 - conf:
+    connectionTimeout: 5m11s
+    http:
+      requestTimeout: 5m9s
+  match: null
+  origin:
+    Resource:
+      creationTime: "0001-01-01T00:00:00Z"
+      kri: kri_mt_mesh-1__kuma-system_matched-for-rules-ddd_
+      labels:
+        k8s.kuma.io/namespace: kuma-system
+        kuma.io/origin: zone
+        kuma.io/policy-role: system
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: matched-for-rules-ddd
+      type: MeshTimeout
+    RuleIndex: 0
+- conf:
     connectionTimeout: 3m31s
     http:
       requestTimeout: 3m29s

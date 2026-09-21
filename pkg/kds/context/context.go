@@ -100,6 +100,7 @@ func DefaultContext(
 			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
 			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
 			util.WithoutLabel(mesh_proto.DeletionGracePeriodStartedLabel),
+			util.If(util.IsKubernetes(cfg.Store.Type), util.PopulateNamespaceLabelFromNameExtension()),
 			util.WithoutLabelPrefixes(cfg.Multizone.Zone.KDS.Labels.SkipPrefixes...),
 		),
 		MapInsightResourcesZeroGeneration,

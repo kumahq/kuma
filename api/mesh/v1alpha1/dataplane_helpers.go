@@ -74,6 +74,10 @@ const (
 	// observed using the Inspect API.
 	EffectLabel = "kuma.io/effect"
 
+	// PolicyRoleLabel is set by the Kuma CP on Kubernetes to "system" on a policy in the Kuma system namespace.
+	// Such a policy applies mesh-wide even though it carries the k8s.kuma.io/namespace label. No other value exists.
+	PolicyRoleLabel = "kuma.io/policy-role"
+
 	// ManagedByLabel is used when a MeshService is auto-generated
 	ManagedByLabel = "kuma.io/managed-by"
 
@@ -127,6 +131,10 @@ func (o ResourceOrigin) IsValid() error {
 		return errors.Errorf("unknown resource origin %q", o)
 	}
 }
+
+type PolicyRole string
+
+const SystemPolicyRole PolicyRole = "system"
 
 type ProxyType string
 

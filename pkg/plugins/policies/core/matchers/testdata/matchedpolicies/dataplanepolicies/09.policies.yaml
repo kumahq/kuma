@@ -5,7 +5,7 @@ name: default-demo-app.kuma-system
 labels:
   kuma.io/display-name: default-demo-app
   k8s.kuma.io/namespace: kuma-system
-  k8s.kuma.io/system-namespace: "true"
+  kuma.io/policy-role: system
 spec:
   targetRef:
     kind: Mesh

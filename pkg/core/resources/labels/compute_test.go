@@ -271,7 +271,7 @@ var _ = Describe("Compute", func() {
 				"kuma.io/env":    "kubernetes",
 			},
 		}),
-		Entry("policy in the system namespace gets no namespace label", testCase{
+		Entry("policy in the system namespace gets the namespace label and the system role", testCase{
 			mode:      core.Zone,
 			isK8s:     true,
 			localZone: "zone-1",
@@ -285,11 +285,39 @@ var _ = Describe("Compute", func() {
 				}).
 				Build(),
 			expectedLabels: map[string]string{
-				"kuma.io/display-name": "idle-timeout",
-				"kuma.io/mesh":         "mesh-1",
-				"kuma.io/origin":       "zone",
-				"kuma.io/zone":         "zone-1",
-				"kuma.io/env":          "kubernetes",
+				"k8s.kuma.io/namespace": "kuma-system",
+				"kuma.io/policy-role":   "system",
+				"kuma.io/display-name":  "idle-timeout",
+				"kuma.io/mesh":          "mesh-1",
+				"kuma.io/origin":        "zone",
+				"kuma.io/zone":          "zone-1",
+				"kuma.io/env":           "kubernetes",
+			},
+		}),
+		Entry("role label supplied on a policy in an app namespace is dropped", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: func() core_model.Resource {
+				r := builders.MeshTimeout().
+					WithMesh("mesh-1").
+					WithName("idle-timeout").
+					WithNamespace("app-ns").
+					WithTargetRef(builders.TargetRefMesh()).
+					AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+						IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+					}).
+					Build()
+				r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel] = string(mesh_proto.SystemPolicyRole)
+				return r
+			}(),
+			expectedLabels: map[string]string{
+				"k8s.kuma.io/namespace": "app-ns",
+				"kuma.io/display-name":  "idle-timeout",
+				"kuma.io/mesh":          "mesh-1",
+				"kuma.io/origin":        "zone",
+				"kuma.io/zone":          "zone-1",
+				"kuma.io/env":           "kubernetes",
 			},
 		}),
 		Entry("non-policy in the system namespace keeps the namespace label", testCase{

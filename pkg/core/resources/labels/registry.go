@@ -31,13 +31,8 @@ type Descriptor struct {
 	Compute func(w Write, cp ControlPlane) (value string, ok bool, err error)
 
 	// EnforceOnRead recomputes the label on every read. ok=false means "produce
-	// nothing", never "remove"; removal is RemoveOnRead's job.
+	// nothing", never "remove".
 	EnforceOnRead func(r StoredResource, cp ControlPlane) (value string, ok bool)
-
-	// RemoveOnRead drops the stored label on every read, for a resource the control
-	// plane no longer writes it on, so a value an older control plane stored does not
-	// survive until the next write.
-	RemoveOnRead func(r StoredResource, cp ControlPlane) bool
 
 	// ValidateValue checks a value an untrusted writer supplied for an OwnerControlPlane
 	// label.
@@ -200,6 +195,16 @@ var registry = []Descriptor{
 		},
 	},
 	{
+		Key:   mesh_proto.PolicyRoleLabel,
+		Owner: OwnerControlPlane,
+		Compute: func(w Write, _ ControlPlane) (string, bool, error) {
+			if w.Namespace.system && w.Descriptor.IsPolicy && w.Descriptor.IsPluginOriginated {
+				return string(mesh_proto.SystemPolicyRole), true, nil
+			}
+			return "", false, nil
+		},
+	},
+	{
 		Key:   mesh_proto.DisplayName,
 		Owner: OwnerControlPlane,
 		Compute: func(w Write, _ ControlPlane) (string, bool, error) {
@@ -227,25 +232,16 @@ var registry = []Descriptor{
 			if !cp.IsK8s {
 				return "", false, nil
 			}
-			if w.Namespace.value == "" {
-				return keep(w, mesh_proto.KubeNamespaceTag)
+			if w.Namespace.value != "" {
+				return w.Namespace.value, true, nil
 			}
-			// A policy in the system namespace applies mesh-wide, which is what the
-			// absence of the label means to policy matching.
-			if w.Namespace.system && w.Descriptor.IsPolicy {
-				return "", false, nil
-			}
-			return w.Namespace.value, true, nil
+			return keep(w, mesh_proto.KubeNamespaceTag)
 		},
 		EnforceOnRead: func(r StoredResource, _ ControlPlane) (string, bool) {
 			if r.Namespace.value != "" && !r.Namespace.system {
 				return r.Namespace.value, true
 			}
 			return "", false
-		},
-		RemoveOnRead: func(r StoredResource, cp ControlPlane) bool {
-			// Only a read that knows the mode can tell a local policy from an import.
-			return cp.Mode != "" && r.Namespace.system && r.IsLocal && r.Descriptor.IsPolicy
 		},
 	},
 	{

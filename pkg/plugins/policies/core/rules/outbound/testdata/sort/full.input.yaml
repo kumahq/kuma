@@ -67,3 +67,22 @@ spec:
         connectionTimeout: 11s
         http:
           requestTimeout: 12s
+---
+# a policy in the system namespace sorts with the mesh-wide ones, whatever its name
+type: MeshTimeout
+name: matched-for-rules-zzz
+mesh: mesh-1
+labels:
+  kuma.io/origin: zone
+  k8s.kuma.io/namespace: kuma-system
+  kuma.io/policy-role: system
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionTimeout: 411s
+        http:
+          requestTimeout: 412s

@@ -25,9 +25,8 @@ func BenchmarkSortByTargetRef(b *testing.B) {
 						Name: fmt.Sprintf("route-%d", n-i),
 						Labels: map[string]string{
 							mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
-
-							mesh_proto.DisplayName:      fmt.Sprintf("route-%d", n-i),
-							mesh_proto.KubeNamespaceTag: "ns-a",
+							mesh_proto.DisplayName:         fmt.Sprintf("route-%d", n-i),
+							mesh_proto.KubeNamespaceTag:    "ns-a",
 						},
 					},
 					Spec: &v1alpha1.MeshHTTPRoute{

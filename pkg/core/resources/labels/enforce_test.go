@@ -59,6 +59,16 @@ var _ = Describe("EnforcedReadLabels", func() {
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 			},
 		}),
+		Entry("a local policy in the system namespace gets no role on read", testCase{
+			r:       meshWideTimeout(),
+			ns:      systemNamespace,
+			isLocal: true,
+			cp:      zoneCP,
+			expected: map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+				mesh_proto.ZoneTag:             "zone-1",
+			},
+		}),
 		Entry("nothing is enforced in the system namespace without a mode", testCase{
 			r:        meshWideTimeout(),
 			ns:       systemNamespace,
@@ -148,31 +158,6 @@ var _ = Describe("EnforcedReadLabels", func() {
 				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 			},
 		}),
-	)
-
-	// A policy in the system namespace applies mesh-wide and carries no namespace
-	// label. One an older control plane stored would scope it to the system namespace,
-	// so a read drops it; an import keeps the namespace it came with.
-	DescribeTable("RemovedReadLabels should drop the namespace label of a local policy in the system namespace",
-		func(r core_model.Resource, ns resource_labels.Namespace, isLocal bool, cp resource_labels.ControlPlane, expected []string) {
-			removed := resource_labels.RemovedReadLabels(resource_labels.StoredResource{
-				Descriptor: r.Descriptor(),
-				Spec:       r.GetSpec(),
-				Namespace:  ns,
-				IsLocal:    isLocal,
-			}, cp)
-			if len(expected) == 0 {
-				Expect(removed).To(BeEmpty())
-			} else {
-				Expect(removed).To(Equal(expected))
-			}
-		},
-		Entry("local policy in the system namespace on a zone", meshWideTimeout(), systemNamespace, true, zoneCP, []string{mesh_proto.KubeNamespaceTag}),
-		Entry("import in the system namespace on a zone", meshWideTimeout(), systemNamespace, false, zoneCP, nil),
-		Entry("local policy in an app namespace", meshWideTimeout(), appNamespace, true, zoneCP, nil),
-		Entry("non-policy in the system namespace", meshservice_api.NewMeshServiceResource(), systemNamespace, true, zoneCP, nil),
-		Entry("policy on Universal", meshWideTimeout(), universal, true, globalCP, nil),
-		Entry("nothing is removed without a mode", meshWideTimeout(), systemNamespace, true, noCP, nil),
 	)
 
 	fromGlobal := map[string]string{mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin)}

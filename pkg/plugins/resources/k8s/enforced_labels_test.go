@@ -164,42 +164,6 @@ var _ = Describe("enforced label derivation through the converters", func() {
 		Entry("CachingConverter without a mode leaves both labels alone", caching, "app-ns", nil, nil),
 	)
 
-	// A policy in the system namespace applies mesh-wide and carries no namespace
-	// label. One an older control plane stored would scope it to the system namespace,
-	// so the read drops it; an import keeps the namespace it came with.
-	DescribeTable("should drop a stale namespace label from a local policy in the system namespace",
-		func(newConverter func() k8s_common.Converter, stored map[string]string, expected string) {
-			got := labelsOf(newConverter(), policyIn(systemNamespaceForTest, stored))
-			if expected == "" {
-				Expect(got).NotTo(HaveKey(v1alpha1.KubeNamespaceTag))
-			} else {
-				Expect(got).To(HaveKeyWithValue(v1alpha1.KubeNamespaceTag, expected))
-			}
-		},
-		Entry("SimpleConverter drops it from a local policy", simpleOnZone, map[string]string{
-			v1alpha1.KubeNamespaceTag:    systemNamespaceForTest,
-			v1alpha1.ResourceOriginLabel: string(v1alpha1.ZoneResourceOrigin),
-		}, ""),
-		Entry("CachingConverter drops it from a local policy", cachingOnZone, map[string]string{
-			v1alpha1.KubeNamespaceTag:    systemNamespaceForTest,
-			v1alpha1.ResourceOriginLabel: string(v1alpha1.ZoneResourceOrigin),
-		}, ""),
-		Entry("SimpleConverter drops it from a local policy with no stored origin", simpleOnZone, map[string]string{
-			v1alpha1.KubeNamespaceTag: systemNamespaceForTest,
-		}, ""),
-		Entry("SimpleConverter keeps it on an import", simpleOnZone, map[string]string{
-			v1alpha1.KubeNamespaceTag:    "app-ns",
-			v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
-		}, "app-ns"),
-		Entry("CachingConverter keeps it on an import", cachingOnZone, map[string]string{
-			v1alpha1.KubeNamespaceTag:    "app-ns",
-			v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
-		}, "app-ns"),
-		Entry("SimpleConverter without a mode leaves it alone", simple, map[string]string{
-			v1alpha1.KubeNamespaceTag: systemNamespaceForTest,
-		}, systemNamespaceForTest),
-	)
-
 	It("should return the enforced origin and zone on a CachingConverter cache hit", func() {
 		converter := cachingOnZone()
 		obj := policyIn("app-ns", importedFromGlobal)

@@ -531,12 +531,16 @@ func resourceOrigin(labels map[string]string) (mesh_proto.ResourceOrigin, bool) 
 
 // PolicyNamespace returns the Kubernetes namespace a policy is scoped to. It is empty
 // for a policy that applies mesh-wide: one on Universal, on global, or in the system
-// namespace.
+// namespace, which carries kuma.io/policy-role: system.
 func PolicyNamespace(rm ResourceMeta) string {
 	if rm == nil {
 		return ""
 	}
-	return rm.GetLabels()[mesh_proto.KubeNamespaceTag]
+	labels := rm.GetLabels()
+	if labels[mesh_proto.PolicyRoleLabel] == string(mesh_proto.SystemPolicyRole) {
+		return ""
+	}
+	return labels[mesh_proto.KubeNamespaceTag]
 }
 
 // ComparePolicyScope orders a mesh-wide policy before a namespaced one, so the

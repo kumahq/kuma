@@ -365,6 +365,53 @@ var _ = Describe("DppSelectedByPolicy MeshHTTPRoute namespace scoping", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(inbounds).ToNot(BeEmpty())
 	})
+
+	It("selects through any matching route for a policy in the system namespace", func() {
+		meta := &test_model.ResourceMeta{
+			Mesh: "mesh-1",
+			Name: "timeout-1",
+			Labels: map[string]string{
+				mesh_proto.KubeNamespaceTag: "kuma-system",
+				mesh_proto.PolicyRoleLabel:  string(mesh_proto.SystemPolicyRole),
+			},
+		}
+
+		inbounds, _, err := matchers.DppSelectedByPolicy(meta, ref, dataplane("ns-b"), resources)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(inbounds).ToNot(BeEmpty())
+	})
+})
+
+var _ = Describe("DppSelectedByPolicy namespace scoping", func() {
+	dataplane := builders.Dataplane().
+		WithName("dp-1").
+		WithMesh("mesh-1").
+		WithLabels(map[string]string{mesh_proto.KubeNamespaceTag: "kuma-demo"}).
+		AddInbound(builders.Inbound().WithPort(80)).
+		Build()
+	meshRef := common_api.TargetRef{Kind: common_api.Mesh}
+	policyIn := func(labels map[string]string) core_model.ResourceMeta {
+		return &test_model.ResourceMeta{Mesh: "mesh-1", Name: "timeout-1", Labels: labels}
+	}
+
+	It("selects a dataplane in any namespace for a policy in the system namespace", func() {
+		meta := policyIn(map[string]string{
+			mesh_proto.KubeNamespaceTag: "kuma-system",
+			mesh_proto.PolicyRoleLabel:  string(mesh_proto.SystemPolicyRole),
+		})
+
+		inbounds, _, err := matchers.DppSelectedByPolicy(meta, meshRef, dataplane, xds_context.Resources{})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(inbounds).ToNot(BeEmpty())
+	})
+
+	It("does not select across namespaces when the role is missing", func() {
+		meta := policyIn(map[string]string{mesh_proto.KubeNamespaceTag: "kuma-system"})
+
+		inbounds, _, err := matchers.DppSelectedByPolicy(meta, meshRef, dataplane, xds_context.Resources{})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(inbounds).To(BeEmpty())
+	})
 })
 
 func getResourceType(resTypes []core_model.ResourceType) core_model.ResourceType {

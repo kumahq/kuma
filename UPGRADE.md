@@ -8,9 +8,9 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
-### Producer policies and the `kuma.io/policy-role` label are removed
+### Producer policies are removed; `kuma.io/policy-role` only marks system policies
 
-The policy role model (`system`, `producer`, `consumer`, `workload-owner`) is gone, and with it the `kuma.io/policy-role` label the control plane computed on every policy on Kubernetes. What decides where a policy applies is only where it lives:
+The `producer`, `consumer` and `workload-owner` policy roles are gone. The control plane still writes `kuma.io/policy-role: system` on a policy in the Kuma system namespace of a Kubernetes control plane, and writes no role on any other policy. What decides where a policy applies is where it lives:
 
 - a policy on the global control plane, or on a Universal zone, applies to every data plane proxy in the mesh
 - a policy in the Kuma system namespace of a Kubernetes zone applies to every data plane proxy in that zone
@@ -20,7 +20,7 @@ A namespaced policy whose `to[]` entries select a `MeshService` or `MeshHTTPRout
 
 Precedence follows the same three levels: a policy in an app namespace overrides one from the zone's system namespace, which overrides one from global. Within one level, resource name breaks ties as before.
 
-A policy in the Kuma system namespace no longer carries the `k8s.kuma.io/namespace` label, since that label now marks a policy as namespaced. A label left on a stored policy by an older control plane is ignored on read and deleted on the next write. A leftover `kuma.io/policy-role` is ignored.
+A `producer`, `consumer` or `workload-owner` value left on a stored policy by an older control plane is ignored on read and removed on the next write.
 
 A `MeshHTTPRoute` generated from a Gateway API `HTTPRoute` is always created in the Kuma system namespace, whichever namespace the `HTTPRoute`'s parent lives in, so a route in its `Service`'s namespace keeps applying to every client of that `Service`.
 
@@ -28,7 +28,7 @@ A `MeshHTTPRoute` generated from a Gateway API `HTTPRoute` is always created in 
 
 Find every namespaced policy whose `to[]` selects a `MeshService` or `MeshHTTPRoute` in its own namespace and that clients in other namespaces or zones rely on. Move it to the zone's Kuma system namespace to keep it zone-wide, or to the global control plane to keep it mesh-wide. A policy left in its namespace silently stops applying to clients outside it.
 
-Remove `kuma.io/policy-role` from anything that selects policies by it, such as `kubectl` label selectors or dashboards: the control plane no longer writes it.
+Label selectors on `kuma.io/policy-role=system`, in `kubectl` or dashboards, keep working. Selectors on `producer`, `consumer` or `workload-owner` match nothing: the control plane no longer writes those values.
 
 ### DPP configuration refresh interval default raised to 10s
 
