@@ -28,11 +28,14 @@ networking:
     reachableBackends:
       refs:
         - kind: MeshService
-          name: test-server-1
+          labels:
+            kuma.io/display-name: test-server-1
         - kind: MeshMultiZoneService
-          name: multizone-test-server
+          labels:
+            kuma.io/display-name: multizone-test-server
         - kind: MeshExternalService
-          name: mes-1
+          labels:
+            kuma.io/display-name: mes-1
 ---
 type: MeshService
 name: test-server-1

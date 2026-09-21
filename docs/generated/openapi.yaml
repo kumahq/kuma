@@ -7382,18 +7382,13 @@ components:
                               type: string
                             description: Labels used to select backends
                             type: object
-                          name:
-                            description: Name of the backend.
-                            type: string
-                          namespace:
-                            description: Namespace of the backend. Might be empty
-                            type: string
                           port:
                             description: Port of the backend.
                             format: uint32
                             type: integer
                         required:
                           - kind
+                          - labels
                         type: object
                       type: array
                   type: object
@@ -15872,18 +15867,13 @@ components:
                                   type: string
                                 description: Labels used to select backends
                                 type: object
-                              name:
-                                description: Name of the backend.
-                                type: string
-                              namespace:
-                                description: Namespace of the backend. Might be empty
-                                type: string
                               port:
                                 description: Port of the backend.
                                 format: uint32
                                 type: integer
                             required:
                               - kind
+                              - labels
                             type: object
                           type: array
                       type: object
