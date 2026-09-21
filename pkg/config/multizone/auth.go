@@ -3,6 +3,7 @@ package multizone
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -83,10 +84,8 @@ func (c KDSClientAuthConfig) LoadToken() (string, error) {
 	if c.TokenPath != "" {
 		// the checks are inline rather than in a helper, SAST tools recognize them better
 		cleanPath := filepath.Clean(c.TokenPath)
-		for _, segment := range strings.Split(cleanPath, string(filepath.Separator)) {
-			if segment == ".." {
-				return "", errors.Errorf("invalid zone token path: the path contains a traversal sequence: %s", c.TokenPath)
-			}
+		if slices.Contains(strings.Split(cleanPath, string(filepath.Separator)), "..") {
+			return "", errors.Errorf("invalid zone token path: the path contains a traversal sequence: %s", c.TokenPath)
 		}
 		absPath, err := filepath.Abs(cleanPath)
 		if err != nil {
