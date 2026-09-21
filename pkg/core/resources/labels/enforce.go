@@ -73,7 +73,7 @@ func EnforcedReadLabels(r StoredResource, cp ControlPlane) map[string]string {
 		if d.EnforceOnRead == nil {
 			continue
 		}
-		v, ok := d.EnforceOnRead(r, cp)
+		v, ok := d.EnforceOnRead(d.Key, r, cp)
 		if !ok {
 			continue
 		}

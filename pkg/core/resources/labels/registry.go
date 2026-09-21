@@ -30,18 +30,18 @@ type Descriptor struct {
 
 	// Compute returns the value to store on a write; ok=false removes the label.
 	// Returning keep stores whatever was submitted. err aborts the whole write.
-	Compute func(w Write, cp ControlPlane) (value string, ok bool, err error)
+	Compute func(key string, w Write, cp ControlPlane) (value string, ok bool, err error)
 
 	// EnforceOnRead recomputes the label on every read. ok=false means "produce
 	// nothing", never "remove".
-	EnforceOnRead func(r StoredResource, cp ControlPlane) (value string, ok bool)
+	EnforceOnRead func(key string, r StoredResource, cp ControlPlane) (value string, ok bool)
 
 	// ValidateValue checks a value an untrusted writer supplied for an OwnerControlPlane
 	// label.
-	ValidateValue func(value string, w Write, cp ControlPlane) []string
+	ValidateValue func(key, value string, w Write, cp ControlPlane) []string
 
 	// ValidateFormat checks the value's syntax for any writer.
-	ValidateFormat func(value string) []string
+	ValidateFormat func(key, value string) []string
 
 	// StoredAsAnnotation marks labels whose values carry a resource name and therefore
 	// can be up to 253 characters, which does not fit the 63-character Kubernetes label
@@ -58,26 +58,19 @@ func k8sWrongValueMsg(key, expected, actual string) string {
 	return fmt.Sprintf("'%s' label should have '%s' value, got '%s'", key, expected, actual)
 }
 
-// controlPlaneOnly describes a label a control plane component writes through the
-// store: kept as supplied for a trusted writer, rejected for anyone else.
-func controlPlaneOnly(key string) Descriptor {
-	return Descriptor{
-		Key:   key,
-		Owner: OwnerControlPlane,
-		Compute: func(w Write, _ ControlPlane) (string, bool, error) {
-			if !w.TrustedWriter {
-				return "", false, nil
-			}
-			return keep(w, key)
-		},
-		ValidateValue: func(_ string, _ Write, _ ControlPlane) []string {
-			return []string{fmt.Sprintf("label %q is set by the control plane and cannot be set manually", key)}
-		},
+func keepForTrustedWriter(key string, w Write, _ ControlPlane) (string, bool, error) {
+	if !w.TrustedWriter {
+		return "", false, nil
 	}
+	return keep(w, key)
 }
 
-func oneOf(key string, values ...string) func(string) []string {
-	return func(v string) []string {
+func rejectManualValue(key, _ string, _ Write, _ ControlPlane) []string {
+	return []string{fmt.Sprintf("label %q is set by the control plane and cannot be set manually", key)}
+}
+
+func oneOf(values ...string) func(string, string) []string {
+	return func(key, v string) []string {
 		if slices.Contains(values, v) {
 			return nil
 		}
@@ -85,8 +78,8 @@ func oneOf(key string, values ...string) func(string) []string {
 	}
 }
 
-func listenerLabel(key string, listenerType mesh_proto.Dataplane_Networking_Listener_Type) func(w Write, cp ControlPlane) (string, bool, error) {
-	return func(w Write, _ ControlPlane) (string, bool, error) {
+func listenerLabel(listenerType mesh_proto.Dataplane_Networking_Listener_Type) func(string, Write, ControlPlane) (string, bool, error) {
+	return func(key string, w Write, _ ControlPlane) (string, bool, error) {
 		if !w.Descriptor.IsProxy {
 			return keep(w, key)
 		}
@@ -108,7 +101,7 @@ var registry = []Descriptor{
 	{
 		Key:   mesh_proto.ResourceOriginLabel,
 		Owner: OwnerControlPlane,
-		Compute: func(w Write, cp ControlPlane) (string, bool, error) {
+		Compute: func(_ string, w Write, cp ControlPlane) (string, bool, error) {
 			switch cp.Mode {
 			case config_core.Global:
 				return string(mesh_proto.GlobalResourceOrigin), true, nil
@@ -118,7 +111,7 @@ var registry = []Descriptor{
 				return keep(w, mesh_proto.ResourceOriginLabel)
 			}
 		},
-		EnforceOnRead: func(r StoredResource, cp ControlPlane) (string, bool) {
+		EnforceOnRead: func(_ string, r StoredResource, cp ControlPlane) (string, bool) {
 			switch cp.Mode {
 			case config_core.Global:
 				if r.IsLocal {
@@ -134,7 +127,7 @@ var registry = []Descriptor{
 				return "", false
 			}
 		},
-		ValidateValue: func(v string, w Write, cp ControlPlane) []string {
+		ValidateValue: func(_ string, v string, w Write, cp ControlPlane) []string {
 			if v == "" {
 				return nil
 			}
@@ -160,7 +153,7 @@ var registry = []Descriptor{
 			}
 			return nil
 		},
-		ValidateFormat: func(v string) []string {
+		ValidateFormat: func(_ string, v string) []string {
 			if v == "" {
 				return nil
 			}
@@ -173,19 +166,19 @@ var registry = []Descriptor{
 	{
 		Key:   mesh_proto.ZoneTag,
 		Owner: OwnerControlPlane,
-		Compute: func(w Write, cp ControlPlane) (string, bool, error) {
+		Compute: func(_ string, w Write, cp ControlPlane) (string, bool, error) {
 			if cp.Mode == config_core.Zone && w.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
 				return cp.Zone, true, nil
 			}
 			return keep(w, mesh_proto.ZoneTag)
 		},
-		EnforceOnRead: func(r StoredResource, cp ControlPlane) (string, bool) {
+		EnforceOnRead: func(_ string, r StoredResource, cp ControlPlane) (string, bool) {
 			if cp.Mode == config_core.Zone && r.IsLocal && cp.Zone != "" && r.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
 				return cp.Zone, true
 			}
 			return "", false
 		},
-		ValidateValue: func(v string, w Write, cp ControlPlane) []string {
+		ValidateValue: func(_ string, v string, w Write, cp ControlPlane) []string {
 			if cp.IsK8s {
 				if !w.Descriptor.IsPluginOriginated || (cp.Mode != config_core.Global && !cp.FederatedZone) {
 					return nil
@@ -207,7 +200,7 @@ var registry = []Descriptor{
 	{
 		Key:   metadata.KumaMeshLabel,
 		Owner: OwnerControlPlane,
-		Compute: func(w Write, _ ControlPlane) (string, bool, error) {
+		Compute: func(_ string, w Write, _ ControlPlane) (string, bool, error) {
 			if v, ok := w.Labels[metadata.KumaMeshLabel]; ok || w.Descriptor.Scope != core_model.ScopeMesh {
 				return v, ok, nil
 			}
@@ -216,7 +209,7 @@ var registry = []Descriptor{
 			}
 			return core_model.DefaultMesh, true, nil
 		},
-		ValidateValue: func(v string, w Write, cp ControlPlane) []string {
+		ValidateValue: func(_ string, v string, w Write, cp ControlPlane) []string {
 			if cp.IsK8s || v == w.Mesh {
 				return nil
 			}
@@ -226,7 +219,7 @@ var registry = []Descriptor{
 	{
 		Key:   mesh_proto.PolicyRoleLabel,
 		Owner: OwnerControlPlane,
-		Compute: func(w Write, _ ControlPlane) (string, bool, error) {
+		Compute: func(_ string, w Write, _ ControlPlane) (string, bool, error) {
 			if w.Namespace.value == "" || !w.Descriptor.IsPolicy || !w.Descriptor.IsPluginOriginated {
 				return keep(w, mesh_proto.PolicyRoleLabel)
 			}
@@ -236,7 +229,7 @@ var registry = []Descriptor{
 			}
 			return string(role), true, nil
 		},
-		EnforceOnRead: func(r StoredResource, _ ControlPlane) (string, bool) {
+		EnforceOnRead: func(_ string, r StoredResource, _ ControlPlane) (string, bool) {
 			if r.Namespace.value == "" || r.Namespace.system || !r.Descriptor.IsPolicy || !r.Descriptor.IsPluginOriginated {
 				return "", false
 			}
@@ -253,7 +246,7 @@ var registry = []Descriptor{
 			}
 			return string(role), true
 		},
-		ValidateValue: func(v string, w Write, cp ControlPlane) []string {
+		ValidateValue: func(_ string, v string, w Write, cp ControlPlane) []string {
 			if cp.IsK8s || !w.Descriptor.IsPluginOriginated || !w.Descriptor.IsPolicy {
 				return nil
 			}
@@ -266,7 +259,7 @@ var registry = []Descriptor{
 	{
 		Key:   mesh_proto.DisplayName,
 		Owner: OwnerControlPlane,
-		Compute: func(w Write, _ ControlPlane) (string, bool, error) {
+		Compute: func(_ string, w Write, _ ControlPlane) (string, bool, error) {
 			return w.DisplayName, true, nil
 		},
 		StoredAsAnnotation: true,
@@ -274,7 +267,7 @@ var registry = []Descriptor{
 	{
 		Key:   mesh_proto.EnvTag,
 		Owner: OwnerControlPlane,
-		Compute: func(w Write, cp ControlPlane) (string, bool, error) {
+		Compute: func(_ string, w Write, cp ControlPlane) (string, bool, error) {
 			if cp.Mode != config_core.Zone || !w.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
 				return keep(w, mesh_proto.EnvTag)
 			}
@@ -287,7 +280,7 @@ var registry = []Descriptor{
 	{
 		Key:   mesh_proto.KubeNamespaceTag,
 		Owner: OwnerControlPlane,
-		Compute: func(w Write, cp ControlPlane) (string, bool, error) {
+		Compute: func(_ string, w Write, cp ControlPlane) (string, bool, error) {
 			if !cp.IsK8s {
 				return "", false, nil
 			}
@@ -296,7 +289,7 @@ var registry = []Descriptor{
 			}
 			return keep(w, mesh_proto.KubeNamespaceTag)
 		},
-		EnforceOnRead: func(r StoredResource, _ ControlPlane) (string, bool) {
+		EnforceOnRead: func(_ string, r StoredResource, _ ControlPlane) (string, bool) {
 			if r.Namespace.value != "" && !r.Namespace.system {
 				return r.Namespace.value, true
 			}
@@ -306,7 +299,7 @@ var registry = []Descriptor{
 	{
 		Key:   metadata.KumaServiceAccount,
 		Owner: OwnerControlPlane,
-		Compute: func(w Write, cp ControlPlane) (string, bool, error) {
+		Compute: func(_ string, w Write, cp ControlPlane) (string, bool, error) {
 			if !cp.IsK8s {
 				return "", false, nil
 			}
@@ -315,7 +308,7 @@ var registry = []Descriptor{
 			}
 			return keep(w, metadata.KumaServiceAccount)
 		},
-		ValidateValue: func(_ string, w Write, cp ControlPlane) []string {
+		ValidateValue: func(_, _ string, w Write, cp ControlPlane) []string {
 			if !cp.IsK8s || w.Descriptor.Name != core_mesh.DataplaneType {
 				return nil
 			}
@@ -326,17 +319,17 @@ var registry = []Descriptor{
 	{
 		Key:     mesh_proto.ListenerZoneIngressLabel,
 		Owner:   OwnerControlPlane,
-		Compute: listenerLabel(mesh_proto.ListenerZoneIngressLabel, mesh_proto.Dataplane_Networking_Listener_ZoneIngress),
+		Compute: listenerLabel(mesh_proto.Dataplane_Networking_Listener_ZoneIngress),
 	},
 	{
 		Key:     mesh_proto.ListenerZoneEgressLabel,
 		Owner:   OwnerControlPlane,
-		Compute: listenerLabel(mesh_proto.ListenerZoneEgressLabel, mesh_proto.Dataplane_Networking_Listener_ZoneEgress),
+		Compute: listenerLabel(mesh_proto.Dataplane_Networking_Listener_ZoneEgress),
 	},
 	{
 		Key:   metadata.KumaWorkload,
 		Owner: OwnerUser,
-		Compute: func(w Write, _ ControlPlane) (string, bool, error) {
+		Compute: func(_ string, w Write, _ ControlPlane) (string, bool, error) {
 			if w.Workload != "" {
 				return w.Workload, true, nil
 			}
@@ -344,19 +337,39 @@ var registry = []Descriptor{
 		},
 		StoredAsAnnotation: true,
 	},
-	controlPlaneOnly(mesh_proto.ManagedByLabel),
-	controlPlaneOnly(mesh_proto.DeletionGracePeriodStartedLabel),
-	controlPlaneOnly(metadata.KumaServiceName),
-	controlPlaneOnly(metadata.HeadlessService),
+	{
+		Key:           mesh_proto.ManagedByLabel,
+		Owner:         OwnerControlPlane,
+		Compute:       keepForTrustedWriter,
+		ValidateValue: rejectManualValue,
+	},
+	{
+		Key:           mesh_proto.DeletionGracePeriodStartedLabel,
+		Owner:         OwnerControlPlane,
+		Compute:       keepForTrustedWriter,
+		ValidateValue: rejectManualValue,
+	},
+	{
+		Key:           metadata.KumaServiceName,
+		Owner:         OwnerControlPlane,
+		Compute:       keepForTrustedWriter,
+		ValidateValue: rejectManualValue,
+	},
+	{
+		Key:           metadata.HeadlessService,
+		Owner:         OwnerControlPlane,
+		Compute:       keepForTrustedWriter,
+		ValidateValue: rejectManualValue,
+	},
 	{
 		Key:            mesh_proto.KDSSyncLabel,
 		Owner:          OwnerUser,
-		ValidateFormat: oneOf(mesh_proto.KDSSyncLabel, "enabled", "disabled"),
+		ValidateFormat: oneOf("enabled", "disabled"),
 	},
 	{
 		Key:            mesh_proto.EffectLabel,
 		Owner:          OwnerUser,
-		ValidateFormat: oneOf(mesh_proto.EffectLabel, "shadow"),
+		ValidateFormat: oneOf("shadow"),
 	},
 }
 

@@ -27,7 +27,7 @@ func ValidateOwnership(w Write, cp ControlPlane) validators.ValidationError {
 		if !ok {
 			continue
 		}
-		for _, msg := range d.ValidateValue(v, w, cp) {
+		for _, msg := range d.ValidateValue(d.Key, v, w, cp) {
 			err.AddViolationAt(validators.Root().Key(d.Key), msg)
 		}
 	}
@@ -62,7 +62,7 @@ func validateRegisteredFormat(w Write) validators.ValidationError {
 		if !ok {
 			continue
 		}
-		for _, msg := range d.ValidateFormat(v) {
+		for _, msg := range d.ValidateFormat(d.Key, v) {
 			err.AddViolationAt(validators.Root().Key(d.Key), msg)
 		}
 	}
