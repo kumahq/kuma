@@ -48,7 +48,8 @@ func (a *adminTokenBootstrap) Start(stop <-chan struct{}) error {
 			msg := "bootstrap of Admin User Token is enabled. "
 			if a.cpCfg.Environment == config_core.KubernetesEnvironment {
 				msg += fmt.Sprintf("To extract credentials execute 'kubectl get secret %s -n %s --template={{.data.value}} | base64 -d'. ", globalSecretKey.Name, a.cpCfg.Store.Kubernetes.SystemNamespace)
-			} else {
+			} else if a.cpCfg.ApiServer.Authn.LocalhostIsAdmin {
+				// the request is rejected when localhost is not admin, so don't suggest it
 				msg += fmt.Sprintf("To extract admin credentials execute 'curl http://localhost:%d/global-secrets/%s | jq -r .data | base64 -d'. ", a.cpCfg.ApiServer.HTTP.Port, globalSecretKey.Name)
 			}
 			msg += "You configure kumactl with them 'kumactl config control-planes add --auth-type=tokens --auth-conf token=YOUR_TOKEN'." +
