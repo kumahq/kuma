@@ -46,36 +46,5 @@
    "type": "ZoneEgress"
   }
  ],
- "outbounds": [
-  {
-   "kri": "kri_extsvc_default___mes-1_9090",
-   "port": 9090,
-   "protocol": "http",
-   "proxyResourceName": "kri_extsvc_default___mes-1_9090"
-  },
-  {
-   "kri": "kri_msvc_default_other-zone__remote-server_main-port",
-   "port": 80,
-   "protocol": "http",
-   "proxyResourceName": "kri_msvc_default_other-zone__remote-server_main-port"
-  },
-  {
-   "kri": "kri_msvc_default_test-zone__local-server_main-port",
-   "port": 80,
-   "protocol": "http",
-   "proxyResourceName": "kri_msvc_default_test-zone__local-server_main-port"
-  },
-  {
-   "kri": "kri_msvc_default_test-zone__local-server_secondary-port",
-   "port": 8080,
-   "protocol": "tcp",
-   "proxyResourceName": "kri_msvc_default_test-zone__local-server_secondary-port"
-  },
-  {
-   "kri": "kri_mzsvc_default___multizone-server_80",
-   "port": 80,
-   "protocol": "http",
-   "proxyResourceName": "kri_mzsvc_default___multizone-server_80"
-  }
- ]
+ "outbounds": []
 }

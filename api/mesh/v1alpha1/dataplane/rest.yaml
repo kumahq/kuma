@@ -328,7 +328,8 @@ components:
                     Reachable backend via transparent proxy when running with
                     MeshExternalService, MeshService and MeshMultiZoneService. Setting an
                     explicit list of refs can dramatically improve the performance of the
-                    mesh. If not specified, all services in the mesh are reachable.
+                    mesh. If not specified, no services in the mesh are reachable, unless
+                    the control plane sets KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND.
                   properties:
                     refs:
                       items:
