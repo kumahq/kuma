@@ -92,7 +92,7 @@ jobs:
             go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.9.0
+          version: 2026.9.3
       # Resolve through make so per-combo ENVOY_VERSION_<os>_<arch> overrides
       # in mk/build.mk produce distinct cache keys.
       - name: Envoy version
@@ -177,7 +177,7 @@ jobs:
           fetch-depth: 0
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.9.0
+          version: 2026.9.3
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: dist-tarballs-*
@@ -311,7 +311,7 @@ jobs:
       - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.9.0
+          version: 2026.9.3
       # Login must precede the build for the cache push; anonymous pulls of the
       # public cache tags work without it (PR runs).
       - name: Docker login for buildx cache push
@@ -473,7 +473,7 @@ jobs:
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.9.0
+          version: 2026.9.3
       - name: package-helm-chart
         id: package-helm
         env:
