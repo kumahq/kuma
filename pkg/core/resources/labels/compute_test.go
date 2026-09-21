@@ -316,32 +316,6 @@ var _ = Describe("Compute", func() {
 				"kuma.io/zone":          "zone-1",
 			},
 		}),
-		Entry("stale policy-role label is dropped from a policy", testCase{
-			mode:      core.Zone,
-			isK8s:     true,
-			localZone: "zone-1",
-			r: func() core_model.Resource {
-				r := builders.MeshTimeout().
-					WithMesh("mesh-1").
-					WithName("idle-timeout").
-					WithNamespace("app-ns").
-					WithTargetRef(builders.TargetRefMesh()).
-					AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
-						IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-					}).
-					Build()
-				r.GetMeta().GetLabels()["kuma.io/policy-role"] = "producer"
-				return r
-			}(),
-			expectedLabels: map[string]string{
-				"k8s.kuma.io/namespace": "app-ns",
-				"kuma.io/display-name":  "idle-timeout",
-				"kuma.io/mesh":          "mesh-1",
-				"kuma.io/origin":        "zone",
-				"kuma.io/zone":          "zone-1",
-				"kuma.io/env":           "kubernetes",
-			},
-		}),
 		Entry("dataplane proxy", testCase{
 			mode:      core.Zone,
 			isK8s:     true,

@@ -15,13 +15,10 @@ type Namespace struct {
 
 var UnsetNamespace = Namespace{}
 
-// Labels the control plane used to compute and no longer does. They are deleted on
-// every write of the kinds they were computed for, so a resource created by an older
-// control plane stops carrying them, instead of keeping a value nothing maintains.
-var (
-	removedProxyLabels  = []string{"kuma.io/proxy-type", "kuma.io/gateway"}
-	removedPolicyLabels = []string{"kuma.io/policy-role"}
-)
+// Labels the control plane used to compute and no longer does. They are
+// deleted on every proxy write so a resource created by an older control plane
+// stops carrying them, instead of keeping a value nothing maintains.
+var removedLabels = []string{"kuma.io/proxy-type", "kuma.io/gateway"}
 
 func NewNamespace(value string, system bool) Namespace {
 	return Namespace{
@@ -63,15 +60,10 @@ func Compute(w Write, cp ControlPlane) (map[string]string, error) {
 			delete(labels, d.Key)
 		}
 	}
-	var removed []string
-	switch {
-	case w.Descriptor.IsProxy:
-		removed = removedProxyLabels
-	case w.Descriptor.IsPolicy:
-		removed = removedPolicyLabels
-	}
-	for _, k := range removed {
-		delete(labels, k)
+	if w.Descriptor.IsProxy {
+		for _, k := range removedLabels {
+			delete(labels, k)
+		}
 	}
 	return labels, nil
 }

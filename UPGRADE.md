@@ -20,7 +20,7 @@ A namespaced policy whose `to[]` entries select a `MeshService` or `MeshHTTPRout
 
 Precedence follows the same three levels: a policy in an app namespace overrides one from the zone's system namespace, which overrides one from global. Within one level, resource name breaks ties as before.
 
-A policy in the Kuma system namespace no longer carries the `k8s.kuma.io/namespace` label, since that label now marks a policy as namespaced. A label left on a stored policy by an older control plane is ignored on read and deleted on the next write, as is a leftover `kuma.io/policy-role`.
+A policy in the Kuma system namespace no longer carries the `k8s.kuma.io/namespace` label, since that label now marks a policy as namespaced. A label left on a stored policy by an older control plane is ignored on read and deleted on the next write. A leftover `kuma.io/policy-role` is ignored.
 
 A `MeshHTTPRoute` generated from a Gateway API `HTTPRoute` is always created in the Kuma system namespace, whichever namespace the `HTTPRoute`'s parent lives in, so a route in its `Service`'s namespace keeps applying to every client of that `Service`.
 
@@ -28,7 +28,7 @@ A `MeshHTTPRoute` generated from a Gateway API `HTTPRoute` is always created in 
 
 Find every namespaced policy whose `to[]` selects a `MeshService` or `MeshHTTPRoute` in its own namespace and that clients in other namespaces or zones rely on. Move it to the zone's Kuma system namespace to keep it zone-wide, or to the global control plane to keep it mesh-wide. A policy left in its namespace silently stops applying to clients outside it.
 
-Remove `kuma.io/policy-role` from anything that selects policies by it, such as `kubectl` label selectors or dashboards: the label is no longer written and is deleted from existing policies as they are written.
+Remove `kuma.io/policy-role` from anything that selects policies by it, such as `kubectl` label selectors or dashboards: the control plane no longer writes it.
 
 ### DPP configuration refresh interval default raised to 10s
 
