@@ -204,17 +204,14 @@ message Dataplane {
         // Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService
         //  +required
         string kind = 1;
-        // Name of the backend.
-        //  +optional
-        string name = 2;
-        // Namespace of the backend. Might be empty
-        //  +optional
-        string namespace = 3;
+        // `name` and `namespace` have been removed in favor of `labels`.
+        reserved 2, 3;
+        reserved "name", "namespace";
         // Port of the backend.
         //  +optional
         google.protobuf.UInt32Value port = 4;
         // Labels used to select backends
-        //  +optional
+        //  +required
         map<string, string> labels = 5;
       }
 

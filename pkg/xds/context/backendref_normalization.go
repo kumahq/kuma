@@ -11,7 +11,7 @@ import (
 
 // NormalizeBackendRefTarget converts legacy backend-ref fields into label and
 // section-name selectors shared by dataplane outbounds and reachable-backend resolution.
-func NormalizeBackendRefTarget(kind, name, namespace string, port *uint32, labels map[string]string, defaultNamespace string) (map[string]string, string) {
+func NormalizeBackendRefTarget(kind, name string, port *uint32, labels map[string]string, defaultNamespace string) (map[string]string, string) {
 	sectionName := ""
 	if port != nil && *port > 0 {
 		sectionName = fmt.Sprintf("%d", *port)
@@ -23,7 +23,8 @@ func NormalizeBackendRefTarget(kind, name, namespace string, port *uint32, label
 		return nil, sectionName
 	}
 
-	if common_api.TargetRefKind(kind) == common_api.MeshService && namespace == "" {
+	namespace := ""
+	if common_api.TargetRefKind(kind) == common_api.MeshService {
 		if service, parsedNamespace, parsedPort, ok := parseLegacyMeshServiceTag(name); ok {
 			name = service
 			namespace = parsedNamespace

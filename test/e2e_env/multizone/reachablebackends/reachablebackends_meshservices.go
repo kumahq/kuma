@@ -33,7 +33,8 @@ func MeshServicesWithReachableBackendsOption() {
         labels:
           kuma.io/display-name: other-zone-test-server
       - kind: MeshService
-        name: local-test-server
+        labels:
+          kuma.io/display-name: local-test-server
         port: 80
 `
 
