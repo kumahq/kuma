@@ -48,9 +48,13 @@ func (a *adminTokenBootstrap) Start(stop <-chan struct{}) error {
 			msg := "bootstrap of Admin User Token is enabled. "
 			if a.cpCfg.Environment == config_core.KubernetesEnvironment {
 				msg += fmt.Sprintf("To extract credentials execute 'kubectl get secret %s -n %s --template={{.data.value}} | base64 -d'. ", globalSecretKey.Name, a.cpCfg.Store.Kubernetes.SystemNamespace)
-			} else if a.cpCfg.ApiServer.Authn.LocalhostIsAdmin {
-				// the request is rejected when localhost is not admin, so don't suggest it
-				msg += fmt.Sprintf("To extract admin credentials execute 'curl http://localhost:%d/global-secrets/%s | jq -r .data | base64 -d'. ", a.cpCfg.ApiServer.HTTP.Port, globalSecretKey.Name)
+			} else {
+				prefix := "To extract admin credentials"
+				if !a.cpCfg.ApiServer.Authn.LocalhostIsAdmin {
+					// the request is rejected unless it comes from an admin
+					prefix += " temporarily set KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN to true and"
+				}
+				msg += fmt.Sprintf("%s execute 'curl http://localhost:%d/global-secrets/%s | jq -r .data | base64 -d'. ", prefix, a.cpCfg.ApiServer.HTTP.Port, globalSecretKey.Name)
 			}
 			msg += "You configure kumactl with them 'kumactl config control-planes add --auth-type=tokens --auth-conf token=YOUR_TOKEN'." +
 				" To disable bootstrap of Admin User Token set KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN to false."
