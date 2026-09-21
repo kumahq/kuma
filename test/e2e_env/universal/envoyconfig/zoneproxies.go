@@ -160,10 +160,7 @@ spec:
 					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 			),
 		).
-		Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
-			zoneProxyMeshName,
-			fmt.Sprintf("%s.%s.mesh.local", zoneProxyMeshName, universal.Cluster.ZoneName()),
-		)).
+		Install(zoneProxyAllowAll()).
 		Install(YamlUniversal(meshExternalService)).
 		Install(YamlUniversal(meshIdentityYAML)).
 		Install(zoneproxy.Install(
@@ -238,7 +235,16 @@ spec:
 }
 
 func CleanupAfterZoneProxyTest(policies ...core_model.ResourceTypeDescriptor) func() {
-	return cleanupAfterTest(zoneProxyMeshName, []string{zoneProxyIngressDP, zoneProxyEgressDP, "zone-proxy-demo-client", "zone-proxy-test-server", "zone-proxy-test-server-no-reusable-ports"}, policies...)
+	return cleanupAfterTest(zoneProxyMeshName, zoneProxyAllowAll(), []string{zoneProxyIngressDP, zoneProxyEgressDP, "zone-proxy-demo-client", "zone-proxy-test-server", "zone-proxy-test-server-no-reusable-ports"}, policies...)
+}
+
+func zoneProxyAllowAll() InstallFunc {
+	return func(cluster Cluster) error {
+		return MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
+			zoneProxyMeshName,
+			fmt.Sprintf("%s.%s.mesh.local", zoneProxyMeshName, cluster.ZoneName()),
+		)(cluster)
+	}
 }
 
 func CleanupAfterZoneProxySuite() {

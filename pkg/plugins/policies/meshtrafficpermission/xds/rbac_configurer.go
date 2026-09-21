@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	"slices"
 
 	matcher_config "github.com/cncf/xds/go/xds/type/matcher/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -13,8 +14,10 @@ import (
 	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	bldrs_matchers "github.com/kumahq/kuma/v2/pkg/envoy/builders/xds/matchers"
+	core_rules "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
 	policies_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
@@ -25,6 +28,9 @@ import (
 type RBACConfigurer struct {
 	StatsName    string
 	InboundRules []*inbound.Rule
+	// LegacyRules are 'from' rules merged into the same matcher as InboundRules
+	LegacyRules core_rules.Rules
+	Mesh        string
 }
 
 func (c *RBACConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -132,6 +138,11 @@ func (c *RBACConfigurer) createMatcher() (*matcher_config.Matcher, error) {
 		}
 		fieldMatchers = append(fieldMatchers, denyMatchers)
 	}
+	legacyDenyMatchers, err := c.legacyMatchers(rbac_config.RBAC_DENY, policies_api.Deny)
+	if err != nil {
+		return nil, err
+	}
+	fieldMatchers = append(fieldMatchers, legacyDenyMatchers...)
 
 	for _, rule := range c.InboundRules {
 		conf := rule.Conf.(policies_api.RuleConf)
@@ -141,6 +152,11 @@ func (c *RBACConfigurer) createMatcher() (*matcher_config.Matcher, error) {
 		}
 		fieldMatchers = append(fieldMatchers, allowMatchers)
 	}
+	legacyAllowMatchers, err := c.legacyMatchers(rbac_config.RBAC_ALLOW, policies_api.Allow, policies_api.AllowWithShadowDeny)
+	if err != nil {
+		return nil, err
+	}
+	fieldMatchers = append(fieldMatchers, legacyAllowMatchers...)
 
 	return bldrs_matchers.NewMatcherBuilder().
 		Configure(bldrs_matchers.MatchersList(fieldMatchers)).
@@ -163,6 +179,11 @@ func (c *RBACConfigurer) createShadowMatcher() (*matcher_config.Matcher, error) 
 		}
 		fieldMatchers = append(fieldMatchers, shadowDenyMatchers)
 	}
+	legacyShadowDenyMatchers, err := c.legacyMatchers(rbac_config.RBAC_DENY, policies_api.AllowWithShadowDeny)
+	if err != nil {
+		return nil, err
+	}
+	fieldMatchers = append(fieldMatchers, legacyShadowDenyMatchers...)
 
 	if len(fieldMatchers) == 0 {
 		return nil, nil
@@ -174,6 +195,41 @@ func (c *RBACConfigurer) createShadowMatcher() (*matcher_config.Matcher, error) 
 			bldrs_matchers.NewOnMatch().Configure(bldrs_matchers.RbacAction(rbac_config.RBAC_DENY, "default")),
 		)).
 		Build()
+}
+
+// legacyMatchers translates 'from' rules with one of the given actions.
+func (c *RBACConfigurer) legacyMatchers(rbacAction rbac_config.RBAC_Action, actions ...policies_api.Action) ([]*matcher_config.Matcher_MatcherList_FieldMatcher, error) {
+	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
+	for _, rule := range c.LegacyRules {
+		action := pointer.Deref(rule.Conf.(policies_api.Conf).Action)
+		if !slices.Contains(actions, action) {
+			continue
+		}
+		// A catch-all deny ('kind: Mesh' or negations only) is what OnNoMatch already does,
+		// emitted before allows it would shadow every 'rules' allow.
+		catchAll := !slices.ContainsFunc(rule.Subset, func(t subsetutils.Tag) bool { return !t.Not })
+		if action == policies_api.Deny && catchAll {
+			continue
+		}
+		predicate, err := predicateFromSubset(c.Mesh, rule.Subset)
+		if err != nil {
+			return nil, err
+		}
+		name := "MeshTrafficPermission"
+		if len(rule.Origin) > 0 {
+			// origins are ordered by specificity and the last one decides the merged action
+			name = kri.FromResourceMeta(rule.Origin[len(rule.Origin)-1], policies_api.MeshTrafficPermissionType).String()
+		}
+		onMatch, err := bldrs_matchers.NewOnMatch().Configure(bldrs_matchers.RbacAction(rbacAction, name)).Build()
+		if err != nil {
+			return nil, err
+		}
+		fieldMatchers = append(fieldMatchers, &matcher_config.Matcher_MatcherList_FieldMatcher{
+			Predicate: predicate,
+			OnMatch:   onMatch,
+		})
+	}
+	return fieldMatchers, nil
 }
 
 func buildMatchers(matches []common_api.Match, action rbac_config.RBAC_Action, origin common.Origin) (*matcher_config.Matcher_MatcherList_FieldMatcher, error) {

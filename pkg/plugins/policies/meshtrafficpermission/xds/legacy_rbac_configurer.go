@@ -3,6 +3,7 @@ package xds
 import (
 	"fmt"
 
+	matcher_config "github.com/cncf/xds/go/xds/type/matcher/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
 	http_rbac "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"
@@ -11,6 +12,7 @@ import (
 	matcherv3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	bldrs_matchers "github.com/kumahq/kuma/v2/pkg/envoy/builders/xds/matchers"
 	core_xds "github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/subsetutils"
 	policies_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
@@ -18,6 +20,7 @@ import (
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/v2/pkg/util/xds"
 	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
+	xds_tls "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls"
 	tls "github.com/kumahq/kuma/v2/pkg/xds/envoy/tls/v3"
 )
 
@@ -215,6 +218,34 @@ func (c *LegacyRBACConfigurer) principalFromSubset(ss subsetutils.Subset) *rbac_
 			},
 		}
 	}
+}
+
+// predicateFromSubset is the matcher API counterpart of principalFromSubset.
+func predicateFromSubset(mesh string, ss subsetutils.Subset) (*matcher_config.Matcher_MatcherList_Predicate, error) {
+	if len(ss) == 0 {
+		return bldrs_matchers.NewPredicate().Configure(bldrs_matchers.AnyURISANPredicate()).Build()
+	}
+
+	var predicates []*matcher_config.Matcher_MatcherList_Predicate
+	for _, t := range ss {
+		uri := xds_tls.KumaID(t.Key, t.Value)
+		if t.Key == mesh_proto.ServiceTag {
+			uri = xds_tls.ServiceSpiffeID(mesh, t.Value)
+		}
+		predicate, err := bldrs_matchers.NewPredicate().Configure(bldrs_matchers.URISANPredicate(uri)).Build()
+		if err != nil {
+			return nil, err
+		}
+		if t.Not {
+			predicate, err = bldrs_matchers.NewPredicate().Configure(bldrs_matchers.NotPredicate(predicate)).Build()
+			if err != nil {
+				return nil, err
+			}
+		}
+		predicates = append(predicates, predicate)
+	}
+
+	return bldrs_matchers.NewPredicate().Configure(bldrs_matchers.AndPredicate(predicates)).Build()
 }
 
 func (c *LegacyRBACConfigurer) not(p *rbac_config.Principal) *rbac_config.Principal {

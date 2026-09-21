@@ -107,6 +107,7 @@ var (
 	_ = Describe("Virtual Outbound", Label("job-0"), virtualoutbound.VirtualOutbound, Ordered)
 	_ = Describe("Transparent Proxy", Label("job-3"), transparentproxy.TransparentProxy, Ordered)
 	_ = Describe("Mesh Traffic Permission", Label("job-2"), meshtrafficpermission.MeshTrafficPermissionUniversal, Ordered)
+	_ = Describe("Mesh Traffic Permission - merge from and rules", Label("job-2"), meshtrafficpermission.MergeFromAndRulesUniversal, Ordered)
 	_ = Describe("GRPC", Label("job-3"), grpc.GRPC, Ordered)
 	_ = Describe("MeshRateLimit", Label("job-2"), meshratelimit.Policy, Ordered)
 	_ = Describe("MeshRateLimit on Zone Proxy", Label("job-2"), meshratelimit.ZoneProxy, Ordered)

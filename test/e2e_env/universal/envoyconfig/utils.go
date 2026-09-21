@@ -338,12 +338,14 @@ func normalizeClusterAddress(cluster map[string]any) {
 	}
 }
 
-func cleanupAfterTest(mesh string, dpps []string, policies ...core_model.ResourceTypeDescriptor) func() {
+// allowAll has to be the same one the mesh was set up with: a mesh running MeshIdentity needs the
+// 'rules' form, where the legacy 'from' form would leave it with different RBAC than setup did.
+func cleanupAfterTest(mesh string, allowAll InstallFunc, dpps []string, policies ...core_model.ResourceTypeDescriptor) func() {
 	GinkgoHelper()
 	return func() {
 		GinkgoHelper()
 		Expect(DeleteMeshResources(universal.Cluster, mesh, policies...)).To(Succeed())
-		Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
+		Expect(universal.Cluster.Install(allowAll)).To(Succeed())
 		// Wait for the dataplane xDS configs to settle before letting the next
 		// spec start. Without this the next test races envoy convergence: a
 		// resource (e.g. an OpenTelemetry cluster from the previous meshmetric
