@@ -242,5 +242,54 @@ var _ = Describe("DestinationIndex", func() {
 			Expect(matched).To(BeTrue())
 			Expect(outbounds).To(BeEmpty())
 		})
+
+		Context("reachableBackends not set", func() {
+			var ms core_model.Resource
+
+			BeforeEach(func() {
+				ms = builders.MeshService().
+					WithName("backend-svc").
+					AddIntPort(9000, 9000, metadata.ProtocolHTTP).
+					Build()
+			})
+
+			DescribeTable("should resolve outbounds",
+				func(withTPSection bool, allowAllOutbound bool, expectAll bool) {
+					dp := builders.Dataplane().WithAddress("127.0.0.1").Build()
+					if withTPSection {
+						dp.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
+					}
+
+					index := xds_context.NewDestinationIndex([]core_model.Resource{ms}).WithAllowAllOutbound(allowAllOutbound)
+					outbounds, matched := index.GetReachableBackends(dp)
+
+					if expectAll {
+						Expect(matched).To(BeFalse())
+						Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(ms), "9000")))
+					} else {
+						Expect(matched).To(BeTrue())
+						Expect(outbounds).To(BeEmpty())
+					}
+				},
+				Entry("deny by default", true, false, false),
+				Entry("deny by default without transparentProxying section", false, false, false),
+				Entry("allow all when allowAllOutbound is set", true, true, true),
+				Entry("allow all without transparentProxying section when allowAllOutbound is set", false, true, true),
+			)
+
+			It("should return explicit outbounds", func() {
+				dp := builders.Dataplane().
+					WithAddress("127.0.0.1").
+					AddOutbound(builders.Outbound().WithMeshService("backend-svc", 9000).WithPort(10001)).
+					Build()
+
+				index := xds_context.NewDestinationIndex([]core_model.Resource{ms})
+				outbounds, matched := index.GetReachableBackends(dp)
+
+				Expect(matched).To(BeTrue())
+				Expect(outbounds).To(HaveLen(1))
+				Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(ms), "9000")))
+			})
+		})
 	})
 })

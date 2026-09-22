@@ -310,7 +310,7 @@
                 "reachable_backends": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends",
                     "additionalProperties": true,
-                    "description": "Reachable backend via transparent proxy when running with MeshExternalService, MeshService and MeshMultiZoneService. Setting an explicit list of refs can dramatically improve the performance of the mesh. If not specified, all services in the mesh are reachable."
+                    "description": "Reachable backend via transparent proxy when running with MeshExternalService, MeshService and MeshMultiZoneService. Setting an explicit list of refs can dramatically improve the performance of the mesh. If not specified, no services in the mesh are reachable, unless the control plane sets KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND."
                 }
             },
             "additionalProperties": true,

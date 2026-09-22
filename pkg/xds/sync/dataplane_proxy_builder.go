@@ -101,7 +101,8 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 	}
 	var reachableBackends map[kri.Identifier]core_resources.Port
 	var onlySelectedBackends bool
-	if dataplane.Spec.GetNetworking().GetTransparentProxying() != nil {
+	// On Kubernetes the transparent proxy config arrives via kuma-dp metadata, so the section is often nil
+	if tpEnabled || dataplane.Spec.GetNetworking().GetTransparentProxying() != nil {
 		reachableBackends, onlySelectedBackends = meshContext.BaseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
 	}
 

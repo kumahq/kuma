@@ -219,6 +219,9 @@ func logWarnings(config kuma_cp.Config) {
 	if config.ApiServer.Authn.LocalhostIsAdmin {
 		log.Info("WARNING: you can access Control Plane API as admin by sending requests from the same machine where Control Plane runs. To increase security, it is recommended to extract admin credentials and set KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN to false.")
 	}
+	if config.Defaults.AllowAllOutbound {
+		log.Info("WARNING: KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND is enabled. Data plane proxies without reachableBackends can send traffic to every destination in the mesh and receive configuration for all of them, which increases control plane and proxy CPU and memory usage in large meshes. To increase security and performance, define reachableBackends on data plane proxies and set KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND to false.")
+	}
 }
 
 func initializeMetrics(builder *core_runtime.Builder) error {
@@ -466,7 +469,9 @@ func initializeConfigManager(builder *core_runtime.Builder) {
 }
 
 func initializeMeshCache(builder *core_runtime.Builder) error {
-	var mcbOpts []xds_context.MeshContextBuilderOption
+	mcbOpts := []xds_context.MeshContextBuilderOption{
+		xds_context.WithAllowAllOutbound(builder.Config().Defaults.AllowAllOutbound),
+	}
 	if builder.Config().XdsServer.PolicyMatchingCacheSize > 0 {
 		mcbOpts = append(mcbOpts, xds_context.WithPolicyMatchingHash())
 	}
