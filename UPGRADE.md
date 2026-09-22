@@ -131,6 +131,7 @@ Retries are the one thing that changes. A mesh without a `MeshRetry` does not re
 
 - If a workload relies on `KUMA_DATAPLANE_RUNTIME_STRICT_INBOUND_PORTS_ENABLED=false` to receive traffic on ports it does not declare, declare those ports as inbounds before you upgrade.
 - Restart data planes that run with `KUMA_DATAPLANE_RUNTIME_REUSE_PORT_ENABLED=false` after you upgrade the control plane. Envoy cannot change `enable_reuse_port` on a running listener, so it rejects listener updates until the data plane restarts.
+
 ### OpenTelemetry backends referenced by `backendRef` always export through `kuma-dp`
 
 `MeshTrace`, `MeshAccessLog`, and `MeshMetric` send data for a `backendRef` to a `MeshOpenTelemetryBackend` through `kuma-dp`: Envoy exports to a Unix socket and `kuma-dp` forwards to the collector. Setting `runtime.kubernetes.injector.otelPipeEnabled` (`KUMA_RUNTIME_KUBERNETES_INJECTOR_OTEL_PIPE_ENABLED`) or `KUMA_DATAPLANE_RUNTIME_OTEL_PIPE_ENABLED` to `false` used to make Envoy export to the collector directly. Both settings are removed.
