@@ -23,7 +23,7 @@ const (
 )
 
 func KDSMutualTLS() {
-	var global, trustedZone, impersonatingZone, anonymousZone Cluster
+	var global, trustedZone, anonymousZone Cluster
 	var tmpDir string
 
 	writeFile := func(name string, content []byte) string {
@@ -64,7 +64,6 @@ func KDSMutualTLS() {
 			Setup(global)).To(Succeed())
 
 		trustedZone = NewUniversalCluster(NewTestingT(), "kds-mtls-trusted", Silent)
-		impersonatingZone = NewUniversalCluster(NewTestingT(), "kds-mtls-impersonating", Silent)
 		anonymousZone = NewUniversalCluster(NewTestingT(), "kds-mtls-anonymous", Silent)
 
 		zoneOpts := func(extra ...KumaDeploymentOption) []KumaDeploymentOption {
@@ -73,10 +72,6 @@ func KDSMutualTLS() {
 		Expect(NewClusterSetup().
 			Install(Kuma(core.Zone, zoneOpts(issueClientCert(ca, "trusted", trustedZone.ZoneName())...)...)).
 			Setup(trustedZone)).To(Succeed())
-		// a cert signed by the trusted CA, but issued for a different zone than the one it connects as
-		Expect(NewClusterSetup().
-			Install(Kuma(core.Zone, zoneOpts(issueClientCert(ca, "impersonating", trustedZone.ZoneName())...)...)).
-			Setup(impersonatingZone)).To(Succeed())
 		Expect(NewClusterSetup().
 			Install(Kuma(core.Zone, zoneOpts()...)).
 			Setup(anonymousZone)).To(Succeed())
@@ -85,29 +80,18 @@ func KDSMutualTLS() {
 	AfterEachFailure(func() {
 		DebugUniversal(global, "default")
 		DebugUniversal(trustedZone, "default")
-		DebugUniversal(impersonatingZone, "default")
 		DebugUniversal(anonymousZone, "default")
 	})
 
 	E2EAfterAll(func() {
-		for _, c := range []Cluster{trustedZone, impersonatingZone, anonymousZone, global} {
+		for _, c := range []Cluster{trustedZone, anonymousZone, global} {
 			ControlPlaneAssertions(c)
 			Expect(c.DeleteKuma()).To(Succeed())
 			Expect(c.DismissCluster()).To(Succeed())
 		}
 	})
 
-	// the trusted zone connecting to the same Global CP rules out any other reason for a zone to be missing
-	expectZoneNeverConnects := func(zone Cluster) {
-		Expect(WaitForZoneOnline(global, trustedZone.ZoneName())).To(Succeed())
-		Consistently(func(g Gomega) {
-			out, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(out).ToNot(ContainSubstring(zone.ZoneName()))
-		}, "60s", "1s").Should(Succeed())
-	}
-
-	It("should connect a zone presenting a certificate issued for its name", func() {
+	It("should connect a zone presenting a client certificate", func() {
 		Expect(WaitForZoneOnline(global, trustedZone.ZoneName())).To(Succeed())
 	})
 
@@ -121,11 +105,13 @@ func KDSMutualTLS() {
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	It("should reject a zone presenting a certificate issued for another zone", func() {
-		expectZoneNeverConnects(impersonatingZone)
-	})
-
 	It("should reject a zone that doesn't present a certificate", func() {
-		expectZoneNeverConnects(anonymousZone)
+		// the trusted zone connecting to the same Global CP rules out any other reason for the zone to be missing
+		Expect(WaitForZoneOnline(global, trustedZone.ZoneName())).To(Succeed())
+		Consistently(func(g Gomega) {
+			out, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).ToNot(ContainSubstring(anonymousZone.ZoneName()))
+		}, "60s", "1s").Should(Succeed())
 	})
 }

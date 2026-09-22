@@ -28,7 +28,6 @@ type KdsServerConfig struct {
 	// TlsCipherSuites defines the list of ciphers to use
 	TlsCipherSuites []string `json:"tlsCipherSuites" envconfig:"kuma_multizone_global_kds_tls_cipher_suites"`
 	// TlsClientCaFile defines a path to a file with PEM-encoded CA used to verify client certificates of Zone CPs.
-	// A Zone CP that presents a certificate must present one signed by this CA and issued for its zone name.
 	TlsClientCaFile string `json:"tlsClientCaFile" envconfig:"kuma_multizone_global_kds_tls_client_ca_file"`
 	// RequireClientCert rejects Zone CPs that don't present a client certificate signed by TlsClientCaFile.
 	RequireClientCert bool `json:"requireClientCert" envconfig:"kuma_multizone_global_kds_require_client_cert"`

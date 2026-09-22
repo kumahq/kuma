@@ -113,19 +113,13 @@ func (s *server) Start(stop <-chan struct{}) error {
 		grpcOptions = append(grpcOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	}
 
-	streamInterceptors := s.streamInterceptors
-	unaryInterceptors := s.unaryInterceptors
-	if tlsEnabled && s.config.TlsClientCaFile != "" {
-		streamInterceptors = append([]grpc.StreamServerInterceptor{kds_middleware.ClientCertStreamInterceptor()}, streamInterceptors...)
-		unaryInterceptors = append([]grpc.UnaryServerInterceptor{kds_middleware.ClientCertUnaryInterceptor()}, unaryInterceptors...)
-	}
 	grpcOptions = append(
 		grpcOptions,
 		grpc.ChainStreamInterceptor(
-			append(streamInterceptors, kds_middleware.StreamIDStreamInterceptor(&s.streamCount))...,
+			append(s.streamInterceptors, kds_middleware.StreamIDStreamInterceptor(&s.streamCount))...,
 		),
 		grpc.ChainUnaryInterceptor(
-			append(unaryInterceptors, kds_middleware.StreamIDUnaryInterceptor(&s.streamCount))...,
+			append(s.unaryInterceptors, kds_middleware.StreamIDUnaryInterceptor(&s.streamCount))...,
 		),
 	)
 	if s.config.Tracing.Enabled {

@@ -568,7 +568,6 @@ multizone:
       # TlsCipherSuites the list of cipher suites
       tlsCipherSuites: [] # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CIPHER_SUITES
       # TlsClientCaFile defines a path to a file with PEM-encoded CA used to verify client certificates of Zone CPs.
-      # A Zone CP that presents a certificate must present one signed by this CA and issued for its zone name.
       tlsClientCaFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CLIENT_CA_FILE
       # RequireClientCert rejects Zone CPs that don't present a client certificate signed by TlsClientCaFile.
       requireClientCert: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_REQUIRE_CLIENT_CERT
