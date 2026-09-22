@@ -96,17 +96,32 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 	tpEnabled bool,
 	bindOutbounds bool,
 ) []*xds_types.Outbound {
+	outbounds := ResolveOutbounds(meshContext.BaseMeshContext, dataplane, tpEnabled, bindOutbounds)
+	if tpEnabled || bindOutbounds {
+		// VIP outbounds never carry a legacy outbound, so the dataplane's legacy
+		// outbound list is always cleared here.
+		dataplane.Spec.Networking.Outbound = nil
+	}
+	return outbounds
+}
+
+func ResolveOutbounds(
+	baseMeshContext *xds_context.BaseMeshContext,
+	dataplane *core_mesh.DataplaneResource,
+	tpEnabled bool,
+	bindOutbounds bool,
+) xds_types.Outbounds {
 	if !tpEnabled && !bindOutbounds {
-		return asOutbounds(dataplane, meshContext.ResolveResourceIdentifier)
+		return asOutbounds(dataplane, baseMeshContext.DestinationIndex.ResolveResourceIdentifier)
 	}
 	var reachableBackends map[kri.Identifier]core_resources.Port
 	var onlySelectedBackends bool
 	if dataplane.Spec.GetNetworking().GetTransparentProxying() != nil {
-		reachableBackends, onlySelectedBackends = meshContext.BaseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
+		reachableBackends, onlySelectedBackends = baseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
 	}
 
-	var newOutbounds []*xds_types.Outbound
-	for _, outbound := range meshContext.VIPOutbounds {
+	var newOutbounds xds_types.Outbounds
+	for _, outbound := range baseMeshContext.VIPOutbounds {
 		if onlySelectedBackends {
 			// check if there is an entry with specific port or without port
 			_, selected := reachableBackends[outbound.Resource]
@@ -123,9 +138,6 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 		}
 		newOutbounds = append(newOutbounds, outbound)
 	}
-	// VIP outbounds never carry a legacy outbound, so the dataplane's legacy
-	// outbound list is always cleared here.
-	dataplane.Spec.Networking.Outbound = nil
 	return newOutbounds
 }
 

@@ -83,7 +83,7 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 			}
 
 			var dest core.Destination
-			if dest = di.getDestinationByKRI(id); dest == nil {
+			if dest = di.GetDestinationByKRI(id); dest == nil {
 				return
 			}
 
@@ -130,17 +130,17 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 	return outbounds, true
 }
 
-func (di *DestinationIndex) getDestinationByKRI(id kri.Identifier) core.Destination {
+func (di *DestinationIndex) GetDestinationByKRI(id kri.Identifier) core.Destination {
 	if id.IsEmpty() {
 		return nil
 	}
 	return di.destinationByIdentifier[kri.NoSectionName(id)]
 }
 
-// resolveResourceIdentifier resolves one resource identifier based on the labels.
+// ResolveResourceIdentifier resolves one resource identifier based on the labels.
 // If multiple resources match the labels, the oldest one is returned.
 // The reason is that picking the oldest one is the less likely to break existing traffic after introducing new resources.
-func (di *DestinationIndex) resolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) kri.Identifier {
+func (di *DestinationIndex) ResolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) kri.Identifier {
 	if len(labels) == 0 {
 		return kri.Identifier{}
 	}

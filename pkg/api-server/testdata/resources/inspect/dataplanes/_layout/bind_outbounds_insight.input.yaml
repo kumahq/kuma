@@ -16,22 +16,16 @@ networking:
       tags:
         kuma.io/display-name: foo
         kuma.io/protocol: http
-    - port: 8081
-      name: secondary-port
-      protocol: tcp
-      tags:
-        kuma.io/display-name: foo
-        kuma.io/protocol: tcp
-  outbound:
-    - port: 8080
-      backendRef:
-        kind: MeshService
-        port: 80
-        labels:
-          kuma.io/display-name: test-server
+---
+type: DataplaneInsight
+name: dp-1
+mesh: default
+metadata:
+  features:
+    - feature-bind-outbounds
 ---
 type: MeshService
-name: test-server-syncedhash
+name: test-server
 mesh: default
 labels:
   kuma.io/display-name: test-server

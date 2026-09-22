@@ -5,12 +5,6 @@
    "port": 8080,
    "protocol": "http",
    "proxyResourceName": "self_inbound_dp_main-port"
-  },
-  {
-   "kri": "kri_dp_default_test-zone__dp-1_secondary-port",
-   "port": 8081,
-   "protocol": "tcp",
-   "proxyResourceName": "self_inbound_dp_secondary-port"
   }
  ],
  "kri": "kri_dp_default_test-zone__dp-1_",
@@ -20,10 +14,10 @@
  "listeners": [],
  "outbounds": [
   {
-   "kri": "kri_msvc_default_test-zone__test-server_80",
+   "kri": "kri_msvc_default_test-zone__test-server_main-port",
    "port": 80,
    "protocol": "http",
-   "proxyResourceName": "kri_msvc_default_test-zone__test-server_80"
+   "proxyResourceName": "kri_msvc_default_test-zone__test-server_main-port"
   }
  ]
 }

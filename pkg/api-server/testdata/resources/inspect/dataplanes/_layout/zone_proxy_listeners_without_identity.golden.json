@@ -2,7 +2,6 @@
  "inbounds": [],
  "kri": "kri_dp_default_test-zone__dp-zone-proxy_",
  "labels": {
-  "kuma.io/workload": "zone-proxy",
   "kuma.io/zone": "test-zone"
  },
  "listeners": [
@@ -31,22 +30,7 @@
    "port": 10001,
    "proxyResourceName": "self_zoneingress_dp_zi-main",
    "type": "ZoneIngress"
-  },
-  {
-   "clusters": [
-    {
-     "kri": "kri_extsvc_default___mes-1_9090",
-     "port": 9090,
-     "protocol": "http",
-     "proxyResourceName": "kri_extsvc_default___mes-1_9090"
-    }
-   ],
-   "kri": "kri_dp_default_test-zone__dp-zone-proxy_10002",
-   "port": 10002,
-   "proxyResourceName": "self_zoneegress_dp_10002",
-   "type": "ZoneEgress"
   }
  ],
- "outbounds": [],
- "spiffeId": "spiffe://default.test-zone.mesh.local/workload/zone-proxy"
+ "outbounds": []
 }
