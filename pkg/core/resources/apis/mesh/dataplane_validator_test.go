@@ -226,11 +226,13 @@ var _ = Describe("Dataplane", func() {
                 reachableBackends:
                   refs:
                   - kind: MeshService
-                    name: a
+                    labels:
+                      kuma.io/display-name: a
                     port: 9090
                   - kind: MeshExternalService
-                    name: es
-                    namespace: es1
+                    labels:
+                      kuma.io/display-name: es
+                      k8s.kuma.io/namespace: es1
                   - kind: MeshService
                     labels:
                       kuma.io/test: abc`,
@@ -796,40 +798,17 @@ var _ = Describe("Dataplane", func() {
                 reachableBackends:
                   refs:
                   - kind: Something
-                    name: first
                     labels:
                       kuma.io/test: test
                   - kind: MeshService
-                    name: second
-                    namespace: not-valid
-                    labels:
-                      kuma.io/test: test
-                  - kind: MeshService
-                    name: third
-                    labels:
-                      kuma.io/test: test
-                  - kind: MeshService
-                    name: first$-.kuma
-                  - kind: MeshService
-                  - kind: MeshService
-                    namespace: xyz
+                    port: 80
 `,
 			expected: `
                 violations:
                 - field: networking.transparentProxing.reachableBackends.refs[0].kind
                   message: 'invalid value. Available values are: MeshExternalService,MeshMultiZoneService,MeshService'
-                - field: networking.transparentProxing.reachableBackends.refs[0].labels
-                  message: labels cannot be defined when name is specified
                 - field: networking.transparentProxing.reachableBackends.refs[1].labels
-                  message: labels cannot be defined when name is specified
-                - field: networking.transparentProxing.reachableBackends.refs[2].labels
-                  message: labels cannot be defined when name is specified
-                - field: networking.transparentProxing.reachableBackends.refs[3].name
-                  message: invalid characters. A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character
-                - field: networking.transparentProxing.reachableBackends.refs[4].name
-                  message: name or labels are required
-                - field: networking.transparentProxing.reachableBackends.refs[5].name
-                  message: name is required, when namespace is defined`,
+                  message: must not be empty`,
 		}),
 		Entry("listener missing address", testCase{
 			dataplane: `

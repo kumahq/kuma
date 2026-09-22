@@ -388,6 +388,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "49.services-for-pod.yaml",
 			dataplane:      "49.dataplane.yaml",
 		}),
+		Entry("50. Pod with a name-based reachable backend ref", testCase{
+			pod:         "50.pod.yaml",
+			expectedErr: "kuma.io/reachable-backends has invalid format",
+		}),
 	)
 })
 

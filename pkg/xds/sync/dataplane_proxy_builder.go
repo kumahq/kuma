@@ -168,7 +168,6 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 		labels, sectionName := xds_context.NormalizeBackendRefTarget(
 			o.BackendRef.Kind,
 			o.BackendRef.Name,
-			"",
 			&port,
 			o.BackendRef.Labels,
 			dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],

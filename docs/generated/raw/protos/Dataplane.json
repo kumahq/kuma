@@ -308,14 +308,6 @@
                     "type": "string",
                     "description": "Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService"
                 },
-                "name": {
-                    "type": "string",
-                    "description": "Name of the backend."
-                },
-                "namespace": {
-                    "type": "string",
-                    "description": "Namespace of the backend. Might be empty"
-                },
                 "port": {
                     "additionalProperties": true,
                     "type": "integer",

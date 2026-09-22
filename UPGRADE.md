@@ -761,6 +761,43 @@ Policies that select real resources through `spec.targetRef` or `spec.to[].targe
 
 Migrate any policy that still selects those resources by `name` and/or `namespace` to use `labels` instead before upgrading. `sectionName` remains supported for `Dataplane` inbound selection and `MeshService` port selection.
 
+### `reachableBackends` refs select backends by `labels` only
+
+`name` and `namespace` have been removed from `Dataplane.networking.transparentProxying.reachableBackends.refs[]` and from the `kuma.io/reachable-backends` annotation. Every ref now requires `kind` and `labels`, and `port` stays optional to narrow the ref to a single port.
+
+A Universal `Dataplane` whose ref still sets `name` fails validation with `labels: must not be empty`. On Kubernetes, a pod whose `kuma.io/reachable-backends` annotation still sets `name` or `namespace` is rejected by the pod converter, so its `Dataplane` is not updated.
+
+**Action required:** rewrite every ref before upgrading. `name` becomes the `kuma.io/display-name` label and `namespace` becomes the `k8s.kuma.io/namespace` label.
+
+Before:
+
+```yaml
+kuma.io/reachable-backends: |
+  refs:
+  - kind: MeshService
+    name: redis
+    namespace: redis-system
+    port: 6379
+```
+
+After:
+
+```yaml
+kuma.io/reachable-backends: |
+  refs:
+  - kind: MeshService
+    labels:
+      kuma.io/display-name: redis
+      k8s.kuma.io/namespace: redis-system
+    port: 6379
+```
+
+### Data plane proxies without `reachableBackends` get no outbounds
+
+A data plane proxy without `reachableBackends` now gets no generated outbounds, so it cannot reach any service through the transparent proxy. This includes pods injected by a 2.14 control plane, whose `Dataplane` keeps the redirect ports in the spec.
+
+**Action required:** define `reachableBackends` on every data plane proxy before upgrading, or set `defaults.allowAllOutbound` (`KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND`) to `true` to restore the previous allow-all behavior.
+
 ### A `MeshHTTPRoute` rule whose backendRefs all fail to resolve answers 500
 
 A rule that declares `backendRefs` and resolves none of them no longer falls back to the destination service. The rule now serves `500` to every request it matches, which is what the Gateway API requires of an invalid backendRef. A rule that resolves at least one of its backendRefs keeps routing to those backends, and a rule with a `RequestRedirect` filter still redirects.

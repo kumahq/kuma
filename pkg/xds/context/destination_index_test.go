@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("DestinationIndex", func() {
 	Describe("GetReachableBackends", func() {
-		It("should resolve name/namespace format to correct MeshService", func() {
+		It("should resolve labels and port to the MeshService port", func() {
 			ms := builders.MeshService().
 				WithName("backend-svc-hash123").
 				WithLabels(map[string]string{
@@ -40,10 +40,12 @@ var _ = Describe("DestinationIndex", func() {
 			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
 				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
 					{
-						Kind:      "MeshService",
-						Name:      "backend-svc",
-						Namespace: "other-ns",
-						Port:      wrapperspb.UInt32(8080),
+						Kind: "MeshService",
+						Labels: map[string]string{
+							mesh_proto.DisplayName:      "backend-svc",
+							mesh_proto.KubeNamespaceTag: "other-ns",
+						},
+						Port: wrapperspb.UInt32(8080),
 					},
 				},
 			}
@@ -58,7 +60,7 @@ var _ = Describe("DestinationIndex", func() {
 			Expect(outbounds).To(HaveKey(expectedKRI))
 		})
 
-		It("should resolve MeshService name refs using display name derived from resource metadata", func() {
+		It("should resolve display-name label derived from resource metadata", func() {
 			ms := builders.MeshService().
 				WithName("backend-svc").
 				AddIntPort(9000, 9000, metadata.ProtocolHTTP).
@@ -74,8 +76,8 @@ var _ = Describe("DestinationIndex", func() {
 			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
 				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
 					{
-						Kind: "MeshService",
-						Name: "backend-svc",
+						Kind:   "MeshService",
+						Labels: map[string]string{mesh_proto.DisplayName: "backend-svc"},
 					},
 				},
 			}
@@ -88,86 +90,6 @@ var _ = Describe("DestinationIndex", func() {
 
 			expectedKRI := kri.WithSectionName(kri.From(ms), "9000")
 			Expect(outbounds).To(HaveKey(expectedKRI))
-		})
-
-		It("should fallback to dataplane namespace when namespace not specified", func() {
-			ms := builders.MeshService().
-				WithName("backend-svc-hash456").
-				WithLabels(map[string]string{
-					mesh_proto.DisplayName:      "backend-svc",
-					mesh_proto.KubeNamespaceTag: "default",
-					mesh_proto.ZoneTag:          "zone-1",
-				}).
-				AddIntPort(9000, 9000, metadata.ProtocolHTTP).
-				Build()
-
-			dp := builders.Dataplane().
-				WithName("dp-1").
-				WithLabels(map[string]string{
-					mesh_proto.KubeNamespaceTag: "default",
-					mesh_proto.ZoneTag:          "zone-1",
-				}).
-				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
-				Build()
-
-			dp.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
-			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
-				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
-					{
-						Kind: "MeshService",
-						Name: "backend-svc",
-					},
-				},
-			}
-
-			index := xds_context.NewDestinationIndex([]core_model.Resource{ms})
-			outbounds, matched := index.GetReachableBackends(dp)
-
-			Expect(matched).To(BeTrue())
-			Expect(outbounds).To(HaveLen(1))
-
-			expectedKRI := kri.WithSectionName(kri.From(ms), "9000")
-			Expect(outbounds).To(HaveKey(expectedKRI))
-		})
-
-		It("should resolve legacy MeshService name forms through derived labels", func() {
-			ms := builders.MeshService().
-				WithName("backend-svc-hash321").
-				WithLabels(map[string]string{
-					mesh_proto.DisplayName:      "backend-svc",
-					mesh_proto.KubeNamespaceTag: "other-ns",
-					mesh_proto.ZoneTag:          "zone-1",
-				}).
-				AddIntPort(8080, 8080, metadata.ProtocolHTTP).
-				Build()
-
-			dp := builders.Dataplane().
-				WithName("dp-1").
-				WithLabels(map[string]string{
-					mesh_proto.KubeNamespaceTag: "default",
-					mesh_proto.ZoneTag:          "zone-1",
-				}).
-				WithAddress("127.0.0.1").
-				WithInboundOfTagsAndProtocol("http", "kuma.io/display-name", "web").
-				Build()
-
-			dp.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
-			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
-				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
-					{
-						Kind: "MeshService",
-						Name: "backend-svc_other-ns_svc_8080",
-					},
-				},
-			}
-
-			index := xds_context.NewDestinationIndex([]core_model.Resource{ms})
-			outbounds, matched := index.GetReachableBackends(dp)
-
-			Expect(matched).To(BeTrue())
-			Expect(outbounds).To(HaveLen(1))
-			Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(ms), "8080")))
 		})
 
 		It("should resolve user-defined outbound legacy MeshService name forms through derived labels", func() {
@@ -204,7 +126,7 @@ var _ = Describe("DestinationIndex", func() {
 			Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(ms), "8080")))
 		})
 
-		It("should not resolve when namespace does not match", func() {
+		It("should not resolve when namespace label does not match", func() {
 			ms := builders.MeshService().
 				WithName("backend-svc-hash789").
 				WithLabels(map[string]string{
@@ -229,9 +151,11 @@ var _ = Describe("DestinationIndex", func() {
 			dp.Spec.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
 				Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
 					{
-						Kind:      "MeshService",
-						Name:      "backend-svc",
-						Namespace: "wrong-ns",
+						Kind: "MeshService",
+						Labels: map[string]string{
+							mesh_proto.DisplayName:      "backend-svc",
+							mesh_proto.KubeNamespaceTag: "wrong-ns",
+						},
 					},
 				},
 			}
