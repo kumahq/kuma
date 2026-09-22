@@ -116,8 +116,8 @@ func (s *server) Start(stop <-chan struct{}) error {
 	streamInterceptors := s.streamInterceptors
 	unaryInterceptors := s.unaryInterceptors
 	if tlsEnabled && s.config.TlsClientCaFile != "" {
-		streamInterceptors = append([]grpc.StreamServerInterceptor{kds_middleware.ClientCertStreamInterceptor(s.config.RequireClientCert)}, streamInterceptors...)
-		unaryInterceptors = append([]grpc.UnaryServerInterceptor{kds_middleware.ClientCertUnaryInterceptor(s.config.RequireClientCert)}, unaryInterceptors...)
+		streamInterceptors = append([]grpc.StreamServerInterceptor{kds_middleware.ClientCertStreamInterceptor()}, streamInterceptors...)
+		unaryInterceptors = append([]grpc.UnaryServerInterceptor{kds_middleware.ClientCertUnaryInterceptor()}, unaryInterceptors...)
 	}
 	grpcOptions = append(
 		grpcOptions,

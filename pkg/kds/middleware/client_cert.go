@@ -13,18 +13,18 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
 )
 
-func ClientCertStreamInterceptor(requireClientCert bool) grpc.StreamServerInterceptor {
+func ClientCertStreamInterceptor() grpc.StreamServerInterceptor {
 	return func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		if err := verifyClientCert(ss.Context(), requireClientCert); err != nil {
+		if err := verifyClientCert(ss.Context()); err != nil {
 			return err
 		}
 		return handler(srv, ss)
 	}
 }
 
-func ClientCertUnaryInterceptor(requireClientCert bool) grpc.UnaryServerInterceptor {
+func ClientCertUnaryInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		if err := verifyClientCert(ctx, requireClientCert); err != nil {
+		if err := verifyClientCert(ctx); err != nil {
 			return nil, err
 		}
 		return handler(ctx, req)
@@ -33,16 +33,14 @@ func ClientCertUnaryInterceptor(requireClientCert bool) grpc.UnaryServerIntercep
 
 // verifyClientCert binds the client-id declared in metadata to the verified
 // client certificate, so a zone holding a valid cert can't act as another zone.
-func verifyClientCert(ctx context.Context, requireClientCert bool) error {
+// Whether a certificate is required at all is enforced by the TLS handshake.
+func verifyClientCert(ctx context.Context) error {
 	p, ok := peer.FromContext(ctx)
 	if !ok {
 		return status.Error(codes.Unauthenticated, "peer info is not available")
 	}
 	tlsInfo, ok := p.AuthInfo.(credentials.TLSInfo)
 	if !ok || len(tlsInfo.State.VerifiedChains) == 0 || len(tlsInfo.State.VerifiedChains[0]) == 0 {
-		if requireClientCert {
-			return status.Error(codes.Unauthenticated, "client certificate is required")
-		}
 		return nil
 	}
 	zone, err := util.ClientIDFromIncomingCtx(ctx)

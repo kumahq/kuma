@@ -20,10 +20,9 @@ import (
 
 var _ = Describe("ClientCert interceptor", func() {
 	type testCase struct {
-		requireClientCert bool
-		authInfo          credentials.AuthInfo
-		clientID          string
-		expectedCode      codes.Code
+		authInfo     credentials.AuthInfo
+		clientID     string
+		expectedCode codes.Code
 	}
 
 	tlsInfo := func(leaf *x509.Certificate) credentials.TLSInfo {
@@ -39,7 +38,7 @@ var _ = Describe("ClientCert interceptor", func() {
 		if given.clientID != "" {
 			ctx = metadata.NewIncomingContext(ctx, metadata.Pairs("client-id", given.clientID))
 		}
-		interceptor := middleware.ClientCertUnaryInterceptor(given.requireClientCert)
+		interceptor := middleware.ClientCertUnaryInterceptor()
 		_, err := interceptor(ctx, nil, &grpc.UnaryServerInfo{}, func(context.Context, any) (any, error) {
 			return nil, nil
 		})
@@ -56,57 +55,39 @@ var _ = Describe("ClientCert interceptor", func() {
 			}
 		},
 		Entry("cert with zone in DNS SAN", testCase{
-			requireClientCert: true,
-			authInfo:          tlsInfo(&x509.Certificate{DNSNames: []string{"zone-1"}}),
-			clientID:          "zone-1",
-			expectedCode:      codes.OK,
+			authInfo:     tlsInfo(&x509.Certificate{DNSNames: []string{"zone-1"}}),
+			clientID:     "zone-1",
+			expectedCode: codes.OK,
 		}),
 		Entry("cert with zone in CN", testCase{
-			requireClientCert: true,
-			authInfo:          tlsInfo(&x509.Certificate{Subject: pkix.Name{CommonName: "zone-1"}}),
-			clientID:          "zone-1",
-			expectedCode:      codes.OK,
+			authInfo:     tlsInfo(&x509.Certificate{Subject: pkix.Name{CommonName: "zone-1"}}),
+			clientID:     "zone-1",
+			expectedCode: codes.OK,
 		}),
 		Entry("cert issued for another zone", testCase{
-			requireClientCert: true,
-			authInfo:          tlsInfo(&x509.Certificate{DNSNames: []string{"zone-2"}}),
-			clientID:          "zone-1",
-			expectedCode:      codes.PermissionDenied,
-		}),
-		Entry("cert issued for another zone when cert is optional", testCase{
-			requireClientCert: false,
-			authInfo:          tlsInfo(&x509.Certificate{DNSNames: []string{"zone-2"}}),
-			clientID:          "zone-1",
-			expectedCode:      codes.PermissionDenied,
+			authInfo:     tlsInfo(&x509.Certificate{DNSNames: []string{"zone-2"}}),
+			clientID:     "zone-1",
+			expectedCode: codes.PermissionDenied,
 		}),
 		Entry("cert without client-id", testCase{
-			requireClientCert: true,
-			authInfo:          tlsInfo(&x509.Certificate{DNSNames: []string{"zone-1"}}),
-			expectedCode:      codes.InvalidArgument,
+			authInfo:     tlsInfo(&x509.Certificate{DNSNames: []string{"zone-1"}}),
+			expectedCode: codes.InvalidArgument,
 		}),
-		Entry("no cert when cert is required", testCase{
-			requireClientCert: true,
-			authInfo:          tlsInfo(nil),
-			clientID:          "zone-1",
-			expectedCode:      codes.Unauthenticated,
+		Entry("no cert", testCase{
+			authInfo:     tlsInfo(nil),
+			clientID:     "zone-1",
+			expectedCode: codes.OK,
 		}),
-		Entry("no cert when cert is optional", testCase{
-			requireClientCert: false,
-			authInfo:          tlsInfo(nil),
-			clientID:          "zone-1",
-			expectedCode:      codes.OK,
-		}),
-		Entry("plaintext connection when cert is required", testCase{
-			requireClientCert: true,
-			clientID:          "zone-1",
-			expectedCode:      codes.Unauthenticated,
+		Entry("plaintext connection", testCase{
+			clientID:     "zone-1",
+			expectedCode: codes.OK,
 		}),
 	)
 
 	It("should reject a stream with a cert issued for another zone", func() {
 		ctx := peer.NewContext(context.Background(), &peer.Peer{AuthInfo: tlsInfo(&x509.Certificate{DNSNames: []string{"zone-2"}})})
 		ctx = metadata.NewIncomingContext(ctx, metadata.Pairs("client-id", "zone-1"))
-		interceptor := middleware.ClientCertStreamInterceptor(true)
+		interceptor := middleware.ClientCertStreamInterceptor()
 		called := false
 
 		err := interceptor(nil, &fakeServerStream{ctx: ctx}, &grpc.StreamServerInfo{}, func(any, grpc.ServerStream) error {
