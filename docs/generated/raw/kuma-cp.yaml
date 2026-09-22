@@ -467,7 +467,7 @@ defaults:
   skipTenantResources: false # ENV: KUMA_DEFAULTS_SKIP_TENANT_RESOURCES
   # If true, it skips creating default hostname generators
   skipHostnameGenerators: false # ENV: KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS
-  # If true, a data plane proxy without reachableBackends can reach every destination in the mesh.
+  # If true, a data plane proxy without reachableBackends can reach every destination in the mesh, and one without MeshPassthrough keeps outbound passthrough.
   # Insecure: restores the legacy behavior where outbound traffic is allowed by default.
   allowAllOutbound: false # ENV: KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND
 # Metrics configuration

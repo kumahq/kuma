@@ -798,6 +798,12 @@ A data plane proxy without `reachableBackends` now gets no generated outbounds, 
 
 **Action required:** define `reachableBackends` on every data plane proxy before upgrading, or set `defaults.allowAllOutbound` (`KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND`) to `true` to restore the previous allow-all behavior.
 
+### Outbound passthrough defaults to `None`
+
+A transparent proxy data plane proxy that no `MeshPassthrough` policy selects now drops traffic to destinations outside the mesh instead of forwarding it to the original destination. This behaves as if a `MeshPassthrough` with `passthroughMode: None` targets it. Proxies without a transparent proxy or with bound outbounds are not affected, and a policy with `passthroughMode: All` keeps passthrough on.
+
+**Action required:** before upgrading, allow the external destinations your workloads use with `MeshExternalService` or a `MeshPassthrough` policy (`passthroughMode: Matched` with `appendMatch`, or `passthroughMode: All`), or set `defaults.allowAllOutbound` (`KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND`) to `true` to restore the previous behavior.
+
 ### A `MeshHTTPRoute` rule whose backendRefs all fail to resolve answers 500
 
 A rule that declares `backendRefs` and resolves none of them no longer falls back to the destination service. The rule now serves `500` to every request it matches, which is what the Gateway API requires of an invalid backendRef. A rule that resolves at least one of its backendRefs keeps routing to those backends, and a rule with a `RequestRedirect` filter still redirects.
