@@ -419,7 +419,7 @@
                 "metadata": {
                   "filterMetadata": {
                     "envoy.lb": {
-                      "kuma.io/access": "external",
+                      "access": "external",
                       "kuma.io/display-name": "mes-zone-proxy",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
@@ -427,7 +427,7 @@
                       "kuma.io/zone": "kuma-3"
                     },
                     "envoy.transport_socket_match": {
-                      "kuma.io/access": "external",
+                      "access": "external",
                       "kuma.io/display-name": "mes-zone-proxy",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",

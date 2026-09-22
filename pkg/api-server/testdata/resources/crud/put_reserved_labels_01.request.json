@@ -1,0 +1,7 @@
+{
+  "type": "MeshTimeout",
+  "mesh": "default",
+  "name": "mt-user-key",
+  "labels": { "example.com/foo": "bar", "team": "payments" },
+  "spec": { "targetRef": { "kind": "Mesh" }, "to": [ { "targetRef": { "kind": "Mesh" }, "default": { "idleTimeout": "2s" } } ] }
+}
