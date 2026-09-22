@@ -27,6 +27,11 @@ type KdsServerConfig struct {
 	TlsMaxVersion string `json:"tlsMaxVersion" envconfig:"kuma_multizone_global_kds_tls_max_version"`
 	// TlsCipherSuites defines the list of ciphers to use
 	TlsCipherSuites []string `json:"tlsCipherSuites" envconfig:"kuma_multizone_global_kds_tls_cipher_suites"`
+	// TlsClientCaFile defines a path to a file with PEM-encoded CA used to verify client certificates of Zone CPs.
+	// A Zone CP that presents a certificate must present one signed by this CA and issued for its zone name.
+	TlsClientCaFile string `json:"tlsClientCaFile" envconfig:"kuma_multizone_global_kds_tls_client_ca_file"`
+	// RequireClientCert rejects Zone CPs that don't present a client certificate signed by TlsClientCaFile.
+	RequireClientCert bool `json:"requireClientCert" envconfig:"kuma_multizone_global_kds_require_client_cert"`
 	// MaxMsgSize defines a maximum size of the message that is exchanged using KDS.
 	// In practice this means a limit on full list of one resource type.
 	MaxMsgSize uint32 `json:"maxMsgSize" envconfig:"kuma_multizone_global_kds_max_msg_size"`
@@ -72,6 +77,9 @@ func (c *KdsServerConfig) Validate() error {
 	if c.TlsKeyFile == "" && c.TlsCertFile != "" {
 		errs = multierr.Append(errs, errors.New(".TlsKeyFile cannot be empty if TlsCertFile has been set"))
 	}
+	if c.RequireClientCert && c.TlsClientCaFile == "" {
+		errs = multierr.Append(errs, errors.New(".TlsClientCaFile cannot be empty if RequireClientCert is true"))
+	}
 	if _, err := config_types.TLSVersion(c.TlsMinVersion); err != nil {
 		errs = multierr.Append(errs, errors.New(".TlsMinVersion"+err.Error()))
 	}
@@ -94,6 +102,10 @@ type KdsClientConfig struct {
 	TlsSkipVerify bool `json:"tlsSkipVerify" envconfig:"kuma_multizone_zone_kds_tls_skip_verify"`
 	// RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify the server by using it.
 	RootCAFile string `json:"rootCaFile" envconfig:"kuma_multizone_zone_kds_root_ca_file"`
+	// TlsCertFile defines a path to a file with PEM-encoded client certificate presented to Global CP.
+	TlsCertFile string `json:"tlsCertFile" envconfig:"kuma_multizone_zone_kds_tls_cert_file"`
+	// TlsKeyFile defines a path to a file with PEM-encoded key of the client certificate presented to Global CP.
+	TlsKeyFile string `json:"tlsKeyFile" envconfig:"kuma_multizone_zone_kds_tls_key_file"`
 	// MaxMsgSize defines a maximum size of the message that is exchanged using KDS.
 	// In practice this means a limit on full list of one resource type.
 	MaxMsgSize uint32 `json:"maxMsgSize" envconfig:"kuma_multizone_zone_kds_max_msg_size"`
@@ -118,10 +130,14 @@ var _ config.Config = &KdsClientConfig{}
 var _ config.Config = ZoneHealthCheckConfig{}
 
 func (c *KdsClientConfig) Validate() error {
-	if err := c.EventBasedWatchdog.Validate(); err != nil {
-		return errors.Wrap(err, "invalid eventBasedWatchdog config")
+	var errs error
+	if (c.TlsCertFile == "") != (c.TlsKeyFile == "") {
+		errs = multierr.Append(errs, errors.New(".TlsCertFile and .TlsKeyFile have to be set together"))
 	}
-	return nil
+	if err := c.EventBasedWatchdog.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrap(err, "invalid eventBasedWatchdog config"))
+	}
+	return errs
 }
 
 type EventBasedWatchdogConfig struct {

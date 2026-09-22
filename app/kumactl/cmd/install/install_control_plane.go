@@ -240,6 +240,7 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringVar(&args.ControlPlane_tls_general_caBundle, "tls-general-ca-bundle", args.ControlPlane_tls_general_secret, "Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)")
 	cmd.Flags().StringVar(&args.ControlPlane_tls_apiServer_secret, "tls-api-server-secret", args.ControlPlane_tls_apiServer_secret, "Secret that contains tls.crt, tls.key for protecting Kuma API on HTTPS")
 	cmd.Flags().StringVar(&args.ControlPlane_tls_kdsZoneClient_secret, "tls-kds-zone-client-secret", args.ControlPlane_tls_kdsZoneClient_secret, "Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_kdsZoneClient_clientCertSecret, "tls-kds-zone-client-cert-secret", args.ControlPlane_tls_kdsZoneClient_clientCertSecret, "Secret that contains tls.crt and tls.key of the client certificate presented to KDS Global server. Used for mTLS")
 	cmd.Flags().StringVar(&args.ControlPlane_injectorFailurePolicy, "injector-failure-policy", args.ControlPlane_injectorFailurePolicy, "failure policy of the mutating web hook implemented by the Kuma Injector component")
 	cmd.Flags().StringToStringVar(&args.ControlPlane_nodeSelector, "control-plane-node-selector", args.ControlPlane_nodeSelector, "node selector for Kuma Control Plane")
 	cmd.Flags().StringToStringVar(&args.ControlPlane_envVars, "env-var", args.ControlPlane_envVars, "environment variables that will be passed to the control plane")

@@ -596,6 +596,10 @@ spec:
               value: "grpc://192.168.0.1:5685"
             - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
               value: "/var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt"
+            - name: KUMA_MULTIZONE_ZONE_KDS_TLS_CERT_FILE
+              value: "/var/run/secrets/kuma.io/kds-client-cert/tls.crt"
+            - name: KUMA_MULTIZONE_ZONE_KDS_TLS_KEY_FILE
+              value: "/var/run/secrets/kuma.io/kds-client-cert/tls.key"
             - name: KUMA_MULTIZONE_ZONE_NAME
               value: "zone-1"
             - name: KUMA_PLUGIN_POLICIES_ENABLED
@@ -688,6 +692,9 @@ spec:
             - name: kds-client-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
               readOnly: true
+            - name: kds-client-cert
+              mountPath: /var/run/secrets/kuma.io/kds-client-cert
+              readOnly: true
             - name: tmp
               mountPath: /tmp
       volumes:
@@ -703,6 +710,9 @@ spec:
         - name: kds-client-tls-cert
           secret:
             secretName: kds-ca-secret
+        - name: kds-client-cert
+          secret:
+            secretName: kds-client-cert-secret
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config

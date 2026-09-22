@@ -261,6 +261,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.TlsEnabled).To(BeFalse())
 			Expect(cfg.Multizone.Global.KDS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.Multizone.Global.KDS.TlsKeyFile).To(Equal("/key"))
+			Expect(cfg.Multizone.Global.KDS.TlsClientCaFile).To(Equal("/clientCa"))
+			Expect(cfg.Multizone.Global.KDS.RequireClientCert).To(BeTrue())
 			Expect(cfg.Multizone.Global.KDS.MaxMsgSize).To(Equal(uint32(1)))
 			Expect(cfg.Multizone.Global.KDS.MsgSendTimeout.Duration).To(Equal(10 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.NackBackoff.Duration).To(Equal(11 * time.Second))
@@ -274,6 +276,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
+			Expect(cfg.Multizone.Zone.KDS.TlsCertFile).To(Equal("/clientCert"))
+			Expect(cfg.Multizone.Zone.KDS.TlsKeyFile).To(Equal("/clientKey"))
 			Expect(cfg.Multizone.Zone.KDS.MaxMsgSize).To(Equal(uint32(2)))
 			Expect(cfg.Multizone.Zone.KDS.MsgSendTimeout.Duration).To(Equal(20 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.NackBackoff.Duration).To(Equal(21 * time.Second))
@@ -633,6 +637,8 @@ multizone:
       tlsMinVersion: TLSv1_3
       tlsMaxVersion: TLSv1_3
       tlsCipherSuites: ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"]
+      tlsClientCaFile: /clientCa
+      requireClientCert: true
       maxMsgSize: 1
       msgSendTimeout: 10s
       nackBackoff: 11s
@@ -655,6 +661,8 @@ multizone:
     name: "zone-1"
     kds:
       rootCaFile: /rootCa
+      tlsCertFile: /clientCert
+      tlsKeyFile: /clientKey
       maxMsgSize: 2
       msgSendTimeout: 20s
       nackBackoff: 21s
@@ -998,6 +1006,8 @@ meshService:
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_MIN_VERSION":                                                "TLSv1_3",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_MAX_VERSION":                                                "TLSv1_3",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_CIPHER_SUITES":                                              "TLS_RSA_WITH_AES_128_CBC_SHA,TLS_AES_256_GCM_SHA384",
+				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_CLIENT_CA_FILE":                                             "/clientCa",
+				"KUMA_MULTIZONE_GLOBAL_KDS_REQUIRE_CLIENT_CERT":                                            "true",
 				"KUMA_MULTIZONE_GLOBAL_KDS_MAX_MSG_SIZE":                                                   "1",
 				"KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT":                                               "10s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF":                                                   "11s",
@@ -1011,6 +1021,8 @@ meshService:
 				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
 				"KUMA_MULTIZONE_ZONE_NAME":                                                                 "zone-1",
 				"KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE":                                                     "/rootCa",
+				"KUMA_MULTIZONE_ZONE_KDS_TLS_CERT_FILE":                                                    "/clientCert",
+				"KUMA_MULTIZONE_ZONE_KDS_TLS_KEY_FILE":                                                     "/clientKey",
 				"KUMA_MULTIZONE_ZONE_KDS_MAX_MSG_SIZE":                                                     "2",
 				"KUMA_MULTIZONE_ZONE_KDS_MSG_SEND_TIMEOUT":                                                 "20s",
 				"KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF":                                                     "21s",

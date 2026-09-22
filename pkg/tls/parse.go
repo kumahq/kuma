@@ -7,6 +7,8 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"errors"
+	"fmt"
+	"os"
 )
 
 // ParsePrivateKey parses an ASN.1 DER-encoded private key. This is
@@ -28,4 +30,17 @@ func ParsePrivateKey(data []byte) (crypto.PrivateKey, error) {
 	}
 
 	return nil, errors.New("failed to parse private key")
+}
+
+// LoadCertPool reads PEM-encoded certificates from a file into a new pool.
+func LoadCertPool(file string) (*x509.CertPool, error) {
+	pemCerts, err := os.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("could not read certificate %s: %w", file, err)
+	}
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM(pemCerts) {
+		return nil, fmt.Errorf("failed to parse PEM certificates from %s", file)
+	}
+	return pool, nil
 }

@@ -3,9 +3,7 @@ package mux
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
@@ -35,6 +33,7 @@ import (
 	kds_sync_store "github.com/kumahq/kuma/v3/pkg/kds/store"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	resources_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
+	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	"github.com/kumahq/kuma/v3/pkg/version"
 )
@@ -97,11 +96,14 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	)
 	switch u.Scheme {
 	case "grpc":
+		if c.config.TlsCertFile != "" {
+			return errors.Errorf("client certificate requires the %q scheme in the global address", "grpcs")
+		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	case "grpcs":
-		tlsConfig, err := tlsConfig(c.config.RootCAFile, c.config.TlsSkipVerify)
+		tlsConfig, err := tlsConfig(c.config, c.rt.CertWatchers())
 		if err != nil {
-			return errors.Wrap(err, "could not ")
+			return errors.Wrap(err, "could not create TLS config")
 		}
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig)))
 	default:
@@ -375,22 +377,26 @@ func (c *client) NeedLeaderElection() bool {
 	return true
 }
 
-func tlsConfig(rootCaFile string, skipVerify bool) (*tls.Config, error) {
+func tlsConfig(cfg multizone.KdsClientConfig, certWatchers *util_tls.Watchers) (*tls.Config, error) {
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: skipVerify, // #nosec G402 -- we let the user decide if they want to ignore verification
+		InsecureSkipVerify: cfg.TlsSkipVerify, // #nosec G402 -- we let the user decide if they want to ignore verification
 		MinVersion:         tls.VersionTLS12,
 	}
-	if rootCaFile != "" {
-		roots := x509.NewCertPool()
-		caCert, err := os.ReadFile(rootCaFile)
+	if cfg.RootCAFile != "" {
+		roots, err := util_tls.LoadCertPool(cfg.RootCAFile)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not read certificate %s", rootCaFile)
-		}
-		ok := roots.AppendCertsFromPEM(caCert)
-		if !ok {
-			return nil, errors.New("failed to parse root certificate")
+			return nil, err
 		}
 		tlsConfig.RootCAs = roots
+	}
+	if cfg.TlsCertFile != "" {
+		keyPair, err := certWatchers.Watch(cfg.TlsCertFile, cfg.TlsKeyFile)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig.GetClientCertificate = func(*tls.CertificateRequestInfo) (*tls.Certificate, error) {
+			return keyPair.Certificate()
+		}
 	}
 	return tlsConfig, nil
 }

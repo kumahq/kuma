@@ -90,6 +90,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.tls.kdsZoneClient.create | bool | `false` | Whether to create the TLS secret in helm. |
 | controlPlane.tls.kdsZoneClient.cert | string | `""` | CA bundle that was used to sign the certificate of KDS Global Server. |
 | controlPlane.tls.kdsZoneClient.skipVerify | bool | `false` | If true, TLS cert of the server is not verified. |
+| controlPlane.tls.kdsZoneClient.clientCertSecretName | string | `""` | Name of the K8s Secret resource that contains tls.crt and tls.key of the client certificate presented to KDS Global Server. The certificate must be issued for the zone name (DNS SAN or CN). |
 | controlPlane.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
 | controlPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma CP ImagePullPolicy |
 | controlPlane.image.repository | string | `"kuma-cp"` | Kuma CP image repository |

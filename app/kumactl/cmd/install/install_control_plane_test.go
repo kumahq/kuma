@@ -209,6 +209,7 @@ var _ = Context("kumactl install control-plane", func() {
 				"--dataplane-init-version", "greatest",
 				"--tls-api-server-secret", "api-server-secret",
 				"--tls-kds-zone-client-secret", "kds-ca-secret",
+				"--tls-kds-zone-client-cert-secret", "kds-client-cert-secret",
 				"--tls-general-ca-secret", "general-tls-secret-ca",
 				"--mode", "zone",
 				"--kds-global-address", "grpc://192.168.0.1:5685",

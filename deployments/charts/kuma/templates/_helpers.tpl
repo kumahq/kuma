@@ -277,6 +277,12 @@ env:
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
 {{- end }}
+{{- if and (eq .Values.controlPlane.mode "zone") .Values.controlPlane.tls.kdsZoneClient.clientCertSecretName }}
+- name: KUMA_MULTIZONE_ZONE_KDS_TLS_CERT_FILE
+  value: /var/run/secrets/kuma.io/kds-client-cert/tls.crt
+- name: KUMA_MULTIZONE_ZONE_KDS_TLS_KEY_FILE
+  value: /var/run/secrets/kuma.io/kds-client-cert/tls.key
+{{- end }}
 - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
   value: "false"
 - name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
@@ -341,6 +347,12 @@ env:
 {{- if and (eq .Values.controlPlane.mode "zone") (or .Values.controlPlane.tls.kdsZoneClient.secretName .Values.controlPlane.tls.kdsZoneClient.create) }}
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
+{{- end }}
+{{- if and (eq .Values.controlPlane.mode "zone") .Values.controlPlane.tls.kdsZoneClient.clientCertSecretName }}
+- name: KUMA_MULTIZONE_ZONE_KDS_TLS_CERT_FILE
+  value: /var/run/secrets/kuma.io/kds-client-cert/tls.crt
+- name: KUMA_MULTIZONE_ZONE_KDS_TLS_KEY_FILE
+  value: /var/run/secrets/kuma.io/kds-client-cert/tls.key
 {{- end }}
 {{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
 - name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY

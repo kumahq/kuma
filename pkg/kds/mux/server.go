@@ -7,6 +7,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -80,7 +81,11 @@ func (s *server) Start(stop <-chan struct{}) error {
 		grpc.MaxSendMsgSize(int(s.config.MaxMsgSize)),
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
-	if s.config.TlsCertFile != "" && s.config.TlsEnabled {
+	tlsEnabled := s.config.TlsCertFile != "" && s.config.TlsEnabled
+	if s.config.RequireClientCert && !tlsEnabled {
+		return errors.New("requireClientCert needs KDS TLS to be enabled")
+	}
+	if tlsEnabled {
 		keyPair, err := s.certWatchers.Watch(s.config.TlsCertFile, s.config.TlsKeyFile)
 		if err != nil {
 			return err
@@ -95,16 +100,32 @@ func (s *server) Start(stop <-chan struct{}) error {
 		if tlsCfg.CipherSuites, err = config_types.TLSCiphers(s.config.TlsCipherSuites); err != nil {
 			return err
 		}
+		if s.config.TlsClientCaFile != "" {
+			if tlsCfg.ClientCAs, err = util_tls.LoadCertPool(s.config.TlsClientCaFile); err != nil {
+				return err
+			}
+			// Verifying only presented certs lets zones roll out certs before RequireClientCert is flipped.
+			tlsCfg.ClientAuth = tls.VerifyClientCertIfGiven
+			if s.config.RequireClientCert {
+				tlsCfg.ClientAuth = tls.RequireAndVerifyClientCert
+			}
+		}
 		grpcOptions = append(grpcOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	}
 
+	streamInterceptors := s.streamInterceptors
+	unaryInterceptors := s.unaryInterceptors
+	if tlsEnabled && s.config.TlsClientCaFile != "" {
+		streamInterceptors = append([]grpc.StreamServerInterceptor{kds_middleware.ClientCertStreamInterceptor(s.config.RequireClientCert)}, streamInterceptors...)
+		unaryInterceptors = append([]grpc.UnaryServerInterceptor{kds_middleware.ClientCertUnaryInterceptor(s.config.RequireClientCert)}, unaryInterceptors...)
+	}
 	grpcOptions = append(
 		grpcOptions,
 		grpc.ChainStreamInterceptor(
-			append(s.streamInterceptors, kds_middleware.StreamIDStreamInterceptor(&s.streamCount))...,
+			append(streamInterceptors, kds_middleware.StreamIDStreamInterceptor(&s.streamCount))...,
 		),
 		grpc.ChainUnaryInterceptor(
-			append(s.unaryInterceptors, kds_middleware.StreamIDUnaryInterceptor(&s.streamCount))...,
+			append(unaryInterceptors, kds_middleware.StreamIDUnaryInterceptor(&s.streamCount))...,
 		),
 	)
 	if s.config.Tracing.Enabled {

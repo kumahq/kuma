@@ -567,6 +567,11 @@ multizone:
       tlsMaxVersion: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_MAX_VERSION
       # TlsCipherSuites the list of cipher suites
       tlsCipherSuites: [] # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CIPHER_SUITES
+      # TlsClientCaFile defines a path to a file with PEM-encoded CA used to verify client certificates of Zone CPs.
+      # A Zone CP that presents a certificate must present one signed by this CA and issued for its zone name.
+      tlsClientCaFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CLIENT_CA_FILE
+      # RequireClientCert rejects Zone CPs that don't present a client certificate signed by TlsClientCaFile.
+      requireClientCert: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_REQUIRE_CLIENT_CERT
       # MaxMsgSize defines a maximum size of the message in bytes that is exchanged using KDS.
       # In practice this means a limit on full list of one resource type.
       maxMsgSize: 10485760 # ENV: KUMA_MULTIZONE_GLOBAL_KDS_MAX_MSG_SIZE
@@ -600,6 +605,10 @@ multizone:
     kds:
       # RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
       rootCaFile: # ENV: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
+      # TlsCertFile defines a path to a file with PEM-encoded client certificate presented to Global CP.
+      tlsCertFile: # ENV: KUMA_MULTIZONE_ZONE_KDS_TLS_CERT_FILE
+      # TlsKeyFile defines a path to a file with PEM-encoded key of the client certificate presented to Global CP.
+      tlsKeyFile: # ENV: KUMA_MULTIZONE_ZONE_KDS_TLS_KEY_FILE
       # If true, TLS connection to the server won't be verified.
       tlsSkipVerify: false # ENV: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
       # MaxMsgSize defines a maximum size of the message in bytes that is exchanged using KDS.

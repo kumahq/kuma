@@ -25,3 +25,33 @@ func TestEventBasedWatchdogConfigValidateRejectsNonPositiveIntervals(t *testing.
 		t.Fatalf("expected full resync validation error, got %v", err)
 	}
 }
+
+func TestKdsServerConfigValidateRequiresClientCaForClientCert(t *testing.T) {
+	cfg := DefaultGlobalConfig().KDS
+	cfg.RequireClientCert = true
+
+	err := cfg.Validate()
+	if err == nil || !strings.Contains(err.Error(), ".TlsClientCaFile cannot be empty if RequireClientCert is true") {
+		t.Fatalf("expected client CA validation error, got %v", err)
+	}
+
+	cfg.TlsClientCaFile = "/ca.crt"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("expected no validation error, got %v", err)
+	}
+}
+
+func TestKdsClientConfigValidateRequiresCertAndKeyTogether(t *testing.T) {
+	cfg := DefaultZoneConfig().KDS
+	cfg.TlsCertFile = "/tls.crt"
+
+	err := cfg.Validate()
+	if err == nil || !strings.Contains(err.Error(), ".TlsCertFile and .TlsKeyFile have to be set together") {
+		t.Fatalf("expected cert/key validation error, got %v", err)
+	}
+
+	cfg.TlsKeyFile = "/tls.key"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("expected no validation error, got %v", err)
+	}
+}

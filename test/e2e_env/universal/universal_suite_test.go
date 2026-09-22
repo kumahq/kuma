@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/healthcheck"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/inspect"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/intercp"
+	"github.com/kumahq/kuma/v3/test/e2e_env/universal/kdsmtls"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/meshaccesslog"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/meshexternalservice"
 	"github.com/kumahq/kuma/v3/test/e2e_env/universal/meshfaultinjection"
@@ -102,4 +103,5 @@ var (
 	_ = Describe("MeshIdentity - Rotate CA", Label("job-2"), meshidentity.Rotate, Ordered)
 	_ = Describe("Strict Inbound Ports", Label("job-3"), strictinbounds.StrictInboundPorts, Ordered)
 	_ = Describe("Control Plane Certificate Rotation", Label("job-2"), certs.Rotation, Ordered)
+	_ = Describe("KDS mTLS", Label("job-3"), kdsmtls.KDSMutualTLS, Ordered)
 )
