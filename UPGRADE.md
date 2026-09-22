@@ -8,6 +8,11 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Reserved label prefixes
+
+From now on, `kuma.io/` and `k8s.kuma.io/` are reserved label prefixes.
+Every unknown label under these prefixes will be rejected on create and update.
+
 ### DPP configuration refresh interval default raised to 10s
 
 `xdsServer.dataplaneConfigurationRefreshInterval` (`KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL`) now defaults to `10s` instead of `1s`. The control plane regenerates the xDS configuration of every connected proxy on this interval, so a 1s default kept the control plane busy and scaled poorly with the number of data plane proxies.
@@ -786,6 +791,12 @@ kuma.io/reachable-backends: |
       k8s.kuma.io/namespace: redis-system
     port: 6379
 ```
+
+### Data plane proxies without `reachableBackends` get no outbounds
+
+A data plane proxy without `reachableBackends` now gets no generated outbounds, so it cannot reach any service through the transparent proxy. This includes pods injected by a 2.14 control plane, whose `Dataplane` keeps the redirect ports in the spec.
+
+**Action required:** define `reachableBackends` on every data plane proxy before upgrading, or set `defaults.allowAllOutbound` (`KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND`) to `true` to restore the previous allow-all behavior.
 
 ### A `MeshHTTPRoute` rule whose backendRefs all fail to resolve answers 500
 

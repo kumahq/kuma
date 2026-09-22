@@ -571,4 +571,38 @@ var _ = Describe("Compute", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(labels).To(HaveKeyWithValue(mesh_proto.DisplayName, "recomputed-name"))
 	})
+
+	DescribeTable("control-plane-only labels",
+		func(trusted bool, expectKept bool) {
+			res := builders.MeshService().WithMesh("mesh-1").WithName("backend").Build()
+			supplied := map[string]string{
+				mesh_proto.ResourceOriginLabel:             string(mesh_proto.ZoneResourceOrigin),
+				mesh_proto.ManagedByLabel:                  "k8s-controller",
+				mesh_proto.DeletionGracePeriodStartedLabel: "2026-01-01T00.00.00Z",
+				metadata.KumaServiceName:                   "backend",
+				metadata.HeadlessService:                   "false",
+			}
+
+			labels, err := resource_labels.Compute(resource_labels.Write{
+				Descriptor:    res.Descriptor(),
+				Spec:          res.GetSpec(),
+				Namespace:     resource_labels.NewNamespace("kuma-demo", false),
+				Mesh:          "mesh-1",
+				DisplayName:   "backend",
+				Labels:        supplied,
+				TrustedWriter: trusted,
+			}, resource_labels.ControlPlane{Mode: core.Zone, IsK8s: true, Zone: "zone-1"})
+
+			Expect(err).ToNot(HaveOccurred())
+			for _, key := range []string{mesh_proto.ManagedByLabel, mesh_proto.DeletionGracePeriodStartedLabel, metadata.KumaServiceName, metadata.HeadlessService} {
+				if expectKept {
+					Expect(labels).To(HaveKeyWithValue(key, supplied[key]))
+				} else {
+					Expect(labels).ToNot(HaveKey(key))
+				}
+			}
+		},
+		Entry("are kept as supplied by a trusted writer", true, true),
+		Entry("are dropped when supplied by a user", false, false),
+	)
 })

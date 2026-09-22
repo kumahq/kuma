@@ -1,1 +1,3 @@
-meshexternalservice.kuma.io/mes-arbitrary-user created
+error while running command: exit status 1; The MeshExternalService "mes-arbitrary-user" is invalid: 
+* labels["k8s.kuma.io/baz"]: label "k8s.kuma.io/baz" is reserved and not known to this control plane
+* labels["kuma.io/foo"]: label "kuma.io/foo" is reserved and not known to this control plane

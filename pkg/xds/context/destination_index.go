@@ -50,7 +50,8 @@ func (di *DestinationIndex) WithAllowAllOutbound(allow bool) *DestinationIndex {
 	return di
 }
 
-// GetReachableBackends return map of reachable port by its KRI, and bool to indicate if any backend were match or all destinations were returned
+// GetReachableBackends returns reachable ports by KRI, and true when only the returned backends are reachable.
+// Without reachableBackends it returns an empty map and true (deny), or every destination and false when allowAllOutbound is set.
 func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneResource) (map[kri.Identifier]core.Port, bool) {
 	outbounds := map[kri.Identifier]core.Port{}
 
