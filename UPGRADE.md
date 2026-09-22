@@ -765,7 +765,7 @@ Migrate any policy that still selects those resources by `name` and/or `namespac
 
 `name` and `namespace` have been removed from `Dataplane.networking.transparentProxying.reachableBackends.refs[]` and from the `kuma.io/reachable-backends` annotation. Every ref now requires `kind` and `labels`, and `port` stays optional to narrow the ref to a single port.
 
-A Universal `Dataplane` whose ref still sets `name` fails validation with `labels: must not be empty`. On Kubernetes, a pod whose `kuma.io/reachable-backends` annotation still sets `name` or `namespace` is rejected by the pod converter, so its `Dataplane` is not updated.
+Refs still using `name` or `namespace` resolve to nothing. Validation runs only on writes, so an existing `Dataplane` is not re-validated, and the control plane drops the unknown fields when it reads the stored spec. The proxy then receives no outbound clusters, even with `KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND=true`, until every ref is rewritten. New writes fail validation with `labels: must not be empty`, and on Kubernetes the pod converter rejects an annotation that still sets `name` or `namespace`.
 
 **Action required:** rewrite every ref before upgrading. `name` becomes the `kuma.io/display-name` label and `namespace` becomes the `k8s.kuma.io/namespace` label.
 
