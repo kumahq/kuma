@@ -8,6 +8,11 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Reserved label prefixes
+
+From now on, `kuma.io/` and `k8s.kuma.io/` are reserved label prefixes.
+Every unknown label under these prefixes will be rejected on create and update.
+
 ### DPP configuration refresh interval default raised to 10s
 
 `xdsServer.dataplaneConfigurationRefreshInterval` (`KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL`) now defaults to `10s` instead of `1s`. The control plane regenerates the xDS configuration of every connected proxy on this interval, so a 1s default kept the control plane busy and scaled poorly with the number of data plane proxies.

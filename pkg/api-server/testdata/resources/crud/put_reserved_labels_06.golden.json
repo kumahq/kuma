@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not process a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "labels[\"kuma.io/managed-by\"]",
+   "reason": "label \"kuma.io/managed-by\" is set by the control plane and cannot be set manually"
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "labels[\"kuma.io/managed-by\"]",
+   "message": "label \"kuma.io/managed-by\" is set by the control plane and cannot be set manually"
+  }
+ ]
+}

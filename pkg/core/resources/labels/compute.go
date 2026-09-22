@@ -55,7 +55,7 @@ func Compute(w Write, cp ControlPlane) (map[string]string, error) {
 		if d.Compute == nil {
 			continue
 		}
-		v, ok, err := d.Compute(w, cp)
+		v, ok, err := d.Compute(d.Key, w, cp)
 		if err != nil {
 			return nil, err
 		}
