@@ -13,10 +13,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/config/multizone"
@@ -37,7 +35,6 @@ import (
 	kds_reconcile "github.com/kumahq/kuma/v3/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
-	"github.com/kumahq/kuma/v3/pkg/util/rsa"
 	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
@@ -103,12 +100,6 @@ func DefaultContext(
 			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin)),
 			util.WithoutLabelPrefixes(cfg.Multizone.Global.KDS.Labels.SkipPrefixes...),
 		),
-		kds_reconcile.If(
-			kds_reconcile.And(
-				kds_reconcile.TypeIs(system.GlobalSecretType),
-				kds_reconcile.NameHasPrefix(system.ZoneTokenSigningKeyPrefix),
-			),
-			MapZoneTokenSigningKeyGlobalToPublicKey),
 		kds_reconcile.If(
 			kds_reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
@@ -219,30 +210,6 @@ func MapInsightResourcesZeroGeneration(_ kds.Features, r core_model.Resource) (c
 	return r, nil
 }
 
-func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
-	signingKeyBytes := r.(*system.GlobalSecretResource).Spec.GetData().GetValue()
-	publicKeyBytes, err := rsa.FromPrivateKeyPEMBytesToPublicKeyPEMBytes(signingKeyBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	publicSigningKeyResource := system.NewGlobalSecretResource()
-	newResName := strings.ReplaceAll(
-		r.GetMeta().GetName(),
-		system.ZoneTokenSigningKeyPrefix,
-		system.ZoneTokenSigningPublicKeyPrefix,
-	)
-	publicSigningKeyResource.SetMeta(util.CloneResourceMeta(r.GetMeta(), util.WithName(newResName)))
-
-	if err := publicSigningKeyResource.SetSpec(&system_proto.Secret{
-		Data: &wrapperspb.BytesValue{Value: publicKeyBytes},
-	}); err != nil {
-		return nil, err
-	}
-
-	return publicSigningKeyResource, nil
-}
-
 // RemoveK8sSystemNamespaceSuffixMapper is a mapper responsible for removing control plane system namespace suffixes
 // from names of resources if resources are stored in kubernetes.
 func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) kds_reconcile.ResourceMapper {
@@ -302,10 +269,12 @@ func GlobalProvidedFilter(rm manager.ReadOnlyResourceManager) kds_reconcile.Reso
 			_, exists := KDSSyncedConfigs[r.GetMeta().GetName()]
 			return exists
 		case system.GlobalSecretType:
-			if slices.Contains([]string{system.EnvoyAdminCA, system.AdminUserToken, system.InterCpCA, system.UserTokenRevocations}, r.GetMeta().GetName()) {
+			if slices.Contains([]string{system.EnvoyAdminCA, system.AdminUserToken, system.InterCpCA, system.UserTokenRevocations, system.ZoneTokenRevocations}, r.GetMeta().GetName()) {
 				return false
 			}
-			if strings.HasPrefix(r.GetMeta().GetName(), system.UserTokenSigningKeyPrefix) {
+			// zone tokens are validated on Global CP only, the signing key must never leave it
+			if strings.HasPrefix(r.GetMeta().GetName(), system.UserTokenSigningKeyPrefix) ||
+				strings.HasPrefix(r.GetMeta().GetName(), system.ZoneTokenSigningKeyPrefix) {
 				return false
 			}
 		}
