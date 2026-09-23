@@ -256,6 +256,51 @@ var _ = Describe("Cached Resource Manager", func() {
 		Expect(hits + hitWaits).To(Equal(100.0))
 	}))
 
+	It("should apply filter, resource keys and pagination on top of the cached base List()", func() {
+		// given more dataplanes in the mesh
+		for _, name := range []string{"dp-3", "dp-2"} {
+			dp := core_mesh.NewDataplaneResource()
+			dp.Spec = res.Spec
+			Expect(store.Create(context.Background(), dp, core_store.CreateByKey(name, "default"))).To(Succeed())
+		}
+
+		// when listed with different in-memory options
+		filtered := core_mesh.DataplaneResourceList{}
+		Expect(cachedManager.List(context.Background(), &filtered, core_store.ListByMesh("default"), core_store.ListByFilterFunc(func(rs core_model.Resource) bool {
+			return rs.GetMeta().GetName() != "dp-2"
+		}))).To(Succeed())
+
+		byKeys := core_mesh.DataplaneResourceList{}
+		Expect(cachedManager.List(context.Background(), &byKeys, core_store.ListByMesh("default"), core_store.ListByResourceKeys([]core_model.ResourceKey{
+			core_model.WithMesh("default", "dp-3"),
+		}))).To(Succeed())
+
+		firstPage := core_mesh.DataplaneResourceList{}
+		Expect(cachedManager.List(context.Background(), &firstPage, core_store.ListByMesh("default"), core_store.ListByPage(2, ""))).To(Succeed())
+		secondPage := core_mesh.DataplaneResourceList{}
+		Expect(cachedManager.List(context.Background(), &secondPage, core_store.ListByMesh("default"), core_store.ListByPage(2, firstPage.GetPagination().NextOffset))).To(Succeed())
+
+		// then options are applied
+		names := func(list core_mesh.DataplaneResourceList) []string {
+			var out []string
+			for _, item := range list.Items {
+				out = append(out, item.GetMeta().GetName())
+			}
+			return out
+		}
+		Expect(names(filtered)).To(Equal([]string{"dp-1", "dp-3"}))
+		Expect(filtered.GetPagination().Total).To(Equal(uint32(2)))
+		Expect(names(byKeys)).To(Equal([]string{"dp-3"}))
+		Expect(names(firstPage)).To(Equal([]string{"dp-1", "dp-2"}))
+		Expect(firstPage.GetPagination().Total).To(Equal(uint32(3)))
+		Expect(firstPage.GetPagination().NextOffset).To(Equal("2"))
+		Expect(names(secondPage)).To(Equal([]string{"dp-3"}))
+		Expect(secondPage.GetPagination().NextOffset).To(BeEmpty())
+
+		// and the store is queried only once for the shared base List()
+		Expect(int(countingManager.listQueries)).To(Equal(1))
+	})
+
 	It("should cache status for resources with HasStatus", func() {
 		// given resource with status
 		workload := workload_api.NewWorkloadResource()

@@ -85,6 +85,10 @@ type resourceEndpoints struct {
 	routeMetadataProvider  runtime.RouteMetadataProvider
 
 	disableOriginLabelValidation bool
+
+	// readOnlyResManager serves the inspection reads from the store cache.
+	// Writes and the generic CRUD reads stay on resManager for read-after-write consistency.
+	readOnlyResManager manager.ReadOnlyResourceManager
 }
 
 // reservedRouteMetadataKeys are route metadata keys Kuma interprets itself, so a
@@ -861,7 +865,7 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 				rest_errors.HandleError(request.Request.Context(), response, err, "failed inspect")
 				return
 			}
-			if err := r.resManager.List(request.Request.Context(), hl, store.ListByMesh(meshName)); err != nil {
+			if err := r.readOnlyResManager.List(request.Request.Context(), hl, store.ListByMesh(meshName)); err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, "failed inspect")
 				return
 			}
@@ -871,7 +875,7 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			request,
 			response,
 			r.descriptor,
-			r.resManager,
+			r.readOnlyResManager,
 			r.resourceAccess,
 			func(policyResource core_model.Resource) store.ListFilterFunc {
 				return func(rs core_model.Resource) bool {
@@ -910,7 +914,7 @@ func matchingDataplanesForFilter(
 	request *restful.Request,
 	response *restful.Response,
 	descriptor core_model.ResourceTypeDescriptor,
-	resManager manager.ResourceManager,
+	resManager manager.ReadOnlyResourceManager,
 	resourceAccess access.ResourceAccess,
 	dpFilterForResource func(resource core_model.Resource) store.ListFilterFunc,
 ) {
@@ -986,7 +990,7 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 		}
 
 		dataplaneInsight := core_mesh.NewDataplaneInsightResource()
-		err = r.resManager.Get(ctx, dataplaneInsight, store.GetByKey(name, mesh))
+		err = r.readOnlyResManager.Get(ctx, dataplaneInsight, store.GetByKey(name, mesh))
 		if err != nil {
 			rest_errors.HandleError(ctx, response, err, "Failed to fetch dataplane insight")
 			return
@@ -1076,7 +1080,7 @@ func (r *resourceEndpoints) getPoliciesConf(plugins []core_plugins.RegisteredPol
 		}
 
 		resource := r.descriptor.NewObject()
-		if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(dataplaneName, meshName)); err != nil {
+		if err := r.readOnlyResManager.Get(request.Request.Context(), resource, store.GetByKey(dataplaneName, meshName)); err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("Could not retrieve %s", r.descriptor.Name))
 			return
 		}
@@ -1321,7 +1325,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 		}
 
 		resource := r.descriptor.NewObject()
-		if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(resourceName, meshName)); err != nil {
+		if err := r.readOnlyResManager.Get(request.Request.Context(), resource, store.GetByKey(resourceName, meshName)); err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("Could not retrieve %s", r.descriptor.Name))
 			return
 		}

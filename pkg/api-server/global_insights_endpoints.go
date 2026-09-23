@@ -16,7 +16,7 @@ import (
 )
 
 type globalInsightsEndpoints struct {
-	resManager     manager.ResourceManager
+	resManager     manager.ReadOnlyResourceManager
 	resourceAccess access.ResourceAccess
 }
 

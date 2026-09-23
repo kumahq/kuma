@@ -52,7 +52,7 @@ func addInspectEndpoints(
 	ws *restful.WebService,
 	cfg *kuma_cp.Config,
 	builder xds_context.MeshContextBuilder,
-	rm manager.ResourceManager,
+	rm manager.ReadOnlyResourceManager,
 	resourceAccess access.ResourceAccess,
 ) {
 	ws.Route(
@@ -257,7 +257,7 @@ func inspectGatewayRouteDataplanes(
 // Uses exact tag matching via meshservice.MatchesDataplane() to fix multizone aggregation issues.
 // Legacy endpoint /meshes/{mesh}/meshservices/{name}/_resources/dataplanes (inspect_mesh_service.go:38) remains for backward compatibility.
 func inspectMeshServiceDataplanes(
-	rm manager.ResourceManager,
+	rm manager.ReadOnlyResourceManager,
 	resourceAccess access.ResourceAccess,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {

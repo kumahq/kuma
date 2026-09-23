@@ -152,6 +152,7 @@ func NewApiServer(
 		ws,
 		defs,
 		rt.ResourceManager(),
+		rt.ReadOnlyResourceManager(),
 		cfg,
 		rt.Access().ResourceAccess,
 		rt.GlobalInsightService(),
@@ -160,7 +161,7 @@ func NewApiServer(
 		rt.RouteMetadataProvider(),
 	)
 	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
-	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ResourceManager(), rt.Access().ResourceAccess)
+	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ReadOnlyResourceManager(), rt.Access().ResourceAccess)
 	addInspectEnvoyAdminEndpoints(ws, cfg, rt.ResourceManager(), rt.Access().EnvoyAdminAccess, rt.EnvoyAdminClient())
 	addInspectMeshServiceEndpoints(ws, rt.ResourceManager(), rt.Access().ResourceAccess, cfg.Mode == config_core.Global)
 	guiUrl := ""
@@ -258,6 +259,7 @@ func addResourcesEndpoints(
 	ws *restful.WebService,
 	defs []model.ResourceTypeDescriptor,
 	resManager manager.ResourceManager,
+	readOnlyResManager manager.ReadOnlyResourceManager,
 	cfg *kuma_cp.Config,
 	resourceAccess resources_access.ResourceAccess,
 	globalInsightService globalinsight.GlobalInsightService,
@@ -266,7 +268,7 @@ func addResourcesEndpoints(
 	routeMetadataProvider runtime.RouteMetadataProvider,
 ) {
 	globalInsightsEndpoints := globalInsightsEndpoints{
-		resManager:     resManager,
+		resManager:     readOnlyResManager,
 		resourceAccess: resourceAccess,
 	}
 	globalInsightsEndpoints.addEndpoint(ws)
@@ -276,7 +278,7 @@ func addResourcesEndpoints(
 	}
 	globalInsightEndpoint.addEndpoint(ws)
 
-	newDataplaneLayoutEndpoint(resManager, meshContextBuilder, resourceAccess, cfg.Multizone.Zone.Name, cfg.Environment).addEndpoint(ws)
+	newDataplaneLayoutEndpoint(readOnlyResManager, meshContextBuilder, resourceAccess, cfg.Multizone.Zone.Name, cfg.Environment).addEndpoint(ws)
 
 	var k8sMapper k8s.ResourceMapperFunc
 	var k8sSecretMapper k8s.ResourceMapperFunc
@@ -302,6 +304,7 @@ func addResourcesEndpoints(
 			mode:                         cfg.Mode,
 			federatedZone:                cfg.IsFederatedZoneCP(),
 			resManager:                   resManager,
+			readOnlyResManager:           readOnlyResManager,
 			descriptor:                   definition,
 			resourceAccess:               resourceAccess,
 			filter:                       filters.Resource(definition),
