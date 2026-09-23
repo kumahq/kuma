@@ -51,6 +51,12 @@ func (di *DestinationIndex) WithAllowAllOutbound(allow bool) *DestinationIndex {
 	return di
 }
 
+// AllowAllOutbound reports whether a proxy without reachableBackends reaches every destination.
+// An unset index means the legacy permissive behavior.
+func (di *DestinationIndex) AllowAllOutbound() bool {
+	return di == nil || !di.restrictOutbound
+}
+
 // GetReachableBackends return map of reachable port by its KRI, and bool to indicate if any backend were match or all destinations were returned
 func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneResource) (map[kri.Identifier]core.Port, bool) {
 	outbounds := map[kri.Identifier]core.Port{}

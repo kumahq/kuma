@@ -39,16 +39,26 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if proxy.Dataplane == nil {
 		return nil
 	}
-	policies, ok := proxy.Policies.Dynamic[api.MeshPassthroughType]
-	if !ok {
-		return nil
-	}
+	policies, matched := proxy.Policies.Dynamic[api.MeshPassthroughType]
+	configured := matched && len(policies.SingleItemRules.Rules) > 0
 	if proxy.Dataplane.Spec.GetNetworking().GetGateway().GetType() == v1alpha1.Dataplane_Networking_Gateway_BUILTIN {
-		policies.Warnings = append(policies.Warnings, "policy doesn't support builtin gateway")
+		if configured {
+			policies.Warnings = append(policies.Warnings, "policy doesn't support builtin gateway")
+		}
 		return nil
 	}
 	if !proxy.GetTransparentProxy().Enabled() || proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
-		policies.Warnings = append(policies.Warnings, "policy doesn't support proxy running without transparent-proxy")
+		if configured {
+			policies.Warnings = append(policies.Warnings, "policy doesn't support proxy running without transparent-proxy")
+		}
+		return nil
+	}
+	if !configured {
+		// without a matched policy passthrough defaults to None unless the CP opts back into allow-all,
+		// otherwise restricting outbound would only redirect mesh traffic through the passthrough cluster
+		if !ctx.Mesh.BaseMeshContext.AllowAllOutbound() {
+			removeDefaultPassthroughCluster(rs, unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource))
+		}
 		return nil
 	}
 	listeners := policies_xds.GatherListeners(rs)
