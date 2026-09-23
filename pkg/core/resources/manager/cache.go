@@ -102,18 +102,13 @@ func (c *cachedManager) List(ctx context.Context, list model.ResourceList, fs ..
 		return err
 	}
 	opts := store.NewListOptions(fs...)
-	if opts.FilterFunc != nil || opts.PageSize != 0 || opts.PageOffset != "" || len(opts.ResourceKeys) > 0 {
-		// Cache only the base query and apply the filter, resource keys and pagination in memory,
-		// so requests that differ only by these options share one cache entry.
+	if opts.HasInMemoryOptions() {
+		// Requests that differ only by in-memory options share the cache entry of the base query.
 		fullList, err := registry.Global().NewList(list.GetItemType())
 		if err != nil {
 			return err
 		}
-		baseOpts := []store.ListOptionsFunc{store.ListByMesh(opts.Mesh), store.ListByNameContains(opts.NameContains)}
-		if opts.Ordered {
-			baseOpts = append(baseOpts, store.ListOrdered())
-		}
-		if err := c.List(ctx, fullList, baseOpts...); err != nil {
+		if err := c.List(ctx, fullList, opts.BaseOptions()...); err != nil {
 			return err
 		}
 		return store.FilterAndPaginate(fullList, list, opts)
