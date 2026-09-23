@@ -574,15 +574,7 @@ func SetupServer(rt runtime.Runtime) error {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-<<<<<<< HEAD
 			xds_context.WithAllowAllOutbound(cfg.Defaults.AllowAllOutbound),
-=======
-			vips.NewPersistence(rt.ReadOnlyResourceManager(), rt.ConfigManager(), cfg.Experimental.UseTagFirstVirtualOutboundModel),
-			cfg.DNSServer.Domain,
-			cfg.DNSServer.ServiceVipPort,
-			xds_context.AnyToAnyReachableServicesGraphBuilder,
-			rt.CAProvider(),
->>>>>>> 7fb43868c0 (perf(api-server): cache the dataplane _rules inspection endpoint (#17760))
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
