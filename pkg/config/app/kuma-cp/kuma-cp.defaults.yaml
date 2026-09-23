@@ -509,6 +509,10 @@ defaults:
   createMeshRoutingResources: false # ENV: KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES
   # If true, it skips creating default hostname generators
   skipHostnameGenerators: false # ENV: KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS
+  # If true, a data plane proxy without reachableBackends can reach every destination in the mesh.
+  # Set it to false to restrict such a proxy to no destination at all, which lowers control plane
+  # and proxy CPU and memory usage in large meshes.
+  allowAllOutbound: true # ENV: KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND
 # Metrics configuration
 metrics:
   dataplane:

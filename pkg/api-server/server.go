@@ -531,6 +531,7 @@ func SetupServer(rt runtime.Runtime) error {
 			cfg.DNSServer.ServiceVipPort,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			rt.CAProvider(),
+			xds_context.WithAllowAllOutbound(cfg.Defaults.AllowAllOutbound),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
