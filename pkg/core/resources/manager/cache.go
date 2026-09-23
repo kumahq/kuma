@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/metrics"
 	"github.com/kumahq/kuma/v2/pkg/multitenant"
@@ -101,8 +102,16 @@ func (c *cachedManager) List(ctx context.Context, list model.ResourceList, fs ..
 		return err
 	}
 	opts := store.NewListOptions(fs...)
-	if !opts.IsCacheable() {
-		return fmt.Errorf("filter functions are not allowed for cached store")
+	if opts.HasInMemoryOptions() {
+		// Requests that differ only by in-memory options share the cache entry of the base query.
+		fullList, err := registry.Global().NewList(list.GetItemType())
+		if err != nil {
+			return err
+		}
+		if err := c.List(ctx, fullList, opts.BaseOptions()...); err != nil {
+			return err
+		}
+		return store.FilterAndPaginate(fullList, list, opts)
 	}
 	cacheKey := fmt.Sprintf("LIST:%s:%s:%s", list.GetItemType(), opts.HashCode(), tenantID)
 	obj, found := c.cache.Get(cacheKey)
