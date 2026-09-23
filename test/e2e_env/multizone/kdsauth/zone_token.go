@@ -1,6 +1,8 @@
 package kdsauth
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -66,11 +68,11 @@ func ZoneToken() {
 	// the Zone CP logs the status its KDS stream was rejected with, a zone absent
 	// because it crashed or is still starting does not have it
 	cpLogs := func(name string) string {
-		logs := ""
+		var logs strings.Builder
 		for _, log := range zoneByName[name].GetKumaCPLogs() {
-			logs += log
+			logs.WriteString(log)
 		}
-		return logs
+		return logs.String()
 	}
 
 	It("should connect the zone with a token issued for it", func() {
