@@ -61,7 +61,7 @@ endif
 
 # --- Component disable list ---
 
-K3D_DISABLE_DEFAULT := traefik servicelb metrics-server
+K3D_DISABLE_DEFAULT := traefik servicelb metrics-server gateway-api-crd
 # Re-enable components: K3D_ENABLE="traefik metrics-server"
 K3D_ENABLE ?=
 K3D_DISABLE := $(filter-out $(strip $(K3D_ENABLE)),$(K3D_DISABLE_DEFAULT))
