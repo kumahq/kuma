@@ -71,7 +71,7 @@ func Setup(rt runtime.Runtime) error {
 	}
 	authStreamInterceptors, authUnaryInterceptors, err := kds_auth.ServerInterceptors(
 		rt.Config().Multizone.Global.KDS.Auth.Type,
-		rt.KDSContext().GlobalZoneAuthenticator,
+		rt.KDSContext().ZoneAuthenticators,
 	)
 	if err != nil {
 		return err

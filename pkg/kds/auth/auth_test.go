@@ -269,8 +269,16 @@ var _ = Describe("Zone Token signed offline", func() {
 })
 
 var _ = Describe("Server interceptors", func() {
-	It("should authenticate with the registered authenticator", func() {
-		stream, unary, err := kds_auth.ServerInterceptors(multizone.KDSAuthZoneToken, funcAuthenticator(nil))
+	authenticators := func(types ...multizone.KDSAuthType) kds_auth.Authenticators {
+		authenticators := kds_auth.Authenticators{}
+		for _, authType := range types {
+			authenticators[authType] = funcAuthenticator(nil)
+		}
+		return authenticators
+	}
+
+	It("should authenticate with the authenticator of the configured type", func() {
+		stream, unary, err := kds_auth.ServerInterceptors(multizone.KDSAuthZoneToken, authenticators(multizone.KDSAuthZoneToken))
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stream).To(HaveLen(1))
@@ -278,28 +286,32 @@ var _ = Describe("Server interceptors", func() {
 	})
 
 	It("should authenticate with a type a distribution registered", func() {
-		stream, _, err := kds_auth.ServerInterceptors("custom", funcAuthenticator(nil))
+		stream, _, err := kds_auth.ServerInterceptors("custom", authenticators(multizone.KDSAuthZoneToken, "custom"))
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stream).To(HaveLen(1))
 	})
 
-	It("should not authenticate with the none type", func() {
-		stream, unary, err := kds_auth.ServerInterceptors(multizone.KDSAuthNone, nil)
+	DescribeTable("should not authenticate with the none type",
+		func(registered kds_auth.Authenticators) {
+			stream, unary, err := kds_auth.ServerInterceptors(multizone.KDSAuthNone, registered)
 
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stream).To(BeEmpty())
-		Expect(unary).To(BeEmpty())
-	})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(stream).To(BeEmpty())
+			Expect(unary).To(BeEmpty())
+		},
+		Entry("nothing registered", nil),
+		Entry("authenticators registered", authenticators(multizone.KDSAuthZoneToken, "custom")),
+	)
 
 	DescribeTable("should reject a type nothing authenticates with",
 		func(authType multizone.KDSAuthType) {
-			_, _, err := kds_auth.ServerInterceptors(authType, nil)
+			_, _, err := kds_auth.ServerInterceptors(authType, authenticators("custom"))
 
-			Expect(err).To(MatchError(ContainSubstring("is not supported by this control plane")))
+			Expect(err).To(MatchError(ContainSubstring("is not supported by this control plane. Supported types: custom, none")))
 		},
 		Entry("zoneToken without an authenticator", multizone.KDSAuthZoneToken),
-		Entry("a type of a distribution that is not installed", multizone.KDSAuthType("custom")),
+		Entry("a type of a distribution that is not installed", multizone.KDSAuthType("other")),
 		Entry("a typo", multizone.KDSAuthType("zonetoken")),
 	)
 })

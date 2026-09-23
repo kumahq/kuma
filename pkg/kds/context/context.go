@@ -17,6 +17,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
+	"github.com/kumahq/kuma/v3/pkg/config/multizone"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -59,11 +60,27 @@ type Context struct {
 	ServerStreamInterceptors []grpc.StreamServerInterceptor
 	ServerUnaryInterceptor   []grpc.UnaryServerInterceptor
 
-	// GlobalZoneAuthenticator authenticates every KDS RPC received by Global CP,
-	// after ServerStreamInterceptors and ServerUnaryInterceptor. Nil disables authentication.
-	GlobalZoneAuthenticator kds_auth.Authenticator
+	// ZoneAuthenticators authenticate every KDS RPC received by Global CP, after
+	// ServerStreamInterceptors and ServerUnaryInterceptor. Register with RegisterZoneAuthenticator.
+	ZoneAuthenticators kds_auth.Authenticators
 	// ZoneCredentials are attached to every KDS RPC sent by Zone CP. Nil sends none.
 	ZoneCredentials credentials.PerRPCCredentials
+}
+
+// RegisterZoneAuthenticator registers the authenticator of one KDS auth type. A type
+// can be registered once, so a distribution cannot replace an authenticator of another type.
+func (c *Context) RegisterZoneAuthenticator(authType multizone.KDSAuthType, authenticator kds_auth.Authenticator) error {
+	if authType == multizone.KDSAuthNone {
+		return errors.Errorf("cannot register an authenticator for %q, it disables authentication of Zone CPs", multizone.KDSAuthNone)
+	}
+	if _, ok := c.ZoneAuthenticators[authType]; ok {
+		return errors.Errorf("authenticator for KDS auth type %q is already registered", authType)
+	}
+	if c.ZoneAuthenticators == nil {
+		c.ZoneAuthenticators = kds_auth.Authenticators{}
+	}
+	c.ZoneAuthenticators[authType] = authenticator
+	return nil
 }
 
 type Filter interface {

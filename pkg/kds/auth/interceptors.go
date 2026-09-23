@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"slices"
+	"strings"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -46,20 +48,32 @@ func authenticate(ctx context.Context, authenticator Authenticator) error {
 	return nil
 }
 
-// ServerInterceptors returns the interceptors authenticating Zone CPs, empty when
-// authentication is disabled. The authenticator is the one registered on the KDS
-// context, nil when nothing built one for authType. Kuma builds it for the
-// zoneToken type, distributions add types of their own, so a type left without an
-// authenticator is a configuration error rather than an open control plane.
-func ServerInterceptors(authType multizone.KDSAuthType, authenticator Authenticator) ([]grpc.StreamServerInterceptor, []grpc.UnaryServerInterceptor, error) {
-	switch {
-	case authenticator != nil:
-		return []grpc.StreamServerInterceptor{StreamServerInterceptor(authenticator)},
-			[]grpc.UnaryServerInterceptor{UnaryServerInterceptor(authenticator)},
-			nil
-	case authType == multizone.KDSAuthNone:
-		return nil, nil, nil
-	default:
-		return nil, nil, errors.Errorf("multizone.global.kds.auth.type %q is not supported by this control plane", authType)
+// Authenticators holds the authenticator of every KDS authentication type a control plane supports.
+type Authenticators map[multizone.KDSAuthType]Authenticator
+
+func (a Authenticators) SupportedTypes() []string {
+	types := []string{string(multizone.KDSAuthNone)}
+	for authType := range a {
+		types = append(types, string(authType))
 	}
+	slices.Sort(types)
+	return types
+}
+
+// ServerInterceptors returns the interceptors authenticating Zone CPs, empty for "none".
+// A type nothing registered an authenticator for is an error rather than an open control plane.
+func ServerInterceptors(authType multizone.KDSAuthType, authenticators Authenticators) ([]grpc.StreamServerInterceptor, []grpc.UnaryServerInterceptor, error) {
+	if authType == multizone.KDSAuthNone {
+		return nil, nil, nil
+	}
+	authenticator, ok := authenticators[authType]
+	if !ok {
+		return nil, nil, errors.Errorf(
+			"multizone.global.kds.auth.type %q is not supported by this control plane. Supported types: %s",
+			authType, strings.Join(authenticators.SupportedTypes(), ", "),
+		)
+	}
+	return []grpc.StreamServerInterceptor{StreamServerInterceptor(authenticator)},
+		[]grpc.UnaryServerInterceptor{UnaryServerInterceptor(authenticator)},
+		nil
 }

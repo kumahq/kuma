@@ -528,7 +528,7 @@ func configureKDSAuth(kdsContext *kds_context.Context, resManager core_manager.R
 		if err != nil {
 			return err
 		}
-		kdsContext.GlobalZoneAuthenticator = kds_auth.NewZoneTokenAuthenticator(validator)
+		return kdsContext.RegisterZoneAuthenticator(multizone.KDSAuthZoneToken, kds_auth.NewZoneTokenAuthenticator(validator))
 	case config_core.Zone:
 		authCfg := cfg.Multizone.Zone.KDS.Auth
 		if !authCfg.HasToken() || !cfg.IsFederatedZoneCP() {

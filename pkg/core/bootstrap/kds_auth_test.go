@@ -42,7 +42,7 @@ var _ = Describe("KDS authentication", func() {
 			kdsContext, err := configure(cfg)
 
 			Expect(err).ToNot(HaveOccurred())
-			Expect(kdsContext.GlobalZoneAuthenticator).To(BeNil())
+			Expect(kdsContext.ZoneAuthenticators).To(BeEmpty())
 			Expect(kdsContext.ZoneCredentials).To(BeNil())
 		}
 	})
@@ -55,7 +55,7 @@ var _ = Describe("KDS authentication", func() {
 		kdsContext, err := configure(cfg)
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(kdsContext.GlobalZoneAuthenticator).ToNot(BeNil())
+		Expect(kdsContext.ZoneAuthenticators).To(HaveKey(multizone.KDSAuthZoneToken))
 		Expect(kdsContext.ZoneCredentials).To(BeNil())
 	})
 
@@ -67,7 +67,7 @@ var _ = Describe("KDS authentication", func() {
 		kdsContext, err := configure(cfg)
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(kdsContext.GlobalZoneAuthenticator).To(BeNil())
+		Expect(kdsContext.ZoneAuthenticators).To(BeEmpty())
 	})
 
 	It("should send the token from Zone CP over TLS", func() {
