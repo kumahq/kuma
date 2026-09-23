@@ -1,0 +1,3 @@
+controlPlane:
+  envVars:
+    GOMEMLIMIT: 200MiB

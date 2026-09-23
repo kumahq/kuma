@@ -687,11 +687,7 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
             - name: GOMEMLIMIT
-              valueFrom:
-                resourceFieldRef:
-                  containerName: control-plane
-                  resource: limits.memory
-                  divisor: "1"
+              value: "241591910"
             - name: GOMAXPROCS
               valueFrom:
                 resourceFieldRef:

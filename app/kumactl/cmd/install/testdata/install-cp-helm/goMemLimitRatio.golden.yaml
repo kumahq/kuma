@@ -477,7 +477,7 @@ metadata:
   annotations: 
     
 spec:
-  replicas: 2
+  replicas: 1
   minReadySeconds: 0
   strategy:
     rollingUpdate:
@@ -615,7 +615,7 @@ spec:
                 fieldRef:
                   fieldPath: status.podIP
             - name: GOMEMLIMIT
-              value: "241591910"
+              value: "858993459"
             - name: GOMAXPROCS
               valueFrom:
                 resourceFieldRef:
@@ -647,7 +647,7 @@ spec:
               port: 5680
           resources:
             limits:
-              memory: 256Mi
+              memory: 1Gi
             requests:
               cpu: 500m
               memory: 256Mi

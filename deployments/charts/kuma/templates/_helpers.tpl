@@ -374,3 +374,34 @@ env:
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+Converts a Kubernetes memory quantity (268435456, 256Mi, 1.5Gi, 500M) to bytes.
+*/}}
+{{- define "kuma.memoryQuantityToBytes" -}}
+{{- if or (kindIs "float64" .) (kindIs "int" .) (kindIs "int64" .) -}}
+{{- float64 . -}}
+{{- else -}}
+{{- $quantity := toString . | trim -}}
+{{- $multipliers := dict "" 1.0 "k" 1e3 "M" 1e6 "G" 1e9 "T" 1e12 "Ki" 1024.0 "Mi" 1048576.0 "Gi" 1073741824.0 "Ti" 1099511627776.0 -}}
+{{- $number := regexFind "^[0-9]+(\\.[0-9]+)?" $quantity -}}
+{{- $suffix := trimPrefix $number $quantity -}}
+{{- if or (not $number) (not (hasKey $multipliers $suffix)) -}}
+{{- fail (printf "cannot parse memory quantity %q, use a Kubernetes quantity like 256Mi or 1Gi" $quantity) -}}
+{{- end -}}
+{{- mulf (float64 $number) (get $multipliers $suffix) -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+GOMEMLIMIT for the control plane: controlPlane.runtime.goMemLimit.ratio of the container memory limit, in bytes.
+The remainder is headroom for memory the Go runtime does not account for, such as the mapped binary.
+*/}}
+{{- define "kuma.controlPlane.goMemLimit" -}}
+{{- $ratio := dig "goMemLimit" "ratio" 0.9 .Values.controlPlane.runtime | float64 -}}
+{{- if or (le $ratio 0.0) (gt $ratio 1.0) -}}
+{{- fail "controlPlane.runtime.goMemLimit.ratio must be greater than 0 and at most 1" -}}
+{{- end -}}
+{{- $limitBytes := include "kuma.memoryQuantityToBytes" .Values.controlPlane.resources.limits.memory | float64 -}}
+{{- mulf $limitBytes $ratio | int64 -}}
+{{- end -}}

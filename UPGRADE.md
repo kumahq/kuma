@@ -13,6 +13,14 @@ does not have any particular instructions.
 From now on, `kuma.io/` and `k8s.kuma.io/` are reserved label prefixes.
 Every unknown label under these prefixes will be rejected on create and update.
 
+### Helm chart sets control plane `GOMEMLIMIT` to 90% of the memory limit
+
+The chart used to set `GOMEMLIMIT` to the full `controlPlane.resources.limits.memory`. `GOMEMLIMIT` only covers memory the Go runtime manages, so with no headroom left for the rest, such as the mapped `kuma-cp` binary, the container could be OOM killed before the garbage collector reacted. The chart now computes `GOMEMLIMIT` as `controlPlane.runtime.goMemLimit.ratio` (default `0.9`) of the memory limit and renders it in bytes.
+
+**Action required**
+
+None. Set `controlPlane.runtime.goMemLimit.ratio` to choose another fraction, or set `GOMEMLIMIT` in `controlPlane.envVars` or `controlPlane.envVarEntries` to use an exact value, in which case the chart does not render its own. Without `controlPlane.resources.limits.memory` the chart keeps the previous behavior and reads the limit with a `resourceFieldRef`. The value is computed from Helm values only, so a memory limit set outside the chart, for example by a `LimitRange` or a VPA, is not taken into account.
+
 ### DPP configuration refresh interval default raised to 10s
 
 `xdsServer.dataplaneConfigurationRefreshInterval` (`KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL`) now defaults to `10s` instead of `1s`. The control plane regenerates the xDS configuration of every connected proxy on this interval, so a 1s default kept the control plane busy and scaled poorly with the number of data plane proxies.

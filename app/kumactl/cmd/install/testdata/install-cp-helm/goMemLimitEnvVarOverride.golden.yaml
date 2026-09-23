@@ -477,7 +477,7 @@ metadata:
   annotations: 
     
 spec:
-  replicas: 2
+  replicas: 1
   minReadySeconds: 0
   strategy:
     rollingUpdate:
@@ -542,6 +542,8 @@ spec:
               - ALL
             readOnlyRootFilesystem: true
           env:
+            - name: GOMEMLIMIT
+              value: "200MiB"
             - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
               value: "false"
             - name: KUMA_API_SERVER_READ_ONLY
@@ -614,8 +616,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: GOMEMLIMIT
-              value: "241591910"
             - name: GOMAXPROCS
               valueFrom:
                 resourceFieldRef:
