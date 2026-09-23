@@ -17,10 +17,12 @@ func ZoneToken() {
 
 	var global *UniversalCluster
 	var zones []*UniversalCluster
+	zoneByName := map[string]*UniversalCluster{}
 
 	setupZone := func(name string, opts ...KumaDeploymentOption) {
 		cluster := NewUniversalCluster(NewTestingT(), name, Silent)
 		zones = append(zones, cluster)
+		zoneByName[name] = cluster
 		opts = append(opts, WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))
 		Expect(NewClusterSetup().Install(Kuma(core.Zone, opts...)).Setup(cluster)).To(Succeed())
 	}
@@ -61,17 +63,38 @@ func ZoneToken() {
 		return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
 	}
 
-	It("should connect only the zone with a token issued for it", func() {
+	// the Zone CP logs the status its KDS stream was rejected with, a zone absent
+	// because it crashed or is still starting does not have it
+	cpLogs := func(name string) string {
+		logs := ""
+		for _, log := range zoneByName[name].GetKumaCPLogs() {
+			logs += log
+		}
+		return logs
+	}
+
+	It("should connect the zone with a token issued for it", func() {
 		Eventually(func(g Gomega) {
 			out, err := inspectZones()
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).To(And(ContainSubstring(validTokenZone), ContainSubstring("Online")))
 		}, "30s", "1s").Should(Succeed())
-
-		Consistently(func(g Gomega) {
-			out, err := inspectZones()
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(out).ToNot(Or(ContainSubstring(otherZoneTokenZone), ContainSubstring(noTokenZone)))
-		}, "10s", "1s").Should(Succeed())
 	})
+
+	DescribeTable("should reject a zone that does not authenticate",
+		func(zoneName string, rejection string) {
+			Eventually(func(g Gomega) {
+				g.Expect(cpLogs(zoneName)).To(ContainSubstring(rejection))
+			}, "30s", "1s").Should(Succeed())
+
+			Consistently(func(g Gomega) {
+				out, err := inspectZones()
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(out).ToNot(ContainSubstring(zoneName))
+			}, "10s", "1s").Should(Succeed())
+		},
+		Entry("without a token", noTokenZone, "Zone CP did not provide a zone token"),
+		Entry("with a token of another zone", otherZoneTokenZone,
+			`token is signed for "`+validTokenZone+`" zone, but connected CP advertised as "`+otherZoneTokenZone+`"`),
+	)
 }
