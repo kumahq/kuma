@@ -166,6 +166,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		xds_server.MeshResourceTypes(),
 		builder.LookupIP(),
 		builder.Config().Multizone.Zone.Name,
+		xds_context.WithAllowAllOutbound(builder.Config().Defaults.AllowAllOutbound),
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(

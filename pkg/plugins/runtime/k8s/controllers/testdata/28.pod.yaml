@@ -14,19 +14,22 @@ metadata:
     kuma.io/reachable-backends: |
       refs:
       - kind: MeshService
-        name: demo-app
-        namespace: kuma-demo
+        labels:
+          kuma.io/display-name: demo-app
+          k8s.kuma.io/namespace: kuma-demo
         port: 5000
       - kind: MeshService
-        name: redis
-        namespace: redis-system
+        labels:
+          kuma.io/display-name: redis
+          k8s.kuma.io/namespace: redis-system
       - kind: MeshService
         labels:
           kuma.io/display-name: xyz
           kuma.io/zone: east
       - kind: MeshExternalService
-        name: demo-app
-        namespace: kuma-system
+        labels:
+          kuma.io/display-name: demo-app
+          k8s.kuma.io/namespace: kuma-system
       - kind: MeshExternalService
         labels:
           kuma.io/display-name: httpbin

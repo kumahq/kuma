@@ -89,10 +89,8 @@ func processReachableBackendRefs(refs ReachableBackendRefs) []*mesh_proto.Datapl
 
 	for _, ref := range refs.Refs {
 		backendRef := &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
-			Kind:      ref.Kind,
-			Name:      pointer.Deref(ref.Name),
-			Namespace: pointer.Deref(ref.Namespace),
-			Labels:    ref.Labels,
+			Kind:   ref.Kind,
+			Labels: ref.Labels,
 		}
 
 		if ref.Port != nil {
@@ -126,8 +124,9 @@ func (p *PodConverter) dataplaneFor(
 
 	if v, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
 		var refs ReachableBackendRefs
-		if err := yaml.Unmarshal([]byte(v), &refs); err != nil {
-			return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
+		// strict, so refs still using the removed name/namespace fields fail loudly
+		if err := yaml.UnmarshalStrict([]byte(v), &refs); err != nil {
+			return nil, errors.Wrapf(err, "cannot parse, %s has invalid format", metadata.KumaReachableBackends)
 		}
 
 		tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
@@ -309,9 +308,7 @@ type ReachableBackendRefs struct {
 }
 
 type ReachableBackendRef struct {
-	Kind      string            `json:"kind,omitempty"`
-	Name      *string           `json:"name,omitempty"`
-	Namespace *string           `json:"namespace,omitempty"`
-	Port      *uint32           `json:"port,omitempty"`
-	Labels    map[string]string `json:"labels,omitempty"`
+	Kind   string            `json:"kind,omitempty"`
+	Port   *uint32           `json:"port,omitempty"`
+	Labels map[string]string `json:"labels,omitempty"`
 }

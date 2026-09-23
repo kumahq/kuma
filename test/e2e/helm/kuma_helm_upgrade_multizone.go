@@ -148,7 +148,14 @@ spec:
 			err = NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(namespace)).
 				Install(testserver.Install(testserver.WithNamespace(namespace))).
-				Install(democlient.Install(democlient.WithNamespace(namespace))).
+				// 2.14 still generates legacy outbounds alongside reachableBackends, so
+				// traffic works before the upgrade and the ref keeps it working after.
+				Install(democlient.Install(
+					democlient.WithNamespace(namespace),
+					democlient.WithPodAnnotations(map[string]string{
+						"kuma.io/reachable-backends": fmt.Sprintf(`{"refs":[{"kind":"MeshService","labels":{"k8s.kuma.io/namespace":%q}}]}`, namespace),
+					}),
+				)).
 				Setup(zoneK8s)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -205,6 +212,7 @@ spec:
 				WithHelmChartPath(Config.HelmChartPath),
 				ClearNoHelmOpts(),
 				WithHelmOpt("meshes[0].ingress.deployment.replicas", "0"),
+				WithEnv(AllowAllOutboundEnv, "false"),
 			)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -244,6 +252,18 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(cfg).To(ContainSubstring("self_transparentproxy_passthrough_inbound"))
 				g.Expect(cfg).To(ContainSubstring("self_transparentproxy_passthrough_outbound"))
+			}, "60s", "2s").Should(Succeed())
+
+			By("Upgraded control plane generates outbounds from reachableBackends")
+			Eventually(func(g Gomega) {
+				pod, err := k8s.RunKubectlAndGetOutputContextE(GinkgoT(), context.Background(),
+					zoneK8s.GetKubectlOptions(namespace),
+					"get", "pods", "-l", "app=demo-client", "-o", "jsonpath={.items[0].metadata.name}")
+				g.Expect(err).ToNot(HaveOccurred())
+				cfg, err := zoneK8s.GetKumactlOptions().RunKumactlAndGetOutput(
+					"inspect", "dataplane", pod+"."+namespace, "--type", "config", "--mesh", "default")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(cfg).To(ContainSubstring(fmt.Sprintf("kri_msvc_default_%s_%s_test-server_main", Kuma2, namespace)))
 			}, "60s", "2s").Should(Succeed())
 
 			By("start zone ingress after upgrade")

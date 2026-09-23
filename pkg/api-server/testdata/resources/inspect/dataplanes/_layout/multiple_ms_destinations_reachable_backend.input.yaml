@@ -28,10 +28,12 @@ networking:
     reachableBackends:
       refs:
         - kind: MeshService
-          name: test-server-1
+          labels:
+            kuma.io/display-name: test-server-1
           port: 80
         - kind: MeshService
-          name: test-server-2
+          labels:
+            kuma.io/display-name: test-server-2
 ---
 type: MeshService
 name: test-server-1

@@ -116,7 +116,8 @@ func ResolveOutbounds(
 	}
 	var reachableBackends map[kri.Identifier]core_resources.Port
 	var onlySelectedBackends bool
-	if dataplane.Spec.GetNetworking().GetTransparentProxying() != nil {
+	// On Kubernetes the transparent proxy config arrives via kuma-dp metadata, so the section is often nil
+	if tpEnabled || dataplane.Spec.GetNetworking().GetTransparentProxying() != nil {
 		reachableBackends, onlySelectedBackends = baseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
 	}
 
@@ -179,7 +180,6 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, index *xds_context.Dest
 		labels, sectionName := xds_context.NormalizeBackendRefTarget(
 			o.BackendRef.Kind,
 			o.BackendRef.Name,
-			"",
 			&port,
 			o.BackendRef.Labels,
 			dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
