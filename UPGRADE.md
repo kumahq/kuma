@@ -32,6 +32,14 @@ Only if you set `enableIssuer` to `false` to mint Zone Tokens offline. Move it t
 
 `xdsServer.dataplaneConfigurationRefreshInterval` (`KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL`) now defaults to `10s` instead of `1s`. The control plane regenerates the xDS configuration of every connected proxy on this interval, so a 1s default kept the control plane busy and scaled poorly with the number of data plane proxies.
 
+### Zone token secrets are no longer synced to zones
+
+A zone token is validated on Global CP only, so Global CP stops sending `zone-token-signing-key-*` and `zone-token-revocations` over KDS. Zones no longer receive the derived `zone-token-signing-public-key-*` global secret, and the copies they already have are deleted on the first KDS sync after the upgrade.
+
+**Action required**
+
+Upgrade zones before or together with Global CP. A zone older than `3.0.0` validates zone proxy tokens with the synced public key, and it cannot do that once Global CP stops sending it.
+
 **Action required**
 
 None. Changes to meshes, policies, and services now take up to 10 seconds to reach data plane proxies instead of up to 1 second. The same applies to trust bundles, so a CA rotation must leave the old CA in place for at least one refresh interval after the new one is added, otherwise proxies that have not yet been refreshed will fail mTLS. If your deployment needs faster propagation, set `xdsServer.dataplaneConfigurationRefreshInterval` back to the previous value, keeping in mind the control plane CPU cost.
