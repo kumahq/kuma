@@ -37,8 +37,9 @@ func NormalizeBackendRefTarget(kind, name string, port *uint32, labels map[strin
 	normalized := map[string]string{
 		mesh_proto.DisplayName: name,
 	}
-	switch common_api.TargetRefKind(kind) {
-	case common_api.MeshService, common_api.MeshExternalService, common_api.MeshMultiZoneService:
+	// MeshExternalService is admitted only in the system namespace, and Global admits
+	// MeshMultiZoneService only there, so only a MeshService inherits the proxy namespace
+	if common_api.TargetRefKind(kind) == common_api.MeshService {
 		if namespace == "" {
 			namespace = defaultNamespace
 		}

@@ -91,12 +91,12 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 
 			var dest core.Destination
 			if dest = di.getDestinationByKRI(id); dest == nil {
-				return
+				continue
 			}
 
 			if p, ok := dest.FindPortByName(id.SectionName); ok {
 				outbounds[kri.WithSectionName(id, p.GetName())] = p
-				return
+				continue
 			}
 
 			for _, p := range dest.GetPorts() {
