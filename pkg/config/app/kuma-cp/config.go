@@ -44,7 +44,7 @@ type Defaults struct {
 	SkipTenantResources bool `json:"skipTenantResources" envconfig:"kuma_defaults_skip_tenant_resources"`
 	// If true, it skips creating default hostname generators
 	SkipHostnameGenerators bool `json:"SkipHostnameGenerators" envconfig:"kuma_defaults_skip_hostname_generators"`
-	// If true, a data plane proxy without reachableBackends can reach every destination in the mesh.
+	// If true, a data plane proxy without reachableBackends can reach every destination in the mesh, and one without MeshPassthrough keeps outbound passthrough.
 	// Insecure: restores the legacy behavior where outbound traffic is allowed by default.
 	AllowAllOutbound bool `json:"allowAllOutbound" envconfig:"kuma_defaults_allow_all_outbound"`
 }

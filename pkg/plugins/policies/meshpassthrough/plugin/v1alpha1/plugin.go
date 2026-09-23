@@ -35,11 +35,17 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshPassthroughType]
-	if !ok {
+	if !proxy.GetTransparentProxy().Enabled() || proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
+		if ok && policies.ProxyConf != nil {
+			addWarnings(proxy, policies, "policy doesn't support proxy running without transparent-proxy")
+		}
 		return nil
 	}
-	if !proxy.GetTransparentProxy().Enabled() || proxy.Metadata.HasFeature(xds_types.FeatureBindOutbounds) {
-		addWarnings(proxy, policies, "policy doesn't support proxy running without transparent-proxy")
+	if !ok || policies.ProxyConf == nil {
+		// without a matched policy passthrough defaults to None unless the CP opts back into allow-all
+		if !ctx.Mesh.BaseMeshContext.DestinationIndex.AllowAllOutbound() {
+			removeDefaultPassthroughCluster(rs)
+		}
 		return nil
 	}
 	listeners := policies_xds.GatherListeners(rs)
@@ -70,9 +76,6 @@ func applyToOutboundPassthrough(
 	listeners policies_xds.Listeners,
 	proxy *core_xds.Proxy,
 ) ([]string, error) {
-	if policyConf == nil {
-		return nil, nil
-	}
 	conf := policyConf.Conf.(api.Conf)
 
 	// todo: this should be handled by "base policy"

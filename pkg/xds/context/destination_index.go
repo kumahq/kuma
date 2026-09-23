@@ -50,6 +50,11 @@ func (di *DestinationIndex) WithAllowAllOutbound(allow bool) *DestinationIndex {
 	return di
 }
 
+// AllowAllOutbound reports whether a data plane proxy without MeshPassthrough keeps the default outbound passthrough.
+func (di *DestinationIndex) AllowAllOutbound() bool {
+	return di != nil && di.allowAllOutbound
+}
+
 // GetReachableBackends returns reachable ports by KRI, and true when only the returned backends are reachable.
 // Without reachableBackends it returns an empty map and true (deny), or every destination and false when allowAllOutbound is set.
 func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneResource) (map[kri.Identifier]core.Port, bool) {
