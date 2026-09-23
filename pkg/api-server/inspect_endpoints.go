@@ -14,7 +14,7 @@ import (
 
 func addInspectEndpoints(
 	ws *restful.WebService,
-	rm manager.ResourceManager,
+	rm manager.ReadOnlyResourceManager,
 	resourceAccess access.ResourceAccess,
 ) {
 	ws.Route(
@@ -29,7 +29,7 @@ func addInspectEndpoints(
 // inspectMeshServiceDataplanes provides the standardized /_dataplanes endpoint.
 // Uses exact tag matching via meshservice.MatchesDataplane() to fix multizone aggregation issues.
 func inspectMeshServiceDataplanes(
-	rm manager.ResourceManager,
+	rm manager.ReadOnlyResourceManager,
 	resourceAccess access.ResourceAccess,
 ) handlerFunc {
 	return func(request *restful.Request) (any, error) {
