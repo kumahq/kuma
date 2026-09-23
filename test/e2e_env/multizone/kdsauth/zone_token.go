@@ -96,7 +96,8 @@ func ZoneToken() {
 			}, "10s", "1s").Should(Succeed())
 		},
 		Entry("without a token", noTokenZone, "Zone CP did not provide a zone token"),
+		// the error is logged as a JSON-encoded field, so its quotes are escaped
 		Entry("with a token of another zone", otherZoneTokenZone,
-			`token is signed for "`+validTokenZone+`" zone, but connected CP advertised as "`+otherZoneTokenZone+`"`),
+			`token is signed for \"`+validTokenZone+`\" zone, but connected CP advertised as \"`+otherZoneTokenZone+`\"`),
 	)
 }
