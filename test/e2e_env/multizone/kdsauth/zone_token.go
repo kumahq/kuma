@@ -1,8 +1,6 @@
 package kdsauth
 
 import (
-	"strings"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -65,16 +63,6 @@ func ZoneToken() {
 		return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
 	}
 
-	// the Zone CP logs the status its KDS stream was rejected with, a zone absent
-	// because it crashed or is still starting does not have it
-	cpLogs := func(name string) string {
-		var logs strings.Builder
-		for _, log := range zoneByName[name].GetKumaCPLogs() {
-			logs.WriteString(log)
-		}
-		return logs.String()
-	}
-
 	It("should connect the zone with a token issued for it", func() {
 		Eventually(func(g Gomega) {
 			out, err := inspectZones()
@@ -85,8 +73,10 @@ func ZoneToken() {
 
 	DescribeTable("should reject a zone that does not authenticate",
 		func(zoneName string, rejection string) {
+			// the Zone CP logs the status its KDS stream was rejected with, a zone absent
+			// because it crashed or is still starting does not have it
 			Eventually(func(g Gomega) {
-				g.Expect(cpLogs(zoneName)).To(ContainSubstring(rejection))
+				g.Expect(zoneByName[zoneName].GetKumaCPLogs()).To(ContainElement(ContainSubstring(rejection)))
 			}, "30s", "1s").Should(Succeed())
 
 			Consistently(func(g Gomega) {
