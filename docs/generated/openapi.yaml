@@ -15897,7 +15897,8 @@ components:
                         mesh. If not specified, no services in the mesh are
                         reachable, unless
 
-                        the control plane disables KUMA_DEFAULTS_RESTRICT_OUTBOUND.
+                        the control plane disables
+                        KUMA_DEFAULTS_RESTRICT_OUTBOUND.
                       properties:
                         refs:
                           items:
