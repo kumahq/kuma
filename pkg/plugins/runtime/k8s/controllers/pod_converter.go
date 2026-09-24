@@ -128,6 +128,12 @@ func (p *PodConverter) dataplaneFor(
 		if err := yaml.UnmarshalStrict([]byte(v), &refs); err != nil {
 			return nil, errors.Wrapf(err, "cannot parse, %s has invalid format", metadata.KumaReachableBackends)
 		}
+		// proto cannot tell omitted labels from empty ones, so require `labels: {}` here to select every backend
+		for i, ref := range refs.Refs {
+			if ref.Labels == nil {
+				return nil, errors.Errorf("%s: refs[%d].labels is required, use {} to select every %s", metadata.KumaReachableBackends, i, ref.Kind)
+			}
+		}
 
 		tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
 			Refs: processReachableBackendRefs(refs),

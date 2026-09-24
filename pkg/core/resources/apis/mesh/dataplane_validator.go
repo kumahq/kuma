@@ -181,6 +181,9 @@ func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_Transparent
 			default:
 				result.AddViolationAt(path.Index(i).Field("kind"), fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
 			}
+			if len(backendRef.Labels) == 0 && backendRef.Port != nil {
+				result.AddViolationAt(path.Index(i).Field("port"), "must not be set when labels are empty")
+			}
 		}
 	}
 	return result

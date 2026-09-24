@@ -2,7 +2,6 @@ package context
 
 import (
 	"maps"
-	"strconv"
 	"time"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
@@ -78,8 +77,8 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 			if id.SectionName != "" {
 				if p, ok := dest.FindPortByName(id.SectionName); ok {
 					outbounds[kri.WithSectionName(id, p.GetName())] = p
-					continue
 				}
+				continue
 			}
 
 			for _, p := range dest.GetPorts() {
@@ -145,13 +144,9 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 			port = pointer.To(ref.Port.GetValue())
 		}
 
-		// Like a Kubernetes label selector, no labels selects every backend of the kind
+		// Like a Kubernetes label selector, empty labels select every backend of the kind
 		if len(ref.Labels) == 0 {
-			sectionName := ""
-			if ref.GetPort().GetValue() > 0 {
-				sectionName = strconv.FormatUint(uint64(ref.GetPort().GetValue()), 10)
-			}
-			addOutbounds(di.resourceIdentifiersOfType(core_model.ResourceType(ref.Kind)), sectionName)
+			addOutbounds(di.resourceIdentifiersOfType(core_model.ResourceType(ref.Kind)), "")
 			continue
 		}
 

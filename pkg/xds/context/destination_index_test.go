@@ -181,18 +181,20 @@ var _ = Describe("DestinationIndex", func() {
 			Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(mes), "9000")))
 		})
 
-		Context("reachableBackends ref without labels", func() {
+		Context("reachableBackends refs across kinds", func() {
 			var destinations []core_model.Resource
 			var msA, msB, mes, mzs core_model.Resource
 
 			BeforeEach(func() {
 				msA = builders.MeshService().
 					WithName("svc-a").
+					WithLabels(map[string]string{"team": "billing"}).
 					AddIntPort(8080, 8080, metadata.ProtocolHTTP).
 					AddIntPort(9090, 9090, metadata.ProtocolHTTP).
 					Build()
 				msB = builders.MeshService().
 					WithName("svc-b").
+					WithLabels(map[string]string{"team": "billing"}).
 					AddIntPort(8080, 8080, metadata.ProtocolHTTP).
 					Build()
 				mes = builders.MeshExternalService().WithName("ext").Build()
@@ -215,8 +217,8 @@ var _ = Describe("DestinationIndex", func() {
 			It("should select every backend of each kind", func() {
 				outbounds, matched := reachable(
 					&mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{Kind: "MeshService", Labels: map[string]string{}},
-					&mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{Kind: "MeshExternalService"},
-					&mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{Kind: "MeshMultiZoneService"},
+					&mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{Kind: "MeshExternalService", Labels: map[string]string{}},
+					&mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{Kind: "MeshMultiZoneService", Labels: map[string]string{}},
 				)
 
 				Expect(matched).To(BeTrue())
@@ -230,7 +232,7 @@ var _ = Describe("DestinationIndex", func() {
 
 			It("should select only backends of the given kind", func() {
 				outbounds, matched := reachable(
-					&mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{Kind: "MeshExternalService"},
+					&mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{Kind: "MeshExternalService", Labels: map[string]string{}},
 				)
 
 				Expect(matched).To(BeTrue())
@@ -238,14 +240,18 @@ var _ = Describe("DestinationIndex", func() {
 				Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(mes), "9000")))
 			})
 
-			It("should narrow every backend of the kind to the given port", func() {
+			It("should skip backends without the given port", func() {
 				outbounds, matched := reachable(
-					&mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{Kind: "MeshService", Port: wrapperspb.UInt32(9090)},
+					&mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
+						Kind:   "MeshService",
+						Labels: map[string]string{"team": "billing"},
+						Port:   wrapperspb.UInt32(9090),
+					},
 				)
 
 				Expect(matched).To(BeTrue())
+				Expect(outbounds).To(HaveLen(1))
 				Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(msA), "9090")))
-				Expect(outbounds).NotTo(HaveKey(kri.WithSectionName(kri.From(msA), "8080")))
 			})
 		})
 
