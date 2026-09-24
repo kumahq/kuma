@@ -5,6 +5,7 @@
     {{ $kdsZoneClientTLSSecretName = print (include "kuma.name" .) "-kds-zone-client-tls" }}
   {{ end }}
 {{ end }}
+{{ $zoneTokenSecretName := include "kuma.zoneTokenSecretName" . }}
 
 {{ if and (eq .Values.controlPlane.environment "kubernetes") (eq .Values.controlPlane.mode "global") }}
   {{ fail "Kubernetes-native Global Control Plane is not supported: controlPlane.mode=global cannot be deployed with this Helm chart. Deploy Zone control planes on Kubernetes; run the Global Control Plane on non-Kubernetes (Universal) infrastructure instead" }}
@@ -288,6 +289,11 @@ spec:
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
               readOnly: true
           {{- end }}
+          {{- if $zoneTokenSecretName }}
+            - name: zone-token
+              mountPath: /var/run/secrets/kuma.io/zone-token
+              readOnly: true
+          {{- end }}
           {{- range $extraConfigMap := .Values.controlPlane.extraConfigMaps }}
             - name: {{ $extraConfigMap.name }}
               mountPath: {{ $extraConfigMap.mountPath }}
@@ -369,6 +375,11 @@ spec:
         - name: kds-client-tls-cert
           secret:
             secretName: {{ $kdsZoneClientTLSSecretName }}
+        {{- end }}
+        {{- if $zoneTokenSecretName }}
+        - name: zone-token
+          secret:
+            secretName: {{ $zoneTokenSecretName }}
         {{- end }}
         - name: {{ include "kuma.name" . }}-control-plane-config
           configMap:

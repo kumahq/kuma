@@ -53,6 +53,15 @@ controlPlane:
   # -- Only used in `zone` mode
   kdsGlobalAddress: ""
 
+  # Zone Token this Zone CP presents to the Global CP over KDS. Only used in `zone` mode.
+  zoneToken:
+    # -- Name of the K8s Secret with the Zone Token. The Secret is mounted as a file,
+    # so a rotated token is picked up on the next KDS stream without restarting the CP.
+    # Leave empty to send no token.
+    secretName: ""
+    # -- Key of the Secret that holds the token
+    key: "token"
+
   # -- Number of replicas of the Kuma CP. Ignored when autoscaling is enabled
   replicas: 1
 

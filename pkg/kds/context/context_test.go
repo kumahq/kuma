@@ -397,7 +397,11 @@ var _ = Describe("Context", func() {
 					TargetRef: pointer.To(builders.ToTopLevelTargetRef(targetRef)),
 					To: &[]meshtimeout_api.To{
 						{
-							TargetRef: builders.ToOutboundTargetRef(builders.TargetRefMeshService("backend", "kuma-demo", "")),
+							TargetRef: builders.ToOutboundTargetRef(builders.TargetRefMeshServiceLabels(map[string]string{
+								mesh_proto.DisplayName:      "backend",
+								mesh_proto.KubeNamespaceTag: "kuma-demo",
+								mesh_proto.ZoneTag:          "origin-zone",
+							}, "")),
 						},
 					},
 				},

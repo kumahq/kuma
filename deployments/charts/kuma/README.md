@@ -27,6 +27,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.mode | string | `"zone"` | Kuma CP modes: zone, global. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
+| controlPlane.zoneToken.secretName | string | `""` | Name of the K8s Secret with the Zone Token. The Secret is mounted as a file, so a rotated token is picked up on the next KDS stream without restarting the CP. Leave empty to send no token. |
+| controlPlane.zoneToken.key | string | `"token"` | Key of the Secret that holds the token |
 | controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP. Ignored when autoscaling is enabled |
 | controlPlane.restartPolicy | string | `"Always"` | Pod restart policy for the Control Plane. |
 | controlPlane.minReadySeconds | int | `0` | Minimum number of seconds for which a newly created pod should be ready for it to be considered available. |
