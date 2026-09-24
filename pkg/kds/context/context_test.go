@@ -245,21 +245,13 @@ var _ = Describe("Context", func() {
 				// then
 				Expect(ok).To(Equal(given.expect))
 			},
-			Entry("should filter out zone token signing key", testCase{
+			Entry("should not filter out zone token signing key", testCase{
 				resource: &core_system.GlobalSecretResource{
 					Meta: &test_model.ResourceMeta{
 						Name: core_system.ZoneTokenSigningKeyPrefix + "-1",
 					},
 				},
-				expect: false,
-			}),
-			Entry("should filter out zone token revocations", testCase{
-				resource: &core_system.GlobalSecretResource{
-					Meta: &test_model.ResourceMeta{
-						Name: core_system.ZoneTokenRevocations,
-					},
-				},
-				expect: false,
+				expect: true,
 			}),
 			Entry("should not filter out when not signing key", testCase{
 				resource: &core_system.GlobalSecretResource{

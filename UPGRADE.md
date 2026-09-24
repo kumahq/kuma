@@ -32,14 +32,6 @@ A Zone Token now has one job, authenticating a Zone CP to a Global CP over KDS, 
 
 Only if you set `enableIssuer` to `false` to mint Zone Tokens offline. Move it to `multizone.global.kds.auth.zoneToken.enableIssuer` on the Global CP, the removed setting is ignored and the issuer is enabled again. The other removed settings had no effect, `dpServer.authn.zoneProxy.zoneToken.validator` was read by nothing and `dpServer.authn.zoneProxy.type` was autoconfigured and never consumed.
 
-### Zone token secrets are no longer synced to zones
-
-A zone token is validated on Global CP only, so Global CP stops sending `zone-token-signing-key-*` and `zone-token-revocations` over KDS. Zones no longer receive the derived `zone-token-signing-public-key-*` global secret, and the copies they already have are deleted on the first KDS sync after the upgrade.
-
-**Action required**
-
-Upgrade zones before or together with Global CP. A zone older than `3.0.0` validates zone proxy tokens with the synced public key, and it cannot do that once Global CP stops sending it.
-
 ### DPP configuration refresh interval default raised to 10s
 
 `xdsServer.dataplaneConfigurationRefreshInterval` (`KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL`) now defaults to `10s` instead of `1s`. The control plane regenerates the xDS configuration of every connected proxy on this interval, so a 1s default kept the control plane busy and scaled poorly with the number of data plane proxies.
