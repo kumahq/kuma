@@ -88,6 +88,22 @@ var _ = Describe("MeshExternalService", func() {
 				name: "external-service",
 				file: "endpoints-with-priority-valid",
 			}),
+			Entry("secure data source", testCase{
+				name: "external-service",
+				file: "secure-datasource-valid",
+			}),
+			Entry("secure data source mixed with legacy fields or with unsupported type", testCase{
+				name: "external-service",
+				file: "secure-datasource-invalid",
+			}),
+			Entry("secure data source without value", testCase{
+				name: "external-service",
+				file: "secure-datasource-missing-value-invalid",
+			}),
+			Entry("extension with file data source", testCase{
+				name: "external-service",
+				file: "extension-with-file-datasource-invalid",
+			}),
 		)
 	})
 })

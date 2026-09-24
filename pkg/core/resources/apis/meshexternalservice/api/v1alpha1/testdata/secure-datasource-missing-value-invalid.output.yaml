@@ -1,0 +1,7 @@
+violations:
+- field: spec.tls.verification.caCert.insecureInline
+  message: must be defined
+- field: spec.tls.verification.clientCert.type
+  message: 'EnvVar must be one of: Secret, InsecureInline'
+- field: spec.tls.verification.clientKey.secretRef
+  message: must be defined

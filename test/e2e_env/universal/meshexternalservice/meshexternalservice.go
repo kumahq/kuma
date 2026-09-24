@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshaccesslog_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
@@ -71,7 +70,7 @@ networking:
 			mes.Spec.Tls = &meshexternalservice_api.Tls{
 				Enabled: true,
 				Verification: &meshexternalservice_api.Verification{
-					CaCert: &common_api.DataSource{Inline: &caCert},
+					CaCert: &meshexternalservice_api.VerificationDataSource{Inline: &caCert},
 					Mode:   meshexternalservice_api.TLSVerificationSecured,
 				},
 			}

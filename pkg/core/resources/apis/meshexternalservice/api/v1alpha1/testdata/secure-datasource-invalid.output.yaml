@@ -1,0 +1,7 @@
+violations:
+- field: spec.tls.verification.caCert
+  message: secret, inline and inlineString cannot be combined with type
+- field: spec.tls.verification.clientCert.type
+  message: 'File must be one of: Secret, InsecureInline'
+- field: spec.tls.verification.clientKey.secretRef.name
+  message: must be defined
