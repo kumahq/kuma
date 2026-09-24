@@ -252,6 +252,15 @@ var _ = Context("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.zone.golden.yaml",
 		}),
+		Entry("should generate Kubernetes resources for Zone with a Zone Token", testCase{
+			extraArgs: []string{
+				"--mode", "zone",
+				"--zone", "zone-1",
+				"--kds-global-address", "grpcs://192.168.0.1:5685",
+				"--zone-token-path", filepath.Join("testdata", "zone-token"),
+			},
+			goldenFile: "install-control-plane.zone-token.golden.yaml",
+		}),
 		Entry("should work with --set", testCase{
 			extraArgs: []string{
 				"--set",
@@ -327,6 +336,18 @@ controlPlane:
 		Entry("--kds-global-address has no grpcs/grpc scheme", errTestCase{
 			extraArgs: []string{"--kds-global-address", "http://192.168.0.1:1234", "--mode", "zone", "--zone", "zone-1"},
 			errorMsg:  "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// or grpc:// got:'http://192.168.0.1:1234'",
+		}),
+		Entry("--zone-token-path with --mode global", errTestCase{
+			extraArgs: []string{"--mode", "global", "--zone-token-path", filepath.Join("testdata", "zone-token")},
+			errorMsg:  "--zone-token-path can only be used with --mode=zone",
+		}),
+		Entry("--zone-token-path points at no file", errTestCase{
+			extraArgs: []string{"--mode", "zone", "--zone", "zone-1", "--zone-token-path", filepath.Join("testdata", "no-such-token")},
+			errorMsg:  "could not read the Zone Token from",
+		}),
+		Entry("--zone-token-path points at an empty file", errTestCase{
+			extraArgs: []string{"--mode", "zone", "--zone", "zone-1", "--zone-token-path", filepath.Join("testdata", "zone-token-empty")},
+			errorMsg:  "is empty",
 		}),
 		Entry("--mode standalone is no longer supported", errTestCase{
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "standalone"},

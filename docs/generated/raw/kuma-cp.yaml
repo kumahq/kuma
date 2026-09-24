@@ -592,6 +592,29 @@ multizone:
         # Defines whether tracing is enabled for all gRPC methods
         # of GlobalKDSServer and KDSSyncService or completely disabled
         enabled: true # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TRACING_ENABLED
+      # Authentication of Zone CPs connecting to Global CP
+      auth:
+        # Type of authentication. Available values: "none", "zoneToken", plus the types a distribution adds.
+        # With "zoneToken" every Zone CP has to present a Zone Token generated with `kumactl generate zone-token --zone=<zone> --scope=cp`
+        type: none # ENV: KUMA_MULTIZONE_GLOBAL_KDS_AUTH_TYPE
+        # Configuration of the "zoneToken" authentication type
+        zoneToken:
+          # If true the Global CP issues Zone Tokens over its API.
+          # Set it to false when all the tokens are signed offline with the private key.
+          enableIssuer: true # ENV: KUMA_MULTIZONE_GLOBAL_KDS_AUTH_ZONE_TOKEN_ENABLE_ISSUER
+          # Zone Token validator configuration
+          validator:
+            # If true then Kuma secrets with prefix "zone-token-signing-key" are considered as signing keys.
+            useSecrets: true # ENV: KUMA_MULTIZONE_GLOBAL_KDS_AUTH_ZONE_TOKEN_VALIDATOR_USE_SECRETS
+            # List of public keys used to validate the token. Example:
+            # - kid: 1
+            #   key: |
+            #     -----BEGIN RSA PUBLIC KEY-----
+            #     MIIBCgKCAQEAq....
+            #     -----END RSA PUBLIC KEY-----
+            # - kid: 2
+            #   keyFile: /keys/public.pem
+            publicKeys: []
   zone:
     # Kuma Zone name used to mark the zone dataplane resources
     name: "default" # ENV: KUMA_MULTIZONE_ZONE_NAME
@@ -623,6 +646,12 @@ multizone:
         fullResyncInterval: 1m # ENV: KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
         # If true, the initial full resync is delayed by a random duration up to FullResyncInterval.
         delayFullResync: true # ENV: KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC
+      # Credentials Zone CP presents to Global CP. Requires grpcs scheme in globalAddress.
+      auth:
+        # Zone Token provided as a string
+        tokenInline: "" # ENV: KUMA_MULTIZONE_ZONE_KDS_AUTH_TOKEN_INLINE
+        # Path to a file with a Zone Token. The file is read on every new KDS stream, so the token can be rotated without a restart.
+        tokenPath: "" # ENV: KUMA_MULTIZONE_ZONE_KDS_AUTH_TOKEN_PATH
 # Diagnostics configuration
 diagnostics:
   # Port of Diagnostic Server for checking health and readiness of the Control Plane
@@ -693,28 +722,6 @@ dpServer:
           #     -----END RSA PUBLIC KEY-----
           # - kid: 2
           #   mesh: demo
-          #   keyFile: /keys/public.pem
-          publicKeys: []
-    # Configuration for zone proxy authentication.
-    zoneProxy:
-      # Type of authentication. Available values: "serviceAccountToken", "zoneToken", "none".
-      # If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "zoneToken" on Universal.
-      type: ""
-      # Configuration for zoneToken authentication method.
-      zoneToken:
-        # If true the control plane token issuer is enabled. It's recommended to set it to false when all the tokens are issued offline.
-        enableIssuer: true
-        # Zone Token validator configuration.
-        validator:
-          # If true then Kuma secrets with prefix "zone-token-signing-key" are considered as signing keys.
-          useSecrets: true
-          # List of public keys used to validate the token. Example:
-          # - kid: 1
-          #   key: |
-          #     -----BEGIN RSA PUBLIC KEY-----
-          #     MIIBCgKCAQEAq....
-          #     -----END RSA PUBLIC KEY-----
-          # - kid: 2
           #   keyFile: /keys/public.pem
           publicKeys: []
     # If true then Envoy uses Google gRPC instead of Envoy gRPC which lets a proxy reload the auth data (service account token, dp token etc.) stored in the file without proxy restart.
