@@ -148,26 +148,6 @@ spec:
                       caCert:
                         description: CaCert defines a certificate of CA.
                         properties:
-                          envVar:
-                            description: 'EnvVar is part of the 3.0 shape but rejected
-                              on MeshExternalService: it reads the control plane''s
-                              environment.'
-                            properties:
-                              name:
-                                type: string
-                            required:
-                            - name
-                            type: object
-                          file:
-                            description: 'File is part of the 3.0 shape but rejected
-                              on MeshExternalService: it reads the control plane''s
-                              filesystem.'
-                            properties:
-                              path:
-                                type: string
-                            required:
-                            - path
-                            type: object
                           inline:
                             description: 'Inline is the legacy, base64-encoded form
                               of `type: InsecureInline` with `insecureInline.value`,
@@ -219,26 +199,6 @@ spec:
                       clientCert:
                         description: ClientCert defines a certificate of a client.
                         properties:
-                          envVar:
-                            description: 'EnvVar is part of the 3.0 shape but rejected
-                              on MeshExternalService: it reads the control plane''s
-                              environment.'
-                            properties:
-                              name:
-                                type: string
-                            required:
-                            - name
-                            type: object
-                          file:
-                            description: 'File is part of the 3.0 shape but rejected
-                              on MeshExternalService: it reads the control plane''s
-                              filesystem.'
-                            properties:
-                              path:
-                                type: string
-                            required:
-                            - path
-                            type: object
                           inline:
                             description: 'Inline is the legacy, base64-encoded form
                               of `type: InsecureInline` with `insecureInline.value`,
@@ -290,26 +250,6 @@ spec:
                       clientKey:
                         description: ClientKey defines a client private key.
                         properties:
-                          envVar:
-                            description: 'EnvVar is part of the 3.0 shape but rejected
-                              on MeshExternalService: it reads the control plane''s
-                              environment.'
-                            properties:
-                              name:
-                                type: string
-                            required:
-                            - name
-                            type: object
-                          file:
-                            description: 'File is part of the 3.0 shape but rejected
-                              on MeshExternalService: it reads the control plane''s
-                              filesystem.'
-                            properties:
-                              path:
-                                type: string
-                            required:
-                            - path
-                            type: object
                           inline:
                             description: 'Inline is the legacy, base64-encoded form
                               of `type: InsecureInline` with `insecureInline.value`,

@@ -15,8 +15,6 @@ tls:
         value: test
     clientCert:
       type: File
-      file:
-        path: /etc/passwd
     clientKey:
       type: Secret
       secretRef:

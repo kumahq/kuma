@@ -73,7 +73,7 @@ var _ = Describe("VerificationDataSource", func() {
 		),
 	)
 
-	DescribeTable("decodes every 3.0 SecureDataSource shape without losing fields",
+	DescribeTable("decodes the supported 3.0 SecureDataSource shapes without losing fields",
 		func(given string) {
 			ds := v1alpha1.VerificationDataSource{}
 			Expect(core_model.FromYAML([]byte(given), &ds)).To(Succeed())
@@ -83,8 +83,6 @@ var _ = Describe("VerificationDataSource", func() {
 		},
 		Entry("Secret", "{type: Secret, secretRef: {kind: Secret, name: my-secret}}"),
 		Entry("InsecureInline", "{type: InsecureInline, insecureInline: {value: test}}"),
-		Entry("File", "{type: File, file: {path: /etc/ca.crt}}"),
-		Entry("EnvVar", "{type: EnvVar, envVar: {name: CA_CERT}}"),
 	)
 
 	Describe("Deprecations()", func() {

@@ -12,7 +12,5 @@ tls:
       type: InsecureInline
     clientCert:
       type: EnvVar
-      envVar:
-        name: HOME
     clientKey:
       type: Secret
