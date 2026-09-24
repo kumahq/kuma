@@ -86,11 +86,8 @@ var _ = Describe("ComputePolicyRole", func() {
 			zone:         "zone-1",
 			expectedRole: mesh_proto.ProducerPolicyRole,
 		}),
-		// A producer policy is applied to every dataplane in the mesh and synced to
-		// the other zones, so it may only name a resource its own namespace owns. A
-		// selector that leaves out the namespace or the zone is a subset match over
-		// the whole mesh and resolves to another tenant's resource. Every such item
-		// is a consumer item and stays inside the policy's namespace.
+		// See selectsOwnResource in compute.go: only a to[] item naming one
+		// resource in the policy's own namespace and zone is a producer item.
 		Entry("consumer policy when to[] omits the namespace and the zone", testCase{
 			policy: policyWithTo(builders.TargetRefMeshServiceLabels(map[string]string{
 				mesh_proto.DisplayName: "backend",
@@ -266,6 +263,59 @@ var _ = Describe("Compute", func() {
 				WithNamespace("custom-ns").
 				WithTargetRef(builders.TargetRefMesh()).
 				AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build(),
+			expectedLabels: map[string]string{
+				"k8s.kuma.io/namespace": "custom-ns",
+				"kuma.io/display-name":  "idle-timeout",
+				"kuma.io/policy-role":   "consumer",
+				"kuma.io/mesh":          "mesh-1",
+				"kuma.io/origin":        "zone",
+				"kuma.io/zone":          "zone-1",
+				"kuma.io/env":           "kubernetes",
+			},
+		}),
+		Entry("plugin originated producer policy on zone-k8s", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: builders.MeshTimeout().
+				WithMesh("mesh-1").
+				WithName("idle-timeout").
+				WithNamespace("custom-ns").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					mesh_proto.DisplayName:      "backend",
+					mesh_proto.KubeNamespaceTag: "custom-ns",
+					mesh_proto.ZoneTag:          "zone-1",
+				}, ""), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build(),
+			expectedLabels: map[string]string{
+				"k8s.kuma.io/namespace": "custom-ns",
+				"kuma.io/display-name":  "idle-timeout",
+				"kuma.io/policy-role":   "producer",
+				"kuma.io/mesh":          "mesh-1",
+				"kuma.io/origin":        "zone",
+				"kuma.io/zone":          "zone-1",
+				"kuma.io/env":           "kubernetes",
+			},
+		}),
+		Entry("a to[] item without the zone is stored as consumer", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: builders.MeshTimeout().
+				WithMesh("mesh-1").
+				WithName("idle-timeout").
+				WithNamespace("custom-ns").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					mesh_proto.DisplayName:      "backend",
+					mesh_proto.KubeNamespaceTag: "custom-ns",
+				}, ""), meshtimeout_api.Conf{
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build(),
