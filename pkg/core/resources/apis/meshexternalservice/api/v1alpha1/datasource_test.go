@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"sigs.k8s.io/yaml"
 
 	datasource_api "github.com/kumahq/kuma/v2/api/common/v1alpha1/datasource"
 	system_proto "github.com/kumahq/kuma/v2/api/system/v1alpha1"
@@ -70,6 +71,20 @@ var _ = Describe("VerificationDataSource", func() {
 			v1alpha1.VerificationDataSource{Type: pointer.To(datasource_api.SecureDataSourceEnvVar)},
 			"datasource type: EnvVar is not supported on MeshExternalService",
 		),
+	)
+
+	DescribeTable("decodes every 3.0 SecureDataSource shape without losing fields",
+		func(given string) {
+			ds := v1alpha1.VerificationDataSource{}
+			Expect(core_model.FromYAML([]byte(given), &ds)).To(Succeed())
+			actual, err := yaml.Marshal(ds)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchYAML(given))
+		},
+		Entry("Secret", "{type: Secret, secretRef: {kind: Secret, name: my-secret}}"),
+		Entry("InsecureInline", "{type: InsecureInline, insecureInline: {value: test}}"),
+		Entry("File", "{type: File, file: {path: /etc/ca.crt}}"),
+		Entry("EnvVar", "{type: EnvVar, envVar: {name: CA_CERT}}"),
 	)
 
 	Describe("Deprecations()", func() {

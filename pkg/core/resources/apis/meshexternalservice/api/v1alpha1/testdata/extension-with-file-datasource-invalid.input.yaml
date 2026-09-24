@@ -9,3 +9,5 @@ tls:
   verification:
     caCert:
       type: File
+      file:
+        path: /etc/passwd

@@ -132,6 +132,10 @@ type VerificationDataSource struct {
 	InlineString *string `json:"inlineString,omitempty"`
 	// Type of the data source, one of `Secret` or `InsecureInline`.
 	Type *datasource_api.SecureDataSourceType `json:"type,omitempty"`
+	// File is part of the 3.0 shape but rejected on MeshExternalService: it reads the control plane's filesystem.
+	File *datasource_api.File `json:"file,omitempty"`
+	// EnvVar is part of the 3.0 shape but rejected on MeshExternalService: it reads the control plane's environment.
+	EnvVar *datasource_api.EnvVar `json:"envVar,omitempty"`
 	// InsecureInline is the data source value as plain text, used with `type: InsecureInline`.
 	InsecureInline *datasource_api.Inline `json:"insecureInline,omitempty"`
 	// SecretRef references a Secret, used with `type: Secret`.

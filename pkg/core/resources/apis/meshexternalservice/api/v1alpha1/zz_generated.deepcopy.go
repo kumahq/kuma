@@ -257,6 +257,16 @@ func (in *VerificationDataSource) DeepCopyInto(out *VerificationDataSource) {
 		*out = new(datasource.SecureDataSourceType)
 		**out = **in
 	}
+	if in.File != nil {
+		in, out := &in.File, &out.File
+		*out = new(datasource.File)
+		**out = **in
+	}
+	if in.EnvVar != nil {
+		in, out := &in.EnvVar, &out.EnvVar
+		*out = new(datasource.EnvVar)
+		**out = **in
+	}
 	if in.InsecureInline != nil {
 		in, out := &in.InsecureInline, &out.InsecureInline
 		*out = new(datasource.Inline)
