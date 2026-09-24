@@ -1,7 +1,0 @@
-controlPlane:
-  resources:
-    limits:
-      memory: 1Gi
-  runtime:
-    goMemLimit:
-      ratio: 0.8

@@ -185,22 +185,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-          {{- $userGoMemLimit := hasKey .Values.controlPlane.envVars "GOMEMLIMIT" }}
-          {{- range .Values.controlPlane.envVarEntries }}
-          {{- if eq .name "GOMEMLIMIT" }}{{ $userGoMemLimit = true }}{{ end }}
-          {{- end }}
-          {{- if not $userGoMemLimit }}
-            - name: GOMEMLIMIT
-          {{- if dig "limits" "memory" "" .Values.controlPlane.resources }}
-              value: {{ include "kuma.controlPlane.goMemLimit" . | quote }}
-          {{- else }}
-              valueFrom:
-                resourceFieldRef:
-                  containerName: control-plane
-                  resource: limits.memory
-                  divisor: {{ .Values.controlPlane.runtime.goMemLimit.divisor | quote }}
-          {{- end }}
-          {{- end }}
             - name: GOMAXPROCS
               valueFrom:
                 resourceFieldRef:

@@ -13,13 +13,13 @@ does not have any particular instructions.
 From now on, `kuma.io/` and `k8s.kuma.io/` are reserved label prefixes.
 Every unknown label under these prefixes will be rejected on create and update.
 
-### Helm chart sets control plane `GOMEMLIMIT` to 90% of the memory limit
+### Control plane sets `GOMEMLIMIT` itself to 90% of the cgroup memory limit
 
-The chart used to set `GOMEMLIMIT` to the full `controlPlane.resources.limits.memory`. `GOMEMLIMIT` only covers memory the Go runtime manages, so with no headroom left for the rest, such as the mapped `kuma-cp` binary, the container could be OOM killed before the garbage collector reacted. The chart now computes `GOMEMLIMIT` as `controlPlane.runtime.goMemLimit.ratio` (default `0.9`) of the memory limit and renders it in bytes.
+The Helm chart used to set `GOMEMLIMIT` to the full `controlPlane.resources.limits.memory`. `GOMEMLIMIT` only covers memory the Go runtime manages, so with no headroom left for the rest, such as the mapped `kuma-cp` binary, the container could be OOM killed before the garbage collector reacted. `kuma-cp` now reads the cgroup memory limit at startup and sets `GOMEMLIMIT` to 90% of it. This also covers limits the chart does not know about, such as a `LimitRange` default or a VPA, and Universal deployments under a cgroup. The chart no longer renders the `GOMEMLIMIT` environment variable and `controlPlane.runtime.goMemLimit.divisor` is removed.
 
 **Action required**
 
-None. Set `controlPlane.runtime.goMemLimit.ratio` to choose another fraction, or set `GOMEMLIMIT` in `controlPlane.envVars` or `controlPlane.envVarEntries` to use an exact value, in which case the chart does not render its own. Without `controlPlane.resources.limits.memory` the chart keeps the previous behavior and reads the limit with a `resourceFieldRef`. The value is computed from Helm values only, so a memory limit set outside the chart, for example by a `LimitRange` or a VPA, is not taken into account.
+None. Set the `AUTOMEMLIMIT` environment variable to choose another fraction, for example `AUTOMEMLIMIT=0.85`, or to `off` to disable it. Set `GOMEMLIMIT` explicitly to use an exact value, in which case `kuma-cp` leaves it as is. On Kubernetes use `controlPlane.envVars` for either. Remove `controlPlane.runtime.goMemLimit` from your values if you set it.
 
 ### DPP configuration refresh interval default raised to 10s
 

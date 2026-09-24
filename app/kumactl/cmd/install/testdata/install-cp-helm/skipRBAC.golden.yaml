@@ -277,8 +277,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: GOMEMLIMIT
-              value: "241591910"
             - name: GOMAXPROCS
               valueFrom:
                 resourceFieldRef:
