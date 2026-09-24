@@ -35,10 +35,12 @@ var _ = Describe("EnforcedReadLabels", func() {
 	noCP := resource_labels.ControlPlane{}
 
 	type testCase struct {
-		r        core_model.Resource
-		ns       resource_labels.Namespace
-		isLocal  bool
-		cp       resource_labels.ControlPlane
+		r       core_model.Resource
+		ns      resource_labels.Namespace
+		isLocal bool
+		cp      resource_labels.ControlPlane
+		// labels as stored, for the rules that read one instead of recomputing it
+		labels   map[string]string
 		expected map[string]string
 	}
 
@@ -49,6 +51,7 @@ var _ = Describe("EnforcedReadLabels", func() {
 				Spec:       given.r.GetSpec(),
 				Namespace:  given.ns,
 				IsLocal:    given.isLocal,
+				Labels:     given.labels,
 			}, given.cp)).To(Equal(given.expected))
 		},
 		Entry("workload-owner policy in an app namespace", testCase{
@@ -81,14 +84,38 @@ var _ = Describe("EnforcedReadLabels", func() {
 				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
 					mesh_proto.DisplayName:      "backend",
 					mesh_proto.KubeNamespaceTag: "kuma-demo",
+					mesh_proto.ZoneTag:          "zone-1",
 				}, ""), idleTimeout).
 				Build(),
 			ns:      appNamespace,
 			isLocal: true,
 			cp:      noCP,
+			labels:  map[string]string{mesh_proto.ZoneTag: "zone-1"},
 			expected: map[string]string{
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 				mesh_proto.PolicyRoleLabel:  string(mesh_proto.ProducerPolicyRole),
+			},
+		}),
+		// The role is recomputed on every read, so a policy stored as producer by a
+		// control plane that accepted a looser selector is demoted here instead of
+		// keeping its reach over another namespace.
+		Entry("a policy whose to[] names no namespace and no zone reads as consumer", testCase{
+			r: builders.MeshTimeout().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					mesh_proto.DisplayName: "backend",
+				}, ""), idleTimeout).
+				Build(),
+			ns:      appNamespace,
+			isLocal: true,
+			cp:      noCP,
+			labels: map[string]string{
+				mesh_proto.ZoneTag:         "zone-1",
+				mesh_proto.PolicyRoleLabel: string(mesh_proto.ProducerPolicyRole),
+			},
+			expected: map[string]string{
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+				mesh_proto.PolicyRoleLabel:  string(mesh_proto.ConsumerPolicyRole),
 			},
 		}),
 		// A policy that mixes producer and consumer items is rejected at admission, so
@@ -100,15 +127,18 @@ var _ = Describe("EnforcedReadLabels", func() {
 				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
 					mesh_proto.DisplayName:      "backend-1",
 					mesh_proto.KubeNamespaceTag: "kuma-demo",
+					mesh_proto.ZoneTag:          "zone-1",
 				}, ""), idleTimeout).
 				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
 					mesh_proto.DisplayName:      "backend-2",
 					mesh_proto.KubeNamespaceTag: "other-ns",
+					mesh_proto.ZoneTag:          "zone-1",
 				}, ""), idleTimeout).
 				Build(),
 			ns:      appNamespace,
 			isLocal: true,
 			cp:      noCP,
+			labels:  map[string]string{mesh_proto.ZoneTag: "zone-1"},
 			expected: map[string]string{
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 				mesh_proto.PolicyRoleLabel:  string(mesh_proto.WorkloadOwnerPolicyRole),
