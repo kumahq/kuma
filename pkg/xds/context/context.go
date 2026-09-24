@@ -96,7 +96,6 @@ type MeshContext struct {
 	DataplanesByName   map[string]*core_mesh.DataplaneResource
 	EndpointMap        xds.EndpointMap
 	VIPDomains         []xds_types.VIPDomains
-	VIPOutbounds       xds_types.Outbounds
 	DataSourceLoader   datasource.Loader
 	CAsByTrustDomain   map[string][]PEMBytes
 	// ZoneEgresses holds one entry per zone egress instance, resolved from Dataplanes

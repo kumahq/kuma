@@ -174,7 +174,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		DataplanesByName:                topology.DataplanesByName,
 		EndpointMap:                     topology.EndpointMap,
 		VIPDomains:                      baseMeshContext.VIPDomains,
-		VIPOutbounds:                    baseMeshContext.VIPOutbounds,
 		DataSourceLoader:                loader,
 		CAsByTrustDomain:                getCAsByTrustDomain(resources.MeshTrusts().Items),
 		ZoneEgresses:                    topology.ZoneEgresses,
