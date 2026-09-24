@@ -96,6 +96,39 @@ func listenerLabel(listenerType mesh_proto.Dataplane_Networking_Listener_Type) f
 	}
 }
 
+func computeZone(_ string, w Write, cp ControlPlane) (string, bool, error) {
+	if cp.Mode == config_core.Zone && w.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
+		return cp.Zone, cp.Zone != "", nil
+	}
+	return keep(w, mesh_proto.ZoneTag)
+}
+
+func enforceZone(_ string, r StoredResource, cp ControlPlane) (string, bool) {
+	if cp.Mode == config_core.Zone && r.IsLocal && cp.Zone != "" && r.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
+		return cp.Zone, true
+	}
+	return "", false
+}
+
+// zoneOfWrite and zoneOfStored give the kuma.io/zone the resource ends up with, for
+// the rules that need to compare it with a value in the spec. The zone descriptor
+// runs before them in the registry but its result is not threaded through, so they
+// ask it again rather than read a label the write may not carry yet.
+func zoneOfWrite(w Write, cp ControlPlane) string {
+	v, ok, err := computeZone(mesh_proto.ZoneTag, w, cp)
+	if err != nil || !ok {
+		return ""
+	}
+	return v
+}
+
+func zoneOfStored(r StoredResource, cp ControlPlane) string {
+	if v, ok := enforceZone(mesh_proto.ZoneTag, r, cp); ok {
+		return v
+	}
+	return r.Labels[mesh_proto.ZoneTag]
+}
+
 // Iteration order is the order the API server reports ownership violations in.
 var registry = []Descriptor{
 	{
@@ -164,20 +197,10 @@ var registry = []Descriptor{
 		},
 	},
 	{
-		Key:   mesh_proto.ZoneTag,
-		Owner: OwnerControlPlane,
-		Compute: func(_ string, w Write, cp ControlPlane) (string, bool, error) {
-			if cp.Mode == config_core.Zone && w.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
-				return cp.Zone, cp.Zone != "", nil
-			}
-			return keep(w, mesh_proto.ZoneTag)
-		},
-		EnforceOnRead: func(_ string, r StoredResource, cp ControlPlane) (string, bool) {
-			if cp.Mode == config_core.Zone && r.IsLocal && cp.Zone != "" && r.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
-				return cp.Zone, true
-			}
-			return "", false
-		},
+		Key:           mesh_proto.ZoneTag,
+		Owner:         OwnerControlPlane,
+		Compute:       computeZone,
+		EnforceOnRead: enforceZone,
 		ValidateValue: func(_ string, v string, w Write, cp ControlPlane) []string {
 			if cp.IsK8s {
 				if !w.Descriptor.IsPluginOriginated || (cp.Mode != config_core.Global && !cp.FederatedZone) {
@@ -219,17 +242,17 @@ var registry = []Descriptor{
 	{
 		Key:   mesh_proto.PolicyRoleLabel,
 		Owner: OwnerControlPlane,
-		Compute: func(_ string, w Write, _ ControlPlane) (string, bool, error) {
+		Compute: func(_ string, w Write, cp ControlPlane) (string, bool, error) {
 			if w.Namespace.value == "" || !w.Descriptor.IsPolicy || !w.Descriptor.IsPluginOriginated {
 				return keep(w, mesh_proto.PolicyRoleLabel)
 			}
-			role, err := ComputePolicyRole(w.Spec.(core_model.Policy), w.Namespace)
+			role, err := ComputePolicyRole(w.Spec.(core_model.Policy), w.Namespace, zoneOfWrite(w, cp))
 			if err != nil {
 				return "", false, err
 			}
 			return string(role), true, nil
 		},
-		EnforceOnRead: func(_ string, r StoredResource, _ ControlPlane) (string, bool) {
+		EnforceOnRead: func(_ string, r StoredResource, cp ControlPlane) (string, bool) {
 			if r.Namespace.value == "" || r.Namespace.system || !r.Descriptor.IsPolicy || !r.Descriptor.IsPluginOriginated {
 				return "", false
 			}
@@ -237,7 +260,7 @@ var registry = []Descriptor{
 			if !ok {
 				return "", false
 			}
-			role, err := ComputePolicyRole(policy, r.Namespace)
+			role, err := ComputePolicyRole(policy, r.Namespace, zoneOfStored(r, cp))
 			if err != nil {
 				// Only reachable for a policy admission never validated. Fall back to the
 				// narrowest role instead of erroring: this runs on every read and ToCoreList

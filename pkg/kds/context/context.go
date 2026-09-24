@@ -301,7 +301,7 @@ func GlobalProvidedFilter(rm manager.ReadOnlyResourceManager) kds_reconcile.Reso
 					return false
 				}
 				// otherwise we're testing the role in Global CP in case Zone had the validation webhook turned off
-				role, err := resource_labels.ComputePolicyRole(policy, resource_labels.NewNamespace(r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag], false))
+				role, err := resource_labels.ComputePolicyRole(policy, resource_labels.NewNamespace(r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag], false), core_model.ZoneOfResource(r))
 				if err != nil {
 					ri := kri.From(r)
 					log.V(1).Info(err.Error(), "name", ri.Name, "mesh", ri.Mesh, "zone", ri.Zone, "namespace", ri.Namespace)
