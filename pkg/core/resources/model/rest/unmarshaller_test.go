@@ -100,6 +100,34 @@ var _ = Describe("UnmarshalStrict", func() {
 		}))
 	})
 
+	It("should reject fields from the Kubernetes resource representation", func() {
+		// given a document with the k8s-style wrapper that the REST representation inlines
+		doc := `{
+			"apiVersion": "kuma.io/v1alpha1",
+			"kind": "MeshTrafficPermission",
+			"metadata": {"labels": {"team": "a"}},
+			"type": "MeshTrafficPermission",
+			"name": "mtp-1",
+			"mesh": "default",
+			"spec": {
+				"targetRef": {"kind": "Mesh"},
+				"rules": [{"default": {"allow": [{"spiffeID": {"type": "Exact", "value": "spiffe://trust-domain/ns/default"}}]}}]
+			}
+		}`
+
+		// when
+		_, err := rest.JSON.UnmarshalStrict([]byte(doc), desc)
+
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(validators.IsValidationError(err)).To(BeTrue())
+		Expect(err.(*validators.ValidationError).Violations).To(Equal([]validators.Violation{
+			{Field: "apiVersion", Message: "unknown field"},
+			{Field: "kind", Message: "unknown field"},
+			{Field: "metadata", Message: "unknown field"},
+		}))
+	})
+
 	It("should keep ignoring unknown fields on lenient unmarshal", func() {
 		// given
 		doc := `{

@@ -174,9 +174,19 @@ func (u *unmarshaler) UnmarshalListToCore(b []byte, rs core_model.ResourceList) 
 
 func rejectUnknownFields(rawObj map[string]any, structuralSchema *schema.Structural) error {
 	unknownFields := pruning.PruneWithOptions(rawObj, structuralSchema, true, schema.UnknownFieldPathOptions{TrackUnknownFieldPaths: true})
+	for _, k8sField := range []string{"apiVersion", "kind", "metadata"} {
+		if _, ok := rawObj[k8sField]; !ok {
+			continue
+		}
+		if _, known := structuralSchema.Properties[k8sField]; known {
+			continue
+		}
+		unknownFields = append(unknownFields, k8sField)
+	}
 	if len(unknownFields) == 0 {
 		return nil
 	}
+	sort.Strings(unknownFields)
 	verr := &validators.ValidationError{}
 	for _, field := range unknownFields {
 		verr.AddViolation(field, "unknown field")
