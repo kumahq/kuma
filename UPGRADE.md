@@ -784,7 +784,7 @@ Migrate any policy that still selects those resources by `name` and/or `namespac
 
 `name` and `namespace` have been removed from `Dataplane.networking.transparentProxying.reachableBackends.refs[]` and from the `kuma.io/reachable-backends` annotation. Every ref now requires `kind` and `labels`, and `port` stays optional to narrow the ref to a single port.
 
-Refs still using `name` or `namespace` resolve to nothing. Validation runs only on writes, so an existing `Dataplane` is not re-validated, and the control plane drops the unknown fields when it reads the stored spec. The proxy then receives no outbound clusters, even with `KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND=true`, until every ref is rewritten. New writes fail validation with `labels: must not be empty`, and on Kubernetes the pod converter rejects an annotation that still sets `name` or `namespace`.
+Refs still using `name` or `namespace` resolve to nothing. Validation runs only on writes, so an existing `Dataplane` is not re-validated, and the control plane drops the unknown fields when it reads the stored spec. The proxy then receives no outbound clusters, even with `KUMA_DEFAULTS_RESTRICT_OUTBOUND=false`, until every ref is rewritten. New writes fail validation with `labels: must not be empty`, and on Kubernetes the pod converter rejects an annotation that still sets `name` or `namespace`.
 
 **Action required:** rewrite every ref before upgrading. `name` becomes the `kuma.io/display-name` label and `namespace` becomes the `k8s.kuma.io/namespace` label.
 
@@ -815,13 +815,13 @@ kuma.io/reachable-backends: |
 
 A data plane proxy without `reachableBackends` now gets no generated outbounds, so it cannot reach any service through the transparent proxy. This includes pods injected by a 2.14 control plane, whose `Dataplane` keeps the redirect ports in the spec.
 
-**Action required:** define `reachableBackends` on every data plane proxy before upgrading, or set `defaults.allowAllOutbound` (`KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND`) to `true` to restore the previous allow-all behavior.
+**Action required:** define `reachableBackends` on every data plane proxy before upgrading, or set `defaults.restrictOutbound` (`KUMA_DEFAULTS_RESTRICT_OUTBOUND`) to `false` to restore the previous allow-all behavior.
 
 ### Outbound passthrough defaults to `None`
 
 A transparent proxy data plane proxy that no `MeshPassthrough` policy selects now drops traffic to destinations outside the mesh instead of forwarding it to the original destination. This behaves as if a `MeshPassthrough` with `passthroughMode: None` targets it. Proxies without a transparent proxy or with bound outbounds are not affected, and a policy with `passthroughMode: All` keeps passthrough on.
 
-**Action required:** before upgrading, allow the external destinations your workloads use with `MeshExternalService` or a `MeshPassthrough` policy (`passthroughMode: Matched` with `appendMatch`, or `passthroughMode: All`), or set `defaults.allowAllOutbound` (`KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND`) to `true` to restore the previous behavior.
+**Action required:** before upgrading, allow the external destinations your workloads use with `MeshExternalService` or a `MeshPassthrough` policy (`passthroughMode: Matched` with `appendMatch`, or `passthroughMode: All`), or set `defaults.restrictOutbound` (`KUMA_DEFAULTS_RESTRICT_OUTBOUND`) to `false` to restore the previous behavior.
 
 ### A `MeshHTTPRoute` rule whose backendRefs all fail to resolve answers 500
 

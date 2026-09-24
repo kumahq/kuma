@@ -35,7 +35,7 @@ func TransparentProxyConfigMap() {
 				WithCtlOpts(map[string]string{
 					"--set": fmt.Sprintf("%stransparentProxy.configMap.enabled=true", Config.HelmSubChartPrefix),
 				}),
-				WithEnv(AllowAllOutboundEnv, "false"),
+				WithEnv(RestrictOutboundEnv, "true"),
 			))
 		}, "90s", "3s").Should(Succeed())
 

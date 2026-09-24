@@ -70,8 +70,8 @@ var kdsFastWatchdogEnv = map[string]string{
 	"KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL":   "1s",
 }
 
-// AllowAllOutboundEnv is enabled by default in e2e because most test apps don't define reachableBackends
-const AllowAllOutboundEnv = "KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND"
+// RestrictOutboundEnv is disabled by default in e2e because most test apps don't define reachableBackends
+const RestrictOutboundEnv = "KUMA_DEFAULTS_RESTRICT_OUTBOUND"
 
 func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
 	// Set defaults.
@@ -79,7 +79,7 @@ func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
 	k.installationMode = KumactlInstallationMode
 	k.env = map[string]string{}
 	maps.Copy(k.env, kdsFastWatchdogEnv)
-	k.env[AllowAllOutboundEnv] = "true"
+	k.env[RestrictOutboundEnv] = "false"
 	k.meshUpdateFuncs = map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh{}
 	k.verifyKuma = true
 	k.setupKumactl = true

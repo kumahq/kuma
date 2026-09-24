@@ -579,7 +579,7 @@ type Dataplane_Networking_TransparentProxying struct {
 	// MeshExternalService, MeshService and MeshMultiZoneService. Setting an
 	// explicit list of refs can dramatically improve the performance of the
 	// mesh. If not specified, no services in the mesh are reachable, unless
-	// the control plane sets KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND.
+	// the control plane disables KUMA_DEFAULTS_RESTRICT_OUTBOUND.
 	ReachableBackends *Dataplane_Networking_TransparentProxying_ReachableBackends `protobuf:"bytes,7,opt,name=reachable_backends,json=reachableBackends,proto3" json:"reachable_backends,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
