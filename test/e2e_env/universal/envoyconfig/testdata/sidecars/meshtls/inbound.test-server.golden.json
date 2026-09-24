@@ -2,25 +2,27 @@
   "diff": [
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_msvc_envoyconfig_kuma-3__demo-client_3000/transportSocket/typedConfig/commonTlsContext/tlsParams",
-      "value": {
-        "cipherSuites": [
-          "ECDHE-ECDSA-AES256-GCM-SHA384"
-        ],
-        "tlsMaximumProtocolVersion": "TLSv1_3",
-        "tlsMinimumProtocolVersion": "TLSv1_3"
-      }
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_msvc_envoyconfig_kuma-3__demo-client_3000/transportSocket/typedConfig/commonTlsContext/tlsParams/cipherSuites",
+      "value": [
+        "ECDHE-ECDSA-AES256-GCM-SHA384"
+      ]
     },
     {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_msvc_envoyconfig_kuma-3__test-server_80/transportSocket/typedConfig/commonTlsContext/tlsParams",
-      "value": {
-        "cipherSuites": [
-          "ECDHE-ECDSA-AES256-GCM-SHA384"
-        ],
-        "tlsMaximumProtocolVersion": "TLSv1_3",
-        "tlsMinimumProtocolVersion": "TLSv1_3"
-      }
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_msvc_envoyconfig_kuma-3__demo-client_3000/transportSocket/typedConfig/commonTlsContext/tlsParams/tlsMinimumProtocolVersion",
+      "value": "TLSv1_3"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_msvc_envoyconfig_kuma-3__test-server_80/transportSocket/typedConfig/commonTlsContext/tlsParams/cipherSuites",
+      "value": [
+        "ECDHE-ECDSA-AES256-GCM-SHA384"
+      ]
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_msvc_envoyconfig_kuma-3__test-server_80/transportSocket/typedConfig/commonTlsContext/tlsParams/tlsMinimumProtocolVersion",
+      "value": "TLSv1_3"
     },
     {
       "op": "add",
