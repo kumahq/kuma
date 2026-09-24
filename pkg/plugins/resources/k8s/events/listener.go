@@ -6,14 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kumahq/kuma/v3/pkg/core"
@@ -50,17 +44,24 @@ func NewListener(mgr manager.Manager, out events.Emitter, metrics core_metrics.M
 	}, nil
 }
 
+// Start registers the listener on the manager cache's informers, the same ones the
+// Kubernetes store reads from, so every type is watched and held in memory once.
 func (k *listener) Start(stop <-chan struct{}) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		select {
+		case <-stop:
+		case <-ctx.Done():
+		}
+		cancel()
+	}()
+
 	types := core_registry.Global().ObjectTypes()
 	knownTypes := k.mgr.GetScheme().KnownTypes(kuma_v1alpha1.GroupVersion)
 	for _, t := range types {
 		if _, ok := knownTypes[string(t)]; !ok {
 			continue
-		}
-		gvk := kuma_v1alpha1.GroupVersion.WithKind(string(t))
-		lw, err := k.createListerWatcher(gvk)
-		if err != nil {
-			return err
 		}
 		coreObj, err := core_registry.Global().NewObject(t)
 		if err != nil {
@@ -71,15 +72,14 @@ func (k *listener) Start(stop <-chan struct{}) error {
 			return err
 		}
 
-		informer := cache.NewSharedInformer(lw, obj, 0)
+		informer, err := k.mgr.GetCache().GetInformer(ctx, obj)
+		if err != nil {
+			return errors.Wrapf(err, "could not get informer for %s", t)
+		}
 		if _, err := informer.AddEventHandler(k); err != nil {
 			return err
 		}
-
-		go func(typ core_model.ResourceType) {
-			log.V(1).Info("start watching resource", "type", typ)
-			informer.Run(stop)
-		}(t)
+		log.V(1).Info("start watching resource", "type", t)
 	}
 	return nil
 }
@@ -103,13 +103,14 @@ func (k *listener) OnAdd(obj any, _ bool) {
 		k.recordDroppedEvent("add", obj)
 		return
 	}
-	if err := k.addTypeInformationToObject(kobj); err != nil {
-		log.Error(err, "unable to add TypeMeta to KubernetesObject")
+	kind, err := k.kindOf(kobj)
+	if err != nil {
+		log.Error(err, "unable to resolve kind of KubernetesObject")
 		return
 	}
 	k.out.Send(events.ResourceChangedEvent{
 		Operation: events.Create,
-		Type:      core_model.ResourceType(kobj.GetObjectKind().GroupVersionKind().Kind),
+		Type:      core_model.ResourceType(kind),
 		Key:       resourceKey(kobj),
 	})
 }
@@ -122,13 +123,18 @@ func (k *listener) OnUpdate(oldObj, newObj any) {
 		k.recordDroppedEvent("update", newObj)
 		return
 	}
-	if err := k.addTypeInformationToObject(kobj); err != nil {
-		log.Error(err, "unable to add TypeMeta to KubernetesObject")
+	// The manager cache resyncs periodically and replays unchanged objects as updates.
+	if oldKobj, ok := kubernetesObjectFromEvent(oldObj); ok && oldKobj.GetResourceVersion() == kobj.GetResourceVersion() {
+		return
+	}
+	kind, err := k.kindOf(kobj)
+	if err != nil {
+		log.Error(err, "unable to resolve kind of KubernetesObject")
 		return
 	}
 	k.out.Send(events.ResourceChangedEvent{
 		Operation: events.Update,
-		Type:      core_model.ResourceType(kobj.GetObjectKind().GroupVersionKind().Kind),
+		Type:      core_model.ResourceType(kind),
 		Key:       resourceKey(kobj),
 	})
 }
@@ -139,13 +145,14 @@ func (k *listener) OnDelete(obj any) {
 		k.recordDroppedEvent("delete", obj)
 		return
 	}
-	if err := k.addTypeInformationToObject(kobj); err != nil {
-		log.Error(err, "unable to add TypeMeta to KubernetesObject")
+	kind, err := k.kindOf(kobj)
+	if err != nil {
+		log.Error(err, "unable to resolve kind of KubernetesObject")
 		return
 	}
 	k.out.Send(events.ResourceChangedEvent{
 		Operation: events.Delete,
-		Type:      core_model.ResourceType(kobj.GetObjectKind().GroupVersionKind().Kind),
+		Type:      core_model.ResourceType(kind),
 		Key:       resourceKey(kobj),
 	})
 }
@@ -172,63 +179,18 @@ func (k *listener) NeedLeaderElection() bool {
 	return false
 }
 
-func (k *listener) addTypeInformationToObject(obj runtime.Object) error {
+// kindOf reads the Kind from the scheme instead of setting TypeMeta on the object:
+// objects come from the shared manager cache and must not be mutated.
+func (k *listener) kindOf(obj runtime.Object) (string, error) {
 	gvks, _, err := k.mgr.GetScheme().ObjectKinds(obj)
 	if err != nil {
-		return errors.Wrap(err, "missing apiVersion or kind and cannot assign it")
+		return "", errors.Wrap(err, "missing apiVersion or kind")
 	}
-
 	for _, gvk := range gvks {
-		if gvk.Kind == "" {
+		if gvk.Kind == "" || gvk.Version == "" || gvk.Version == runtime.APIVersionInternal {
 			continue
 		}
-		if gvk.Version == "" || gvk.Version == runtime.APIVersionInternal {
-			continue
-		}
-		obj.GetObjectKind().SetGroupVersionKind(gvk)
-		break
+		return gvk.Kind, nil
 	}
-
-	return nil
-}
-
-func (k *listener) createListerWatcher(gvk schema.GroupVersionKind) (cache.ListerWatcher, error) {
-	mapping, err := k.mgr.GetRESTMapper().RESTMapping(gvk.GroupKind(), gvk.Version)
-	if err != nil {
-		return nil, err
-	}
-	httpClient, err := rest.HTTPClientFor(k.mgr.GetConfig())
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create HTTP client from Manager config")
-	}
-	client, err := apiutil.RESTClientForGVK(gvk, false, false, k.mgr.GetConfig(), serializer.NewCodecFactory(k.mgr.GetScheme()), httpClient)
-	if err != nil {
-		return nil, err
-	}
-	listGVK := gvk.GroupVersion().WithKind(gvk.Kind + "List")
-	listObj, err := k.mgr.GetScheme().New(listGVK)
-	if err != nil {
-		return nil, err
-	}
-	paramCodec := runtime.NewParameterCodec(k.mgr.GetScheme())
-	return &cache.ListWatch{
-		ListWithContextFunc: func(ctx context.Context, opts metav1.ListOptions) (runtime.Object, error) {
-			res := listObj.DeepCopyObject()
-			err := client.Get().
-				Resource(mapping.Resource.Resource).
-				VersionedParams(&opts, paramCodec).
-				Do(ctx).
-				Into(res)
-			return res, err
-		},
-		// Setup the watch function
-		WatchFuncWithContext: func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-			// Watch needs to be set to true separately
-			opts.Watch = true
-			return client.Get().
-				Resource(mapping.Resource.Resource).
-				VersionedParams(&opts, paramCodec).
-				Watch(ctx)
-		},
-	}, nil
+	return "", errors.Errorf("no versioned kind registered for %T", obj)
 }
