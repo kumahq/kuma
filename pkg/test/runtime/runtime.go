@@ -180,7 +180,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		builder.Config().DNSServer.ServiceVipPort,
 		xds_context.AnyToAnyReachableServicesGraphBuilder,
 		builder.CAProvider(),
-		xds_context.WithAllowAllOutbound(builder.Config().Defaults.AllowAllOutbound),
+		xds_context.WithAllowAllOutbound(!builder.Config().Defaults.RestrictOutbound),
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(
