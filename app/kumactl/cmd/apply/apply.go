@@ -85,7 +85,7 @@ $ kumactl apply -f resources/
 				if len(ctx.args.vars) > 0 {
 					bytes = template.Render(rawResource, ctx.args.vars)
 				}
-				res, pErr := rest_types.YAML.UnmarshalCore(bytes)
+				res, pErr := rest_types.YAML.UnmarshalCoreStrict(bytes)
 				if pErr != nil {
 					_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "resource[%d]: failed to parse resource: %+v\n", i, pErr)
 					hasErrors = true

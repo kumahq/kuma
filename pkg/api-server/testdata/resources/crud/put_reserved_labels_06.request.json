@@ -5,6 +5,6 @@
   "labels": { "kuma.io/managed-by": "meshservice-generator" },
   "spec": {
     "selector": { "dataplaneLabels": { "matchLabels": { "app": "backend" } } },
-    "ports": [ { "port": 80, "targetPort": 80, "protocol": "http" } ]
+    "ports": [ { "port": 80, "targetPort": 80, "appProtocol": "http" } ]
   }
 }

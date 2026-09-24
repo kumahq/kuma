@@ -8,7 +8,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema/defaulting"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema/pruning"
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
@@ -53,6 +55,14 @@ func (e *InvalidResourceError) Is(target error) bool {
 }
 
 func (u *unmarshaler) UnmarshalCore(bytes []byte) (core_model.Resource, error) {
+	return u.unmarshalCore(bytes, false)
+}
+
+func (u *unmarshaler) UnmarshalCoreStrict(bytes []byte) (core_model.Resource, error) {
+	return u.unmarshalCore(bytes, true)
+}
+
+func (u *unmarshaler) unmarshalCore(bytes []byte, strict bool) (core_model.Resource, error) {
 	m := v1alpha1.ResourceMeta{}
 	if err := u.unmarshalFn(bytes, &m); err != nil {
 		return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid meta type: %q", err.Error())}
@@ -61,7 +71,7 @@ func (u *unmarshaler) UnmarshalCore(bytes []byte) (core_model.Resource, error) {
 	if err != nil {
 		return nil, err
 	}
-	restResource, err := u.Unmarshal(bytes, desc)
+	restResource, err := u.unmarshal(bytes, desc, strict)
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +83,14 @@ func (u *unmarshaler) UnmarshalCore(bytes []byte) (core_model.Resource, error) {
 }
 
 func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescriptor) (Resource, error) {
+	return u.unmarshal(bytes, desc, false)
+}
+
+func (u *unmarshaler) UnmarshalStrict(bytes []byte, desc core_model.ResourceTypeDescriptor) (Resource, error) {
+	return u.unmarshal(bytes, desc, true)
+}
+
+func (u *unmarshaler) unmarshal(bytes []byte, desc core_model.ResourceTypeDescriptor, strict bool) (Resource, error) {
 	resource := desc.NewObject()
 	restResource := From.Resource(resource)
 	defaultedBytes := bytes
@@ -83,6 +101,12 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 		// Unfortunately to validate new policies we must first unmarshal into a rawObj
 		if err = u.unmarshalFn(bytes, &rawObj); err != nil {
 			return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: %q", desc.Name, err.Error())}
+		}
+
+		if strict {
+			if err := rejectUnknownFields(rawObj, desc.StructuralSchema); err != nil {
+				return nil, err
+			}
 		}
 
 		// Apply defaulting
@@ -146,6 +170,18 @@ func (u *unmarshaler) UnmarshalListToCore(b []byte, rs core_model.ResourceList) 
 	}
 	rs.GetPagination().SetTotal(rsr.Total)
 	return nil
+}
+
+func rejectUnknownFields(rawObj map[string]any, structuralSchema *schema.Structural) error {
+	unknownFields := pruning.PruneWithOptions(rawObj, structuralSchema, true, schema.UnknownFieldPathOptions{TrackUnknownFieldPaths: true})
+	if len(unknownFields) == 0 {
+		return nil
+	}
+	verr := &validators.ValidationError{}
+	for _, field := range unknownFields {
+		verr.AddViolation(field, "unknown field")
+	}
+	return verr
 }
 
 func toValidationError(res *validate.Result) *validators.ValidationError {
