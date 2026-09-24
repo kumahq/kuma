@@ -18,6 +18,8 @@ import (
 type DestinationIndex struct {
 	destinationByIdentifier    map[kri.Identifier]core.Destination
 	destinationsByLabelByValue labelsToValuesToResourceIdentifier
+	// zero value keeps the legacy behavior: no reachableBackends means every destination
+	restrictOutbound bool
 }
 type labelsToValuesToResourceIdentifier map[labelValue]map[kri.Identifier]bool
 
@@ -41,6 +43,18 @@ func NewDestinationIndex(resources ...[]core_model.Resource) *DestinationIndex {
 		destinationByIdentifier:    destinationByIdentifier,
 		destinationsByLabelByValue: destinationsByLabelByValue,
 	}
+}
+
+// WithAllowAllOutbound makes a data plane proxy without reachableBackends reach every destination.
+func (di *DestinationIndex) WithAllowAllOutbound(allow bool) *DestinationIndex {
+	di.restrictOutbound = !allow
+	return di
+}
+
+// AllowAllOutbound reports whether a proxy without reachableBackends reaches every destination.
+// An unset index means the legacy permissive behavior.
+func (di *DestinationIndex) AllowAllOutbound() bool {
+	return di == nil || !di.restrictOutbound
 }
 
 // GetReachableBackends return map of reachable port by its KRI, and bool to indicate if any backend were match or all destinations were returned
@@ -99,6 +113,9 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 	}
 
 	if networking.GetTransparentProxying().GetReachableBackends() == nil {
+		if di.restrictOutbound {
+			return outbounds, true
+		}
 		// return all destinations if reachable backends not configured
 		for id, dest := range di.destinationByIdentifier {
 			for _, port := range dest.GetPorts() {

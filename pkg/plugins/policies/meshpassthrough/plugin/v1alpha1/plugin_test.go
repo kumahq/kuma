@@ -21,6 +21,7 @@ import (
 	xds_builders "github.com/kumahq/kuma/v2/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_yaml "github.com/kumahq/kuma/v2/pkg/util/yaml"
+	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 	. "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
@@ -32,6 +33,7 @@ var _ = Describe("MeshPassthrough", func() {
 		resources               []*core_xds.Resource
 		singleItemRules         core_rules.SingleItemRules
 		meshPassthroughDisabled bool
+		restrictOutbound        bool
 		listenersGolden         string
 		clustersGolden          string
 	}
@@ -48,6 +50,9 @@ var _ = Describe("MeshPassthrough", func() {
 			context := *xds_builders.Context().
 				WithMeshBuilder(mesh).
 				Build()
+			if given.restrictOutbound {
+				context.Mesh.BaseMeshContext.DestinationIndex = xds_context.NewDestinationIndex().WithAllowAllOutbound(false)
+			}
 			proxy := xds_builders.Proxy().
 				WithApiVersion(envoy_common.APIV3).
 				WithDataplane(
@@ -657,5 +662,39 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden:         "enabled_on_policy_and_mesh.listeners.golden.yaml",
 			clustersGolden:          "enabled_on_policy_and_mesh.clusters.golden.yaml",
 		}),
+		Entry("no policy keeps the default passthrough", testCase{
+			resources:       defaultPassthroughResources(),
+			listenersGolden: "no_policy.listeners.golden.yaml",
+			clustersGolden:  "no_policy_passthrough_kept.clusters.golden.yaml",
+		}),
+		Entry("no policy with restricted outbound drops the default passthrough", testCase{
+			resources:        defaultPassthroughResources(),
+			restrictOutbound: true,
+			listenersGolden:  "no_policy.listeners.golden.yaml",
+			clustersGolden:   "no_policy.clusters.golden.yaml",
+		}),
 	)
 })
+
+// defaultPassthroughResources mirrors what TransparentProxyGenerator adds for outbound passthrough
+func defaultPassthroughResources() []*core_xds.Resource {
+	name := "outbound:passthrough:ipv4"
+	return []*core_xds.Resource{
+		{
+			Name:   name,
+			Origin: metadata.OriginTransparent,
+			Resource: NewListenerBuilder(envoy_common.APIV3, name).
+				Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+					Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+						plugins_xds.NewSplitBuilder().WithClusterName(name).WithWeight(100).Build(),
+					}...)),
+				)).MustBuild(),
+		},
+		{
+			Name:     name,
+			Origin:   metadata.OriginTransparent,
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, name).MustBuild(),
+		},
+	}
+}

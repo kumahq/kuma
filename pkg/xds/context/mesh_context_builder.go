@@ -44,6 +44,19 @@ type meshContextBuilder struct {
 	vipPort         uint32
 	rsGraphBuilder  ReachableServicesGraphBuilder
 	caProvider      secrets.CaProvider
+
+	// zero value keeps the legacy behavior: no reachableBackends means every destination
+	restrictOutbound bool
+}
+
+// MeshContextBuilderOption configures optional behavior of the MeshContextBuilder.
+type MeshContextBuilderOption func(*meshContextBuilder)
+
+// WithAllowAllOutbound makes a data plane proxy without reachableBackends reach every destination in the mesh.
+func WithAllowAllOutbound(allow bool) MeshContextBuilderOption {
+	return func(m *meshContextBuilder) {
+		m.restrictOutbound = !allow
+	}
 }
 
 // MeshContextBuilder
@@ -75,13 +88,14 @@ func NewMeshContextBuilder(
 	vipPort uint32,
 	rsGraphBuilder ReachableServicesGraphBuilder,
 	caProvider secrets.CaProvider,
+	opts ...MeshContextBuilderOption,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
 	for _, typ := range types {
 		typeSet[typ] = struct{}{}
 	}
 
-	return &meshContextBuilder{
+	builder := &meshContextBuilder{
 		rm:              rm,
 		typeSet:         typeSet,
 		ipFunc:          ipFunc,
@@ -92,6 +106,10 @@ func NewMeshContextBuilder(
 		rsGraphBuilder:  rsGraphBuilder,
 		caProvider:      caProvider,
 	}
+	for _, opt := range opts {
+		opt(builder)
+	}
+	return builder
 }
 
 func (m *meshContextBuilder) Build(ctx context.Context, meshName string) (MeshContext, error) {
@@ -363,7 +381,7 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		hash:             newHash,
 		Mesh:             mesh,
 		ResourceMap:      rmap,
-		DestinationIndex: NewDestinationIndex(destinations...),
+		DestinationIndex: NewDestinationIndex(destinations...).WithAllowAllOutbound(!m.restrictOutbound),
 	}, nil
 }
 

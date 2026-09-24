@@ -30,6 +30,7 @@ func NewApiServer(cfg kuma_cp.Config, runtime runtime.Runtime) (*api_server.ApiS
 			cfg.DNSServer.ServiceVipPort,
 			context.AnyToAnyReachableServicesGraphBuilder,
 			runtime.CAProvider(),
+			context.WithAllowAllOutbound(cfg.Defaults.AllowAllOutbound),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

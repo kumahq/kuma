@@ -547,6 +547,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		builder.Config().DNSServer.ServiceVipPort,
 		rsGraphBuilder,
 		builder.CAProvider(),
+		xds_context.WithAllowAllOutbound(builder.Config().Defaults.AllowAllOutbound),
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(

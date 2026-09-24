@@ -47,6 +47,11 @@ type Defaults struct {
 	CreateMeshRoutingResources bool `json:"createMeshRoutingResources" envconfig:"kuma_defaults_create_mesh_routing_resources"`
 	// If true, it skips creating default hostname generators
 	SkipHostnameGenerators bool `json:"SkipHostnameGenerators" envconfig:"kuma_defaults_skip_hostname_generators"`
+	// If true, a data plane proxy without reachableBackends can reach every destination in the mesh,
+	// and one without MeshPassthrough keeps outbound passthrough. Set it to false to deny both, which
+	// lowers control plane and proxy CPU and memory usage in large meshes. A matched MeshPassthrough
+	// always wins over this setting.
+	AllowAllOutbound bool `json:"allowAllOutbound" envconfig:"kuma_defaults_allow_all_outbound"`
 }
 
 type Metrics struct {
@@ -469,6 +474,7 @@ func DefaultDefaultsConfig() *Defaults {
 		SkipTenantResources:        false,
 		CreateMeshRoutingResources: false,
 		SkipHostnameGenerators:     false,
+		AllowAllOutbound:           true,
 	}
 }
 

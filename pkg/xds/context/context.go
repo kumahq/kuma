@@ -72,6 +72,15 @@ type BaseMeshContext struct {
 	hash             []byte
 }
 
+// AllowAllOutbound reports whether a proxy without reachableBackends reaches every destination.
+// An unset context means the legacy permissive behavior.
+func (g *BaseMeshContext) AllowAllOutbound() bool {
+	if g == nil {
+		return true
+	}
+	return g.DestinationIndex.AllowAllOutbound()
+}
+
 // Hash base64 version of the hash mostly useed for testing
 func (g BaseMeshContext) Hash() string {
 	return base64.StdEncoding.EncodeToString(g.hash)

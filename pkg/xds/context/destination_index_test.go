@@ -8,6 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	"github.com/kumahq/kuma/v2/pkg/core/metadata"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
@@ -15,6 +16,41 @@ import (
 
 var _ = Describe("DestinationIndex", func() {
 	Describe("GetReachableBackends", func() {
+		dpWithoutReachableBackends := func() *core_mesh.DataplaneResource {
+			return builders.Dataplane().
+				WithName("dp-1").
+				WithAddress("127.0.0.1").
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+				WithTransparentProxying(15001, 15006, "").
+				Build()
+		}
+
+		It("should return every destination when reachableBackends is unset", func() {
+			ms := builders.MeshService().
+				WithName("backend-svc").
+				AddIntPort(8080, 8080, metadata.ProtocolHTTP).
+				Build()
+
+			index := xds_context.NewDestinationIndex([]core_model.Resource{ms}).WithAllowAllOutbound(true)
+			outbounds, onlySelected := index.GetReachableBackends(dpWithoutReachableBackends())
+
+			Expect(onlySelected).To(BeFalse())
+			Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(ms), "8080")))
+		})
+
+		It("should return no destination when reachableBackends is unset and allowAllOutbound is off", func() {
+			ms := builders.MeshService().
+				WithName("backend-svc").
+				AddIntPort(8080, 8080, metadata.ProtocolHTTP).
+				Build()
+
+			index := xds_context.NewDestinationIndex([]core_model.Resource{ms}).WithAllowAllOutbound(false)
+			outbounds, onlySelected := index.GetReachableBackends(dpWithoutReachableBackends())
+
+			Expect(onlySelected).To(BeTrue())
+			Expect(outbounds).To(BeEmpty())
+		})
+
 		It("should resolve name/namespace format to correct MeshService", func() {
 			ms := builders.MeshService().
 				WithName("backend-svc-hash123").
