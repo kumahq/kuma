@@ -1093,14 +1093,34 @@ already behaviourally identical, so no other changes are required.
 
 ### `meshServices` removed from the `Mesh` schema
 
-The `meshServices` field (and its `mode` enum) has been removed from the
-`Mesh` resource spec. Unified resource naming is now unconditional,
+The `meshServices` field (and its `mode` enum) no longer has any effect on
+the `Mesh` resource. Unified resource naming is now unconditional,
 regardless of what the mesh's former `meshServices.mode` was set to.
+
+The field remains in the schema as deprecated so that stored values survive
+the upgrade and keep syncing to zones over KDS. Zones before 3.0 read a
+missing field as `Disabled`, which makes them delete every generated
+`MeshService`, skip mesh-scoped zone proxy listeners, and stop serving
+`MeshService` outbounds and DNS; keeping the stored mode on the wire avoids
+that. Zones on 3.0 ignore the field. Setting the field to any mode other
+than `Exclusive` on write is now rejected, because that mode would silently
+behave as `Exclusive`.
 
 **Action required**
 
-None. A `Mesh` spec that still sets `meshServices` continues to apply
-successfully; the field is silently ignored by the control plane.
+If every mesh already runs with `meshServices.mode: Exclusive`, nothing.
+The 3.0 global syncs the stored mode, and 2.x zones keep generating and
+serving `MeshServices` until they are upgraded.
+
+A mesh without the field, or one created on the 3.0 global before the zones
+catch up, reads as `Disabled` to 2.x zones, exactly as it did before the
+upgrade. Set `meshServices.mode: Exclusive` on such a mesh if a 2.x zone
+must serve `MeshServices` for it during the mixed-version window.
+
+A mesh stored with `meshServices.mode` set to `Disabled`, `Everywhere`, or
+`ReachableBackends` keeps that mode on 2.x zones until they upgrade. The
+mesh still flips to `Exclusive` behavior on every 3.0 control plane, so
+finish moving it to `Exclusive` as zones are upgraded.
 
 ### `routing.zoneEgress` removed from the `Mesh` schema
 

@@ -3,10 +3,45 @@
     "$ref": "#/definitions/Mesh",
     "definitions": {
         "Mesh": {
+            "properties": {
+                "meshServices": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.MeshServices",
+                    "additionalProperties": true,
+                    "description": "Deprecated: ignored since 3.0, where every mesh behaves as Exclusive. Kept only so pre-3.0 zones keep receiving the mode over KDS."
+                }
+            },
             "additionalProperties": true,
             "type": "object",
             "title": "Mesh",
             "description": "Mesh defines configuration of a single mesh."
+        },
+        "kuma.mesh.v1alpha1.Mesh.MeshServices": {
+            "properties": {
+                "mode": {
+                    "enum": [
+                        "Disabled",
+                        0,
+                        "Everywhere",
+                        1,
+                        "ReachableBackends",
+                        2,
+                        "Exclusive",
+                        3
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Mode"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mesh Services"
         }
     }
 }
