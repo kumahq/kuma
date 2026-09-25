@@ -58,9 +58,6 @@ func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*
 		return nil, err
 	}
 
-	// zones.zoneIngresses and zones.zoneEgresses stay at zero: they were fed by
-	// ZoneIngressInsight/ZoneEgressInsight, and zone proxies are now Dataplanes
-	// with listeners, which MeshInsight does not break out yet.
 	return globalInsights, nil
 }
 
@@ -69,13 +66,12 @@ func (gis *defaultGlobalInsightService) aggregateDataplanes(
 	globalInsight *api_types.GlobalInsightBase,
 ) {
 	for _, meshInsight := range meshInsights.GetItems() {
-		dataplanesByType := meshInsight.GetSpec().(*mesh_proto.MeshInsight).GetDataplanesByType()
+		dataplanes := meshInsight.GetSpec().(*mesh_proto.MeshInsight).GetDataplanes()
 
-		standard := dataplanesByType.GetStandard()
-		globalInsight.Dataplanes.Standard.Online += int(standard.GetOnline())
-		globalInsight.Dataplanes.Standard.Offline += int(standard.GetOffline())
-		globalInsight.Dataplanes.Standard.PartiallyDegraded += int(standard.GetPartiallyDegraded())
-		globalInsight.Dataplanes.Standard.Total += int(standard.GetTotal())
+		globalInsight.Dataplanes.Online += int(dataplanes.GetOnline())
+		globalInsight.Dataplanes.Offline += int(dataplanes.GetOffline())
+		globalInsight.Dataplanes.PartiallyDegraded += int(dataplanes.GetPartiallyDegraded())
+		globalInsight.Dataplanes.Total += int(dataplanes.GetTotal())
 	}
 }
 
