@@ -915,7 +915,7 @@ meshZoneProxyDefaults:
     # time to push and ack the update, so raise this if you have raised either
     # interval. Must be lower than terminationGracePeriodSeconds, otherwise the chart
     # fails to render. Set to 0 to drop the hook.
-    preStopSleepSeconds: 15
+    preStopSleepSeconds: 20
     service:
       # -- Default Service type for zone egress.
       type: ClusterIP
