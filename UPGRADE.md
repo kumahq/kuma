@@ -2400,15 +2400,19 @@ also applies when `spec.extension` is set, even though an extension owns the res
 
 **Action required**
 
-Rewrite `caCert`, `clientCert` and `clientKey` on every `MeshExternalService` to the new
-shape as part of the upgrade.
+Rewrite the resources on 2.14 before upgrading the global control plane. 2.14.6 and later accept both shapes (see [Upgrade to `2.14.6`](#upgrade-to-2146)):
+
+1. Upgrade the global control plane and every zone control plane to 2.14.6 or later.
+2. Rewrite `caCert`, `clientCert` and `clientKey` on every `MeshExternalService` to the new shape.
+3. Upgrade to 3.0, global control plane first.
 
 **Warning**: a `MeshExternalService` written in the old shape after the upgrade is rejected
 at write time, because the missing `type` discriminator is a validation violation. Resources
 already stored in the old shape are not rejected — the control plane cannot read their TLS
 material, so the destination is dropped from the xDS config of every proxy routing to it,
-with an error logged on the control plane. Plan the rewrite together with the upgrade to
-avoid an outage on those destinations.
+with an error logged on the control plane. Rewriting after the global is on 3.0 is too late:
+it accepts only the new shape, and zones older than 2.14.6 drop the new fields, so their
+proxies silently fall back to the system CA.
 
 ### Inbound `tags` removed from `Dataplane`
 
@@ -2453,6 +2457,16 @@ Since 2.14.0 every generated cluster carries a `DEFAULT`-priority circuit breake
 **Action required**
 
 Review every `MeshProxyPatch` that patches `circuitBreakers`. Where the same cluster is also covered by a `MeshCircuitBreaker`, the patch now overrides that policy for each field it sets, instead of being ignored — `MeshProxyPatch` runs last, so it wins the fields it names and the policy keeps the rest. Remove patches you wrote before 2.14.0 and no longer rely on, and drop any workaround you put in place because the patch appeared to do nothing.
+
+## Upgrade to `2.14.6`
+
+### `MeshExternalService` TLS verification accepts the `SecureDataSource` shape
+
+2.14.6 accepts both shapes of `spec.tls.verification.caCert`, `.clientCert` and `.clientKey` on `MeshExternalService`, so resources can be rewritten to the shape 3.0 requires before upgrading. The old `secret`, `inline` and `inlineString` fields keep working on 2.14 and produce a deprecation warning. A single data source cannot mix both shapes, and the `File` and `EnvVar` types are rejected.
+
+**Action required**
+
+Before upgrading to 3.0, upgrade every control plane to 2.14.6 or later, then rewrite each `MeshExternalService` as described in [`MeshExternalService` TLS verification uses the `SecureDataSource` shape](#meshexternalservice-tls-verification-uses-the-securedatasource-shape). A zone on an older 2.14 does not know the new fields: they are dropped (pruned on Kubernetes), and the proxy silently falls back to the system CA.
 
 ## Upgrade to `2.13.7`
 
