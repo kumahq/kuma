@@ -62,6 +62,31 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 
 	networking := dataplane.Spec.GetNetworking()
 
+	addOutbounds := func(ids []kri.Identifier, sectionName string) {
+		for _, id := range ids {
+			if sectionName != "" {
+				id = kri.WithSectionName(id, sectionName)
+			}
+
+			var dest core.Destination
+			if dest = di.GetDestinationByKRI(id); dest == nil {
+				continue
+			}
+
+			// an unnamed port matches the empty section name, so only narrow when one is set
+			if id.SectionName != "" {
+				if p, ok := dest.FindPortByName(id.SectionName); ok {
+					outbounds[kri.WithSectionName(id, p.GetName())] = p
+				}
+				continue
+			}
+
+			for _, p := range dest.GetPorts() {
+				outbounds[kri.WithSectionName(id, p.GetName())] = p
+			}
+		}
+	}
+
 	processRef := func(kind string, name string, port *uint32, labels map[string]string) {
 		selectorLabels, sectionName := NormalizeBackendRefTarget(
 			kind,
@@ -88,26 +113,7 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 			return
 		}
 
-		ids := di.resolveResourceIdentifiersForLabels(core_model.ResourceType(kind), selectorLabels)
-		for _, id := range ids {
-			if sectionName != "" {
-				id = kri.WithSectionName(id, sectionName)
-			}
-
-			var dest core.Destination
-			if dest = di.GetDestinationByKRI(id); dest == nil {
-				continue
-			}
-
-			if p, ok := dest.FindPortByName(id.SectionName); ok {
-				outbounds[kri.WithSectionName(id, p.GetName())] = p
-				continue
-			}
-
-			for _, p := range dest.GetPorts() {
-				outbounds[kri.WithSectionName(id, p.GetName())] = p
-			}
-		}
+		addOutbounds(di.resolveResourceIdentifiersForLabels(core_model.ResourceType(kind), selectorLabels), sectionName)
 	}
 
 	// Handle user defined outbound without a transparent proxy
@@ -136,6 +142,12 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 		var port *uint32
 		if ref.Port != nil {
 			port = pointer.To(ref.Port.GetValue())
+		}
+
+		// Like a Kubernetes label selector, empty labels select every backend of the kind
+		if len(ref.Labels) == 0 {
+			addOutbounds(di.resourceIdentifiersOfType(core_model.ResourceType(ref.Kind)), "")
+			continue
 		}
 
 		processRef(ref.Kind, "", port, ref.Labels)
@@ -179,6 +191,16 @@ func (di *DestinationIndex) resolveResourceIdentifiersForLabels(resType core_mod
 	for ri, count := range reachable {
 		if count == len(labels) {
 			result = append(result, ri)
+		}
+	}
+	return result
+}
+
+func (di *DestinationIndex) resourceIdentifiersOfType(resType core_model.ResourceType) []kri.Identifier {
+	var result []kri.Identifier
+	for id := range di.destinationByIdentifier {
+		if id.ResourceType == resType {
+			result = append(result, id)
 		}
 	}
 	return result

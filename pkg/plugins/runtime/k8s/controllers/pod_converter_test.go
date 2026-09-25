@@ -392,6 +392,10 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:         "50.pod.yaml",
 			expectedErr: "kuma.io/reachable-backends has invalid format",
 		}),
+		Entry("51. Pod with a reachable backend ref without labels", testCase{
+			pod:         "51.pod.yaml",
+			expectedErr: "refs[0].labels is required",
+		}),
 	)
 })
 

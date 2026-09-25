@@ -235,7 +235,9 @@ var _ = Describe("Dataplane", func() {
                       k8s.kuma.io/namespace: es1
                   - kind: MeshService
                     labels:
-                      kuma.io/test: abc`,
+                      kuma.io/test: abc
+                  - kind: MeshMultiZoneService
+                    labels: {}`,
 		),
 		Entry("dataplane with backend ref with labels", `
             type: Dataplane
@@ -801,14 +803,15 @@ var _ = Describe("Dataplane", func() {
                     labels:
                       kuma.io/test: test
                   - kind: MeshService
+                    labels: {}
                     port: 80
 `,
 			expected: `
                 violations:
                 - field: networking.transparentProxing.reachableBackends.refs[0].kind
                   message: 'invalid value. Available values are: MeshExternalService,MeshMultiZoneService,MeshService'
-                - field: networking.transparentProxing.reachableBackends.refs[1].labels
-                  message: must not be empty`,
+                - field: networking.transparentProxing.reachableBackends.refs[1].port
+                  message: must not be set when labels are empty`,
 		}),
 		Entry("listener missing address", testCase{
 			dataplane: `
