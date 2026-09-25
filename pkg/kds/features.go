@@ -37,14 +37,6 @@ const FeatureHostnameGeneratorMzSelector string = "hg-mz-selector"
 // FeatureProducerPolicyFlow means that the zone control plane supports the producer policy flow.
 const FeatureProducerPolicyFlow string = "producer-policy-flow"
 
-// FeatureMeshServicesImplicitExclusive means that the zone control plane
-// treats every mesh as meshServices.mode Exclusive and does not need the mode
-// carried on the Mesh over KDS. Zones before 3.0 read a missing meshServices
-// field as Disabled and tear down all MeshService traffic, so the global
-// control plane keeps sending meshServices.mode: Exclusive to zones that do
-// not advertise this feature (https://github.com/kumahq/kuma/issues/18868).
-const FeatureMeshServicesImplicitExclusive string = "mesh-services-implicit-exclusive"
-
 func ContextHasFeature(ctx context.Context, feature string) bool {
 	md, _ := metadata.FromIncomingContext(ctx)
 	features := md.Get(FeaturesMetadataKey)

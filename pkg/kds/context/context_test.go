@@ -554,7 +554,7 @@ var _ = Describe("Context", func() {
 		)
 	})
 
-	Describe("MeshServicesExclusiveForLegacyZones", func() {
+	Describe("MeshServicesExclusive", func() {
 		newMesh := func() *core_mesh.MeshResource {
 			return builders.Mesh().WithName("mesh-1").Build()
 		}
@@ -563,32 +563,25 @@ var _ = Describe("Context", func() {
 			return r.GetSpec().(*mesh_proto.Mesh).GetMeshServices() //nolint:staticcheck // deprecated on purpose: the tests exercise the pre-3.0 zone compatibility field
 		}
 
-		It("should set Exclusive on a Mesh sent to a zone without the feature", func() {
-			out, err := context.MeshServicesExclusiveForLegacyZones()(kds.Features{}, newMesh())
+		It("should set Exclusive on a Mesh that does not carry the field", func() {
+			out, err := context.MeshServicesExclusive()(kds.Features{}, newMesh())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(meshServices(out).GetMode()).To(Equal(mesh_proto.Mesh_MeshServices_Exclusive))
 		})
 
-		It("should leave a Mesh untouched for a zone with the feature", func() {
-			features := kds.Features{kds.FeatureMeshServicesImplicitExclusive: true}
-			out, err := context.MeshServicesExclusiveForLegacyZones()(features, newMesh())
-			Expect(err).ToNot(HaveOccurred())
-			Expect(meshServices(out)).To(BeNil())
-		})
-
-		It("should force Exclusive over a stored mode for a zone without the feature", func() {
+		It("should force Exclusive over a stored mode", func() {
 			mesh := newMesh()
 			mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{ //nolint:staticcheck // deprecated on purpose
 				Mode: mesh_proto.Mesh_MeshServices_Disabled,
 			}
-			out, err := context.MeshServicesExclusiveForLegacyZones()(kds.Features{}, mesh)
+			out, err := context.MeshServicesExclusive()(kds.Features{}, mesh)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(meshServices(out).GetMode()).To(Equal(mesh_proto.Mesh_MeshServices_Exclusive))
 		})
 
 		It("should not mutate the original resource", func() {
 			mesh := newMesh()
-			out, err := context.MeshServicesExclusiveForLegacyZones()(kds.Features{}, mesh)
+			out, err := context.MeshServicesExclusive()(kds.Features{}, mesh)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(meshServices(mesh)).To(BeNil(), "mapper must not leak the field into the shared spec")
 			Expect(meshServices(out)).ToNot(BeNil())
@@ -598,7 +591,7 @@ var _ = Describe("Context", func() {
 		It("should leave resources that are not a Mesh untouched", func() {
 			r := meshtrust_api.NewMeshTrustResource()
 			r.SetMeta(&test_model.ResourceMeta{Name: "trust-1", Mesh: "mesh-1"})
-			out, err := context.MeshServicesExclusiveForLegacyZones()(kds.Features{}, r)
+			out, err := context.MeshServicesExclusive()(kds.Features{}, r)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(out).To(BeIdenticalTo(r))
 		})
@@ -612,11 +605,6 @@ var _ = Describe("Context", func() {
 			out, err := kdsCtx.GlobalResourceMapper(kds.Features{}, newMesh())
 			Expect(err).ToNot(HaveOccurred())
 			Expect(meshServices(out).GetMode()).To(Equal(mesh_proto.Mesh_MeshServices_Exclusive))
-
-			features := kds.Features{kds.FeatureMeshServicesImplicitExclusive: true}
-			out, err = kdsCtx.GlobalResourceMapper(features, newMesh())
-			Expect(err).ToNot(HaveOccurred())
-			Expect(meshServices(out)).To(BeNil())
 		})
 	})
 })

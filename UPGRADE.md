@@ -1089,14 +1089,15 @@ The `meshServices` field (and its `mode` enum) no longer has any effect on
 the `Mesh` resource. Unified resource naming is now unconditional,
 regardless of what the mesh's former `meshServices.mode` was set to.
 
-The field remains in the schema as deprecated, so a `Mesh` spec that still
-sets `meshServices` continues to apply successfully. It exists only for
-mixed-version multizone upgrades: while a zone runs a version older than
-3.0, the global control plane keeps sending it `meshServices.mode:
-Exclusive` on every Mesh over KDS. Zones before 3.0 read a missing field as
+The field remains in the schema as deprecated. A `Mesh` spec that sets it
+to `Exclusive` continues to apply successfully, and setting it to any other
+mode is now rejected, because that mode would silently behave as
+`Exclusive`. The field exists only for mixed-version multizone upgrades:
+the global control plane sends `meshServices.mode: Exclusive` on every
+Mesh it syncs over KDS, because zones before 3.0 read a missing field as
 `Disabled`, which makes them delete every generated `MeshService`, skip
 mesh-scoped zone proxy listeners, and stop serving `MeshService` outbounds
-and DNS.
+and DNS. Zones on 3.0 ignore the field.
 
 **Action required**
 

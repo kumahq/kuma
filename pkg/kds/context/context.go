@@ -100,7 +100,7 @@ func DefaultContext(
 			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin)),
 			util.WithoutLabelPrefixes(cfg.Multizone.Global.KDS.Labels.SkipPrefixes...),
 		),
-		MeshServicesExclusiveForLegacyZones(),
+		MeshServicesExclusive(),
 		kds_reconcile.If(
 			kds_reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
@@ -211,28 +211,22 @@ func MapInsightResourcesZeroGeneration(_ kds.Features, r core_model.Resource) (c
 	return r, nil
 }
 
-// MeshServicesExclusiveForLegacyZones marks every Mesh synced to a zone that
-// does not advertise FeatureMeshServicesImplicitExclusive as
-// meshServices.mode: Exclusive. 3.0 removed the mode from the Mesh API and
-// behaves as if every mesh were Exclusive, but the field is reserved in the
-// 3.0 schema era sense only: pre-3.0 zones still read the field and treat a
+// MeshServicesExclusive marks every synced Mesh as meshServices.mode:
+// Exclusive. 3.0 removed the mode from the Mesh API and behaves as if every
+// mesh were Exclusive, but pre-3.0 zones still read the field and treat a
 // missing one as Disabled, which makes them delete every MeshService, skip
 // mesh-scoped zone proxy listeners and stop resolving MeshService DNS names
-// (https://github.com/kumahq/kuma/issues/18868). Sending Exclusive keeps such
-// zones working until they are upgraded; zones on 3.0 advertise the feature
-// and are served the Mesh without the field, which they ignore anyway.
-func MeshServicesExclusiveForLegacyZones() kds_reconcile.ResourceMapper {
-	return func(features kds.Features, r core_model.Resource) (core_model.Resource, error) {
-		if features.HasFeature(kds.FeatureMeshServicesImplicitExclusive) {
-			return r, nil
-		}
+// (https://github.com/kumahq/kuma/issues/18868). Zones on 3.0 ignore the
+// field, so every zone can be served the same Mesh without a feature
+// negotiation.
+func MeshServicesExclusive() kds_reconcile.ResourceMapper {
+	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		spec, ok := r.GetSpec().(*mesh_proto.Mesh)
 		if !ok {
 			return r, nil
 		}
 		// The clone is required: specs are shared pointers, so setting the
-		// field on the original would leak it into the store cache and into
-		// snapshots generated for zones that do advertise the feature.
+		// field on the original would leak it into the store cache.
 		spec = proto.Clone(spec).(*mesh_proto.Mesh)
 		spec.MeshServices = &mesh_proto.Mesh_MeshServices{ //nolint:staticcheck // deprecated on purpose: the field exists only for this pre-3.0 zone compatibility mapping
 			Mode: mesh_proto.Mesh_MeshServices_Exclusive,
