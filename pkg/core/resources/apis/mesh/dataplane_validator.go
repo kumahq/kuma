@@ -182,7 +182,7 @@ func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_Transparent
 				result.AddViolationAt(path.Index(i).Field("kind"), fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
 			}
 			if len(backendRef.Labels) == 0 {
-				result.AddViolationAt(path.Index(i).Field("labels"), validators.MustNotBeEmpty)
+				result.AddViolationAt(path.Index(i).Field("labels"), fmt.Sprintf("must not be empty, use %s: <mesh> to select every %s", mesh_proto.MeshTag, backendRef.Kind))
 			}
 		}
 	}

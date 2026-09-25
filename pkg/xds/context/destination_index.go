@@ -99,8 +99,11 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 				continue
 			}
 
-			if p, ok := dest.FindPortByName(id.SectionName); ok {
-				outbounds[kri.WithSectionName(id, p.GetName())] = p
+			// an unnamed port matches the empty section name, so only narrow when one is set
+			if id.SectionName != "" {
+				if p, ok := dest.FindPortByName(id.SectionName); ok {
+					outbounds[kri.WithSectionName(id, p.GetName())] = p
+				}
 				continue
 			}
 

@@ -808,7 +808,7 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.transparentProxing.reachableBackends.refs[0].kind
                   message: 'invalid value. Available values are: MeshExternalService,MeshMultiZoneService,MeshService'
                 - field: networking.transparentProxing.reachableBackends.refs[1].labels
-                  message: must not be empty`,
+                  message: 'must not be empty, use kuma.io/mesh: <mesh> to select every MeshService'`,
 		}),
 		Entry("listener missing address", testCase{
 			dataplane: `

@@ -8,6 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	"github.com/kumahq/kuma/v3/pkg/core/metadata"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -178,6 +179,61 @@ var _ = Describe("DestinationIndex", func() {
 
 			Expect(matched).To(BeTrue())
 			Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(mes), "9000")))
+		})
+
+		Context("reachableBackends refs with ports", func() {
+			var destinations []core_model.Resource
+			var msA, msB core_model.Resource
+
+			BeforeEach(func() {
+				msA = builders.MeshService().
+					WithName("svc-a").
+					WithLabels(map[string]string{"team": "billing"}).
+					AddIntPort(8080, 8080, metadata.ProtocolHTTP).
+					AddIntPort(9090, 9090, metadata.ProtocolHTTP).
+					Build()
+				msB = builders.MeshService().
+					WithName("svc-b").
+					WithLabels(map[string]string{"team": "billing"}).
+					AddIntPort(8080, 8080, metadata.ProtocolHTTP).
+					Build()
+				destinations = []core_model.Resource{msA, msB}
+			})
+
+			reachable := func(ref *mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef) (map[kri.Identifier]core.Port, bool) {
+				dp := builders.Dataplane().WithAddress("127.0.0.1").Build()
+				dp.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
+					ReachableBackends: &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
+						Refs: []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{ref},
+					},
+				}
+				return xds_context.NewDestinationIndex(destinations).GetReachableBackends(dp)
+			}
+
+			It("should select every port when port is not set", func() {
+				outbounds, matched := reachable(&mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
+					Kind:   "MeshService",
+					Labels: map[string]string{"team": "billing"},
+				})
+
+				Expect(matched).To(BeTrue())
+				Expect(outbounds).To(HaveLen(3))
+				Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(msA), "8080")))
+				Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(msA), "9090")))
+				Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(msB), "8080")))
+			})
+
+			It("should skip backends without the given port", func() {
+				outbounds, matched := reachable(&mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
+					Kind:   "MeshService",
+					Labels: map[string]string{"team": "billing"},
+					Port:   wrapperspb.UInt32(9090),
+				})
+
+				Expect(matched).To(BeTrue())
+				Expect(outbounds).To(HaveLen(1))
+				Expect(outbounds).To(HaveKey(kri.WithSectionName(kri.From(msA), "9090")))
+			})
 		})
 
 		It("should not resolve when namespace label does not match", func() {
