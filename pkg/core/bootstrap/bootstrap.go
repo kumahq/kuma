@@ -476,7 +476,7 @@ func initializeConfigManager(builder *core_runtime.Builder) {
 
 func initializeMeshCache(builder *core_runtime.Builder) error {
 	mcbOpts := []xds_context.MeshContextBuilderOption{
-		xds_context.WithAllowAllOutbound(!builder.Config().Defaults.RestrictOutbound),
+		xds_context.WithRestrictOutbound(builder.Config().Defaults.RestrictOutbound),
 	}
 	if builder.Config().XdsServer.PolicyMatchingCacheSize > 0 {
 		mcbOpts = append(mcbOpts, xds_context.WithPolicyMatchingHash())
