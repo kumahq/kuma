@@ -291,7 +291,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
 			Expect(cfg.Defaults.SkipHostnameGenerators).To(BeTrue())
-			Expect(cfg.Defaults.RestrictOutbound).To(BeFalse())
+			Expect(cfg.Defaults.RestrictOutbound).To(HaveValue(BeFalse()))
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())

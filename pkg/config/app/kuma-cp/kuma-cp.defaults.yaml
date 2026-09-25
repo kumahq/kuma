@@ -469,7 +469,8 @@ defaults:
   skipHostnameGenerators: false # ENV: KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS
   # If true, a data plane proxy without reachableBackends reaches no destination in the mesh, and one without MeshPassthrough gets no outbound passthrough.
   # Set it to false to restore the legacy behavior where outbound traffic is allowed by default (insecure).
-  restrictOutbound: true # ENV: KUMA_DEFAULTS_RESTRICT_OUTBOUND
+  # Unset means true.
+  restrictOutbound: null # ENV: KUMA_DEFAULTS_RESTRICT_OUTBOUND
 # Metrics configuration
 metrics:
   dataplane:
