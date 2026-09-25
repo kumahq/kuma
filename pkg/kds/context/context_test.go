@@ -560,7 +560,7 @@ var _ = Describe("Context", func() {
 		}
 
 		meshServices := func(r model.Resource) *mesh_proto.Mesh_MeshServices {
-			return r.GetSpec().(*mesh_proto.Mesh).GetMeshServices() //nolint:staticcheck // deprecated on purpose: the tests exercise the pre-3.0 zone compatibility field
+			return r.GetSpec().(*mesh_proto.Mesh).GetMeshServices() //nolint:staticcheck // deprecated on purpose
 		}
 
 		It("should set Exclusive on a Mesh that does not carry the field", func() {

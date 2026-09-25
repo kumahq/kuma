@@ -42,13 +42,8 @@ message Mesh {
   reserved 8;
   reserved "skipCreatingInitialPolicies";
 
-  // Deprecated: 3.0 removed the MeshService mode from the Mesh API and every
-  // mesh behaves as if meshServices.mode was Exclusive. The field only
-  // remains so a global control plane can keep marking meshes as Exclusive
-  // when it syncs them over KDS to zones older than 3.0: those zones read a
-  // missing field as Disabled and tear down all MeshService traffic
-  // (https://github.com/kumahq/kuma/issues/18868). Any value stored through
-  // the API has no effect on 3.0 control planes.
+  // Deprecated: ignored since 3.0, where every mesh behaves as Exclusive.
+  // Kept only so pre-3.0 zones keep receiving the mode over KDS.
   MeshServices meshServices = 9 [deprecated = true];
 
   message MeshServices {

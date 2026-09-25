@@ -21,28 +21,17 @@ import (
 	"github.com/kumahq/kuma/v3/test/framework/deployments/testserver"
 )
 
-// ZonesStayExclusiveBehindNewGlobal reproduces
-// https://github.com/kumahq/kuma/issues/18868: a 3.0 global control plane
-// reserves the `meshServices` field on Mesh, so it syncs Meshes without it to
-// zones that still run 2.14. A 2.14 zone reads the missing field as
-// `meshServices.mode: Disabled` and tears down all MeshService traffic: it
-// deletes every generated MeshService, skips mesh-scoped zone proxy listeners
-// and stops resolving `*.svc.mesh.local`.
+// ZonesStayExclusiveBehindNewGlobal pins both zones to the last 2.14.x
+// release behind a Global on the current build, applies a Mesh without
+// `meshServices` - the state a normal 3.0 upgrade leaves behind - and
+// asserts the zones keep behaving as Exclusive: the synced Mesh carries the
+// mode, MeshServices keep existing, and in-zone and cross-zone MeshService
+// traffic keeps flowing.
 //
-// The spec pins both zones to the last 2.14.x release while Global runs the
-// current build, applies a Mesh without `meshServices` - the state a normal
-// 3.0 upgrade leaves behind, so only the KDS mapper can put a mode on the
-// synced Mesh - and then asserts the zone keeps behaving as Exclusive: the
-// synced Mesh carries the mode, MeshServices keep existing, and in-zone and
-// cross-zone MeshService traffic keeps flowing.
-//
-// Global itself is not upgraded inside this spec: the framework has no
-// mechanism to run an old Universal kuma-cp, so Global starts on the current
-// build. That is equivalent for what is being tested - KDS does not care how
-// the mixed state was reached, only how Global serves 2.14 zones while it
-// lasts. Both zones are Kubernetes because only Kubernetes zones can be
-// version-pinned, via old Helm charts; a Universal zone would need the same
-// missing old-binary mechanism.
+// Global starts on the current build rather than being upgraded: the
+// framework has no way to run an old Universal kuma-cp, and KDS does not
+// care how the mixed state was reached. Only Kubernetes zones can be
+// version-pinned, via old Helm charts.
 func ZonesStayExclusiveBehindNewGlobal() {
 	meshName := "ms-exclusive"
 	identityName := "ms-exclusive-identity"
@@ -107,9 +96,8 @@ func ZonesStayExclusiveBehindNewGlobal() {
 		grp.Wait()
 	})
 
-	// getFromZone reads straight off the zone's API, because kumactl would
-	// unmarshal the response into its own Mesh model and drop the field this
-	// spec is about before the assertion could see it.
+	// getFromZone reads straight off the zone's API: kumactl would unmarshal
+	// into its own Mesh model and drop the field this spec asserts on.
 	getFromZone := func(cluster Cluster, path string) (string, error) {
 		req, err := http.NewRequestWithContext(
 			context.Background(), http.MethodGet,
@@ -165,8 +153,7 @@ name: %s
 					MeshIdentityTrustDomains(meshName, zoneK8s1, zoneK8s2)...,
 				)).
 				// The default generators only name synced (cross-zone)
-				// MeshServices on Kubernetes zones. This one names local ones,
-				// the way `ledger.svc.mesh.local` resolved in the issue.
+				// MeshServices on Kubernetes zones; this one names local ones.
 				Install(YamlUniversal(fmt.Sprintf(`
 type: HostnameGenerator
 name: ms-exclusive-local
@@ -197,9 +184,8 @@ spec:
 						WithHelmOpt("meshes[0].ingress.service.type", "NodePort"),
 						WithoutHelmOpt("global.image.tag"),
 					)).
-					// The mesh zone proxy is a Dataplane in the test's mesh, so
-					// the mesh has to reach this zone over KDS before its
-					// readiness can pass.
+					// The mesh zone proxy is a Dataplane in the test's mesh,
+					// so the mesh has to sync over KDS before its readiness.
 					Install(func(c Cluster) error {
 						return WaitForMesh(meshName, []Cluster{c})
 					}).

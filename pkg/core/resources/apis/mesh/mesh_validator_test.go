@@ -83,15 +83,15 @@ var _ = Describe("Mesh", func() {
 			}, `
                 violations:
                 - field: meshServices.mode
-                  message: meshServices.mode was removed in 3.0 and every mesh behaves as
-                    Exclusive; remove the field or set it to Exclusive`),
+                  message: removed in 3.0 and every mesh behaves as Exclusive; remove the
+                    field or set it to Exclusive`),
 			Entry("ReachableBackends is rejected", &mesh_proto.Mesh_MeshServices{
 				Mode: mesh_proto.Mesh_MeshServices_ReachableBackends,
 			}, `
                 violations:
                 - field: meshServices.mode
-                  message: meshServices.mode was removed in 3.0 and every mesh behaves as
-                    Exclusive; remove the field or set it to Exclusive`),
+                  message: removed in 3.0 and every mesh behaves as Exclusive; remove the
+                    field or set it to Exclusive`),
 		)
 	})
 })

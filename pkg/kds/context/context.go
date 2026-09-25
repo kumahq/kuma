@@ -212,31 +212,23 @@ func MapInsightResourcesZeroGeneration(_ kds.Features, r core_model.Resource) (c
 }
 
 // MeshServicesExclusive marks every synced Mesh as meshServices.mode:
-// Exclusive. 3.0 removed the mode from the Mesh API and behaves as if every
-// mesh were Exclusive, but pre-3.0 zones still read the field and treat a
-// missing one as Disabled, which makes them delete every MeshService, skip
-// mesh-scoped zone proxy listeners and stop resolving MeshService DNS names
-// (https://github.com/kumahq/kuma/issues/18868). Zones on 3.0 ignore the
-// field, so every zone can be served the same Mesh without a feature
-// negotiation.
+// Exclusive, which is how 3.0 behaves everywhere. Zones before 3.0 read a
+// missing field as Disabled and tear down all MeshService traffic.
 func MeshServicesExclusive() kds_reconcile.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		spec, ok := r.GetSpec().(*mesh_proto.Mesh)
 		if !ok {
 			return r, nil
 		}
-		// The clone is required: specs are shared pointers, so setting the
-		// field on the original would leak it into the store cache.
+		// Specs are shared pointers into the store cache, so the field must
+		// be set on a clone.
 		spec = proto.Clone(spec).(*mesh_proto.Mesh)
-		spec.MeshServices = &mesh_proto.Mesh_MeshServices{ //nolint:staticcheck // deprecated on purpose: the field exists only for this pre-3.0 zone compatibility mapping
+		spec.MeshServices = &mesh_proto.Mesh_MeshServices{ //nolint:staticcheck // deprecated on purpose
 			Mode: mesh_proto.Mesh_MeshServices_Exclusive,
 		}
 		newR := r.Descriptor().NewObject()
 		newR.SetMeta(r.GetMeta())
-		if err := newR.SetSpec(spec); err != nil {
-			return nil, err
-		}
-		return newR, nil
+		return newR, newR.SetSpec(spec)
 	}
 }
 

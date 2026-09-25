@@ -83,13 +83,8 @@ func (Mesh_MeshServices_Mode) EnumDescriptor() ([]byte, []int) {
 // Mesh defines configuration of a single mesh.
 type Mesh struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Deprecated: 3.0 removed the MeshService mode from the Mesh API and every
-	// mesh behaves as if meshServices.mode was Exclusive. The field only
-	// remains so a global control plane can keep marking meshes as Exclusive
-	// when it syncs them over KDS to zones older than 3.0: those zones read a
-	// missing field as Disabled and tear down all MeshService traffic
-	// (https://github.com/kumahq/kuma/issues/18868). Any value stored through
-	// the API has no effect on 3.0 control planes.
+	// Deprecated: ignored since 3.0, where every mesh behaves as Exclusive.
+	// Kept only so pre-3.0 zones keep receiving the mode over KDS.
 	//
 	// Deprecated: Marked as deprecated in api/mesh/v1alpha1/mesh.proto.
 	MeshServices  *Mesh_MeshServices `protobuf:"bytes,9,opt,name=meshServices,proto3" json:"meshServices,omitempty"`

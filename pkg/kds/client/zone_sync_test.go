@@ -38,8 +38,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 )
 
-// markedExclusive returns the Mesh spec as the zone store holds it after the
-// global KDS mapper marked it meshServices.mode: Exclusive.
+// markedExclusive returns the Mesh spec as the global KDS mapper marks it.
 func markedExclusive(spec *mesh_proto.Mesh) *mesh_proto.Mesh {
 	out := proto.Clone(spec).(*mesh_proto.Mesh)
 	out.MeshServices = &mesh_proto.Mesh_MeshServices{ //nolint:staticcheck // deprecated on purpose

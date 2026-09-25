@@ -34,9 +34,8 @@ import (
 //
 // The 3.0 global serves every Mesh to the pre-upgrade zone as
 // meshServices.mode: Exclusive (see ZonesStayExclusiveBehindNewGlobal), so
-// the zone computes no legacy VIP outbounds: traffic resolves through
-// MeshService DNS names from the start, and Dataplanes sync to Global
-// cleanly.
+// the zone computes no legacy VIP outbounds and in-zone traffic resolves
+// through MeshService DNS names from the start.
 func UpgradingZoneWithHelmChart() {
 	namespace := "helm-upgrade-ns"
 	testServerURL := fmt.Sprintf("http://test-server.%s.svc.mesh.local:80", namespace)
@@ -134,9 +133,7 @@ spec:
           maxStreamDuration: 20s`, "default"))(global)).To(Succeed())
 
 			// The default generators only name synced (cross-zone) MeshServices
-			// on Kubernetes zones. This one names local ones, so in-zone
-			// traffic can use MeshService DNS while the zone is served
-			// Exclusive mode.
+			// on Kubernetes zones; this one names local ones.
 			Expect(YamlUniversal(`
 type: HostnameGenerator
 name: helm-upgrade-local
@@ -161,8 +158,7 @@ spec:
 				Install(NamespaceWithSidecarInjection(namespace)).
 				Install(testserver.Install(testserver.WithNamespace(namespace))).
 				// The 2.14 zone is served Exclusive mode, so MeshService
-				// outbounds carry the traffic before the upgrade, and the
-				// reachableBackends ref keeps the same path working after it.
+				// outbounds carry the traffic both before and after the upgrade.
 				Install(democlient.Install(
 					democlient.WithNamespace(namespace),
 					democlient.WithPodAnnotations(map[string]string{
@@ -182,9 +178,9 @@ spec:
 
 			// Only the zone's own mesh zone ingress is asserted here. The
 			// pre-upgrade zone is served Exclusive mode, so it computes no VIP
-			// outbounds and every Dataplane reaches Global; keeping the lenient
-			// count anyway and asserting strictly after the upgrade, which is
-			// what this spec is actually about.
+			// outbounds and every Dataplane reaches Global; the count after
+			// the upgrade is asserted strictly below, which is what this spec
+			// is actually about.
 			Eventually(func(g Gomega) (int, error) {
 				return NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
 			}, "60s", "1s").Should(BeNumerically(">=", 1), "dpps should be synced to global")
