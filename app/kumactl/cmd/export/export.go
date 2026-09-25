@@ -297,7 +297,7 @@ func resourcesTypesToDump(cmd *cobra.Command, ectx *exportContext) ([]model.Reso
 			if !res.IncludeInFederation { // base decision on `IncludeInFederation` field
 				continue
 			}
-			if res.Policy != nil && res.Policy.IsTargetRef { // do not include new policies
+			if res.Policy != nil { // do not include policies
 				continue
 			}
 		case profileFederationWithPolicies:

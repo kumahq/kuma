@@ -209,9 +209,6 @@ type PolicyDescription struct {
 
 	// HasToTargetRef indicates that this policy can be used as an outbound policy
 	HasToTargetRef bool `json:"hasToTargetRef"`
-
-	// IsTargetRef whether this policy uses targetRef matching
-	IsTargetRef bool `json:"isTargetRef"`
 }
 
 // PolicyOrigin The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.

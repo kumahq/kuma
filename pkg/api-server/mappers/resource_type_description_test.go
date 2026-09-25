@@ -23,7 +23,6 @@ func TestMapResourceTypeDescriptionPreservesRulesTargetRefPolicies(t *testing.T)
 
 	require.Len(t, response.Resources, 1)
 	require.NotNil(t, response.Resources[0].Policy)
-	require.True(t, response.Resources[0].Policy.IsTargetRef)
 	require.True(t, response.Resources[0].Policy.HasRulesTargetRef)
 	require.True(t, response.Resources[0].Policy.HasToTargetRef)
 }

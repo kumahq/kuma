@@ -69,8 +69,7 @@
    "pluralDisplayName": "Mesh Access Logs",
    "policy": {
     "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -86,8 +85,7 @@
    "pluralDisplayName": "Mesh Circuit Breakers",
    "policy": {
     "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -115,8 +113,7 @@
    "pluralDisplayName": "Mesh Fault Injections",
    "policy": {
     "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -132,8 +129,7 @@
    "pluralDisplayName": "Mesh HTTP Routes",
    "policy": {
     "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -149,8 +145,7 @@
    "pluralDisplayName": "Mesh Health Checks",
    "policy": {
     "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -190,8 +185,7 @@
    "pluralDisplayName": "Mesh Load Balancing Strategies",
    "policy": {
     "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -207,8 +201,7 @@
    "pluralDisplayName": "Mesh Metrics",
    "policy": {
     "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isTargetRef": true
+    "hasToTargetRef": false
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -248,8 +241,7 @@
    "pluralDisplayName": "Mesh Passthroughs",
    "policy": {
     "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isTargetRef": true
+    "hasToTargetRef": false
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -265,8 +257,7 @@
    "pluralDisplayName": "Mesh Proxy Patches",
    "policy": {
     "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isTargetRef": true
+    "hasToTargetRef": false
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -282,8 +273,7 @@
    "pluralDisplayName": "Mesh Rate Limits",
    "policy": {
     "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -299,8 +289,7 @@
    "pluralDisplayName": "Mesh Retries",
    "policy": {
     "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -328,8 +317,7 @@
    "pluralDisplayName": "Mesh TCP Routes",
    "policy": {
     "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -345,8 +333,7 @@
    "pluralDisplayName": "Mesh TLSes",
    "policy": {
     "hasRulesTargetRef": true,
-    "hasToTargetRef": false,
-    "isTargetRef": true
+    "hasToTargetRef": false
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -362,8 +349,7 @@
    "pluralDisplayName": "Mesh Timeouts",
    "policy": {
     "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -379,8 +365,7 @@
    "pluralDisplayName": "Mesh Traces",
    "policy": {
     "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isTargetRef": true
+    "hasToTargetRef": false
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -396,8 +381,7 @@
    "pluralDisplayName": "Mesh Traffic Permissions",
    "policy": {
     "hasRulesTargetRef": true,
-    "hasToTargetRef": false,
-    "isTargetRef": true
+    "hasToTargetRef": false
    },
    "readOnly": false,
    "scope": "Mesh",

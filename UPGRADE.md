@@ -376,13 +376,13 @@ The `readOnly` field returned by `GET /_resources` now reports whether generic `
 
 Dynamic clients should use `readOnly` as the capability of the current control plane, not as an intrinsic property of the resource type. No action is needed for Kubernetes installations using the default read-only API configuration.
 
-### `policy.hasFromTargetRef` and `policy.isFromAsRules` are removed from `GET /_resources`
+### `policy.hasFromTargetRef`, `policy.isFromAsRules` and `policy.isTargetRef` are removed from `GET /_resources`
 
-Both fields of the `policy` object returned by `GET /_resources` have been hardcoded to `false` since the `from`-style targetRef was dropped, so they no longer described anything. They are removed from the response. `policy.isTargetRef` is kept and is `true` for every policy, since every remaining policy uses targetRef matching.
+`hasFromTargetRef` and `isFromAsRules` in the `policy` object returned by `GET /_resources` have been hardcoded to `false` since the `from`-style targetRef was dropped, and `isTargetRef` has been `true` for every policy, so none of them described anything. They are removed from the response.
 
 **Action required**
 
-Treat a missing `hasFromTargetRef` as `false`. To tell whether a policy applies to inbound traffic, read `policy.hasRulesTargetRef` instead.
+Treat every entry with a `policy` object as a targetRef policy. To tell whether a policy applies to inbound traffic, read `policy.hasRulesTargetRef` instead of `policy.hasFromTargetRef`.
 
 ### The legacy per-policy inspect paths `{policy}/{name}/dataplanes` are removed
 

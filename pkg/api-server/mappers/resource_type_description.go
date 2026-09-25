@@ -30,7 +30,6 @@ func MapResourceTypeDescription(defs []model.ResourceTypeDescriptor, readOnly bo
 			td.Policy = &api_common.PolicyDescription{
 				HasToTargetRef:    def.HasToTargetRef,
 				HasRulesTargetRef: def.HasRulesTargetRef,
-				IsTargetRef:       true,
 			}
 		}
 		response.Resources = append(response.Resources, td)
