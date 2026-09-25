@@ -512,7 +512,8 @@ defaults:
   # If true, a data plane proxy without reachableBackends reaches no destination in the mesh,
   # and one without MeshPassthrough gets no outbound passthrough, which lowers control plane and
   # proxy CPU and memory usage in large meshes. A matched MeshPassthrough always wins over this setting.
-  restrictOutbound: false # ENV: KUMA_DEFAULTS_RESTRICT_OUTBOUND
+  # Unset means false.
+  restrictOutbound: null # ENV: KUMA_DEFAULTS_RESTRICT_OUTBOUND
 # Metrics configuration
 metrics:
   dataplane:

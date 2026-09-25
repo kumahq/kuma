@@ -50,7 +50,8 @@ type Defaults struct {
 	// If true, a data plane proxy without reachableBackends reaches no destination in the mesh,
 	// and one without MeshPassthrough gets no outbound passthrough, which lowers control plane and
 	// proxy CPU and memory usage in large meshes. A matched MeshPassthrough always wins over this setting.
-	RestrictOutbound bool `json:"restrictOutbound" envconfig:"kuma_defaults_restrict_outbound"`
+	// Unset means false; nil keeps an explicit false distinguishable from the default.
+	RestrictOutbound *bool `json:"restrictOutbound" envconfig:"kuma_defaults_restrict_outbound"`
 }
 
 type Metrics struct {
@@ -473,7 +474,6 @@ func DefaultDefaultsConfig() *Defaults {
 		SkipTenantResources:        false,
 		CreateMeshRoutingResources: false,
 		SkipHostnameGenerators:     false,
-		RestrictOutbound:           false,
 	}
 }
 
