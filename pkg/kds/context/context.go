@@ -9,15 +9,15 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	system_proto "github.com/kumahq/kuma/v3/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	"github.com/kumahq/kuma/v3/pkg/config/multizone"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
@@ -30,11 +30,11 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/kds"
+	kds_auth "github.com/kumahq/kuma/v3/pkg/kds/auth"
 	"github.com/kumahq/kuma/v3/pkg/kds/hash"
 	kds_reconcile "github.com/kumahq/kuma/v3/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
 	"github.com/kumahq/kuma/v3/pkg/kds/util"
-	"github.com/kumahq/kuma/v3/pkg/util/rsa"
 	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
@@ -56,6 +56,28 @@ type Context struct {
 	EnvoyAdminRPCs           service.EnvoyAdminRPCs
 	ServerStreamInterceptors []grpc.StreamServerInterceptor
 	ServerUnaryInterceptor   []grpc.UnaryServerInterceptor
+
+	// ZoneAuthenticators authenticate every KDS RPC received by Global CP, after
+	// ServerStreamInterceptors and ServerUnaryInterceptor. Register with RegisterZoneAuthenticator.
+	ZoneAuthenticators kds_auth.Authenticators
+	// ZoneCredentials are attached to every KDS RPC sent by Zone CP. Nil sends none.
+	ZoneCredentials credentials.PerRPCCredentials
+}
+
+// RegisterZoneAuthenticator registers the authenticator of one KDS auth type. A type
+// can be registered once, so a distribution cannot replace an authenticator of another type.
+func (c *Context) RegisterZoneAuthenticator(authType multizone.KDSAuthType, authenticator kds_auth.Authenticator) error {
+	if authType == multizone.KDSAuthNone {
+		return errors.Errorf("cannot register an authenticator for %q, it disables authentication of Zone CPs", multizone.KDSAuthNone)
+	}
+	if _, ok := c.ZoneAuthenticators[authType]; ok {
+		return errors.Errorf("authenticator for KDS auth type %q is already registered", authType)
+	}
+	if c.ZoneAuthenticators == nil {
+		c.ZoneAuthenticators = kds_auth.Authenticators{}
+	}
+	c.ZoneAuthenticators[authType] = authenticator
+	return nil
 }
 
 type Filter interface {
@@ -79,12 +101,6 @@ func DefaultContext(
 			util.WithoutLabelPrefixes(cfg.Multizone.Global.KDS.Labels.SkipPrefixes...),
 		),
 		MeshServicesExclusiveForLegacyZones(),
-		kds_reconcile.If(
-			kds_reconcile.And(
-				kds_reconcile.TypeIs(system.GlobalSecretType),
-				kds_reconcile.NameHasPrefix(system.ZoneTokenSigningKeyPrefix),
-			),
-			MapZoneTokenSigningKeyGlobalToPublicKey),
 		kds_reconcile.If(
 			kds_reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
@@ -195,30 +211,6 @@ func MapInsightResourcesZeroGeneration(_ kds.Features, r core_model.Resource) (c
 	return r, nil
 }
 
-func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
-	signingKeyBytes := r.(*system.GlobalSecretResource).Spec.GetData().GetValue()
-	publicKeyBytes, err := rsa.FromPrivateKeyPEMBytesToPublicKeyPEMBytes(signingKeyBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	publicSigningKeyResource := system.NewGlobalSecretResource()
-	newResName := strings.ReplaceAll(
-		r.GetMeta().GetName(),
-		system.ZoneTokenSigningKeyPrefix,
-		system.ZoneTokenSigningPublicKeyPrefix,
-	)
-	publicSigningKeyResource.SetMeta(util.CloneResourceMeta(r.GetMeta(), util.WithName(newResName)))
-
-	if err := publicSigningKeyResource.SetSpec(&system_proto.Secret{
-		Data: &wrapperspb.BytesValue{Value: publicKeyBytes},
-	}); err != nil {
-		return nil, err
-	}
-
-	return publicSigningKeyResource, nil
-}
-
 // MeshServicesExclusiveForLegacyZones marks every Mesh synced to a zone that
 // does not advertise FeatureMeshServicesImplicitExclusive as
 // meshServices.mode: Exclusive. 3.0 removed the mode from the Mesh API and
@@ -313,10 +305,12 @@ func GlobalProvidedFilter(rm manager.ReadOnlyResourceManager) kds_reconcile.Reso
 			_, exists := KDSSyncedConfigs[r.GetMeta().GetName()]
 			return exists
 		case system.GlobalSecretType:
-			if slices.Contains([]string{system.EnvoyAdminCA, system.AdminUserToken, system.InterCpCA, system.UserTokenRevocations}, r.GetMeta().GetName()) {
+			if slices.Contains([]string{system.EnvoyAdminCA, system.AdminUserToken, system.InterCpCA, system.UserTokenRevocations, system.ZoneTokenRevocations}, r.GetMeta().GetName()) {
 				return false
 			}
-			if strings.HasPrefix(r.GetMeta().GetName(), system.UserTokenSigningKeyPrefix) {
+			// zone tokens are validated on Global CP only, the signing key must never leave it
+			if strings.HasPrefix(r.GetMeta().GetName(), system.UserTokenSigningKeyPrefix) ||
+				strings.HasPrefix(r.GetMeta().GetName(), system.ZoneTokenSigningKeyPrefix) {
 				return false
 			}
 		}

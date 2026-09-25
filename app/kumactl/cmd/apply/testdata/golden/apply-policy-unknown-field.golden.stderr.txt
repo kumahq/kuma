@@ -1,0 +1,2 @@
+resource[0]: failed to parse resource: spec.from: unknown field
+Error: failed to validate some resources

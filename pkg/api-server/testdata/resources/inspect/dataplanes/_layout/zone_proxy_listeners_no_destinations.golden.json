@@ -1,0 +1,9 @@
+{
+ "inbounds": [],
+ "kri": "kri_dp_default_test-zone__dp-zone-proxy_",
+ "labels": {
+  "kuma.io/zone": "test-zone"
+ },
+ "listeners": [],
+ "outbounds": []
+}

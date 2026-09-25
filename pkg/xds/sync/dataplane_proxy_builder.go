@@ -96,18 +96,33 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 	tpEnabled bool,
 	bindOutbounds bool,
 ) []*xds_types.Outbound {
+	outbounds := ResolveOutbounds(meshContext.BaseMeshContext, dataplane, tpEnabled, bindOutbounds)
+	if tpEnabled || bindOutbounds {
+		// VIP outbounds never carry a legacy outbound, so the dataplane's legacy
+		// outbound list is always cleared here.
+		dataplane.Spec.Networking.Outbound = nil
+	}
+	return outbounds
+}
+
+func ResolveOutbounds(
+	baseMeshContext *xds_context.BaseMeshContext,
+	dataplane *core_mesh.DataplaneResource,
+	tpEnabled bool,
+	bindOutbounds bool,
+) xds_types.Outbounds {
 	if !tpEnabled && !bindOutbounds {
-		return asOutbounds(dataplane, meshContext.ResolveResourceIdentifier)
+		return asOutbounds(dataplane, baseMeshContext.DestinationIndex)
 	}
 	var reachableBackends map[kri.Identifier]core_resources.Port
 	var onlySelectedBackends bool
 	// On Kubernetes the transparent proxy config arrives via kuma-dp metadata, so the section is often nil
 	if tpEnabled || dataplane.Spec.GetNetworking().GetTransparentProxying() != nil {
-		reachableBackends, onlySelectedBackends = meshContext.BaseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
+		reachableBackends, onlySelectedBackends = baseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
 	}
 
-	var newOutbounds []*xds_types.Outbound
-	for _, outbound := range meshContext.VIPOutbounds {
+	var newOutbounds xds_types.Outbounds
+	for _, outbound := range baseMeshContext.VIPOutbounds {
 		if onlySelectedBackends {
 			// check if there is an entry with specific port or without port
 			_, selected := reachableBackends[outbound.Resource]
@@ -124,9 +139,6 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 		}
 		newOutbounds = append(newOutbounds, outbound)
 	}
-	// VIP outbounds never carry a legacy outbound, so the dataplane's legacy
-	// outbound list is always cleared here.
-	dataplane.Spec.Networking.Outbound = nil
 	return newOutbounds
 }
 
@@ -158,7 +170,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 	return matchedPolicies, nil
 }
 
-func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelResourceIdentifierResolver) xds_types.Outbounds {
+func asOutbounds(dataplane *core_mesh.DataplaneResource, index *xds_context.DestinationIndex) xds_types.Outbounds {
 	var outbounds xds_types.Outbounds
 	for _, o := range dataplane.Spec.Networking.Outbound {
 		if o.BackendRef == nil {
@@ -181,7 +193,7 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 		if sectionName != "" {
 			backendRef.SectionName = pointer.To(sectionName)
 		}
-		ref, ok := resolve.BackendRef(kri.From(dataplane), backendRef, resolver)
+		ref, ok := resolve.BackendRef(kri.From(dataplane), backendRef, index.ResolveResourceIdentifier)
 		if !ok {
 			continue
 		}
@@ -189,9 +201,21 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 			outbounds = append(outbounds, &xds_types.Outbound{
 				Address:  o.Address,
 				Port:     o.Port,
-				Resource: ref.Resource(),
+				Resource: portNameSection(index, ref.Resource()),
 			})
 		}
 	}
 	return outbounds
+}
+
+func portNameSection(index *xds_context.DestinationIndex, id kri.Identifier) kri.Identifier {
+	destination := index.GetDestinationByKRI(id)
+	if destination == nil {
+		return id
+	}
+	port, ok := destination.FindPortByName(id.SectionName)
+	if !ok {
+		return id
+	}
+	return kri.WithSectionName(id, port.GetName())
 }
