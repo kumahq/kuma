@@ -1,0 +1,11 @@
+match:
+  type: HostnameGenerator
+  port: 8080
+  protocol: http
+extension:
+  type: Lambda
+tls:
+  enabled: true
+  verification:
+    caCert:
+      type: File

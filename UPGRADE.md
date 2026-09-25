@@ -6,6 +6,37 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.14.6`
+
+### `MeshExternalService` TLS verification accepts the `SecureDataSource` shape
+
+3.0 reads `spec.tls.verification.caCert`, `.clientCert` and `.clientKey` on `MeshExternalService` only in the `SecureDataSource` shape. 2.14.6 accepts both shapes, so resources can be rewritten before upgrading to 3.0. The old `secret`, `inline` and `inlineString` fields keep working on 2.14 and now produce a deprecation warning.
+
+| Old field | New field |
+|---|---|
+| `inline: <base64>` | `type: InsecureInline`, `insecureInline.value: <plain text>` |
+| `inlineString: <text>` | `type: InsecureInline`, `insecureInline.value: <text>` |
+| `secret: <name>` | `type: Secret`, `secretRef: {kind: Secret, name: <name>}` |
+
+`inline` is base64-encoded, `insecureInline.value` is plain text, so decode the old value when rewriting it. For example `inline: dGVzdA==` becomes:
+
+```yaml
+caCert:
+  type: InsecureInline
+  insecureInline:
+    value: test
+```
+
+A single data source cannot mix both shapes, and the `File` and `EnvVar` types are rejected.
+
+**Action required**
+
+Before upgrading to 3.0:
+
+1. Upgrade the global control plane and every zone control plane to 2.14.6 or later. A zone on an older 2.14 does not know the new fields: they are dropped (pruned on Kubernetes), and the proxy silently falls back to the system CA.
+2. Rewrite `caCert`, `clientCert` and `clientKey` on every `MeshExternalService` to the new shape.
+3. Upgrade to 3.0, global control plane first.
+
 ## Upgrade to `2.14.5`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because it changes behaviour existing deployments may rely on.

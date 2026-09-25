@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	datasource_api "github.com/kumahq/kuma/v2/api/common/v1alpha1/datasource"
 	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/datasource"
@@ -1391,13 +1391,13 @@ var _ = Describe("TrafficRoute", func() {
 											Value: "test.com",
 										},
 									},
-									CaCert: &common_api.DataSource{
+									CaCert: &meshexternalservice_api.VerificationDataSource{
 										InlineString: pointer.To("ca"),
 									},
-									ClientCert: &common_api.DataSource{
+									ClientCert: &meshexternalservice_api.VerificationDataSource{
 										InlineString: pointer.To("cert"),
 									},
-									ClientKey: &common_api.DataSource{
+									ClientKey: &meshexternalservice_api.VerificationDataSource{
 										InlineString: pointer.To("key"),
 									},
 								},
@@ -1521,6 +1521,140 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
+			Entry("uses MeshExternalService with SecureDataSource TLS", testCase{
+				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "example-mes",
+						},
+						Spec: &meshexternalservice_api.MeshExternalService{
+							Match: meshexternalservice_api.Match{
+								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Port:     10000,
+								Protocol: core_meta.ProtocolHTTP,
+							},
+							Endpoints: &[]meshexternalservice_api.Endpoint{
+								{
+									Address: "example.com",
+									Port:    443,
+								},
+							},
+							Tls: &meshexternalservice_api.Tls{
+								Enabled: true,
+								Verification: &meshexternalservice_api.Verification{
+									Mode: meshexternalservice_api.TLSVerificationSecured,
+									CaCert: &meshexternalservice_api.VerificationDataSource{
+										Type:           pointer.To(datasource_api.SecureDataSourceInline),
+										InsecureInline: &datasource_api.Inline{Value: "ca"},
+									},
+									ClientCert: &meshexternalservice_api.VerificationDataSource{
+										Type:           pointer.To(datasource_api.SecureDataSourceInline),
+										InsecureInline: &datasource_api.Inline{Value: "cert"},
+									},
+									ClientKey: &meshexternalservice_api.VerificationDataSource{
+										Type:           pointer.To(datasource_api.SecureDataSourceInline),
+										InsecureInline: &datasource_api.Inline{Value: "key"},
+									},
+								},
+							},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "missing-secret-mes",
+						},
+						Spec: &meshexternalservice_api.MeshExternalService{
+							Match: meshexternalservice_api.Match{
+								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Port:     10000,
+								Protocol: core_meta.ProtocolHTTP,
+							},
+							Endpoints: &[]meshexternalservice_api.Endpoint{
+								{
+									Address: "example.com",
+									Port:    443,
+								},
+							},
+							Tls: &meshexternalservice_api.Tls{
+								Enabled: true,
+								Verification: &meshexternalservice_api.Verification{
+									CaCert: &meshexternalservice_api.VerificationDataSource{
+										Type:      pointer.To(datasource_api.SecureDataSourceSecretRef),
+										SecretRef: &datasource_api.SecretRef{Kind: datasource_api.SecretRefType, Name: "not-existing"},
+									},
+								},
+							},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{
+							Mesh: "default",
+							Name: "file-mes",
+						},
+						Spec: &meshexternalservice_api.MeshExternalService{
+							Match: meshexternalservice_api.Match{
+								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Port:     10000,
+								Protocol: core_meta.ProtocolHTTP,
+							},
+							Endpoints: &[]meshexternalservice_api.Endpoint{
+								{
+									Address: "example.com",
+									Port:    443,
+								},
+							},
+							Tls: &meshexternalservice_api.Tls{
+								Enabled: true,
+								Verification: &meshexternalservice_api.Verification{
+									CaCert: &meshexternalservice_api.VerificationDataSource{
+										Type: pointer.To(datasource_api.SecureDataSourceFile),
+									},
+								},
+							},
+						},
+					},
+				},
+				zoneEgresses: []*core_mesh.ZoneEgressResource{
+					{
+						Meta: &test_model.ResourceMeta{
+							Name: "egress",
+							Mesh: "default",
+						},
+						Spec: &mesh_proto.ZoneEgress{
+							Networking: &mesh_proto.ZoneEgress_Networking{
+								Address: "1.1.1.1",
+								Port:    10002,
+							},
+						},
+					},
+				},
+				mesh: defaultMeshWithMTLS,
+				expected: core_xds.EndpointMap{
+					"default_example-mes___extsvc_10000": []core_xds.Endpoint{
+						{
+							Target:   "1.1.1.1",
+							Port:     10002,
+							Locality: nil,
+							Weight:   1,
+							ExternalService: &core_xds.ExternalService{
+								Protocol:           core_meta.ProtocolHTTP,
+								TLSEnabled:         true,
+								FallbackToSystemCa: true,
+								CaCert:             []byte("ca"),
+								ClientCert:         []byte("cert"),
+								ClientKey:          []byte("key"),
+								OwnerResource: kri.Identifier{
+									ResourceType: meshexternalservice_api.MeshExternalServiceType,
+									Mesh:         "default",
+									Name:         "example-mes",
+								},
+							},
+						},
+					},
+				},
+			}),
 			Entry("uses MeshExternalService without egress", testCase{
 				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
 					{
@@ -1560,13 +1694,13 @@ var _ = Describe("TrafficRoute", func() {
 											Value: "test.com",
 										},
 									},
-									CaCert: &common_api.DataSource{
+									CaCert: &meshexternalservice_api.VerificationDataSource{
 										InlineString: pointer.To("ca"),
 									},
-									ClientCert: &common_api.DataSource{
+									ClientCert: &meshexternalservice_api.VerificationDataSource{
 										InlineString: pointer.To("cert"),
 									},
-									ClientKey: &common_api.DataSource{
+									ClientKey: &meshexternalservice_api.VerificationDataSource{
 										InlineString: pointer.To("key"),
 									},
 								},
@@ -1927,10 +2061,10 @@ var _ = Describe("TrafficRoute", func() {
 									Enabled: true,
 									Verification: &meshexternalservice_api.Verification{
 										Mode: meshexternalservice_api.TLSVerificationSecured,
-										ClientKey: &common_api.DataSource{
+										ClientKey: &meshexternalservice_api.VerificationDataSource{
 											Secret: pointer.To("not-existing"),
 										},
-										ClientCert: &common_api.DataSource{
+										ClientCert: &meshexternalservice_api.VerificationDataSource{
 											Secret: pointer.To("not-existing"),
 										},
 									},

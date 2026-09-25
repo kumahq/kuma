@@ -4,7 +4,7 @@ package v1alpha1
 import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
-	"github.com/kumahq/kuma/v2/api/common/v1alpha1"
+	datasource_api "github.com/kumahq/kuma/v2/api/common/v1alpha1/datasource"
 	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	hostnamegenerator_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
@@ -114,11 +114,28 @@ type Verification struct {
 	// SubjectAltNames list of names to verify in the certificate.
 	SubjectAltNames *[]SANMatch `json:"subjectAltNames,omitempty"`
 	// CaCert defines a certificate of CA.
-	CaCert *v1alpha1.DataSource `json:"caCert,omitempty"`
+	CaCert *VerificationDataSource `json:"caCert,omitempty"`
 	// ClientCert defines a certificate of a client.
-	ClientCert *v1alpha1.DataSource `json:"clientCert,omitempty"`
+	ClientCert *VerificationDataSource `json:"clientCert,omitempty"`
 	// ClientKey defines a client private key.
-	ClientKey *v1alpha1.DataSource `json:"clientKey,omitempty"`
+	ClientKey *VerificationDataSource `json:"clientKey,omitempty"`
+}
+
+// VerificationDataSource accepts both the legacy `secret`/`inline`/`inlineString` fields
+// and the `SecureDataSource` shape used by 3.0, so resources can be migrated before upgrading.
+type VerificationDataSource struct {
+	// Secret is the legacy form of `type: Secret` with `secretRef`, not read by 3.0.
+	Secret *string `json:"secret,omitempty"` // #nosec G117 -- stores reference name, not secret value
+	// Inline is the legacy, base64-encoded form of `type: InsecureInline` with `insecureInline.value`, not read by 3.0.
+	Inline *[]byte `json:"inline,omitempty"`
+	// InlineString is the legacy form of `type: InsecureInline` with `insecureInline.value`, not read by 3.0.
+	InlineString *string `json:"inlineString,omitempty"`
+	// Type of the data source, one of `Secret` or `InsecureInline`.
+	Type *datasource_api.SecureDataSourceType `json:"type,omitempty"`
+	// InsecureInline is the data source value as plain text, used with `type: InsecureInline`.
+	InsecureInline *datasource_api.Inline `json:"insecureInline,omitempty"`
+	// SecretRef references a Secret, used with `type: Secret`.
+	SecretRef *datasource_api.SecretRef `json:"secretRef,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Exact;Prefix

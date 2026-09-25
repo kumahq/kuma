@@ -1307,13 +1307,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Type:  meshexternalservice_api.SANMatchExact,
 								Value: "example2.com",
 							}},
-							CaCert: &common_api.DataSource{
+							CaCert: &meshexternalservice_api.VerificationDataSource{
 								InlineString: pointer.To("ca"),
 							},
-							ClientCert: &common_api.DataSource{
+							ClientCert: &meshexternalservice_api.VerificationDataSource{
 								InlineString: pointer.To("cert"),
 							},
-							ClientKey: &common_api.DataSource{
+							ClientKey: &meshexternalservice_api.VerificationDataSource{
 								InlineString: pointer.To("key"),
 							},
 						},
@@ -1368,13 +1368,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 									Value: "example2.com",
 								},
 							},
-							CaCert: &common_api.DataSource{
+							CaCert: &meshexternalservice_api.VerificationDataSource{
 								InlineString: pointer.To("ca"),
 							},
-							ClientCert: &common_api.DataSource{
+							ClientCert: &meshexternalservice_api.VerificationDataSource{
 								InlineString: pointer.To("cert"),
 							},
-							ClientKey: &common_api.DataSource{
+							ClientKey: &meshexternalservice_api.VerificationDataSource{
 								InlineString: pointer.To("key"),
 							},
 						},

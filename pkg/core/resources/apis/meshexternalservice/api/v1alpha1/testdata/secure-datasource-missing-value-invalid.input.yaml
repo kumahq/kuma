@@ -1,0 +1,16 @@
+match:
+  type: HostnameGenerator
+  port: 8080
+  protocol: http
+endpoints:
+  - address: example.com
+    port: 443
+tls:
+  enabled: true
+  verification:
+    caCert:
+      type: InsecureInline
+    clientCert:
+      type: EnvVar
+    clientKey:
+      type: Secret

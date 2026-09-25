@@ -29,5 +29,19 @@ func (t *MeshExternalServiceResource) Deprecations() []string {
 			MeshExternalServiceResourceTypeDescriptor.Name, portName, err))
 	}
 
+	if t.Spec.Tls != nil && t.Spec.Tls.Verification != nil {
+		v := t.Spec.Tls.Verification
+		for _, ds := range []struct {
+			field  string
+			source *VerificationDataSource
+		}{{"caCert", v.CaCert}, {"clientCert", v.ClientCert}, {"clientKey", v.ClientKey}} {
+			if ds.source != nil && ds.source.IsLegacy() {
+				deprecations = append(deprecations, fmt.Sprintf(
+					"'spec.tls.verification.%s' uses 'secret', 'inline' or 'inlineString', which are deprecated and no longer read in 3.0. Use 'type: Secret' with 'secretRef', or 'type: InsecureInline' with 'insecureInline.value' (plain text, not base64).",
+					ds.field))
+			}
+		}
+	}
+
 	return deprecations
 }

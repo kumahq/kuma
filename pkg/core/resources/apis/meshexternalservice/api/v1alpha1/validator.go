@@ -7,6 +7,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
+	datasource_api "github.com/kumahq/kuma/v2/api/common/v1alpha1/datasource"
 	common_tls "github.com/kumahq/kuma/v2/api/common/v1alpha1/tls"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -37,6 +38,9 @@ func (r *MeshExternalServiceResource) validate() error {
 		if r.Spec.Tls != nil {
 			verr.AddErrorAt(path.Field("tls"), validateTls(r.Spec.Tls))
 		}
+	} else if r.Spec.Tls != nil && r.Spec.Tls.Verification != nil {
+		// an extension owns the rest of the tls validation, but never the data source shape
+		verr.AddErrorAt(path.Field("tls"), validateVerificationDataSources(r.Spec.Tls.Verification))
 	}
 
 	if r.Spec.Extension != nil && r.Spec.Extension.Type == "" {
@@ -74,8 +78,42 @@ func validateTls(tls *Tls) validators.ValidationError {
 		if tls.Verification.ClientCert == nil && tls.Verification.ClientKey != nil {
 			verr.AddViolation(path.Field("clientCert").String(), validators.MustBeDefined+" when clientKey is defined")
 		}
+
+		verr.Add(validateVerificationDataSources(tls.Verification))
 	}
 
+	return verr
+}
+
+func validateVerificationDataSources(verification *Verification) validators.ValidationError {
+	var verr validators.ValidationError
+	path := validators.RootedAt("verification")
+	verr.Add(validateVerificationDataSource(path.Field("caCert"), verification.CaCert))
+	verr.Add(validateVerificationDataSource(path.Field("clientCert"), verification.ClientCert))
+	verr.Add(validateVerificationDataSource(path.Field("clientKey"), verification.ClientKey))
+	return verr
+}
+
+// validateVerificationDataSource leaves the legacy shape as it was and applies the 3.0 rules
+// to the SecureDataSource shape. File and EnvVar are rejected because they read the control
+// plane's own filesystem and environment.
+func validateVerificationDataSource(path validators.PathBuilder, ds *VerificationDataSource) validators.ValidationError {
+	var verr validators.ValidationError
+	if ds == nil || ds.Type == nil {
+		return verr
+	}
+	if ds.IsLegacy() {
+		verr.AddViolationAt(path, "secret, inline and inlineString cannot be combined with type")
+		return verr
+	}
+	switch *ds.Type {
+	case datasource_api.SecureDataSourceSecretRef, datasource_api.SecureDataSourceInline:
+	default:
+		verr.AddViolationAt(path.Field("type"), validators.MustBeOneOf(string(*ds.Type), string(datasource_api.SecureDataSourceSecretRef), string(datasource_api.SecureDataSourceInline)))
+		return verr
+	}
+	sds := datasource_api.SecureDataSource{Type: *ds.Type, InsecureInline: ds.InsecureInline, SecretRef: ds.SecretRef}
+	verr.Add(sds.ValidateSecureDataSource(path))
 	return verr
 }
 

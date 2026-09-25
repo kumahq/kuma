@@ -769,18 +769,18 @@ func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, 
 	var err error
 	if tls.Verification != nil {
 		if tls.Verification.CaCert != nil {
-			caCert, err = loadBytes(ctx, tls.Verification.CaCert.ConvertToProto(), meshName, loader)
+			caCert, err = loadVerificationBytes(ctx, tls.Verification.CaCert, meshName, loader)
 			if err != nil {
 				return errors.Wrap(err, "could not load caCert")
 			}
 			es.CaCert = caCert
 		}
 		if tls.Verification.ClientKey != nil && tls.Verification.ClientCert != nil {
-			clientCert, err = loadBytes(ctx, tls.Verification.ClientCert.ConvertToProto(), meshName, loader)
+			clientCert, err = loadVerificationBytes(ctx, tls.Verification.ClientCert, meshName, loader)
 			if err != nil {
 				return errors.Wrap(err, "could not load clientCert")
 			}
-			clientKey, err = loadBytes(ctx, tls.Verification.ClientKey.ConvertToProto(), meshName, loader)
+			clientKey, err = loadVerificationBytes(ctx, tls.Verification.ClientKey, meshName, loader)
 			if err != nil {
 				return errors.Wrap(err, "could not load clientKey")
 			}
@@ -963,6 +963,19 @@ func loadBytes(ctx context.Context, ds *v1alpha1.DataSource, mesh string, loader
 		return nil, nil
 	}
 	return loader.Load(ctx, mesh, ds)
+}
+
+// loadVerificationBytes errors on an unsupported type instead of loading nothing: a resource
+// with an extension or synced from another zone may have skipped validation.
+func loadVerificationBytes(ctx context.Context, ds *meshexternalservice_api.VerificationDataSource, mesh string, loader datasource.Loader) ([]byte, error) {
+	if ds == nil {
+		return nil, nil
+	}
+	proto, err := ds.ToProto()
+	if err != nil {
+		return nil, err
+	}
+	return loadBytes(ctx, proto, mesh, loader)
 }
 
 const (
