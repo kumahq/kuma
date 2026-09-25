@@ -212,7 +212,7 @@ spec:
 				WithHelmChartPath(Config.HelmChartPath),
 				ClearNoHelmOpts(),
 				WithHelmOpt("meshes[0].ingress.deployment.replicas", "0"),
-				WithEnv(AllowAllOutboundEnv, "false"),
+				WithEnv(RestrictOutboundEnv, "true"),
 			)
 			Expect(err).ToNot(HaveOccurred())
 

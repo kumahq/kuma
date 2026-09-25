@@ -329,7 +329,7 @@ components:
                     MeshExternalService, MeshService and MeshMultiZoneService. Setting an
                     explicit list of refs can dramatically improve the performance of the
                     mesh. If not specified, no services in the mesh are reachable, unless
-                    the control plane sets KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND.
+                    the control plane disables KUMA_DEFAULTS_RESTRICT_OUTBOUND.
                   properties:
                     refs:
                       items:

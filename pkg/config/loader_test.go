@@ -291,7 +291,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
 			Expect(cfg.Defaults.SkipHostnameGenerators).To(BeTrue())
-			Expect(cfg.Defaults.AllowAllOutbound).To(BeTrue())
+			Expect(cfg.Defaults.RestrictOutbound).To(HaveValue(BeFalse()))
 
 			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
@@ -686,7 +686,7 @@ defaults:
   skipMeshCreation: true
   skipHostnameGenerators: true
   skipTenantResources: true
-  allowAllOutbound: true
+  restrictOutbound: false
 diagnostics:
   serverPort: 5003
   debugEndpoints: true
@@ -1033,7 +1033,7 @@ meshService:
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS":                                                   "true",
 				"KUMA_DEFAULTS_SKIP_TENANT_RESOURCES":                                                      "true",
-				"KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND":                                                         "true",
+				"KUMA_DEFAULTS_RESTRICT_OUTBOUND":                                                          "false",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
 				"KUMA_DIAGNOSTICS_TLS_ENABLED":                                                             "true",
