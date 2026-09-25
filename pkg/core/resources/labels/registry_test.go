@@ -9,11 +9,62 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/labels"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
-var _ = Describe("AllComputedLabels", func() {
-	// The OpenAPI spec documents every computed label under Meta.labels. Nothing
+var _ = Describe("Registry", func() {
+	It("should only register reserved keys, each once", func() {
+		seen := map[string]struct{}{}
+		for _, d := range labels.Registry {
+			Expect(d.Key).To(Or(HavePrefix("kuma.io/"), HavePrefix("k8s.kuma.io/")), d.Key)
+			Expect(seen).ToNot(HaveKey(d.Key), d.Key)
+			seen[d.Key] = struct{}{}
+		}
+	})
+
+	It("should compute every control-plane-owned label", func() {
+		for _, d := range labels.Registry {
+			if d.Owner == labels.OwnerControlPlane {
+				Expect(d.Compute).ToNot(BeNil(), d.Key)
+			}
+		}
+	})
+
+	It("should not check ownership of user-owned labels", func() {
+		for _, d := range labels.Registry {
+			if d.Owner == labels.OwnerUser {
+				Expect(d.ValidateValue).To(BeNil(), d.Key)
+			}
+		}
+	})
+
+	It("should expose the keys the control plane writes as AllComputedLabels", func() {
+		var keys []string
+		for _, d := range labels.Registry {
+			if d.Compute != nil {
+				keys = append(keys, d.Key)
+			}
+		}
+		var computed []string
+		for label := range labels.AllComputedLabels {
+			computed = append(computed, label)
+		}
+		Expect(computed).To(ConsistOf(keys))
+	})
+
+	It("should store the name-carrying labels as annotations", func() {
+		Expect(labels.AnnotationBacked()).To(ConsistOf(
+			mesh_proto.DisplayName,
+			metadata.KumaServiceAccount,
+			metadata.KumaWorkload,
+		))
+	})
+})
+
+var _ = Describe("Registry", func() {
+	// The OpenAPI spec documents every registered label under Meta.labels. Nothing
 	// forces the two to agree, so they drift silently as labels come and go.
 	It("should match the labels documented in the OpenAPI spec", func() {
 		specPath := filepath.Join("..", "..", "..", "..", "api", "openapi", "specs", "common", "resource.yaml")
@@ -42,11 +93,11 @@ var _ = Describe("AllComputedLabels", func() {
 			documented = append(documented, label)
 		}
 
-		var computed []string
-		for label := range labels.AllComputedLabels {
-			computed = append(computed, label)
+		var registered []string
+		for _, d := range labels.Registry {
+			registered = append(registered, d.Key)
 		}
 
-		Expect(documented).To(ConsistOf(computed))
+		Expect(documented).To(ConsistOf(registered))
 	})
 })

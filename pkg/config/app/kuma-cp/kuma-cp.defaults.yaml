@@ -70,8 +70,6 @@ store:
       ratio: 100 # ENV: KUMA_STORE_POSTGRES_READ_REPLICA_RATIO
   # Cache for read only operations. This cache is local to the instance of the control plane.
   cache:
-    # If true then cache is enabled
-    enabled: true # ENV: KUMA_STORE_CACHE_ENABLED
     # Expiration time for elements in cache.
     expirationTime: 1s # ENV: KUMA_STORE_CACHE_EXPIRATION_TIME
   # Upsert (get and update) configuration
@@ -137,7 +135,7 @@ monitoringAssignmentServer:
 # Envoy XDS server configuration
 xdsServer:
   # Interval for re-genarting configuration for Dataplanes connected to the Control Plane
-  dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
+  dataplaneConfigurationRefreshInterval: 10s # ENV: KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
   # Interval for flushing status of Dataplanes connected to the Control Plane
   dataplaneStatusFlushInterval: 10s # ENV: KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL
   # Maximum number of policy matching results kept in the shared Dataplane xDS reconciliation cache. Set to 0 to disable.
@@ -469,6 +467,9 @@ defaults:
   skipTenantResources: false # ENV: KUMA_DEFAULTS_SKIP_TENANT_RESOURCES
   # If true, it skips creating default hostname generators
   skipHostnameGenerators: false # ENV: KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS
+  # If true, a data plane proxy without reachableBackends can reach every destination in the mesh, and one without MeshPassthrough keeps outbound passthrough.
+  # Insecure: restores the legacy behavior where outbound traffic is allowed by default.
+  allowAllOutbound: false # ENV: KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND
 # Metrics configuration
 metrics:
   dataplane:
@@ -591,6 +592,29 @@ multizone:
         # Defines whether tracing is enabled for all gRPC methods
         # of GlobalKDSServer and KDSSyncService or completely disabled
         enabled: true # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TRACING_ENABLED
+      # Authentication of Zone CPs connecting to Global CP
+      auth:
+        # Type of authentication. Available values: "none", "zoneToken", plus the types a distribution adds.
+        # With "zoneToken" every Zone CP has to present a Zone Token generated with `kumactl generate zone-token --zone=<zone> --scope=cp`
+        type: none # ENV: KUMA_MULTIZONE_GLOBAL_KDS_AUTH_TYPE
+        # Configuration of the "zoneToken" authentication type
+        zoneToken:
+          # If true the Global CP issues Zone Tokens over its API.
+          # Set it to false when all the tokens are signed offline with the private key.
+          enableIssuer: true # ENV: KUMA_MULTIZONE_GLOBAL_KDS_AUTH_ZONE_TOKEN_ENABLE_ISSUER
+          # Zone Token validator configuration
+          validator:
+            # If true then Kuma secrets with prefix "zone-token-signing-key" are considered as signing keys.
+            useSecrets: true # ENV: KUMA_MULTIZONE_GLOBAL_KDS_AUTH_ZONE_TOKEN_VALIDATOR_USE_SECRETS
+            # List of public keys used to validate the token. Example:
+            # - kid: 1
+            #   key: |
+            #     -----BEGIN RSA PUBLIC KEY-----
+            #     MIIBCgKCAQEAq....
+            #     -----END RSA PUBLIC KEY-----
+            # - kid: 2
+            #   keyFile: /keys/public.pem
+            publicKeys: []
   zone:
     # Kuma Zone name used to mark the zone dataplane resources
     name: "default" # ENV: KUMA_MULTIZONE_ZONE_NAME
@@ -622,6 +646,12 @@ multizone:
         fullResyncInterval: 1m # ENV: KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_FULL_RESYNC_INTERVAL
         # If true, the initial full resync is delayed by a random duration up to FullResyncInterval.
         delayFullResync: true # ENV: KUMA_MULTIZONE_ZONE_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC
+      # Credentials Zone CP presents to Global CP. Requires grpcs scheme in globalAddress.
+      auth:
+        # Zone Token provided as a string
+        tokenInline: "" # ENV: KUMA_MULTIZONE_ZONE_KDS_AUTH_TOKEN_INLINE
+        # Path to a file with a Zone Token. The file is read on every new KDS stream, so the token can be rotated without a restart.
+        tokenPath: "" # ENV: KUMA_MULTIZONE_ZONE_KDS_AUTH_TOKEN_PATH
 # Diagnostics configuration
 diagnostics:
   # Port of Diagnostic Server for checking health and readiness of the Control Plane
@@ -692,28 +722,6 @@ dpServer:
           #     -----END RSA PUBLIC KEY-----
           # - kid: 2
           #   mesh: demo
-          #   keyFile: /keys/public.pem
-          publicKeys: []
-    # Configuration for zone proxy authentication.
-    zoneProxy:
-      # Type of authentication. Available values: "serviceAccountToken", "zoneToken", "none".
-      # If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "zoneToken" on Universal.
-      type: ""
-      # Configuration for zoneToken authentication method.
-      zoneToken:
-        # If true the control plane token issuer is enabled. It's recommended to set it to false when all the tokens are issued offline.
-        enableIssuer: true
-        # Zone Token validator configuration.
-        validator:
-          # If true then Kuma secrets with prefix "zone-token-signing-key" are considered as signing keys.
-          useSecrets: true
-          # List of public keys used to validate the token. Example:
-          # - kid: 1
-          #   key: |
-          #     -----BEGIN RSA PUBLIC KEY-----
-          #     MIIBCgKCAQEAq....
-          #     -----END RSA PUBLIC KEY-----
-          # - kid: 2
           #   keyFile: /keys/public.pem
           publicKeys: []
     # If true then Envoy uses Google gRPC instead of Envoy gRPC which lets a proxy reload the auth data (service account token, dp token etc.) stored in the file without proxy restart.

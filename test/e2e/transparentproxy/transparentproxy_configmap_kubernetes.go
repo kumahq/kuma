@@ -35,6 +35,7 @@ func TransparentProxyConfigMap() {
 				WithCtlOpts(map[string]string{
 					"--set": fmt.Sprintf("%stransparentProxy.configMap.enabled=true", Config.HelmSubChartPrefix),
 				}),
+				WithEnv(AllowAllOutboundEnv, "false"),
 			))
 		}, "90s", "3s").Should(Succeed())
 
@@ -49,6 +50,14 @@ func TransparentProxyConfigMap() {
 				democlient.Install(
 					democlient.WithMesh(meshName),
 					democlient.WithNamespace(namespace),
+				),
+				democlient.Install(
+					democlient.WithName("demo-client-reachable"),
+					democlient.WithMesh(meshName),
+					democlient.WithNamespace(namespace),
+					democlient.WithPodAnnotations(map[string]string{
+						metadata.KumaReachableBackends: fmt.Sprintf(`{"refs":[{"kind":"MeshService","labels":{"k8s.kuma.io/namespace":%q}}]}`, namespace),
+					}),
 				),
 				testserver.Install(
 					testserver.WithMesh(meshName),
@@ -115,13 +124,38 @@ func TransparentProxyConfigMap() {
 		Expect(stdout).ToNot(ContainSubstring(`"transparentProxying":`))
 	})
 
-	It("should be able to connect to test-server", func() {
+	It("should generate outbounds only from reachableBackends", func() {
+		inspectConfig := func(podName string) (string, error) {
+			return cluster.GetKumactlOptions().RunKumactlAndGetOutput(
+				"inspect",
+				"dataplane",
+				"--type=config",
+				fmt.Sprintf("--mesh=%s", meshName),
+				fmt.Sprintf("%s.%s", podName, namespace),
+			)
+		}
+		testServerOutbound := fmt.Sprintf("_%s_test-server_main", namespace)
+
+		reachablePod, err := PodOfApp(cluster, "demo-client-reachable", namespace)
+		Expect(err).ToNot(HaveOccurred())
+		Eventually(func(g Gomega) {
+			stdout, err := inspectConfig(reachablePod.Name)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(stdout).To(ContainSubstring(testServerOutbound))
+		}, "30s", "1s").Should(Succeed())
+
+		stdout, err := inspectConfig(demoClientPod.Name)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).ToNot(ContainSubstring(testServerOutbound))
+	})
+
+	It("should be able to connect to test-server from reachableBackends", func() {
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				cluster,
-				"demo-client",
+				"demo-client-reachable",
 				"test-server",
-				client.FromKubernetesPod(namespace, "demo-client"),
+				client.FromKubernetesPod(namespace, "demo-client-reachable"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())

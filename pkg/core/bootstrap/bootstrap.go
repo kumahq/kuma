@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/url"
 
 	"github.com/pkg/errors"
 
@@ -11,6 +12,7 @@ import (
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/config/multizone"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/access"
 	config_manager "github.com/kumahq/kuma/v3/pkg/core/config/manager"
@@ -43,6 +45,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/intercp"
 	"github.com/kumahq/kuma/v3/pkg/intercp/catalog"
 	"github.com/kumahq/kuma/v3/pkg/intercp/envoyadmin"
+	kds_auth "github.com/kumahq/kuma/v3/pkg/kds/auth"
 	kds_context "github.com/kumahq/kuma/v3/pkg/kds/context"
 	kds_envoyadmin "github.com/kumahq/kuma/v3/pkg/kds/envoyadmin"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
@@ -139,6 +142,9 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 	builder.WithDpServer(dpServer)
 	resourceManager := builder.ResourceManager()
 	kdsContext := kds_context.DefaultContext(appCtx, builder.ReadOnlyResourceManager(), cfg)
+	if err := configureKDSAuth(kdsContext, builder.ReadOnlyResourceManager(), cfg); err != nil {
+		return nil, errors.Wrap(err, "could not configure KDS authentication")
+	}
 	builder.WithKDSContext(kdsContext)
 	builder.WithInterCPClientPool(intercp.DefaultClientPool(int(cfg.Multizone.Global.KDS.MaxMsgSize)))
 
@@ -218,6 +224,9 @@ func buildRuntime(appCtx context.Context, cfg kuma_cp.Config) (core_runtime.Runt
 func logWarnings(config kuma_cp.Config) {
 	if config.ApiServer.Authn.LocalhostIsAdmin {
 		log.Info("WARNING: you can access Control Plane API as admin by sending requests from the same machine where Control Plane runs. To increase security, it is recommended to extract admin credentials and set KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN to false.")
+	}
+	if config.Defaults.AllowAllOutbound {
+		log.Info("WARNING: KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND is enabled. Data plane proxies without reachableBackends can send traffic to every destination in the mesh and receive configuration for all of them, which increases control plane and proxy CPU and memory usage in large meshes. Data plane proxies without MeshPassthrough can send traffic to any address outside the mesh. To increase security and performance, define reachableBackends on data plane proxies, use MeshPassthrough or MeshExternalService for external traffic, and set KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND to false.")
 	}
 }
 
@@ -350,13 +359,11 @@ func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 
 func initializeGlobalInsightService(cfg kuma_cp.Config, builder *core_runtime.Builder) {
 	globalInsightService := globalinsight.NewDefaultGlobalInsightService(builder.ResourceStore())
-	if cfg.Store.Cache.Enabled {
-		globalInsightService = globalinsight.NewCachedGlobalInsightService(
-			globalInsightService,
-			builder.Tenants(),
-			cfg.Store.Cache.ExpirationTime.Duration,
-		)
-	}
+	globalInsightService = globalinsight.NewCachedGlobalInsightService(
+		globalInsightService,
+		builder.Tenants(),
+		cfg.Store.Cache.ExpirationTime.Duration,
+	)
 
 	builder.WithGlobalInsightService(globalInsightService)
 }
@@ -450,20 +457,16 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 	builder.WithResourceManager(customizableManager)
 
-	if builder.Config().Store.Cache.Enabled {
-		cachedManager, err := core_manager.NewCachedManager(
-			customizableManager,
-			builder.Config().Store.Cache.ExpirationTime.Duration,
-			builder.Metrics(),
-			builder.Tenants(),
-		)
-		if err != nil {
-			return err
-		}
-		builder.WithReadOnlyResourceManager(cachedManager)
-	} else {
-		builder.WithReadOnlyResourceManager(customizableManager)
+	cachedManager, err := core_manager.NewCachedManager(
+		customizableManager,
+		builder.Config().Store.Cache.ExpirationTime.Duration,
+		builder.Metrics(),
+		builder.Tenants(),
+	)
+	if err != nil {
+		return err
 	}
+	builder.WithReadOnlyResourceManager(cachedManager)
 	return nil
 }
 
@@ -472,7 +475,9 @@ func initializeConfigManager(builder *core_runtime.Builder) {
 }
 
 func initializeMeshCache(builder *core_runtime.Builder) error {
-	var mcbOpts []xds_context.MeshContextBuilderOption
+	mcbOpts := []xds_context.MeshContextBuilderOption{
+		xds_context.WithAllowAllOutbound(builder.Config().Defaults.AllowAllOutbound),
+	}
 	if builder.Config().XdsServer.PolicyMatchingCacheSize > 0 {
 		mcbOpts = append(mcbOpts, xds_context.WithPolicyMatchingHash())
 	}
@@ -504,10 +509,39 @@ func initializeTokenIssuers(builder *core_runtime.Builder) {
 	} else {
 		issuers.DataplaneToken = issuer.DisabledIssuer{}
 	}
-	if builder.Config().DpServer.Authn.ZoneProxy.ZoneToken.EnableIssuer {
+	if builder.Config().Multizone.Global.KDS.Auth.ZoneToken.EnableIssuer {
 		issuers.ZoneToken = builtin.NewZoneTokenIssuer(builder.ResourceManager())
 	} else {
 		issuers.ZoneToken = zone2.DisabledIssuer{}
 	}
 	builder.WithTokenIssuers(issuers)
+}
+
+func configureKDSAuth(kdsContext *kds_context.Context, resManager core_manager.ReadOnlyResourceManager, cfg kuma_cp.Config) error {
+	switch cfg.Mode {
+	case config_core.Global:
+		authCfg := cfg.Multizone.Global.KDS.Auth
+		if authCfg.Type != multizone.KDSAuthZoneToken {
+			return nil
+		}
+		validator, err := builtin.NewZoneTokenValidator(resManager, cfg.Store.Type, authCfg.ZoneToken.Validator)
+		if err != nil {
+			return err
+		}
+		return kdsContext.RegisterZoneAuthenticator(multizone.KDSAuthZoneToken, kds_auth.NewZoneTokenAuthenticator(validator))
+	case config_core.Zone:
+		authCfg := cfg.Multizone.Zone.KDS.Auth
+		if !authCfg.HasToken() || !cfg.IsFederatedZoneCP() {
+			return nil
+		}
+		if u, err := url.Parse(cfg.Multizone.Zone.GlobalAddress); err == nil && u.Scheme != "grpcs" {
+			return errors.New("zone token cannot be sent over a plaintext connection. Use grpcs scheme in multizone.zone.globalAddress")
+		}
+		// fail on startup instead of on the first KDS stream
+		if _, err := authCfg.LoadToken(); err != nil {
+			return err
+		}
+		kdsContext.ZoneCredentials = kds_auth.NewTokenCredentials(authCfg.LoadToken, true)
+	}
+	return nil
 }

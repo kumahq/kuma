@@ -35,7 +35,7 @@ func NewInspectCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	inspectCmd.AddCommand(newInspectZonesCmd(pctx))
 	inspectCmd.AddCommand(newInspectMeshesCmd(pctx))
 
-	for _, desc := range registry.Global().ObjectDescriptors(core_model.AllowedToInspect()) {
+	for _, desc := range registry.Global().ObjectDescriptors(core_model.IsPolicy()) {
 		inspectCmd.AddCommand(newInspectPolicyCmd(desc, pctx))
 	}
 	return inspectCmd

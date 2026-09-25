@@ -45,3 +45,6 @@ spec:
       targetPort: 80
       appProtocol: http
       name: main-port
+status:
+  vips:
+    - ip: 240.0.0.1

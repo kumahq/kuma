@@ -62,19 +62,16 @@ func (p *PodConverter) PodToDataplane(
 		return err
 	}
 
-	labels, err := resource_labels.Compute(
-		core_mesh.DataplaneResourceTypeDescriptor,
-		dataplaneProto,
-		mergeLabels(dataplane.GetLabels(), pod.Labels, nodeLabels),
-		dataplane.Mesh,
-		dataplane.Name,
-		resource_labels.WithNamespace(resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace)),
-		resource_labels.WithMode(p.Mode),
-		resource_labels.WithK8s(true),
-		resource_labels.WithZone(p.Zone),
-		resource_labels.WithServiceAccount(pod.Spec.ServiceAccountName),
-		resource_labels.WithWorkload(workloadName),
-	)
+	labels, err := resource_labels.Compute(resource_labels.Write{
+		Descriptor:     core_mesh.DataplaneResourceTypeDescriptor,
+		Spec:           dataplaneProto,
+		Namespace:      resource_labels.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
+		Mesh:           dataplane.Mesh,
+		DisplayName:    dataplane.Name,
+		Labels:         mergeLabels(dataplane.GetLabels(), pod.Labels, nodeLabels),
+		ServiceAccount: pod.Spec.ServiceAccountName,
+		Workload:       workloadName,
+	}, resource_labels.ControlPlane{Mode: p.Mode, Zone: p.Zone, IsK8s: true})
 	if err != nil {
 		return err
 	}
@@ -92,10 +89,8 @@ func processReachableBackendRefs(refs ReachableBackendRefs) []*mesh_proto.Datapl
 
 	for _, ref := range refs.Refs {
 		backendRef := &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
-			Kind:      ref.Kind,
-			Name:      pointer.Deref(ref.Name),
-			Namespace: pointer.Deref(ref.Namespace),
-			Labels:    ref.Labels,
+			Kind:   ref.Kind,
+			Labels: ref.Labels,
 		}
 
 		if ref.Port != nil {
@@ -129,8 +124,9 @@ func (p *PodConverter) dataplaneFor(
 
 	if v, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
 		var refs ReachableBackendRefs
-		if err := yaml.Unmarshal([]byte(v), &refs); err != nil {
-			return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
+		// strict, so refs still using the removed name/namespace fields fail loudly
+		if err := yaml.UnmarshalStrict([]byte(v), &refs); err != nil {
+			return nil, errors.Wrapf(err, "cannot parse, %s has invalid format", metadata.KumaReachableBackends)
 		}
 
 		tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
@@ -138,10 +134,26 @@ func (p *PodConverter) dataplaneFor(
 		}
 	}
 
+	// Only a pod injected before 3.0 carries these, and only such a pod needs
+	// them: its sidecar reports no transparent proxy configuration of its own.
+	if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation); err != nil {
+		return nil, err
+	} else if ok {
+		tp.RedirectPortInbound = v //nolint:staticcheck // deprecated on purpose
+	}
+
+	if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation); err != nil {
+		return nil, err
+	} else if ok {
+		tp.RedirectPortOutbound = v //nolint:staticcheck // deprecated on purpose
+	}
+
 	// Avoid setting an empty TransparentProxying object by checking if any fields are set.
 	// Only assign it if at least one relevant field has a non-zero or non-nil value.
 	if tp.DirectAccessServices != nil ||
-		tp.ReachableBackends != nil {
+		tp.ReachableBackends != nil ||
+		tp.GetRedirectPortInbound() != 0 || //nolint:staticcheck // deprecated on purpose
+		tp.GetRedirectPortOutbound() != 0 { //nolint:staticcheck // deprecated on purpose
 		dataplane.Networking.TransparentProxying = &tp
 	}
 
@@ -296,9 +308,7 @@ type ReachableBackendRefs struct {
 }
 
 type ReachableBackendRef struct {
-	Kind      string            `json:"kind,omitempty"`
-	Name      *string           `json:"name,omitempty"`
-	Namespace *string           `json:"namespace,omitempty"`
-	Port      *uint32           `json:"port,omitempty"`
-	Labels    map[string]string `json:"labels,omitempty"`
+	Kind   string            `json:"kind,omitempty"`
+	Port   *uint32           `json:"port,omitempty"`
+	Labels map[string]string `json:"labels,omitempty"`
 }

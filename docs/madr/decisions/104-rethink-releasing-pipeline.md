@@ -1,3 +1,12 @@
+---
+title: Rethink the releasing pipeline to release faster
+status: accepted
+date: 2026-07-10
+tags: [release, ci, github-actions, supply-chain]
+summary: A tag re-runs the full e2e matrix that already passed on the identical release-branch SHA; skipping unit and e2e on tags, guarding on a green published SHA, cuts release runs from ~100-220m to ~20-30m.
+related: [091-migrate-to-v2-module-path]
+---
+
 # Rethink the releasing pipeline to release faster
 
 - Status: accepted

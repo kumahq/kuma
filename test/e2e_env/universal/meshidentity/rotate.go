@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/channels"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
+	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
 	"github.com/kumahq/kuma/v3/test/framework/envs/universal"
 )
 
@@ -96,13 +97,20 @@ spec:
 			Setup(universal.Cluster)).To(Succeed())
 
 		// given
-		// communication works
+		// communication works over mTLS. The server enforces mTLS as soon as it
+		// gets its identity, but the client switches its outbound cluster to TLS
+		// only after the MeshService TLS status is updated; until then requests
+		// can still pass on pooled plaintext connections.
+		clientAdmin := universal.Cluster.GetApp("rotate-demo-client").GetEnvoyAdminTunnel()
 		Eventually(func(g Gomega) {
 			response, err := client.CollectEchoResponse(
 				universal.Cluster, "rotate-demo-client", "test-server.svc.mesh.local",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(Equal("rotate-test-server"))
+			s, err := clientAdmin.GetStats("cluster.*test-server_80.ssl.handshake")
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(s).To(stats.BeGreaterThanZero())
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		// and
@@ -188,6 +196,16 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(ready).To(BeTrue())
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+
+		// and
+		// every proxy has picked up the bundle holding both CAs. A MeshIdentity is
+		// reported ready as soon as the control plane reconciles it, but proxies only
+		// learn about it on their next xDS refresh. Removing the old CA before that
+		// takes a proxy straight from trusting the old CA to trusting the new one,
+		// and it loses mTLS against peers that sit on the other side of the switch.
+		Consistently(func(g Gomega) {
+			g.Expect(reqError.Load()).To(BeNil())
+		}, "20s", "1s").Should(Succeed())
 
 		// when
 		// old identity is removed

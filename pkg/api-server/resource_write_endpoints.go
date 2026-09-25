@@ -31,7 +31,7 @@ func (r *resourceCrudHandler) createOrUpdateResource(request *restful.Request) (
 		return nil, withTitle(err, "Could not process a resource")
 	}
 
-	resourceRest, err := rest.JSON.Unmarshal(bodyBytes, r.descriptor)
+	resourceRest, err := rest.JSON.UnmarshalStrict(bodyBytes, r.descriptor)
 	if err != nil {
 		return nil, withTitle(err, "Could not process a resource")
 	}
@@ -76,29 +76,6 @@ func clearMeshTrustOrigin(resRest rest.Resource, meshName string, name string) {
 	}
 }
 
-// computeLabels derives the full label set for a resource from its descriptor,
-// spec and meta, applying the control-plane mode, zone, k8s and namespace context
-// shared by create and update.
-func (r *resourceCrudHandler) computeLabels(
-	descriptor core_model.ResourceTypeDescriptor,
-	spec core_model.ResourceSpec,
-	meta core_model.ResourceMeta,
-	meshName string,
-	name string,
-) (map[string]string, error) {
-	return resource_labels.Compute(
-		descriptor,
-		spec,
-		meta.GetLabels(),
-		meshName,
-		name,
-		resource_labels.WithNamespace(resource_labels.GetNamespace(meta, r.systemNamespace)),
-		resource_labels.WithMode(r.mode),
-		resource_labels.WithK8s(r.isK8s),
-		resource_labels.WithZone(r.zoneName),
-	)
-}
-
 func (r *resourceCrudHandler) createResource(
 	ctx context.Context,
 	name string,
@@ -121,7 +98,14 @@ func (r *resourceCrudHandler) createResource(
 	_ = res.SetSpec(resRest.GetSpec())
 	res.SetMeta(resRest.GetMeta())
 
-	labels, err := r.computeLabels(res.Descriptor(), res.GetSpec(), res.GetMeta(), meshName, name)
+	labels, err := resource_labels.Compute(resource_labels.Write{
+		Descriptor:  r.descriptor,
+		Spec:        res.GetSpec(),
+		Namespace:   resource_labels.GetNamespace(res.GetMeta(), r.systemNamespace),
+		Mesh:        meshName,
+		DisplayName: name,
+		Labels:      res.GetMeta().GetLabels(),
+	}, r.cp)
 	if err != nil {
 		return nil, withTitle(err, "Could not compute labels for a resource")
 	}
@@ -161,7 +145,14 @@ func (r *resourceCrudHandler) updateResource(
 
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 
-	labels, err := r.computeLabels(currentRes.Descriptor(), currentRes.GetSpec(), newResRest.GetMeta(), meshName, currentRes.GetMeta().GetName())
+	labels, err := resource_labels.Compute(resource_labels.Write{
+		Descriptor:  r.descriptor,
+		Spec:        currentRes.GetSpec(),
+		Namespace:   resource_labels.GetNamespace(newResRest.GetMeta(), r.systemNamespace),
+		Mesh:        meshName,
+		DisplayName: currentRes.GetMeta().GetName(),
+		Labels:      newResRest.GetMeta().GetLabels(),
+	}, r.cp)
 	if err != nil {
 		return nil, withTitle(err, "Could not compute labels for a resource")
 	}

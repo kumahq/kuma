@@ -34,6 +34,7 @@ import (
 	config_types "github.com/kumahq/kuma/v3/pkg/config/types"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	resources_access "github.com/kumahq/kuma/v3/pkg/core/resources/access"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
@@ -164,6 +165,7 @@ func NewApiServer(
 		ws,
 		defs,
 		rt.ResourceManager(),
+		rt.ReadOnlyResourceManager(),
 		cfg,
 		rt.Access().ResourceAccess,
 		rt.GlobalInsightService(),
@@ -172,7 +174,7 @@ func NewApiServer(
 		rt.RouteMetadataProvider(),
 	)
 	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
-	addInspectEndpoints(ws, rt.ResourceManager(), rt.Access().ResourceAccess)
+	addInspectEndpoints(ws, rt.ReadOnlyResourceManager(), rt.Access().ResourceAccess)
 	addInspectEnvoyAdminEndpoints(ws, rt.ResourceManager(), rt.Access().EnvoyAdminAccess, rt.EnvoyAdminClient())
 	addInspectMeshServiceEndpoints(ws, rt.ResourceManager(), cfg.Mode == config_core.Global)
 	guiUrl := ""
@@ -339,6 +341,7 @@ func addResourcesEndpoints(
 	ws *restful.WebService,
 	defs []model.ResourceTypeDescriptor,
 	resManager manager.ResourceManager,
+	readOnlyResManager manager.ReadOnlyResourceManager,
 	cfg *kuma_cp.Config,
 	resourceAccess resources_access.ResourceAccess,
 	globalInsightService globalinsight.GlobalInsightService,
@@ -347,7 +350,7 @@ func addResourcesEndpoints(
 	routeMetadataProvider runtime.RouteMetadataProvider,
 ) {
 	globalInsightsEndpoints := globalInsightsEndpoints{
-		resManager:     resManager,
+		resManager:     readOnlyResManager,
 		resourceAccess: resourceAccess,
 	}
 	globalInsightsEndpoints.addEndpoint(ws)
@@ -357,7 +360,7 @@ func addResourcesEndpoints(
 	}
 	globalInsightEndpoint.addEndpoint(ws)
 
-	newDataplaneLayoutEndpoint(resManager, meshContextBuilder, resourceAccess, cfg.Multizone.Zone.Name, cfg.Environment).addEndpoint(ws)
+	newDataplaneLayoutEndpoint(readOnlyResManager, meshContextBuilder, resourceAccess, cfg.Multizone.Zone.Name, cfg.Environment).addEndpoint(ws)
 
 	var k8sMapper k8s.ResourceMapperFunc
 	var k8sSecretMapper k8s.ResourceMapperFunc
@@ -390,13 +393,13 @@ func addResourcesEndpoints(
 			resourceCrudHandler: &resourceCrudHandler{
 				resourceEndpointsContext: endpointsCtx,
 				k8sMapper:                k8sMapperForDescriptor(definition, k8sMapper, k8sSecretMapper),
-				federatedZone:            cfg.IsFederatedZoneCP(),
+				cp:                       resource_labels.ControlPlaneFromConfig(*cfg),
 				filter:                   filters.Resource(definition),
 				systemNamespace:          cfg.Store.Kubernetes.SystemNamespace,
-				isK8s:                    cfg.Environment == config_core.KubernetesEnvironment,
 			},
 			inspect: &resourceInspectHandler{
 				resourceEndpointsContext: endpointsCtx,
+				readOnlyResManager:       readOnlyResManager,
 				meshContextBuilder:       meshContextBuilder,
 				xdsHooks:                 xdsHooks,
 				knownInternalAddresses:   cfg.IPAM.KnownInternalCIDRs,
@@ -567,10 +570,14 @@ func SetupServer(rt runtime.Runtime) error {
 	apiServer, err := NewApiServer(
 		rt,
 		xds_context.NewMeshContextBuilder(
-			rt.ResourceManager(),
+			// Read through the cached read-only manager so hot inspection
+			// endpoints (_rules, _policies, dataplane layout) don't hit the
+			// store on every request. Mirrors initializeMeshCache in bootstrap.
+			rt.ReadOnlyResourceManager(),
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
+			xds_context.WithAllowAllOutbound(cfg.Defaults.AllowAllOutbound),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

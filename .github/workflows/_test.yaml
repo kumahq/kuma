@@ -18,8 +18,8 @@ permissions:
 env:
   CI_TOOLS_DIR: ${{ github.workspace }}/.ci_tools
   # This is automatically managed by CI
-  K8S_MIN_VERSION: v1.34.9-k3s1
-  K8S_MAX_VERSION: v1.35.3-k3s1
+  K8S_MIN_VERSION: v1.34.11-k3s1
+  K8S_MAX_VERSION: v1.37.0-k3s1
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold,aqua:stackrox/kube-linter"
 jobs:
   test_unit:
@@ -43,7 +43,7 @@ jobs:
           fetch-depth: 0
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.9.0
+          version: 2026.9.3
         env:
           GITHUB_TOKEN: ${{ github.token }}
       # Module contents are a pure function of go.sum, so one immutable entry

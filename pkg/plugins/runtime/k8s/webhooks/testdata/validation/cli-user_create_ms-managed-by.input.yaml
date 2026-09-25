@@ -1,0 +1,19 @@
+# user=cli-user,operation=CREATE,namespace=my-custom-app-ns
+apiVersion: kuma.io/v1alpha1
+kind: MeshService
+metadata:
+  name: redis
+  labels:
+    kuma.io/mesh: default
+    kuma.io/managed-by: k8s-controller
+    k8s.kuma.io/service-name: redis
+    k8s.kuma.io/is-headless-service: "false"
+spec:
+  selector:
+    dataplaneLabels:
+      matchLabels:
+        app: redis
+  ports:
+    - port: 6739
+      targetPort: 6739
+      appProtocol: tcp

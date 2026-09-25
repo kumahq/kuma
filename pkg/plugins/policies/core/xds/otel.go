@@ -122,7 +122,7 @@ func resolvedFromSpec(backend *motb_api.MeshOpenTelemetryBackendResource) *Resol
 }
 
 // resolveBackendResourceByLabels matches all labels and picks the oldest on collision.
-// Same strategy as DestinationIndex.resolveResourceIdentifier.
+// Same strategy as DestinationIndex.ResolveResourceIdentifier.
 func resolveBackendResourceByLabels(
 	resources xds_context.Resources,
 	labels map[string]string,

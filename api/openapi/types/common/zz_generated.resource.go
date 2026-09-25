@@ -160,9 +160,11 @@ type Meta struct {
 	// Labels Labels of the resource.
 	//
 	// Labels documented as `readOnly` are always computed by the control plane; a value supplied by the
-	// user is overwritten. The remaining documented labels can be set by the user, and the control plane
-	// only fills in a default when they are absent. `kuma.io/origin` and `kuma.io/zone` are immutable
-	// after creation.
+	// user is overwritten or rejected. The remaining documented labels can be set by the user, and the
+	// control plane only fills in a default when they are absent. `kuma.io/origin` and `kuma.io/zone` are
+	// immutable after creation.
+	//
+	// Every other key under `kuma.io/` or `k8s.kuma.io/` is reserved and rejected.
 	//
 	//
 	// Example: {"k8s.kuma.io/namespace":"kuma-system","kuma.io/display-name":"mtp","kuma.io/mesh":"default","kuma.io/origin":"zone"}

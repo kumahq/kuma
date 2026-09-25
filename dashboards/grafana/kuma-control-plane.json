@@ -2083,7 +2083,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "min(envoy_server_days_until_first_cert_expiring{mesh=\"$mesh\",kuma_io_zone=~\"$zone\"})",
+          "expr": "min(envoy_server_days_until_first_cert_expiring{mesh=\"$mesh\",zone=~\"$zone\"})",
           "legendFormat": "{{kuma_workload}}",
           "refId": "A",
           "instant": true
@@ -2160,7 +2160,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "expr": "min by (kuma_workload) ((envoy_listener_ssl_certificate_expiration_unix_time_seconds{mesh=\"$mesh\",kuma_io_zone=~\"$zone\",envoy_listener_address=~\"self_inbound_dp_.*\"} - time()) / 3600)",
+          "expr": "min by (kuma_workload) ((envoy_listener_ssl_certificate_expiration_unix_time_seconds{mesh=\"$mesh\",zone=~\"$zone\",envoy_listener_address=~\"self_inbound_dp_.*\"} - time()) / 3600)",
           "legendFormat": "{{kuma_workload}}",
           "refId": "A"
         }
@@ -3944,7 +3944,7 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+        "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, zone)",
         "hide": 0,
         "includeAll": true,
         "label": "Zone",
@@ -3953,7 +3953,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_zone)",
+          "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, zone)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 2,

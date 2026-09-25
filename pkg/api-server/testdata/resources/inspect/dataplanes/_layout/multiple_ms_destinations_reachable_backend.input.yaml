@@ -23,13 +23,17 @@ networking:
         kuma.io/display-name: foo
         kuma.io/protocol: tcp
   transparentProxying:
+    redirectPortInbound: 15006
+    redirectPortOutbound: 15001
     reachableBackends:
       refs:
         - kind: MeshService
-          name: test-server-1
+          labels:
+            kuma.io/display-name: test-server-1
           port: 80
         - kind: MeshService
-          name: test-server-2
+          labels:
+            kuma.io/display-name: test-server-2
 ---
 type: MeshService
 name: test-server-1
@@ -50,6 +54,9 @@ spec:
       targetPort: 8080
       appProtocol: tcp
       name: secondary-port
+status:
+  vips:
+    - ip: 240.0.0.1
 ---
 type: MeshService
 name: test-server-2
@@ -70,6 +77,9 @@ spec:
       targetPort: 8080
       appProtocol: http
       name: secondary-port
+status:
+  vips:
+    - ip: 240.0.0.2
 ---
 type: MeshService
 name: test-server-3
@@ -86,3 +96,6 @@ spec:
       targetPort: 80
       appProtocol: http
       name: main-port
+status:
+  vips:
+    - ip: 240.0.0.3

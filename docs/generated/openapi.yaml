@@ -6479,6 +6479,32 @@ components:
               description: >-
                 Set to `enabled` when the proxy has a zone egress listener.
                 Always computed by the control plane.
+            ^kuma\.io/managed-by$:
+              type: string
+              readOnly: true
+              description: >-
+                Component that generated the resource. Set by the control plane,
+                cannot be set manually.
+            ^kuma\.io/deletion-grace-period-started-at$:
+              type: string
+              readOnly: true
+              description: >-
+                When the control plane started the grace period before deleting
+                a generated `MeshService` no proxy serves. Set by the control
+                plane, cannot be set manually.
+            ^k8s\.kuma\.io/service-name$:
+              type: string
+              readOnly: true
+              description: >-
+                Kubernetes `Service` a generated `MeshService` is derived from.
+                Set by the control plane, cannot be set manually.
+            ^k8s\.kuma\.io/is-headless-service$:
+              type: string
+              readOnly: true
+              description: >-
+                Whether the Kubernetes `Service` a generated `MeshService` is
+                derived from is headless. Set by the control plane, cannot be
+                set manually.
             ^kuma\.io/mesh$:
               type: string
               description: Mesh the resource belongs to. Defaults to `default` when unset.
@@ -6492,6 +6518,21 @@ components:
               description: >-
                 Environment the resource was applied in. Defaults to `universal`
                 or `kubernetes` when unset.
+            ^kuma\.io/kds-sync$:
+              type: string
+              enum:
+                - enabled
+                - disabled
+              description: >-
+                Whether the resource is synced to the other control planes over
+                KDS. Overrides the default of its type.
+            ^kuma\.io/effect$:
+              type: string
+              enum:
+                - shadow
+              description: >-
+                Set to `shadow` on a policy to keep it out of the proxy
+                configuration while the Inspect API still reports it.
           example:
             k8s.kuma.io/namespace: kuma-system
             kuma.io/display-name: mtp
@@ -6504,13 +6545,17 @@ components:
             Labels documented as `readOnly` are always computed by the control
             plane; a value supplied by the
 
-            user is overwritten. The remaining documented labels can be set by
-            the user, and the control plane
+            user is overwritten or rejected. The remaining documented labels can
+            be set by the user, and the
 
-            only fills in a default when they are absent. `kuma.io/origin` and
-            `kuma.io/zone` are immutable
+            control plane only fills in a default when they are absent.
+            `kuma.io/origin` and `kuma.io/zone` are
 
-            after creation.
+            immutable after creation.
+
+
+            Every other key under `kuma.io/` or `k8s.kuma.io/` is reserved and
+            rejected.
     ProxyRule:
       description: a rule that affects the entire proxy
       type: object
@@ -7353,8 +7398,10 @@ components:
                     explicit list of refs can dramatically improve the
                     performance of the
 
-                    mesh. If not specified, all services in the mesh are
-                    reachable.
+                    mesh. If not specified, no services in the mesh are
+                    reachable, unless
+
+                    the control plane sets KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND.
                   properties:
                     refs:
                       items:
@@ -7369,21 +7416,44 @@ components:
                               type: string
                             description: Labels used to select backends
                             type: object
-                          name:
-                            description: Name of the backend.
-                            type: string
-                          namespace:
-                            description: Namespace of the backend. Might be empty
-                            type: string
                           port:
                             description: Port of the backend.
                             format: uint32
                             type: integer
                         required:
                           - kind
+                          - labels
                         type: object
                       type: array
                   type: object
+                redirectPortInbound:
+                  description: >-
+                    Port on which all inbound traffic is being transparently
+                    redirected.
+
+
+                    Deprecated: read only for a proxy that sends no transparent
+                    proxy
+
+                    metadata, which means a sidecar injected before 3.0. Gone in
+                    3.1.
+
+
+                    Deprecated: Marked as deprecated in
+                    api/mesh/v1alpha1/dataplane.proto.
+                  type: integer
+                redirectPortOutbound:
+                  description: >-
+                    Port on which all outbound traffic is being transparently
+                    redirected.
+
+
+                    Deprecated: see `redirect_port_inbound`.
+
+
+                    Deprecated: Marked as deprecated in
+                    api/mesh/v1alpha1/dataplane.proto.
+                  type: integer
               type: object
           type: object
         type:
@@ -15813,8 +15883,10 @@ components:
                         explicit list of refs can dramatically improve the
                         performance of the
 
-                        mesh. If not specified, all services in the mesh are
-                        reachable.
+                        mesh. If not specified, no services in the mesh are
+                        reachable, unless
+
+                        the control plane sets KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND.
                       properties:
                         refs:
                           items:
@@ -15829,21 +15901,44 @@ components:
                                   type: string
                                 description: Labels used to select backends
                                 type: object
-                              name:
-                                description: Name of the backend.
-                                type: string
-                              namespace:
-                                description: Namespace of the backend. Might be empty
-                                type: string
                               port:
                                 description: Port of the backend.
                                 format: uint32
                                 type: integer
                             required:
                               - kind
+                              - labels
                             type: object
                           type: array
                       type: object
+                    redirectPortInbound:
+                      description: >-
+                        Port on which all inbound traffic is being transparently
+                        redirected.
+
+
+                        Deprecated: read only for a proxy that sends no
+                        transparent proxy
+
+                        metadata, which means a sidecar injected before 3.0.
+                        Gone in 3.1.
+
+
+                        Deprecated: Marked as deprecated in
+                        api/mesh/v1alpha1/dataplane.proto.
+                      type: integer
+                    redirectPortOutbound:
+                      description: >-
+                        Port on which all outbound traffic is being
+                        transparently redirected.
+
+
+                        Deprecated: see `redirect_port_inbound`.
+
+
+                        Deprecated: Marked as deprecated in
+                        api/mesh/v1alpha1/dataplane.proto.
+                      type: integer
                   type: object
               type: object
           type: object

@@ -276,6 +276,14 @@
         },
         "kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying": {
             "properties": {
+                "redirect_port_inbound": {
+                    "type": "integer",
+                    "description": "Port on which all inbound traffic is being transparently redirected. Deprecated: read only for a proxy that sends no transparent proxy metadata, which means a sidecar injected before 3.0. Gone in 3.1."
+                },
+                "redirect_port_outbound": {
+                    "type": "integer",
+                    "description": "Port on which all outbound traffic is being transparently redirected. Deprecated: see `redirect_port_inbound`."
+                },
                 "direct_access_services": {
                     "items": {
                         "type": "string"
@@ -286,7 +294,7 @@
                 "reachable_backends": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends",
                     "additionalProperties": true,
-                    "description": "Reachable backend via transparent proxy when running with MeshExternalService, MeshService and MeshMultiZoneService. Setting an explicit list of refs can dramatically improve the performance of the mesh. If not specified, all services in the mesh are reachable."
+                    "description": "Reachable backend via transparent proxy when running with MeshExternalService, MeshService and MeshMultiZoneService. Setting an explicit list of refs can dramatically improve the performance of the mesh. If not specified, no services in the mesh are reachable, unless the control plane sets KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND."
                 }
             },
             "additionalProperties": true,
@@ -299,14 +307,6 @@
                 "kind": {
                     "type": "string",
                     "description": "Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService"
-                },
-                "name": {
-                    "type": "string",
-                    "description": "Name of the backend."
-                },
-                "namespace": {
-                    "type": "string",
-                    "description": "Namespace of the backend. Might be empty"
                 },
                 "port": {
                     "additionalProperties": true,

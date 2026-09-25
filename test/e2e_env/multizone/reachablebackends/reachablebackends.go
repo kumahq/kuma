@@ -39,11 +39,12 @@ func ReachableBackends() {
 	reachableBackends := fmt.Sprintf(`
       refs:
       - kind: MeshService
-        name: first-test-server
-        namespace: %s
+        labels:
+          kuma.io/display-name: first-test-server
+          k8s.kuma.io/namespace: %s
       - kind: MeshExternalService
         labels:
-          kuma.io/access: external-service
+          access: external-service
       - kind: MeshMultiZoneService
         labels:
           reachable: "true"
@@ -89,7 +90,7 @@ type: MeshExternalService
 name: %s-reachable
 mesh: %s
 labels:
-  kuma.io/access: %s
+  access: %s
 spec:
   match:
     type: HostnameGenerator

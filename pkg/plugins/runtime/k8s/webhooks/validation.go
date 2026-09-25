@@ -14,6 +14,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/validator"
@@ -79,7 +80,7 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
-		if err := h.validateLabels(coreRes.GetMeta()); err.HasViolations() {
+		if err := h.validateLabels(coreRes, req.Namespace, h.isPrivilegedUser(h.AllowedUsers, req.UserInfo)); err.HasViolations() {
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
@@ -145,7 +146,7 @@ func (h *validatingHandler) decode(kind string, raw kube_runtime.RawExtension) (
 // writer, and the Global->Zone KDS stream then wedges on AlreadyExists.
 func (h *validatingHandler) validateOriginNotChanged(oldObj, newObj k8s_model.KubernetesObject) *admission.Response {
 	// a non-federated zone owns everything in its store
-	if h.Mode != core.Global && !h.FederatedZone {
+	if h.ControlPlane.Mode != core.Global && !h.ControlPlane.FederatedZone {
 		return nil
 	}
 	oldOrigin, ok := oldObj.GetLabels()[mesh_proto.ResourceOriginLabel]
@@ -161,14 +162,17 @@ func (h *validatingHandler) validateOriginNotChanged(oldObj, newObj k8s_model.Ku
 	return nil
 }
 
-func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validators.ValidationError {
+func (h *validatingHandler) validateLabels(r core_model.Resource, ns string, trustedWriter bool) validators.ValidationError {
 	var verr validators.ValidationError
-	labelsPath := validators.Root().Field("labels")
-	if origin, ok := core_model.ResourceOrigin(rm); ok {
-		if err := origin.IsValid(); err != nil {
-			verr.AddViolationAt(labelsPath.Key(mesh_proto.ResourceOriginLabel), err.Error())
-		}
-	}
+	verr.AddError("labels", resource_labels.ValidateFormat(resource_labels.Write{
+		Descriptor:    r.Descriptor(),
+		Spec:          r.GetSpec(),
+		Namespace:     resource_labels.NewNamespace(ns, ns == h.SystemNamespace),
+		Mesh:          r.GetMeta().GetMesh(),
+		DisplayName:   r.GetMeta().GetName(),
+		Labels:        r.GetMeta().GetLabels(),
+		TrustedWriter: trustedWriter,
+	}))
 	return verr
 }
 

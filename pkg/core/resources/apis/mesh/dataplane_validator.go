@@ -181,17 +181,8 @@ func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_Transparent
 			default:
 				result.AddViolationAt(path.Index(i).Field("kind"), fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
 			}
-			if backendRef.Name != "" {
-				result.AddErrorAt(path.Index(i).Field("name"), validateIdentifier(backendRef.Name, identifierRegexp, identifierErrMsg))
-			}
-			if backendRef.Name == "" && backendRef.Namespace == "" && len(backendRef.Labels) == 0 {
-				result.AddViolationAt(path.Index(i).Field("name"), "name or labels are required")
-			}
-			if backendRef.Name == "" && backendRef.Namespace != "" {
-				result.AddViolationAt(path.Index(i).Field("name"), "name is required, when namespace is defined")
-			}
-			if (backendRef.Name != "" || backendRef.Namespace != "") && len(backendRef.Labels) > 0 {
-				result.AddViolationAt(path.Index(i).Field("labels"), "labels cannot be defined when name is specified")
+			if len(backendRef.Labels) == 0 {
+				result.AddViolationAt(path.Index(i).Field("labels"), validators.MustNotBeEmpty)
 			}
 		}
 	}

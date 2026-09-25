@@ -114,6 +114,23 @@ components:
               type: string
               readOnly: true
               description: Set to `enabled` when the proxy has a zone egress listener. Always computed by the control plane.
+            # Written by control plane components on the resources they generate. A value supplied by the user is rejected.
+            '^kuma\.io/managed-by$':
+              type: string
+              readOnly: true
+              description: Component that generated the resource. Set by the control plane, cannot be set manually.
+            '^kuma\.io/deletion-grace-period-started-at$':
+              type: string
+              readOnly: true
+              description: When the control plane started the grace period before deleting a generated `MeshService` no proxy serves. Set by the control plane, cannot be set manually.
+            '^k8s\.kuma\.io/service-name$':
+              type: string
+              readOnly: true
+              description: Kubernetes `Service` a generated `MeshService` is derived from. Set by the control plane, cannot be set manually.
+            '^k8s\.kuma\.io/is-headless-service$':
+              type: string
+              readOnly: true
+              description: Whether the Kubernetes `Service` a generated `MeshService` is derived from is headless. Set by the control plane, cannot be set manually.
             # Can be set by the user. The control plane only fills in a default when the label is absent.
             '^kuma\.io/mesh$':
               type: string
@@ -124,6 +141,15 @@ components:
             '^kuma\.io/env$':
               type: string
               description: Environment the resource was applied in. Defaults to `universal` or `kubernetes` when unset.
+            # Set by the user only. The control plane validates the value and never fills one in.
+            '^kuma\.io/kds-sync$':
+              type: string
+              enum: [enabled, disabled]
+              description: Whether the resource is synced to the other control planes over KDS. Overrides the default of its type.
+            '^kuma\.io/effect$':
+              type: string
+              enum: [shadow]
+              description: Set to `shadow` on a policy to keep it out of the proxy configuration while the Inspect API still reports it.
           example:
             "k8s.kuma.io/namespace": "kuma-system"
             "kuma.io/display-name": "mtp"
@@ -133,9 +159,11 @@ components:
             Labels of the resource.
 
             Labels documented as `readOnly` are always computed by the control plane; a value supplied by the
-            user is overwritten. The remaining documented labels can be set by the user, and the control plane
-            only fills in a default when they are absent. `kuma.io/origin` and `kuma.io/zone` are immutable
-            after creation.
+            user is overwritten or rejected. The remaining documented labels can be set by the user, and the
+            control plane only fills in a default when they are absent. `kuma.io/origin` and `kuma.io/zone` are
+            immutable after creation.
+
+            Every other key under `kuma.io/` or `k8s.kuma.io/` is reserved and rejected.
     InspectRule:
       type: object
       required: [type]

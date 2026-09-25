@@ -63,6 +63,12 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 		return err
 	}
 
+	return FilterAndPaginate(fullList, list, opts)
+}
+
+// FilterAndPaginate copies the items of fullList that match opts (resource keys and filter func) into list,
+// sorted by mesh and name, and cuts the page described by opts. Items are added by reference, fullList is not modified.
+func FilterAndPaginate(fullList, list model.ResourceList, opts *ListOptions) error {
 	filteredList, err := registry.Global().NewList(list.GetItemType())
 	if err != nil {
 		return err
