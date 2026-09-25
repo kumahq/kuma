@@ -220,6 +220,16 @@ var _ = Describe("MeshTLS", func() {
 			workloadIdentity: workloadIdentity(),
 			ipFamilyMode:     "dualstack",
 		}),
+		Entry("strict with tls min version only = outbound max TLS13", testCase{
+			caseName:         "strict-with-tls-min-version-only",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: workloadIdentity(),
+		}),
+		Entry("strict with tls max version auto = outbound max TLS13", testCase{
+			caseName:         "strict-with-tls-max-version-auto",
+			meshBuilder:      samples.MeshDefaultBuilder(),
+			workloadIdentity: workloadIdentity(),
+		}),
 
 		Entry("permissive = raw buffer, TLS and kuma TLS filter chains", testCase{
 			caseName:         "permissive",

@@ -193,7 +193,10 @@
                     "resourceApiVersion": "V3"
                   }
                 }
-              ]
+              ],
+              "tlsParams": {
+                "tlsMaximumProtocolVersion": "TLSv1_3"
+              }
             },
             "sni": "sni.extsvc.envoyconfig-zoneproxies.kuma-3.mes-zone-proxy.80"
           }
@@ -264,7 +267,10 @@
                     "resourceApiVersion": "V3"
                   }
                 }
-              ]
+              ],
+              "tlsParams": {
+                "tlsMaximumProtocolVersion": "TLSv1_3"
+              }
             },
             "sni": "sni.msvc.envoyconfig-zoneproxies.kuma-3.zone-proxy-demo-client.3000"
           }
@@ -330,7 +336,10 @@
                     "resourceApiVersion": "V3"
                   }
                 }
-              ]
+              ],
+              "tlsParams": {
+                "tlsMaximumProtocolVersion": "TLSv1_3"
+              }
             },
             "sni": "sni.msvc.envoyconfig-zoneproxies.kuma-3.zone-proxy-test-server.80"
           }

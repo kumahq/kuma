@@ -30,6 +30,8 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
+          tlsParams:
+            tlsMaximumProtocolVersion: TLSv1_3
         sni: sni.extsvc.default.externalservice.8007
     type: EDS
     typedExtensionProtocolOptions:

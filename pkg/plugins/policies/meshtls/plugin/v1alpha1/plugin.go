@@ -196,7 +196,7 @@ func configureTLSParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
 	version := pointer.Deref(conf.TlsVersion)
 	ciphers := pointer.Deref(conf.TlsCiphers)
 
-	if len(ciphers) > 0 || version.Min != nil || version.Max != nil {
+	if dst.CommonTlsContext.TlsParams == nil {
 		dst.CommonTlsContext.TlsParams = &envoy_tls.TlsParameters{}
 	}
 
@@ -208,9 +208,7 @@ func configureTLSParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
 		dst.CommonTlsContext.TlsParams.TlsMinimumProtocolVersion = common_tls.ToTlsVersion(version.Min)
 	}
 
-	if version.Max != nil {
-		dst.CommonTlsContext.TlsParams.TlsMaximumProtocolVersion = common_tls.ToTlsVersion(version.Max)
-	}
+	dst.CommonTlsContext.TlsParams.TlsMaximumProtocolVersion = common_tls.ToUpstreamMaxTlsVersion(version.Max)
 
 	logger.V(1).Info("computed outbound tls params", "params", dst.CommonTlsContext.TlsParams)
 

@@ -318,9 +318,7 @@ func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, 
 		if tls.Version.Min != nil {
 			es.MinTlsVersion = pointer.To(common_tls.ToTlsVersion(tls.Version.Min))
 		}
-		if tls.Version.Max != nil {
-			es.MaxTlsVersion = pointer.To(common_tls.ToTlsVersion(tls.Version.Max))
-		}
+		es.MaxTlsVersion = pointer.To(common_tls.ToUpstreamMaxTlsVersion(tls.Version.Max))
 	}
 	var err error
 	if tls.Verification != nil {
