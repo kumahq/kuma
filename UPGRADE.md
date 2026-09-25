@@ -1207,11 +1207,13 @@ Complete the migration described in the previous section, then drop the
 top-level `ingress` and `egress` blocks from your values files and the removed
 flags from any `kumactl install control-plane` invocation.
 
-Most legacy settings map onto `meshes[].ingress` / `meshes[].egress`. These have
-no equivalent there: `podAnnotations`, `annotations`, `logLevel`, `drainTime`,
-`lifecycle`, `livenessProbe`, `readinessProbe`, `startupProbe`, `dns.policy`,
-`dns.config`, `service.enabled` and `service.nodePort`. Drain time and probes
-are now control-plane-wide sidecar injector settings.
+Most legacy settings map onto `meshes[].ingress` / `meshes[].egress`;
+`podAnnotations` moves to `deployment.podAnnotations`, next to the new
+`deployment.podLabels`. These have no equivalent there: `annotations`,
+`logLevel`, `drainTime`, `lifecycle`, `livenessProbe`, `readinessProbe`,
+`startupProbe`, `dns.policy`, `dns.config`, `service.enabled` and
+`service.nodePort`. Drain time and probes are now control-plane-wide sidecar
+injector settings.
 
 ### Mesh-scoped zone proxies keep their `kuma-dp` until you restart them
 
