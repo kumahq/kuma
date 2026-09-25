@@ -9,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v2/pkg/core/runtime"
 	"github.com/kumahq/kuma/v2/pkg/dns/vips"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	"github.com/kumahq/kuma/v2/pkg/xds/context"
 	"github.com/kumahq/kuma/v2/pkg/xds/server"
 )
@@ -30,7 +31,7 @@ func NewApiServer(cfg kuma_cp.Config, runtime runtime.Runtime) (*api_server.ApiS
 			cfg.DNSServer.ServiceVipPort,
 			context.AnyToAnyReachableServicesGraphBuilder,
 			runtime.CAProvider(),
-			context.WithAllowAllOutbound(cfg.Defaults.AllowAllOutbound),
+			context.WithRestrictOutbound(pointer.Deref(cfg.Defaults.RestrictOutbound)),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

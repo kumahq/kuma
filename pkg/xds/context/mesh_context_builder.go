@@ -52,10 +52,10 @@ type meshContextBuilder struct {
 // MeshContextBuilderOption configures optional behavior of the MeshContextBuilder.
 type MeshContextBuilderOption func(*meshContextBuilder)
 
-// WithAllowAllOutbound makes a data plane proxy without reachableBackends reach every destination in the mesh.
-func WithAllowAllOutbound(allow bool) MeshContextBuilderOption {
+// WithRestrictOutbound makes a data plane proxy without reachableBackends reach no destination in the mesh.
+func WithRestrictOutbound(restrict bool) MeshContextBuilderOption {
 	return func(m *meshContextBuilder) {
-		m.restrictOutbound = !allow
+		m.restrictOutbound = restrict
 	}
 }
 

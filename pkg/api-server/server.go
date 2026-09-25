@@ -49,6 +49,7 @@ import (
 	secrets_k8s "github.com/kumahq/kuma/v2/pkg/plugins/secrets/k8s"
 	tokens_server "github.com/kumahq/kuma/v2/pkg/tokens/builtin/server"
 	kuma_srv "github.com/kumahq/kuma/v2/pkg/util/http/server"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_prometheus "github.com/kumahq/kuma/v2/pkg/util/prometheus"
 	"github.com/kumahq/kuma/v2/pkg/version"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
@@ -531,7 +532,7 @@ func SetupServer(rt runtime.Runtime) error {
 			cfg.DNSServer.ServiceVipPort,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			rt.CAProvider(),
-			xds_context.WithAllowAllOutbound(cfg.Defaults.AllowAllOutbound),
+			xds_context.WithRestrictOutbound(pointer.Deref(cfg.Defaults.RestrictOutbound)),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

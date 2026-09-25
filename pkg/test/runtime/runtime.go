@@ -48,6 +48,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/postgres/config"
 	tokens_builtin "github.com/kumahq/kuma/v2/pkg/tokens/builtin"
 	tokens_access "github.com/kumahq/kuma/v2/pkg/tokens/builtin/access"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	mesh_cache "github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	xds_runtime "github.com/kumahq/kuma/v2/pkg/xds/runtime"
@@ -180,7 +181,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		builder.Config().DNSServer.ServiceVipPort,
 		xds_context.AnyToAnyReachableServicesGraphBuilder,
 		builder.CAProvider(),
-		xds_context.WithAllowAllOutbound(builder.Config().Defaults.AllowAllOutbound),
+		xds_context.WithRestrictOutbound(pointer.Deref(builder.Config().Defaults.RestrictOutbound)),
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(
