@@ -2,12 +2,10 @@ package api_server
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/emicklei/go-restful/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	api_server_types "github.com/kumahq/kuma/v3/pkg/api-server/types"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
@@ -145,25 +143,24 @@ func (r *resourceCrudHandler) updateResource(
 
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 
-	labels, err := resource_labels.Compute(resource_labels.Write{
+	w := resource_labels.Write{
 		Descriptor:  r.descriptor,
 		Spec:        currentRes.GetSpec(),
 		Namespace:   resource_labels.GetNamespace(newResRest.GetMeta(), r.systemNamespace),
 		Mesh:        meshName,
 		DisplayName: currentRes.GetMeta().GetName(),
 		Labels:      newResRest.GetMeta().GetLabels(),
-	}, r.cp)
+	}
+	labels, err := resource_labels.Compute(w, r.cp)
 	if err != nil {
 		return nil, withTitle(err, "Could not compute labels for a resource")
 	}
 
-	if stored, ok := currentRes.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]; ok && stored != labels[mesh_proto.ResourceOriginLabel] {
-		var err validators.ValidationError
-		err.AddViolationAt(
-			validators.RootedAt("labels").Key(mesh_proto.ResourceOriginLabel),
-			fmt.Sprintf("is immutable, cannot be changed from %q to %q", stored, labels[mesh_proto.ResourceOriginLabel]),
-		)
-		return nil, withTitle(&err, "Could not update a resource")
+	w.Labels, w.Previous = labels, currentRes.GetMeta().GetLabels()
+	var verr validators.ValidationError
+	verr.AddError("labels", resource_labels.ValidateUpdate(w, r.cp))
+	if verr.HasViolations() {
+		return nil, withTitle(&verr, "Could not update a resource")
 	}
 
 	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(labels)); err != nil {

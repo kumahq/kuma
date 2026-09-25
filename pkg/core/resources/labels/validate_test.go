@@ -338,4 +338,81 @@ var _ = Describe("Validate", func() {
 			},
 		}),
 	)
+
+	type updateCase struct {
+		previous map[string]string
+		labels   map[string]string
+		trusted  bool
+		cp       resource_labels.ControlPlane
+		expected []validators.Violation
+	}
+
+	origin := func(v string) map[string]string {
+		return map[string]string{mesh_proto.ResourceOriginLabel: v}
+	}
+
+	DescribeTable("should reject an update that changes an immutable label",
+		func(given updateCase) {
+			w := resource_labels.Write{
+				Descriptor:    timeout().Descriptor(),
+				Namespace:     systemNamespace,
+				Labels:        given.labels,
+				Previous:      given.previous,
+				TrustedWriter: given.trusted,
+			}
+			err := resource_labels.ValidateUpdate(w, given.cp)
+			if given.expected == nil {
+				Expect(err.HasViolations()).To(BeFalse(), err.Error())
+			} else {
+				Expect(err.Violations).To(Equal(given.expected))
+			}
+		},
+		// Universal
+		Entry("origin: unchanged on a global CP", updateCase{
+			previous: origin("global"), labels: origin("global"), cp: universalGlobal,
+		}),
+		Entry("origin: global to zone on a global CP", updateCase{
+			previous: origin("global"), labels: origin("zone"), cp: universalGlobal,
+			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, `is immutable, cannot be changed from "global" to "zone"`)},
+		}),
+		Entry("origin: global to zone on a federated zone", updateCase{
+			previous: origin("global"), labels: origin("zone"), cp: universalFederated,
+			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, `is immutable, cannot be changed from "global" to "zone"`)},
+		}),
+		Entry("origin: global to zone on a non-federated zone", updateCase{
+			previous: origin("global"), labels: origin("zone"), cp: universalNonFederated,
+			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, `is immutable, cannot be changed from "global" to "zone"`)},
+		}),
+		Entry("origin: removed", updateCase{
+			previous: origin("global"), labels: map[string]string{}, cp: universalGlobal,
+			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, `is immutable, cannot be changed from "global" to ""`)},
+		}),
+		Entry("origin: not stored before", updateCase{
+			previous: map[string]string{}, labels: origin("zone"), cp: universalGlobal,
+		}),
+		Entry("origin: a create has no previous labels", updateCase{
+			labels: origin("zone"), cp: universalGlobal,
+		}),
+		Entry("origin: a trusted writer may change it", updateCase{
+			previous: origin("global"), labels: origin("zone"), trusted: true, cp: universalGlobal,
+		}),
+		// k8s
+		Entry("origin: global to zone on a k8s global CP", updateCase{
+			previous: origin("global"), labels: origin("zone"), cp: k8sGlobal,
+			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "'kuma.io/origin' label is immutable, cannot be changed from 'global' to 'zone'")},
+		}),
+		Entry("origin: global to zone on a k8s federated zone", updateCase{
+			previous: origin("global"), labels: origin("zone"), cp: k8sFederated,
+			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "'kuma.io/origin' label is immutable, cannot be changed from 'global' to 'zone'")},
+		}),
+		Entry("origin: global to zone on a k8s non-federated zone", updateCase{
+			previous: origin("global"), labels: origin("zone"), cp: k8sNonFederated,
+		}),
+		Entry("origin: unchanged on a k8s federated zone", updateCase{
+			previous: origin("zone"), labels: origin("zone"), cp: k8sFederated,
+		}),
+		Entry("origin: a trusted writer may change it on k8s", updateCase{
+			previous: origin("global"), labels: origin("zone"), trusted: true, cp: k8sGlobal,
+		}),
+	)
 })

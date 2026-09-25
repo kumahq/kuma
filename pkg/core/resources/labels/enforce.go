@@ -38,6 +38,10 @@ type Write struct {
 	// TrustedWriter: the labels come from a control plane (the store, KDS, GC, the
 	// storage-version migrator, the CP's own k8s controllers), not from a user.
 	TrustedWriter bool
+	// Previous: the labels stored for the object an update replaces; nil on a create.
+	// ValidateUpdate compares them with Labels, which must then be the labels the
+	// update stores.
+	Previous map[string]string
 	// Only the pod converter sets these.
 	ServiceAccount string
 	Workload       string
