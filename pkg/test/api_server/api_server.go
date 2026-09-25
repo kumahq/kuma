@@ -20,7 +20,7 @@ func NewApiServer(cfg kuma_cp.Config, runtime runtime.Runtime) (*api_server.ApiS
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			context.WithRestrictOutbound(cfg.Defaults.RestrictOutbound),
+			context.WithRestrictOutbound(cfg.Defaults.IsOutboundRestricted()),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
