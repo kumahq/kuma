@@ -54,11 +54,14 @@ func ZonesStayExclusiveBehindNewGlobal() {
 	var globalCP ControlPlane
 
 	BeforeEach(func() {
-		global = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
-		zoneK8s1 = NewK8sCluster(NewTestingT(), Kuma2, Silent).
+		// CI starts only kuma-1 and kuma-2 as k3d clusters, so both Kubernetes
+		// zones take those names. The Universal global needs no k3d cluster,
+		// so it takes the remaining name.
+		global = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
+		zoneK8s1 = NewK8sCluster(NewTestingT(), Kuma1, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
-		zoneK8s2 = NewK8sCluster(NewTestingT(), Kuma3, Silent).
+		zoneK8s2 = NewK8sCluster(NewTestingT(), Kuma2, Silent).
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 
@@ -210,7 +213,7 @@ spec:
 			installZone(zoneK8s1, fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueID())))
 			installZone(zoneK8s2, fmt.Sprintf("kuma-%s", strings.ToLower(random.UniqueID())))
 
-			By("Deploy workloads: test-server in kuma-2, clients in both zones")
+			By("Deploy workloads: test-server in kuma-1, clients in both zones")
 			err = NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(namespace)).
 				Install(testserver.Install(
@@ -271,7 +274,7 @@ spec:
 			Eventually(func(g Gomega) {
 				g.Expect(client.CollectEchoResponse(
 					zoneK8s2, "demo-client",
-					fmt.Sprintf("http://test-server.%s.svc.kuma-2.mesh.local:80", namespace),
+					fmt.Sprintf("http://test-server.%s.svc.kuma-1.mesh.local:80", namespace),
 					client.FromKubernetesPod(namespace, "demo-client"),
 				)).To(HaveField("Instance", ContainSubstring("test-server")))
 			}, "3m", "1s").Should(Succeed())
