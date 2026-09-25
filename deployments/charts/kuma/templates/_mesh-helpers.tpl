@@ -35,6 +35,18 @@ kuma.io/mesh: {{ .meshName }}
 {{- end -}}
 
 {{/*
+Pod template labels for per-mesh zone proxies. They carry no chart or app
+version, so upgrading the control plane does not restart the zone proxies.
+params: { root: $, meshName: string, role: string }
+*/}}
+{{- define "kuma.mesh.zoneproxy.podLabels" -}}
+app: {{ include "kuma.mesh.zoneproxy.name" . }}
+kuma.io/mesh: {{ .meshName }}
+{{ include "kuma.selectorLabels" .root }}
+app.kubernetes.io/managed-by: {{ .root.Release.Service }}
+{{- end -}}
+
+{{/*
 Selector labels for per-mesh zone proxy resources.
 params: { root: $, meshName: string, role: string }
 */}}

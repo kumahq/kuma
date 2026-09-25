@@ -54,10 +54,28 @@ spec:
     metadata:
       annotations:
         kuma.io/reachable-backends: '{"refs":[]}'
+        {{- with $dep.podAnnotations }}
+        {{- if hasKey . "kuma.io/reachable-backends" }}
+        {{- fail (printf "meshes[%s].%s.deployment.podAnnotations: kuma.io/reachable-backends is set by the chart" $meshName $role) }}
+        {{- end }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       labels:
-        {{- include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 8 }}
+        {{- $podLabels := include "kuma.mesh.zoneproxy.podLabels" (dict "root" $ "meshName" $meshName "role" $role) }}
+        {{- $chartLabels := fromYaml $podLabels }}
+        {{- $_ := set $chartLabels "kuma.io/sidecar-injection" "enabled" }}
+        {{- $_ = set $chartLabels "k8s.kuma.io/zone-proxy-type" $role }}
+        {{- range $key, $value := $dep.podLabels }}
+        {{- if hasKey $chartLabels $key }}
+        {{- fail (printf "meshes[%s].%s.deployment.podLabels: %s is set by the chart" $meshName $role $key) }}
+        {{- end }}
+        {{- end }}
+        {{- $podLabels | nindent 8 }}
         kuma.io/sidecar-injection: enabled
         k8s.kuma.io/zone-proxy-type: {{ $role }}
+        {{- with $dep.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- if and $dep.podSpec $dep.podSpec.resources }}
       resources: {{ toYaml $dep.podSpec.resources | nindent 8 }}

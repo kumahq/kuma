@@ -485,10 +485,6 @@ spec:
     app: kuma-default-ingress
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-  externalIPs:
-  - 192.168.5.2
-  loadBalancerSourceRanges:
-  - 10.0.0.0/8
 ---
 apiVersion: v1
 kind: Service
@@ -511,7 +507,6 @@ spec:
     app: kuma-default-egress
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-  publishNotReadyAddresses: true
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -757,6 +752,7 @@ spec:
     metadata:
       annotations:
         kuma.io/reachable-backends: '{"refs":[]}'
+        kuma.io/envoy-log-level: debug
       labels:
         app: kuma-default-ingress
         kuma.io/mesh: default
@@ -764,6 +760,7 @@ spec:
         app.kubernetes.io/instance: kuma
         kuma.io/sidecar-injection: enabled
         k8s.kuma.io/zone-proxy-type: ingress
+        team: platform
     spec:
       securityContext:
         runAsUser: 5678
@@ -824,6 +821,7 @@ spec:
         app.kubernetes.io/instance: kuma
         kuma.io/sidecar-injection: enabled
         k8s.kuma.io/zone-proxy-type: egress
+        team: platform
     spec:
       securityContext:
         runAsUser: 5678

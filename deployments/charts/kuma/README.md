@@ -249,7 +249,7 @@ A Helm chart for the Kuma Control Plane
 | meshZoneProxyDefaults.ingress.service.type | string | `"LoadBalancer"` | Default Service type for zone ingress. |
 | meshZoneProxyDefaults.ingress.service.port | int | `10001` | Default port for zone ingress Service. |
 | meshZoneProxyDefaults.ingress.service.targetPort | int | `10001` | Container port the zone ingress listens on. Do not change unless the zone proxy binary is reconfigured. |
-| meshZoneProxyDefaults.egress.preStopSleepSeconds | int | `15` | Seconds a terminating zone egress keeps serving before shutdown, applied as a preStop sleep hook. Clients reach a zone egress by pod IP from EDS, so a pod that goes away before the control plane has pushed new endpoints takes requests down with it. The hook has to outlast that propagation, which costs roughly KUMA_STORE_CACHE_EXPIRATION_TIME (default 1s) plus KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL (default 1s) plus the time to push and ack the update, so raise this if you have raised either interval. Must be lower than terminationGracePeriodSeconds, otherwise the chart fails to render. Set to 0 to drop the hook. |
+| meshZoneProxyDefaults.egress.preStopSleepSeconds | int | `20` | Seconds a terminating zone egress keeps serving before shutdown, applied as a preStop sleep hook. Clients reach a zone egress by pod IP from EDS, so a pod that goes away before the control plane has pushed new endpoints takes requests down with it. The hook has to outlast that propagation, which costs roughly KUMA_STORE_CACHE_EXPIRATION_TIME (default 1s) plus KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL (default 1s) plus the time to push and ack the update, so raise this if you have raised either interval. Must be lower than terminationGracePeriodSeconds, otherwise the chart fails to render. Set to 0 to drop the hook. |
 | meshZoneProxyDefaults.egress.service.type | string | `"ClusterIP"` | Default Service type for zone egress. |
 | meshZoneProxyDefaults.egress.service.port | int | `10002` | Default port for zone egress Service. |
 | meshZoneProxyDefaults.egress.service.targetPort | int | `10002` | Container port the zone egress listens on. Do not change unless the zone proxy binary is reconfigured. |
@@ -262,10 +262,12 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].ingress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].ingress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
 | meshes[0].ingress.service.labels | object | `{}` | Labels to add to the Service resource. |
-| meshes[0].ingress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":1}` | Deployment-level settings. |
+| meshes[0].ingress.deployment | object | `{"annotations":{},"labels":{},"podAnnotations":{},"podLabels":{},"podSpec":{},"replicas":1}` | Deployment-level settings. |
 | meshes[0].ingress.deployment.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
 | meshes[0].ingress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].ingress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
+| meshes[0].ingress.deployment.podLabels | object | `{}` | Labels to add to the zone proxy pods. Must not override the labels the chart sets on them. |
+| meshes[0].ingress.deployment.podAnnotations | object | `{}` | Annotations to add to the zone proxy pods, for example kuma.io/* sidecar settings. Must not override kuma.io/reachable-backends. |
 | meshes[0].ingress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
 | meshes[0].ingress.hpa | object | `{"enabled":false,"maxReplicas":5,"minReplicas":2,"targetCPUUtilizationPercentage":80}` | Horizontal Pod Autoscaler settings. |
 | meshes[0].ingress.pdb | object | `{"enabled":false,"maxUnavailable":1}` | Pod Disruption Budget settings. |
@@ -278,10 +280,12 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].egress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].egress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
 | meshes[0].egress.service.labels | object | `{}` | Labels to add to the Service resource. |
-| meshes[0].egress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":1}` | Deployment-level settings. |
+| meshes[0].egress.deployment | object | `{"annotations":{},"labels":{},"podAnnotations":{},"podLabels":{},"podSpec":{},"replicas":1}` | Deployment-level settings. |
 | meshes[0].egress.deployment.replicas | int | `1` | Number of replicas. Ignored when hpa.enabled is true. |
 | meshes[0].egress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].egress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
+| meshes[0].egress.deployment.podLabels | object | `{}` | Labels to add to the zone proxy pods. Must not override the labels the chart sets on them. |
+| meshes[0].egress.deployment.podAnnotations | object | `{}` | Annotations to add to the zone proxy pods, for example kuma.io/* sidecar settings. Must not override kuma.io/reachable-backends. |
 | meshes[0].egress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
 | meshes[0].egress.hpa.enabled | bool | `false` |  |
 | meshes[0].egress.hpa.minReplicas | int | `2` |  |
