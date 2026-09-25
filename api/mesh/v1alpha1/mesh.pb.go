@@ -22,9 +22,77 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type Mesh_MeshServices_Mode int32
+
+const (
+	// MeshServices aren't generated
+	Mesh_MeshServices_Disabled Mesh_MeshServices_Mode = 0
+	// MeshServices are generated and used for configuration
+	Mesh_MeshServices_Everywhere Mesh_MeshServices_Mode = 1
+	// MeshServices are generated but only used for configuration where
+	// configured via reachableBackends
+	Mesh_MeshServices_ReachableBackends Mesh_MeshServices_Mode = 2
+	// MeshServices are generated, used for configuration and kuma.io/services
+	// are not used
+	Mesh_MeshServices_Exclusive Mesh_MeshServices_Mode = 3
+)
+
+// Enum value maps for Mesh_MeshServices_Mode.
+var (
+	Mesh_MeshServices_Mode_name = map[int32]string{
+		0: "Disabled",
+		1: "Everywhere",
+		2: "ReachableBackends",
+		3: "Exclusive",
+	}
+	Mesh_MeshServices_Mode_value = map[string]int32{
+		"Disabled":          0,
+		"Everywhere":        1,
+		"ReachableBackends": 2,
+		"Exclusive":         3,
+	}
+)
+
+func (x Mesh_MeshServices_Mode) Enum() *Mesh_MeshServices_Mode {
+	p := new(Mesh_MeshServices_Mode)
+	*p = x
+	return p
+}
+
+func (x Mesh_MeshServices_Mode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Mesh_MeshServices_Mode) Descriptor() protoreflect.EnumDescriptor {
+	return file_api_mesh_v1alpha1_mesh_proto_enumTypes[0].Descriptor()
+}
+
+func (Mesh_MeshServices_Mode) Type() protoreflect.EnumType {
+	return &file_api_mesh_v1alpha1_mesh_proto_enumTypes[0]
+}
+
+func (x Mesh_MeshServices_Mode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Mesh_MeshServices_Mode.Descriptor instead.
+func (Mesh_MeshServices_Mode) EnumDescriptor() ([]byte, []int) {
+	return file_api_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{0, 0, 0}
+}
+
 // Mesh defines configuration of a single mesh.
 type Mesh struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Deprecated: 3.0 removed the MeshService mode from the Mesh API and every
+	// mesh behaves as if meshServices.mode was Exclusive. The field only
+	// remains so a global control plane can keep marking meshes as Exclusive
+	// when it syncs them over KDS to zones older than 3.0: those zones read a
+	// missing field as Disabled and tear down all MeshService traffic
+	// (https://github.com/kumahq/kuma/issues/18868). Any value stored through
+	// the API has no effect on 3.0 control planes.
+	//
+	// Deprecated: Marked as deprecated in api/mesh/v1alpha1/mesh.proto.
+	MeshServices  *Mesh_MeshServices `protobuf:"bytes,9,opt,name=meshServices,proto3" json:"meshServices,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -59,15 +127,75 @@ func (*Mesh) Descriptor() ([]byte, []int) {
 	return file_api_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{0}
 }
 
+// Deprecated: Marked as deprecated in api/mesh/v1alpha1/mesh.proto.
+func (x *Mesh) GetMeshServices() *Mesh_MeshServices {
+	if x != nil {
+		return x.MeshServices
+	}
+	return nil
+}
+
+type Mesh_MeshServices struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Mode          Mesh_MeshServices_Mode `protobuf:"varint,1,opt,name=mode,proto3,enum=kuma.mesh.v1alpha1.Mesh_MeshServices_Mode" json:"mode,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Mesh_MeshServices) Reset() {
+	*x = Mesh_MeshServices{}
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Mesh_MeshServices) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Mesh_MeshServices) ProtoMessage() {}
+
+func (x *Mesh_MeshServices) ProtoReflect() protoreflect.Message {
+	mi := &file_api_mesh_v1alpha1_mesh_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Mesh_MeshServices.ProtoReflect.Descriptor instead.
+func (*Mesh_MeshServices) Descriptor() ([]byte, []int) {
+	return file_api_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{0, 0}
+}
+
+func (x *Mesh_MeshServices) GetMode() Mesh_MeshServices_Mode {
+	if x != nil {
+		return x.Mode
+	}
+	return Mesh_MeshServices_Disabled
+}
+
 var File_api_mesh_v1alpha1_mesh_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_mesh_proto_rawDesc = "" +
 	"\n" +
-	"\x1capi/mesh/v1alpha1/mesh.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\"\xf0\x01\n" +
-	"\x04Mesh:R\xaa\x8c\x89\xa6\x01L\n" +
+	"\x1capi/mesh/v1alpha1/mesh.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\"\xd6\x03\n" +
+	"\x04Mesh\x12M\n" +
+	"\fmeshServices\x18\t \x01(\v2%.kuma.mesh.v1alpha1.Mesh.MeshServicesB\x02\x18\x01R\fmeshServices\x1a\x9a\x01\n" +
+	"\fMeshServices\x12>\n" +
+	"\x04mode\x18\x01 \x01(\x0e2*.kuma.mesh.v1alpha1.Mesh.MeshServices.ModeR\x04mode\"J\n" +
+	"\x04Mode\x12\f\n" +
+	"\bDisabled\x10\x00\x12\x0e\n" +
+	"\n" +
+	"Everywhere\x10\x01\x12\x15\n" +
+	"\x11ReachableBackends\x10\x02\x12\r\n" +
+	"\tExclusive\x10\x03:R\xaa\x8c\x89\xa6\x01L\n" +
 	"\fMeshResource\x12\x04Mesh\x18\x01\"\x04mesh:\x0e\n" +
-	"\x04mesh\x12\x06meshesR\x17model.GlobalToZonesFlag\x90\x01\x01\x9a\x01\x01mJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\x06\x10\aJ\x04\b\a\x10\bJ\x04\b\b\x10\tJ\x04\b\t\x10\n" +
-	"R\x04mtlsR\atracingR\aloggingR\ametricsR\n" +
+	"\x04mesh\x12\x06meshesR\x17model.GlobalToZonesFlag\x90\x01\x01\x9a\x01\x01mJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\x06\x10\aJ\x04\b\a\x10\bJ\x04\b\b\x10\tR\x04mtlsR\atracingR\aloggingR\ametricsR\n" +
 	"networkingR\aroutingR\vconstraintsR\x1bskipCreatingInitialPoliciesB-Z+github.com/kumahq/kuma/v3/api/mesh/v1alpha1b\x06proto3"
 
 var (
@@ -82,16 +210,21 @@ func file_api_mesh_v1alpha1_mesh_proto_rawDescGZIP() []byte {
 	return file_api_mesh_v1alpha1_mesh_proto_rawDescData
 }
 
-var file_api_mesh_v1alpha1_mesh_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_api_mesh_v1alpha1_mesh_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_api_mesh_v1alpha1_mesh_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_api_mesh_v1alpha1_mesh_proto_goTypes = []any{
-	(*Mesh)(nil), // 0: kuma.mesh.v1alpha1.Mesh
+	(Mesh_MeshServices_Mode)(0), // 0: kuma.mesh.v1alpha1.Mesh.MeshServices.Mode
+	(*Mesh)(nil),                // 1: kuma.mesh.v1alpha1.Mesh
+	(*Mesh_MeshServices)(nil),   // 2: kuma.mesh.v1alpha1.Mesh.MeshServices
 }
 var file_api_mesh_v1alpha1_mesh_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	2, // 0: kuma.mesh.v1alpha1.Mesh.meshServices:type_name -> kuma.mesh.v1alpha1.Mesh.MeshServices
+	0, // 1: kuma.mesh.v1alpha1.Mesh.MeshServices.mode:type_name -> kuma.mesh.v1alpha1.Mesh.MeshServices.Mode
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_api_mesh_v1alpha1_mesh_proto_init() }
@@ -104,13 +237,14 @@ func file_api_mesh_v1alpha1_mesh_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_mesh_v1alpha1_mesh_proto_rawDesc), len(file_api_mesh_v1alpha1_mesh_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   1,
+			NumEnums:      1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_api_mesh_v1alpha1_mesh_proto_goTypes,
 		DependencyIndexes: file_api_mesh_v1alpha1_mesh_proto_depIdxs,
+		EnumInfos:         file_api_mesh_v1alpha1_mesh_proto_enumTypes,
 		MessageInfos:      file_api_mesh_v1alpha1_mesh_proto_msgTypes,
 	}.Build()
 	File_api_mesh_v1alpha1_mesh_proto = out.File

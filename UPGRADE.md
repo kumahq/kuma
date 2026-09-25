@@ -1042,14 +1042,32 @@ already behaviourally identical, so no other changes are required.
 
 ### `meshServices` removed from the `Mesh` schema
 
-The `meshServices` field (and its `mode` enum) has been removed from the
-`Mesh` resource spec. Unified resource naming is now unconditional,
+The `meshServices` field (and its `mode` enum) no longer has any effect on
+the `Mesh` resource. Unified resource naming is now unconditional,
 regardless of what the mesh's former `meshServices.mode` was set to.
+
+The field remains in the schema as deprecated, so a `Mesh` spec that still
+sets `meshServices` continues to apply successfully. It exists only for
+mixed-version multizone upgrades: while a zone runs a version older than
+3.0, the global control plane keeps sending it `meshServices.mode:
+Exclusive` on every Mesh over KDS. Zones before 3.0 read a missing field as
+`Disabled`, which makes them delete every generated `MeshService`, skip
+mesh-scoped zone proxy listeners, and stop serving `MeshService` outbounds
+and DNS.
 
 **Action required**
 
-None. A `Mesh` spec that still sets `meshServices` continues to apply
-successfully; the field is silently ignored by the control plane.
+If every mesh already runs with `meshServices.mode: Exclusive`, nothing.
+The 3.0 global serves 2.x zones exactly that mode, and the zones keep
+generating and serving `MeshServices` until they are upgraded.
+
+If a mesh still runs with `meshServices.mode` set to `Disabled`,
+`Everywhere`, or `ReachableBackends` when the global control plane is
+upgraded, its 2.x zones flip to `Exclusive` as soon as the 3.0 global takes
+over: `MeshServices` start being generated and `kuma.io/service` stops being
+used for configuration in those zones. Finish moving such meshes to
+`Exclusive` before upgrading the global control plane, or plan for the flip
+to happen at that moment instead of at each zone's own upgrade.
 
 ### `routing.zoneEgress` removed from the `Mesh` schema
 

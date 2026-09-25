@@ -42,5 +42,29 @@ message Mesh {
   reserved 8;
   reserved "skipCreatingInitialPolicies";
 
-  reserved 9; // formerly meshServices
+  // Deprecated: 3.0 removed the MeshService mode from the Mesh API and every
+  // mesh behaves as if meshServices.mode was Exclusive. The field only
+  // remains so a global control plane can keep marking meshes as Exclusive
+  // when it syncs them over KDS to zones older than 3.0: those zones read a
+  // missing field as Disabled and tear down all MeshService traffic
+  // (https://github.com/kumahq/kuma/issues/18868). Any value stored through
+  // the API has no effect on 3.0 control planes.
+  MeshServices meshServices = 9 [deprecated = true];
+
+  message MeshServices {
+    Mode mode = 1;
+
+    enum Mode {
+      // MeshServices aren't generated
+      Disabled = 0;
+      // MeshServices are generated and used for configuration
+      Everywhere = 1;
+      // MeshServices are generated but only used for configuration where
+      // configured via reachableBackends
+      ReachableBackends = 2;
+      // MeshServices are generated, used for configuration and kuma.io/services
+      // are not used
+      Exclusive = 3;
+    }
+  }
 }

@@ -19,10 +19,45 @@
             "description": "MeshOverview defines the projected state of a Mesh."
         },
         "kuma.mesh.v1alpha1.Mesh": {
+            "properties": {
+                "meshServices": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.MeshServices",
+                    "additionalProperties": true,
+                    "description": "Deprecated: 3.0 removed the MeshService mode from the Mesh API and every mesh behaves as if meshServices.mode was Exclusive. The field only remains so a global control plane can keep marking meshes as Exclusive when it syncs them over KDS to zones older than 3.0: those zones read a missing field as Disabled and tear down all MeshService traffic (https://github.com/kumahq/kuma/issues/18868). Any value stored through the API has no effect on 3.0 control planes."
+                }
+            },
             "additionalProperties": true,
             "type": "object",
             "title": "Mesh",
             "description": "Mesh defines configuration of a single mesh."
+        },
+        "kuma.mesh.v1alpha1.Mesh.MeshServices": {
+            "properties": {
+                "mode": {
+                    "enum": [
+                        "Disabled",
+                        0,
+                        "Everywhere",
+                        1,
+                        "ReachableBackends",
+                        2,
+                        "Exclusive",
+                        3
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Mode"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mesh Services"
         },
         "kuma.mesh.v1alpha1.MeshInsight": {
             "properties": {
