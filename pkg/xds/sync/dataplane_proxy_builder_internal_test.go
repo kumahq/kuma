@@ -22,12 +22,12 @@ var _ = Describe("DataplaneProxyBuilder resolveVIPOutbounds", func() {
 			meshContext := xds_context.MeshContext{
 				BaseMeshContext: &xds_context.BaseMeshContext{
 					DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{ms}).WithAllowAllOutbound(allowAllOutbound),
+					VIPOutbounds: xds_types.Outbounds{{
+						Address:  "240.0.0.1",
+						Port:     9000,
+						Resource: kri.WithSectionName(kri.From(ms), "9000"),
+					}},
 				},
-				VIPOutbounds: xds_types.Outbounds{{
-					Address:  "240.0.0.1",
-					Port:     9000,
-					Resource: kri.WithSectionName(kri.From(ms), "9000"),
-				}},
 			}
 			dp := builders.Dataplane().WithAddress("127.0.0.1").Build()
 			Expect(dp.Spec.GetNetworking().GetTransparentProxying()).To(BeNil())

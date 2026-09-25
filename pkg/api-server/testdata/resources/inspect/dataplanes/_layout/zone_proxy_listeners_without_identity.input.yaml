@@ -7,7 +7,6 @@ name: dp-zone-proxy
 mesh: default
 labels:
   kuma.io/zone: test-zone
-  kuma.io/workload: zone-proxy
 networking:
   address: 127.0.0.1
   listeners:
@@ -92,26 +91,3 @@ spec:
 status:
   vip:
     ip: 242.0.0.4
----
-type: MeshIdentity
-name: identity-1
-mesh: default
-labels:
-  kuma.io/zone: test-zone
-spec:
-  selector:
-    dataplane:
-      matchLabels:
-        kuma.io/zone: test-zone
-  provider:
-    type: Bundled
-    bundled:
-      insecureAllowSelfSigned: true
-      autogenerate:
-        enabled: true
-status:
-  conditions:
-    - type: Ready
-      status: "True"
-      reason: Ready
-      message: Successfully initialized

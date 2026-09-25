@@ -245,6 +245,14 @@ and a global control plane serves whatever a zone sent it, so a client that
 reads from a global control plane federated with zones on an older version
 should still fall back to `127.0.0.1`.
 
+### Outbounds that pick a `MeshService` port by number use the port name
+
+A `Dataplane` outbound with `backendRef: {kind: MeshService, name: backend, port: 80}`, where port `80` is named `http`, used to get the port number as its section name. Following the resource identifier design, where the section name is the port name, it now gets `http`. The Envoy listener, cluster and stat prefix of such an outbound change from `..._backend_80` to `..._backend_http`. Transparent proxy outbounds already used the port name and are unchanged.
+
+**Action required**
+
+Policies that target the port with `sectionName: http` now apply to these outbounds. Before, they were skipped and the service-level or `Mesh` rule applied instead. Check such policies before upgrading. Update dashboards and alerts that match on the old `_80` stat prefix.
+
 ### KDS full resync is periodic again, not every second
 
 Removing the polling KDS watchdog carried the poll loop's `refreshInterval` of
