@@ -131,7 +131,7 @@ Fixes #123
 **Scopes:** `kuma-cp`, `kuma-dp`, `kumactl`, `xds`, `kds`, `MeshRetry`, `api-server`
 **Sign:** Use `-s -S` flags
 
-**PR:** Base: `master` • Template: `.github/PULL_REQUEST_TEMPLATE.md` • Changelog: from title or `> Changelog:` • Labels: `ci/*` at creation • MADR: `docs/madr/decisions/000-template.md` • No Kong Mesh mentions (use "downstream project")
+**PR:** Base: `master` • Template: `.github/PULL_REQUEST_TEMPLATE.md` • Changelog: from title or `> Changelog:` • Labels: `ci/*`, read live by CI • MADR: `docs/madr/decisions/000-template.md` • No Kong Mesh mentions (use "downstream project")
 
 ---
 

@@ -84,7 +84,52 @@ Today that means the arm64 e2e legs in `_test.yaml` and the `linux/arm64` leg of
 - `scorecard.yml` must keep a literal label, because `scorecard-action` rejects an expression-based `runs-on` during workflow verification.
 - `pr-comments.yaml` must stay GitHub-hosted. It checks out the head of the PR a maintainer commented on, which is a fork on most pull requests, and runs `make` against it. `runs-on` cannot read the step that resolves `isCrossRepository`, so the runner is chosen before the workflow knows whose code it is about to run.
 - `_provenance.yaml` and `lifecycle.yml` have no `runs-on`. They call reusable workflows that choose their own runner.
+- `pr-retarget.yaml` has no fork carve-out. `pull_request_target` runs the base branch's own code, so a fork cannot reach the runner through it.
 
 ## Cutting a release branch
 
 Variable names cannot contain `-` or `.`, and an inline expression cannot sanitize `github.ref_name`, so the branch slug is written into the workflows by hand. After cutting `release-X.Y`, replace `RUNNERS_MASTER_` with `RUNNERS_RELEASE_X_Y_` across `.github/workflows/` on the new branch, comments included, and set the matching variables. A missed rename would silently fall back to the global variable, so `validate-workflows-and-scripts.yaml` fails when a slug in the workflows does not match the branch. `PR` is exempt, since it names a tier rather than a branch.
+
+# What decides how much CI a pull request runs
+
+Draft state and labels. `meta` reads both, and every job that gates on either reads `meta`.
+
+## Draft state
+
+A draft skips `build_check`, `check`, `test_unit`, the e2e matrix and `build_publish`, and every job in `validate-workflows-and-scripts.yaml` with them. Ready for review runs them; converting back to a draft cancels the run in flight and replaces it with a cheap one. A backport whose cherry-pick conflicted opens as a draft, so it runs nothing until someone resolves it.
+
+Gate with a job-level `if:`, never a narrowed trigger. A job skipped by a condition reports Success and satisfies a required check, while a workflow that never fires leaves that check waiting for a report and blocks the pull request for good. A skipped *matrix* job reports under its unexpanded name, so the per-leg e2e names disappear whenever the matrix comes out empty.
+
+`distributions` is the only required check covering CI, and it publishes nothing until every one of its `needs` finishes. So it fails on a draft rather than passing: a green one would stay newest for the forty minutes the ready run takes, and a pull request is merged out of that window by `auto-merge.yaml`, by a fork whose read-only token no hold can cover, or by a bot marking it ready with `github.token` and raising no run at all. A draft carries one red check saying it has tested nothing, which costs nothing, because GitHub refuses to merge a draft anyway.
+
+`meta` also posts a `distributions` check of its own, `in_progress`, as soon as it has read the pull request, so a green result from an earlier run of the same commit cannot satisfy the requirement while this one is still deciding. A newer check run of the same name replaces the older one outright. A fork's token is read-only, so that hold fails there and the step says so.
+
+`meta` refuses a run started against a base the pull request no longer targets, rather than publishing decisions that describe something else, and `distributions` reads the base again at fan-in so a retarget ten minutes in cannot be overwritten by the run it interrupted. Changing the base fires no event on the main workflow, so `pr-retarget.yaml` watches for it and posts the same hold, leaving the required check pending until a run happens against the branch the pull request now aims at. Recovery in every case is a push. A release branch requires `distributions` too but has no `pr-retarget.yaml` until this is backported to it, so a pull request moved onto one keeps whatever result it already had.
+
+An automation that marks a pull request ready must use an app token. GitHub raises no workflow run for an event its own token caused, so `ready_for_review` would not fire and the draft's results would stand.
+
+A dispatched run is not judged against the pull request at all, because `ci-stability-master.yaml` dispatches this workflow to hunt flakes and needs it to go green. Someone with write access can therefore dispatch on a draft's branch and get `distributions` green from a run of the branch tip rather than the merge.
+
+## Labels
+
+`meta` asks the API rather than trusting the webhook, whose copy is routinely empty: a pull request cannot be created with labels, so they always arrive in a second call. A label counts if it lands before `meta` reads, twenty to forty seconds into the run - ample for `gh pr create --label`, Renovate or `backport.yaml`, no use to someone clicking. Otherwise it takes effect on the next run, or on a re-run of this one.
+
+| label | what it does |
+| --- | --- |
+| `ci/skip-test` | skips the unit tests, the e2e matrix and the container-structure test |
+| `ci/skip-e2e-test` | skips the e2e matrix only |
+| `ci/skip-container-structure-test` | skips the container-structure test inside `build_publish` |
+| `ci/run-full-matrix` | runs the full matrix instead of the reduced pull-request one |
+| `ci/run-build` | builds the artifacts a pull request does not build by default |
+| `ci/force-publish` | builds and publishes them; refused on a pull request from a fork |
+| `ci/auto-merge` | approves and enables auto-merge; the one label read from the event payload, because `auto-merge.yaml` triggers on `labeled` |
+| `ci/verify-stability` | reruns CI to find flakes, removed after several consecutive green runs; drafts are ignored |
+| `ci/verify-stability-merge-master` | the same, merging master before each rerun |
+
+Every one of them is declared in `meta_repo.yml`.
+
+# The gate action
+
+Every decision above - the label read, the hold, the fan-in assertion, the tag gate - is one Go program in `.github/actions/cigate`, run as a container action so a job spends about five seconds on it instead of a minute installing a toolchain.
+
+A push to master that changes the program publishes the image and opens the pull request that pins `action.yml` to its digest, so the source and the binary never drift for more than that pull request's lifetime; `validate-workflows-and-scripts.yaml` warns on any pull request opened while they have. Publishing only from master is what stops a branch shipping itself a gate that waves it through, and it is why `action.yml` can name a `Dockerfile` instead: a pin can only be written after a publish, so the gate builds itself until one exists. Kong Mesh rewrites it back to the Dockerfile on every sync, because it vendors the source but cannot rebuild or re-pin an image in this organisation's registry.

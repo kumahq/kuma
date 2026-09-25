@@ -1,0 +1,81 @@
+name: "CI gate image"
+on:
+  push:
+    branches: ["master"]
+    paths:
+      - ".github/actions/cigate/**"
+      - "!.github/actions/cigate/*_test.go"
+      - "!.github/actions/cigate/action.yml"
+      - ".github/workflows/cigate-image.yaml"
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+permissions: {}
+jobs:
+  publish:
+    name: "Publish the CI gate image"
+    timeout-minutes: 20
+    runs-on: ubuntu-24.04
+    if: ${{ github.ref == 'refs/heads/master' }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/actions/cigate
+          sparse-checkout-cone-mode: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        id: build
+        with:
+          context: .github/actions/cigate
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ghcr.io/kumahq/cigate:${{ github.sha }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: "Point the action at the image just published"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          sed -i -E "s|^  image: .*|  image: docker://ghcr.io/kumahq/cigate@${DIGEST}|" .github/actions/cigate/action.yml
+          grep -q "cigate@${DIGEST}" .github/actions/cigate/action.yml
+
+      - name: "Generate GitHub app token"
+        id: github-app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: "Open the pull request that pins it"
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ steps.github-app-token.outputs.token }}
+          branch: ci/pin-cigate-image
+          delete-branch: true
+          signoff: true
+          title: "ci(actions): pin the CI gate image built from ${{ github.sha }}"
+          commit-message: "ci(actions): pin the CI gate image built from ${{ github.sha }}"
+          body: |
+            ## Motivation
+
+            `.github/actions/cigate/action.yml` pins the gate image by digest, so between a push to master that changes the gate source and someone updating that pin by hand, every pull request runs an older binary than it carries.
+
+            ## Implementation
+
+            Point the pin at the image built from ${{ github.sha }}.
+          committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
+          author: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>

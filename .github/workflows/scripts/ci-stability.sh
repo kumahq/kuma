@@ -61,12 +61,14 @@ fetch_sticky_comment() {
   # distinguish "no such comment" from "couldn't reach GitHub" — important
   # to avoid creating duplicate sticky comments on transient errors.
   local pr=$1 json
-  if ! json=$(gh api "repos/${OWNER}/${REPO}/issues/${pr}/comments" --paginate 2>/dev/null); then
-    return 1
-  fi
+  json=$(gh api "repos/${OWNER}/${REPO}/issues/${pr}/comments" --paginate 2>/dev/null) || return 1
   printf '%s' "$json" | jq -c --arg marker "$STICKY_MARKER" '
-    [.[] | select(.body | contains($marker))] | first // empty
+    [.[] | select(.user.type == "Bot" and (.body | contains($marker)))] | first // empty
   '
+}
+
+next_run_number() {
+  jq '([.runs[].number // 0] | max // 0) + 1' <<<"$1"
 }
 
 extract_state() {
@@ -97,7 +99,7 @@ render_comment() {
     jq -R 'split(",") | map(select(length > 0))') || return 1
   flaky=$(jq -r --argjson total "$run_count" --argjson exclude "$exclude_json" '
     [.runs[] | select(.result == "fail") | .failed_jobs[]?]
-    | map(select(. as $j | $exclude | index($j) | not))
+    | map(sub(" \\(cancelled\\)$"; "")) - $exclude
     | sort
     | group_by(.)
     | map({job: .[0], count: length})
@@ -164,16 +166,9 @@ fetch_checks() {
 # Returns the age (in seconds) of a commit on stdout, or non-zero on failure.
 commit_age_secs() {
   local sha=$1 committed_at committed_epoch now_epoch
-  if ! committed_at=$(gh api "repos/${OWNER}/${REPO}/commits/${sha}" \
-      --jq '.commit.committer.date' 2>/dev/null); then
-    return 1
-  fi
-  if [[ -z "$committed_at" ]]; then
-    return 1
-  fi
-  if ! committed_epoch=$(date -u -d "$committed_at" +%s 2>/dev/null); then
-    return 1
-  fi
+  committed_at=$(gh api "repos/${OWNER}/${REPO}/commits/${sha}" --jq '.commit.committer.date' 2>/dev/null) || return 1
+  [[ -n "$committed_at" ]] || return 1
+  committed_epoch=$(date -u -d "$committed_at" +%s 2>/dev/null) || return 1
   now_epoch=$(date -u +%s)
   printf '%s' "$(( now_epoch - committed_epoch ))"
 }
@@ -187,28 +182,31 @@ process_pr() {
 
   local pr_json
   if ! pr_json=$(gh pr view "$pr" \
-      --json headRefName,headRepositoryOwner,state,headRefOid 2>/dev/null); then
+      --json headRefName,headRepositoryOwner,state,headRefOid,isDraft 2>/dev/null); then
     warn "PR #${pr}: could not fetch PR details"
     summary "- ⚠️ PR #${pr}: details fetch failed"
     return
   fi
 
-  if [[ "$(jq -r '.state' <<<"$pr_json")" != "OPEN" ]]; then
+  local pr_state is_draft head_owner branch head_sha
+  IFS=$'\t' read -r pr_state is_draft head_owner branch head_sha < <(
+    jq -r '[.state, .isDraft, .headRepositoryOwner.login, .headRefName, .headRefOid] | @tsv' <<<"$pr_json")
+
+  if [[ "$pr_state" != "OPEN" ]]; then
     log "PR #${pr}: not open, skipping"
     return
   fi
 
-  local head_owner
-  head_owner=$(jq -r '.headRepositoryOwner.login' <<<"$pr_json")
+  if [[ "$is_draft" == "true" ]]; then
+    log "PR #${pr}: draft, skipping"
+    return
+  fi
+
   if [[ "$head_owner" != "$OWNER" ]]; then
     warn "PR #${pr}: head repo is fork \`${head_owner}\`, cannot push"
     summary "- ⏭️ PR #${pr}: skipped (fork \`${head_owner}\`)"
     return
   fi
-
-  local branch head_sha
-  branch=$(jq   -r '.headRefName' <<<"$pr_json")
-  head_sha=$(jq -r '.headRefOid'  <<<"$pr_json")
 
   # --- fresh-commit grace period ---
   # Skip if HEAD was committed less than FRESH_COMMIT_GRACE_SECS ago. Without
@@ -230,24 +228,23 @@ process_pr() {
   # --- observe current check status ---
   # fetch_checks returns non-zero on API failure; skip this PR rather than
   # silently proceeding and bypassing the pending-check guard.
-  local checks has_pending=0 has_failed=0
+  local checks has_pending=0 has_failed=0 has_passed=0
   local -a failed_jobs=()
   if ! checks=$(fetch_checks "$pr"); then
     warn "PR #${pr}: could not fetch check status"
     summary "- ⚠️ PR #${pr}: checks fetch failed"
     return
   fi
-  if [[ -n "$checks" ]]; then
-    while read -r bucket name; do
-      [[ -z "$bucket" ]] && continue
-      case "$bucket" in
-        pending)       has_pending=1 ;;
-        fail)          has_failed=1; failed_jobs+=("$name") ;;
-        cancel)        has_failed=1; failed_jobs+=("$name (cancelled)") ;;
-        pass|skipping) ;;
-      esac
-    done <<<"$checks"
-  fi
+  while read -r bucket name; do
+    [[ -z "$bucket" ]] && continue
+    case "$bucket" in
+      pending)       has_pending=1 ;;
+      fail)          has_failed=1; failed_jobs+=("$name") ;;
+      cancel)        has_failed=1; failed_jobs+=("$name (cancelled)") ;;
+      pass)          has_passed=1 ;;
+      skipping)      ;;
+    esac
+  done <<<"$checks"
 
   if (( has_pending )); then
     log "PR #${pr}: checks pending on ${head_sha:0:7}, not triggering"
@@ -274,18 +271,16 @@ process_pr() {
 
   # --- record observation if definitive ---
   local result="none"
-  if [[ -n "$checks" ]]; then
-    if (( has_failed )); then result="fail"; else result="pass"; fi
-  fi
+  if (( has_failed )); then result="fail"; elif (( has_passed )); then result="pass"; fi
   if [[ "$result" != "none" ]]; then
     local now_utc failed_json run_number observation
     now_utc=$(date -u +"%Y-%m-%d %H:%M")
     if (( ${#failed_jobs[@]} > 0 )); then
-      failed_json=$(printf '%s\n' "${failed_jobs[@]}" | jq -R . | jq -s .)
+      failed_json=$(printf '%s\n' "${failed_jobs[@]}" | jq -Rn '[inputs]')
     else
       failed_json='[]'
     fi
-    run_number=$(( $(jq '.runs | length' <<<"$state") + 1 ))
+    run_number=$(next_run_number "$state")
     observation=$(jq -n \
       --argjson n "$run_number" \
       --arg observed_at "$now_utc" \
@@ -373,7 +368,7 @@ Removing the \`ci/verify-stability-merge-master\` label. Rebase or merge \`maste
 
   # --- push empty trigger commit ---
   local new_run_number trigger_msg
-  new_run_number=$(( $(jq '.runs | length' <<<"$state") + 1 ))
+  new_run_number=$(next_run_number "$state")
   trigger_msg="ci(stability): trigger run #${new_run_number} for PR #${pr}
 
 Workflow run: ${RUN_URL}"
@@ -413,27 +408,28 @@ main() {
   summary ""
   summary "## Processed PRs"
 
-  local prs_stability prs_merge
-  prs_stability=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability") | .number' "$OPEN_PRS_FILE")
-  prs_merge=$(jq     -r '.[] | select(.labels[]?.name == "ci/verify-stability-merge-master") | .number' "$OPEN_PRS_FILE")
+  local wanted
+  if ! jq -e 'type == "array"' "$OPEN_PRS_FILE" >/dev/null 2>&1 \
+    || ! wanted=$(jq -r '
+        .[]
+        | select(any(.labels[]?.name; . == "ci/verify-stability"))
+        | "\(.number) \(if ([.labels[]?.name] | index("ci/verify-stability-merge-master")) then 1 else 0 end)"
+      ' "$OPEN_PRS_FILE"); then
+    err "could not read ${OPEN_PRS_FILE}"
+    summary "- ⚠️ could not read the open pull request list"
+    return 1
+  fi
 
-  if [[ -z "$prs_stability" ]]; then
+  if [[ -z "$wanted" ]]; then
     log "No PRs with ci/verify-stability label"
     summary "_No PRs with \`ci/verify-stability\` label._"
     return 0
   fi
 
-  declare -A merge_set=()
-  while read -r p; do
-    [[ -n "$p" ]] && merge_set["$p"]=1
-  done <<<"$prs_merge"
-
-  while read -r pr; do
+  while read -r pr do_merge; do
     [[ -z "$pr" ]] && continue
-    local do_merge=0
-    [[ -n "${merge_set[$pr]:-}" ]] && do_merge=1
     process_pr "$pr" "$do_merge" || warn "PR #${pr}: processing error (continuing)"
-  done <<<"$prs_stability"
+  done <<<"$wanted"
 }
 
 main "$@"
