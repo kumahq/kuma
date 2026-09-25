@@ -107,6 +107,9 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	default:
 		return errors.Errorf("unsupported scheme %q. Use one of %s", u.Scheme, []string{"grpc", "grpcs"})
 	}
+	if creds := c.rt.KDSContext().ZoneCredentials; creds != nil {
+		dialOpts = append(dialOpts, grpc.WithPerRPCCredentials(creds))
+	}
 	conn, err := grpc.NewClient(u.Host, dialOpts...)
 	if err != nil {
 		return err

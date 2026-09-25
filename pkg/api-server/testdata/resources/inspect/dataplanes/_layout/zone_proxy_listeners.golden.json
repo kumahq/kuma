@@ -2,6 +2,7 @@
  "inbounds": [],
  "kri": "kri_dp_default_test-zone__dp-zone-proxy_",
  "labels": {
+  "kuma.io/workload": "zone-proxy",
   "kuma.io/zone": "test-zone"
  },
  "listeners": [
@@ -46,5 +47,6 @@
    "type": "ZoneEgress"
   }
  ],
- "outbounds": []
+ "outbounds": [],
+ "spiffeId": "spiffe://default.test-zone.mesh.local/workload/zone-proxy"
 }

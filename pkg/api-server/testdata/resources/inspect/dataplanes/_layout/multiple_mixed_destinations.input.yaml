@@ -56,6 +56,9 @@ spec:
       targetPort: 8080
       appProtocol: tcp
       name: secondary-port
+status:
+  vips:
+    - ip: 240.0.0.1
 ---
 type: MeshMultiZoneService
 name: multizone-test-server
@@ -68,6 +71,9 @@ spec:
   ports:
     - port: 80
       appProtocol: http
+status:
+  vips:
+    - ip: 240.0.0.2
 ---
 type: MeshExternalService
 name: mes-1
@@ -80,3 +86,6 @@ spec:
   endpoints:
     - address: 127.0.0.1
       port: 8080
+status:
+  vip:
+    ip: 242.0.0.3

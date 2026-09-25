@@ -1,6 +1,9 @@
 package install
 
 import (
+	"bytes"
+	"encoding/base64"
+	"fmt"
 	"io"
 	"maps"
 	"os"
@@ -19,6 +22,7 @@ import (
 	install_context "github.com/kumahq/kuma/v3/app/kumactl/cmd/install/context"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/install/k8s"
 	kuma_cmd "github.com/kumahq/kuma/v3/pkg/cmd"
+	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/util/data"
 )
 
@@ -132,6 +136,17 @@ This command requires that the KUBECONFIG environment is set`,
 			templateFiles, err := ctx.InstallCpTemplateFiles(&args)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
+			}
+			if args.ZoneTokenPath != "" {
+				if args.ControlPlane_mode != core.Zone {
+					return errors.Errorf("--zone-token-path can only be used with --mode=%s", core.Zone)
+				}
+				file, err := zoneTokenSecret(args.ZoneTokenPath)
+				if err != nil {
+					return err
+				}
+				templateFiles = append(templateFiles, file)
+				args.ControlPlane_zoneToken_secret = zoneTokenSecretName
 			}
 			if args.DumpValues {
 				fList := templateFiles.Filter(func(file data.File) bool {
@@ -267,6 +282,7 @@ This command requires that the KUBECONFIG environment is set`,
 	if err := cmd.Flags().MarkHidden("skip-kinds"); err != nil {
 		panic(err.Error())
 	}
+	cmd.Flags().StringVar(&args.ZoneTokenPath, "zone-token-path", args.ZoneTokenPath, "path to a file with the Zone Token this Zone CP presents to the Global CP. The token is stored in a Secret and mounted, so it can be rotated without restarting the CP")
 	cmd.Flags().BoolVar(&args.SkipCRDs, "skip-crds", false, "skip installation of CRDs (CustomResourceDefinitions). This is useful when installing a control plane with universal environment")
 
 	// This is used for testing the install command without a cluster
@@ -277,6 +293,37 @@ This command requires that the KUBECONFIG environment is set`,
 
 	cmd.Flags().BoolVar(&args.DumpValues, "dump-values", false, "output all possible values for the configuration. This is similar to `helm show values <chart>")
 	return cmd
+}
+
+// zoneTokenSecretName is the Secret kumactl creates for --zone-token-path. The chart
+// mounts whatever controlPlane.zoneToken.secretName names, so a HELM install can use
+// a Secret of its own instead.
+const zoneTokenSecretName = "zone-token" // #nosec G101 -- a resource name, not a credential
+
+// zoneTokenSecret turns a Zone Token file into the Secret the chart mounts.
+func zoneTokenSecret(tokenPath string) (data.File, error) {
+	token, err := os.ReadFile(tokenPath)
+	if err != nil {
+		return data.File{}, errors.Wrapf(err, "could not read the Zone Token from %s", tokenPath)
+	}
+	if len(bytes.TrimSpace(token)) == 0 {
+		return data.File{}, errors.Errorf("the Zone Token in %s is empty", tokenPath)
+	}
+	secret := fmt.Sprintf(`apiVersion: v1
+kind: Secret
+metadata:
+  name: %s
+  namespace: {{ .Release.Namespace }}
+type: Opaque
+data:
+  token: %s
+`, zoneTokenSecretName, base64.StdEncoding.EncodeToString(token))
+
+	return data.File{
+		Data:     []byte(secret),
+		Name:     zoneTokenSecretName,
+		FullPath: "templates/zone-token.yaml",
+	}, nil
 }
 
 func isUniversalEnvironment(vals map[string]any, prefix string) bool {

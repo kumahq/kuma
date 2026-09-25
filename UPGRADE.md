@@ -13,6 +13,41 @@ does not have any particular instructions.
 From now on, `kuma.io/` and `k8s.kuma.io/` are reserved label prefixes.
 Every unknown label under these prefixes will be rejected on create and update.
 
+<<<<<<< HEAD
+### Zone Token issuance moved to the KDS auth configuration
+
+A Zone Token now has one job, authenticating a Zone CP to a Global CP over KDS, so the setting that gates its issuance sits with the rest of the KDS authentication configuration. `dpServer.authn.zoneProxy` is removed, it configured the authentication of zone proxies, which are ordinary data plane proxies authenticating with a dataplane token since 3.0.0.
+
+| Removed | Use instead |
+|---|---|
+| `dpServer.authn.zoneProxy.zoneToken.enableIssuer` | `multizone.global.kds.auth.zoneToken.enableIssuer` |
+| `KUMA_DP_SERVER_AUTHN_ZONE_PROXY_ZONE_TOKEN_ENABLE_ISSUER` | `KUMA_MULTIZONE_GLOBAL_KDS_AUTH_ZONE_TOKEN_ENABLE_ISSUER` |
+| `dpServer.authn.zoneProxy.zoneToken.validator` | `multizone.global.kds.auth.zoneToken.validator` |
+| `dpServer.authn.zoneProxy.zoneToken.validator.useSecrets` | `multizone.global.kds.auth.zoneToken.validator.useSecrets` |
+| `KUMA_DP_SERVER_AUTHN_ZONE_PROXY_ZONE_TOKEN_VALIDATOR_USE_SECRETS` | `KUMA_MULTIZONE_GLOBAL_KDS_AUTH_ZONE_TOKEN_VALIDATOR_USE_SECRETS` |
+| `dpServer.authn.zoneProxy.zoneToken.validator.publicKeys` | `multizone.global.kds.auth.zoneToken.validator.publicKeys` |
+| `dpServer.authn.zoneProxy.type` | none, it was read by nothing |
+| `KUMA_DP_SERVER_AUTHN_ZONE_PROXY_TYPE` | none, it was read by nothing |
+
+**Action required**
+
+Only if you set `enableIssuer` to `false` to mint Zone Tokens offline. Move it to `multizone.global.kds.auth.zoneToken.enableIssuer` on the Global CP, the removed setting is ignored and the issuer is enabled again. The other removed settings had no effect, `dpServer.authn.zoneProxy.zoneToken.validator` was read by nothing and `dpServer.authn.zoneProxy.type` was autoconfigured and never consumed.
+### Resources with fields that are not in the schema are rejected
+
+Applying a policy or resource with a field that does not exist in its schema now fails with `400` listing every unknown field, for example `spec.from: unknown field`. Previously such fields were silently dropped, so a policy written for an older version, such as a `MeshTrafficPermission` with `spec.from` instead of `spec.rules`, was stored without it and looked applied while doing nothing. The check covers policies and resources with a generated schema; legacy resources without one, such as `Mesh`, still drop unknown fields silently. It applies to the Kuma API server and `kumactl apply`. On Kubernetes, `kubectl apply` behavior is unchanged: the API server prunes unknown fields and prints a warning.
+
+**Action required**
+
+Fix manifests that stop applying: remove the reported field or use its current equivalent, for example `spec.rules` instead of `spec.from` on inbound policies.
+
+### Zone token secrets are no longer synced to zones
+
+A zone token is validated on Global CP only, so Global CP stops sending `zone-token-revocations` over KDS and stops deriving `zone-token-signing-public-key-*` from `zone-token-signing-key-*` for the zones. The copies zones already have are deleted on the first KDS sync after the upgrade.
+
+**Action required**
+
+None. A zone older than `3.0.0` reads these secrets only to authenticate a standalone `ZoneIngress` or `ZoneEgress` on Universal, and those have to be replaced with zone proxy `Dataplane` resources before upgrading (see [`ZoneIngress` and `ZoneEgress` resources removed](#zoneingress-and-zoneegress-resources-removed)). Zone proxy `Dataplane` resources authenticate with a dataplane token.
+
 ### DPP configuration refresh interval default raised to 10s
 
 `xdsServer.dataplaneConfigurationRefreshInterval` (`KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL`) now defaults to `10s` instead of `1s`. The control plane regenerates the xDS configuration of every connected proxy on this interval, so a 1s default kept the control plane busy and scaled poorly with the number of data plane proxies.
@@ -217,6 +252,14 @@ stored before the upgrade keeps its empty address until it is applied again,
 and a global control plane serves whatever a zone sent it, so a client that
 reads from a global control plane federated with zones on an older version
 should still fall back to `127.0.0.1`.
+
+### Outbounds that pick a `MeshService` port by number use the port name
+
+A `Dataplane` outbound with `backendRef: {kind: MeshService, name: backend, port: 80}`, where port `80` is named `http`, used to get the port number as its section name. Following the resource identifier design, where the section name is the port name, it now gets `http`. The Envoy listener, cluster and stat prefix of such an outbound change from `..._backend_80` to `..._backend_http`. Transparent proxy outbounds already used the port name and are unchanged.
+
+**Action required**
+
+Policies that target the port with `sectionName: http` now apply to these outbounds. Before, they were skipped and the service-level or `Mesh` rule applied instead. Check such policies before upgrading. Update dashboards and alerts that match on the old `_80` stat prefix.
 
 ### KDS full resync is periodic again, not every second
 

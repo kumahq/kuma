@@ -145,8 +145,8 @@ func (d *tokenWebService) handleZoneIdentityRequest(request *restful.Request, re
 
 	var verr validators.ValidationError
 
-	// Scope is optional: no scope is defined here anymore, distributions that
-	// issue Zone Tokens for their own components register their own.
+	// Scope is optional and not validated: distributions that issue Zone Tokens
+	// for their own components register their own scopes.
 	validForErr, validFor := validateValidFor(idReq.ValidFor)
 	verr.Add(validForErr)
 
