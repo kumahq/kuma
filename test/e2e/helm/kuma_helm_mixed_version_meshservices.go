@@ -30,10 +30,11 @@ import (
 // and stops resolving `*.svc.mesh.local`.
 //
 // The spec pins both zones to the last 2.14.x release while Global runs the
-// current build, applies a Mesh with `meshServices.mode: Exclusive`, and then
-// asserts the zone keeps behaving as Exclusive: the synced Mesh still carries
-// the mode, MeshServices keep existing, and in-zone and cross-zone
-// MeshService traffic keeps flowing.
+// current build, applies a Mesh without `meshServices` - the state a normal
+// 3.0 upgrade leaves behind, so only the KDS mapper can put a mode on the
+// synced Mesh - and then asserts the zone keeps behaving as Exclusive: the
+// synced Mesh carries the mode, MeshServices keep existing, and in-zone and
+// cross-zone MeshService traffic keeps flowing.
 //
 // Global itself is not upgraded inside this spec: the framework has no
 // mechanism to run an old Universal kuma-cp, so Global starts on the current
@@ -149,13 +150,11 @@ func ZonesStayExclusiveBehindNewGlobal() {
 
 	DescribeTable("zone on an older minor keeps MeshService Exclusive mode",
 		func(version string) {
-			By("Apply a Mesh with meshServices.mode: Exclusive on the 3.0 global")
+			By("Apply a Mesh without meshServices on the 3.0 global")
 			err := NewClusterSetup().
 				Install(YamlUniversal(fmt.Sprintf(`
 type: Mesh
 name: %s
-meshServices:
-  mode: Exclusive
 `, meshName))).
 				Install(MeshIdentityBundled(meshName, identityName)).
 				Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(
