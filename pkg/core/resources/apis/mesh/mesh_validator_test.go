@@ -93,5 +93,38 @@ var _ = Describe("Mesh", func() {
                   message: removed in 3.0 and every mesh behaves as Exclusive; remove the
                     field or set it to Exclusive`),
 		)
+
+		It("should not panic when meta is not set yet", func() {
+			// given a mesh before the store assigns its meta, as on the create path
+			mesh := NewMeshResource()
+			mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{ //nolint:staticcheck // deprecated on purpose
+				Mode: mesh_proto.Mesh_MeshServices_Exclusive,
+			}
+
+			// when/then
+			Expect(mesh.Validate()).ToNot(HaveOccurred())
+		})
+
+		It("should accept any mode on a mesh synced over KDS", func() {
+			// given a global-origin mesh carrying a pre-3.0 mode
+			mesh := NewMeshResource()
+			mesh.SetMeta(&test_model.ResourceMeta{
+				Name: "mesh-1",
+				Labels: map[string]string{
+					mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+				},
+			})
+			mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{ //nolint:staticcheck // deprecated on purpose
+				Mode: mesh_proto.Mesh_MeshServices_Disabled,
+			}
+
+			// when
+			verr := mesh.Validate()
+
+			// then
+			actual, err := yaml.Marshal(verr)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchYAML("null"))
+		})
 	})
 })

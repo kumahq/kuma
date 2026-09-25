@@ -100,7 +100,6 @@ func DefaultContext(
 			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin)),
 			util.WithoutLabelPrefixes(cfg.Multizone.Global.KDS.Labels.SkipPrefixes...),
 		),
-		MeshServicesExclusive(),
 		kds_reconcile.If(
 			kds_reconcile.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
@@ -209,27 +208,6 @@ func MapInsightResourcesZeroGeneration(_ kds.Features, r core_model.Resource) (c
 	}
 
 	return r, nil
-}
-
-// MeshServicesExclusive marks every synced Mesh as meshServices.mode:
-// Exclusive, which is how 3.0 behaves everywhere. Zones before 3.0 read a
-// missing field as Disabled and tear down all MeshService traffic.
-func MeshServicesExclusive() kds_reconcile.ResourceMapper {
-	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
-		spec, ok := r.GetSpec().(*mesh_proto.Mesh)
-		if !ok {
-			return r, nil
-		}
-		// Specs are shared pointers into the store cache, so the field must
-		// be set on a clone.
-		spec = proto.Clone(spec).(*mesh_proto.Mesh)
-		spec.MeshServices = &mesh_proto.Mesh_MeshServices{ //nolint:staticcheck // deprecated on purpose
-			Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-		}
-		newR := r.Descriptor().NewObject()
-		newR.SetMeta(r.GetMeta())
-		return newR, newR.SetSpec(spec)
-	}
 }
 
 // RemoveK8sSystemNamespaceSuffixMapper is a mapper responsible for removing control plane system namespace suffixes

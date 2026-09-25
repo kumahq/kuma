@@ -22,10 +22,10 @@ import (
 )
 
 // ZonesStayExclusiveBehindNewGlobal pins both zones to the last 2.14.x
-// release behind a Global on the current build, applies a Mesh without
-// `meshServices` - the state a normal 3.0 upgrade leaves behind - and
-// asserts the zones keep behaving as Exclusive: the synced Mesh carries the
-// mode, MeshServices keep existing, and in-zone and cross-zone MeshService
+// release behind a Global on the current build, applies a Mesh with
+// `meshServices.mode: Exclusive` the way a 2.14 store held it, and asserts
+// the zones keep behaving as Exclusive: the synced Mesh carries the mode,
+// MeshServices keep existing, and in-zone and cross-zone MeshService
 // traffic keeps flowing.
 //
 // Global starts on the current build rather than being upgraded: the
@@ -106,7 +106,7 @@ func ZonesStayExclusiveBehindNewGlobal() {
 		if err != nil {
 			return "", err
 		}
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(req)
 		if err != nil {
 			return "", err
 		}
@@ -141,11 +141,13 @@ func ZonesStayExclusiveBehindNewGlobal() {
 
 	DescribeTable("zone on an older minor keeps MeshService Exclusive mode",
 		func(version string) {
-			By("Apply a Mesh without meshServices on the 3.0 global")
+			By("Apply a Mesh with meshServices.mode: Exclusive on the 3.0 global")
 			err := NewClusterSetup().
 				Install(YamlUniversal(fmt.Sprintf(`
 type: Mesh
 name: %s
+meshServices:
+  mode: Exclusive
 `, meshName))).
 				Install(MeshIdentityBundled(meshName, identityName)).
 				Install(MeshTrafficPermissionAllowAllUniversalWorkloadIdentity(

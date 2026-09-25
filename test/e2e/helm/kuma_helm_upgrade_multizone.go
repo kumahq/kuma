@@ -31,14 +31,20 @@ import (
 // or upgraded here: Global-on-Kubernetes was removed (#17270), Global is always
 // Universal now, and the test framework has no mechanism to run an old Universal
 // kuma-cp binary, only old Helm charts/images for Kubernetes clusters.
-//
-// The 3.0 global serves every Mesh to the pre-upgrade zone as
-// meshServices.mode: Exclusive (see ZonesStayExclusiveBehindNewGlobal), so
-// the zone computes no legacy VIP outbounds and in-zone traffic resolves
-// through MeshService DNS names from the start.
+// vipOutboundNack is why this spec relaxes two things a 2.14 pre-upgrade zone
+// cannot satisfy: it sends Dataplanes whose VIP outbounds carry no backendRef,
+// which this Global rejects on every resync until the upgrade lands. Both ends
+// count the NACK - Global as the sync client that sends it, the zone as the
+// delta server that receives it - and the rejection also makes the test
+// server's Dataplane reach Global only if it wins a race with VIP computation.
+// Fixed in 2.14.x. Grep this identifier to revert every accommodation once a
+// release carrying the fix is out and SupportedVersionEntriesAtLeast picks it
+// up.
+const vipOutboundNack = "2.14 zones send VIP outbounds without backendRef, fixed but not yet released"
+
 func UpgradingZoneWithHelmChart() {
 	namespace := "helm-upgrade-ns"
-	testServerURL := fmt.Sprintf("http://test-server.%s.svc.mesh.local:80", namespace)
+	testServerURL := "test-server_helm-upgrade-ns_svc_80.mesh"
 	var global, zoneK8s, zoneUniversal Cluster
 	var globalCP ControlPlane
 
@@ -63,8 +69,8 @@ func UpgradingZoneWithHelmChart() {
 	})
 
 	E2EAfterEach(func() {
-		ControlPlaneAssertions(global)
-		ControlPlaneAssertions(zoneK8s)
+		ControlPlaneAssertions(global, KnownNack("kds_nack_total", vipOutboundNack))
+		ControlPlaneAssertions(zoneK8s, KnownNack("kds_delta_requests_received", vipOutboundNack))
 		ControlPlaneAssertions(zoneUniversal)
 		grp := sync.WaitGroup{}
 		grp.Add(3)
@@ -132,21 +138,6 @@ spec:
           requestTimeout: 2s
           maxStreamDuration: 20s`, "default"))(global)).To(Succeed())
 
-			// The default generators only name synced (cross-zone) MeshServices
-			// on Kubernetes zones; this one names local ones.
-			Expect(YamlUniversal(`
-type: HostnameGenerator
-name: helm-upgrade-local
-spec:
-  template: '{{ .DisplayName }}.{{ .Namespace }}.svc.mesh.local'
-  selector:
-    meshService:
-      matchLabels:
-        kuma.io/mesh: default
-        kuma.io/env: kubernetes
-        k8s.kuma.io/is-headless-service: "false"
-`)(global)).To(Succeed())
-
 			// mt1 is the only MeshTimeout anywhere: a Mesh no longer comes with
 			// default policies, so nothing else reaches the zone.
 			Eventually(func(g Gomega) (int, error) {
@@ -157,8 +148,8 @@ spec:
 			err = NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(namespace)).
 				Install(testserver.Install(testserver.WithNamespace(namespace))).
-				// The 2.14 zone is served Exclusive mode, so MeshService
-				// outbounds carry the traffic both before and after the upgrade.
+				// 2.14 still generates legacy outbounds alongside reachableBackends, so
+				// traffic works before the upgrade and the ref keeps it working after.
 				Install(democlient.Install(
 					democlient.WithNamespace(namespace),
 					democlient.WithPodAnnotations(map[string]string{
@@ -176,11 +167,13 @@ spec:
 				)).To(HaveField("Instance", ContainSubstring("test-server")))
 			}, "60s", "1s").Should(Succeed())
 
-			// Only the zone's own mesh zone ingress is asserted here. The
-			// pre-upgrade zone is served Exclusive mode, so it computes no VIP
-			// outbounds and every Dataplane reaches Global; the count after
-			// the upgrade is asserted strictly below, which is what this spec
-			// is actually about.
+			// Only the zone's own mesh zone ingress is asserted here. Whether
+			// the test server's Dataplane also makes it across is a race while
+			// the pre-upgrade zone is on 2.14: if KDS syncs it before the zone
+			// computes its VIP outbounds it lands, otherwise it is already
+			// invalid and Global rejects it (see vipOutboundNack). The count
+			// after the upgrade is asserted strictly below, which is what this
+			// spec is actually about.
 			Eventually(func(g Gomega) (int, error) {
 				return NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
 			}, "60s", "1s").Should(BeNumerically(">=", 1), "dpps should be synced to global")

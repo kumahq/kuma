@@ -10,7 +10,6 @@ import (
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/api/system/v1alpha1"
@@ -35,17 +34,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/test/grpc"
 	"github.com/kumahq/kuma/v3/pkg/test/kds/samples"
 	"github.com/kumahq/kuma/v3/pkg/test/kds/setup"
-	"github.com/kumahq/kuma/v3/pkg/test/matchers"
 )
-
-// markedExclusive returns the Mesh spec as the global KDS mapper marks it.
-func markedExclusive(spec *mesh_proto.Mesh) *mesh_proto.Mesh {
-	out := proto.Clone(spec).(*mesh_proto.Mesh)
-	out.MeshServices = &mesh_proto.Mesh_MeshServices{ //nolint:staticcheck // deprecated on purpose
-		Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-	}
-	return out
-}
 
 var _ = Describe("Zone Delta Sync", func() {
 	zoneName := "zone-1"
@@ -136,7 +125,7 @@ var _ = Describe("Zone Delta Sync", func() {
 		err = zoneStore.List(context.Background(), &actual)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(actual.Items[0].Spec).To(matchers.MatchProto(markedExclusive(samples.Mesh1)))
+		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
 		Expect(actual.Items[0].Meta.GetLabels()).To(Equal(map[string]string{
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 			"foo":                          "bar",
@@ -169,7 +158,7 @@ var _ = Describe("Zone Delta Sync", func() {
 		err = zoneStore.List(context.Background(), &actual)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(actual.Items[0].Spec).To(matchers.MatchProto(markedExclusive(samples.Mesh1)))
+		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
 		Expect(actual.Items[0].Meta.GetLabels()).To(Equal(map[string]string{
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 			"foo":                          "bar",
