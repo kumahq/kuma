@@ -392,6 +392,22 @@ controlPlane:
 			},
 			errorMsg: "meshes[default].egress: preStopSleepSeconds (30) must be lower than terminationGracePeriodSeconds (10)",
 		}),
+		Entry("with a zone proxy pod label the chart sets", errTestCase{
+			extraArgs: []string{
+				"--set", "meshes[0].name=default",
+				"--set", "meshes[0].ingress.enabled=true",
+				"--set", "meshes[0].ingress.deployment.podLabels.kuma\\.io/sidecar-injection=disabled",
+			},
+			errorMsg: "meshes[default].ingress.deployment.podLabels: kuma.io/sidecar-injection is set by the chart",
+		}),
+		Entry("with a zone proxy pod annotation the chart sets", errTestCase{
+			extraArgs: []string{
+				"--set", "meshes[0].name=default",
+				"--set", "meshes[0].egress.enabled=true",
+				"--set", "meshes[0].egress.deployment.podAnnotations.kuma\\.io/reachable-backends=x",
+			},
+			errorMsg: "meshes[default].egress.deployment.podAnnotations: kuma.io/reachable-backends is set by the chart",
+		}),
 		Entry("with unexpected image tag", errTestCase{
 			extraArgs: []string{"--set", "global.image.tag=1.5.0"},
 			errorMsg:  "only supports",
