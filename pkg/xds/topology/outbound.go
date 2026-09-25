@@ -2,6 +2,8 @@ package topology
 
 import (
 	"context"
+	crypto_tls "crypto/tls"
+	"crypto/x509"
 	"maps"
 	"net"
 	"slices"
@@ -370,6 +372,21 @@ func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, 
 			es.ServerName = ""
 			es.SANs = []core_xds.SAN{}
 			es.SkipHostnameVerification = true
+		}
+	}
+	return validateTLSMaterial(es)
+}
+
+// validateTLSMaterial rejects material Envoy cannot load. Envoy NACKs the whole cluster
+// update for one bad cluster, so a single broken MeshExternalService would otherwise stop
+// config delivery for every other cluster on the proxy (the zone egress serves all meshes).
+func validateTLSMaterial(es *core_xds.ExternalService) error {
+	if len(es.CaCert) > 0 && !x509.NewCertPool().AppendCertsFromPEM(es.CaCert) {
+		return errors.New("caCert does not contain a PEM encoded certificate")
+	}
+	if len(es.ClientCert) > 0 || len(es.ClientKey) > 0 {
+		if _, err := crypto_tls.X509KeyPair(es.ClientCert, es.ClientKey); err != nil {
+			return errors.Wrap(err, "clientCert and clientKey are not a valid key pair")
 		}
 	}
 	return nil
