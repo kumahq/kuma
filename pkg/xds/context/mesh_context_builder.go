@@ -38,7 +38,7 @@ type meshContextBuilder struct {
 	ipFunc                 lookup.LookupIPFunc
 	zone                   string
 	withPolicyMatchingHash bool
-	allowAllOutbound       bool
+	restrictOutbound       bool
 }
 
 // MeshContextBuilderOption configures optional behavior of the MeshContextBuilder.
@@ -52,10 +52,10 @@ func WithPolicyMatchingHash() MeshContextBuilderOption {
 	}
 }
 
-// WithAllowAllOutbound makes a data plane proxy without reachableBackends reach every destination in the mesh.
-func WithAllowAllOutbound(allow bool) MeshContextBuilderOption {
+// WithRestrictOutbound makes a data plane proxy without reachableBackends reach no destination in the mesh.
+func WithRestrictOutbound(restrict bool) MeshContextBuilderOption {
 	return func(m *meshContextBuilder) {
-		m.allowAllOutbound = allow
+		m.restrictOutbound = restrict
 	}
 }
 
@@ -91,10 +91,11 @@ func NewMeshContextBuilder(
 	}
 
 	builder := &meshContextBuilder{
-		rm:      rm,
-		typeSet: typeSet,
-		ipFunc:  ipFunc,
-		zone:    zone,
+		rm:               rm,
+		typeSet:          typeSet,
+		ipFunc:           ipFunc,
+		zone:             zone,
+		restrictOutbound: true,
 	}
 	for _, opt := range opts {
 		opt(builder)
@@ -327,7 +328,7 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		typeHashes:       typeHashes,
 		Mesh:             mesh,
 		ResourceMap:      rmap,
-		DestinationIndex: NewDestinationIndex(destinations...).WithAllowAllOutbound(m.allowAllOutbound),
+		DestinationIndex: NewDestinationIndex(destinations...).WithAllowAllOutbound(!m.restrictOutbound),
 		VIPDomains:       vipDomains(destinationResources),
 		VIPOutbounds:     vipOutbounds(destinationResources),
 	}, nil
