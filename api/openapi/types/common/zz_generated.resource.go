@@ -204,20 +204,11 @@ type PolicyConf struct {
 
 // PolicyDescription information about a policy
 type PolicyDescription struct {
-	// HasFromTargetRef indicates that this policy can be used as an inbound policy
-	HasFromTargetRef bool `json:"hasFromTargetRef"`
-
 	// HasRulesTargetRef indicates that the policy has a rules targetRef field for matching
 	HasRulesTargetRef bool `json:"hasRulesTargetRef"`
 
 	// HasToTargetRef indicates that this policy can be used as an outbound policy
 	HasToTargetRef bool `json:"hasToTargetRef"`
-
-	// IsFromAsRules If set to `true`, performs a backward compatibility conversion from the deprecated 'from' array to the new 'rules' array. This ensures older policies remain functional under the updated schema.
-	IsFromAsRules bool `json:"isFromAsRules"`
-
-	// IsTargetRef whether this policy uses targetRef matching
-	IsTargetRef bool `json:"isTargetRef"`
 }
 
 // PolicyOrigin The list of policies KRI that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.

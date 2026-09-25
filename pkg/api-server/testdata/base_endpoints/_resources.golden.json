@@ -68,11 +68,8 @@
    "path": "meshaccesslogs",
    "pluralDisplayName": "Mesh Access Logs",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -87,11 +84,8 @@
    "path": "meshcircuitbreakers",
    "pluralDisplayName": "Mesh Circuit Breakers",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -118,11 +112,8 @@
    "path": "meshfaultinjections",
    "pluralDisplayName": "Mesh Fault Injections",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -137,11 +128,8 @@
    "path": "meshhttproutes",
    "pluralDisplayName": "Mesh HTTP Routes",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -156,11 +144,8 @@
    "path": "meshhealthchecks",
    "pluralDisplayName": "Mesh Health Checks",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -199,11 +184,8 @@
    "path": "meshloadbalancingstrategies",
    "pluralDisplayName": "Mesh Load Balancing Strategies",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -218,11 +200,8 @@
    "path": "meshmetrics",
    "pluralDisplayName": "Mesh Metrics",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": false
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -261,11 +240,8 @@
    "path": "meshpassthroughs",
    "pluralDisplayName": "Mesh Passthroughs",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": false
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -280,11 +256,8 @@
    "path": "meshproxypatches",
    "pluralDisplayName": "Mesh Proxy Patches",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": false
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -299,11 +272,8 @@
    "path": "meshratelimits",
    "pluralDisplayName": "Mesh Rate Limits",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -318,11 +288,8 @@
    "path": "meshretries",
    "pluralDisplayName": "Mesh Retries",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -349,11 +316,8 @@
    "path": "meshtcproutes",
    "pluralDisplayName": "Mesh TCP Routes",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": false,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -368,11 +332,8 @@
    "path": "meshtlses",
    "pluralDisplayName": "Mesh TLSes",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": false
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -387,11 +348,8 @@
    "path": "meshtimeouts",
    "pluralDisplayName": "Mesh Timeouts",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
-    "hasToTargetRef": true,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": true
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -406,11 +364,8 @@
    "path": "meshtraces",
    "pluralDisplayName": "Mesh Traces",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": false,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": false
    },
    "readOnly": false,
    "scope": "Mesh",
@@ -425,11 +380,8 @@
    "path": "meshtrafficpermissions",
    "pluralDisplayName": "Mesh Traffic Permissions",
    "policy": {
-    "hasFromTargetRef": false,
     "hasRulesTargetRef": true,
-    "hasToTargetRef": false,
-    "isFromAsRules": false,
-    "isTargetRef": true
+    "hasToTargetRef": false
    },
    "readOnly": false,
    "scope": "Mesh",

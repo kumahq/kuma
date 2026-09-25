@@ -30,9 +30,7 @@ var _ = Describe("Resources Client", func() {
    "path": "circuit-breakers",
    "pluralDisplayName": "Circuit Breakers",
    "policy": {
-    "hasFromTargetRef": false,
-    "hasToTargetRef": false,
-    "isTargetRef": false
+    "hasToTargetRef": false
    },
    "readOnly": false,
    "scope": "Mesh",
