@@ -33,9 +33,9 @@ A single data source cannot mix both shapes, and the `File` and `EnvVar` types a
 
 Before upgrading to 3.0:
 
-1. Upgrade the global control plane and every zone control plane to 2.14.6 or later. A zone on an older 2.14 does not know the new fields: on Kubernetes they are pruned and the proxy silently falls back to the system CA.
+1. Upgrade the global control plane and every zone control plane to 2.14.6 or later. A zone on an older 2.14 does not know the new fields: they are dropped (pruned on Kubernetes), and the proxy silently falls back to the system CA.
 2. Rewrite `caCert`, `clientCert` and `clientKey` on every `MeshExternalService` to the new shape.
-3. Upgrade to 3.0.
+3. Upgrade to 3.0, global control plane first.
 
 ## Upgrade to `2.14.5`
 
