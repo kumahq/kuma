@@ -40,6 +40,14 @@ Applying a policy or resource with a field that does not exist in its schema now
 
 Fix manifests that stop applying: remove the reported field or use its current equivalent, for example `spec.rules` instead of `spec.from` on inbound policies.
 
+### Zone token secrets are no longer synced to zones
+
+A zone token is validated on Global CP only, so Global CP stops sending `zone-token-revocations` over KDS and stops deriving `zone-token-signing-public-key-*` from `zone-token-signing-key-*` for the zones. The copies zones already have are deleted on the first KDS sync after the upgrade.
+
+**Action required**
+
+None. A zone older than `3.0.0` reads these secrets only to authenticate a standalone `ZoneIngress` or `ZoneEgress` on Universal, and those have to be replaced with zone proxy `Dataplane` resources before upgrading (see [`ZoneIngress` and `ZoneEgress` resources removed](#zoneingress-and-zoneegress-resources-removed)). Zone proxy `Dataplane` resources authenticate with a dataplane token.
+
 ### DPP configuration refresh interval default raised to 10s
 
 `xdsServer.dataplaneConfigurationRefreshInterval` (`KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL`) now defaults to `10s` instead of `1s`. The control plane regenerates the xDS configuration of every connected proxy on this interval, so a 1s default kept the control plane busy and scaled poorly with the number of data plane proxies.
