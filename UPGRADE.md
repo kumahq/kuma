@@ -13,7 +13,14 @@ does not have any particular instructions.
 From now on, `kuma.io/` and `k8s.kuma.io/` are reserved label prefixes.
 Every unknown label under these prefixes will be rejected on create and update.
 
-<<<<<<< HEAD
+### Control plane sets `GOMEMLIMIT` itself to 90% of the cgroup memory limit
+
+The Helm chart used to set `GOMEMLIMIT` to the full `controlPlane.resources.limits.memory`. `GOMEMLIMIT` only covers memory the Go runtime manages, so with no headroom left for the rest, such as the mapped `kuma-cp` binary, the container could be OOM killed before the garbage collector reacted. `kuma-cp` now reads the cgroup memory limit at startup and sets `GOMEMLIMIT` to 90% of it. This also covers limits the chart does not know about, such as a `LimitRange` default or a VPA, and Universal deployments under a cgroup. The chart no longer renders the `GOMEMLIMIT` environment variable and `controlPlane.runtime.goMemLimit.divisor` is removed.
+
+**Action required**
+
+None. Set the `AUTOMEMLIMIT` environment variable to choose another fraction, for example `AUTOMEMLIMIT=0.85`, or to `off` to disable it. Set `GOMEMLIMIT` explicitly to use an exact value, in which case `kuma-cp` leaves it as is. On Kubernetes use `controlPlane.envVars` for either. Remove `controlPlane.runtime.goMemLimit` from your values if you set it.
+
 ### Zone Token issuance moved to the KDS auth configuration
 
 A Zone Token now has one job, authenticating a Zone CP to a Global CP over KDS, so the setting that gates its issuance sits with the rest of the KDS authentication configuration. `dpServer.authn.zoneProxy` is removed, it configured the authentication of zone proxies, which are ordinary data plane proxies authenticating with a dataplane token since 3.0.0.

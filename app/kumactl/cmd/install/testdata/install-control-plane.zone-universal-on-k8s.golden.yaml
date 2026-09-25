@@ -288,12 +288,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: GOMEMLIMIT
-              valueFrom:
-                resourceFieldRef:
-                  containerName: control-plane
-                  resource: limits.memory
-                  divisor: "1"
             - name: GOMAXPROCS
               valueFrom:
                 resourceFieldRef:
