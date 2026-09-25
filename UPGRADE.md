@@ -1213,6 +1213,28 @@ no equivalent there: `podAnnotations`, `annotations`, `logLevel`, `drainTime`,
 `dns.config`, `service.enabled` and `service.nodePort`. Drain time and probes
 are now control-plane-wide sidecar injector settings.
 
+### Mesh-scoped zone proxies keep their `kuma-dp` until you restart them
+
+Zone proxy pods deployed through `meshes[]` no longer carry the `helm.sh/chart`
+and `app.kubernetes.io/version` labels, so upgrading the control plane leaves
+them running, like any other data plane proxy. Previously every version upgrade
+rolled them while the old control plane was still injecting sidecars, so they
+restarted and came back with the old `kuma-dp` anyway.
+
+Upgrading from a 2.14 patch that predates this change still rolls them once,
+because their pod template changes: the version labels go away and the egress
+`preStopSleepSeconds` default rises from 15 to 20 seconds. They come back with
+the 2.14 `kuma-dp`.
+
+**Action required**
+
+After the control plane upgrade, restart the zone proxies to move them to the
+new `kuma-dp`:
+
+```sh
+kubectl rollout restart deployment -n kuma-system -l kuma.io/mesh
+```
+
 ### Standalone zone proxy inspect endpoints and `kumactl inspect` commands removed
 
 The Envoy admin inspect endpoints for standalone zone proxies are gone:
