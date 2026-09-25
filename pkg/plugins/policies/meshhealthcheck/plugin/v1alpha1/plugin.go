@@ -206,7 +206,11 @@ func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			if !ok {
 				continue
 			}
+			mesKRI := kri.From(meshExtSvc)
 			for mesID, typedResources := range indexed {
+				if kri.NoSectionName(mesID) != mesKRI {
+					continue
+				}
 				conf := mhc.ToRules.ResourceRules.Compute(mesID, meshResources)
 				if conf == nil {
 					continue
