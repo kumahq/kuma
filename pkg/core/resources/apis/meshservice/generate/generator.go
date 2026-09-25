@@ -265,8 +265,11 @@ func checkMeshServicesConsistency(
 	return conflicting, meshService
 }
 
+// servicesDiffer compares the selector too: a MeshService generated from a
+// kuma.io/service tag keeps its name under kuma.io/workload generation, so only
+// the selector shows it no longer matches its Dataplanes.
 func servicesDiffer(a, b *meshservice_api.MeshService) bool {
-	return !reflect.DeepEqual(a.Ports, b.Ports)
+	return !reflect.DeepEqual(a.Ports, b.Ports) || !reflect.DeepEqual(a.Selector, b.Selector)
 }
 
 func desiredLabels(mesh, name, zone string, propagated map[string]string) map[string]string {

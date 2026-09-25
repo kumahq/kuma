@@ -591,6 +591,43 @@ var _ = Describe("MeshService generator", func() {
 			}, "2s", "100ms").Should(Succeed())
 		})
 
+		// A MeshService generated from kuma.io/service inbound tags keeps its name
+		// under kuma.io/workload generation, so only the selector tells it apart.
+		It("should rewrite the tag selector of a MeshService whose ports already match", func() {
+			stale := meshservice_api.NewMeshServiceResource()
+			stale.Spec.Selector = meshservice_api.Selector{
+				DataplaneTags: &map[string]string{mesh_proto.ServiceTag: "backend"},
+			}
+			stale.Spec.Ports = []meshservice_api.Port{{
+				Name:        pointer.To("http"),
+				Port:        80,
+				TargetPort:  pointer.To(intstr.FromInt32(80)),
+				AppProtocol: core_meta.ProtocolTCP,
+			}}
+			Expect(resManager.Create(context.Background(), stale,
+				store.CreateByKey("backend", model.DefaultMesh),
+				store.CreateWithLabels(map[string]string{
+					mesh_proto.ManagedByLabel:      "meshservice-generator",
+					mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+					mesh_proto.ZoneTag:             "zone",
+				}),
+			)).To(Succeed())
+
+			createDataplane("dp-1", "backend", nil,
+				builders.Inbound().WithPort(80).WithServicePort(8080).WithName("http"),
+			)
+
+			Eventually(func(g Gomega) {
+				ms := meshservice_api.NewMeshServiceResource()
+				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+				g.Expect(ms.Spec.Selector).To(Equal(meshservice_api.Selector{
+					DataplaneLabels: &common_api.LabelSelector{
+						MatchLabels: &map[string]string{metadata.KumaWorkload: "backend"},
+					},
+				}))
+			}, "2s", "100ms").Should(Succeed())
+		})
+
 		It("should generate a single MeshService for many Dataplanes of one workload", func() {
 			createDataplane("dp-1", "backend", nil,
 				builders.Inbound().WithPort(80).WithServicePort(8080).WithName("http"),
