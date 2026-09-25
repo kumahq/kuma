@@ -75,9 +75,9 @@ func ZonesStayExclusiveBehindNewGlobal() {
 	})
 
 	E2EAfterEach(func() {
-		ControlPlaneAssertions(global, KnownNack("kds_nack_total", vipOutboundNack))
-		ControlPlaneAssertions(zoneK8s1, KnownNack("kds_delta_requests_received", vipOutboundNack))
-		ControlPlaneAssertions(zoneK8s2, KnownNack("kds_delta_requests_received", vipOutboundNack))
+		ControlPlaneAssertions(global)
+		ControlPlaneAssertions(zoneK8s1)
+		ControlPlaneAssertions(zoneK8s2)
 		grp := sync.WaitGroup{}
 		grp.Add(3)
 		go func() {
