@@ -94,19 +94,9 @@ var _ = Describe("Mesh", func() {
                     field or set it to Exclusive`),
 		)
 
-		It("should not panic when meta is not set yet", func() {
-			// given a mesh before the store assigns its meta, as on the create path
-			mesh := NewMeshResource()
-			mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{ //nolint:staticcheck // deprecated on purpose
-				Mode: mesh_proto.Mesh_MeshServices_Exclusive,
-			}
-
-			// when/then
-			Expect(mesh.Validate()).ToNot(HaveOccurred())
-		})
-
-		It("should accept any mode on a mesh synced over KDS", func() {
-			// given a global-origin mesh carrying a pre-3.0 mode
+		It("should reject other modes even when the mesh carries the global origin label", func() {
+			// the origin label is stamped on the global's own writes and on
+			// KDS-ingested meshes alike, so it must not exempt the check
 			mesh := NewMeshResource()
 			mesh.SetMeta(&test_model.ResourceMeta{
 				Name: "mesh-1",
@@ -124,7 +114,27 @@ var _ = Describe("Mesh", func() {
 			// then
 			actual, err := yaml.Marshal(verr)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML("null"))
+			Expect(actual).To(MatchYAML(`
+                violations:
+                - field: meshServices.mode
+                  message: removed in 3.0 and every mesh behaves as Exclusive; remove the
+                    field or set it to Exclusive`))
+		})
+
+		It("should warn on write when the deprecated field is set", func() {
+			// given
+			mesh := NewMeshResource()
+			mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{ //nolint:staticcheck // deprecated on purpose
+				Mode: mesh_proto.Mesh_MeshServices_Exclusive,
+			}
+
+			// when/then
+			Expect(mesh.Deprecations()).To(ConsistOf(
+				"meshServices was removed in 3.0 and is ignored: every mesh behaves as Exclusive. Drop the field before it is reserved again in a future release.",
+			))
+
+			// and not when the field is absent
+			Expect(NewMeshResource().Deprecations()).To(BeEmpty())
 		})
 	})
 })
