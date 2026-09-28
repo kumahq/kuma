@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
@@ -35,15 +36,18 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(req admission.Request, r c
 	}
 	ns := req.Namespace
 
-	var stored metav1.PartialObjectMetadata
+	// The labels are read from the raw objects: r's meta already has the read-time
+	// enforced labels overlaid and a name.namespace name.
+	var supplied, stored metav1.PartialObjectMetadata
+	if req.Operation != admissionv1.Delete {
+		if err := yaml.Unmarshal(req.Object.Raw, &supplied); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+	}
 	if len(req.OldObject.Raw) > 0 {
 		if err := yaml.Unmarshal(req.OldObject.Raw, &stored); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
-	}
-	labels := r.GetMeta().GetLabels()
-	if req.Operation == admissionv1.Delete {
-		labels = nil
 	}
 
 	if ns != "" {
@@ -58,9 +62,9 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(req admission.Request, r c
 		Spec:         r.GetSpec(),
 		Namespace:    resource_labels.NewNamespace(ns, ns == c.SystemNamespace),
 		Mesh:         r.GetMeta().GetMesh(),
-		DisplayName:  r.GetMeta().GetName(),
-		Labels:       labels,
-		StoredLabels: stored.GetLabels(),
+		DisplayName:  supplied.GetName(),
+		Labels:       k8s.SuppliedLabels(&supplied),
+		StoredLabels: k8s.SuppliedLabels(&stored),
 	}, c.ControlPlane); err.HasViolations() {
 		return *forbiddenResponse("Operation not allowed. " + err.Violations[0].Message)
 	}

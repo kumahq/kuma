@@ -6,14 +6,14 @@
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/zone\"]",
-   "reason": "kuma.io/zone is not allowed on a global control plane"
+   "reason": "label \"kuma.io/zone\" is managed by the control plane and cannot be set here"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"kuma.io/zone\"]",
-   "message": "kuma.io/zone is not allowed on a global control plane"
+   "message": "label \"kuma.io/zone\" is managed by the control plane and cannot be set here"
   }
  ]
 }

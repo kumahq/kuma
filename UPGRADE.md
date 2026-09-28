@@ -22,6 +22,14 @@ From now on, `kuma.io/` and `k8s.kuma.io/` are reserved label prefixes.
 Every unknown label under these prefixes will be rejected on create and update.
 On Universal this includes the labels of the `Dataplane` passed to `kuma-dp run`: a proxy whose `Dataplane` carries an unknown reserved label, such as a leftover `kuma.io/gateway: "true"`, or an invalid label value fails to register until the label is fixed.
 
+### Control-plane-owned labels are rejected when they differ from the computed value
+
+The control plane computes `kuma.io/origin`, `kuma.io/zone`, `kuma.io/env`, `kuma.io/mesh`, `kuma.io/display-name`, `kuma.io/policy-role`, `k8s.kuma.io/namespace`, `k8s.kuma.io/service-account`, `kuma.io/listener-zoneingress` and `kuma.io/listener-zoneegress` on every write. Depending on the label and the platform, a value you supplied used to be either rejected or silently replaced. Now, on both Kubernetes and Universal, a supplied value that differs from the computed one is rejected, and an equal or absent one is accepted. On an update, a value equal to the stored one is accepted too, so re-applying a stored resource with `kubectl apply` or `kumactl apply` keeps working. Plugin policies on Universal now also carry `kuma.io/policy-role: system`.
+
+**Action required**
+
+Remove these labels from your manifests, or set them to the value the control plane shows on the stored resource.
+
 ### Zone Token issuance moved to the KDS auth configuration
 
 A Zone Token now has one job, authenticating a Zone CP to a Global CP over KDS, so the setting that gates its issuance sits with the rest of the KDS authentication configuration. `dpServer.authn.zoneProxy` is removed, it configured the authentication of zone proxies, which are ordinary data plane proxies authenticating with a dataplane token since 3.0.0.
@@ -455,7 +463,7 @@ None for most users. If you have a `NetworkPolicy`, a monitoring check, or a `Co
 
 ### The `k8s.kuma.io/service-account` label on a `Dataplane` is managed by the control plane
 
-On Kubernetes this label is computed by the control plane from the Pod's ServiceAccount and is not meant to be set by hand. The admission webhook now rejects any `Dataplane` create or update that carries `k8s.kuma.io/service-account`, unless the request comes from the control plane itself or from another user listed in `runtime.kubernetes.allowedUsers`, on both Zone and Global control planes. A proxy is also rejected at xDS authentication when the label on its `Dataplane` does not match the ServiceAccount of its Pod. Other resource types are unaffected, as are resources synced over KDS and resources written by the control plane.
+On Kubernetes this label is computed by the control plane from the Pod's ServiceAccount and is not meant to be set by hand. The admission webhook now rejects any `Dataplane` create or update that carries `k8s.kuma.io/service-account`, unless the request comes from the control plane itself or from another user listed in `runtime.kubernetes.allowedUsers`, on both Zone and Global control planes. A proxy is also rejected at xDS authentication when the label on its `Dataplane` does not match the ServiceAccount of its Pod. Resources synced over KDS and resources written by the control plane are unaffected.
 
 **Action required**
 
