@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_plugins "github.com/kumahq/kuma/v2/pkg/core/plugins"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -830,4 +832,49 @@ var _ = Describe("MeshHealthCheck", func() {
 			expectedCluster: "basic-meshexternalservice-tcp.zone_proxy_cluster.golden.yaml",
 		}),
 	)
+
+	It("should give each MeshExternalService cluster on a ZoneEgress only its own health check", func() {
+		rs := core_xds.NewResourceSet()
+		rules := outbound.ResourceRules{}
+		dynamic := core_xds.ExternalServiceDynamicPolicies{}
+		mesList := &meshexternalservice_api.MeshExternalServiceResourceList{}
+		for _, name := range []string{"a", "b", "c"} {
+			mes := builders.MeshExternalService().WithName(name).WithMesh("default").Build()
+			Expect(mesList.AddItem(mes)).To(Succeed())
+			id := kri.From(mes)
+			rs.Add(&core_xds.Resource{
+				Name:           id.String(),
+				Origin:         metadata.OriginEgress,
+				Resource:       clusters.NewClusterBuilder(envoy_common.APIV3, id.String()).MustBuild(),
+				ResourceOrigin: id,
+				Protocol:       core_meta.ProtocolHTTP,
+			})
+			rules[id] = outbound.ResourceRule{Conf: []any{api.Conf{
+				Interval:           test.ParseDuration("10s"),
+				Timeout:            test.ParseDuration("2s"),
+				UnhealthyThreshold: pointer.To[int32](3),
+				HealthyThreshold:   pointer.To[int32](1),
+				Http:               &api.HttpHealthCheck{Path: pointer.To("/" + name)},
+			}}}
+			dynamic[destinationname.MustResolve(false, mes, mes.Spec.Match)] = core_xds.PluginOriginatedPolicies{}
+		}
+		for _, policies := range dynamic {
+			policies[api.MeshHealthCheckType] = core_xds.TypedMatchingPolicies{ToRules: core_rules.ToRules{ResourceRules: rules}}
+		}
+		proxy := xds_builders.Proxy().Build()
+		proxy.ZoneEgressProxy = &core_xds.ZoneEgressProxy{MeshResourcesList: []*core_xds.MeshResources{{
+			Mesh:      samples.MeshDefault(),
+			Dynamic:   dynamic,
+			Resources: map[core_model.ResourceType]core_model.ResourceList{meshexternalservice_api.MeshExternalServiceType: mesList},
+		}}}
+		xdsCtx := *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build()
+
+		Expect(plugin.NewPlugin().(core_plugins.PolicyPlugin).Apply(rs, xdsCtx, proxy)).To(Succeed())
+
+		for _, r := range rs.ListOf(envoy_resource.ClusterType) {
+			healthChecks := r.Resource.(*envoy_cluster.Cluster).GetHealthChecks()
+			Expect(healthChecks).To(HaveLen(1), r.Name)
+			Expect(healthChecks[0].GetHttpHealthCheck().GetPath()).To(Equal("/"+r.ResourceOrigin.Name), r.Name)
+		}
+	})
 })
