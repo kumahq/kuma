@@ -70,7 +70,7 @@ func validateDefault(conf Conf) validators.ValidationError {
 			}
 			if _, found := uniqueDomains[key]; found {
 				if _, found := uniqueDomains[key][match.Value]; found {
-					verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), fmt.Sprintf("value %s is already defiend for this port and protocol", match.Value))
+					verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), fmt.Sprintf("value %s is already defined for this port and protocol", match.Value))
 				} else {
 					uniqueDomains[key][match.Value] = true
 				}
