@@ -17,5 +17,6 @@ func TestE2E(t *testing.T) {
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
 	_ = Describe("Zone with Helm chart and Universal Global", Label("job-0"), Ordered, helm.ZoneWithHelmChartAndUniversalGlobal, Serial)
+	_ = Describe("2.14 zones keep MeshService Exclusive mode behind a 3.0 global", Label("job-1"), helm.ZonesStayExclusiveBehindNewGlobal, Serial)
 	_ = Describe("Upgrade Zone with Helm chart", Label("job-2"), helm.UpgradingZoneWithHelmChart, Serial)
 )

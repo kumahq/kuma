@@ -1102,14 +1102,28 @@ already behaviourally identical, so no other changes are required.
 
 ### `meshServices` removed from the `Mesh` schema
 
-The `meshServices` field (and its `mode` enum) has been removed from the
-`Mesh` resource spec. Unified resource naming is now unconditional,
+The `meshServices` field (and its `mode` enum) no longer has any effect on
+the `Mesh` resource. Unified resource naming is now unconditional,
 regardless of what the mesh's former `meshServices.mode` was set to.
+
+The field remains in the schema as deprecated so that stored values survive
+the upgrade and keep syncing to zones over KDS: zones before 3.0 read a
+missing field as `Disabled`, which makes them delete every generated
+`MeshService`, skip mesh-scoped zone proxy listeners, and stop serving
+`MeshService` outbounds and DNS. Zones on 3.0 ignore the field, and writes
+setting it to any mode other than `Exclusive` are rejected, because that
+mode would silently behave as `Exclusive`.
 
 **Action required**
 
-None. A `Mesh` spec that still sets `meshServices` continues to apply
-successfully; the field is silently ignored by the control plane.
+Set `meshServices.mode: Exclusive` on every mesh before upgrading the
+global control plane, including meshes that never set the field: a 2.x
+zone reads a missing field as `Disabled`. The 3.0 global then keeps syncing
+the stored mode, and 2.x zones keep serving `MeshServices` until they are
+upgraded. A mesh that still carries another mode when the global is
+upgraded is rejected by 3.0 zones over KDS until it is set to `Exclusive`.
+A write that carries the field with `Exclusive` still applies and returns a
+deprecation warning; drop the field from your manifests.
 
 ### `routing.zoneEgress` removed from the `Mesh` schema
 

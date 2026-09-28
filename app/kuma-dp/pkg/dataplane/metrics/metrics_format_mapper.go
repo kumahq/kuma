@@ -65,7 +65,7 @@ func FromPrometheusMetrics(appMetrics map[string]*io_prometheus_client.MetricFam
 			case io_prometheus_client.MetricType_HISTOGRAM:
 				scopedAggregations = scopedHistograms(prometheusMetric.Metric, kumaVersion, extraAttributes, requestTime)
 			default:
-				log.Info("got unsupported metric type", "type", prometheusMetric.Type)
+				log.Info("got unsupported metric type", "type", prometheusMetric.GetType())
 			}
 			for scope, aggregations := range scopedAggregations {
 				scopedMetrics[scope] = append(scopedMetrics[scope], metricdata.Metrics{
