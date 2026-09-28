@@ -20,11 +20,6 @@ type Namespace struct {
 
 var UnsetNamespace = Namespace{}
 
-// Labels the control plane used to compute and no longer does. They are
-// deleted on every proxy write so a resource created by an older control plane
-// stops carrying them, instead of keeping a value nothing maintains.
-var removedLabels = []string{"kuma.io/proxy-type", "kuma.io/gateway"}
-
 func NewNamespace(value string, system bool) Namespace {
 	return Namespace{
 		value:  value,
@@ -63,11 +58,6 @@ func Compute(w Write, cp ControlPlane) (map[string]string, error) {
 			labels[d.Key] = v
 		} else {
 			delete(labels, d.Key)
-		}
-	}
-	if w.Descriptor.IsProxy {
-		for _, k := range removedLabels {
-			delete(labels, k)
 		}
 	}
 	return labels, nil
