@@ -67,9 +67,6 @@ func NewStoredResource(res core_model.Resource, ns Namespace, storedLabels map[s
 	}
 }
 
-// KDS only writes into the system namespace, so anything outside it is local; inside it,
-// and on Universal, the stored origin is trusted because the API server recomputes it on
-// every write and the CP is the only other writer.
 func isLocal(ns Namespace, storedLabels map[string]string, cp ControlPlane) bool {
 	return (ns.value != "" && !ns.system) || core_model.IsLocallyOriginated(cp.Mode, storedLabels)
 }
