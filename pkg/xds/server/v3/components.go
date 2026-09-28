@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/v3/pkg/core"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
@@ -39,7 +40,7 @@ func RegisterXDS(
 	workloadLabelValidator := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewWorkloadLabelValidator(rt.ReadOnlyResourceManager(), rt.Config().Environment))
 
 	dpLifecycle := xds_callbacks.DataplaneCallbacksToXdsCallbacks(
-		xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId(), rt.Config().Store.Cache.ExpirationTime.Duration))
+		xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId(), rt.Config().Store.Cache.ExpirationTime.Duration, resource_labels.ControlPlaneFromConfig(rt.Config())))
 	reconciler := DefaultReconciler(rt, xdsContext, statsCallbacks, xdsMetrics)
 	otelStatusCache := otelstatus.NewCache()
 	watchdogFactory, err := xds_sync.DefaultDataplaneWatchdogFactory(rt, reconciler, xdsMetrics, envoyCpCtx, otelStatusCache, envoy_common.APIV3)
