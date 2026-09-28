@@ -50,7 +50,10 @@ type Rule struct {
 }
 
 func HashMatches(m []Match) common_api.MatchesHash {
-	bytes, _ := json.Marshal(m)
+	bytes, err := json.Marshal(m)
+	if err != nil {
+		return common_api.MatchesHash{}
+	}
 	h := sha256.Hash(string(bytes))
 	return common_api.MatchesHash(h)
 }
