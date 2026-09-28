@@ -196,8 +196,8 @@ func (zw *ZoneWatch) cleanupStaleConnections(zone zoneTenant, zoneInsight *syste
 		}
 		// If we have a connection that started before the one from insight, cancel the stream.
 		// There's no need to check globalId since the connection exists in the map, meaning it is local.
-		activeStreamConnTime := proto.MustTimestampFromProto(conf.GetConnectTime())
-		if connOpenTime.Before(*activeStreamConnTime) {
+		activeStreamConnTime := *proto.MustTimestampFromProto(conf.GetConnectTime())
+		if connOpenTime.Before(activeStreamConnTime) {
 			ctx := multitenant.WithTenant(context.TODO(), zone.tenantID)
 			log := kuma_log.AddFieldsFromCtx(zw.log, ctx, zw.extensions)
 			log.Info("the same zone has connected but the previous connection wasn't closed, closing",
