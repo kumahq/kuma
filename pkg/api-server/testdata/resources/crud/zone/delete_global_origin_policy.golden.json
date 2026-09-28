@@ -6,14 +6,14 @@
  "invalid_parameters": [
   {
    "field": "[\"kuma.io/origin\"]",
-   "reason": "the origin label must be set to 'zone'"
+   "reason": "the resource is owned by the global control plane and can be changed only there"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "[\"kuma.io/origin\"]",
-   "message": "the origin label must be set to 'zone'"
+   "message": "the resource is owned by the global control plane and can be changed only there"
   }
  ]
 }

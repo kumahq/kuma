@@ -2,12 +2,14 @@ package webhooks
 
 import (
 	"fmt"
+	"net/http"
 	"slices"
 	"strings"
 
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
@@ -26,9 +28,17 @@ const (
 	StorageVersionMigratorUser  = "system:serviceaccount:kube-system:storage-version-migrator-controller"
 )
 
-func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string) admission.Response {
-	if c.isPrivilegedUser(c.AllowedUsers, userInfo) {
+func (c *ResourceAdmissionChecker) IsOperationAllowed(req admission.Request, r core_model.Resource) admission.Response {
+	if c.isPrivilegedUser(c.AllowedUsers, req.UserInfo) {
 		return admission.Allowed("")
+	}
+	ns := req.Namespace
+
+	var stored metav1.PartialObjectMetadata
+	if len(req.OldObject.Raw) > 0 {
+		if err := yaml.Unmarshal(req.OldObject.Raw, &stored); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
 	}
 
 	if ns != "" {
@@ -39,12 +49,13 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 	}
 
 	if err := resource_labels.ValidateOwnership(resource_labels.Write{
-		Descriptor:  r.Descriptor(),
-		Spec:        r.GetSpec(),
-		Namespace:   resource_labels.NewNamespace(ns, ns == c.SystemNamespace),
-		Mesh:        r.GetMeta().GetMesh(),
-		DisplayName: r.GetMeta().GetName(),
-		Labels:      r.GetMeta().GetLabels(),
+		Descriptor:   r.Descriptor(),
+		Spec:         r.GetSpec(),
+		Namespace:    resource_labels.NewNamespace(ns, ns == c.SystemNamespace),
+		Mesh:         r.GetMeta().GetMesh(),
+		DisplayName:  r.GetMeta().GetName(),
+		Labels:       r.GetMeta().GetLabels(),
+		StoredLabels: stored.GetLabels(),
 	}, c.ControlPlane); err.HasViolations() {
 		return *forbiddenResponse("Operation not allowed. " + err.Violations[0].Message)
 	}

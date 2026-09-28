@@ -2,12 +2,10 @@ package api_server
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	"github.com/emicklei/go-restful/v3"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	api_server_types "github.com/kumahq/kuma/v3/pkg/api-server/types"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
@@ -16,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/validator"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
-	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
 func (r *resourceCrudHandler) createOrUpdateResource(request *restful.Request) (any, error) {
@@ -37,14 +34,17 @@ func (r *resourceCrudHandler) createOrUpdateResource(request *restful.Request) (
 	}
 
 	create := false
+	var storedLabels map[string]string
 	resource := r.descriptor.NewObject()
 	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(name, meshName)); err != nil && store.IsNotFound(err) {
 		create = true
 	} else if err != nil {
 		return nil, withTitle(err, "Failed to find a resource")
+	} else {
+		storedLabels = resource.GetMeta().GetLabels()
 	}
 
-	if err := r.validateResourceRequest(name, meshName, resourceRest); err != nil {
+	if err := r.validateResourceRequest(name, meshName, resourceRest, storedLabels); err != nil {
 		return nil, withTitle(err, "Could not process a resource")
 	}
 
@@ -157,15 +157,6 @@ func (r *resourceCrudHandler) updateResource(
 		return nil, withTitle(err, "Could not compute labels for a resource")
 	}
 
-	if stored, ok := currentRes.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]; ok && stored != labels[mesh_proto.ResourceOriginLabel] {
-		var err validators.ValidationError
-		err.AddViolationAt(
-			validators.RootedAt("labels").Key(mesh_proto.ResourceOriginLabel),
-			fmt.Sprintf("is immutable, cannot be changed from %q to %q", stored, labels[mesh_proto.ResourceOriginLabel]),
-		)
-		return nil, withTitle(&err, "Could not update a resource")
-	}
-
 	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(labels)); err != nil {
 		return nil, withTitle(err, "Failed to update a resource")
 	}
@@ -186,7 +177,14 @@ func (r *resourceCrudHandler) deleteResource(request *restful.Request) (any, err
 		return nil, withTitle(err, "Could not delete a resource")
 	}
 
-	if verr := r.validateOriginForWrite(resource.GetMeta()); verr.HasViolations() {
+	if verr := resource_labels.ValidateOwnership(resource_labels.Write{
+		Descriptor:   r.descriptor,
+		Spec:         resource.GetSpec(),
+		Namespace:    resource_labels.GetNamespace(resource.GetMeta(), r.systemNamespace),
+		Mesh:         meshName,
+		DisplayName:  name,
+		StoredLabels: resource.GetMeta().GetLabels(),
+	}, r.cp); verr.HasViolations() {
 		return nil, withTitle(verr.OrNil(), "Could not delete a resource")
 	}
 

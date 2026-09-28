@@ -44,6 +44,7 @@ var _ = Describe("Validate", func() {
 		r        core_model.Resource
 		ns       resource_labels.Namespace
 		labels   map[string]string
+		stored   map[string]string
 		trusted  bool
 		cp       resource_labels.ControlPlane
 		expected []validators.Violation
@@ -61,6 +62,7 @@ var _ = Describe("Validate", func() {
 				Namespace:     given.ns,
 				Mesh:          given.r.GetMeta().GetMesh(),
 				Labels:        given.labels,
+				StoredLabels:  given.stored,
 				TrustedWriter: given.trusted,
 			}
 			err := resource_labels.Validate(w, given.cp)
@@ -124,6 +126,41 @@ var _ = Describe("Validate", func() {
 		Entry("origin: unknown value fails the format rule on k8s", testCase{
 			r: timeout(), ns: systemNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "unknownvalue"}, cp: k8sNonFederated,
 			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, `unknown resource origin "unknownvalue"`)},
+		}),
+		// stored origin
+		Entry("stored: zone-owned on a global CP", testCase{
+			r: timeout(), stored: map[string]string{mesh_proto.ResourceOriginLabel: "zone"}, cp: universalGlobal,
+			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "the resource is owned by a zone control plane and can be changed only there")},
+		}),
+		Entry("stored: global-owned on a federated zone", testCase{
+			r: timeout(), stored: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: universalFederated,
+			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "the resource is owned by the global control plane and can be changed only there")},
+		}),
+		Entry("stored: global-owned on a non-federated zone", testCase{
+			r: timeout(), stored: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: universalNonFederated,
+		}),
+		Entry("stored: zone-owned on a federated zone", testCase{
+			r: timeout(), stored: map[string]string{mesh_proto.ResourceOriginLabel: "zone"}, cp: universalFederated,
+		}),
+		Entry("stored: without an origin on a global CP", testCase{
+			r: timeout(), stored: map[string]string{}, cp: universalGlobal,
+		}),
+		Entry("stored: a trusted writer is exempt", testCase{
+			r: timeout(), stored: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, trusted: true, cp: universalFederated,
+		}),
+		Entry("stored: foreign ownership is the only ownership violation", testCase{
+			r:        timeout(),
+			labels:   map[string]string{mesh_proto.ResourceOriginLabel: "zone", mesh_proto.ZoneTag: "zone-1"},
+			stored:   map[string]string{mesh_proto.ResourceOriginLabel: "zone"},
+			cp:       universalGlobal,
+			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "the resource is owned by a zone control plane and can be changed only there")},
+		}),
+		Entry("stored: global-owned in the system namespace of a k8s federated zone", testCase{
+			r: timeout(), ns: systemNamespace, stored: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: k8sFederated,
+			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "the resource is owned by the global control plane and can be changed only there")},
+		}),
+		Entry("stored: global-owned in an app namespace of a k8s federated zone", testCase{
+			r: timeout(), ns: appNamespace, stored: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: k8sFederated,
 		}),
 		// zone, Universal
 		Entry("zone: any value on a global CP", testCase{
