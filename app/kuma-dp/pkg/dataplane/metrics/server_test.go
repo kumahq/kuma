@@ -2,16 +2,23 @@ package metrics
 
 import (
 	"io"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
+	"strconv"
+	"sync/atomic"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	prom_client "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
 
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	meshmetric_plugin "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
 )
 
 var (
@@ -89,6 +96,75 @@ var _ = Describe("Rewriting the metrics URL", func() {
 			queryModifier: AddSidecarParameters(nil),
 		}),
 	)
+})
+
+var _ = Describe("MeshMetric Prometheus endpoint", func() {
+	var hits atomic.Int64
+	var body string
+
+	BeforeEach(func() {
+		hits.Store(0)
+		app := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			hits.Add(1)
+			w.Header().Set(hdrContentType, "text/plain; charset=UTF-8")
+			_, _ = w.Write([]byte("# TYPE test_app_requests counter\ntest_app_requests 1\n"))
+		}))
+		DeferCleanup(app.Close)
+		host, portStr, err := net.SplitHostPort(app.Listener.Addr().String())
+		Expect(err).ToNot(HaveOccurred())
+		port, err := strconv.ParseUint(portStr, 10, 32)
+		Expect(err).ToNot(HaveOccurred())
+
+		producer := NewAggregatedMetricsProducer([]ApplicationToScrape{{
+			Name:              "app",
+			Address:           host,
+			Port:              uint32(port),
+			Path:              "/metrics",
+			QueryModifier:     RemoveQueryParameters,
+			MeshMetricMutator: AggregatedOtelMutator(),
+		}}, false, "dev")
+
+		// not GinkgoT().TempDir(), unix socket paths are capped at ~104 chars on macOS
+		dir, err := os.MkdirTemp("", "hijacker")
+		Expect(err).ToNot(HaveOccurred())
+		DeferCleanup(os.RemoveAll, dir)
+		socketPath := filepath.Join(dir, "metrics.sock")
+
+		stop := make(chan struct{})
+		hijacker := New(socketPath, nil, false, producer)
+		go func() {
+			defer GinkgoRecover()
+			Expect(hijacker.Start(stop)).To(Succeed())
+		}()
+		DeferCleanup(func() { close(stop) })
+		Eventually(func() error {
+			_, err := os.Stat(socketPath)
+			return err
+		}).Should(Succeed())
+
+		client := createHTTPClientForUDS(socketPath)
+		resp, err := client.Get("http://localhost" + meshmetric_plugin.PrometheusDataplaneStatsPath)
+		Expect(err).ToNot(HaveOccurred())
+		defer resp.Body.Close()
+		b, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		body = string(b)
+	})
+
+	It("should serve application and kuma-dp metrics", func() {
+		Expect(body).To(ContainSubstring("test_app_requests"))
+		Expect(body).To(ContainSubstring("go_goroutines"))
+		Expect(hits.Load()).To(BeEquivalentTo(1))
+	})
+
+	It("should not scrape applications when the default gatherer is gathered", func() {
+		hits.Store(0)
+
+		_, err := prom_client.DefaultGatherer.Gather()
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(hits.Load()).To(BeZero())
+	})
 })
 
 var _ = Describe("Select Content Type", func() {

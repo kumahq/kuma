@@ -212,12 +212,14 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 		ErrorLog:          adapter.ToStd(logger),
 	}
 
-	promExporter, err := prometheus.New(prometheus.WithProducer(s.producer), prometheus.WithTranslationStrategy(otlptranslator.UnderscoreEscapingWithoutSuffixes))
+	// not the default registry: the OTel self metrics bridge gathers it and would scrape applications again
+	registry := prom_client.NewRegistry()
+	promExporter, err := prometheus.New(prometheus.WithRegisterer(registry), prometheus.WithProducer(s.producer), prometheus.WithTranslationStrategy(otlptranslator.UnderscoreEscapingWithoutSuffixes))
 	if err != nil {
 		return err
 	}
 	sdkmetric.NewMeterProvider(sdkmetric.WithReader(promExporter))
-	s.prometheusHandler = promhttp.HandlerFor(prom_client.DefaultGatherer, promhttp.HandlerOpts{
+	s.prometheusHandler = promhttp.HandlerFor(prom_client.Gatherers{prom_client.DefaultGatherer, registry}, promhttp.HandlerOpts{
 		ErrorHandling: promhttp.ContinueOnError,
 	})
 
