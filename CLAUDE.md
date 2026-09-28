@@ -124,6 +124,7 @@ A MADR is the design rationale, not the current state — check the code before 
 - Global CP coordinates Zone CPs via KDS (`pkg/kds/`)
 - Zone ingress/egress proxies (Dataplanes with zone proxy listeners) handle cross-zone traffic
 - Supports Kubernetes and Universal (VM/bare metal)
+- Upgrade order: global CP first, then zone CPs, and data plane proxies last (by manually restarting them). Design cross-version changes (KDS, schema, validation) for this order only - a newer global must keep older zones working, zone-first is not supported
 
 ### Code generation
 
