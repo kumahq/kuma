@@ -12,6 +12,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -39,6 +40,7 @@ type DataplaneLifecycle struct {
 	deregistrationDelay time.Duration
 	cpInstanceID        string
 	cacheExpirationTime time.Duration
+	cp                  resource_labels.ControlPlane
 }
 
 type proxyInfo struct {
@@ -56,6 +58,7 @@ func NewDataplaneLifecycle(
 	deregistrationDelay time.Duration,
 	cpInstanceID string,
 	cacheExpirationTime time.Duration,
+	cp resource_labels.ControlPlane,
 ) *DataplaneLifecycle {
 	return &DataplaneLifecycle{
 		resManager:          resManager,
@@ -65,6 +68,7 @@ func NewDataplaneLifecycle(
 		deregistrationDelay: deregistrationDelay,
 		cpInstanceID:        cpInstanceID,
 		cacheExpirationTime: cacheExpirationTime,
+		cp:                  cp,
 	}
 }
 
@@ -79,6 +83,9 @@ func (d *DataplaneLifecycle) OnProxyConnected(streamID core_xds.StreamID, proxyK
 		return nil
 	}
 	if err := d.validateProxyKey(proxyKey, md.Resource); err != nil {
+		return err
+	}
+	if err := d.validateLabels(md.Resource); err != nil {
 		return err
 	}
 	return d.register(ctx, streamID, proxyKey, md)
@@ -229,6 +236,21 @@ func (d *DataplaneLifecycle) validateUpsert(ctx context.Context, existing core_m
 func (d *DataplaneLifecycle) validateProxyKey(proxyKey core_model.ResourceKey, proxyResource core_model.Resource) error {
 	if core_model.MetaToResourceKey(proxyResource.GetMeta()) != proxyKey {
 		return errors.Errorf("proxyId %s does not match proxy resource %s", proxyKey, proxyResource.GetMeta())
+	}
+	return nil
+}
+
+func (d *DataplaneLifecycle) validateLabels(proxyResource core_model.Resource) error {
+	err := resource_labels.Validate(resource_labels.Write{
+		Descriptor:  proxyResource.Descriptor(),
+		Spec:        proxyResource.GetSpec(),
+		Namespace:   resource_labels.UnsetNamespace,
+		Mesh:        proxyResource.GetMeta().GetMesh(),
+		DisplayName: proxyResource.GetMeta().GetName(),
+		Labels:      proxyResource.GetMeta().GetLabels(),
+	}, d.cp)
+	if err.HasViolations() {
+		return errors.Wrap(&err, "invalid labels of the proxy resource passed in kuma-dp run")
 	}
 	return nil
 }
