@@ -285,10 +285,9 @@ func (s *stream) NACK(resourceType core_model.ResourceType, err error) error {
 func (s *stream) mapRemovedResources(removedResourceNames []string) []core_model.ResourceKey {
 	removed := []core_model.ResourceKey{}
 	for _, resourceName := range removedResourceNames {
-		index := strings.LastIndex(resourceName, ".")
 		var rk core_model.ResourceKey
-		if index != -1 {
-			rk = core_model.WithMesh(resourceName[index+1:], resourceName[:index])
+		if name, mesh, found := strings.CutLast(resourceName, "."); found {
+			rk = core_model.WithMesh(mesh, name)
 		} else {
 			rk = core_model.WithoutMesh(resourceName)
 		}
