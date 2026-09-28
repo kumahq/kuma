@@ -201,7 +201,7 @@ func (zw *ZoneWatch) cleanupStaleConnections(zone zoneTenant, zoneInsight *syste
 			ctx := multitenant.WithTenant(context.TODO(), zone.tenantID)
 			log := kuma_log.AddFieldsFromCtx(zw.log, ctx, zw.extensions)
 			log.Info("the same zone has connected but the previous connection wasn't closed, closing",
-				"zone", zone.zone, "streamType", stream, "previouslyConnected", connOpenTime, "currentlyConnected", activeStreamConnTime)
+				"zone", zone.zone, "streamType", stream, "previouslyConnected", connOpenTime, "currentlyConnected", *activeStreamConnTime)
 			zw.bus.Send(service.StreamCancelled{
 				Zone:     zone.zone,
 				TenantID: zone.tenantID,

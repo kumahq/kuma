@@ -2,6 +2,14 @@ package topology_test
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
+	"time"
 
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -29,6 +37,48 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 	. "github.com/kumahq/kuma/v3/pkg/xds/topology"
 )
+
+var testCertPEM, testKeyPEM = selfSignedPEM()
+
+func selfSignedPEM() (string, string) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		panic(err)
+	}
+	tmpl := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: "example.com"},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &key.PublicKey, key)
+	if err != nil {
+		panic(err)
+	}
+	keyDER, err := x509.MarshalECPrivateKey(key)
+	if err != nil {
+		panic(err)
+	}
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})),
+		string(pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER}))
+}
+
+func mesWithVerification(name string, verification *meshexternalservice_api.Verification) *meshexternalservice_api.MeshExternalServiceResource {
+	return &meshexternalservice_api.MeshExternalServiceResource{
+		Meta: &test_model.ResourceMeta{Mesh: "default", Name: name},
+		Spec: &meshexternalservice_api.MeshExternalService{
+			Match: meshexternalservice_api.Match{
+				Type:     meshexternalservice_api.HostnameGeneratorType,
+				Port:     10000,
+				Protocol: core_meta.ProtocolTCP,
+			},
+			Endpoints: &[]meshexternalservice_api.Endpoint{{Address: "example.com", Port: 443}},
+			Tls:       &meshexternalservice_api.Tls{Enabled: true, Verification: verification},
+		},
+	}
+}
 
 var _ = Describe("TrafficRoute", func() {
 	const defaultMeshName = "default"
@@ -249,15 +299,15 @@ var _ = Describe("TrafficRoute", func() {
 									},
 									CaCert: &datasource_api.SecureDataSource{
 										Type:           datasource_api.SecureDataSourceInline,
-										InsecureInline: &datasource_api.Inline{Value: "ca"},
+										InsecureInline: &datasource_api.Inline{Value: testCertPEM},
 									},
 									ClientCert: &datasource_api.SecureDataSource{
 										Type:           datasource_api.SecureDataSourceInline,
-										InsecureInline: &datasource_api.Inline{Value: "cert"},
+										InsecureInline: &datasource_api.Inline{Value: testCertPEM},
 									},
 									ClientKey: &datasource_api.SecureDataSource{
 										Type:           datasource_api.SecureDataSourceInline,
-										InsecureInline: &datasource_api.Inline{Value: "key"},
+										InsecureInline: &datasource_api.Inline{Value: testKeyPEM},
 									},
 								},
 							},
@@ -341,9 +391,9 @@ var _ = Describe("TrafficRoute", func() {
 								Protocol:                 core_meta.ProtocolHTTP,
 								TLSEnabled:               true,
 								FallbackToSystemCa:       true,
-								CaCert:                   []byte("ca"),
-								ClientCert:               []byte("cert"),
-								ClientKey:                []byte("key"),
+								CaCert:                   []byte(testCertPEM),
+								ClientCert:               []byte(testCertPEM),
+								ClientKey:                []byte(testKeyPEM),
 								AllowRenegotiation:       true,
 								SkipHostnameVerification: false,
 								ServerName:               "example.com",
@@ -363,6 +413,56 @@ var _ = Describe("TrafficRoute", func() {
 									ResourceType: meshexternalservice_api.MeshExternalServiceType,
 									Mesh:         "default",
 									Name:         "example-mes",
+								},
+							},
+						},
+					},
+				},
+			}),
+			Entry("skips only the MeshExternalService with unparsable TLS material", testCase{
+				meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
+					mesWithVerification("bad-ca", &meshexternalservice_api.Verification{
+						CaCert: &datasource_api.SecureDataSource{
+							Type:           datasource_api.SecureDataSourceInline,
+							InsecureInline: &datasource_api.Inline{Value: "-----BEGIN CERTIFICATE-----\nMIIB\n-----END CERTIFICATE-----\n"},
+						},
+					}),
+					mesWithVerification("bad-key-pair", &meshexternalservice_api.Verification{
+						ClientCert: &datasource_api.SecureDataSource{
+							Type:           datasource_api.SecureDataSourceInline,
+							InsecureInline: &datasource_api.Inline{Value: testCertPEM},
+						},
+						ClientKey: &datasource_api.SecureDataSource{
+							Type:           datasource_api.SecureDataSourceInline,
+							InsecureInline: &datasource_api.Inline{Value: "not a key"},
+						},
+					}),
+					mesWithVerification("good", &meshexternalservice_api.Verification{
+						CaCert: &datasource_api.SecureDataSource{
+							Type:           datasource_api.SecureDataSourceInline,
+							InsecureInline: &datasource_api.Inline{Value: testCertPEM},
+						},
+					}),
+				},
+				zoneEgressAddresses: []core_xds.ZoneEgressInstance{
+					{Address: "1.1.1.1", Port: 10002},
+				},
+				workloadIdentity: true,
+				expected: core_xds.EndpointMap{
+					"kri_extsvc_default___good_10000": []core_xds.Endpoint{
+						{
+							Target: "1.1.1.1",
+							Port:   10002,
+							Weight: 1,
+							ExternalService: &core_xds.ExternalService{
+								Protocol:           core_meta.ProtocolTCP,
+								TLSEnabled:         true,
+								FallbackToSystemCa: true,
+								CaCert:             []byte(testCertPEM),
+								OwnerResource: kri.Identifier{
+									ResourceType: meshexternalservice_api.MeshExternalServiceType,
+									Mesh:         "default",
+									Name:         "good",
 								},
 							},
 						},
@@ -451,15 +551,15 @@ var _ = Describe("TrafficRoute", func() {
 									},
 									CaCert: &datasource_api.SecureDataSource{
 										Type:           datasource_api.SecureDataSourceInline,
-										InsecureInline: &datasource_api.Inline{Value: "ca"},
+										InsecureInline: &datasource_api.Inline{Value: testCertPEM},
 									},
 									ClientCert: &datasource_api.SecureDataSource{
 										Type:           datasource_api.SecureDataSourceInline,
-										InsecureInline: &datasource_api.Inline{Value: "cert"},
+										InsecureInline: &datasource_api.Inline{Value: testCertPEM},
 									},
 									ClientKey: &datasource_api.SecureDataSource{
 										Type:           datasource_api.SecureDataSourceInline,
-										InsecureInline: &datasource_api.Inline{Value: "key"},
+										InsecureInline: &datasource_api.Inline{Value: testKeyPEM},
 									},
 								},
 							},

@@ -33,6 +33,8 @@ metadata:
       - kind: MeshExternalService
         labels:
           kuma.io/display-name: httpbin
+      - kind: MeshMultiZoneService
+        labels: {}
 spec:
   containers:
     - ports: []

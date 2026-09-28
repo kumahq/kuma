@@ -12,6 +12,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -39,6 +40,7 @@ type DataplaneLifecycle struct {
 	deregistrationDelay time.Duration
 	cpInstanceID        string
 	cacheExpirationTime time.Duration
+	cp                  resource_labels.ControlPlane
 }
 
 type proxyInfo struct {
@@ -56,6 +58,7 @@ func NewDataplaneLifecycle(
 	deregistrationDelay time.Duration,
 	cpInstanceID string,
 	cacheExpirationTime time.Duration,
+	cp resource_labels.ControlPlane,
 ) *DataplaneLifecycle {
 	return &DataplaneLifecycle{
 		resManager:          resManager,
@@ -65,6 +68,7 @@ func NewDataplaneLifecycle(
 		deregistrationDelay: deregistrationDelay,
 		cpInstanceID:        cpInstanceID,
 		cacheExpirationTime: cacheExpirationTime,
+		cp:                  cp,
 	}
 }
 
@@ -80,6 +84,16 @@ func (d *DataplaneLifecycle) OnProxyConnected(streamID core_xds.StreamID, proxyK
 	}
 	if err := d.validateProxyKey(proxyKey, md.Resource); err != nil {
 		return err
+	}
+	if verr := resource_labels.Validate(resource_labels.Write{
+		Descriptor:  md.Resource.Descriptor(),
+		Spec:        md.Resource.GetSpec(),
+		Namespace:   resource_labels.UnsetNamespace,
+		Mesh:        md.Resource.GetMeta().GetMesh(),
+		DisplayName: md.Resource.GetMeta().GetName(),
+		Labels:      md.Resource.GetMeta().GetLabels(),
+	}, d.cp); verr.HasViolations() {
+		return errors.Wrap(&verr, "invalid labels of the proxy resource passed in kuma-dp run")
 	}
 	return d.register(ctx, streamID, proxyKey, md)
 }

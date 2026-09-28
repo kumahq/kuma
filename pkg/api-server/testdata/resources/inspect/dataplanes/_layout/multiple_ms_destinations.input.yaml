@@ -46,6 +46,9 @@ spec:
       targetPort: 80
       appProtocol: http
       name: main-port
+status:
+  vips:
+    - ip: 240.0.0.1
 ---
 type: MeshService
 name: test-server-2
@@ -62,6 +65,9 @@ spec:
       targetPort: 80
       appProtocol: http
       name: main-port
+status:
+  vips:
+    - ip: 240.0.0.2
 ---
 type: MeshService
 name: test-server-3
@@ -78,3 +84,6 @@ spec:
       targetPort: 80
       appProtocol: http
       name: main-port
+status:
+  vips:
+    - ip: 240.0.0.3

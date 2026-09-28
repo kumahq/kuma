@@ -38,3 +38,4 @@ spec:
         - kind: MeshExternalService
           labels:
             kuma.io/display-name: httpbin
+        - kind: MeshMultiZoneService
