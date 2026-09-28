@@ -8,12 +8,20 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Outbound mTLS negotiates TLS 1.3
+
+Outbound mesh mTLS connections now allow TLS 1.3. Previously Envoy's client default capped them at TLS 1.2, so mesh traffic negotiated TLS 1.2 even though inbound listeners accepted TLS 1.3. A `MeshTLS` or `MeshExternalService` `tlsVersion.max` that is unset or `TLSAuto` now resolves to TLS 1.3 on the client side, which also fixes `min: TLS13` without `max` failing every connection with `NO_SUPPORTED_VERSIONS_ENABLED`.
+
+**Action required**
+
+None for most meshes. TLS 1.3 cipher suites are not configurable, so `tlsCiphers` no longer restricts connections that negotiate TLS 1.3. To keep outbound traffic on TLS 1.2, set `tlsVersion.max: TLS12` in `MeshTLS` or `MeshExternalService`.
+
 ### Reserved label prefixes
 
 From now on, `kuma.io/` and `k8s.kuma.io/` are reserved label prefixes.
 Every unknown label under these prefixes will be rejected on create and update.
+On Universal this includes the labels of the `Dataplane` passed to `kuma-dp run`: a proxy whose `Dataplane` carries an unknown reserved label, such as a leftover `kuma.io/gateway: "true"`, or an invalid label value fails to register until the label is fixed.
 
-<<<<<<< HEAD
 ### Zone Token issuance moved to the KDS auth configuration
 
 A Zone Token now has one job, authenticating a Zone CP to a Global CP over KDS, so the setting that gates its issuance sits with the rest of the KDS authentication configuration. `dpServer.authn.zoneProxy` is removed, it configured the authentication of zone proxies, which are ordinary data plane proxies authenticating with a dataplane token since 3.0.0.
@@ -32,6 +40,7 @@ A Zone Token now has one job, authenticating a Zone CP to a Global CP over KDS, 
 **Action required**
 
 Only if you set `enableIssuer` to `false` to mint Zone Tokens offline. Move it to `multizone.global.kds.auth.zoneToken.enableIssuer` on the Global CP, the removed setting is ignored and the issuer is enabled again. The other removed settings had no effect, `dpServer.authn.zoneProxy.zoneToken.validator` was read by nothing and `dpServer.authn.zoneProxy.type` was autoconfigured and never consumed.
+
 ### Resources with fields that are not in the schema are rejected
 
 Applying a policy or resource with a field that does not exist in its schema now fails with `400` listing every unknown field, for example `spec.from: unknown field`. Previously such fields were silently dropped, so a policy written for an older version, such as a `MeshTrafficPermission` with `spec.from` instead of `spec.rules`, was stored without it and looked applied while doing nothing. The check covers policies and resources with a generated schema; legacy resources without one, such as `Mesh`, still drop unknown fields silently. It applies to the Kuma API server and `kumactl apply`. On Kubernetes, `kubectl apply` behavior is unchanged: the API server prunes unknown fields and prints a warning.
@@ -1093,14 +1102,28 @@ already behaviourally identical, so no other changes are required.
 
 ### `meshServices` removed from the `Mesh` schema
 
-The `meshServices` field (and its `mode` enum) has been removed from the
-`Mesh` resource spec. Unified resource naming is now unconditional,
+The `meshServices` field (and its `mode` enum) no longer has any effect on
+the `Mesh` resource. Unified resource naming is now unconditional,
 regardless of what the mesh's former `meshServices.mode` was set to.
+
+The field remains in the schema as deprecated so that stored values survive
+the upgrade and keep syncing to zones over KDS: zones before 3.0 read a
+missing field as `Disabled`, which makes them delete every generated
+`MeshService`, skip mesh-scoped zone proxy listeners, and stop serving
+`MeshService` outbounds and DNS. Zones on 3.0 ignore the field, and writes
+setting it to any mode other than `Exclusive` are rejected, because that
+mode would silently behave as `Exclusive`.
 
 **Action required**
 
-None. A `Mesh` spec that still sets `meshServices` continues to apply
-successfully; the field is silently ignored by the control plane.
+Set `meshServices.mode: Exclusive` on every mesh before upgrading the
+global control plane, including meshes that never set the field: a 2.x
+zone reads a missing field as `Disabled`. The 3.0 global then keeps syncing
+the stored mode, and 2.x zones keep serving `MeshServices` until they are
+upgraded. A mesh that still carries another mode when the global is
+upgraded is rejected by 3.0 zones over KDS until it is set to `Exclusive`.
+A write that carries the field with `Exclusive` still applies and returns a
+deprecation warning; drop the field from your manifests.
 
 ### `routing.zoneEgress` removed from the `Mesh` schema
 
@@ -2448,15 +2471,19 @@ also applies when `spec.extension` is set, even though an extension owns the res
 
 **Action required**
 
-Rewrite `caCert`, `clientCert` and `clientKey` on every `MeshExternalService` to the new
-shape as part of the upgrade.
+Rewrite the resources on 2.14 before upgrading the global control plane. 2.14.6 and later accept both shapes (see [Upgrade to `2.14.6`](#upgrade-to-2146)):
+
+1. Upgrade the global control plane and every zone control plane to 2.14.6 or later.
+2. Rewrite `caCert`, `clientCert` and `clientKey` on every `MeshExternalService` to the new shape.
+3. Upgrade to 3.0, global control plane first.
 
 **Warning**: a `MeshExternalService` written in the old shape after the upgrade is rejected
 at write time, because the missing `type` discriminator is a validation violation. Resources
 already stored in the old shape are not rejected — the control plane cannot read their TLS
 material, so the destination is dropped from the xDS config of every proxy routing to it,
-with an error logged on the control plane. Plan the rewrite together with the upgrade to
-avoid an outage on those destinations.
+with an error logged on the control plane. Rewriting after the global is on 3.0 is too late:
+it accepts only the new shape, and zones older than 2.14.6 drop the new fields, so their
+proxies silently fall back to the system CA.
 
 ### Inbound `tags` removed from `Dataplane`
 
@@ -2501,6 +2528,16 @@ Since 2.14.0 every generated cluster carries a `DEFAULT`-priority circuit breake
 **Action required**
 
 Review every `MeshProxyPatch` that patches `circuitBreakers`. Where the same cluster is also covered by a `MeshCircuitBreaker`, the patch now overrides that policy for each field it sets, instead of being ignored — `MeshProxyPatch` runs last, so it wins the fields it names and the policy keeps the rest. Remove patches you wrote before 2.14.0 and no longer rely on, and drop any workaround you put in place because the patch appeared to do nothing.
+
+## Upgrade to `2.14.6`
+
+### `MeshExternalService` TLS verification accepts the `SecureDataSource` shape
+
+2.14.6 accepts both shapes of `spec.tls.verification.caCert`, `.clientCert` and `.clientKey` on `MeshExternalService`, so resources can be rewritten to the shape 3.0 requires before upgrading. The old `secret`, `inline` and `inlineString` fields keep working on 2.14 and produce a deprecation warning. A single data source cannot mix both shapes, and the `File` and `EnvVar` types are rejected.
+
+**Action required**
+
+Before upgrading to 3.0, upgrade every control plane to 2.14.6 or later, then rewrite each `MeshExternalService` as described in [`MeshExternalService` TLS verification uses the `SecureDataSource` shape](#meshexternalservice-tls-verification-uses-the-securedatasource-shape). A zone on an older 2.14 does not know the new fields: they are dropped (pruned on Kubernetes), and the proxy silently falls back to the system CA.
 
 ## Upgrade to `2.13.7`
 

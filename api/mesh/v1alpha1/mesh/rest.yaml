@@ -66,6 +66,21 @@ components:
           additionalProperties:
             type: string
           type: object
+        meshServices:
+          description: |-
+            Deprecated: ignored since 3.0, where every mesh behaves as Exclusive.
+            Kept only so pre-3.0 zones keep receiving the mode over KDS.
+
+            Deprecated: Marked as deprecated in api/mesh/v1alpha1/mesh.proto.
+          properties:
+            mode:
+              enum:
+              - Disabled
+              - Everywhere
+              - ReachableBackends
+              - Exclusive
+              type: string
+          type: object
         modificationTime:
           description: Time at which the resource was updated
           format: date-time

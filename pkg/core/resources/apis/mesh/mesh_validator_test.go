@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
@@ -56,5 +57,84 @@ var _ = Describe("Mesh", func() {
                 - field: name
                   message: must be no more than 63 characters`),
 		)
+
+		DescribeTable("should validate meshServices.mode",
+			func(meshServices *mesh_proto.Mesh_MeshServices, expected string) {
+				// given
+				mesh := NewMeshResource()
+				mesh.SetMeta(&test_model.ResourceMeta{Name: "mesh-1"})
+				mesh.Spec.MeshServices = meshServices //nolint:staticcheck // deprecated on purpose
+
+				// when
+				verr := mesh.Validate()
+				// and
+				actual, err := yaml.Marshal(verr)
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(actual).To(MatchYAML(expected))
+			},
+			Entry("field not set", nil, "null"),
+			Entry("Exclusive is accepted", &mesh_proto.Mesh_MeshServices{
+				Mode: mesh_proto.Mesh_MeshServices_Exclusive,
+			}, "null"),
+			Entry("Disabled is rejected", &mesh_proto.Mesh_MeshServices{
+				Mode: mesh_proto.Mesh_MeshServices_Disabled,
+			}, `
+                violations:
+                - field: meshServices.mode
+                  message: removed in 3.0 and every mesh behaves as Exclusive; remove the
+                    field or set it to Exclusive`),
+			Entry("ReachableBackends is rejected", &mesh_proto.Mesh_MeshServices{
+				Mode: mesh_proto.Mesh_MeshServices_ReachableBackends,
+			}, `
+                violations:
+                - field: meshServices.mode
+                  message: removed in 3.0 and every mesh behaves as Exclusive; remove the
+                    field or set it to Exclusive`),
+		)
+
+		It("should reject other modes even when the mesh carries the global origin label", func() {
+			// the origin label is stamped on the global's own writes and on
+			// KDS-ingested meshes alike, so it must not exempt the check
+			mesh := NewMeshResource()
+			mesh.SetMeta(&test_model.ResourceMeta{
+				Name: "mesh-1",
+				Labels: map[string]string{
+					mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+				},
+			})
+			mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{ //nolint:staticcheck // deprecated on purpose
+				Mode: mesh_proto.Mesh_MeshServices_Disabled,
+			}
+
+			// when
+			verr := mesh.Validate()
+
+			// then
+			actual, err := yaml.Marshal(verr)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchYAML(`
+                violations:
+                - field: meshServices.mode
+                  message: removed in 3.0 and every mesh behaves as Exclusive; remove the
+                    field or set it to Exclusive`))
+		})
+
+		It("should warn on write when the deprecated field is set", func() {
+			// given
+			mesh := NewMeshResource()
+			mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{ //nolint:staticcheck // deprecated on purpose
+				Mode: mesh_proto.Mesh_MeshServices_Exclusive,
+			}
+
+			// when/then
+			Expect(mesh.Deprecations()).To(ConsistOf(
+				"meshServices was removed in 3.0 and is ignored: every mesh behaves as Exclusive. Drop the field before it is reserved again in a future release.",
+			))
+
+			// and not when the field is absent
+			Expect(NewMeshResource().Deprecations()).To(BeEmpty())
+		})
 	})
 })
