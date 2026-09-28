@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -40,6 +41,10 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(req admission.Request, r c
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 	}
+	labels := r.GetMeta().GetLabels()
+	if req.Operation == admissionv1.Delete {
+		labels = nil
+	}
 
 	if ns != "" {
 		// check only namespace-scoped resources
@@ -54,7 +59,7 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(req admission.Request, r c
 		Namespace:    resource_labels.NewNamespace(ns, ns == c.SystemNamespace),
 		Mesh:         r.GetMeta().GetMesh(),
 		DisplayName:  r.GetMeta().GetName(),
-		Labels:       r.GetMeta().GetLabels(),
+		Labels:       labels,
 		StoredLabels: stored.GetLabels(),
 	}, c.ControlPlane); err.HasViolations() {
 		return *forbiddenResponse("Operation not allowed. " + err.Violations[0].Message)
