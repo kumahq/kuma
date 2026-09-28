@@ -29,6 +29,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/config/xds"
 	"github.com/kumahq/kuma/v3/pkg/config/xds/bootstrap"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
+	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
 var _ config.Config = &Config{}
@@ -44,9 +45,14 @@ type Defaults struct {
 	SkipTenantResources bool `json:"skipTenantResources" envconfig:"kuma_defaults_skip_tenant_resources"`
 	// If true, it skips creating default hostname generators
 	SkipHostnameGenerators bool `json:"SkipHostnameGenerators" envconfig:"kuma_defaults_skip_hostname_generators"`
-	// If true, a data plane proxy without reachableBackends can reach every destination in the mesh, and one without MeshPassthrough keeps outbound passthrough.
-	// Insecure: restores the legacy behavior where outbound traffic is allowed by default.
-	AllowAllOutbound bool `json:"allowAllOutbound" envconfig:"kuma_defaults_allow_all_outbound"`
+	// If true, a data plane proxy without reachableBackends reaches no destination in the mesh, and one without MeshPassthrough gets no outbound passthrough.
+	// Set it to false to restore the legacy behavior where outbound traffic is allowed by default (insecure).
+	// Unset means true; nil keeps an explicit value distinguishable from the default.
+	RestrictOutbound *bool `json:"restrictOutbound" envconfig:"kuma_defaults_restrict_outbound"`
+}
+
+func (d *Defaults) IsOutboundRestricted() bool {
+	return pointer.DerefOr(d.RestrictOutbound, true)
 }
 
 type Metrics struct {
@@ -459,7 +465,6 @@ func DefaultDefaultsConfig() *Defaults {
 		SkipMeshCreation:       false,
 		SkipTenantResources:    false,
 		SkipHostnameGenerators: false,
-		AllowAllOutbound:       false,
 	}
 }
 
