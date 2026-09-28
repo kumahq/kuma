@@ -327,7 +327,7 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		typeHashes:       typeHashes,
 		Mesh:             mesh,
 		ResourceMap:      rmap,
-		DestinationIndex: NewDestinationIndex(destinations...).WithAllowAllOutbound(!m.restrictOutbound),
+		DestinationIndex: NewDestinationIndex(destinations...).WithRestrictOutbound(m.restrictOutbound),
 		VIPDomains:       vipDomains(destinationResources),
 		VIPOutbounds:     vipOutbounds(destinationResources),
 	}, nil

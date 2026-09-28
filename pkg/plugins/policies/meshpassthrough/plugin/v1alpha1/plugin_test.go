@@ -38,7 +38,7 @@ var _ = Describe("MeshPassthrough", func() {
 		// dataplaneIPv6 makes the proxy itself IPv6, which is what picks the address
 		// family a domain cluster resolves in
 		dataplaneIPv6            bool
-		allowAllOutbound         bool
+		unrestrictedOutbound     bool
 		transparentProxyDisabled bool
 		features                 xds_types.Features
 		listenersGolden          string
@@ -77,7 +77,7 @@ var _ = Describe("MeshPassthrough", func() {
 					xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshPassthroughType, given.proxyConf),
 				).
 				Build()
-			context.Mesh.BaseMeshContext.DestinationIndex.WithAllowAllOutbound(given.allowAllOutbound)
+			context.Mesh.BaseMeshContext.DestinationIndex.WithRestrictOutbound(!given.unrestrictedOutbound)
 			proxy.Metadata.Features = given.features
 			if given.transparentProxyDisabled {
 				proxy.Metadata.TransparentProxy = nil
@@ -830,11 +830,11 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "no_policy.listeners.golden.yaml",
 			clustersGolden:  "no_policy.clusters.golden.yaml",
 		}),
-		Entry("no policy with allowAllOutbound keeps the default passthrough", testCase{
-			resources:        defaultPassthroughResources(),
-			allowAllOutbound: true,
-			listenersGolden:  "no_policy.listeners.golden.yaml",
-			clustersGolden:   "no_policy_passthrough_kept.clusters.golden.yaml",
+		Entry("no policy with unrestricted outbound keeps the default passthrough", testCase{
+			resources:            defaultPassthroughResources(),
+			unrestrictedOutbound: true,
+			listenersGolden:      "no_policy.listeners.golden.yaml",
+			clustersGolden:       "no_policy_passthrough_kept.clusters.golden.yaml",
 		}),
 		Entry("no policy without transparent proxy is left untouched", testCase{
 			resources:                defaultPassthroughResources(),

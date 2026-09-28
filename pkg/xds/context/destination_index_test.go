@@ -307,13 +307,13 @@ var _ = Describe("DestinationIndex", func() {
 			})
 
 			DescribeTable("should resolve outbounds",
-				func(withTPSection bool, allowAllOutbound bool, expectAll bool) {
+				func(withTPSection bool, restrictOutbound bool, expectAll bool) {
 					dp := builders.Dataplane().WithAddress("127.0.0.1").Build()
 					if withTPSection {
 						dp.Spec.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
 					}
 
-					index := xds_context.NewDestinationIndex([]core_model.Resource{ms}).WithAllowAllOutbound(allowAllOutbound)
+					index := xds_context.NewDestinationIndex([]core_model.Resource{ms}).WithRestrictOutbound(restrictOutbound)
 					outbounds, matched := index.GetReachableBackends(dp)
 
 					if expectAll {
@@ -324,10 +324,10 @@ var _ = Describe("DestinationIndex", func() {
 						Expect(outbounds).To(BeEmpty())
 					}
 				},
-				Entry("deny by default", true, false, false),
-				Entry("deny by default without transparentProxying section", false, false, false),
-				Entry("allow all when allowAllOutbound is set", true, true, true),
-				Entry("allow all without transparentProxying section when allowAllOutbound is set", false, true, true),
+				Entry("deny by default", true, true, false),
+				Entry("deny by default without transparentProxying section", false, true, false),
+				Entry("allow all when restrictOutbound is unset", true, false, true),
+				Entry("allow all without transparentProxying section when restrictOutbound is unset", false, false, true),
 			)
 
 			It("should return explicit outbounds", func() {

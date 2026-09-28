@@ -14,14 +14,14 @@ import (
 
 var _ = Describe("DataplaneProxyBuilder resolveVIPOutbounds", func() {
 	DescribeTable("transparent proxy enabled without transparentProxying section",
-		func(allowAllOutbound bool, expectedOutbounds int) {
+		func(restrictOutbound bool, expectedOutbounds int) {
 			ms := builders.MeshService().
 				WithName("backend").
 				AddIntPort(9000, 9000, metadata.ProtocolHTTP).
 				Build()
 			meshContext := xds_context.MeshContext{
 				BaseMeshContext: &xds_context.BaseMeshContext{
-					DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{ms}).WithAllowAllOutbound(allowAllOutbound),
+					DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{ms}).WithRestrictOutbound(restrictOutbound),
 					VIPOutbounds: xds_types.Outbounds{{
 						Address:  "240.0.0.1",
 						Port:     9000,
@@ -36,7 +36,7 @@ var _ = Describe("DataplaneProxyBuilder resolveVIPOutbounds", func() {
 
 			Expect(outbounds).To(HaveLen(expectedOutbounds))
 		},
-		Entry("deny by default", false, 0),
-		Entry("allow all when allowAllOutbound is set", true, 1),
+		Entry("deny by default", true, 0),
+		Entry("allow all when restrictOutbound is unset", false, 1),
 	)
 })

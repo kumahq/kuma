@@ -43,7 +43,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	}
 	if !ok || policies.ProxyConf == nil {
 		// without a matched policy passthrough defaults to None unless the CP opts back into allow-all
-		if !ctx.Mesh.BaseMeshContext.DestinationIndex.AllowAllOutbound() {
+		if ctx.Mesh.BaseMeshContext.DestinationIndex.RestrictOutbound() {
 			removeDefaultPassthroughCluster(rs)
 		}
 		return nil
