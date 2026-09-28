@@ -86,7 +86,7 @@ var _ = Describe("Global Insight", func() {
 func createMeshInsight(name string, rs store.ResourceStore) error {
 	return builders.MeshInsight().
 		WithName(name).
-		WithStandardDataplaneStats(1, 1, 1, 3).
+		WithDataplaneStats(3, 2, 1, 6).
 		AddResourceStats("MeshTimeout", 2).
 		AddResourceStats("MeshRetry", 1).
 		Create(rs)
