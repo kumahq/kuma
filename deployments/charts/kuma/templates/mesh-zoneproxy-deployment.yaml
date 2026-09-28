@@ -53,6 +53,12 @@ spec:
     matchLabels:
       {{- include "kuma.mesh.zoneproxy.selectorLabels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 6 }}
   template:
+    {{- /* Keep the chart and app version out of the pod template: a change
+           rolls the zone proxies on every control plane upgrade, while the
+           old control plane still injects, so they return with the old
+           kuma-dp. Operators restart them after the upgrade instead. A
+           chart-rendered ConfigMap or Secret mounted here needs a checksum/
+           annotation of a template that renders no version labels. */}}
     metadata:
       annotations:
         kuma.io/reachable-backends: '{"refs":[]}'
