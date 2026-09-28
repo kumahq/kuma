@@ -475,6 +475,37 @@ var _ = Describe("MeshService generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 	})
 
+	// A MeshService generated from kuma.io/service inbound tags keeps its name when
+	// generation switches to kuma.io/workload, so only the selector tells it apart.
+	It("should rewrite the selector of a MeshService whose ports already match", func() {
+		stale := meshservice_api.NewMeshServiceResource()
+		stale.Spec.Ports = []meshservice_api.Port{{
+			Name:        pointer.To("80"),
+			Port:        80,
+			TargetPort:  pointer.To(intstr.FromInt(80)),
+			AppProtocol: core_meta.ProtocolTCP,
+		}}
+		Expect(resManager.Create(context.Background(), stale,
+			store.CreateByKey("backend", model.DefaultMesh),
+			store.CreateWithLabels(map[string]string{
+				mesh_proto.ManagedByLabel:      "meshservice-generator",
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+				mesh_proto.ZoneTag:             "zone",
+			}),
+		)).To(Succeed())
+
+		Expect(createBackendDataplane(backendDataplane())).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			ms := meshservice_api.NewMeshServiceResource()
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			g.Expect(ms.Spec.Selector.DataplaneLabels).ToNot(BeNil())
+			g.Expect(ms.Spec.Selector.DataplaneLabels.MatchLabels).To(HaveValue(Equal(map[string]string{
+				metadata.KumaWorkload: "backend",
+			})))
+		}, "2s", "100ms").Should(Succeed())
+	})
+
 	It("should emit metric", func() {
 		Eventually(func(g Gomega) {
 			g.Expect(test_metrics.FindMetric(metrics, "component_meshservice_generator")).ToNot(BeNil())
