@@ -31,7 +31,7 @@ func (r *resourceCrudHandler) createOrUpdateResource(request *restful.Request) (
 		return nil, withTitle(err, "Could not process a resource")
 	}
 
-	resourceRest, err := rest.JSON.Unmarshal(bodyBytes, r.descriptor)
+	resourceRest, err := rest.JSON.UnmarshalStrict(bodyBytes, r.descriptor)
 	if err != nil {
 		return nil, withTitle(err, "Could not process a resource")
 	}

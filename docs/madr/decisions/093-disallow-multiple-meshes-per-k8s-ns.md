@@ -1,3 +1,12 @@
+---
+title: Disallow Multiple Meshes per Kubernetes Namespace
+status: superseded
+date: 2025-11-21
+tags: [kubernetes, mesh, workload, namespace]
+summary: Blocked multiple meshes in one Kubernetes namespace behind a runtime flag to avoid Workload name collisions; superseded by MADR 099, which allows them again and handles collisions in the controller.
+related: [099-allow-multiple-meshes-per-k8s-ns, 094-zone-proxy-deployment-model, 092-workload-identifier]
+---
+
 # Disallow Multiple Meshes per Kubernetes Namespace
 
 * Status: superseded by [MADR 099](099-allow-multiple-meshes-per-k8s-ns.md)

@@ -18,6 +18,7 @@ import (
 type DestinationIndex struct {
 	destinationByIdentifier    map[kri.Identifier]core.Destination
 	destinationsByLabelByValue labelsToValuesToResourceIdentifier
+	allowAllOutbound           bool
 }
 type labelsToValuesToResourceIdentifier map[labelValue]map[kri.Identifier]bool
 
@@ -43,17 +44,53 @@ func NewDestinationIndex(resources ...[]core_model.Resource) *DestinationIndex {
 	}
 }
 
-// GetReachableBackends return map of reachable port by its KRI, and bool to indicate if any backend were match or all destinations were returned
+// WithAllowAllOutbound makes a data plane proxy without reachableBackends reach every destination.
+func (di *DestinationIndex) WithAllowAllOutbound(allow bool) *DestinationIndex {
+	di.allowAllOutbound = allow
+	return di
+}
+
+// AllowAllOutbound reports whether a data plane proxy without MeshPassthrough keeps the default outbound passthrough.
+func (di *DestinationIndex) AllowAllOutbound() bool {
+	return di != nil && di.allowAllOutbound
+}
+
+// GetReachableBackends returns reachable ports by KRI, and true when only the returned backends are reachable.
+// Without reachableBackends it returns an empty map and true (deny), or every destination and false when allowAllOutbound is set.
 func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneResource) (map[kri.Identifier]core.Port, bool) {
 	outbounds := map[kri.Identifier]core.Port{}
 
 	networking := dataplane.Spec.GetNetworking()
 
-	processRef := func(kind string, name string, namespace string, port *uint32, labels map[string]string) {
+	addOutbounds := func(ids []kri.Identifier, sectionName string) {
+		for _, id := range ids {
+			if sectionName != "" {
+				id = kri.WithSectionName(id, sectionName)
+			}
+
+			var dest core.Destination
+			if dest = di.GetDestinationByKRI(id); dest == nil {
+				continue
+			}
+
+			// an unnamed port matches the empty section name, so only narrow when one is set
+			if id.SectionName != "" {
+				if p, ok := dest.FindPortByName(id.SectionName); ok {
+					outbounds[kri.WithSectionName(id, p.GetName())] = p
+				}
+				continue
+			}
+
+			for _, p := range dest.GetPorts() {
+				outbounds[kri.WithSectionName(id, p.GetName())] = p
+			}
+		}
+	}
+
+	processRef := func(kind string, name string, port *uint32, labels map[string]string) {
 		selectorLabels, sectionName := NormalizeBackendRefTarget(
 			kind,
 			name,
-			namespace,
 			port,
 			labels,
 			dataplane.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
@@ -76,31 +113,12 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 			return
 		}
 
-		ids := di.resolveResourceIdentifiersForLabels(core_model.ResourceType(kind), selectorLabels)
-		for _, id := range ids {
-			if sectionName != "" {
-				id = kri.WithSectionName(id, sectionName)
-			}
-
-			var dest core.Destination
-			if dest = di.getDestinationByKRI(id); dest == nil {
-				return
-			}
-
-			if p, ok := dest.FindPortByName(id.SectionName); ok {
-				outbounds[kri.WithSectionName(id, p.GetName())] = p
-				return
-			}
-
-			for _, p := range dest.GetPorts() {
-				outbounds[kri.WithSectionName(id, p.GetName())] = p
-			}
-		}
+		addOutbounds(di.resolveResourceIdentifiersForLabels(core_model.ResourceType(kind), selectorLabels), sectionName)
 	}
 
 	// Handle user defined outbound without a transparent proxy
 	for _, o := range networking.GetOutbounds(mesh_proto.BackendRefFilter) {
-		processRef(o.BackendRef.Kind, o.BackendRef.Name, "", &o.BackendRef.Port, o.BackendRef.Labels)
+		processRef(o.BackendRef.Kind, o.BackendRef.Name, &o.BackendRef.Port, o.BackendRef.Labels)
 	}
 
 	if len(outbounds) > 0 {
@@ -108,7 +126,9 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 	}
 
 	if networking.GetTransparentProxying().GetReachableBackends() == nil {
-		// return all destinations if reachable backends not configured
+		if !di.allowAllOutbound {
+			return outbounds, true
+		}
 		for id, dest := range di.destinationByIdentifier {
 			for _, port := range dest.GetPorts() {
 				outbounds[kri.WithSectionName(id, port.GetName())] = port
@@ -124,23 +144,29 @@ func (di *DestinationIndex) GetReachableBackends(dataplane *core_mesh.DataplaneR
 			port = pointer.To(ref.Port.GetValue())
 		}
 
-		processRef(ref.Kind, ref.Name, ref.Namespace, port, ref.Labels)
+		// Like a Kubernetes label selector, empty labels select every backend of the kind
+		if len(ref.Labels) == 0 {
+			addOutbounds(di.resourceIdentifiersOfType(core_model.ResourceType(ref.Kind)), "")
+			continue
+		}
+
+		processRef(ref.Kind, "", port, ref.Labels)
 	}
 
 	return outbounds, true
 }
 
-func (di *DestinationIndex) getDestinationByKRI(id kri.Identifier) core.Destination {
+func (di *DestinationIndex) GetDestinationByKRI(id kri.Identifier) core.Destination {
 	if id.IsEmpty() {
 		return nil
 	}
 	return di.destinationByIdentifier[kri.NoSectionName(id)]
 }
 
-// resolveResourceIdentifier resolves one resource identifier based on the labels.
+// ResolveResourceIdentifier resolves one resource identifier based on the labels.
 // If multiple resources match the labels, the oldest one is returned.
 // The reason is that picking the oldest one is the less likely to break existing traffic after introducing new resources.
-func (di *DestinationIndex) resolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) kri.Identifier {
+func (di *DestinationIndex) ResolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) kri.Identifier {
 	if len(labels) == 0 {
 		return kri.Identifier{}
 	}
@@ -165,6 +191,16 @@ func (di *DestinationIndex) resolveResourceIdentifiersForLabels(resType core_mod
 	for ri, count := range reachable {
 		if count == len(labels) {
 			result = append(result, ri)
+		}
+	}
+	return result
+}
+
+func (di *DestinationIndex) resourceIdentifiersOfType(resType core_model.ResourceType) []kri.Identifier {
+	var result []kri.Identifier
+	for id := range di.destinationByIdentifier {
+		if id.ResourceType == resType {
+			result = append(result, id)
 		}
 	}
 	return result

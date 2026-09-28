@@ -45,6 +45,8 @@ CNCF service mesh (Envoy-based) for K8s/VMs. L4-L7 connectivity, security, obser
 
 **Multi-zone:** Global CP → Zone CPs via KDS • Zone ingress/egress proxies for cross-zone • K8s + Universal (VMs)
 
+**Upgrade order:** global CP first → zone CPs → data plane proxies last (manual restart). A newer global must keep older zones working; zone-first is not supported
+
 ### Core Concepts
 
 | Term | Definition | Usage |

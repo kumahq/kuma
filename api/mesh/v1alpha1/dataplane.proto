@@ -169,10 +169,16 @@ message Dataplane {
 
     // TransparentProxying describes configuration for transparent proxying.
     message TransparentProxying {
-      // `redirect_port_inbound` and `redirect_port_outbound` have been removed.
-      // kuma-dp sends the redirect ports to the control plane in its metadata.
-      reserved 1, 2;
-      reserved "redirect_port_inbound", "redirect_port_outbound";
+      // Port on which all inbound traffic is being transparently redirected.
+      //
+      // Deprecated: read only for a proxy that sends no transparent proxy
+      // metadata, which means a sidecar injected before 3.0. Gone in 3.1.
+      uint32 redirect_port_inbound = 1 [deprecated = true];
+
+      // Port on which all outbound traffic is being transparently redirected.
+      //
+      // Deprecated: see `redirect_port_inbound`.
+      uint32 redirect_port_outbound = 2 [deprecated = true];
 
       // List of services that will be accessed directly via IP:PORT
       // Use `*` to indicate direct access to every service in the Mesh.
@@ -198,17 +204,14 @@ message Dataplane {
         // Type of the backend: MeshService, MeshExternalService or MeshMultiZoneService
         //  +required
         string kind = 1;
-        // Name of the backend.
-        //  +optional
-        string name = 2;
-        // Namespace of the backend. Might be empty
-        //  +optional
-        string namespace = 3;
+        // `name` and `namespace` have been removed in favor of `labels`.
+        reserved 2, 3;
+        reserved "name", "namespace";
         // Port of the backend.
         //  +optional
         google.protobuf.UInt32Value port = 4;
         // Labels used to select backends
-        //  +optional
+        //  +required
         map<string, string> labels = 5;
       }
 
@@ -218,7 +221,8 @@ message Dataplane {
       // Reachable backend via transparent proxy when running with
       // MeshExternalService, MeshService and MeshMultiZoneService. Setting an
       // explicit list of refs can dramatically improve the performance of the
-      // mesh. If not specified, all services in the mesh are reachable.
+      // mesh. If not specified, no services in the mesh are reachable, unless
+      // the control plane sets KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND.
       ReachableBackends reachable_backends = 7;
     }
 

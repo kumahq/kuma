@@ -27,6 +27,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.mode | string | `"zone"` | Kuma CP modes: zone, global. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
+| controlPlane.zoneToken.secretName | string | `""` | Name of the K8s Secret with the Zone Token. The Secret is mounted as a file, so a rotated token is picked up on the next KDS stream without restarting the CP. Leave empty to send no token. |
+| controlPlane.zoneToken.key | string | `"token"` | Key of the Secret that holds the token |
 | controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP. Ignored when autoscaling is enabled |
 | controlPlane.restartPolicy | string | `"Always"` | Pod restart policy for the Control Plane. |
 | controlPlane.minReadySeconds | int | `0` | Minimum number of seconds for which a newly created pod should be ready for it to be considered available. |
@@ -155,7 +157,7 @@ A Helm chart for the Kuma Control Plane
 | meshZoneProxyDefaults.egress.replicas | int | `1` | Default number of replicas for zone egress. Ignored when hpa.enabled is true. |
 | meshZoneProxyDefaults.egress.restartPolicy | string | `"Always"` | Default pod restart policy for zone egress. |
 | meshZoneProxyDefaults.egress.terminationGracePeriodSeconds | int | `40` | Default number of seconds to wait before force killing the zone egress pod. |
-| meshZoneProxyDefaults.egress.preStopSleepSeconds | int | `15` | Seconds a terminating zone egress keeps serving before shutdown, applied as a preStop sleep hook. Clients reach a zone egress by pod IP from EDS, so a pod that goes away before the control plane has pushed new endpoints takes requests down with it. The hook has to outlast that propagation, which costs roughly KUMA_STORE_CACHE_EXPIRATION_TIME (default 1s) plus KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL (default 1s) plus the time to push and ack the update, so raise this if you have raised either interval. Must be lower than terminationGracePeriodSeconds, otherwise the chart fails to render. Set to 0 to drop the hook. |
+| meshZoneProxyDefaults.egress.preStopSleepSeconds | int | `20` | Seconds a terminating zone egress keeps serving before shutdown, applied as a preStop sleep hook. Clients reach a zone egress by pod IP from EDS, so a pod that goes away before the control plane has pushed new endpoints takes requests down with it. The hook has to outlast that propagation, which costs roughly KUMA_STORE_CACHE_EXPIRATION_TIME (default 1s) plus KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL (default 10s) plus the time to push and ack the update, so raise this if you have raised either interval. Must be lower than terminationGracePeriodSeconds, otherwise the chart fails to render. Set to 0 to drop the hook. |
 | meshZoneProxyDefaults.egress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for zone egress. Optionally set to false |
 | meshZoneProxyDefaults.egress.imagePullPolicy | string | `"IfNotPresent"` | Default image pull policy for the zone egress pause container. |
 | meshZoneProxyDefaults.egress.service.type | string | `"ClusterIP"` | Default Service type for zone egress. |
@@ -211,7 +213,7 @@ A Helm chart for the Kuma Control Plane
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"registry.k8s.io"` | The kubectl image registry |
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"v1.37.0@sha256:5ed410ebac5dc976cc717098994dcdb29bbbd38f6bd65f582311f5be4ba719cf"` | The kubectl image tag |
+| kubectl.image.tag | string | `"v1.37.1@sha256:b7cab618e281b1ee7484e7b706a96e2135fbb6e072c2a573a7dab4e87d7f2385"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.annotations | object | `{}` | Extra annotations to add to hook Job resources. Useful for tools like ArgoCD that need to control job lifecycle (e.g. argocd.argoproj.io/hook-delete-policy). |

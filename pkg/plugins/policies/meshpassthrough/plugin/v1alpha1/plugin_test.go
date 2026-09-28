@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/naming"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	plugins_xds "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/xds"
@@ -36,10 +37,13 @@ var _ = Describe("MeshPassthrough", func() {
 		proxyConf *core_rules.ProxyConf
 		// dataplaneIPv6 makes the proxy itself IPv6, which is what picks the address
 		// family a domain cluster resolves in
-		dataplaneIPv6   bool
-		listenersGolden string
-		clustersGolden  string
-		warnings        []string
+		dataplaneIPv6            bool
+		allowAllOutbound         bool
+		transparentProxyDisabled bool
+		features                 xds_types.Features
+		listenersGolden          string
+		clustersGolden           string
+		warnings                 []string
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -73,6 +77,11 @@ var _ = Describe("MeshPassthrough", func() {
 					xds_builders.MatchedPolicies().WithProxyConfPolicy(api.MeshPassthroughType, given.proxyConf),
 				).
 				Build()
+			context.Mesh.BaseMeshContext.DestinationIndex.WithAllowAllOutbound(given.allowAllOutbound)
+			proxy.Metadata.Features = given.features
+			if given.transparentProxyDisabled {
+				proxy.Metadata.TransparentProxy = nil
+			}
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 			// when
@@ -816,8 +825,62 @@ var _ = Describe("MeshPassthrough", func() {
 			listenersGolden: "enabled_on_policy_and_mesh.listeners.golden.yaml",
 			clustersGolden:  "enabled_on_policy_and_mesh.clusters.golden.yaml",
 		}),
+		Entry("no policy defaults to None", testCase{
+			resources:       defaultPassthroughResources(),
+			listenersGolden: "no_policy.listeners.golden.yaml",
+			clustersGolden:  "no_policy.clusters.golden.yaml",
+		}),
+		Entry("no policy with allowAllOutbound keeps the default passthrough", testCase{
+			resources:        defaultPassthroughResources(),
+			allowAllOutbound: true,
+			listenersGolden:  "no_policy.listeners.golden.yaml",
+			clustersGolden:   "no_policy_passthrough_kept.clusters.golden.yaml",
+		}),
+		Entry("no policy without transparent proxy is left untouched", testCase{
+			resources:                defaultPassthroughResources(),
+			transparentProxyDisabled: true,
+			listenersGolden:          "no_policy.listeners.golden.yaml",
+			clustersGolden:           "no_policy_passthrough_kept.clusters.golden.yaml",
+		}),
+		Entry("no policy with bind outbounds is left untouched", testCase{
+			resources:       defaultPassthroughResources(),
+			features:        xds_types.Features{xds_types.FeatureBindOutbounds: true},
+			listenersGolden: "no_policy.listeners.golden.yaml",
+			clustersGolden:  "no_policy_passthrough_kept.clusters.golden.yaml",
+		}),
 	)
 })
+
+// defaultPassthroughResources mirrors what TransparentProxyGenerator adds for outbound passthrough
+func defaultPassthroughResources() []*core_xds.Resource {
+	var resources []*core_xds.Resource
+	for _, ipVersion := range []int{4, 6} {
+		name := naming.ContextualTransparentProxyName("outbound", ipVersion)
+		address := "0.0.0.0"
+		if ipVersion == 6 {
+			address = "::"
+		}
+		resources = append(resources,
+			&core_xds.Resource{
+				Name:   name,
+				Origin: metadata.OriginTransparent,
+				Resource: NewListenerBuilder(envoy_common.APIV3, name).
+					Configure(OutboundListener(address, 15001, core_xds.SocketAddressProtocolTCP)).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(TCPProxy(name, []envoy_common.Split{
+							plugins_xds.NewSplitBuilder().WithClusterName(name).WithWeight(100).Build(),
+						}...)),
+					)).MustBuild(),
+			},
+			&core_xds.Resource{
+				Name:     name,
+				Origin:   metadata.OriginTransparent,
+				Resource: clusters.NewClusterBuilder(envoy_common.APIV3, name).MustBuild(),
+			},
+		)
+	}
+	return resources
+}
 
 func mergedPolicyConf(rules core_rules.Rules) *core_rules.ProxyConf {
 	if len(rules) == 0 {

@@ -89,10 +89,8 @@ func processReachableBackendRefs(refs ReachableBackendRefs) []*mesh_proto.Datapl
 
 	for _, ref := range refs.Refs {
 		backendRef := &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
-			Kind:      ref.Kind,
-			Name:      pointer.Deref(ref.Name),
-			Namespace: pointer.Deref(ref.Namespace),
-			Labels:    ref.Labels,
+			Kind:   ref.Kind,
+			Labels: ref.Labels,
 		}
 
 		if ref.Port != nil {
@@ -126,8 +124,15 @@ func (p *PodConverter) dataplaneFor(
 
 	if v, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
 		var refs ReachableBackendRefs
-		if err := yaml.Unmarshal([]byte(v), &refs); err != nil {
-			return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
+		// strict, so refs still using the removed name/namespace fields fail loudly
+		if err := yaml.UnmarshalStrict([]byte(v), &refs); err != nil {
+			return nil, errors.Wrapf(err, "cannot parse, %s has invalid format", metadata.KumaReachableBackends)
+		}
+		// proto cannot tell omitted labels from empty ones, so require `labels: {}` here to select every backend
+		for i, ref := range refs.Refs {
+			if ref.Labels == nil {
+				return nil, errors.Errorf("%s: refs[%d].labels is required, use {} to select every %s", metadata.KumaReachableBackends, i, ref.Kind)
+			}
 		}
 
 		tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
@@ -135,10 +140,26 @@ func (p *PodConverter) dataplaneFor(
 		}
 	}
 
+	// Only a pod injected before 3.0 carries these, and only such a pod needs
+	// them: its sidecar reports no transparent proxy configuration of its own.
+	if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation); err != nil {
+		return nil, err
+	} else if ok {
+		tp.RedirectPortInbound = v //nolint:staticcheck // deprecated on purpose
+	}
+
+	if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation); err != nil {
+		return nil, err
+	} else if ok {
+		tp.RedirectPortOutbound = v //nolint:staticcheck // deprecated on purpose
+	}
+
 	// Avoid setting an empty TransparentProxying object by checking if any fields are set.
 	// Only assign it if at least one relevant field has a non-zero or non-nil value.
 	if tp.DirectAccessServices != nil ||
-		tp.ReachableBackends != nil {
+		tp.ReachableBackends != nil ||
+		tp.GetRedirectPortInbound() != 0 || //nolint:staticcheck // deprecated on purpose
+		tp.GetRedirectPortOutbound() != 0 { //nolint:staticcheck // deprecated on purpose
 		dataplane.Networking.TransparentProxying = &tp
 	}
 
@@ -293,9 +314,7 @@ type ReachableBackendRefs struct {
 }
 
 type ReachableBackendRef struct {
-	Kind      string            `json:"kind,omitempty"`
-	Name      *string           `json:"name,omitempty"`
-	Namespace *string           `json:"namespace,omitempty"`
-	Port      *uint32           `json:"port,omitempty"`
-	Labels    map[string]string `json:"labels,omitempty"`
+	Kind   string            `json:"kind,omitempty"`
+	Port   *uint32           `json:"port,omitempty"`
+	Labels map[string]string `json:"labels,omitempty"`
 }

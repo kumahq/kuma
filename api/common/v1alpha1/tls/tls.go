@@ -80,6 +80,13 @@ func ToTlsVersion(version *TlsVersion) tlsv3.TlsParameters_TlsProtocol {
 	}
 }
 
+func ToUpstreamMaxTlsVersion(version *TlsVersion) tlsv3.TlsParameters_TlsProtocol {
+	if version == nil || *version == TLSVersionAuto {
+		return tlsv3.TlsParameters_TLSv1_3
+	}
+	return ToTlsVersion(version)
+}
+
 // +kubebuilder:validation:Enum=ECDHE-ECDSA-AES128-GCM-SHA256;ECDHE-ECDSA-AES256-GCM-SHA384;ECDHE-ECDSA-CHACHA20-POLY1305;ECDHE-RSA-AES128-GCM-SHA256;ECDHE-RSA-AES256-GCM-SHA384;ECDHE-RSA-CHACHA20-POLY1305
 type TlsCipher string
 

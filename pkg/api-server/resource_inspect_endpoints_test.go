@@ -251,6 +251,7 @@ func (b *inspectionMeshContextBuilder) BuildBaseMeshContextIfChanged(context.Con
 func newInspectionHandler(resManager manager.ResourceManager, resourceAccess access.ResourceAccess, meshContextBuilder xds_context.MeshContextBuilder) *resourceInspectHandler {
 	return &resourceInspectHandler{
 		resManager:         resManager,
+		readOnlyResManager: resManager,
 		descriptor:         core_mesh.DataplaneResourceTypeDescriptor,
 		resourceAccess:     resourceAccess,
 		meshContextBuilder: meshContextBuilder,

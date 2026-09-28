@@ -1,0 +1,10 @@
+Patches: null
+allowed: false
+status:
+  code: 403
+  message: Operation not allowed. label "kuma.io/managed-by" is set by the control
+    plane and cannot be set manually
+  metadata: {}
+  reason: Forbidden
+  status: Failure
+uid: "12345"

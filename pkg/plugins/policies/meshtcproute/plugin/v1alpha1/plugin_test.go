@@ -21,6 +21,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -450,7 +451,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			dp, proxy, backendMeshSvc := dppForMeshExternalService(&meshExtSvc)
-			mc := meshContextForMeshExternalService(dp.Build(), backendDataplane(), &meshExtSvc, zoneEgressDataplane(), backendMeshSvc)
+			mc := meshContextForMeshExternalService(dp.Build(), backendDataplane(), &meshExtSvc, zoneEgressDataplane(), zoneEgressIdentity(), backendMeshSvc)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -516,7 +517,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			dp, proxy, backendMeshSvc := dppForMeshExternalService(&meshExtSvc, &meshExtSvc2)
-			mc := meshContextForMeshExternalService(zoneEgressDataplane(), &meshExtSvc, &meshExtSvc2, dp.Build(), backendDataplane(), backendMeshSvc)
+			mc := meshContextForMeshExternalService(zoneEgressDataplane(), zoneEgressIdentity(), &meshExtSvc, &meshExtSvc2, dp.Build(), backendDataplane(), backendMeshSvc)
 
 			proxy.Policies = core_xds.MatchedPolicies{
 				Dynamic: core_xds.PluginOriginatedPolicies{},
@@ -1010,7 +1011,12 @@ func meshContextForMeshExternalService(resources ...core_model.Resource) *xds_co
 	Expect(err).ToNot(HaveOccurred())
 
 	for _, res := range resources {
-		err = resourceStore.Create(context.Background(), res, store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()))
+		err = resourceStore.Create(
+			context.Background(),
+			res,
+			store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()),
+			store.CreateWithLabels(res.GetMeta().GetLabels()),
+		)
 		Expect(err).ToNot(HaveOccurred())
 	}
 
@@ -1035,6 +1041,11 @@ func zoneEgressDataplane() *core_mesh.DataplaneResource {
 	return builders.Dataplane().
 		WithName("zone-egress-01").
 		WithAddress("127.0.0.1").
+		// The MeshIdentity renders the egress SPIFFE ID from these labels.
+		WithLabels(map[string]string{
+			mesh_proto.KubeNamespaceTag:   "kuma-system",
+			"k8s.kuma.io/service-account": "kuma-default-egress",
+		}).
 		With(func(d *core_mesh.DataplaneResource) {
 			d.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
 				Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
@@ -1044,6 +1055,12 @@ func zoneEgressDataplane() *core_mesh.DataplaneResource {
 				State:   mesh_proto.Dataplane_Networking_Listener_Ready,
 			}}
 		}).Build()
+}
+
+// zoneEgressIdentity is what makes the egress advertised: the control plane only points
+// proxies at an egress once an initialized MeshIdentity gives it a certificate.
+func zoneEgressIdentity() *meshidentity_api.MeshIdentityResource {
+	return builders.MeshIdentity().WithInitializedStatus().Build()
 }
 
 // backendDataplane backs the "backend" MeshService of dppForMeshExternalService, so its

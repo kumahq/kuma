@@ -47,7 +47,7 @@ func (x *XdsServerConfig) Validate() error {
 
 func DefaultXdsServerConfig() *XdsServerConfig {
 	return &XdsServerConfig{
-		DataplaneConfigurationRefreshInterval: config_types.Duration{Duration: 1 * time.Second},
+		DataplaneConfigurationRefreshInterval: config_types.Duration{Duration: 10 * time.Second},
 		DataplaneStatusFlushInterval:          config_types.Duration{Duration: 10 * time.Second},
 		DataplaneDeregistrationDelay:          config_types.Duration{Duration: 10 * time.Second},
 		NACKBackoff:                           config_types.Duration{Duration: 5 * time.Second},

@@ -1,0 +1,16 @@
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: example
+    version: "0.1"
+  annotations:
+    kuma.io/transparent-proxying: enabled
+    kuma.io/transparent-proxying-inbound-port: "15006"
+    kuma.io/transparent-proxying-outbound-port: "15001"
+spec:
+  containers:
+    - ports:
+        - containerPort: 7070
+status:
+  podIP: 192.168.0.1

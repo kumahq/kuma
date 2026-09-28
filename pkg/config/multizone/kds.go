@@ -47,6 +47,8 @@ type KdsServerConfig struct {
 	Tracing         KDSServerTracing      `json:"tracing"`
 	// Labels allows for customizing label handling
 	Labels GlobalLabels `json:"labels"`
+	// Auth defines how Global CP authenticates Zone CPs
+	Auth KDSServerAuthConfig `json:"auth"`
 }
 
 var _ config.Config = &KdsServerConfig{}
@@ -84,6 +86,9 @@ func (c *KdsServerConfig) Validate() error {
 	if err := c.ZoneHealthCheck.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrap(err, "invalid zoneHealthCheck config"))
 	}
+	if err := c.Auth.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrap(err, ".Auth is not valid"))
+	}
 	return errs
 }
 
@@ -111,11 +116,19 @@ type KdsClientConfig struct {
 	EventBasedWatchdog ZoneEventBasedWatchdogConfig `json:"eventBasedWatchdog"`
 	// Labels allows for customizing label handling
 	Labels ZoneLabels `json:"labels"`
+	// Auth defines the credentials Zone CP presents to Global CP
+	Auth KDSClientAuthConfig `json:"auth"`
 }
 
 var _ config.Config = &KdsClientConfig{}
 
 var _ config.Config = ZoneHealthCheckConfig{}
+
+func (c *KdsClientConfig) Sanitize() {
+	if c.Auth.TokenInline != "" {
+		c.Auth.TokenInline = config.SanitizedValue
+	}
+}
 
 func (c *KdsClientConfig) Validate() error {
 	if err := c.EventBasedWatchdog.Validate(); err != nil {

@@ -290,6 +290,45 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 	})
 
+	It("should return 400 when resource contains a field that is not in the schema", func() {
+		// given
+		apiServer, store, stop := createServer(false)
+		defer stop()
+		createMesh(store)
+
+		// when
+		request, err := http.NewRequestWithContext(
+			context.Background(),
+			http.MethodPut,
+			fmt.Sprintf("http://%s/meshes/%s/meshtrafficpermissions/%s", apiServer.Address(), mesh, "mtp-1"),
+			bytes.NewBufferString(`{
+				"type": "MeshTrafficPermission",
+				"name": "mtp-1",
+				"mesh": "mesh-1",
+				"spec": {
+					"targetRef": {"kind": "Mesh"},
+					"from": [{"targetRef": {"kind": "Mesh"}, "default": {"action": "Allow"}}],
+					"rules": [{"default": {"allow": [{"spiffeID": {"type": "Exact", "value": "spiffe://trust-domain/ns/default"}}]}}]
+				}
+			}`),
+		)
+		Expect(err).ToNot(HaveOccurred())
+		request.Header.Add("content-type", "application/json")
+		resp, err := http.DefaultClient.Do(request)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+		bytes, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onUnknownField.golden.json")))
+
+		// and the resource was not created
+		actualMtp := v1alpha1.NewMeshTrafficPermissionResource()
+		err = store.Get(context.Background(), actualMtp, core_store.GetByKey("mtp-1", mesh))
+		Expect(core_store.IsNotFound(err)).To(BeTrue())
+	})
+
 	DescribeTable(
 		"should set origin label automatically",
 		func(federatedZone bool) {

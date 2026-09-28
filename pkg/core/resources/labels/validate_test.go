@@ -202,11 +202,11 @@ var _ = Describe("Validate", func() {
 		}),
 		// syntax
 		Entry("syntax: violations are sorted by key", testCase{
-			r: timeout(), labels: map[string]string{"kuma.io/b": "-bad", "kuma.io/a": "bad-", "bad key": "v"}, cp: universalNonFederated,
+			r: timeout(), labels: map[string]string{"example.com/b": "-bad", "example.com/a": "bad-", "bad key": "v"}, cp: universalNonFederated,
 			expected: []validators.Violation{
 				violation("bad key", "name part must consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyName',  or 'my.name',  or '123-abc', regex used for validation is '([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]')"),
-				violation("kuma.io/a", "a valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')"),
-				violation("kuma.io/b", "a valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')"),
+				violation("example.com/a", "a valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')"),
+				violation("example.com/b", "a valid label must be an empty string or consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyValue',  or 'my_value',  or '12345', regex used for validation is '(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?')"),
 			},
 		}),
 		Entry("syntax: annotation-backed values are names", testCase{
@@ -215,6 +215,127 @@ var _ = Describe("Validate", func() {
 		Entry("syntax: annotation-backed values must be DNS subdomains", testCase{
 			r: timeout(), labels: map[string]string{metadata.KumaWorkload: "Not_A_Name"}, cp: universalNonFederated,
 			expected: []validators.Violation{violation(metadata.KumaWorkload, "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character (e.g. 'example.com', regex used for validation is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*')")},
+		}),
+		// unknown reserved keys
+		Entry("unknown reserved key: kuma.io prefix", testCase{
+			r: timeout(), labels: map[string]string{"kuma.io/anything": "x"}, cp: universalNonFederated,
+			expected: []validators.Violation{violation("kuma.io/anything", `label "kuma.io/anything" is reserved and not known to this control plane`)},
+		}),
+		Entry("unknown reserved key: k8s.kuma.io prefix on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{"k8s.kuma.io/anything": "x"}, cp: k8sNonFederated,
+			expected: []validators.Violation{violation("k8s.kuma.io/anything", `label "k8s.kuma.io/anything" is reserved and not known to this control plane`)},
+		}),
+		Entry("unknown reserved key: legacy proxy-type on a Dataplane", testCase{
+			r: dataplane(), labels: map[string]string{"kuma.io/proxy-type": "sidecar"}, cp: universalNonFederated,
+			expected: []validators.Violation{violation("kuma.io/proxy-type", `label "kuma.io/proxy-type" is reserved and not known to this control plane`)},
+		}),
+		Entry("unknown reserved key: generated MeshService tracking label", testCase{
+			r: timeout(), labels: map[string]string{"kuma.io/pkey-6d1f0b0a": ""}, cp: universalNonFederated,
+			expected: []validators.Violation{violation("kuma.io/pkey-6d1f0b0a", `label "kuma.io/pkey-6d1f0b0a" is reserved and not known to this control plane`)},
+		}),
+		Entry("unknown reserved key: a key outside the reserved prefixes is accepted", testCase{
+			r: timeout(), labels: map[string]string{"example.com/anything": "x", "team": "payments"}, cp: universalNonFederated,
+		}),
+		Entry("unknown reserved key: a trusted writer is exempt", testCase{
+			r: timeout(), labels: map[string]string{"kuma.io/anything": "x"}, trusted: true, cp: universalNonFederated,
+		}),
+		Entry("unknown reserved key: a trusted writer is exempt on k8s", testCase{
+			r: timeout(), ns: systemNamespace, labels: map[string]string{"kuma.io/anything": "x"}, trusted: true, cp: k8sFederated,
+		}),
+		Entry("unknown reserved key: reported after the syntax violation of the key", testCase{
+			r: timeout(), labels: map[string]string{"kuma.io/Not Valid!": "x"}, cp: universalNonFederated,
+			expected: []validators.Violation{
+				violation("kuma.io/Not Valid!", "name part must consist of alphanumeric characters, '-', '_' or '.', and must start and end with an alphanumeric character (e.g. 'MyName',  or 'my.name',  or '123-abc', regex used for validation is '([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]')"),
+				violation("kuma.io/Not Valid!", `label "kuma.io/Not Valid!" is reserved and not known to this control plane`),
+			},
+		}),
+		// kds-sync
+		Entry("kds-sync: enabled", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.KDSSyncLabel: "enabled"}, cp: universalNonFederated,
+		}),
+		Entry("kds-sync: disabled", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.KDSSyncLabel: "disabled"}, cp: universalNonFederated,
+		}),
+		Entry("kds-sync: disabled on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.KDSSyncLabel: "disabled"}, cp: k8sNonFederated,
+		}),
+		Entry("kds-sync: values are case-sensitive", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.KDSSyncLabel: "Disabled"}, cp: universalNonFederated,
+			expected: []validators.Violation{violation(mesh_proto.KDSSyncLabel, `label "kuma.io/kds-sync" must be enabled or disabled, got "Disabled"`)},
+		}),
+		Entry("kds-sync: values are case-sensitive on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.KDSSyncLabel: "Disabled"}, cp: k8sNonFederated,
+			expected: []validators.Violation{violation(mesh_proto.KDSSyncLabel, `label "kuma.io/kds-sync" must be enabled or disabled, got "Disabled"`)},
+		}),
+		Entry("kds-sync: empty is not a value", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.KDSSyncLabel: ""}, cp: universalNonFederated,
+			expected: []validators.Violation{violation(mesh_proto.KDSSyncLabel, `label "kuma.io/kds-sync" must be enabled or disabled, got ""`)},
+		}),
+		Entry("kds-sync: the format rule applies to a trusted writer", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.KDSSyncLabel: "Disabled"}, trusted: true, cp: universalNonFederated,
+			expected: []validators.Violation{violation(mesh_proto.KDSSyncLabel, `label "kuma.io/kds-sync" must be enabled or disabled, got "Disabled"`)},
+		}),
+		// effect
+		Entry("effect: shadow", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.EffectLabel: "shadow"}, cp: universalNonFederated,
+		}),
+		Entry("effect: shadow on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.EffectLabel: "shadow"}, cp: k8sNonFederated,
+		}),
+		Entry("effect: any other value", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.EffectLabel: "san"}, cp: universalNonFederated,
+			expected: []validators.Violation{violation(mesh_proto.EffectLabel, `label "kuma.io/effect" must be shadow, got "san"`)},
+		}),
+		Entry("effect: any other value on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.EffectLabel: "Shadow"}, cp: k8sNonFederated,
+			expected: []validators.Violation{violation(mesh_proto.EffectLabel, `label "kuma.io/effect" must be shadow, got "Shadow"`)},
+		}),
+		// control-plane-only
+		Entry("managed-by: supplied by a user", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.ManagedByLabel: "meshservice-generator"}, cp: universalNonFederated,
+			expected: []validators.Violation{violation(mesh_proto.ManagedByLabel, `label "kuma.io/managed-by" is set by the control plane and cannot be set manually`)},
+		}),
+		Entry("managed-by: supplied by a user on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.ManagedByLabel: "k8s-controller"}, cp: k8sNonFederated,
+			expected: []validators.Violation{violation(mesh_proto.ManagedByLabel, `label "kuma.io/managed-by" is set by the control plane and cannot be set manually`)},
+		}),
+		Entry("managed-by: supplied by a trusted writer", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.ManagedByLabel: "meshservice-generator"}, trusted: true, cp: universalNonFederated,
+		}),
+		Entry("managed-by: supplied by a trusted writer on k8s", testCase{
+			r: timeout(), ns: systemNamespace, labels: map[string]string{mesh_proto.ManagedByLabel: "k8s-controller"}, trusted: true, cp: k8sGlobal,
+		}),
+		Entry("deletion-grace-period-started-at: supplied by a user", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.DeletionGracePeriodStartedLabel: "2026-01-01T00.00.00Z"}, cp: universalNonFederated,
+			expected: []validators.Violation{violation(mesh_proto.DeletionGracePeriodStartedLabel, `label "kuma.io/deletion-grace-period-started-at" is set by the control plane and cannot be set manually`)},
+		}),
+		Entry("deletion-grace-period-started-at: supplied by a user on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.DeletionGracePeriodStartedLabel: "2026-01-01T00.00.00Z"}, cp: k8sFederated,
+			expected: []validators.Violation{violation(mesh_proto.DeletionGracePeriodStartedLabel, `label "kuma.io/deletion-grace-period-started-at" is set by the control plane and cannot be set manually`)},
+		}),
+		Entry("service-name: supplied by a user", testCase{
+			r: timeout(), labels: map[string]string{metadata.KumaServiceName: "backend"}, cp: universalGlobal,
+			expected: []validators.Violation{violation(metadata.KumaServiceName, `label "k8s.kuma.io/service-name" is set by the control plane and cannot be set manually`)},
+		}),
+		Entry("service-name: supplied by a user on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{metadata.KumaServiceName: "backend"}, cp: k8sNonFederated,
+			expected: []validators.Violation{violation(metadata.KumaServiceName, `label "k8s.kuma.io/service-name" is set by the control plane and cannot be set manually`)},
+		}),
+		Entry("is-headless-service: supplied by a user", testCase{
+			r: timeout(), labels: map[string]string{metadata.HeadlessService: "true"}, cp: universalNonFederated,
+			expected: []validators.Violation{violation(metadata.HeadlessService, `label "k8s.kuma.io/is-headless-service" is set by the control plane and cannot be set manually`)},
+		}),
+		Entry("is-headless-service: supplied by a user on k8s", testCase{
+			r: timeout(), ns: systemNamespace, labels: map[string]string{metadata.HeadlessService: "false"}, cp: k8sGlobal,
+			expected: []validators.Violation{violation(metadata.HeadlessService, `label "k8s.kuma.io/is-headless-service" is set by the control plane and cannot be set manually`)},
+		}),
+		Entry("control-plane-only labels are reported in registry order, before the unknown key", testCase{
+			r: timeout(), labels: map[string]string{"kuma.io/pkey-6d1f0b0a": "", metadata.KumaServiceName: "backend", mesh_proto.ManagedByLabel: "k8s-controller"}, cp: universalNonFederated,
+			expected: []validators.Violation{
+				violation(mesh_proto.ManagedByLabel, `label "kuma.io/managed-by" is set by the control plane and cannot be set manually`),
+				violation(metadata.KumaServiceName, `label "k8s.kuma.io/service-name" is set by the control plane and cannot be set manually`),
+				violation("kuma.io/pkey-6d1f0b0a", `label "kuma.io/pkey-6d1f0b0a" is reserved and not known to this control plane`),
+			},
 		}),
 	)
 })

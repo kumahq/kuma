@@ -1,0 +1,17 @@
+Patches: null
+allowed: false
+status:
+  code: 422
+  details:
+    causes:
+    - field: labels["kuma.io/foo"]
+      message: label "kuma.io/foo" is reserved and not known to this control plane
+      reason: FieldValueInvalid
+    kind: MeshTimeout
+    name: backend-v3
+  message: 'labels["kuma.io/foo"]: label "kuma.io/foo" is reserved and not known to
+    this control plane'
+  metadata: {}
+  reason: Invalid
+  status: Failure
+uid: "12345"

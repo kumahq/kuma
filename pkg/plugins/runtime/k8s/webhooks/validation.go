@@ -80,7 +80,7 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
-		if err := h.validateLabels(coreRes, req.Namespace); err.HasViolations() {
+		if err := h.validateLabels(coreRes, req.Namespace, h.isPrivilegedUser(h.AllowedUsers, req.UserInfo)); err.HasViolations() {
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
@@ -162,15 +162,16 @@ func (h *validatingHandler) validateOriginNotChanged(oldObj, newObj k8s_model.Ku
 	return nil
 }
 
-func (h *validatingHandler) validateLabels(r core_model.Resource, ns string) validators.ValidationError {
+func (h *validatingHandler) validateLabels(r core_model.Resource, ns string, trustedWriter bool) validators.ValidationError {
 	var verr validators.ValidationError
 	verr.AddError("labels", resource_labels.ValidateFormat(resource_labels.Write{
-		Descriptor:  r.Descriptor(),
-		Spec:        r.GetSpec(),
-		Namespace:   resource_labels.NewNamespace(ns, ns == h.SystemNamespace),
-		Mesh:        r.GetMeta().GetMesh(),
-		DisplayName: r.GetMeta().GetName(),
-		Labels:      r.GetMeta().GetLabels(),
+		Descriptor:    r.Descriptor(),
+		Spec:          r.GetSpec(),
+		Namespace:     resource_labels.NewNamespace(ns, ns == h.SystemNamespace),
+		Mesh:          r.GetMeta().GetMesh(),
+		DisplayName:   r.GetMeta().GetName(),
+		Labels:        r.GetMeta().GetLabels(),
+		TrustedWriter: trustedWriter,
 	}))
 	return verr
 }

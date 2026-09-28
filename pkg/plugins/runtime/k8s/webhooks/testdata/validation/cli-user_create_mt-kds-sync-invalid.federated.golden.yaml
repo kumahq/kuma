@@ -1,0 +1,17 @@
+Patches: null
+allowed: false
+status:
+  code: 422
+  details:
+    causes:
+    - field: labels["kuma.io/kds-sync"]
+      message: label "kuma.io/kds-sync" must be enabled or disabled, got "Disabled"
+      reason: FieldValueInvalid
+    kind: MeshTimeout
+    name: backend-v3
+  message: 'labels["kuma.io/kds-sync"]: label "kuma.io/kds-sync" must be enabled or
+    disabled, got "Disabled"'
+  metadata: {}
+  reason: Invalid
+  status: Failure
+uid: "12345"

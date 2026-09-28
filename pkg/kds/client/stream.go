@@ -231,7 +231,7 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		// Attribute the batch to the connecting peer's declared client-id
 		// (s.clientID), not the ControlPlane.Identifier in the payload. The
 		// client-id is request metadata the peer declares; verifying it per
-		// connection is the (enterprise) zone-token filter's job, not this
+		// connection is the job of the KDS authenticator (pkg/kds/auth), not this
 		// path's. The two match in ordinary sync, so this only changes behavior
 		// when they diverge.
 		ControlPlaneId:      s.clientID,

@@ -53,6 +53,15 @@ controlPlane:
   # -- Only used in `zone` mode
   kdsGlobalAddress: ""
 
+  # Zone Token this Zone CP presents to the Global CP over KDS. Only used in `zone` mode.
+  zoneToken:
+    # -- Name of the K8s Secret with the Zone Token. The Secret is mounted as a file,
+    # so a rotated token is picked up on the next KDS stream without restarting the CP.
+    # Leave empty to send no token.
+    secretName: ""
+    # -- Key of the Secret that holds the token
+    key: "token"
+
   # -- Number of replicas of the Kuma CP. Ignored when autoscaling is enabled
   replicas: 1
 
@@ -540,11 +549,11 @@ meshZoneProxyDefaults:
     # goes away before the control plane has pushed new endpoints takes requests down
     # with it. The hook has to outlast that propagation, which costs roughly
     # KUMA_STORE_CACHE_EXPIRATION_TIME (default 1s) plus
-    # KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL (default 1s) plus the
+    # KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL (default 10s) plus the
     # time to push and ack the update, so raise this if you have raised either
     # interval. Must be lower than terminationGracePeriodSeconds, otherwise the chart
     # fails to render. Set to 0 to drop the hook.
-    preStopSleepSeconds: 15
+    preStopSleepSeconds: 20
     # -- Whether to automountServiceAccountToken for zone egress. Optionally set to false
     automountServiceAccountToken: true
     # -- Default image pull policy for the zone egress pause container.
@@ -705,7 +714,7 @@ kubectl:
     # -- The kubectl image repository
     repository: kubectl
     # -- The kubectl image tag
-    tag: v1.37.0@sha256:5ed410ebac5dc976cc717098994dcdb29bbbd38f6bd65f582311f5be4ba719cf
+    tag: v1.37.1@sha256:b7cab618e281b1ee7484e7b706a96e2135fbb6e072c2a573a7dab4e87d7f2385
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
