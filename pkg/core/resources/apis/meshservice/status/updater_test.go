@@ -57,14 +57,15 @@ var _ = Describe("Updater", func() {
 
 	It("should add identity to status of service", func() {
 		// when
-		Expect(samples.MeshServiceBackendBuilder().Create(resManager)).To(Succeed())
-		Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
-		Expect(samples.DataplaneWebBuilder().Create(resManager)).To(Succeed()) // identity of web should not be added
+		Expect(samples.MeshMTLSBuilder().WithName("tls-mesh").Create(resManager)).To(Succeed())
+		Expect(samples.MeshServiceBackendBuilder().WithMesh("tls-mesh").Create(resManager)).To(Succeed())
+		Expect(samples.DataplaneBackendBuilder().WithMesh("tls-mesh").Create(resManager)).To(Succeed())
+		Expect(samples.DataplaneWebBuilder().WithMesh("tls-mesh").Create(resManager)).To(Succeed()) // identity of web should not be added
 
 		// then
 		Eventually(func(g Gomega) {
 			ms := meshservice_api.NewMeshServiceResource()
-			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
+			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", "tls-mesh"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
 				{
@@ -72,6 +73,45 @@ var _ = Describe("Updater", func() {
 					Value: "backend",
 				},
 			}))
+		}, "10s", "100ms").Should(Succeed())
+	})
+
+	It("should not add ServiceTag identity when mesh has no mTLS", func() {
+		// when
+		Expect(samples.MeshServiceBackendBuilder().AddServiceTagIdentity("backend").Create(resManager)).To(Succeed())
+		Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			ms := meshservice_api.NewMeshServiceResource()
+			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(pointer.Deref(ms.Spec.Identities)).To(BeEmpty())
+		}, "10s", "100ms").Should(Succeed())
+	})
+
+	It("should drop ServiceTag identity once mTLS is removed from the mesh", func() {
+		// given
+		Expect(samples.MeshMTLSBuilder().WithName("tls-mesh").Create(resManager)).To(Succeed())
+		Expect(samples.MeshServiceBackendBuilder().WithMesh("tls-mesh").Create(resManager)).To(Succeed())
+		Expect(samples.DataplaneBackendBuilder().WithMesh("tls-mesh").Create(resManager)).To(Succeed())
+		Eventually(func(g Gomega) {
+			ms := meshservice_api.NewMeshServiceResource()
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", "tls-mesh"))).To(Succeed())
+			g.Expect(pointer.Deref(ms.Spec.Identities)).To(HaveLen(1))
+		}, "10s", "100ms").Should(Succeed())
+
+		// when
+		mesh := core_mesh.NewMeshResource()
+		Expect(resManager.Get(context.Background(), mesh, store.GetByKey("tls-mesh", model.NoMesh))).To(Succeed())
+		mesh.Spec.Mtls = nil
+		Expect(resManager.Update(context.Background(), mesh)).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			ms := meshservice_api.NewMeshServiceResource()
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", "tls-mesh"))).To(Succeed())
+			g.Expect(pointer.Deref(ms.Spec.Identities)).To(BeEmpty())
 		}, "10s", "100ms").Should(Succeed())
 	})
 
@@ -98,7 +138,6 @@ var _ = Describe("Updater", func() {
 			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
-				{Type: "ServiceTag", Value: "backend"},
 				{
 					Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
 					Value: "spiffe://default.east.mesh.local/ns/my-ns/sa/default",
@@ -154,23 +193,25 @@ var _ = Describe("Updater", func() {
 
 	It("should fall back to the workload label for identity when inbound tags are disabled", func() {
 		// when
+		Expect(samples.MeshMTLSBuilder().WithName("tls-mesh").Create(resManager)).To(Succeed())
 		Expect(builders.MeshService().
 			WithName("backend").
+			WithMesh("tls-mesh").
 			WithDataplaneLabelsSelector(map[string]string{
 				metadata.KumaWorkload: "backend",
 			}).
 			AddIntPort(int32(builders.FirstInboundPort), int32(builders.FirstInboundPort), "http").
 			Create(resManager)).To(Succeed())
-		taglessDpp := samples.DataplaneBackendBuilder().Build()
+		taglessDpp := samples.DataplaneBackendBuilder().WithMesh("tls-mesh").Build()
 		taglessDpp.Spec.Networking.Inbound[0].Tags = map[string]string{}
-		Expect(resManager.Create(context.TODO(), taglessDpp, store.CreateByKey("dp-1", model.DefaultMesh), store.CreateWithLabels(map[string]string{
+		Expect(resManager.Create(context.TODO(), taglessDpp, store.CreateByKey("dp-1", "tls-mesh"), store.CreateWithLabels(map[string]string{
 			metadata.KumaWorkload: "backend",
 		}))).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) {
 			ms := meshservice_api.NewMeshServiceResource()
-			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
+			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", "tls-mesh"))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(ms.Spec.Identities).To(Equal(&[]meshservice_api.MeshServiceIdentity{
 				{
