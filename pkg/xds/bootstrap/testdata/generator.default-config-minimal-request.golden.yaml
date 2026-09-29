@@ -124,15 +124,11 @@ statsConfig:
     tagName: name
   - regex: ^grpc\..*streams_closed(_([0-9]+))
     tagName: status
-<<<<<<< HEAD
   - regex: ^kafka(\.(\S*[0-9]))\.
     tagName: kafka_name
   - regex: ^kafka\..*\.(.*?(?=_duration|$))
     tagName: kafka_type
-  - regex: (worker_([0-9]+)\.)
-=======
   - regex: ^listener\..*?(worker_([0-9]+)\.)
->>>>>>> 6ffae77bd3 (fix(xds): speed up Envoy stats tag extraction (#18910))
     tagName: worker
   - regex: ^listener_manager\..*?(worker_([0-9]+)\.)
     tagName: worker
