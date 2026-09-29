@@ -73,6 +73,11 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 
 	switch req.Operation {
 	case v1.Delete:
+		if !h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) {
+			if resp := h.validateOriginOwnedLocally(k8sObj); resp != nil {
+				return *resp
+			}
+		}
 		return admission.Allowed("")
 	default:
 		var warnings []string
@@ -157,6 +162,38 @@ func (h *validatingHandler) validateOriginNotChanged(oldObj, newObj k8s_model.Ku
 		return forbiddenResponse(fmt.Sprintf(
 			"Operation not allowed. '%s' label is immutable, cannot be changed from '%s' to '%s'",
 			mesh_proto.ResourceOriginLabel, oldOrigin, newOrigin,
+		))
+	}
+	return nil
+}
+
+// Without this, a user could delete a policy that was synced in from
+// elsewhere (kuma.io/origin isn't this control plane's own authority: a
+// zone-originated resource on Global, or a global-originated resource on a
+// federated Zone). The delete appears to succeed, but the next KDS sync just
+// re-creates the resource, so it silently reappears -- e.g. after a zone
+// restart -- instead of the operation failing outright. This mirrors the
+// universal REST API's equivalent guard, resourceCrudHandler.validateOriginForWrite,
+// applied here to the k8s admission path's Delete case.
+func (h *validatingHandler) validateOriginOwnedLocally(obj k8s_model.KubernetesObject) *admission.Response {
+	// a non-federated zone owns everything in its own store
+	if h.ControlPlane.Mode != core.Global && !h.ControlPlane.FederatedZone {
+		return nil
+	}
+	origin, ok := obj.GetLabels()[mesh_proto.ResourceOriginLabel]
+	if !ok {
+		return nil
+	}
+	if h.ControlPlane.Mode == core.Global && origin != string(mesh_proto.GlobalResourceOrigin) {
+		return forbiddenResponse(fmt.Sprintf(
+			"Operation not allowed. This resource originated on a zone ('%s: %s') and can only be deleted from that zone; it is read-only here and will reappear on the next sync.",
+			mesh_proto.ResourceOriginLabel, origin,
+		))
+	}
+	if h.ControlPlane.FederatedZone && origin != string(mesh_proto.ZoneResourceOrigin) {
+		return forbiddenResponse(fmt.Sprintf(
+			"Operation not allowed. This resource originated on the global control plane ('%s: %s') and can only be deleted there; it is read-only here and will reappear on the next sync.",
+			mesh_proto.ResourceOriginLabel, origin,
 		))
 	}
 	return nil
