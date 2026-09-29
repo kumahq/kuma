@@ -68,11 +68,11 @@ func (c *ResourceAdmissionChecker) isNamespaceAllowed(r core_model.Resource, ns 
 	switch c.ControlPlane.Mode {
 	case core.Global:
 		if ns != c.SystemNamespace {
-			return admission.Denied(fmt.Sprintf("on Global CP the policy can be created only in the system namespace:%s", c.SystemNamespace))
+			return admission.Denied(fmt.Sprintf("on Global CP the resource must be in the system namespace:%s", c.SystemNamespace))
 		}
 	case core.Zone:
 		if r.Descriptor().AllowedOnSystemNamespaceOnly && ns != c.SystemNamespace {
-			return admission.Denied(fmt.Sprintf("resource type %v can be created only in the system namespace:%s", r.Descriptor().Name, c.SystemNamespace))
+			return admission.Denied(fmt.Sprintf("resource type %v must be in the system namespace:%s", r.Descriptor().Name, c.SystemNamespace))
 		}
 	}
 	return admission.Allowed("")
