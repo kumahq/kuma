@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -63,7 +64,13 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	if resp := h.IsOperationAllowed(req, resource); !resp.Allowed {
+	var stored metav1.PartialObjectMetadata
+	if len(req.OldObject.Raw) > 0 {
+		if err := json.Unmarshal(req.OldObject.Raw, &stored); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+	}
+	if resp := h.IsOperationAllowed(req, resource, stored.GetLabels()); !resp.Allowed {
 		return resp
 	}
 
