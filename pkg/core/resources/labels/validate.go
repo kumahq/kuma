@@ -7,16 +7,28 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/util/maps"
 )
 
-// ValidateOwnership rejects control-plane-owned labels an untrusted writer supplied
-// with a value the control plane would not have chosen. Violations are keyed by label
-// in registry order.
+// ValidateOwnership rejects an untrusted update or delete of a resource another control
+// plane owns, then control-plane-owned labels an untrusted writer supplied with a value
+// the control plane would not have chosen. Violations are keyed by label in registry order.
 func ValidateOwnership(w Write, cp ControlPlane) validators.ValidationError {
 	var err validators.ValidationError
 	if w.TrustedWriter {
+		return err
+	}
+	if (cp.Mode == config_core.Global || cp.FederatedZone) && !isLocal(w.Namespace, w.StoredLabels, cp) {
+		owner := "the global"
+		if cp.Mode == config_core.Global {
+			owner = "a zone"
+		}
+		err.AddViolationAt(
+			validators.Root().Key(mesh_proto.ResourceOriginLabel),
+			fmt.Sprintf("the resource is owned by %s control plane and can be changed only there", owner),
+		)
 		return err
 	}
 	for _, d := range registry {
