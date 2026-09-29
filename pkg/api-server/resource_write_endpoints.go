@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/validator"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
 
 func (r *resourceCrudHandler) createOrUpdateResource(request *restful.Request) (any, error) {
@@ -177,14 +178,16 @@ func (r *resourceCrudHandler) deleteResource(request *restful.Request) (any, err
 		return nil, withTitle(err, "Could not delete a resource")
 	}
 
-	if verr := resource_labels.ValidateOwnership(resource_labels.Write{
+	var verr validators.ValidationError
+	verr.AddError("labels", resource_labels.ValidateOwnership(resource_labels.Write{
 		Descriptor:   r.descriptor,
 		Spec:         resource.GetSpec(),
 		Namespace:    resource_labels.GetNamespace(resource.GetMeta(), r.systemNamespace),
 		Mesh:         meshName,
 		DisplayName:  name,
 		StoredLabels: resource.GetMeta().GetLabels(),
-	}, r.cp); verr.HasViolations() {
+	}, r.cp))
+	if verr.HasViolations() {
 		return nil, withTitle(verr.OrNil(), "Could not delete a resource")
 	}
 
