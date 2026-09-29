@@ -392,7 +392,7 @@ This should have no effect, since `MeshIdentities` are selected based on lexicog
 
 ### Use a `kuma.io/effect` label
 
-In [MADR](040-transition-to-new-policies.md), we introduced a new label for mesh policies: `kuma.io/effect`. The goal of this label is to help users migrate from the old policies to the new ones. When a user sets `kuma.io/effect: shadow` on a policy, the configuration will not be applied to dataplanes but will allow the user to compare and verify that there are no differences in configuration between the old and new policies.
+In [MADR](https://github.com/kumahq/kuma/blob/46c23d9abaf50781c4fe24f2e8374942f0efb60e/docs/madr/decisions/040-transition-to-new-policies.md), we introduced a new label for mesh policies: `kuma.io/effect`. The goal of this label is to help users migrate from the old policies to the new ones. When a user sets `kuma.io/effect: shadow` on a policy, the configuration will not be applied to dataplanes but will allow the user to compare and verify that there are no differences in configuration between the old and new policies.
 
 We could also reuse this label with the value `san`. In this case, identities would be propagated on the `MeshService`, but the workload identity itself would not be provided.
 
