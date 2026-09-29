@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/validator"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -65,7 +66,20 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
-	if resp := h.IsOperationAllowed(req, coreRes); !resp.Allowed {
+	privileged := h.isPrivilegedUser(h.AllowedUsers, req.UserInfo)
+	var previousRes core_model.Resource
+	var storedLabels map[string]string
+	switch {
+	case req.Operation == v1.Delete:
+		storedLabels = k8s.SuppliedLabels(k8sObj)
+	case req.Operation == v1.Update && !privileged:
+		var previousObj k8s_model.KubernetesObject
+		if previousRes, previousObj, err = h.decode(req.Kind.Kind, req.OldObject); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+		storedLabels = k8s.SuppliedLabels(previousObj)
+	}
+	if resp := h.IsOperationAllowed(req, coreRes, storedLabels); !resp.Allowed {
 		return resp
 	}
 
@@ -78,11 +92,11 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
-		if err := h.validateLabels(coreRes, req.Namespace, h.isPrivilegedUser(h.AllowedUsers, req.UserInfo)); err.HasViolations() {
+		if err := h.validateLabels(coreRes, req.Namespace, privileged); err.HasViolations() {
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
-		if !h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) && coreRes.Descriptor().Scope == core_model.ScopeMesh {
+		if !privileged && coreRes.Descriptor().Scope == core_model.ScopeMesh {
 			if err := h.validateMeshOwnerReference(k8sObj); err.HasViolations() {
 				return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 			}
@@ -100,11 +114,7 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 		// IsOperationAllowed: a KDS sync replaying a resource the user recreated with a
 		// new value upstream must not be wedged by a guard that exists to protect the
 		// user from an in-place edit.
-		if req.Operation == v1.Update && !h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) {
-			previousRes, _, err := h.decode(req.Kind.Kind, req.OldObject)
-			if err != nil {
-				return admission.Errored(http.StatusBadRequest, err)
-			}
+		if previousRes != nil {
 			if err := validator.ValidateUpdate(previousRes, coreRes); err != nil {
 				if kumaErr, ok := err.(*validators.ValidationError); ok {
 					return convertSpecValidationError(kumaErr, coreRes.Descriptor().IsPluginOriginated, k8sObj)

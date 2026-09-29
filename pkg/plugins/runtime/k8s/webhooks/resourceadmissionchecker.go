@@ -30,22 +30,17 @@ const (
 	StorageVersionMigratorUser  = "system:serviceaccount:kube-system:storage-version-migrator-controller"
 )
 
-func (c *ResourceAdmissionChecker) IsOperationAllowed(req admission.Request, r core_model.Resource) admission.Response {
+func (c *ResourceAdmissionChecker) IsOperationAllowed(req admission.Request, r core_model.Resource, storedLabels map[string]string) admission.Response {
 	if c.isPrivilegedUser(c.AllowedUsers, req.UserInfo) {
 		return admission.Allowed("")
 	}
 	ns := req.Namespace
 
-	// The labels are read from the raw objects: r's meta already has the read-time
+	// The labels are read from the raw object: r's meta already has the read-time
 	// enforced labels overlaid and a name.namespace name.
-	var supplied, stored metav1.PartialObjectMetadata
+	var supplied metav1.PartialObjectMetadata
 	if req.Operation != admissionv1.Delete {
 		if err := yaml.Unmarshal(req.Object.Raw, &supplied); err != nil {
-			return admission.Errored(http.StatusBadRequest, err)
-		}
-	}
-	if len(req.OldObject.Raw) > 0 {
-		if err := yaml.Unmarshal(req.OldObject.Raw, &stored); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 	}
@@ -64,7 +59,7 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(req admission.Request, r c
 		Mesh:         r.GetMeta().GetMesh(),
 		DisplayName:  supplied.GetName(),
 		Labels:       k8s.SuppliedLabels(&supplied),
-		StoredLabels: k8s.SuppliedLabels(&stored),
+		StoredLabels: storedLabels,
 	}, c.ControlPlane); err.HasViolations() {
 		return *forbiddenResponse("Operation not allowed. " + err.Violations[0].Message)
 	}
@@ -80,11 +75,11 @@ func (c *ResourceAdmissionChecker) isNamespaceAllowed(r core_model.Resource, ns 
 	switch c.ControlPlane.Mode {
 	case core.Global:
 		if ns != c.SystemNamespace {
-			return admission.Denied(fmt.Sprintf("on Global CP the policy can be created only in the system namespace:%s", c.SystemNamespace))
+			return admission.Denied(fmt.Sprintf("on Global CP the resource must be in the system namespace:%s", c.SystemNamespace))
 		}
 	case core.Zone:
 		if r.Descriptor().AllowedOnSystemNamespaceOnly && ns != c.SystemNamespace {
-			return admission.Denied(fmt.Sprintf("resource type %v can be created only in the system namespace:%s", r.Descriptor().Name, c.SystemNamespace))
+			return admission.Denied(fmt.Sprintf("resource type %v must be in the system namespace:%s", r.Descriptor().Name, c.SystemNamespace))
 		}
 	}
 	return admission.Allowed("")
