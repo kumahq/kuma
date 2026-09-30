@@ -315,6 +315,17 @@ func computedLabels() map[string]struct{} {
 	return keys
 }
 
+// ControlPlaneOwned returns the keys only the control plane decides the value of.
+func ControlPlaneOwned() []string {
+	var keys []string
+	for _, d := range registry {
+		if d.Owner == OwnerControlPlane {
+			keys = append(keys, d.Key)
+		}
+	}
+	return keys
+}
+
 // AnnotationBacked returns the keys Kubernetes stores as annotations instead of labels.
 func AnnotationBacked() []string {
 	var keys []string

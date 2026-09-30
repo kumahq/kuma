@@ -152,6 +152,18 @@ var _ = Describe("Validate", func() {
 			labels:   map[string]string{mesh_proto.ZoneTag: "zone-2"},
 			expected: []validators.Violation{differs(mesh_proto.ZoneTag, "zone-2", "zone-1")},
 		}),
+		Entry("update: a stored service-account the write would drop is rejected", testCase{
+			r: dataplane(), ns: appNamespace, cp: k8sNonFederated,
+			stored:   map[string]string{metadata.KumaServiceAccount: "sa-1"},
+			labels:   map[string]string{metadata.KumaServiceAccount: "sa-1"},
+			expected: []validators.Violation{notHere(metadata.KumaServiceAccount)},
+		}),
+		Entry("update: a stored managed-by the write would drop is rejected", testCase{
+			r: timeout(), cp: universalNonFederated,
+			stored:   map[string]string{mesh_proto.ManagedByLabel: "meshservice-generator"},
+			labels:   map[string]string{mesh_proto.ManagedByLabel: "meshservice-generator"},
+			expected: []validators.Violation{notHere(mesh_proto.ManagedByLabel)},
+		}),
 		Entry("violations are reported in registry order", testCase{
 			r: timeout(), labels: map[string]string{mesh_proto.ZoneTag: "zone-2", metadata.KumaMeshLabel: "mesh-2", mesh_proto.ResourceOriginLabel: "global"}, cp: universalFederated,
 			expected: []validators.Violation{

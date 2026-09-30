@@ -24,11 +24,17 @@ On Universal this includes the labels of the `Dataplane` passed to `kuma-dp run`
 
 ### Control-plane-owned labels are rejected when they differ from the computed value
 
-The control plane computes `kuma.io/origin`, `kuma.io/zone`, `kuma.io/env`, `kuma.io/mesh`, `kuma.io/display-name`, `kuma.io/policy-role`, `k8s.kuma.io/namespace`, `k8s.kuma.io/service-account`, `kuma.io/listener-zoneingress` and `kuma.io/listener-zoneegress` on every write. Depending on the label and the platform, a value you supplied used to be either rejected or silently replaced. Now, on both Kubernetes and Universal, a supplied value that differs from the computed one is rejected, and an equal or absent one is accepted. On an update, a value equal to the stored one is accepted too, so re-applying a stored resource with `kubectl apply` or `kumactl apply` keeps working. Plugin policies on Universal now also carry `kuma.io/policy-role: system`.
+The control plane computes `kuma.io/origin`, `kuma.io/zone`, `kuma.io/env`, `kuma.io/mesh`, `kuma.io/display-name`, `kuma.io/policy-role`, `k8s.kuma.io/namespace`, `k8s.kuma.io/service-account`, `kuma.io/listener-zoneingress` and `kuma.io/listener-zoneegress` on every write. Depending on the label and the platform, a value you supplied used to be either rejected or silently replaced. Now, on both Kubernetes and Universal, a supplied value that differs from the computed one is rejected, and an equal or absent one is accepted. On an update, a value equal to the stored one is accepted too, so re-applying a stored resource with `kubectl apply` or `kumactl apply` keeps working; the stored value is then replaced with the computed one, for example when the edit changes the policy role.
+
+`kuma.io/managed-by`, `kuma.io/deletion-grace-period-started-at`, `k8s.kuma.io/service-name` and `k8s.kuma.io/is-headless-service` are set only by the control plane's own controllers, and `k8s.kuma.io/service-account` only by the pod controller. You cannot set any of them, not even to their stored value: an update of a generated `MeshService`, `Workload` or `Dataplane` that carries them is rejected, because accepting it would drop the label.
+
+On Universal, plugin policies now also carry `kuma.io/policy-role: system`.
+
+`kumactl export --profile federation` and `--profile federation-with-policies` now leave out every control-plane-owned label except `kuma.io/mesh`, so the global control plane accepts the output.
 
 **Action required**
 
-Remove these labels from your manifests, or set them to the value the control plane shows on the stored resource.
+Remove these labels from your manifests, or set them to the value the control plane shows on the stored resource. Don't edit a resource the control plane generated; change what it is generated from, such as the `Service` or the `Pod`. Re-export any federation output made with an older `kumactl` before applying it to the global control plane.
 
 ### Zone Token issuance moved to the KDS auth configuration
 
