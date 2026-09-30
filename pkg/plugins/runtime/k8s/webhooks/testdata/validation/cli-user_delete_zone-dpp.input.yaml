@@ -1,0 +1,18 @@
+# user=cli-user,operation=DELETE,namespace=kuma-system
+apiVersion: kuma.io/v1alpha1
+kind: Dataplane
+mesh: demo
+metadata:
+  namespace: kuma-system
+  name: empty
+  creationTimestamp: null
+  labels:
+    kuma.io/origin: zone
+    kuma.io/zone: zone-2
+spec:
+  networking:
+    address: 127.0.0.1
+    inbound:
+      - port: 11011
+        tags:
+          kuma.io/display-name: backend

@@ -1,19 +1,19 @@
 {
  "type": "/std-errors",
  "status": 400,
- "title": "Could not update a resource",
+ "title": "Could not process a resource",
  "detail": "Resource is not valid",
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/origin\"]",
-   "reason": "is immutable, cannot be changed from \"global\" to \"zone\""
+   "reason": "the resource is owned by the global control plane and can be changed only there"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"kuma.io/origin\"]",
-   "message": "is immutable, cannot be changed from \"global\" to \"zone\""
+   "message": "the resource is owned by the global control plane and can be changed only there"
   }
  ]
 }
