@@ -1,3 +1,7 @@
+---
+outdated: "3.0: `Mesh.mtls` (with its PERMISSIVE mode) and ServiceInsight are removed; permissive mTLS comes from MeshTLS, while the MeshService TLS status introduced here remains."
+---
+
 # Permissive mTLS and MeshService
 
 * Status: accepted

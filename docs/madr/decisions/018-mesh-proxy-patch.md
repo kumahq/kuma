@@ -1,3 +1,7 @@
+---
+outdated: "3.0: legacy ProxyTemplate and `kuma.io/service`-based matching are removed."
+---
+
 # MeshProxyPatch
 
 * Status: accepted

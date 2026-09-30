@@ -1,3 +1,7 @@
+---
+outdated: "3.0: legacy source/destination policies, `from`, `MeshSubset`/`MeshServiceSubset`, `MeshGateway` and `kuma.io/service` tag targeting are removed; inbound config uses `spec.rules`."
+---
+
 # New Policy Matching
 
 * Status: accepted

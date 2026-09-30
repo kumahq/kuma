@@ -1,3 +1,7 @@
+---
+outdated: "3.0: autoreachable services and tag-based `reachableServices` are removed; only `reachableBackends` remains."
+---
+
 # Reachable and Autoreachable services with MeshService and MeshExternalService
 
 * Status: accepted
