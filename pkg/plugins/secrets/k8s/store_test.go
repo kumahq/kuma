@@ -768,6 +768,37 @@ var _ = Describe("KubernetesStore", func() {
 				Expect(secrets.Items[0].Spec.Data.Value).To(Equal([]byte("another")))
 			})
 
+			It("should include a secret with no mesh label when listing the default mesh", func() {
+				// given a secret with no "kuma.io/mesh" label at all, e.g. created directly via kubectl
+				noLabel := backend.ParseYAML(fmt.Sprintf(`
+                apiVersion: v1
+                kind: Secret
+                type: system.kuma.io/secret
+                metadata:
+                  namespace: %s
+                  name: %s
+                data:
+                  value: c2l4 # base64(six)
+`, ns, "six"))
+				backend.Create(noLabel)
+
+				// given
+				secrets := &core_system.SecretResourceList{}
+
+				// when: Get() and the "default mesh" predicate elsewhere in this codebase both treat a
+				// missing kuma.io/mesh label as implicitly belonging to the default mesh (see the
+				// "implicit default mesh" Get() test above), so List() should be consistent with that.
+				err := rs.List(context.Background(), secrets, store.ListByMesh("default"))
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				names := []string{}
+				for _, item := range secrets.Items {
+					names = append(names, item.Meta.GetName())
+				}
+				Expect(names).To(ContainElement("six"))
+			})
+
 			It("should return a list of global secrets sorted", func() {
 				// given
 				secrets := &core_system.GlobalSecretResourceList{}
