@@ -81,10 +81,11 @@ jobs:
           BASE_REF=$(echo -n "$PR_INFO_JSON" | jq -r '.baseRefName //empty')
           COMMIT=$(echo -n "$PR_INFO_JSON" | jq -r '.mergeCommit.oid //empty')
           # Carry the original PR's labels over to the backport PR. Drop labels
-          # that would auto-act on the backport (auto-merge, publish) and
-          # 'backport', which only marks the original PR as needing this run.
+          # that would auto-act on the backport (auto-merge, publish, stability
+          # reruns) and 'backport', which only marks the original PR as needing
+          # this run.
           LABELS=$(echo -n "$PR_INFO_JSON" | jq -r '
-            [(.labels // [])[].name | select(. != "ci/auto-merge" and . != "ci/force-publish" and . != "backport")]
+            [(.labels // [])[].name | select(IN("ci/auto-merge", "ci/force-publish", "ci/verify-stability", "ci/verify-stability-merge-master", "backport") | not)]
             | join(",")')
 
           {
@@ -163,7 +164,10 @@ jobs:
           if git cherry-pick "${{ env.SHA }}"; then
             echo "Cherry-picked without conflicts!"
           else
-            echo "LABELS=${BASE_LABELS},conflict" >> "$GITHUB_ENV"
+            # A conflicted cherry-pick drops the paths it could not resolve, so
+            # this is no longer the change whoever labelled the original judged.
+            echo "LABELS=$(jq -rn --arg l "${BASE_LABELS},conflict" '
+              $l | split(",") - ["ci/skip-test", "ci/skip-e2e-test", "ci/skip-container-structure-test"] | join(",")')" >> "$GITHUB_ENV"
             # A path the target branch does not have, modified by the commit,
             # cannot be resolved by staging it: that writes a whole file this
             # branch never carried, and the result reads like a real backport.

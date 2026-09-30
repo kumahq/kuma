@@ -51,5 +51,14 @@ default:
       name: "ci/skip-e2e-test"
       description: "PR: Don't run e2e tests"
     - color: 965E20
+      name: "ci/skip-container-structure-test"
+      description: "PR: skip the container structure test inside build_publish"
+    - color: 965E20
+      name: "ci/verify-stability"
+      description: "PR: rerun CI repeatedly to find flakes, removed after N consecutive green runs"
+    - color: 965E20
+      name: "ci/verify-stability-merge-master"
+      description: "PR: as ci/verify-stability, merging master before each rerun"
+    - color: 965E20
       name: "ci/auto-merge"
       description: "PR: Approve and Merge PRs automatically"
