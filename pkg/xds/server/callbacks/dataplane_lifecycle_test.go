@@ -225,7 +225,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(core_store.IsNotFound(err)).To(BeTrue())
 	},
 		Entry("unknown reserved key", `{"kuma.io/gateway": "true"}`, `label "kuma.io/gateway" is reserved and not known to this control plane`),
-		Entry("control plane owned label with a wrong value", `{"kuma.io/zone": "zone-2"}`, `kuma.io/zone label should have zone-1 value`),
+		Entry("control plane owned label with a wrong value", `{"kuma.io/zone": "zone-2"}`, `label "kuma.io/zone" is managed by the control plane: got "zone-2", expected "zone-1"`),
 		Entry("malformed value", `{"app": "not valid!!"}`, `a valid label must be an empty string or consist of alphanumeric characters`),
 	)
 

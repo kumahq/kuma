@@ -38,7 +38,6 @@ mesh: lp-mesh
 name: lp-dp-1
 labels:
   color: blue
-  kuma.io/display-name: lp-svc
   kuma.io/workload: lp-svc
   team: payments
 networking:
@@ -71,7 +70,6 @@ mesh: lp-mesh
 name: lp-dp-1
 labels:
   color: blue
-  kuma.io/display-name: lp-svc
   kuma.io/workload: lp-svc
   team: platform
   tier: backend
@@ -98,7 +96,6 @@ type: Dataplane
 mesh: lp-mesh
 name: lp-dp-1
 labels:
-  kuma.io/display-name: lp-svc
   kuma.io/workload: lp-svc
 networking:
   address: 192.168.10.10
