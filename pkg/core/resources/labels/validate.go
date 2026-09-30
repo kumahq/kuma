@@ -14,7 +14,10 @@ import (
 
 // ValidateOwnership rejects an untrusted update or delete of a resource another control
 // plane owns, then control-plane-owned labels an untrusted writer supplied with a value
-// the control plane would not have chosen. Violations are keyed by label in registry order.
+// other than the one Compute stores for this write. A value equal to the stored one is
+// the object round-tripping through the writer and is skipped, unless Compute removes
+// the label: accepting it would drop the label silently. A label whose Compute fails is
+// skipped too: Compute rejects that write. Violations are keyed by label in registry order.
 func ValidateOwnership(w Write, cp ControlPlane) validators.ValidationError {
 	var err validators.ValidationError
 	if w.TrustedWriter {
@@ -32,15 +35,22 @@ func ValidateOwnership(w Write, cp ControlPlane) validators.ValidationError {
 		return err
 	}
 	for _, d := range registry {
-		if d.Owner != OwnerControlPlane || d.ValidateValue == nil {
+		if d.Owner != OwnerControlPlane {
 			continue
 		}
-		v, ok := w.Labels[d.Key]
+		supplied, ok := w.Labels[d.Key]
 		if !ok {
 			continue
 		}
-		for _, msg := range d.ValidateValue(d.Key, v, w, cp) {
-			err.AddViolationAt(validators.Root().Key(d.Key), msg)
+		computed, ok, computeErr := d.Compute(d.Key, w, cp)
+		stored, isStored := w.StoredLabels[d.Key]
+		switch {
+		case computeErr != nil:
+		case !ok:
+			err.AddViolationAt(validators.Root().Key(d.Key), fmt.Sprintf("label %q is managed by the control plane and cannot be set here", d.Key))
+		case isStored && stored == supplied:
+		case computed != supplied:
+			err.AddViolationAt(validators.Root().Key(d.Key), fmt.Sprintf("label %q is managed by the control plane: got %q, expected %q", d.Key, supplied, computed))
 		}
 	}
 	return err

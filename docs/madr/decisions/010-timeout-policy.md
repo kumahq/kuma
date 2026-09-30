@@ -1,3 +1,7 @@
+---
+outdated: "3.0: `from` is replaced by `spec.rules`, `MeshSubset`/`MeshServiceSubset`/`MeshGateway` targets are removed, and legacy Timeout is gone."
+---
+
 # Timeout policy compliant with 2.0 model
 
 * Status: accepted

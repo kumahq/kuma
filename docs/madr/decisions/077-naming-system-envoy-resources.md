@@ -4,7 +4,7 @@
 
 Technical Story: https://github.com/kumahq/kuma/issues/13266
 
-Supersedes: https://github.com/kumahq/kuma/blob/master/docs/madr/decisions/036-internal-listeners.md
+Supersedes: https://github.com/kumahq/kuma/blob/46c23d9abaf50781c4fe24f2e8374942f0efb60e/docs/madr/decisions/036-internal-listeners.md
 
 ## Context and Problem Statement
 

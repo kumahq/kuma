@@ -70,7 +70,7 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 	}
-	if resp := h.IsOperationAllowed(req, resource, stored.GetLabels()); !resp.Allowed {
+	if resp := h.IsOperationAllowed(req, resource, k8s.SuppliedLabels(&stored)); !resp.Allowed {
 		return resp
 	}
 

@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/validator"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -70,13 +71,13 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 	var storedLabels map[string]string
 	switch {
 	case req.Operation == v1.Delete:
-		storedLabels = k8sObj.GetLabels()
+		storedLabels = k8s.SuppliedLabels(k8sObj)
 	case req.Operation == v1.Update && !privileged:
 		var previousObj k8s_model.KubernetesObject
 		if previousRes, previousObj, err = h.decode(req.Kind.Kind, req.OldObject); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
-		storedLabels = previousObj.GetLabels()
+		storedLabels = k8s.SuppliedLabels(previousObj)
 	}
 	if resp := h.IsOperationAllowed(req, coreRes, storedLabels); !resp.Allowed {
 		return resp

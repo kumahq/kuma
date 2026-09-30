@@ -1,3 +1,7 @@
+---
+outdated: "3.0: `from` is replaced by `spec.rules`, `MeshSubset`/`MeshServiceSubset`/`MeshGateway` targets and `kuma.io/service` tags are removed, and legacy FaultInjection is gone."
+---
+
 #  Fault Injection policy
 
 - Status: accepted

@@ -17,6 +17,7 @@ metadata:
   creationTimestamp: "2024-01-24T09:52:46Z"
   labels:
     kuma.io/mesh: default
+    team: payments
   name: default
   namespace: kuma-system
 spec:

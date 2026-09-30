@@ -2,8 +2,8 @@ Patches: null
 allowed: false
 status:
   code: 403
-  message: Operation not allowed. 'kuma.io/origin' label should have 'zone' value,
-    got 'global'
+  message: 'Operation not allowed. label "kuma.io/origin" is managed by the control
+    plane: got "global", expected "zone"'
   metadata: {}
   reason: Forbidden
   status: Failure

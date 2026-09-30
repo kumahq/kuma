@@ -36,6 +36,9 @@ type: MeshAccessLog
 ---
 creationTime: "0001-01-01T00:00:00Z"
 kri: kri_mal_default___mal-with-origin_
+labels:
+  kuma.io/mesh: default
+  team: payments
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: mal-with-origin

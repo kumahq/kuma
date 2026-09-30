@@ -1,3 +1,7 @@
+---
+outdated: "3.0: `healthyPanicThreshold` is removed from MeshHealthCheck, and `MeshGateway` and legacy HealthCheck are gone."
+---
+
 # Health Check Policy
 
 * Status: accepted

@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	"fmt"
+	"net/http"
 	"slices"
 	"strings"
 
@@ -9,10 +10,12 @@ import (
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
@@ -33,9 +36,13 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(req admission.Request, r c
 	}
 	ns := req.Namespace
 
-	labels := r.GetMeta().GetLabels()
-	if req.Operation == admissionv1.Delete {
-		labels = nil
+	// The labels are read from the raw object: r's meta already has the read-time
+	// enforced labels overlaid and a name.namespace name.
+	var supplied metav1.PartialObjectMetadata
+	if req.Operation != admissionv1.Delete {
+		if err := yaml.Unmarshal(req.Object.Raw, &supplied); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
 	}
 
 	if ns != "" {
@@ -50,8 +57,8 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(req admission.Request, r c
 		Spec:         r.GetSpec(),
 		Namespace:    resource_labels.NewNamespace(ns, ns == c.SystemNamespace),
 		Mesh:         r.GetMeta().GetMesh(),
-		DisplayName:  r.GetMeta().GetName(),
-		Labels:       labels,
+		DisplayName:  supplied.GetName(),
+		Labels:       k8s.SuppliedLabels(&supplied),
 		StoredLabels: storedLabels,
 	}, c.ControlPlane); err.HasViolations() {
 		return *forbiddenResponse("Operation not allowed. " + err.Violations[0].Message)
