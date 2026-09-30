@@ -1254,7 +1254,8 @@ the 2.14 `kuma-dp`.
 **Action required**
 
 After the control plane upgrade, restart the zone proxies to move them to the
-new `kuma-dp`:
+new `kuma-dp`. Replace `kuma-system` if you installed the control plane in
+another namespace:
 
 ```sh
 kubectl rollout restart deployment -n kuma-system -l kuma.io/mesh
