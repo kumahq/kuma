@@ -87,7 +87,7 @@ DASHBOARD_LINTER = $(call _once,DASHBOARD_LINTER,$(shell $(MISE) which dashboard
 # oapi-codegen: mise go: backend installs to CI_TOOLS_BIN_DIR, mise which doesn't find it
 OAPI_CODEGEN = $(call _once,OAPI_CODEGEN,$(shell test -f $(CI_TOOLS_BIN_DIR)/oapi-codegen && echo $(CI_TOOLS_BIN_DIR)/oapi-codegen || command -v oapi-codegen))
 
-LATEST_RELEASE_BRANCH = $(call _once,LATEST_RELEASE_BRANCH,$(shell $(YQ) e '.[] | .branch' versions.yml | grep -v dev | sort -V | tail -n 1))
+LATEST_RELEASE_BRANCH = $(call _once,LATEST_RELEASE_BRANCH,$(shell git for-each-ref --format='%(refname:lstrip=3)' 'refs/remotes/origin/release-*' | grep -Ex 'release-[0-9]+\.[0-9]+' | sort -V | tail -n 1))
 
 .PHONY: dev/protos/deps
 dev/protos/deps: ## Dev: Export third-party proto dependencies with buf
