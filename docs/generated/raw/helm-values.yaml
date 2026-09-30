@@ -237,9 +237,6 @@ controlPlane:
     # -- Divisor for GOMAXPROCS (resourceFieldRef divisor for limits.cpu)
     goMaxProcs:
       divisor: "1"
-    # -- Divisor for GOMEMLIMIT (resourceFieldRef divisor for limits.memory)
-    goMemLimit:
-      divisor: "1"
 
   # -- Pod lifecycle settings (useful for adding a preStop hook, when
   # using AWS ALB or NLB)
