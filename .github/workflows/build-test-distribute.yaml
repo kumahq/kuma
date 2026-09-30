@@ -133,7 +133,7 @@ jobs:
       #   1. fork PR                            -> free GitHub-hosted runners (security)
       #   2. master (push, or PR targeting it)  -> free GitHub-hosted runners
       #   3. vars.RUNNERS_PR_<ARCH>             -> pull_request runs, per-arch
-      #   4. vars.RUNNERS_MASTER_<ARCH>         -> per-branch + per-arch override
+      #   4. vars.RUNNERS_MASTER_<ARCH>    -> per-branch + per-arch override
       #   5. vars.RUNNERS_<ARCH>                -> global per-arch override
       #   6. default                            -> the standard self-hosted Kong pool
       # Each variable is a JSON object of size to label array, spliced in raw, so a caller

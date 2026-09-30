@@ -2,8 +2,8 @@ Patches: null
 allowed: false
 status:
   code: 403
-  message: Operation not allowed. 'kuma.io/origin' label is immutable, cannot be changed
-    from 'global' to 'zone'
+  message: Operation not allowed. the resource is owned by the global control plane
+    and can be changed only there
   metadata: {}
   reason: Forbidden
   status: Failure
