@@ -1,3 +1,7 @@
+---
+outdated: "3.0: `from`, `MeshSubset` and `kuma.io/service` tag rules are removed; policies match only real resources."
+---
+
 # Policy matching algorithm with real resources (MeshService, MeshExternalService, Mesh*Route)
 
 * Status: accepted

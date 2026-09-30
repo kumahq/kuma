@@ -1,3 +1,7 @@
+---
+outdated: "3.0: virtual probes and their annotations are removed; the probe conversion described here lives on as Application Probe Proxy."
+---
+
 # gRPC and TCP probes
 
 - Status: accepted

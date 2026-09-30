@@ -1,3 +1,7 @@
+---
+outdated: "3.0: `MeshSubset`/`MeshServiceSubset` targets and legacy Retry are removed."
+---
+
 # Retry policy
 
 * Status: accepted

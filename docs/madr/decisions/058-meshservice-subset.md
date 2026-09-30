@@ -1,3 +1,7 @@
+---
+outdated: "3.0: `kuma.io/service` tags and the `dataplaneTags` selector are removed; subset MeshServices select Dataplanes with `dataplaneLabels`."
+---
+
 # Subsets of Dataplanes per MeshService
 
 * Status: accepted

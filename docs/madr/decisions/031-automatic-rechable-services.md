@@ -1,3 +1,7 @@
+---
+outdated: "3.0: automatic reachable services and `reachableServices` are removed; `reachableBackends` (MADR 061) is the only mechanism."
+---
+
 # Automatic reachable services
 
 * Status: accepted
