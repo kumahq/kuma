@@ -13,6 +13,7 @@ import (
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshmultizoneservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -69,6 +70,69 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 		Expect(rs).To(BeNil())
 	})
 
+	exclusiveMesh := func() *builders.MeshBuilder {
+		return builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive)
+	}
+
+	localMeshServiceIngress := func(mesh *core_mesh.MeshResource, identities []*meshidentity_api.MeshIdentityResource, expected string) testCase {
+		ms := samples.MeshServiceBackendBuilder().
+			WithLabels(map[string]string{mesh_proto.ZoneTag: cpZone}).
+			Build()
+		// LegacyServiceName for default/backend/zone=east/port=80: default_backend__east_msvc_80
+		const legacySvcName = "default_backend__east_msvc_80"
+
+		dp := samples.DataplaneBackendBuilder().
+			With(func(r *core_mesh.DataplaneResource) {
+				r.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
+					{
+						Type:    mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+						Address: "10.0.0.1",
+						Port:    10001,
+						Name:    "zone-ingress-port",
+					},
+				}
+			}).
+			Build()
+
+		return testCase{
+			proxy: &core_xds.Proxy{
+				Id:         *core_xds.BuildProxyId("default", "dp-1"),
+				APIVersion: envoy_common.APIV3,
+				Dataplane:  dp,
+				Metadata: &core_xds.DataplaneMetadata{
+					Features: map[string]bool{
+						xds_types.FeatureUnifiedResourceNaming: true,
+					},
+				},
+				InternalAddresses: DummyInternalAddresses,
+			},
+			meshContext: xds_context.MeshContext{
+				Resource: mesh,
+				DataplaneZoneIngressEndpointMap: core_xds.EndpointMap{
+					legacySvcName: []core_xds.Endpoint{
+						{
+							Target: "192.168.0.1",
+							Port:   2521,
+							Tags:   map[string]string{"kuma.io/service": "backend"},
+							Weight: 1,
+						},
+					},
+				},
+				Resources: xds_context.Resources{
+					MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+						meshservice_api.MeshServiceType: &meshservice_api.MeshServiceResourceList{
+							Items: []*meshservice_api.MeshServiceResource{ms},
+						},
+						meshidentity_api.MeshIdentityType: &meshidentity_api.MeshIdentityResourceList{
+							Items: identities,
+						},
+					},
+				},
+			},
+			expected: expected,
+		}
+	}
+
 	DescribeTable("should generate Envoy xDS resources",
 		func(given testCase) {
 			gen := generator.ZoneProxyListenerGenerator{}
@@ -90,61 +154,30 @@ var _ = Describe("ZoneProxyListenerGenerator", func() {
 
 			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "zone-proxy-listener", given.expected)))
 		},
-		Entry("ingress: local MeshService with zone label", func() testCase {
-			ms := samples.MeshServiceBackendBuilder().
-				WithLabels(map[string]string{mesh_proto.ZoneTag: cpZone}).
-				Build()
-			// LegacyServiceName for default/backend/zone=east/port=80: default_backend__east_msvc_80
-			const legacySvcName = "default_backend__east_msvc_80"
-
-			dp := samples.DataplaneBackendBuilder().
-				With(func(r *core_mesh.DataplaneResource) {
-					r.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{
-						{
-							Type:    mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
-							Address: "10.0.0.1",
-							Port:    10001,
-							Name:    "zone-ingress-port",
-						},
-					}
-				}).
-				Build()
-
-			return testCase{
-				proxy: &core_xds.Proxy{
-					Id:         *core_xds.BuildProxyId("default", "dp-1"),
-					APIVersion: envoy_common.APIV3,
-					Dataplane:  dp,
-					Metadata: &core_xds.DataplaneMetadata{
-						Features: map[string]bool{
-							xds_types.FeatureUnifiedResourceNaming: true,
-						},
-					},
-					InternalAddresses: DummyInternalAddresses,
-				},
-				meshContext: xds_context.MeshContext{
-					Resource: builders.Mesh().WithName("default").WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).Build(),
-					DataplaneZoneIngressEndpointMap: core_xds.EndpointMap{
-						legacySvcName: []core_xds.Endpoint{
-							{
-								Target: "192.168.0.1",
-								Port:   2521,
-								Tags:   map[string]string{"kuma.io/service": "backend"},
-								Weight: 1,
-							},
-						},
-					},
-					Resources: xds_context.Resources{
-						MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
-							meshservice_api.MeshServiceType: &meshservice_api.MeshServiceResourceList{
-								Items: []*meshservice_api.MeshServiceResource{ms},
-							},
-						},
-					},
-				},
-				expected: "ingress-meshservice-zone.envoy.golden.yaml",
-			}
-		}()),
+		Entry("ingress: local MeshService with zone label",
+			localMeshServiceIngress(exclusiveMesh().Build(), nil, "ingress-meshservice-zone.envoy.golden.yaml"),
+		),
+		Entry("ingress: mesh mTLS and MeshIdentity accept the legacy SNI",
+			localMeshServiceIngress(
+				exclusiveMesh().WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").Build(),
+				[]*meshidentity_api.MeshIdentityResource{builders.MeshIdentity().Build()},
+				"ingress-meshservice-mtls-and-meshidentity.envoy.golden.yaml",
+			),
+		),
+		Entry("ingress: mesh mTLS only",
+			localMeshServiceIngress(
+				exclusiveMesh().WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").Build(),
+				nil,
+				"ingress-meshservice-mtls-only.envoy.golden.yaml",
+			),
+		),
+		Entry("ingress: MeshIdentity only",
+			localMeshServiceIngress(
+				exclusiveMesh().Build(),
+				[]*meshidentity_api.MeshIdentityResource{builders.MeshIdentity().Build()},
+				"ingress-meshservice-meshidentity-only.envoy.golden.yaml",
+			),
+		),
 		Entry("ingress: non-local MeshService filtered out", func() testCase {
 			msLocal := samples.MeshServiceBackendBuilder().
 				WithLabels(map[string]string{

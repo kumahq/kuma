@@ -33,6 +33,7 @@ resources:
     - filterChainMatch:
         serverNames:
         - sni.msvc.default.east.backend.80
+        - a601e0c00295a9fbe.backend.80.default.ms
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.tcp_proxy
