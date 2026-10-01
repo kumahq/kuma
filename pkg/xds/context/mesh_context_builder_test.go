@@ -15,6 +15,7 @@ import (
 
 	"github.com/kumahq/kuma/v2/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v2/pkg/core/dns/lookup"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -536,6 +537,61 @@ var _ = Describe("MeshZoneAddress", func() {
 		// and the zone leaves ZonesWithMeshScopedProxy together with its endpoint, so consumers
 		// use the hash-based SNI that the legacy ZoneIngress they now dial actually serves
 		Expect(meshCtx.ZonesWithMeshScopedProxy).To(BeEmpty())
+	})
+
+	It("keeps the ZoneIngress while mesh mTLS is enabled", func() {
+		// given the zone runs both a legacy ZoneIngress and a mesh-scoped one, and proxies
+		// without a workload identity can only send the hash-based SNI
+		Expect(test_store.LoadResources(context.Background(), resourceStore, remoteZoneIngress)).To(Succeed())
+		meshContextBuilder := newMeshContextBuilder(resourceStore, func(string) ([]net.IP, error) {
+			return []net.IP{net.ParseIP("10.0.0.1")}, nil
+		})
+
+		// when
+		meshCtx, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then the zone stays on its ZoneIngress with the hash-based SNI
+		Expect(endpointTargets(meshCtx)).To(ConsistOf("20.0.0.1"))
+		Expect(meshCtx.ZonesWithMeshScopedProxy).To(BeEmpty())
+	})
+
+	It("uses the MeshZoneAddress when mesh mTLS is disabled", func() {
+		// given a MeshIdentity-only mesh where the zone still runs both zone proxies
+		mesh := core_mesh.NewMeshResource()
+		Expect(resourceStore.Get(context.Background(), mesh, store.GetByKey(core_model.DefaultMesh, core_model.NoMesh))).To(Succeed())
+		mesh.Spec.Mtls = nil
+		Expect(resourceStore.Update(context.Background(), mesh)).To(Succeed())
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: MeshIdentity
+name: identity
+mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels: {}
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+  provider:
+    type: Bundled
+    bundled:
+      meshTrustCreation: Enabled
+      insecureAllowSelfSigned: true
+      autogenerate:
+        enabled: true
+`+"---"+remoteZoneIngress)).To(Succeed())
+		meshContextBuilder := newMeshContextBuilder(resourceStore, func(string) ([]net.IP, error) {
+			return []net.IP{net.ParseIP("10.0.0.1")}, nil
+		})
+
+		// when
+		meshCtx, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then every proxy has a workload identity, so the zone moves to its mesh-scoped proxy
+		Expect(endpointTargets(meshCtx)).To(ConsistOf("10.0.0.1"))
+		Expect(meshCtx.ZonesWithMeshScopedProxy).To(Equal(map[string]bool{"east": true}))
 	})
 })
 

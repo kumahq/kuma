@@ -207,6 +207,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		}
 	}
 	zoneIngresses := resources.ZoneIngresses().Items
+	meshZoneAddresses := activeMeshZoneAddresses(mesh, resources.MeshZoneAddresses().Items, zoneIngresses, m.zone)
 	zoneEgresses := readyZoneEgresses(resources.ZoneEgresses().Items)
 	externalServices := resources.ExternalServices().Items
 	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
@@ -225,7 +226,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		meshExternalServices,
 		dataplanes,
 		zoneIngresses,
-		resources.MeshZoneAddresses().Items,
+		meshZoneAddresses,
 		zoneEgresses,
 		externalServices,
 		loader,
@@ -277,7 +278,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	)
 
 	zonesWithMeshScopedProxy := map[string]bool{}
-	for _, mza := range resources.MeshZoneAddresses().Items {
+	for _, mza := range meshZoneAddresses {
 		if zone := core_model.ZoneOfResource(mza); zone != "" {
 			zonesWithMeshScopedProxy[zone] = true
 		}
@@ -737,6 +738,31 @@ func readyZoneEgresses(zoneEgresses []*core_mesh.ZoneEgressResource) []*core_mes
 		ready = append(ready, ze)
 	}
 	return ready
+}
+
+// activeMeshZoneAddresses drops the MeshZoneAddresses of remote zones that still
+// have a legacy ZoneIngress while mesh mTLS is enabled. Proxies without a
+// workload identity send the hash-based SNI, which only a legacy ZoneIngress
+// matches, so a zone switches to its mesh-scoped ingress once the legacy one
+// is drained or mesh mTLS is removed.
+func activeMeshZoneAddresses(
+	mesh *core_mesh.MeshResource,
+	meshZoneAddresses []*meshzoneaddress_api.MeshZoneAddressResource,
+	zoneIngresses []*core_mesh.ZoneIngressResource,
+	localZone string,
+) []*meshzoneaddress_api.MeshZoneAddressResource {
+	if !mesh.MTLSEnabled() {
+		return meshZoneAddresses
+	}
+	zonesWithLegacyIngress := map[string]bool{}
+	for _, zi := range zoneIngresses {
+		if zi.IsRemoteIngress(localZone) && zi.HasPublicAddress() {
+			zonesWithLegacyIngress[zi.Spec.GetZone()] = true
+		}
+	}
+	return slices.DeleteFunc(slices.Clone(meshZoneAddresses), func(mza *meshzoneaddress_api.MeshZoneAddressResource) bool {
+		return zonesWithLegacyIngress[mza.GetMeta().GetLabels()[mesh_proto.ZoneTag]]
+	})
 }
 
 func getCAsByTrustDomain(trusts []*meshtrust_api.MeshTrustResource) map[string][]PEMBytes {
