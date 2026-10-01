@@ -31,8 +31,10 @@ type MeshDestinations struct {
 type BackendRefDestination struct {
 	resolve.ResolvedBackendRef
 
-	Mesh              string
-	SNI               string
+	Mesh string
+	SNI  string
+	// LegacySNI is the hash-based SNI, sent by clients without a workload identity.
+	LegacySNI         string
 	LegacyServiceName string
 }
 
@@ -62,12 +64,14 @@ func BuildRealResourceDestinations(destinations []core_resources.Destination, sy
 		mesh := dest.GetMeta().GetMesh()
 
 		sniFor := newSNIBuilder(dest, origin, mesh, systemNS, useNewSNIFormat)
+		legacySNIFor := newSNIBuilder(dest, origin, mesh, systemNS, false)
 
 		for _, port := range dest.GetPorts() {
 			id := kri.WithSectionName(origin, port.GetName())
 			result = append(result, BackendRefDestination{
 				Mesh:              mesh,
 				SNI:               sniFor(id, port),
+				LegacySNI:         legacySNIFor(id, port),
 				LegacyServiceName: destinationname.ResolveLegacyFromDestination(dest, port),
 				Ref: &resolve.RealResourceBackendRef{
 					Resource: id,

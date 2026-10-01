@@ -104,10 +104,11 @@ func GenerateEDS(
 func CreateFilterChain(
 	proxy *core_xds.Proxy,
 	cluster envoy_common.Cluster,
+	additionalSNIs ...string,
 ) *envoy_listeners.FilterChainBuilder {
 	return envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 		Configure(envoy_listeners.MatchTransportProtocol(core_meta.ProtocolTLS)).
-		Configure(envoy_listeners.MatchServerNames(cluster.SNI())).
+		Configure(envoy_listeners.MatchServerNames(append([]string{cluster.SNI()}, additionalSNIs...)...)).
 		Configure(envoy_listeners.TcpProxyDeprecatedWithMetadata(cluster.Name(), cluster))
 }
 

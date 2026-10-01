@@ -33,6 +33,7 @@ resources:
     - filterChainMatch:
         serverNames:
         - sni.mzsvc.default.global-svc.80
+        - a22ee69d8a791ea78.global-svc.80.default.mzms
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.tcp_proxy

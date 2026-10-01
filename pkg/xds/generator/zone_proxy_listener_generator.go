@@ -152,8 +152,14 @@ func (g ZoneProxyListenerGenerator) generateIngressListener(
 	}
 	rs.AddSet(eds)
 
+	// Clients without a workload identity send the hash-based SNI, and they are
+	// routed here as soon as this zone publishes a MeshZoneAddress.
+	legacySNIs := map[string]string{}
+	for _, br := range backendRefs {
+		legacySNIs[br.Resource().String()] = br.LegacySNI
+	}
 	for _, cluster := range clusters {
-		listenerBuilder.Configure(envoy_listeners.FilterChain(zoneproxy.CreateFilterChain(proxy, cluster)))
+		listenerBuilder.Configure(envoy_listeners.FilterChain(zoneproxy.CreateFilterChain(proxy, cluster, legacySNIs[cluster.Name()])))
 	}
 
 	resource, err := listenerBuilder.Build()
