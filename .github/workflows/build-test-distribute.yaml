@@ -365,6 +365,86 @@ jobs:
           dir: .
           config: .syft.yaml
           upload-sbom-release-assets: true
+  # Dogfoods golt (https://github.com/smykla-skalski/golt), a faster fork of
+  # golangci-lint, next to the golangci-lint run in "check": same config and
+  # args, non-blocking, so findings and timings can be compared per run.
+  lint_golt:
+    needs: ["release_sha_gate"]
+    if: ${{ github.ref_type != 'tag' }}
+    continue-on-error: true
+    timeout-minutes: 40
+    runs-on: >-
+      ${{ (github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository)
+      && 'ubuntu-24.04'
+      || fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
+      || vars.RUNNERS_MASTER_AMD64
+      || vars.RUNNERS_AMD64
+      || '{}').lg
+      || 'ubuntu-24.04' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Cache Go modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/go/pkg/mod
+          key: go-mod-dist-${{ hashFiles('**/go.sum') }}
+      - name: Restore Go build cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/go-build
+          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-
+            go-build-${{ runner.os }}-
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.9
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Resolve golt main
+        id: golt
+        run: echo "sha=$(git ls-remote https://github.com/smykla-skalski/golt.git refs/heads/main | cut -f1)" >> "$GITHUB_OUTPUT"
+      - name: Cache golt binary
+        id: golt-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.CI_TOOLS_DIR }}/golt
+          key: golt-${{ runner.os }}-${{ steps.golt.outputs.sha }}
+      - name: Build golt
+        if: ${{ steps.golt-cache.outputs.cache-hit != 'true' }}
+        env:
+          GOLT_SHA: ${{ steps.golt.outputs.sha }}
+        run: |
+          src="${CI_TOOLS_DIR}/golt-src"
+          git clone --quiet --filter=blob:none https://github.com/smykla-skalski/golt.git "${src}"
+          git -C "${src}" checkout --quiet "${GOLT_SHA}"
+          (cd "${src}" && go build -trimpath -o "${CI_TOOLS_DIR}/golt/golangci-lint" ./cmd/golangci-lint)
+          rm -rf "${src}"
+      - name: Put golt on PATH
+        run: echo "${CI_TOOLS_DIR}/golt" >> "$GITHUB_PATH"
+      # Separate from golangci-lint's cache: entries are keyed by the binary.
+      - name: Restore golt lint cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/golangci-lint
+          key: golt-lint-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            golt-lint-${{ runner.os }}-
+      - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          install-mode: none
+          skip-cache: true
+          args: --fix=false --verbose
+          only-new-issues: false
+      - name: Save golt lint cache
+        if: ${{ always() && github.event_name == 'push' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/golangci-lint
+          key: golt-lint-${{ runner.os }}-${{ github.sha }}
   test:
     needs: ["meta", "build_check"]
     uses: ./.github/workflows/_test.yaml
