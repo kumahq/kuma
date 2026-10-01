@@ -30,11 +30,11 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: a6844c35bc637ba96.multi-backend.80.default.mzms
+        sni: sni.mzsvc.default.multi-backend.80
     transportSocketMatches:
     - match:
-        kuma.io/zone: new-zone
-      name: new-zone
+        kuma.io/zone: legacy-zone
+      name: legacy-zone
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -58,7 +58,7 @@ resources:
               sdsConfig:
                 ads: {}
                 resourceApiVersion: V3
-          sni: sni.mzsvc.default.multi-backend.80
+          sni: a6844c35bc637ba96.multi-backend.80.default.mzms
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

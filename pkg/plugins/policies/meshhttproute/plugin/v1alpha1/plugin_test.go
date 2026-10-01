@@ -997,8 +997,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 		}()),
 		Entry("default-meshmultizoneservice-mixed-zones-no-identity", func() outboundsTestCase {
-			// Same mixed MZMS for a proxy still on legacy mTLS: the hash-based SNI stays the
-			// default and "new-zone" gets a transport_socket_match with the KRI SNI.
+			// Same mixed MZMS for a proxy still on legacy mTLS: the SNI follows the zone proxy, so the
+			// KRI SNI stays the default and "legacy-zone" gets a transport_socket_match with the hash-based SNI.
 			newMeshSvc := meshservice_api.MeshServiceResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "backend-new", Mesh: "default",
