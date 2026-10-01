@@ -372,6 +372,9 @@ jobs:
     needs: ["release_sha_gate"]
     if: ${{ github.ref_type != 'tag' }}
     continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: read # needed by paths-filter to access PR file list
     timeout-minutes: 40
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
@@ -386,12 +389,30 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
+      # Same filter as the golangci-lint step in "check", so both run together.
+      - name: Detect changed files
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: changes
+        with:
+          filters: |
+            code:
+              - '**/*.go'
+              - '**/*.proto'
+              - 'go.mod'
+              - 'go.sum'
+              - 'pkg/**'
+              - 'api/**'
+              - 'tools/**'
+              - 'app/**'
       - name: Cache Go modules
+        if: ${{ steps.changes.outputs.code == 'true' }}
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/go/pkg/mod
           key: go-mod-dist-${{ hashFiles('**/go.sum') }}
       - name: Restore Go build cache
+        if: ${{ steps.changes.outputs.code == 'true' }}
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/go-build
@@ -400,21 +421,24 @@ jobs:
             go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-
             go-build-${{ runner.os }}-
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        if: ${{ steps.changes.outputs.code == 'true' }}
         with:
           version: 2026.9.9
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Resolve golt main
+        if: ${{ steps.changes.outputs.code == 'true' }}
         id: golt
         run: echo "sha=$(git ls-remote https://github.com/smykla-skalski/golt.git refs/heads/main | cut -f1)" >> "$GITHUB_OUTPUT"
       - name: Cache golt binary
+        if: ${{ steps.changes.outputs.code == 'true' }}
         id: golt-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.CI_TOOLS_DIR }}/golt
           key: golt-${{ runner.os }}-${{ steps.golt.outputs.sha }}
       - name: Build golt
-        if: ${{ steps.golt-cache.outputs.cache-hit != 'true' }}
+        if: ${{ steps.changes.outputs.code == 'true' && steps.golt-cache.outputs.cache-hit != 'true' }}
         env:
           GOLT_SHA: ${{ steps.golt.outputs.sha }}
         run: |
@@ -424,9 +448,12 @@ jobs:
           (cd "${src}" && go build -trimpath -o "${CI_TOOLS_DIR}/golt/golangci-lint" ./cmd/golangci-lint)
           rm -rf "${src}"
       - name: Put golt on PATH
+        if: ${{ steps.changes.outputs.code == 'true' }}
         run: echo "${CI_TOOLS_DIR}/golt" >> "$GITHUB_PATH"
       # Separate from golangci-lint's cache: entries are keyed by the binary.
+      # Saved on pull requests too, so re-runs compare warm against warm.
       - name: Restore golt lint cache
+        if: ${{ steps.changes.outputs.code == 'true' }}
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/golangci-lint
@@ -434,13 +461,14 @@ jobs:
           restore-keys: |
             golt-lint-${{ runner.os }}-
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        if: ${{ steps.changes.outputs.code == 'true' }}
         with:
           install-mode: none
           skip-cache: true
           args: --fix=false --verbose
           only-new-issues: false
       - name: Save golt lint cache
-        if: ${{ always() && github.event_name == 'push' }}
+        if: ${{ always() && steps.changes.outputs.code == 'true' }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/golangci-lint
