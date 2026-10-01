@@ -204,8 +204,9 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 		Name:             resource.GetMeta().GetName(),
 		Mesh:             resource.GetMeta().GetMesh(),
 		Version:          strconv.Itoa(newVersion),
+		CreationTime:     resource.GetMeta().GetCreationTime(),
 		ModificationTime: opts.ModificationTime,
-		Labels:           maps.Clone(opts.Labels),
+		Labels:           maps.Clone(updateLabels),
 	})
 
 	return nil
