@@ -149,8 +149,9 @@ func (r *postgresResourceStore) Update(_ context.Context, resource core_model.Re
 		Name:             resource.GetMeta().GetName(),
 		Mesh:             resource.GetMeta().GetMesh(),
 		Version:          strconv.Itoa(newVersion),
+		CreationTime:     resource.GetMeta().GetCreationTime(),
 		ModificationTime: opts.ModificationTime,
-		Labels:           maps.Clone(opts.Labels),
+		Labels:           maps.Clone(updateLabels),
 	})
 
 	return nil
