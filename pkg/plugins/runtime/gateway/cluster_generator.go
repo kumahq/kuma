@@ -187,6 +187,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 			meshCtx.Resource,
 			true, // TODO we just assume this atm?...
 			sni,
+			nil,
 			meshroute.Identities(backendRef, meshCtx, false),
 			len(meshCtx.CAsByTrustDomain) > 0,
 		))

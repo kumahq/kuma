@@ -167,6 +167,11 @@ func GenerateClusters(
 							useKRISni = zone == "" || isLocalMeshService || meshCtx.ZonesWithMeshScopedProxy[zone]
 						}
 						kriSNI := useKRISni && proxy.WorkloadIdentity != nil
+						// Mesh-scoped zone proxies match only the KRI SNI, so a proxy still on
+						// legacy mTLS needs it for remote zones served by one.
+						if proxy.WorkloadIdentity == nil && !isMZMS && !isLocalMeshService && meshCtx.ZonesWithMeshScopedProxy[zone] {
+							kriSNI = true
+						}
 						var sni string
 						if kriSNI {
 							// Zone proxies key the SNI by port name, a backendRef may use the number.
@@ -195,12 +200,24 @@ func GenerateClusters(
 							}
 							edsClusterBuilder.Configure(envoy_clusters.UpstreamTLSContextWithZoneMatches(upstreamCtx, zoneMatches))
 						} else {
+							var zoneSNIs map[string]string
+							if isMZMS {
+								kriSNIForPort := core_sni.FromKRI(kri.WithSectionName(realResourceRef.Resource, port.GetName()))
+								endpoints := meshCtx.EndpointMap[destinationname.ResolveLegacyFromDestination(dest, port)]
+								for _, z := range meshScopedEndpointZones(endpoints, meshCtx.ZonesWithMeshScopedProxy, proxy.Zone) {
+									if zoneSNIs == nil {
+										zoneSNIs = map[string]string{}
+									}
+									zoneSNIs[z] = kriSNIForPort
+								}
+							}
 							edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
 								proxy.SecretsTracker,
 								unifiedNaming,
 								meshCtx.Resource,
 								tlsReady,
 								sni,
+								zoneSNIs,
 								Identities(realResourceRef, meshCtx, false),
 								len(meshCtx.CAsByTrustDomain) > 0,
 							))
@@ -360,6 +377,19 @@ func isMeshExternalService(endpoints []core_xds.Endpoint) bool {
 // SNI), and whether any endpoint expects the default KRI-based SNI: endpoints
 // without locality (local zone, sidecar-to-sidecar) or in a zone served by a
 // new-style mesh-scoped zone proxy (MeshZoneAddress).
+// meshScopedEndpointZones returns the remote zones of a MeshMultiZoneService
+// cluster whose endpoints are served by a mesh-scoped zone proxy.
+func meshScopedEndpointZones(endpoints []core_xds.Endpoint, zonesWithProxy map[string]bool, localZone string) []string {
+	seen := map[string]struct{}{}
+	for _, ep := range endpoints {
+		if ep.Locality == nil || ep.Locality.Zone == localZone || !zonesWithProxy[ep.Locality.Zone] {
+			continue
+		}
+		seen[ep.Locality.Zone] = struct{}{}
+	}
+	return util_maps.SortedKeys(seen)
+}
+
 func classifyMZMSEndpointZones(endpoints []core_xds.Endpoint, zonesWithProxy map[string]bool) ([]string, bool) {
 	seen := map[string]struct{}{}
 	hasDefaultSNIEndpoint := false
