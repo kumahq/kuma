@@ -132,7 +132,7 @@ dev/merge-release:
 	git rm -rf $(TAKE_FILES_FROM_MASTER)
 	git checkout HEAD -- $(TAKE_FILES_FROM_MASTER)
 	@# Release branches rename runner variables after the cut, keep master's names
-	@for f in $$(git grep -lE 'RUNNERS_RELEASE_[0-9]+_[0-9]+_' -- .github/workflows); do \
+	@for f in $$(git grep -lE 'RUNNERS_RELEASE_[0-9]+_[0-9]+_'); do \
 		perl -pi -e 's/RUNNERS_RELEASE_\d+_\d+_/RUNNERS_MASTER_/g' "$$f"; \
 		[ -n "$$(git ls-files -u -- "$$f")" ] || git add "$$f"; \
 	done
