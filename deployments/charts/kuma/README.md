@@ -177,10 +177,12 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].ingress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].ingress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
 | meshes[0].ingress.service.labels | object | `{}` | Labels to add to the Service resource. |
-| meshes[0].ingress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":null}` | Deployment-level settings. |
+| meshes[0].ingress.deployment | object | `{"annotations":{},"labels":{},"podAnnotations":{},"podLabels":{},"podSpec":{},"replicas":null}` | Deployment-level settings. |
 | meshes[0].ingress.deployment.replicas | int | `nil` | Number of replicas. Ignored when hpa.enabled is true. Falls back to meshZoneProxyDefaults.<role>.replicas when unset. |
 | meshes[0].ingress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].ingress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
+| meshes[0].ingress.deployment.podLabels | object | `{}` | Labels to add to the zone proxy pods. Must not override the labels the chart sets on them. |
+| meshes[0].ingress.deployment.podAnnotations | object | `{}` | Annotations to add to the zone proxy pods, for example kuma.io/* sidecar settings. Must not override kuma.io/reachable-backends. |
 | meshes[0].ingress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
 | meshes[0].ingress.hpa | object | `{"enabled":false,"maxReplicas":5,"minReplicas":2,"targetCPUUtilizationPercentage":80}` | Horizontal Pod Autoscaler settings. |
 | meshes[0].ingress.pdb | object | `{"enabled":false,"maxUnavailable":1}` | Pod Disruption Budget settings. |
@@ -198,10 +200,12 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].egress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].egress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
 | meshes[0].egress.service.labels | object | `{}` | Labels to add to the Service resource. |
-| meshes[0].egress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":null}` | Deployment-level settings. |
+| meshes[0].egress.deployment | object | `{"annotations":{},"labels":{},"podAnnotations":{},"podLabels":{},"podSpec":{},"replicas":null}` | Deployment-level settings. |
 | meshes[0].egress.deployment.replicas | int | `nil` | Number of replicas. Ignored when hpa.enabled is true. Falls back to meshZoneProxyDefaults.<role>.replicas when unset. |
 | meshes[0].egress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].egress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
+| meshes[0].egress.deployment.podLabels | object | `{}` | Labels to add to the zone proxy pods. Must not override the labels the chart sets on them. |
+| meshes[0].egress.deployment.podAnnotations | object | `{}` | Annotations to add to the zone proxy pods, for example kuma.io/* sidecar settings. Must not override kuma.io/reachable-backends. |
 | meshes[0].egress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
 | meshes[0].egress.hpa.enabled | bool | `false` |  |
 | meshes[0].egress.hpa.minReplicas | int | `2` |  |

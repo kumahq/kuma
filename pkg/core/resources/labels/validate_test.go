@@ -9,26 +9,66 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	meshtimeout_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
 )
 
 var _ = Describe("Validate", func() {
+	timeoutConf := meshtimeout_api.Conf{IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second}}
 	timeout := func() core_model.Resource {
 		return builders.MeshTimeout().
 			WithMesh("mesh-1").
 			WithTargetRef(builders.TargetRefMesh()).
-			AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
-				IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
-			}).
+			AddTo(builders.TargetRefMesh(), timeoutConf).
+			Build()
+	}
+	timeoutWithoutMesh := func() core_model.Resource {
+		return builders.MeshTimeout().
+			WithMesh("").
+			WithTargetRef(builders.TargetRefMesh()).
+			AddTo(builders.TargetRefMesh(), timeoutConf).
+			Build()
+	}
+	mixedTimeout := func() core_model.Resource {
+		return builders.MeshTimeout().
+			WithMesh("mesh-1").
+			WithTargetRef(builders.TargetRefMesh()).
+			AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+				mesh_proto.DisplayName:      "backend-1",
+				mesh_proto.KubeNamespaceTag: "kuma-demo",
+				mesh_proto.ZoneTag:          "zone-1",
+			}, ""), timeoutConf).
+			AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+				mesh_proto.DisplayName:      "backend-2",
+				mesh_proto.KubeNamespaceTag: "other-ns",
+			}, ""), timeoutConf).
 			Build()
 	}
 	dataplane := func() core_model.Resource {
 		return builders.Dataplane().WithMesh("mesh-1").WithServices("backend").Build()
+	}
+	zoneIngressDataplane := func() core_model.Resource {
+		return builders.Dataplane().WithMesh("mesh-1").
+			With(func(dp *core_mesh.DataplaneResource) {
+				dp.Spec.Networking.Listeners = []*mesh_proto.Dataplane_Networking_Listener{{
+					Type:    mesh_proto.Dataplane_Networking_Listener_ZoneIngress,
+					Address: "127.0.0.1",
+					Port:    10001,
+				}}
+			}).
+			Build()
+	}
+	meshResource := func() core_model.Resource {
+		return &core_mesh.MeshResource{
+			Meta: &test_model.ResourceMeta{Name: "mesh-1"},
+			Spec: &mesh_proto.Mesh{},
+		}
 	}
 	appNamespace := resource_labels.NewNamespace("kuma-demo", false)
 	systemNamespace := resource_labels.NewNamespace("kuma-system", true)
@@ -53,14 +93,21 @@ var _ = Describe("Validate", func() {
 	violation := func(key, msg string) validators.Violation {
 		return validators.Violation{Field: validators.Root().Key(key).String(), Message: msg}
 	}
+	differs := func(key, got, expected string) validators.Violation {
+		return violation(key, `label "`+key+`" is managed by the control plane: got "`+got+`", expected "`+expected+`"`)
+	}
+	notHere := func(key string) validators.Violation {
+		return violation(key, `label "`+key+`" is managed by the control plane and cannot be set here`)
+	}
 
-	DescribeTable("should report the violations of today's rules",
+	DescribeTable("should reject a control-plane-owned label unless it carries the value the control plane computes",
 		func(given testCase) {
 			w := resource_labels.Write{
 				Descriptor:    given.r.Descriptor(),
 				Spec:          given.r.GetSpec(),
 				Namespace:     given.ns,
 				Mesh:          given.r.GetMeta().GetMesh(),
+				DisplayName:   given.r.GetMeta().GetName(),
 				Labels:        given.labels,
 				StoredLabels:  given.stored,
 				TrustedWriter: given.trusted,
@@ -72,60 +119,252 @@ var _ = Describe("Validate", func() {
 				Expect(err.Violations).To(Equal(given.expected))
 			}
 		},
-		// origin, Universal
-		Entry("origin: global on a global CP", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: universalGlobal,
+		Entry("no labels: nothing to check", testCase{
+			r: timeout(), labels: map[string]string{}, cp: universalGlobal,
 		}),
-		Entry("origin: zone on a global CP", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "zone"}, cp: universalGlobal,
-			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "the origin label must be set to 'global'")},
-		}),
-		Entry("origin: global on a federated zone", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: universalFederated,
-			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "the origin label must be set to 'zone'")},
-		}),
-		Entry("origin: global on a non-federated zone", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: universalNonFederated,
-		}),
-		Entry("origin: empty is not present", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: ""}, cp: universalGlobal,
-		}),
-		Entry("origin: unknown value fails the format rule", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "unknownvalue"}, cp: universalNonFederated,
-			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, `unknown resource origin "unknownvalue"`)},
-		}),
-		Entry("origin: unknown value fails the format rule for a trusted writer", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "unknownvalue"}, trusted: true, cp: universalGlobal,
-			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, `unknown resource origin "unknownvalue"`)},
-		}),
-		Entry("origin: format violation is listed before the ownership violation", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "unknownvalue"}, cp: universalGlobal,
-			expected: []validators.Violation{
-				violation(mesh_proto.ResourceOriginLabel, `unknown resource origin "unknownvalue"`),
-				violation(mesh_proto.ResourceOriginLabel, "the origin label must be set to 'global'"),
+		Entry("trusted writer: every mismatch is skipped", testCase{
+			r: timeout(), ns: appNamespace, trusted: true, cp: k8sFederated,
+			labels: map[string]string{
+				mesh_proto.ResourceOriginLabel: "global",
+				mesh_proto.ZoneTag:             "zone-2",
+				metadata.KumaMeshLabel:         "mesh-2",
+				mesh_proto.PolicyRoleLabel:     "invalid",
+				mesh_proto.DisplayName:         "other",
+				mesh_proto.EnvTag:              "universal",
+				mesh_proto.KubeNamespaceTag:    "other-ns",
+				metadata.KumaServiceAccount:    "victim-sa",
 			},
 		}),
-		// origin, k8s
-		Entry("origin: zone on a k8s global CP", testCase{
+		Entry("update: a label unchanged from the stored value is not checked", testCase{
+			r: timeout(), ns: appNamespace, cp: k8sFederated,
+			stored: map[string]string{mesh_proto.PolicyRoleLabel: "producer", mesh_proto.ZoneTag: "zone-1"},
+			labels: map[string]string{mesh_proto.PolicyRoleLabel: "producer", mesh_proto.ZoneTag: "zone-1"},
+		}),
+		Entry("update: a label changed from the stored value is checked", testCase{
+			r: timeout(), ns: appNamespace, cp: k8sFederated,
+			stored:   map[string]string{mesh_proto.ZoneTag: "zone-1"},
+			labels:   map[string]string{mesh_proto.ZoneTag: "zone-2"},
+			expected: []validators.Violation{differs(mesh_proto.ZoneTag, "zone-2", "zone-1")},
+		}),
+		Entry("update: a label not stored before is checked", testCase{
+			r: timeout(), ns: appNamespace, cp: k8sFederated,
+			stored:   map[string]string{},
+			labels:   map[string]string{mesh_proto.ZoneTag: "zone-2"},
+			expected: []validators.Violation{differs(mesh_proto.ZoneTag, "zone-2", "zone-1")},
+		}),
+		Entry("update: a stored service-account the write would drop is rejected", testCase{
+			r: dataplane(), ns: appNamespace, cp: k8sNonFederated,
+			stored:   map[string]string{metadata.KumaServiceAccount: "sa-1"},
+			labels:   map[string]string{metadata.KumaServiceAccount: "sa-1"},
+			expected: []validators.Violation{notHere(metadata.KumaServiceAccount)},
+		}),
+		Entry("update: a stored managed-by the write would drop is rejected", testCase{
+			r: timeout(), cp: universalNonFederated,
+			stored:   map[string]string{mesh_proto.ManagedByLabel: "meshservice-generator"},
+			labels:   map[string]string{mesh_proto.ManagedByLabel: "meshservice-generator"},
+			expected: []validators.Violation{notHere(mesh_proto.ManagedByLabel)},
+		}),
+		Entry("violations are reported in registry order", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.ZoneTag: "zone-2", metadata.KumaMeshLabel: "mesh-2", mesh_proto.ResourceOriginLabel: "global"}, cp: universalFederated,
+			expected: []validators.Violation{
+				differs(mesh_proto.ResourceOriginLabel, "global", "zone"),
+				differs(mesh_proto.ZoneTag, "zone-2", "zone-1"),
+				differs(metadata.KumaMeshLabel, "mesh-2", "mesh-1"),
+			},
+		}),
+		// origin
+		Entry("origin: equal on a global CP", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: universalGlobal,
+		}),
+		Entry("origin: differs on a global CP", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "zone"}, cp: universalGlobal,
+			expected: []validators.Violation{differs(mesh_proto.ResourceOriginLabel, "zone", "global")},
+		}),
+		Entry("origin: differs on a federated zone", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: universalFederated,
+			expected: []validators.Violation{differs(mesh_proto.ResourceOriginLabel, "global", "zone")},
+		}),
+		Entry("origin: differs on a non-federated zone", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: universalNonFederated,
+			expected: []validators.Violation{differs(mesh_proto.ResourceOriginLabel, "global", "zone")},
+		}),
+		Entry("origin: unknown value differs, once", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: "unknownvalue"}, cp: universalGlobal,
+			expected: []validators.Violation{differs(mesh_proto.ResourceOriginLabel, "unknownvalue", "global")},
+		}),
+		Entry("origin: empty differs", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.ResourceOriginLabel: ""}, cp: universalGlobal,
+			expected: []validators.Violation{differs(mesh_proto.ResourceOriginLabel, "", "global")},
+		}),
+		Entry("origin: differs on a k8s global CP", testCase{
 			r: timeout(), ns: systemNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "zone"}, cp: k8sGlobal,
-			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "'kuma.io/origin' label should have 'global' value, got 'zone'")},
+			expected: []validators.Violation{differs(mesh_proto.ResourceOriginLabel, "zone", "global")},
 		}),
-		Entry("origin: global in the system namespace of a k8s federated zone", testCase{
-			r: timeout(), ns: systemNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: k8sFederated,
-			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, "'kuma.io/origin' label should have 'zone' value, got 'global'")},
-		}),
-		Entry("origin: global in an app namespace of a k8s federated zone", testCase{
+		Entry("origin: differs in an app namespace of a k8s federated zone", testCase{
 			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: k8sFederated,
+			expected: []validators.Violation{differs(mesh_proto.ResourceOriginLabel, "global", "zone")},
 		}),
-		Entry("origin: global on a k8s non-federated zone", testCase{
+		Entry("origin: differs on a k8s non-federated zone", testCase{
 			r: timeout(), ns: systemNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: k8sNonFederated,
+			expected: []validators.Violation{differs(mesh_proto.ResourceOriginLabel, "global", "zone")},
 		}),
-		Entry("origin: a non-plugin type is not checked on k8s", testCase{
-			r: dataplane(), ns: systemNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: k8sFederated,
+		Entry("origin: differs on a non-plugin type on k8s", testCase{
+			r: dataplane(), ns: appNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: k8sFederated,
+			expected: []validators.Violation{differs(mesh_proto.ResourceOriginLabel, "global", "zone")},
 		}),
-		Entry("origin: unknown value fails the format rule on k8s", testCase{
-			r: timeout(), ns: systemNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "unknownvalue"}, cp: k8sNonFederated,
-			expected: []validators.Violation{violation(mesh_proto.ResourceOriginLabel, `unknown resource origin "unknownvalue"`)},
+		// zone
+		Entry("zone: equal", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.ZoneTag: "zone-1"}, cp: universalNonFederated,
+		}),
+		Entry("zone: differs", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.ZoneTag: "zone-2"}, cp: universalNonFederated,
+			expected: []validators.Violation{differs(mesh_proto.ZoneTag, "zone-2", "zone-1")},
+		}),
+		Entry("zone: on a global CP", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.ZoneTag: "zone-1"}, cp: universalGlobal,
+			expected: []validators.Violation{notHere(mesh_proto.ZoneTag)},
+		}),
+		Entry("zone: on a type the zone does not provide", testCase{
+			r: meshResource(), labels: map[string]string{mesh_proto.ZoneTag: "zone-1"}, cp: universalNonFederated,
+			expected: []validators.Violation{notHere(mesh_proto.ZoneTag)},
+		}),
+		Entry("zone: equal on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.ZoneTag: "zone-1"}, cp: k8sFederated,
+		}),
+		Entry("zone: differs without an origin on a k8s federated zone", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.ZoneTag: "zone-2"}, cp: k8sFederated,
+			expected: []validators.Violation{differs(mesh_proto.ZoneTag, "zone-2", "zone-1")},
+		}),
+		Entry("zone: differs on a k8s non-federated zone", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.ZoneTag: "zone-2"}, cp: k8sNonFederated,
+			expected: []validators.Violation{differs(mesh_proto.ZoneTag, "zone-2", "zone-1")},
+		}),
+		Entry("zone: on a k8s global CP", testCase{
+			r: timeout(), ns: systemNamespace, labels: map[string]string{mesh_proto.ZoneTag: "zone-2"}, cp: k8sGlobal,
+			expected: []validators.Violation{notHere(mesh_proto.ZoneTag)},
+		}),
+		// mesh
+		Entry("mesh: equal", testCase{
+			r: timeout(), labels: map[string]string{metadata.KumaMeshLabel: "mesh-1"}, cp: universalNonFederated,
+		}),
+		Entry("mesh: differs", testCase{
+			r: timeout(), labels: map[string]string{metadata.KumaMeshLabel: "mesh-2"}, cp: universalNonFederated,
+			expected: []validators.Violation{differs(metadata.KumaMeshLabel, "mesh-2", "mesh-1")},
+		}),
+		Entry("mesh: differs on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{metadata.KumaMeshLabel: "mesh-2"}, cp: k8sNonFederated,
+			expected: []validators.Violation{differs(metadata.KumaMeshLabel, "mesh-2", "mesh-1")},
+		}),
+		Entry("mesh: the default mesh when the write has none", testCase{
+			r: timeoutWithoutMesh(), labels: map[string]string{metadata.KumaMeshLabel: "default"}, cp: universalNonFederated,
+		}),
+		Entry("mesh: on a global-scoped type", testCase{
+			r: meshResource(), labels: map[string]string{metadata.KumaMeshLabel: "mesh-1"}, cp: universalNonFederated,
+			expected: []validators.Violation{notHere(metadata.KumaMeshLabel)},
+		}),
+		// policy-role
+		Entry("policy-role: system on Universal", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.PolicyRoleLabel: "system"}, cp: universalNonFederated,
+		}),
+		Entry("policy-role: differs on Universal", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.PolicyRoleLabel: "consumer"}, cp: universalNonFederated,
+			expected: []validators.Violation{differs(mesh_proto.PolicyRoleLabel, "consumer", "system")},
+		}),
+		Entry("policy-role: empty differs", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.PolicyRoleLabel: ""}, cp: universalNonFederated,
+			expected: []validators.Violation{differs(mesh_proto.PolicyRoleLabel, "", "system")},
+		}),
+		Entry("policy-role: on a non-policy", testCase{
+			r: dataplane(), labels: map[string]string{mesh_proto.PolicyRoleLabel: "system"}, cp: universalNonFederated,
+			expected: []validators.Violation{notHere(mesh_proto.PolicyRoleLabel)},
+		}),
+		Entry("policy-role: system in the system namespace on k8s", testCase{
+			r: timeout(), ns: systemNamespace, labels: map[string]string{mesh_proto.PolicyRoleLabel: "system"}, cp: k8sFederated,
+		}),
+		Entry("policy-role: equal in an app namespace on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.PolicyRoleLabel: "consumer"}, cp: k8sFederated,
+		}),
+		Entry("policy-role: differs in an app namespace on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.PolicyRoleLabel: "invalid"}, cp: k8sFederated,
+			expected: []validators.Violation{differs(mesh_proto.PolicyRoleLabel, "invalid", "consumer")},
+		}),
+		Entry("policy-role: a policy Compute rejects is left to Compute", testCase{
+			r: mixedTimeout(), ns: appNamespace, labels: map[string]string{mesh_proto.PolicyRoleLabel: "invalid"}, cp: k8sFederated,
+		}),
+		// display-name
+		Entry("display-name: equal", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.DisplayName: "mt-1"}, cp: universalNonFederated,
+		}),
+		Entry("display-name: differs", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.DisplayName: "other"}, cp: universalNonFederated,
+			expected: []validators.Violation{differs(mesh_proto.DisplayName, "other", "mt-1")},
+		}),
+		Entry("display-name: differs on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.DisplayName: "other"}, cp: k8sNonFederated,
+			expected: []validators.Violation{differs(mesh_proto.DisplayName, "other", "mt-1")},
+		}),
+		// env
+		Entry("env: equal on a Universal zone", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.EnvTag: "universal"}, cp: universalNonFederated,
+		}),
+		Entry("env: differs on a Universal zone", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.EnvTag: "kubernetes"}, cp: universalNonFederated,
+			expected: []validators.Violation{differs(mesh_proto.EnvTag, "kubernetes", "universal")},
+		}),
+		Entry("env: equal on a k8s zone", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.EnvTag: "kubernetes"}, cp: k8sNonFederated,
+		}),
+		Entry("env: on a global CP", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.EnvTag: "universal"}, cp: universalGlobal,
+			expected: []validators.Violation{notHere(mesh_proto.EnvTag)},
+		}),
+		// namespace
+		Entry("namespace: equal on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.KubeNamespaceTag: "kuma-demo"}, cp: k8sNonFederated,
+		}),
+		Entry("namespace: differs on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.KubeNamespaceTag: "other-ns"}, cp: k8sNonFederated,
+			expected: []validators.Violation{differs(mesh_proto.KubeNamespaceTag, "other-ns", "kuma-demo")},
+		}),
+		Entry("namespace: on a cluster-scoped object on k8s", testCase{
+			r: meshResource(), labels: map[string]string{mesh_proto.KubeNamespaceTag: "kuma-demo"}, cp: k8sNonFederated,
+			expected: []validators.Violation{notHere(mesh_proto.KubeNamespaceTag)},
+		}),
+		Entry("namespace: on Universal", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.KubeNamespaceTag: "kuma-demo"}, cp: universalNonFederated,
+			expected: []validators.Violation{notHere(mesh_proto.KubeNamespaceTag)},
+		}),
+		// service-account
+		Entry("service-account: on a Dataplane on k8s", testCase{
+			r: dataplane(), ns: appNamespace, labels: map[string]string{metadata.KumaServiceAccount: "victim-sa"}, cp: k8sGlobal,
+			expected: []validators.Violation{notHere(metadata.KumaServiceAccount)},
+		}),
+		Entry("service-account: on a policy on k8s", testCase{
+			r: timeout(), ns: appNamespace, labels: map[string]string{metadata.KumaServiceAccount: "victim-sa"}, cp: k8sFederated,
+			expected: []validators.Violation{notHere(metadata.KumaServiceAccount)},
+		}),
+		Entry("service-account: on Universal", testCase{
+			r: dataplane(), labels: map[string]string{metadata.KumaServiceAccount: "victim-sa"}, cp: universalNonFederated,
+			expected: []validators.Violation{notHere(metadata.KumaServiceAccount)},
+		}),
+		Entry("service-account: for a trusted writer on k8s", testCase{
+			r: dataplane(), ns: appNamespace, labels: map[string]string{metadata.KumaServiceAccount: "victim-sa"}, trusted: true, cp: k8sGlobal,
+		}),
+		// listeners
+		Entry("listener-zoneingress: equal on a Dataplane with the listener", testCase{
+			r: zoneIngressDataplane(), labels: map[string]string{mesh_proto.ListenerZoneIngressLabel: "enabled"}, cp: universalNonFederated,
+		}),
+		Entry("listener-zoneingress: on a Dataplane without the listener", testCase{
+			r: dataplane(), labels: map[string]string{mesh_proto.ListenerZoneIngressLabel: "enabled"}, cp: universalNonFederated,
+			expected: []validators.Violation{notHere(mesh_proto.ListenerZoneIngressLabel)},
+		}),
+		Entry("listener-zoneegress: on a policy", testCase{
+			r: timeout(), labels: map[string]string{mesh_proto.ListenerZoneEgressLabel: "enabled"}, cp: universalNonFederated,
+			expected: []validators.Violation{notHere(mesh_proto.ListenerZoneEgressLabel)},
+		}),
+		// user-owned
+		Entry("workload: any value", testCase{
+			r: timeout(), labels: map[string]string{metadata.KumaWorkload: "anything"}, cp: universalNonFederated,
 		}),
 		// stored origin
 		Entry("stored: zone-owned on a global CP", testCase{
@@ -162,81 +401,6 @@ var _ = Describe("Validate", func() {
 		Entry("stored: global-owned in an app namespace of a k8s federated zone", testCase{
 			r: timeout(), ns: appNamespace, stored: map[string]string{mesh_proto.ResourceOriginLabel: "global"}, cp: k8sFederated,
 		}),
-		// zone, Universal
-		Entry("zone: any value on a global CP", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.ZoneTag: "zone-1"}, cp: universalGlobal,
-			expected: []validators.Violation{violation(mesh_proto.ZoneTag, "kuma.io/zone is not allowed on a global control plane")},
-		}),
-		Entry("zone: the local zone", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.ZoneTag: "zone-1"}, cp: universalNonFederated,
-		}),
-		Entry("zone: another zone", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.ZoneTag: "zone-2"}, cp: universalNonFederated,
-			expected: []validators.Violation{violation(mesh_proto.ZoneTag, "kuma.io/zone label should have zone-1 value")},
-		}),
-		Entry("origin is reported before zone", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.ZoneTag: "zone-2", mesh_proto.ResourceOriginLabel: "global"}, cp: universalFederated,
-			expected: []validators.Violation{
-				violation(mesh_proto.ResourceOriginLabel, "the origin label must be set to 'zone'"),
-				violation(mesh_proto.ZoneTag, "kuma.io/zone label should have zone-1 value"),
-			},
-		}),
-		// zone, k8s
-		Entry("zone: another zone with a zone origin on a k8s federated zone", testCase{
-			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "zone", mesh_proto.ZoneTag: "zone-2"}, cp: k8sFederated,
-			expected: []validators.Violation{violation(mesh_proto.ZoneTag, "'kuma.io/zone' label should have 'zone-1' value, got 'zone-2'")},
-		}),
-		Entry("zone: another zone without an origin on a k8s federated zone", testCase{
-			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.ZoneTag: "zone-2"}, cp: k8sFederated,
-		}),
-		Entry("zone: another zone on a k8s non-federated zone", testCase{
-			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.ResourceOriginLabel: "zone", mesh_proto.ZoneTag: "zone-2"}, cp: k8sNonFederated,
-		}),
-		Entry("zone: any value on a k8s global CP", testCase{
-			r: timeout(), ns: systemNamespace, labels: map[string]string{mesh_proto.ZoneTag: "zone-2"}, cp: k8sGlobal,
-		}),
-		// mesh
-		Entry("mesh: the resource's mesh", testCase{
-			r: timeout(), labels: map[string]string{metadata.KumaMeshLabel: "mesh-1"}, cp: universalNonFederated,
-		}),
-		Entry("mesh: another mesh", testCase{
-			r: timeout(), labels: map[string]string{metadata.KumaMeshLabel: "mesh-2"}, cp: universalNonFederated,
-			expected: []validators.Violation{violation(metadata.KumaMeshLabel, "kuma.io/mesh label must not differ from mesh set on resource")},
-		}),
-		Entry("mesh: another mesh on k8s", testCase{
-			r: timeout(), ns: appNamespace, labels: map[string]string{metadata.KumaMeshLabel: "mesh-2"}, cp: k8sNonFederated,
-		}),
-		// policy-role
-		Entry("policy-role: system", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.PolicyRoleLabel: "system"}, cp: universalNonFederated,
-		}),
-		Entry("policy-role: empty reads as system", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.PolicyRoleLabel: ""}, cp: universalNonFederated,
-		}),
-		Entry("policy-role: consumer", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.PolicyRoleLabel: "consumer"}, cp: universalNonFederated,
-			expected: []validators.Violation{violation(mesh_proto.PolicyRoleLabel, "kuma.io/policy-role label should have system value, got consumer")},
-		}),
-		Entry("policy-role: consumer on a non-policy", testCase{
-			r: dataplane(), labels: map[string]string{mesh_proto.PolicyRoleLabel: "consumer"}, cp: universalNonFederated,
-		}),
-		Entry("policy-role: invalid on k8s", testCase{
-			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.PolicyRoleLabel: "invalid"}, cp: k8sFederated,
-		}),
-		// service-account
-		Entry("service-account: on a Dataplane on Universal", testCase{
-			r: dataplane(), labels: map[string]string{metadata.KumaServiceAccount: "victim-sa"}, cp: universalNonFederated,
-		}),
-		Entry("service-account: on a Dataplane on k8s", testCase{
-			r: dataplane(), ns: appNamespace, labels: map[string]string{metadata.KumaServiceAccount: "victim-sa"}, cp: k8sGlobal,
-			expected: []validators.Violation{violation(metadata.KumaServiceAccount, `Label "k8s.kuma.io/service-account" is managed by Kuma and cannot be set manually.`)},
-		}),
-		Entry("service-account: on a policy on k8s", testCase{
-			r: timeout(), ns: appNamespace, labels: map[string]string{metadata.KumaServiceAccount: "victim-sa"}, cp: k8sFederated,
-		}),
-		Entry("service-account: on a Dataplane on k8s for a trusted writer", testCase{
-			r: dataplane(), ns: appNamespace, labels: map[string]string{metadata.KumaServiceAccount: "victim-sa"}, trusted: true, cp: k8sGlobal,
-		}),
 		// syntax
 		Entry("syntax: violations are sorted by key", testCase{
 			r: timeout(), labels: map[string]string{"example.com/b": "-bad", "example.com/a": "bad-", "bad key": "v"}, cp: universalNonFederated,
@@ -247,7 +411,7 @@ var _ = Describe("Validate", func() {
 			},
 		}),
 		Entry("syntax: annotation-backed values are names", testCase{
-			r: timeout(), labels: map[string]string{mesh_proto.DisplayName: "a.very.long.name.that.would.not.fit.a.label.value.because.it.is.longer.than.sixty-three.characters"}, cp: universalNonFederated,
+			r: timeout(), labels: map[string]string{metadata.KumaWorkload: "a.very.long.name.that.would.not.fit.a.label.value.because.it.is.longer.than.sixty-three.characters"}, cp: universalNonFederated,
 		}),
 		Entry("syntax: annotation-backed values must be DNS subdomains", testCase{
 			r: timeout(), labels: map[string]string{metadata.KumaWorkload: "Not_A_Name"}, cp: universalNonFederated,
@@ -330,11 +494,11 @@ var _ = Describe("Validate", func() {
 		// control-plane-only
 		Entry("managed-by: supplied by a user", testCase{
 			r: timeout(), labels: map[string]string{mesh_proto.ManagedByLabel: "meshservice-generator"}, cp: universalNonFederated,
-			expected: []validators.Violation{violation(mesh_proto.ManagedByLabel, `label "kuma.io/managed-by" is set by the control plane and cannot be set manually`)},
+			expected: []validators.Violation{notHere(mesh_proto.ManagedByLabel)},
 		}),
 		Entry("managed-by: supplied by a user on k8s", testCase{
 			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.ManagedByLabel: "k8s-controller"}, cp: k8sNonFederated,
-			expected: []validators.Violation{violation(mesh_proto.ManagedByLabel, `label "kuma.io/managed-by" is set by the control plane and cannot be set manually`)},
+			expected: []validators.Violation{notHere(mesh_proto.ManagedByLabel)},
 		}),
 		Entry("managed-by: supplied by a trusted writer", testCase{
 			r: timeout(), labels: map[string]string{mesh_proto.ManagedByLabel: "meshservice-generator"}, trusted: true, cp: universalNonFederated,
@@ -344,33 +508,33 @@ var _ = Describe("Validate", func() {
 		}),
 		Entry("deletion-grace-period-started-at: supplied by a user", testCase{
 			r: timeout(), labels: map[string]string{mesh_proto.DeletionGracePeriodStartedLabel: "2026-01-01T00.00.00Z"}, cp: universalNonFederated,
-			expected: []validators.Violation{violation(mesh_proto.DeletionGracePeriodStartedLabel, `label "kuma.io/deletion-grace-period-started-at" is set by the control plane and cannot be set manually`)},
+			expected: []validators.Violation{notHere(mesh_proto.DeletionGracePeriodStartedLabel)},
 		}),
 		Entry("deletion-grace-period-started-at: supplied by a user on k8s", testCase{
 			r: timeout(), ns: appNamespace, labels: map[string]string{mesh_proto.DeletionGracePeriodStartedLabel: "2026-01-01T00.00.00Z"}, cp: k8sFederated,
-			expected: []validators.Violation{violation(mesh_proto.DeletionGracePeriodStartedLabel, `label "kuma.io/deletion-grace-period-started-at" is set by the control plane and cannot be set manually`)},
+			expected: []validators.Violation{notHere(mesh_proto.DeletionGracePeriodStartedLabel)},
 		}),
 		Entry("service-name: supplied by a user", testCase{
 			r: timeout(), labels: map[string]string{metadata.KumaServiceName: "backend"}, cp: universalGlobal,
-			expected: []validators.Violation{violation(metadata.KumaServiceName, `label "k8s.kuma.io/service-name" is set by the control plane and cannot be set manually`)},
+			expected: []validators.Violation{notHere(metadata.KumaServiceName)},
 		}),
 		Entry("service-name: supplied by a user on k8s", testCase{
 			r: timeout(), ns: appNamespace, labels: map[string]string{metadata.KumaServiceName: "backend"}, cp: k8sNonFederated,
-			expected: []validators.Violation{violation(metadata.KumaServiceName, `label "k8s.kuma.io/service-name" is set by the control plane and cannot be set manually`)},
+			expected: []validators.Violation{notHere(metadata.KumaServiceName)},
 		}),
 		Entry("is-headless-service: supplied by a user", testCase{
 			r: timeout(), labels: map[string]string{metadata.HeadlessService: "true"}, cp: universalNonFederated,
-			expected: []validators.Violation{violation(metadata.HeadlessService, `label "k8s.kuma.io/is-headless-service" is set by the control plane and cannot be set manually`)},
+			expected: []validators.Violation{notHere(metadata.HeadlessService)},
 		}),
 		Entry("is-headless-service: supplied by a user on k8s", testCase{
 			r: timeout(), ns: systemNamespace, labels: map[string]string{metadata.HeadlessService: "false"}, cp: k8sGlobal,
-			expected: []validators.Violation{violation(metadata.HeadlessService, `label "k8s.kuma.io/is-headless-service" is set by the control plane and cannot be set manually`)},
+			expected: []validators.Violation{notHere(metadata.HeadlessService)},
 		}),
 		Entry("control-plane-only labels are reported in registry order, before the unknown key", testCase{
 			r: timeout(), labels: map[string]string{"kuma.io/pkey-6d1f0b0a": "", metadata.KumaServiceName: "backend", mesh_proto.ManagedByLabel: "k8s-controller"}, cp: universalNonFederated,
 			expected: []validators.Violation{
-				violation(mesh_proto.ManagedByLabel, `label "kuma.io/managed-by" is set by the control plane and cannot be set manually`),
-				violation(metadata.KumaServiceName, `label "k8s.kuma.io/service-name" is set by the control plane and cannot be set manually`),
+				notHere(mesh_proto.ManagedByLabel),
+				notHere(metadata.KumaServiceName),
 				violation("kuma.io/pkey-6d1f0b0a", `label "kuma.io/pkey-6d1f0b0a" is reserved and not known to this control plane`),
 			},
 		}),

@@ -6,7 +6,6 @@ metadata:
   labels:
     kuma.io/origin: zone
     kuma.io/mesh: default
-    k8s.kuma.io/namespace: custom-ns
     kuma.io/zone: zone-1
     kuma.io/kds-sync: Disabled
 spec:
