@@ -299,16 +299,19 @@ components:
                             enum:
                               - Zipkin
                           zipkin: {}
+                        title: Zipkin
                       - properties:
                           datadog: {}
                           type:
                             enum:
                               - Datadog
+                        title: Datadog
                       - properties:
                           openTelemetry: {}
                           type:
                             enum:
                               - OpenTelemetry
+                        title: OpenTelemetry
                   maxItems: 1
                   type: array
                 sampling:

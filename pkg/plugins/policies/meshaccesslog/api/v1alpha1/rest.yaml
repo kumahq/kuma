@@ -253,11 +253,13 @@ components:
                                         type:
                                           enum:
                                             - Plain
+                                      title: Plain
                                     - properties:
                                         json: {}
                                         type:
                                           enum:
                                             - Json
+                                      title: Json
                                 path:
                                   description: Path to a file that logs will be written to
                                   example: /tmp/access.log
@@ -375,11 +377,13 @@ components:
                                         type:
                                           enum:
                                             - Plain
+                                      title: Plain
                                     - properties:
                                         json: {}
                                         type:
                                           enum:
                                             - Json
+                                      title: Json
                               required:
                                 - address
                               type: object
@@ -398,16 +402,19 @@ components:
                                 type:
                                   enum:
                                     - Tcp
+                              title: Tcp
                             - properties:
                                 file: {}
                                 type:
                                   enum:
                                     - File
+                              title: File
                             - properties:
                                 openTelemetry: {}
                                 type:
                                   enum:
                                     - OpenTelemetry
+                              title: OpenTelemetry
                         type: array
                     type: object
                   matches:
@@ -539,11 +546,13 @@ components:
                                         type:
                                           enum:
                                             - Plain
+                                      title: Plain
                                     - properties:
                                         json: {}
                                         type:
                                           enum:
                                             - Json
+                                      title: Json
                                 path:
                                   description: Path to a file that logs will be written to
                                   example: /tmp/access.log
@@ -661,11 +670,13 @@ components:
                                         type:
                                           enum:
                                             - Plain
+                                      title: Plain
                                     - properties:
                                         json: {}
                                         type:
                                           enum:
                                             - Json
+                                      title: Json
                               required:
                                 - address
                               type: object
@@ -684,16 +695,19 @@ components:
                                 type:
                                   enum:
                                     - Tcp
+                              title: Tcp
                             - properties:
                                 file: {}
                                 type:
                                   enum:
                                     - File
+                              title: File
                             - properties:
                                 openTelemetry: {}
                                 type:
                                   enum:
                                     - OpenTelemetry
+                              title: OpenTelemetry
                         type: array
                     type: object
                   targetRef:

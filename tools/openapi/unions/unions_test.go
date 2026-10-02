@@ -21,11 +21,11 @@ var _ = Describe("Find", func() {
 
 		Expect(sites).To(HaveLen(1))
 		Expect(sites[0].OneOf).To(Equal([]any{
-			map[string]any{"properties": map[string]any{
+			map[string]any{"title": "RoundRobin", "properties": map[string]any{
 				"type":       map[string]any{"enum": []any{"RoundRobin"}},
 				"roundRobin": map[string]any{},
 			}},
-			map[string]any{"properties": map[string]any{
+			map[string]any{"title": "URLRewrite", "properties": map[string]any{
 				"type":       map[string]any{"enum": []any{"URLRewrite"}},
 				"urlRewrite": map[string]any{},
 			}},
@@ -48,6 +48,47 @@ var _ = Describe("Find", func() {
 
 		Expect(sites).To(HaveLen(1))
 		Expect(sites[0].Path).To(Equal([]string{"properties", "properties", "spec"}))
+	})
+
+	It("should title the branches of a union nested in an array item", func() {
+		// MeshHTTPRoute nests `filters` inside `backendRefs` items.
+		filters := func() map[string]any {
+			return map[string]any{
+				"type": "array",
+				"items": map[string]any{"properties": map[string]any{
+					"type":              map[string]any{"enum": []any{"URLRewrite", "RequestMirror"}},
+					"urlRewrite":        map[string]any{"type": "object"},
+					"requestMirror":     map[string]any{"type": "object"},
+					"requestHeaderName": map[string]any{"type": "string"},
+				}},
+			}
+		}
+		schema := map[string]any{
+			"properties": map[string]any{
+				"backendRefs": map[string]any{
+					"type": "array",
+					"items": map[string]any{"properties": map[string]any{
+						"name":    map[string]any{"type": "string"},
+						"filters": filters(),
+					}},
+				},
+			},
+		}
+
+		sites := Find(schema, nil)
+
+		Expect(sites).To(HaveLen(1))
+		Expect(sites[0].Path).To(Equal([]string{"properties", "backendRefs", "items", "properties", "filters", "items"}))
+		Expect(sites[0].OneOf).To(Equal([]any{
+			map[string]any{"title": "URLRewrite", "properties": map[string]any{
+				"type":       map[string]any{"enum": []any{"URLRewrite"}},
+				"urlRewrite": map[string]any{},
+			}},
+			map[string]any{"title": "RequestMirror", "properties": map[string]any{
+				"type":          map[string]any{"enum": []any{"RequestMirror"}},
+				"requestMirror": map[string]any{},
+			}},
+		}))
 	})
 })
 
@@ -76,7 +117,7 @@ var _ = Describe("Assignments", func() {
 		// The branches follow the order of the discriminator's enum, not the order
 		// the variant properties happen to be in.
 		Expect(expr).To(Equal(`."components"."schemas"."VaultConfig".oneOf = ` +
-			`[{"properties":{"server":{},"type":{"enum":["Server"]}}},{"properties":{"agent":{},"type":{"enum":["Agent"]}}}]`))
+			`[{"properties":{"server":{},"type":{"enum":["Server"]}},"title":"Server"},{"properties":{"agent":{},"type":{"enum":["Agent"]}},"title":"Agent"}]`))
 	})
 })
 

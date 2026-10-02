@@ -299,11 +299,13 @@ components:
                           type:
                             enum:
                               - Prometheus
+                        title: Prometheus
                       - properties:
                           openTelemetry: {}
                           type:
                             enum:
                               - OpenTelemetry
+                        title: OpenTelemetry
                   type: array
                 sidecar:
                   description: Sidecar metrics collection configuration

@@ -385,11 +385,13 @@ components:
                                                     type:
                                                       enum:
                                                         - ReplaceFullPath
+                                                  title: ReplaceFullPath
                                                 - properties:
                                                     replacePrefixMatch: {}
                                                     type:
                                                       enum:
                                                         - ReplacePrefixMatch
+                                                  title: ReplacePrefixMatch
                                             port:
                                               description: |-
                                                 Port is the port to be used in the value of the `Location`
@@ -505,11 +507,13 @@ components:
                                                     type:
                                                       enum:
                                                         - ReplaceFullPath
+                                                  title: ReplaceFullPath
                                                 - properties:
                                                     replacePrefixMatch: {}
                                                     type:
                                                       enum:
                                                         - ReplacePrefixMatch
+                                                  title: ReplacePrefixMatch
                                           type: object
                                       required:
                                         - type
@@ -520,26 +524,31 @@ components:
                                             type:
                                               enum:
                                                 - RequestHeaderModifier
+                                          title: RequestHeaderModifier
                                         - properties:
                                             responseHeaderModifier: {}
                                             type:
                                               enum:
                                                 - ResponseHeaderModifier
+                                          title: ResponseHeaderModifier
                                         - properties:
                                             requestRedirect: {}
                                             type:
                                               enum:
                                                 - RequestRedirect
+                                          title: RequestRedirect
                                         - properties:
                                             type:
                                               enum:
                                                 - URLRewrite
                                             urlRewrite: {}
+                                          title: URLRewrite
                                         - properties:
                                             requestMirror: {}
                                             type:
                                               enum:
                                                 - RequestMirror
+                                          title: RequestMirror
                                     type: array
                                   kind:
                                     description: Kind of the referenced resource
@@ -706,11 +715,13 @@ components:
                                               type:
                                                 enum:
                                                   - ReplaceFullPath
+                                            title: ReplaceFullPath
                                           - properties:
                                               replacePrefixMatch: {}
                                               type:
                                                 enum:
                                                   - ReplacePrefixMatch
+                                            title: ReplacePrefixMatch
                                       port:
                                         description: |-
                                           Port is the port to be used in the value of the `Location`
@@ -826,11 +837,13 @@ components:
                                               type:
                                                 enum:
                                                   - ReplaceFullPath
+                                            title: ReplaceFullPath
                                           - properties:
                                               replacePrefixMatch: {}
                                               type:
                                                 enum:
                                                   - ReplacePrefixMatch
+                                            title: ReplacePrefixMatch
                                     type: object
                                 required:
                                   - type
@@ -841,26 +854,31 @@ components:
                                       type:
                                         enum:
                                           - RequestHeaderModifier
+                                    title: RequestHeaderModifier
                                   - properties:
                                       responseHeaderModifier: {}
                                       type:
                                         enum:
                                           - ResponseHeaderModifier
+                                    title: ResponseHeaderModifier
                                   - properties:
                                       requestRedirect: {}
                                       type:
                                         enum:
                                           - RequestRedirect
+                                    title: RequestRedirect
                                   - properties:
                                       type:
                                         enum:
                                           - URLRewrite
                                       urlRewrite: {}
+                                    title: URLRewrite
                                   - properties:
                                       requestMirror: {}
                                       type:
                                         enum:
                                           - RequestMirror
+                                    title: RequestMirror
                               type: array
                           type: object
                         matches:

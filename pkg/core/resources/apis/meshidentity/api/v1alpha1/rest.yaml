@@ -366,16 +366,19 @@ components:
                     type:
                       enum:
                         - Bundled
+                  title: Bundled
                 - properties:
                     spire: {}
                     type:
                       enum:
                         - Spire
+                  title: Spire
                 - properties:
                     extension: {}
                     type:
                       enum:
                         - Extension
+                  title: Extension
             selector:
               properties:
                 dataplane:
