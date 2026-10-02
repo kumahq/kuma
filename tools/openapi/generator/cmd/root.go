@@ -27,6 +27,7 @@ func newRootCmd() *cobra.Command {
 
 	cmd.AddCommand(newKriPolicies(rootArgs))
 	cmd.AddCommand(newExtensions(rootArgs))
+	cmd.AddCommand(newUnions(rootArgs))
 
 	cmd.PersistentFlags().StringVar(&rootArgs.version, "version", "v1alpha1", "policy version")
 

@@ -68,12 +68,19 @@ docs/generated:
 # The merge output is built beside the target and moved on success, so a failing
 # merge cannot leave the committed file truncated.
 .PHONY: docs/generated/openapi.yaml
-docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES) | docs/generated docs/generated/openapi/prepare/specs
+docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES) $(OAPI_GEN) | docs/generated docs/generated/openapi/prepare/specs
 	@echo "Rewriting /specs/ paths in all YAML files..."
 	@mkdir -p $(BUILD_DIR)/oapitmp-rewritten
 	@cd $(OAPI_TMP_DIR) && find . -name '*.yaml' | while read f; do \
 		mkdir -p $(BUILD_DIR)/oapitmp-rewritten/$$(dirname $$f); \
 		sed 's|"/specs/|"$(BUILD_DIR)/oapitmp-rewritten/|g; s|'"'"'/specs/|'"'"'$(BUILD_DIR)/oapitmp-rewritten/|g; s| /specs/| $(BUILD_DIR)/oapitmp-rewritten/|g; s|: /specs/|: $(BUILD_DIR)/oapitmp-rewritten/|g' $$f > $(BUILD_DIR)/oapitmp-rewritten/$$f; \
+	done
+# The generated rest.yaml files stay flat because the control plane validates
+# requests against them, so the discriminated unions are only described in the
+# copies that get bundled.
+	@echo "Describing discriminated unions..."
+	@find $(BUILD_DIR)/oapitmp-rewritten -name 'rest.yaml' | LC_ALL=C sort | while read f; do \
+		$(OAPI_GEN) unions --spec $$f --yq-bin $(YQ) || exit 1; \
 	done
 	@echo "Bundling individual OpenAPI specs..."
 	@mkdir -p $(BUILD_DIR)/openapi-bundled

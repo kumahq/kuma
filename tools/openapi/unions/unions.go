@@ -1,6 +1,10 @@
 // Package unions finds the discriminated unions in a controller-gen schema and
 // renders them as yq assignments.
 //
+// The generated rest.yaml files keep the flat schema controller-gen produces,
+// because the control plane validates requests against it. The unions are only
+// described in the bundled spec published for API consumers, see Patch.
+//
 // Kuma models a union as a `type` discriminator plus one optional property per
 // variant. controller-gen emits those variants as unrelated siblings, so nothing
 // in the spec says which property a given `type` selects and consumers have to
@@ -11,10 +15,13 @@
 package unions
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"maps"
 	"os"
+	"os/exec"
 	"sort"
 	"strings"
 	"unicode"
@@ -420,7 +427,10 @@ func Assignments(schema any, base []string, prefix string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	return render(rewrite)
+}
 
+func render(rewrite Rewrite) (string, error) {
 	names := make([]string, 0, len(rewrite.Members))
 	for name := range rewrite.Members {
 		names = append(names, name)
@@ -454,6 +464,79 @@ func Assignments(schema any, base []string, prefix string) (string, error) {
 			YQPath(u.Path), oneOf, discriminator))
 	}
 	return strings.Join(assignments, "\n  | "), nil
+}
+
+// Patch describes, in place, the discriminated unions of every schema in
+// `components.schemas` of the OpenAPI document at specPath. The members of the
+// unions in `<Kind>Item` are named after the kind.
+//
+// It is meant for a copy of the document that is about to be bundled: yq rewrites
+// the whole file, and the document embedded in the control plane has to stay
+// plain, because the structural schema validating requests can neither follow a
+// `$ref` nor prune fields it has no `properties` for. A document with no union
+// left to describe, including one already patched, is not touched.
+func Patch(ctx context.Context, specPath, yqBin string, stderr io.Writer) error {
+	raw, err := os.ReadFile(specPath)
+	if err != nil {
+		return err
+	}
+	var spec struct {
+		Components struct {
+			Schemas map[string]any `json:"schemas"`
+		} `json:"components"`
+	}
+	if err := yaml.Unmarshal(raw, &spec); err != nil {
+		return fmt.Errorf("could not parse %s: %w", specPath, err)
+	}
+
+	names := make([]string, 0, len(spec.Components.Schemas))
+	for name := range spec.Components.Schemas {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	var expressions []string
+	for _, name := range names {
+		rewrite, err := Plan(spec.Components.Schemas[name], []string{"components", "schemas", name}, strings.TrimSuffix(name, "Item"))
+		if err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		for member := range rewrite.Members {
+			if _, ok := spec.Components.Schemas[member]; ok {
+				return fmt.Errorf("%s: union member %s would replace a schema of the same name", name, member)
+			}
+		}
+		expression, err := render(rewrite)
+		if err != nil {
+			return err
+		}
+		if expression != "" {
+			expressions = append(expressions, expression)
+		}
+	}
+	if len(expressions) == 0 {
+		return nil
+	}
+
+	file, err := os.CreateTemp("", "openapi-unions-*.yq")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = os.Remove(file.Name()) }()
+	if _, err := file.WriteString(strings.Join(expressions, "\n  | ") + "\n"); err != nil {
+		return err
+	}
+	if err := file.Close(); err != nil {
+		return err
+	}
+
+	// --from-file, not -f: -f is --front-matter.
+	cmd := exec.CommandContext(ctx, yqBin, "e", "-i", "--from-file", file.Name(), specPath) //nolint:gosec // the binary is a build tool path passed by the Makefile
+	cmd.Stderr = stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("could not patch %s: %w", specPath, err)
+	}
+	return nil
 }
 
 // YQPath renders map keys as a yq path expression.

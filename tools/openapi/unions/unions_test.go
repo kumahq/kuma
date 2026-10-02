@@ -1,12 +1,13 @@
 package unions
 
 import (
-	"encoding/json"
+	"context"
+	"os"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"sigs.k8s.io/yaml"
 )
 
 // object is a union-shaped schema node: a required `type` enum plus the given
@@ -60,14 +61,6 @@ func backends(variants ...string) map[string]any {
 			"backends": map[string]any{"type": "array", "items": object(values, properties)},
 		}},
 	}
-}
-
-func roundTrip(v any) any {
-	encoded, err := json.Marshal(v)
-	Expect(err).ToNot(HaveOccurred())
-	var out any
-	Expect(json.Unmarshal(encoded, &out)).To(Succeed())
-	return out
 }
 
 var _ = Describe("Find", func() {
@@ -237,26 +230,25 @@ var _ = Describe("Plan", func() {
 		}
 	})
 
-	// The API server validates against the published schema, flattened back.
-	It("should flatten back to the schema it was planned from", func() {
-		original := roundTrip(route())
-		doc := roundTrip(route()).(map[string]any)
-
-		rewrite, err := Plan(doc, nil, "MeshHTTPRoute")
+	It("should describe the loadBalancer union of the generated MeshLoadBalancingStrategy spec", func() {
+		raw, err := os.ReadFile("../../../pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1/rest.yaml")
 		Expect(err).ToNot(HaveOccurred())
-		for _, u := range rewrite.Unions {
-			node := dig(doc, u.Path).(map[string]any)
-			delete(node, "properties")
-			delete(node, "required")
-			delete(node, "type")
-			node["oneOf"] = u.OneOf
-			node["discriminator"] = u.Discriminator
-		}
-		schemas := roundTrip(rewrite.Members).(map[string]any)
+		var spec map[string]any
+		Expect(yaml.Unmarshal(raw, &spec)).To(Succeed())
+		item := dig(spec, []string{"components", "schemas", "MeshLoadBalancingStrategyItem"})
 
-		Expect(core_model.FlattenDiscriminatedUnions(doc, schemas)).To(Succeed())
+		rewrite, err := Plan(item, []string{"components", "schemas", "MeshLoadBalancingStrategyItem"}, "MeshLoadBalancingStrategy")
 
-		Expect(roundTrip(doc)).To(Equal(original))
+		Expect(err).ToNot(HaveOccurred())
+		loadBalancer := rewrite.Unions["components.schemas.MeshLoadBalancingStrategyItem.properties.spec.properties.to.items.properties.default.properties.loadBalancer"]
+		Expect(loadBalancer.Discriminator).To(HaveKeyWithValue("mapping", map[string]any{
+			"RoundRobin":   "#/components/schemas/MeshLoadBalancingStrategyLoadBalancerRoundRobin",
+			"LeastRequest": "#/components/schemas/MeshLoadBalancingStrategyLoadBalancerLeastRequest",
+			"RingHash":     "#/components/schemas/MeshLoadBalancingStrategyLoadBalancerRingHash",
+			"Random":       "#/components/schemas/MeshLoadBalancingStrategyLoadBalancerRandom",
+			"Maglev":       "#/components/schemas/MeshLoadBalancingStrategyLoadBalancerMaglev",
+		}))
+		Expect(rewrite.Members["MeshLoadBalancingStrategyLoadBalancerRingHash"].Properties).To(HaveKey("ringHash"))
 	})
 })
 
@@ -313,5 +305,40 @@ var _ = Describe("variantProperty", func() {
 	It("should not resolve to the discriminator itself", func() {
 		_, ok := variantProperty(map[string]any{"type": map[string]any{}}, "Type")
 		Expect(ok).To(BeFalse())
+	})
+})
+
+var _ = Describe("Patch", func() {
+	write := func(content string) string {
+		path := filepath.Join(GinkgoT().TempDir(), "rest.yaml")
+		Expect(os.WriteFile(path, []byte(content), 0o600)).To(Succeed())
+		return path
+	}
+
+	// An already patched document has no union left to find, so running it twice
+	// must not even start yq.
+	It("should leave a document with no union alone", func() {
+		path := write("components:\n  schemas:\n    FooItem:\n      properties:\n        name:\n          type: string\n")
+
+		Expect(Patch(context.Background(), path, "/nonexistent/yq", GinkgoWriter)).To(Succeed())
+	})
+
+	It("should refuse to replace an existing schema with a member", func() {
+		path := write(`components:
+  schemas:
+    FooItem:
+      properties:
+        mode:
+          properties:
+            type: {enum: [A, B]}
+            a: {type: object}
+            b: {type: object}
+    FooModeA:
+      type: string
+`)
+
+		err := Patch(context.Background(), path, "/nonexistent/yq", GinkgoWriter)
+
+		Expect(err).To(MatchError(ContainSubstring("union member FooModeA would replace a schema of the same name")))
 	})
 })
