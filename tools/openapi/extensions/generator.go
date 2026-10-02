@@ -64,6 +64,9 @@ type wrapper struct {
 	kind string
 	// schemaName is the name the config schema takes in `components.schemas`.
 	schemaName string
+	// nodePath is the yq path of the extension node in the document being
+	// patched, set once the node has been located in it.
+	nodePath string
 }
 
 // Generate documents every registered extension in opts.Spec. It is a no-op when
@@ -189,6 +192,7 @@ func forSpec(spec map[string]any, all []wrapper) ([]wrapper, error) {
 		if err := checkExtensionPoint(spec, w.ext.Point); err != nil {
 			return nil, err
 		}
+		_, w.nodePath, _ = locate(spec, w.ext.Point)
 		kept = append(kept, w)
 	}
 	return kept, nil
@@ -203,15 +207,10 @@ func itemSchema(point core_extensions.Point) string {
 // SchemaPath would grow a plausible-looking branch nobody asked for instead of
 // reporting that the resource moved.
 func checkExtensionPoint(spec map[string]any, point core_extensions.Point) error {
-	item := itemSchema(point)
-	where := item + "." + strings.Join(point.SchemaPath, ".")
-	node, ok := dig(spec, append([]string{"components", "schemas", item}, propertyPath(point.SchemaPath)...))
+	where := itemSchema(point) + "." + strings.Join(point.SchemaPath, ".")
+	obj, _, ok := locate(spec, point)
 	if !ok {
 		return fmt.Errorf("%s does not have a %s schema to document", point.ResourceType, where)
-	}
-	obj, ok := node.(map[string]any)
-	if !ok {
-		return fmt.Errorf("%s is not an object schema", where)
 	}
 	properties, _ := obj["properties"].(map[string]any)
 	if _, ok := properties[point.Discriminator]; !ok {
@@ -236,6 +235,50 @@ func dig(node any, path []string) (any, bool) {
 		}
 	}
 	return node, true
+}
+
+// locate finds the extension node of a point in spec and the yq path addressing
+// it. A segment is looked up in `properties` and, failing that, in the branches of
+// a oneOf: tools/openapi/unions moves each variant property of a discriminated
+// union into its own branch, and an extension point can sit inside a variant
+// (MeshIdentity's `spec.provider.extension`).
+func locate(spec map[string]any, point core_extensions.Point) (map[string]any, string, bool) {
+	base := []string{"components", "schemas", itemSchema(point)}
+	node, ok := dig(spec, base)
+	if !ok {
+		return nil, "", false
+	}
+	var sb strings.Builder
+	sb.WriteString(unions.YQPath(base))
+	for _, segment := range point.SchemaPath {
+		obj, ok := node.(map[string]any)
+		if !ok {
+			return nil, "", false
+		}
+		if child, ok := dig(obj, []string{"properties", segment}); ok {
+			node = child
+			fmt.Fprintf(&sb, ".%q.%q", "properties", segment)
+			continue
+		}
+		branches, _ := obj["oneOf"].([]any)
+		found := false
+		for i, branch := range branches {
+			if child, ok := dig(branch, []string{"properties", segment}); ok {
+				node = child
+				fmt.Fprintf(&sb, ".%q[%d].%q.%q", "oneOf", i, "properties", segment)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, "", false
+		}
+	}
+	obj, ok := node.(map[string]any)
+	if !ok {
+		return nil, "", false
+	}
+	return obj, sb.String(), true
 }
 
 // propertyPath interleaves `properties` into a schema path, so {"spec", "extension"}
@@ -400,11 +443,21 @@ func patchExpression(wrappers []wrapper, schemas map[string]any) (string, error)
 		if err != nil {
 			return "", err
 		}
-		path := append([]string{"components", "schemas", itemSchema(point)}, propertyPath(point.SchemaPath)...)
-		assignments = append(assignments, fmt.Sprintf("%s.oneOf = %s", unions.YQPath(path), oneOf))
+		assignments = append(assignments, fmt.Sprintf("%s.oneOf = %s", nodePath(point, wrappers), oneOf))
 	}
 
 	return strings.Join(assignments, "\n  | ") + "\n", nil
+}
+
+// nodePath is the yq path of a point's extension node: where it was located in the
+// document, or where the point says it is when it was not looked up.
+func nodePath(point core_extensions.Point, wrappers []wrapper) string {
+	for _, w := range wrappers {
+		if w.ext.Point.ResourceType == point.ResourceType && w.nodePath != "" {
+			return w.nodePath
+		}
+	}
+	return unions.YQPath(append([]string{"components", "schemas", itemSchema(point)}, propertyPath(point.SchemaPath)...))
 }
 
 // points lists the distinct extension points in registration order.

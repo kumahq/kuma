@@ -1,6 +1,8 @@
 package unions
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -20,16 +22,11 @@ var _ = Describe("Find", func() {
 		sites := Find(loadBalancer("roundRobin", "urlRewrite"), nil)
 
 		Expect(sites).To(HaveLen(1))
-		Expect(sites[0].OneOf).To(Equal([]any{
-			map[string]any{"properties": map[string]any{
-				"type":       map[string]any{"enum": []any{"RoundRobin"}},
-				"roundRobin": map[string]any{},
-			}},
-			map[string]any{"properties": map[string]any{
-				"type":       map[string]any{"enum": []any{"URLRewrite"}},
-				"urlRewrite": map[string]any{},
-			}},
+		Expect(sites[0].Branches).To(Equal([]Branch{
+			{Value: "RoundRobin", Property: "roundRobin"},
+			{Value: "URLRewrite", Property: "urlRewrite"},
 		}))
+		Expect(sites[0].Shared).To(BeEmpty())
 	})
 
 	It("should ignore an enum whose values do not all name a sibling property", func() {
@@ -49,6 +46,42 @@ var _ = Describe("Find", func() {
 		Expect(sites).To(HaveLen(1))
 		Expect(sites[0].Path).To(Equal([]string{"properties", "properties", "spec"}))
 	})
+
+	It("should find a union nested in an array item and keep its shared properties", func() {
+		// MeshHTTPRoute nests `filters` inside `backendRefs` items.
+		filters := func() map[string]any {
+			return map[string]any{
+				"type": "array",
+				"items": map[string]any{"properties": map[string]any{
+					"type":              map[string]any{"enum": []any{"URLRewrite", "RequestMirror"}},
+					"urlRewrite":        map[string]any{"type": "object"},
+					"requestMirror":     map[string]any{"type": "object"},
+					"requestHeaderName": map[string]any{"type": "string"},
+				}},
+			}
+		}
+		schema := map[string]any{
+			"properties": map[string]any{
+				"backendRefs": map[string]any{
+					"type": "array",
+					"items": map[string]any{"properties": map[string]any{
+						"name":    map[string]any{"type": "string"},
+						"filters": filters(),
+					}},
+				},
+			},
+		}
+
+		sites := Find(schema, nil)
+
+		Expect(sites).To(HaveLen(1))
+		Expect(sites[0].Path).To(Equal([]string{"properties", "backendRefs", "items", "properties", "filters", "items"}))
+		Expect(sites[0].Branches).To(Equal([]Branch{
+			{Value: "URLRewrite", Property: "urlRewrite"},
+			{Value: "RequestMirror", Property: "requestMirror"},
+		}))
+		Expect(sites[0].Shared).To(Equal([]string{"requestHeaderName"}))
+	})
 })
 
 var _ = Describe("Assignments", func() {
@@ -61,6 +94,7 @@ var _ = Describe("Assignments", func() {
 
 	It("should render a yq assignment rooted at the base path", func() {
 		schema := map[string]any{
+			"required": []any{"type"},
 			"properties": map[string]any{
 				"type":  map[string]any{"enum": []any{"Server", "Agent"}},
 				"agent": map[string]any{"type": "object"},
@@ -74,9 +108,61 @@ var _ = Describe("Assignments", func() {
 
 		Expect(err).ToNot(HaveOccurred())
 		// The branches follow the order of the discriminator's enum, not the order
-		// the variant properties happen to be in.
-		Expect(expr).To(Equal(`."components"."schemas"."VaultConfig".oneOf = ` +
-			`[{"properties":{"server":{},"type":{"enum":["Server"]}}},{"properties":{"agent":{},"type":{"enum":["Agent"]}}}]`))
+		// the variant properties happen to be in, and copy the variant schema by
+		// path so it keeps its key order.
+		Expect(expr).To(Equal(`."components"."schemas"."VaultConfig".oneOf = [` +
+			`{"title": "Server", "type": "object", "required": ["type"], "properties": {` +
+			`"type": {"type": "string", "const": "Server"}, ` +
+			`"server": ."components"."schemas"."VaultConfig"."properties"."server"}}, ` +
+			`{"title": "Agent", "type": "object", "required": ["type"], "properties": {` +
+			`"type": {"type": "string", "const": "Agent"}, ` +
+			`"agent": ."components"."schemas"."VaultConfig"."properties"."agent"}}]` +
+			"\n  | " + `del(."components"."schemas"."VaultConfig".properties, ."components"."schemas"."VaultConfig".required)`))
+	})
+
+	It("should keep the discriminator description and the required shared properties", func() {
+		schema := map[string]any{
+			"required": []any{"type", "name"},
+			"properties": map[string]any{
+				"type": map[string]any{"description": "Type of the backend.", "enum": []any{"Tcp", "File"}},
+				"name": map[string]any{"type": "string"},
+				"tcp":  map[string]any{"type": "object"},
+				"file": map[string]any{"type": "object"},
+			},
+		}
+
+		expr, err := Assignments(schema, []string{"b"})
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(expr).To(ContainSubstring(`{"title": "Tcp", "type": "object", "required": ["type","name"], "properties": {` +
+			`"type": {"description": "Type of the backend.", "type": "string", "const": "Tcp"}, ` +
+			`"tcp": ."b"."properties"."tcp", "name": ."b"."properties"."name"}}`))
+	})
+
+	It("should rewrite nested unions before the union enclosing them", func() {
+		// MeshAccessLog nests a `format` union inside the `file` variant, so the
+		// enclosing branch has to copy the already rewritten `format`.
+		schema := map[string]any{
+			"properties": map[string]any{
+				"type": map[string]any{"enum": []any{"File", "Tcp"}},
+				"tcp":  map[string]any{"type": "object"},
+				"file": map[string]any{"properties": map[string]any{
+					"format": map[string]any{"properties": map[string]any{
+						"type":  map[string]any{"enum": []any{"Plain", "Json"}},
+						"plain": map[string]any{"type": "string"},
+						"json":  map[string]any{"type": "array"},
+					}},
+				}},
+			},
+		}
+
+		expr, err := Assignments(schema, nil)
+
+		Expect(err).ToNot(HaveOccurred())
+		inner := strings.Index(expr, `."properties"."file"."properties"."format".oneOf = `)
+		outer := strings.Index(expr, "\n  | .oneOf = ")
+		Expect(inner).To(BeNumerically(">=", 0))
+		Expect(outer).To(BeNumerically(">", inner))
 	})
 })
 

@@ -16,9 +16,9 @@ var _ = Describe("generated schema", func() {
 		contents, err := os.ReadFile("rest.yaml")
 		Expect(err).ToNot(HaveOccurred())
 
-		// Each branch pairs a type with the property it selects, so consumers do
-		// not have to infer the mapping.
-		Expect(string(contents)).To(MatchRegexp(`(?s)oneOf:.*roundRobin: \{\}.*- RoundRobin`))
+		// Each branch pins a type with const and holds only the property it
+		// selects, so consumers do not have to infer the mapping.
+		Expect(string(contents)).To(MatchRegexp(`(?s)oneOf:.*title: RoundRobin.*const: RoundRobin.*roundRobin:`))
 	})
 })
 
