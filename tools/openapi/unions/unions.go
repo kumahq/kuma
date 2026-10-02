@@ -77,8 +77,11 @@ func unionOneOf(obj map[string]any) ([]any, bool) {
 		// The variant is matched as an unconstrained schema: the branch records
 		// which property the value selects without making it required, so a
 		// variant that carries no configuration can still be written as just
-		// `type: <value>`.
+		// `type: <value>`. The title names the branch after its value, so
+		// generators that name inline oneOf members by title (Speakeasy) do not
+		// fall back to positional names.
 		oneOf = append(oneOf, map[string]any{
+			"title": name,
 			"properties": map[string]any{
 				"type":  map[string]any{"enum": []any{name}},
 				variant: map[string]any{},
