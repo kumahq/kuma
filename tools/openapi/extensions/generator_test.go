@@ -175,6 +175,49 @@ var _ = Describe("checkExtensionPoint", func() {
 	)
 })
 
+var _ = Describe("locate", func() {
+	It("should address an extension node through the properties of its parents", func() {
+		_, path, ok := locate(specWithExtensionPoint(), fakePoint)
+
+		Expect(ok).To(BeTrue())
+		Expect(path).To(Equal(`."components"."schemas"."FakeResourceItem"."properties"."spec"."properties"."extension"`))
+	})
+
+	It("should descend into the union branch holding the next segment", func() {
+		// tools/openapi/unions moves each variant property of a union into its own
+		// oneOf branch, as with MeshIdentity's `spec.provider.extension`.
+		var spec map[string]any
+		Expect(yaml.Unmarshal([]byte(`
+components:
+  schemas:
+    FakeResourceItem:
+      properties:
+        spec:
+          properties:
+            provider:
+              oneOf:
+                - properties:
+                    type: {const: Bundled}
+                    bundled: {type: object}
+                - properties:
+                    type: {const: Extension}
+                    extension:
+                      properties:
+                        type: {type: string}
+                        config: {}
+`), &spec)).To(Succeed())
+		point := fakePoint
+		point.SchemaPath = []string{"spec", "provider", "extension"}
+
+		node, path, ok := locate(spec, point)
+
+		Expect(ok).To(BeTrue())
+		Expect(node).To(HaveKey("properties"))
+		Expect(path).To(Equal(`."components"."schemas"."FakeResourceItem"."properties"."spec"."properties"."provider"."oneOf"[1]."properties"."extension"`))
+		Expect(checkExtensionPoint(spec, point)).To(Succeed())
+	})
+})
+
 var _ = Describe("propertyPath", func() {
 	It("should interleave properties so a schema path addresses a real node", func() {
 		Expect(propertyPath([]string{"spec", "provider", "extension"})).To(Equal(

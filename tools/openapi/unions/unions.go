@@ -4,7 +4,8 @@
 // Kuma models a union as a `type` discriminator plus one optional property per
 // variant. controller-gen emits those variants as unrelated siblings, so nothing
 // in the spec says which property a given `type` selects and consumers have to
-// hardcode the mapping. Describing them with a oneOf removes the guesswork.
+// hardcode the mapping. Describing them with a oneOf of closed variants removes
+// the guesswork.
 package unions
 
 import (
@@ -24,8 +25,24 @@ import (
 type Site struct {
 	// Path is the sequence of map keys leading to the node, for a yq assignment.
 	Path []string
-	// OneOf pairs each discriminator value with the property it selects.
-	OneOf []any
+	// Branches pairs each discriminator value with the property it selects, in
+	// the order of the discriminator's enum.
+	Branches []Branch
+	// Shared lists the sibling properties that belong to no variant, which every
+	// branch keeps.
+	Shared []string
+	// Required lists the node's required properties, which every branch keeps.
+	Required []string
+	// Description is the description of the `type` property, if any.
+	Description string
+}
+
+// Branch is one variant of a discriminated union.
+type Branch struct {
+	// Value is the discriminator value selecting the variant.
+	Value string
+	// Property is the sibling property holding the variant's configuration.
+	Property string
 }
 
 // Find walks a schema and reports every discriminated union, prefixing each
@@ -41,8 +58,9 @@ func Find(node any, base []string) []Site {
 	}
 
 	var sites []Site
-	if oneOf, ok := unionOneOf(obj); ok {
-		sites = append(sites, Site{Path: append([]string{}, base...), OneOf: oneOf})
+	if site, ok := union(obj); ok {
+		site.Path = append([]string{}, base...)
+		sites = append(sites, site)
 	}
 	for key, child := range obj {
 		sites = append(sites, Find(child, append(base, key))...)
@@ -50,45 +68,49 @@ func Find(node any, base []string) []Site {
 	return sites
 }
 
-func unionOneOf(obj map[string]any) ([]any, bool) {
+func union(obj map[string]any) (Site, bool) {
 	properties, ok := obj["properties"].(map[string]any)
 	if !ok {
-		return nil, false
+		return Site{}, false
 	}
 	discriminator, ok := properties["type"].(map[string]any)
 	if !ok {
-		return nil, false
+		return Site{}, false
 	}
 	values, ok := discriminator["enum"].([]any)
 	if !ok || len(values) < 2 {
-		return nil, false
+		return Site{}, false
 	}
 
-	oneOf := make([]any, 0, len(values))
+	site := Site{Branches: make([]Branch, 0, len(values))}
+	variants := map[string]bool{"type": true}
 	for _, value := range values {
 		name, ok := value.(string)
 		if !ok {
-			return nil, false
+			return Site{}, false
 		}
 		variant, ok := variantProperty(properties, name)
 		if !ok {
-			return nil, false
+			return Site{}, false
 		}
-		// The variant is matched as an unconstrained schema: the branch records
-		// which property the value selects without making it required, so a
-		// variant that carries no configuration can still be written as just
-		// `type: <value>`. The title names the branch after its value, so
-		// generators that name inline oneOf members by title (Speakeasy) do not
-		// fall back to positional names.
-		oneOf = append(oneOf, map[string]any{
-			"title": name,
-			"properties": map[string]any{
-				"type":  map[string]any{"enum": []any{name}},
-				variant: map[string]any{},
-			},
-		})
+		site.Branches = append(site.Branches, Branch{Value: name, Property: variant})
+		variants[variant] = true
 	}
-	return oneOf, true
+	for key := range properties {
+		if !variants[key] {
+			site.Shared = append(site.Shared, key)
+		}
+	}
+	sort.Strings(site.Shared)
+	if required, ok := obj["required"].([]any); ok {
+		for _, r := range required {
+			if name, ok := r.(string); ok && name != "type" {
+				site.Required = append(site.Required, name)
+			}
+		}
+	}
+	site.Description, _ = discriminator["description"].(string)
+	return site, true
 }
 
 // variantProperty resolves a discriminator value to the sibling property holding
@@ -157,31 +179,84 @@ func CRDProperties(crdPath string) (map[string]any, error) {
 	return crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties, nil
 }
 
-// Assignments renders a yq expression adding a oneOf to every discriminated union
-// in the schema, with each path prefixed by base.
+// Assignments renders a yq expression replacing every discriminated union in the
+// schema with a oneOf, with each path prefixed by base.
+//
+// Each branch is a closed variant: `type` pinned with `const` plus only the
+// property that value selects (and any properties shared by all variants). The
+// union node keeps no `properties` of its own, otherwise generators merge them
+// into every branch and the branches become indistinguishable. Generators that
+// name inline oneOf members by title (Speakeasy) get a name per branch, and the
+// const lets them tell the branches apart when decoding. A variant that carries
+// no configuration can still be written as just `type: <value>`, since only
+// `type` is required.
 //
 // The unions are found in the parsed schema rather than in the file being edited
 // so the assignments can be appended to the yq call that writes it: that keeps the
 // generated file's key order intact, which marshaling the whole document through
-// Go would not.
+// Go would not. The variant schemas are copied by path for the same reason, so
+// the deepest unions are rewritten first and an enclosing union copies the
+// rewritten form.
 func Assignments(schema any, base []string) (string, error) {
 	sites := Find(schema, base)
 	if len(sites) == 0 {
 		return "", nil
 	}
 	sort.Slice(sites, func(i, j int) bool {
+		if len(sites[i].Path) != len(sites[j].Path) {
+			return len(sites[i].Path) > len(sites[j].Path)
+		}
 		return strings.Join(sites[i].Path, ".") < strings.Join(sites[j].Path, ".")
 	})
 
 	assignments := make([]string, 0, len(sites))
 	for _, site := range sites {
-		encoded, err := json.Marshal(site.OneOf)
+		oneOf, err := site.oneOf()
 		if err != nil {
 			return "", err
 		}
-		assignments = append(assignments, fmt.Sprintf("%s.oneOf = %s", YQPath(site.Path), encoded))
+		path := YQPath(site.Path)
+		assignments = append(assignments,
+			fmt.Sprintf("%s.oneOf = %s", path, oneOf),
+			fmt.Sprintf("del(%s.properties, %s.required)", path, path),
+		)
 	}
 	return strings.Join(assignments, "\n  | "), nil
+}
+
+// oneOf renders the site's branches as a yq array expression.
+func (s Site) oneOf() (string, error) {
+	required, err := json.Marshal(append([]string{"type"}, s.Required...))
+	if err != nil {
+		return "", err
+	}
+	properties := YQPath(append(append([]string{}, s.Path...), "properties"))
+	branches := make([]string, 0, len(s.Branches))
+	for _, b := range s.Branches {
+		value, err := json.Marshal(b.Value)
+		if err != nil {
+			return "", err
+		}
+		discriminator := fmt.Sprintf(`{"type": "string", "const": %s}`, value)
+		if s.Description != "" {
+			description, err := json.Marshal(s.Description)
+			if err != nil {
+				return "", err
+			}
+			discriminator = fmt.Sprintf(`{"description": %s, "type": "string", "const": %s}`, description, value)
+		}
+		fields := []string{fmt.Sprintf(`"type": %s`, discriminator)}
+		for _, name := range append([]string{b.Property}, s.Shared...) {
+			key, err := json.Marshal(name)
+			if err != nil {
+				return "", err
+			}
+			fields = append(fields, fmt.Sprintf("%s: %s%s", key, properties, YQPath([]string{name})))
+		}
+		branches = append(branches, fmt.Sprintf(`{"title": %s, "type": "object", "required": %s, "properties": {%s}}`,
+			value, required, strings.Join(fields, ", ")))
+	}
+	return "[" + strings.Join(branches, ", ") + "]", nil
 }
 
 // YQPath renders map keys as a yq path expression.
