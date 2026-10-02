@@ -897,6 +897,14 @@ zoneProxyImage:
 # meshes[].ingress.service or meshes[].egress.service fields are not set.
 meshZoneProxyDefaults:
   ingress:
+    # -- Seconds a terminating zone ingress keeps serving before shutdown, applied as a
+    # preStop sleep hook. Remote zones reach a zone ingress through its Service, and
+    # the load balancer and kube-proxy stop routing to a terminating pod only after
+    # they observe the endpoint change, so a pod that goes away sooner drops the
+    # cross-zone requests still landing on it. Raise this if your load balancer
+    # deregisters targets slowly. Must be lower than terminationGracePeriodSeconds,
+    # otherwise the chart fails to render. Set to 0 to drop the hook.
+    preStopSleepSeconds: 20
     service:
       # -- Default Service type for zone ingress.
       type: LoadBalancer
@@ -933,6 +941,10 @@ meshes:
     ingress:
       # -- Deploy a zone ingress for this mesh.
       enabled: false
+      # -- (int) Per-mesh override for the preStop sleep duration. Falls back to
+      # meshZoneProxyDefaults.ingress.preStopSleepSeconds when unset. Set to 0 to
+      # drop the hook.
+      preStopSleepSeconds:
       # -- Per-mesh override for the pause container image. Falls back to
       # .Values.zoneProxyImage when unset. Partial overrides inherit the
       # remaining registry/repository/tag fields from the chart-level default.

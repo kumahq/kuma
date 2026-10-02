@@ -1,4 +1,5 @@
-# mesh-1 overrides the preStop sleep, mesh-2 drops the hook entirely.
+# mesh-1 overrides the egress preStop sleep and keeps the ingress default,
+# mesh-2 drops both hooks entirely.
 meshes:
   - name: mesh-1
     ingress:
@@ -21,6 +22,7 @@ meshes:
   - name: mesh-2
     ingress:
       enabled: true
+      preStopSleepSeconds: 0
       deployment:
         replicas: 1
       image:

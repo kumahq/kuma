@@ -355,6 +355,15 @@ controlPlane:
 			},
 			errorMsg: "meshes[default].egress.deployment.podAnnotations: kuma.io/reachable-backends is set by the chart",
 		}),
+		Entry("ingress preStopSleepSeconds not lower than terminationGracePeriodSeconds", errTestCase{
+			extraArgs: []string{
+				"--set", "meshes[0].name=default",
+				"--set", "meshes[0].ingress.enabled=true",
+				"--set", "meshes[0].ingress.terminationGracePeriodSeconds=10",
+				"--set", "meshes[0].ingress.preStopSleepSeconds=30",
+			},
+			errorMsg: "meshes[default].ingress: preStopSleepSeconds (30) must be lower than terminationGracePeriodSeconds (10)",
+		}),
 		Entry("with unexpected image tag", errTestCase{
 			extraArgs: []string{"--set", "global.image.tag=1.5.0"},
 			errorMsg:  "only supports",
