@@ -175,10 +175,52 @@ var _ = Describe("checkExtensionPoint", func() {
 	)
 })
 
-var _ = Describe("propertyPath", func() {
+var _ = Describe("extensionPointPath", func() {
+	// MeshIdentity's extension point is the config of one variant of the provider
+	// union, whose node only refers to its members.
+	It("should follow a discriminated union into the member that has the property", func() {
+		var spec map[string]any
+		Expect(yaml.Unmarshal([]byte(`
+components:
+  schemas:
+    FakeResourceItem:
+      properties:
+        spec:
+          properties:
+            provider:
+              oneOf:
+                - $ref: '#/components/schemas/FakeResourceProviderBuiltin'
+                - $ref: '#/components/schemas/FakeResourceProviderExtension'
+              discriminator:
+                propertyName: type
+    FakeResourceProviderBuiltin:
+      properties:
+        type: {enum: [Builtin]}
+        builtin: {type: object}
+    FakeResourceProviderExtension:
+      properties:
+        type: {enum: [Extension]}
+        extension:
+          type: object
+          properties:
+            type: {type: string}
+            config: {x-kubernetes-preserve-unknown-fields: true}
+`), &spec)).To(Succeed())
+		point := fakePoint
+		point.SchemaPath = []string{"spec", "provider", "extension"}
+
+		path, err := extensionPointPath(spec, point)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(path).To(Equal([]string{"components", "schemas", "FakeResourceProviderExtension", "properties", "extension"}))
+		Expect(checkExtensionPoint(spec, point)).To(Succeed())
+	})
+
 	It("should interleave properties so a schema path addresses a real node", func() {
-		Expect(propertyPath([]string{"spec", "provider", "extension"})).To(Equal(
-			[]string{"properties", "spec", "properties", "provider", "properties", "extension"}))
+		path, err := extensionPointPath(specWithExtensionPoint(), fakePoint)
+
+		Expect(err).ToNot(HaveOccurred())
+		Expect(path).To(Equal([]string{"components", "schemas", "FakeResourceItem", "properties", "spec", "properties", "extension"}))
 	})
 })
 
@@ -212,7 +254,7 @@ var _ = Describe("patchExpression", func() {
 	It("should add the config schema and point the extension node at it", func() {
 		schemas := map[string]any{"FakeResourceRoute53": map[string]any{"type": "object"}}
 
-		expr, err := patchExpression(fakeWrappers("Route53"), schemas)
+		expr, err := patchExpression(specWithExtensionPoint(), fakeWrappers("Route53"), schemas)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(expr).To(matchers.MatchGoldenEqual(golden("patch-expression.golden.yq")))
@@ -229,7 +271,7 @@ var _ = Describe("patchExpression", func() {
 			},
 		}}
 
-		expr, err := patchExpression(fakeWrappers("vault"), schemas)
+		expr, err := patchExpression(specWithExtensionPoint(), fakeWrappers("vault"), schemas)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(expr).To(matchers.MatchGoldenEqual(golden("patch-expression-union.golden.yq")))

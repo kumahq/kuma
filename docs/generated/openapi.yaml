@@ -7486,6 +7486,200 @@ components:
         - type
         - name
       type: object
+    MeshAccessLogFormatJson:
+      title: Json
+      type: object
+      required:
+        - type
+      properties:
+        json:
+          example:
+            - key: start_time
+              value: '%START_TIME%'
+            - key: bytes_received
+              value: '%BYTES_RECEIVED%'
+          items:
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+            required:
+              - key
+              - value
+            type: object
+          type: array
+        omitEmptyValues:
+          default: false
+          type: boolean
+        type:
+          enum:
+            - Json
+          type: string
+    MeshAccessLogFormatPlain:
+      title: Plain
+      type: object
+      required:
+        - type
+      properties:
+        omitEmptyValues:
+          default: false
+          type: boolean
+        plain:
+          example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+          type: string
+        type:
+          enum:
+            - Plain
+          type: string
+    MeshAccessLogBackendFile:
+      title: File
+      type: object
+      required:
+        - type
+      properties:
+        file:
+          description: FileBackend defines configuration for file based access logs
+          properties:
+            format:
+              description: >-
+                Format of access logs. Placeholders available on
+
+                https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+              discriminator:
+                mapping:
+                  Json: '#/components/schemas/MeshAccessLogFormatJson'
+                  Plain: '#/components/schemas/MeshAccessLogFormatPlain'
+                propertyName: type
+              oneOf:
+                - $ref: '#/components/schemas/MeshAccessLogFormatPlain'
+                - $ref: '#/components/schemas/MeshAccessLogFormatJson'
+            path:
+              description: Path to a file that logs will be written to
+              example: /tmp/access.log
+              minLength: 1
+              type: string
+          required:
+            - path
+          type: object
+        type:
+          enum:
+            - File
+          type: string
+    MeshAccessLogBackendOpenTelemetry:
+      title: OpenTelemetry
+      type: object
+      required:
+        - type
+      properties:
+        openTelemetry:
+          description: Defines an OpenTelemetry logging backend.
+          properties:
+            attributes:
+              description: >-
+                Attributes defines custom OpenTelemetry attributes. Keys must be
+                static
+
+                OpenTelemetry attribute names. Values can contain placeholders
+                available on
+
+                https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+              example:
+                - key: mesh
+                  value: '%KUMA_MESH%'
+              items:
+                properties:
+                  key:
+                    description: Key is the OpenTelemetry attribute name.
+                    pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
+                    type: string
+                  value:
+                    description: Value can contain Kuma placeholders.
+                    type: string
+                required:
+                  - key
+                  - value
+                type: object
+              type: array
+            backendRef:
+              description: >-
+                BackendRef is a reference to a MeshOpenTelemetryBackend resource
+                that
+
+                defines the collector endpoint.
+              properties:
+                kind:
+                  description: Kind of the backend resource.
+                  enum:
+                    - MeshOpenTelemetryBackend
+                  type: string
+                labels:
+                  additionalProperties:
+                    type: string
+                  description: >-
+                    Labels to match the referenced resource. When multiple
+                    resources match,
+
+                    the oldest by creation time wins.
+                  type: object
+              required:
+                - kind
+              type: object
+            body:
+              description: >-
+                Body is a raw string or an OTLP any value as described at
+
+                https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
+
+                It can contain placeholders available on
+
+                https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+              example:
+                kvlistValue:
+                  values:
+                    - key: mesh
+                      value:
+                        stringValue: '%KUMA_MESH%'
+              x-kubernetes-preserve-unknown-fields: true
+          type: object
+        type:
+          enum:
+            - OpenTelemetry
+          type: string
+    MeshAccessLogBackendTcp:
+      title: Tcp
+      type: object
+      required:
+        - type
+      properties:
+        tcp:
+          description: TCPBackend defines a TCP logging backend.
+          properties:
+            address:
+              description: Address of the TCP logging backend
+              example: 127.0.0.1:5000
+              minLength: 1
+              type: string
+            format:
+              description: >-
+                Format of access logs. Placeholders available on
+
+                https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+              discriminator:
+                mapping:
+                  Json: '#/components/schemas/MeshAccessLogFormatJson'
+                  Plain: '#/components/schemas/MeshAccessLogFormatPlain'
+                propertyName: type
+              oneOf:
+                - $ref: '#/components/schemas/MeshAccessLogFormatPlain'
+                - $ref: '#/components/schemas/MeshAccessLogFormatJson'
+          required:
+            - address
+          type: object
+        type:
+          enum:
+            - Tcp
+          type: string
     MeshAccessLogItem:
       type: object
       description: >-
@@ -7543,229 +7737,18 @@ components:
                     properties:
                       backends:
                         items:
-                          properties:
-                            file:
-                              description: >-
-                                FileBackend defines configuration for file based
-                                access logs
-                              properties:
-                                format:
-                                  description: >-
-                                    Format of access logs. Placeholders
-                                    available on
-
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  properties:
-                                    json:
-                                      example:
-                                        - key: start_time
-                                          value: '%START_TIME%'
-                                        - key: bytes_received
-                                          value: '%BYTES_RECEIVED%'
-                                      items:
-                                        properties:
-                                          key:
-                                            type: string
-                                          value:
-                                            type: string
-                                        required:
-                                          - key
-                                          - value
-                                        type: object
-                                      type: array
-                                    omitEmptyValues:
-                                      default: false
-                                      type: boolean
-                                    plain:
-                                      example: >-
-                                        [%START_TIME%] %KUMA_MESH%
-                                        %UPSTREAM_HOST%
-                                      type: string
-                                    type:
-                                      enum:
-                                        - Plain
-                                        - Json
-                                      type: string
-                                  required:
-                                    - type
-                                  type: object
-                                  oneOf:
-                                    - properties:
-                                        plain: {}
-                                        type:
-                                          enum:
-                                            - Plain
-                                    - properties:
-                                        json: {}
-                                        type:
-                                          enum:
-                                            - Json
-                                path:
-                                  description: Path to a file that logs will be written to
-                                  example: /tmp/access.log
-                                  minLength: 1
-                                  type: string
-                              required:
-                                - path
-                              type: object
-                            openTelemetry:
-                              description: Defines an OpenTelemetry logging backend.
-                              properties:
-                                attributes:
-                                  description: >-
-                                    Attributes defines custom OpenTelemetry
-                                    attributes. Keys must be static
-
-                                    OpenTelemetry attribute names. Values can
-                                    contain placeholders available on
-
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  example:
-                                    - key: mesh
-                                      value: '%KUMA_MESH%'
-                                  items:
-                                    properties:
-                                      key:
-                                        description: Key is the OpenTelemetry attribute name.
-                                        pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
-                                        type: string
-                                      value:
-                                        description: Value can contain Kuma placeholders.
-                                        type: string
-                                    required:
-                                      - key
-                                      - value
-                                    type: object
-                                  type: array
-                                backendRef:
-                                  description: >-
-                                    BackendRef is a reference to a
-                                    MeshOpenTelemetryBackend resource that
-
-                                    defines the collector endpoint.
-                                  properties:
-                                    kind:
-                                      description: Kind of the backend resource.
-                                      enum:
-                                        - MeshOpenTelemetryBackend
-                                      type: string
-                                    labels:
-                                      additionalProperties:
-                                        type: string
-                                      description: >-
-                                        Labels to match the referenced resource.
-                                        When multiple resources match,
-
-                                        the oldest by creation time wins.
-                                      type: object
-                                  required:
-                                    - kind
-                                  type: object
-                                body:
-                                  description: >-
-                                    Body is a raw string or an OTLP any value as
-                                    described at
-
-                                    https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
-
-                                    It can contain placeholders available on
-
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  example:
-                                    kvlistValue:
-                                      values:
-                                        - key: mesh
-                                          value:
-                                            stringValue: '%KUMA_MESH%'
-                                  x-kubernetes-preserve-unknown-fields: true
-                              type: object
-                            tcp:
-                              description: TCPBackend defines a TCP logging backend.
-                              properties:
-                                address:
-                                  description: Address of the TCP logging backend
-                                  example: 127.0.0.1:5000
-                                  minLength: 1
-                                  type: string
-                                format:
-                                  description: >-
-                                    Format of access logs. Placeholders
-                                    available on
-
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  properties:
-                                    json:
-                                      example:
-                                        - key: start_time
-                                          value: '%START_TIME%'
-                                        - key: bytes_received
-                                          value: '%BYTES_RECEIVED%'
-                                      items:
-                                        properties:
-                                          key:
-                                            type: string
-                                          value:
-                                            type: string
-                                        required:
-                                          - key
-                                          - value
-                                        type: object
-                                      type: array
-                                    omitEmptyValues:
-                                      default: false
-                                      type: boolean
-                                    plain:
-                                      example: >-
-                                        [%START_TIME%] %KUMA_MESH%
-                                        %UPSTREAM_HOST%
-                                      type: string
-                                    type:
-                                      enum:
-                                        - Plain
-                                        - Json
-                                      type: string
-                                  required:
-                                    - type
-                                  type: object
-                                  oneOf:
-                                    - properties:
-                                        plain: {}
-                                        type:
-                                          enum:
-                                            - Plain
-                                    - properties:
-                                        json: {}
-                                        type:
-                                          enum:
-                                            - Json
-                              required:
-                                - address
-                              type: object
-                            type:
-                              enum:
-                                - Tcp
-                                - File
-                                - OpenTelemetry
-                              type: string
-                          required:
-                            - type
-                          type: object
                           oneOf:
-                            - properties:
-                                tcp: {}
-                                type:
-                                  enum:
-                                    - Tcp
-                            - properties:
-                                file: {}
-                                type:
-                                  enum:
-                                    - File
-                            - properties:
-                                openTelemetry: {}
-                                type:
-                                  enum:
-                                    - OpenTelemetry
+                            - $ref: '#/components/schemas/MeshAccessLogBackendTcp'
+                            - $ref: '#/components/schemas/MeshAccessLogBackendFile'
+                            - $ref: >-
+                                #/components/schemas/MeshAccessLogBackendOpenTelemetry
+                          discriminator:
+                            mapping:
+                              File: '#/components/schemas/MeshAccessLogBackendFile'
+                              OpenTelemetry: >-
+                                #/components/schemas/MeshAccessLogBackendOpenTelemetry
+                              Tcp: '#/components/schemas/MeshAccessLogBackendTcp'
+                            propertyName: type
                         type: array
                     type: object
                   matches:
@@ -7883,229 +7866,18 @@ components:
                     properties:
                       backends:
                         items:
-                          properties:
-                            file:
-                              description: >-
-                                FileBackend defines configuration for file based
-                                access logs
-                              properties:
-                                format:
-                                  description: >-
-                                    Format of access logs. Placeholders
-                                    available on
-
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  properties:
-                                    json:
-                                      example:
-                                        - key: start_time
-                                          value: '%START_TIME%'
-                                        - key: bytes_received
-                                          value: '%BYTES_RECEIVED%'
-                                      items:
-                                        properties:
-                                          key:
-                                            type: string
-                                          value:
-                                            type: string
-                                        required:
-                                          - key
-                                          - value
-                                        type: object
-                                      type: array
-                                    omitEmptyValues:
-                                      default: false
-                                      type: boolean
-                                    plain:
-                                      example: >-
-                                        [%START_TIME%] %KUMA_MESH%
-                                        %UPSTREAM_HOST%
-                                      type: string
-                                    type:
-                                      enum:
-                                        - Plain
-                                        - Json
-                                      type: string
-                                  required:
-                                    - type
-                                  type: object
-                                  oneOf:
-                                    - properties:
-                                        plain: {}
-                                        type:
-                                          enum:
-                                            - Plain
-                                    - properties:
-                                        json: {}
-                                        type:
-                                          enum:
-                                            - Json
-                                path:
-                                  description: Path to a file that logs will be written to
-                                  example: /tmp/access.log
-                                  minLength: 1
-                                  type: string
-                              required:
-                                - path
-                              type: object
-                            openTelemetry:
-                              description: Defines an OpenTelemetry logging backend.
-                              properties:
-                                attributes:
-                                  description: >-
-                                    Attributes defines custom OpenTelemetry
-                                    attributes. Keys must be static
-
-                                    OpenTelemetry attribute names. Values can
-                                    contain placeholders available on
-
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  example:
-                                    - key: mesh
-                                      value: '%KUMA_MESH%'
-                                  items:
-                                    properties:
-                                      key:
-                                        description: Key is the OpenTelemetry attribute name.
-                                        pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
-                                        type: string
-                                      value:
-                                        description: Value can contain Kuma placeholders.
-                                        type: string
-                                    required:
-                                      - key
-                                      - value
-                                    type: object
-                                  type: array
-                                backendRef:
-                                  description: >-
-                                    BackendRef is a reference to a
-                                    MeshOpenTelemetryBackend resource that
-
-                                    defines the collector endpoint.
-                                  properties:
-                                    kind:
-                                      description: Kind of the backend resource.
-                                      enum:
-                                        - MeshOpenTelemetryBackend
-                                      type: string
-                                    labels:
-                                      additionalProperties:
-                                        type: string
-                                      description: >-
-                                        Labels to match the referenced resource.
-                                        When multiple resources match,
-
-                                        the oldest by creation time wins.
-                                      type: object
-                                  required:
-                                    - kind
-                                  type: object
-                                body:
-                                  description: >-
-                                    Body is a raw string or an OTLP any value as
-                                    described at
-
-                                    https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
-
-                                    It can contain placeholders available on
-
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  example:
-                                    kvlistValue:
-                                      values:
-                                        - key: mesh
-                                          value:
-                                            stringValue: '%KUMA_MESH%'
-                                  x-kubernetes-preserve-unknown-fields: true
-                              type: object
-                            tcp:
-                              description: TCPBackend defines a TCP logging backend.
-                              properties:
-                                address:
-                                  description: Address of the TCP logging backend
-                                  example: 127.0.0.1:5000
-                                  minLength: 1
-                                  type: string
-                                format:
-                                  description: >-
-                                    Format of access logs. Placeholders
-                                    available on
-
-                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
-                                  properties:
-                                    json:
-                                      example:
-                                        - key: start_time
-                                          value: '%START_TIME%'
-                                        - key: bytes_received
-                                          value: '%BYTES_RECEIVED%'
-                                      items:
-                                        properties:
-                                          key:
-                                            type: string
-                                          value:
-                                            type: string
-                                        required:
-                                          - key
-                                          - value
-                                        type: object
-                                      type: array
-                                    omitEmptyValues:
-                                      default: false
-                                      type: boolean
-                                    plain:
-                                      example: >-
-                                        [%START_TIME%] %KUMA_MESH%
-                                        %UPSTREAM_HOST%
-                                      type: string
-                                    type:
-                                      enum:
-                                        - Plain
-                                        - Json
-                                      type: string
-                                  required:
-                                    - type
-                                  type: object
-                                  oneOf:
-                                    - properties:
-                                        plain: {}
-                                        type:
-                                          enum:
-                                            - Plain
-                                    - properties:
-                                        json: {}
-                                        type:
-                                          enum:
-                                            - Json
-                              required:
-                                - address
-                              type: object
-                            type:
-                              enum:
-                                - Tcp
-                                - File
-                                - OpenTelemetry
-                              type: string
-                          required:
-                            - type
-                          type: object
                           oneOf:
-                            - properties:
-                                tcp: {}
-                                type:
-                                  enum:
-                                    - Tcp
-                            - properties:
-                                file: {}
-                                type:
-                                  enum:
-                                    - File
-                            - properties:
-                                openTelemetry: {}
-                                type:
-                                  enum:
-                                    - OpenTelemetry
+                            - $ref: '#/components/schemas/MeshAccessLogBackendTcp'
+                            - $ref: '#/components/schemas/MeshAccessLogBackendFile'
+                            - $ref: >-
+                                #/components/schemas/MeshAccessLogBackendOpenTelemetry
+                          discriminator:
+                            mapping:
+                              File: '#/components/schemas/MeshAccessLogBackendFile'
+                              OpenTelemetry: >-
+                                #/components/schemas/MeshAccessLogBackendOpenTelemetry
+                              Tcp: '#/components/schemas/MeshAccessLogBackendTcp'
+                            propertyName: type
                         type: array
                     type: object
                   targetRef:
@@ -9716,6 +9488,328 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '1901-01-01T00:00:00.000Z'
+    MeshHTTPRouteFilterRequestHeaderModifier:
+      title: RequestHeaderModifier
+      type: object
+      required:
+        - type
+      properties:
+        requestHeaderModifier:
+          description: >-
+            Only one action is supported per header name.
+
+            Configuration to set or add multiple values for a header must use
+            RFC 7230
+
+            header value formatting, separating each value with a comma.
+          properties:
+            add:
+              items:
+                properties:
+                  name:
+                    maxLength: 256
+                    minLength: 1
+                    pattern: ^[a-z0-9!#$%\u0026'*+\-.^_\x60|~]+$
+                    type: string
+                  value:
+                    type: string
+                required:
+                  - name
+                  - value
+                type: object
+              maxItems: 16
+              type: array
+              x-kubernetes-list-map-keys:
+                - name
+              x-kubernetes-list-type: map
+            remove:
+              items:
+                type: string
+              maxItems: 16
+              type: array
+            set:
+              items:
+                properties:
+                  name:
+                    maxLength: 256
+                    minLength: 1
+                    pattern: ^[a-z0-9!#$%\u0026'*+\-.^_\x60|~]+$
+                    type: string
+                  value:
+                    type: string
+                required:
+                  - name
+                  - value
+                type: object
+              maxItems: 16
+              type: array
+              x-kubernetes-list-map-keys:
+                - name
+              x-kubernetes-list-type: map
+          type: object
+        type:
+          enum:
+            - RequestHeaderModifier
+          type: string
+    MeshHTTPRouteFilterRequestMirror:
+      title: RequestMirror
+      type: object
+      required:
+        - type
+      properties:
+        requestMirror:
+          properties:
+            backendRef:
+              description: BackendRef defines the destination traffic is routed to.
+              properties:
+                kind:
+                  description: Kind of the referenced resource
+                  enum:
+                    - MeshService
+                    - MeshExternalService
+                    - MeshMultiZoneService
+                  type: string
+                labels:
+                  additionalProperties:
+                    type: string
+                  description: Labels are used to select the referenced real resource.
+                  type: object
+                port:
+                  description: >-
+                    Port is only supported when this ref refers to a real
+                    MeshService object
+                  format: int32
+                  type: integer
+                sectionName:
+                  description: >-
+                    SectionName is used to target a specific section of the
+                    resource.
+
+                    For example, you can target a port from MeshService.ports[]
+                    by its name.
+                  type: string
+                weight:
+                  maximum: 4294967295
+                  minimum: 0
+                  type: integer
+              required:
+                - kind
+              type: object
+            percentage:
+              anyOf:
+                - type: integer
+                - type: string
+              description: |-
+                Percentage of requests to mirror. If not specified, all requests
+                to the target cluster will be mirrored.
+              x-kubernetes-int-or-string: true
+          required:
+            - backendRef
+          type: object
+        type:
+          enum:
+            - RequestMirror
+          type: string
+    MeshHTTPRoutePathReplaceFullPath:
+      title: ReplaceFullPath
+      type: object
+      required:
+        - type
+      properties:
+        replaceFullPath:
+          type: string
+        type:
+          enum:
+            - ReplaceFullPath
+          type: string
+    MeshHTTPRoutePathReplacePrefixMatch:
+      title: ReplacePrefixMatch
+      type: object
+      required:
+        - type
+      properties:
+        replacePrefixMatch:
+          type: string
+        type:
+          enum:
+            - ReplacePrefixMatch
+          type: string
+    MeshHTTPRouteFilterRequestRedirect:
+      title: RequestRedirect
+      type: object
+      required:
+        - type
+      properties:
+        requestRedirect:
+          properties:
+            hostname:
+              description: >-
+                PreciseHostname is the fully qualified domain name of a network
+                host. This
+
+                matches the RFC 1123 definition of a hostname with 1 notable
+                exception that
+
+                numeric IP addresses are not allowed.
+
+
+                Note that as per RFC1035 and RFC1123, a *label* must consist of
+                lower case
+
+                alphanumeric characters or '-', and must start and end with an
+                alphanumeric
+
+                character. No other punctuation is allowed.
+              maxLength: 253
+              minLength: 1
+              pattern: >-
+                ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+              type: string
+            path:
+              description: >-
+                Path defines parameters used to modify the path of the incoming
+                request.
+
+                The modified path is then used to construct the location header.
+
+                When empty, the request path is used as-is.
+              discriminator:
+                mapping:
+                  ReplaceFullPath: '#/components/schemas/MeshHTTPRoutePathReplaceFullPath'
+                  ReplacePrefixMatch: '#/components/schemas/MeshHTTPRoutePathReplacePrefixMatch'
+                propertyName: type
+              oneOf:
+                - $ref: '#/components/schemas/MeshHTTPRoutePathReplaceFullPath'
+                - $ref: '#/components/schemas/MeshHTTPRoutePathReplacePrefixMatch'
+            port:
+              description: |-
+                Port is the port to be used in the value of the `Location`
+                header in the response.
+                When empty, port (if specified) of the request is used.
+              format: int32
+              maximum: 65535
+              minimum: 1
+              type: integer
+            scheme:
+              enum:
+                - http
+                - https
+              type: string
+            statusCode:
+              default: 302
+              description: StatusCode is the HTTP status code to be used in response.
+              enum:
+                - 301
+                - 302
+                - 303
+                - 307
+                - 308
+              type: integer
+          type: object
+        type:
+          enum:
+            - RequestRedirect
+          type: string
+    MeshHTTPRouteFilterResponseHeaderModifier:
+      title: ResponseHeaderModifier
+      type: object
+      required:
+        - type
+      properties:
+        responseHeaderModifier:
+          description: >-
+            Only one action is supported per header name.
+
+            Configuration to set or add multiple values for a header must use
+            RFC 7230
+
+            header value formatting, separating each value with a comma.
+          properties:
+            add:
+              items:
+                properties:
+                  name:
+                    maxLength: 256
+                    minLength: 1
+                    pattern: ^[a-z0-9!#$%\u0026'*+\-.^_\x60|~]+$
+                    type: string
+                  value:
+                    type: string
+                required:
+                  - name
+                  - value
+                type: object
+              maxItems: 16
+              type: array
+              x-kubernetes-list-map-keys:
+                - name
+              x-kubernetes-list-type: map
+            remove:
+              items:
+                type: string
+              maxItems: 16
+              type: array
+            set:
+              items:
+                properties:
+                  name:
+                    maxLength: 256
+                    minLength: 1
+                    pattern: ^[a-z0-9!#$%\u0026'*+\-.^_\x60|~]+$
+                    type: string
+                  value:
+                    type: string
+                required:
+                  - name
+                  - value
+                type: object
+              maxItems: 16
+              type: array
+              x-kubernetes-list-map-keys:
+                - name
+              x-kubernetes-list-type: map
+          type: object
+        type:
+          enum:
+            - ResponseHeaderModifier
+          type: string
+    MeshHTTPRouteFilterURLRewrite:
+      title: URLRewrite
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          enum:
+            - URLRewrite
+          type: string
+        urlRewrite:
+          properties:
+            hostToBackendHostname:
+              description: >-
+                HostToBackendHostname is not currently supported and must not be
+                set.
+              type: boolean
+            hostname:
+              description: >-
+                Hostname is the value to be used to replace the host header
+                value during forwarding.
+              maxLength: 253
+              minLength: 1
+              pattern: >-
+                ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+              type: string
+            path:
+              description: Path defines a path rewrite.
+              discriminator:
+                mapping:
+                  ReplaceFullPath: '#/components/schemas/MeshHTTPRoutePathReplaceFullPath'
+                  ReplacePrefixMatch: '#/components/schemas/MeshHTTPRoutePathReplacePrefixMatch'
+                propertyName: type
+              oneOf:
+                - $ref: '#/components/schemas/MeshHTTPRoutePathReplaceFullPath'
+                - $ref: '#/components/schemas/MeshHTTPRoutePathReplacePrefixMatch'
+          type: object
     MeshHTTPRouteItem:
       type: object
       description: >-
@@ -9841,344 +9935,30 @@ components:
                                 properties:
                                   filters:
                                     items:
-                                      properties:
-                                        requestHeaderModifier:
-                                          description: >-
-                                            Only one action is supported per header
-                                            name.
-
-                                            Configuration to set or add multiple
-                                            values for a header must use RFC 7230
-
-                                            header value formatting, separating each
-                                            value with a comma.
-                                          properties:
-                                            add:
-                                              items:
-                                                properties:
-                                                  name:
-                                                    maxLength: 256
-                                                    minLength: 1
-                                                    pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
-                                                    type: string
-                                                  value:
-                                                    type: string
-                                                required:
-                                                  - name
-                                                  - value
-                                                type: object
-                                              maxItems: 16
-                                              type: array
-                                              x-kubernetes-list-map-keys:
-                                                - name
-                                              x-kubernetes-list-type: map
-                                            remove:
-                                              items:
-                                                type: string
-                                              maxItems: 16
-                                              type: array
-                                            set:
-                                              items:
-                                                properties:
-                                                  name:
-                                                    maxLength: 256
-                                                    minLength: 1
-                                                    pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
-                                                    type: string
-                                                  value:
-                                                    type: string
-                                                required:
-                                                  - name
-                                                  - value
-                                                type: object
-                                              maxItems: 16
-                                              type: array
-                                              x-kubernetes-list-map-keys:
-                                                - name
-                                              x-kubernetes-list-type: map
-                                          type: object
-                                        requestMirror:
-                                          properties:
-                                            backendRef:
-                                              description: >-
-                                                BackendRef defines the destination
-                                                traffic is routed to.
-                                              properties:
-                                                kind:
-                                                  description: Kind of the referenced resource
-                                                  enum:
-                                                    - MeshService
-                                                    - MeshExternalService
-                                                    - MeshMultiZoneService
-                                                  type: string
-                                                labels:
-                                                  additionalProperties:
-                                                    type: string
-                                                  description: >-
-                                                    Labels are used to select the referenced
-                                                    real resource.
-                                                  type: object
-                                                port:
-                                                  description: >-
-                                                    Port is only supported when this ref
-                                                    refers to a real MeshService object
-                                                  format: int32
-                                                  type: integer
-                                                sectionName:
-                                                  description: >-
-                                                    SectionName is used to target a specific
-                                                    section of the resource.
-
-                                                    For example, you can target a port from
-                                                    MeshService.ports[] by its name.
-                                                  type: string
-                                                weight:
-                                                  maximum: 4294967295
-                                                  minimum: 0
-                                                  type: integer
-                                              required:
-                                                - kind
-                                              type: object
-                                            percentage:
-                                              anyOf:
-                                                - type: integer
-                                                - type: string
-                                              description: >-
-                                                Percentage of requests to mirror. If not
-                                                specified, all requests
-
-                                                to the target cluster will be mirrored.
-                                              x-kubernetes-int-or-string: true
-                                          required:
-                                            - backendRef
-                                          type: object
-                                        requestRedirect:
-                                          properties:
-                                            hostname:
-                                              description: >-
-                                                PreciseHostname is the fully qualified
-                                                domain name of a network host. This
-
-                                                matches the RFC 1123 definition of a
-                                                hostname with 1 notable exception that
-
-                                                numeric IP addresses are not allowed.
-
-
-                                                Note that as per RFC1035 and RFC1123, a
-                                                *label* must consist of lower case
-
-                                                alphanumeric characters or '-', and must
-                                                start and end with an alphanumeric
-
-                                                character. No other punctuation is
-                                                allowed.
-                                              maxLength: 253
-                                              minLength: 1
-                                              pattern: >-
-                                                ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
-                                              type: string
-                                            path:
-                                              description: >-
-                                                Path defines parameters used to modify
-                                                the path of the incoming request.
-
-                                                The modified path is then used to
-                                                construct the location header.
-
-                                                When empty, the request path is used
-                                                as-is.
-                                              properties:
-                                                replaceFullPath:
-                                                  type: string
-                                                replacePrefixMatch:
-                                                  type: string
-                                                type:
-                                                  enum:
-                                                    - ReplaceFullPath
-                                                    - ReplacePrefixMatch
-                                                  type: string
-                                              required:
-                                                - type
-                                              type: object
-                                              oneOf:
-                                                - properties:
-                                                    replaceFullPath: {}
-                                                    type:
-                                                      enum:
-                                                        - ReplaceFullPath
-                                                - properties:
-                                                    replacePrefixMatch: {}
-                                                    type:
-                                                      enum:
-                                                        - ReplacePrefixMatch
-                                            port:
-                                              description: >-
-                                                Port is the port to be used in the value
-                                                of the `Location`
-
-                                                header in the response.
-
-                                                When empty, port (if specified) of the
-                                                request is used.
-                                              format: int32
-                                              maximum: 65535
-                                              minimum: 1
-                                              type: integer
-                                            scheme:
-                                              enum:
-                                                - http
-                                                - https
-                                              type: string
-                                            statusCode:
-                                              default: 302
-                                              description: >-
-                                                StatusCode is the HTTP status code to be
-                                                used in response.
-                                              enum:
-                                                - 301
-                                                - 302
-                                                - 303
-                                                - 307
-                                                - 308
-                                              type: integer
-                                          type: object
-                                        responseHeaderModifier:
-                                          description: >-
-                                            Only one action is supported per header
-                                            name.
-
-                                            Configuration to set or add multiple
-                                            values for a header must use RFC 7230
-
-                                            header value formatting, separating each
-                                            value with a comma.
-                                          properties:
-                                            add:
-                                              items:
-                                                properties:
-                                                  name:
-                                                    maxLength: 256
-                                                    minLength: 1
-                                                    pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
-                                                    type: string
-                                                  value:
-                                                    type: string
-                                                required:
-                                                  - name
-                                                  - value
-                                                type: object
-                                              maxItems: 16
-                                              type: array
-                                              x-kubernetes-list-map-keys:
-                                                - name
-                                              x-kubernetes-list-type: map
-                                            remove:
-                                              items:
-                                                type: string
-                                              maxItems: 16
-                                              type: array
-                                            set:
-                                              items:
-                                                properties:
-                                                  name:
-                                                    maxLength: 256
-                                                    minLength: 1
-                                                    pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
-                                                    type: string
-                                                  value:
-                                                    type: string
-                                                required:
-                                                  - name
-                                                  - value
-                                                type: object
-                                              maxItems: 16
-                                              type: array
-                                              x-kubernetes-list-map-keys:
-                                                - name
-                                              x-kubernetes-list-type: map
-                                          type: object
-                                        type:
-                                          enum:
-                                            - RequestHeaderModifier
-                                            - ResponseHeaderModifier
-                                            - RequestRedirect
-                                            - URLRewrite
-                                            - RequestMirror
-                                          type: string
-                                        urlRewrite:
-                                          properties:
-                                            hostToBackendHostname:
-                                              description: >-
-                                                HostToBackendHostname is not currently
-                                                supported and must not be set.
-                                              type: boolean
-                                            hostname:
-                                              description: >-
-                                                Hostname is the value to be used to
-                                                replace the host header value during
-                                                forwarding.
-                                              maxLength: 253
-                                              minLength: 1
-                                              pattern: >-
-                                                ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
-                                              type: string
-                                            path:
-                                              description: Path defines a path rewrite.
-                                              properties:
-                                                replaceFullPath:
-                                                  type: string
-                                                replacePrefixMatch:
-                                                  type: string
-                                                type:
-                                                  enum:
-                                                    - ReplaceFullPath
-                                                    - ReplacePrefixMatch
-                                                  type: string
-                                              required:
-                                                - type
-                                              type: object
-                                              oneOf:
-                                                - properties:
-                                                    replaceFullPath: {}
-                                                    type:
-                                                      enum:
-                                                        - ReplaceFullPath
-                                                - properties:
-                                                    replacePrefixMatch: {}
-                                                    type:
-                                                      enum:
-                                                        - ReplacePrefixMatch
-                                          type: object
-                                      required:
-                                        - type
-                                      type: object
                                       oneOf:
-                                        - properties:
-                                            requestHeaderModifier: {}
-                                            type:
-                                              enum:
-                                                - RequestHeaderModifier
-                                        - properties:
-                                            responseHeaderModifier: {}
-                                            type:
-                                              enum:
-                                                - ResponseHeaderModifier
-                                        - properties:
-                                            requestRedirect: {}
-                                            type:
-                                              enum:
-                                                - RequestRedirect
-                                        - properties:
-                                            type:
-                                              enum:
-                                                - URLRewrite
-                                            urlRewrite: {}
-                                        - properties:
-                                            requestMirror: {}
-                                            type:
-                                              enum:
-                                                - RequestMirror
+                                        - $ref: >-
+                                            #/components/schemas/MeshHTTPRouteFilterRequestHeaderModifier
+                                        - $ref: >-
+                                            #/components/schemas/MeshHTTPRouteFilterResponseHeaderModifier
+                                        - $ref: >-
+                                            #/components/schemas/MeshHTTPRouteFilterRequestRedirect
+                                        - $ref: >-
+                                            #/components/schemas/MeshHTTPRouteFilterURLRewrite
+                                        - $ref: >-
+                                            #/components/schemas/MeshHTTPRouteFilterRequestMirror
+                                      discriminator:
+                                        mapping:
+                                          RequestHeaderModifier: >-
+                                            #/components/schemas/MeshHTTPRouteFilterRequestHeaderModifier
+                                          RequestMirror: >-
+                                            #/components/schemas/MeshHTTPRouteFilterRequestMirror
+                                          RequestRedirect: >-
+                                            #/components/schemas/MeshHTTPRouteFilterRequestRedirect
+                                          ResponseHeaderModifier: >-
+                                            #/components/schemas/MeshHTTPRouteFilterResponseHeaderModifier
+                                          URLRewrite: >-
+                                            #/components/schemas/MeshHTTPRouteFilterURLRewrite
+                                        propertyName: type
                                     type: array
                                   kind:
                                     description: Kind of the referenced resource
@@ -10218,344 +9998,30 @@ components:
                               type: array
                             filters:
                               items:
-                                properties:
-                                  requestHeaderModifier:
-                                    description: >-
-                                      Only one action is supported per header
-                                      name.
-
-                                      Configuration to set or add multiple
-                                      values for a header must use RFC 7230
-
-                                      header value formatting, separating each
-                                      value with a comma.
-                                    properties:
-                                      add:
-                                        items:
-                                          properties:
-                                            name:
-                                              maxLength: 256
-                                              minLength: 1
-                                              pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
-                                              type: string
-                                            value:
-                                              type: string
-                                          required:
-                                            - name
-                                            - value
-                                          type: object
-                                        maxItems: 16
-                                        type: array
-                                        x-kubernetes-list-map-keys:
-                                          - name
-                                        x-kubernetes-list-type: map
-                                      remove:
-                                        items:
-                                          type: string
-                                        maxItems: 16
-                                        type: array
-                                      set:
-                                        items:
-                                          properties:
-                                            name:
-                                              maxLength: 256
-                                              minLength: 1
-                                              pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
-                                              type: string
-                                            value:
-                                              type: string
-                                          required:
-                                            - name
-                                            - value
-                                          type: object
-                                        maxItems: 16
-                                        type: array
-                                        x-kubernetes-list-map-keys:
-                                          - name
-                                        x-kubernetes-list-type: map
-                                    type: object
-                                  requestMirror:
-                                    properties:
-                                      backendRef:
-                                        description: >-
-                                          BackendRef defines the destination
-                                          traffic is routed to.
-                                        properties:
-                                          kind:
-                                            description: Kind of the referenced resource
-                                            enum:
-                                              - MeshService
-                                              - MeshExternalService
-                                              - MeshMultiZoneService
-                                            type: string
-                                          labels:
-                                            additionalProperties:
-                                              type: string
-                                            description: >-
-                                              Labels are used to select the referenced
-                                              real resource.
-                                            type: object
-                                          port:
-                                            description: >-
-                                              Port is only supported when this ref
-                                              refers to a real MeshService object
-                                            format: int32
-                                            type: integer
-                                          sectionName:
-                                            description: >-
-                                              SectionName is used to target a specific
-                                              section of the resource.
-
-                                              For example, you can target a port from
-                                              MeshService.ports[] by its name.
-                                            type: string
-                                          weight:
-                                            maximum: 4294967295
-                                            minimum: 0
-                                            type: integer
-                                        required:
-                                          - kind
-                                        type: object
-                                      percentage:
-                                        anyOf:
-                                          - type: integer
-                                          - type: string
-                                        description: >-
-                                          Percentage of requests to mirror. If not
-                                          specified, all requests
-
-                                          to the target cluster will be mirrored.
-                                        x-kubernetes-int-or-string: true
-                                    required:
-                                      - backendRef
-                                    type: object
-                                  requestRedirect:
-                                    properties:
-                                      hostname:
-                                        description: >-
-                                          PreciseHostname is the fully qualified
-                                          domain name of a network host. This
-
-                                          matches the RFC 1123 definition of a
-                                          hostname with 1 notable exception that
-
-                                          numeric IP addresses are not allowed.
-
-
-                                          Note that as per RFC1035 and RFC1123, a
-                                          *label* must consist of lower case
-
-                                          alphanumeric characters or '-', and must
-                                          start and end with an alphanumeric
-
-                                          character. No other punctuation is
-                                          allowed.
-                                        maxLength: 253
-                                        minLength: 1
-                                        pattern: >-
-                                          ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
-                                        type: string
-                                      path:
-                                        description: >-
-                                          Path defines parameters used to modify
-                                          the path of the incoming request.
-
-                                          The modified path is then used to
-                                          construct the location header.
-
-                                          When empty, the request path is used
-                                          as-is.
-                                        properties:
-                                          replaceFullPath:
-                                            type: string
-                                          replacePrefixMatch:
-                                            type: string
-                                          type:
-                                            enum:
-                                              - ReplaceFullPath
-                                              - ReplacePrefixMatch
-                                            type: string
-                                        required:
-                                          - type
-                                        type: object
-                                        oneOf:
-                                          - properties:
-                                              replaceFullPath: {}
-                                              type:
-                                                enum:
-                                                  - ReplaceFullPath
-                                          - properties:
-                                              replacePrefixMatch: {}
-                                              type:
-                                                enum:
-                                                  - ReplacePrefixMatch
-                                      port:
-                                        description: >-
-                                          Port is the port to be used in the value
-                                          of the `Location`
-
-                                          header in the response.
-
-                                          When empty, port (if specified) of the
-                                          request is used.
-                                        format: int32
-                                        maximum: 65535
-                                        minimum: 1
-                                        type: integer
-                                      scheme:
-                                        enum:
-                                          - http
-                                          - https
-                                        type: string
-                                      statusCode:
-                                        default: 302
-                                        description: >-
-                                          StatusCode is the HTTP status code to be
-                                          used in response.
-                                        enum:
-                                          - 301
-                                          - 302
-                                          - 303
-                                          - 307
-                                          - 308
-                                        type: integer
-                                    type: object
-                                  responseHeaderModifier:
-                                    description: >-
-                                      Only one action is supported per header
-                                      name.
-
-                                      Configuration to set or add multiple
-                                      values for a header must use RFC 7230
-
-                                      header value formatting, separating each
-                                      value with a comma.
-                                    properties:
-                                      add:
-                                        items:
-                                          properties:
-                                            name:
-                                              maxLength: 256
-                                              minLength: 1
-                                              pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
-                                              type: string
-                                            value:
-                                              type: string
-                                          required:
-                                            - name
-                                            - value
-                                          type: object
-                                        maxItems: 16
-                                        type: array
-                                        x-kubernetes-list-map-keys:
-                                          - name
-                                        x-kubernetes-list-type: map
-                                      remove:
-                                        items:
-                                          type: string
-                                        maxItems: 16
-                                        type: array
-                                      set:
-                                        items:
-                                          properties:
-                                            name:
-                                              maxLength: 256
-                                              minLength: 1
-                                              pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
-                                              type: string
-                                            value:
-                                              type: string
-                                          required:
-                                            - name
-                                            - value
-                                          type: object
-                                        maxItems: 16
-                                        type: array
-                                        x-kubernetes-list-map-keys:
-                                          - name
-                                        x-kubernetes-list-type: map
-                                    type: object
-                                  type:
-                                    enum:
-                                      - RequestHeaderModifier
-                                      - ResponseHeaderModifier
-                                      - RequestRedirect
-                                      - URLRewrite
-                                      - RequestMirror
-                                    type: string
-                                  urlRewrite:
-                                    properties:
-                                      hostToBackendHostname:
-                                        description: >-
-                                          HostToBackendHostname is not currently
-                                          supported and must not be set.
-                                        type: boolean
-                                      hostname:
-                                        description: >-
-                                          Hostname is the value to be used to
-                                          replace the host header value during
-                                          forwarding.
-                                        maxLength: 253
-                                        minLength: 1
-                                        pattern: >-
-                                          ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
-                                        type: string
-                                      path:
-                                        description: Path defines a path rewrite.
-                                        properties:
-                                          replaceFullPath:
-                                            type: string
-                                          replacePrefixMatch:
-                                            type: string
-                                          type:
-                                            enum:
-                                              - ReplaceFullPath
-                                              - ReplacePrefixMatch
-                                            type: string
-                                        required:
-                                          - type
-                                        type: object
-                                        oneOf:
-                                          - properties:
-                                              replaceFullPath: {}
-                                              type:
-                                                enum:
-                                                  - ReplaceFullPath
-                                          - properties:
-                                              replacePrefixMatch: {}
-                                              type:
-                                                enum:
-                                                  - ReplacePrefixMatch
-                                    type: object
-                                required:
-                                  - type
-                                type: object
                                 oneOf:
-                                  - properties:
-                                      requestHeaderModifier: {}
-                                      type:
-                                        enum:
-                                          - RequestHeaderModifier
-                                  - properties:
-                                      responseHeaderModifier: {}
-                                      type:
-                                        enum:
-                                          - ResponseHeaderModifier
-                                  - properties:
-                                      requestRedirect: {}
-                                      type:
-                                        enum:
-                                          - RequestRedirect
-                                  - properties:
-                                      type:
-                                        enum:
-                                          - URLRewrite
-                                      urlRewrite: {}
-                                  - properties:
-                                      requestMirror: {}
-                                      type:
-                                        enum:
-                                          - RequestMirror
+                                  - $ref: >-
+                                      #/components/schemas/MeshHTTPRouteFilterRequestHeaderModifier
+                                  - $ref: >-
+                                      #/components/schemas/MeshHTTPRouteFilterResponseHeaderModifier
+                                  - $ref: >-
+                                      #/components/schemas/MeshHTTPRouteFilterRequestRedirect
+                                  - $ref: >-
+                                      #/components/schemas/MeshHTTPRouteFilterURLRewrite
+                                  - $ref: >-
+                                      #/components/schemas/MeshHTTPRouteFilterRequestMirror
+                                discriminator:
+                                  mapping:
+                                    RequestHeaderModifier: >-
+                                      #/components/schemas/MeshHTTPRouteFilterRequestHeaderModifier
+                                    RequestMirror: >-
+                                      #/components/schemas/MeshHTTPRouteFilterRequestMirror
+                                    RequestRedirect: >-
+                                      #/components/schemas/MeshHTTPRouteFilterRequestRedirect
+                                    ResponseHeaderModifier: >-
+                                      #/components/schemas/MeshHTTPRouteFilterResponseHeaderModifier
+                                    URLRewrite: >-
+                                      #/components/schemas/MeshHTTPRouteFilterURLRewrite
+                                  propertyName: type
                               type: array
                           type: object
                         matches:
@@ -11135,6 +10601,378 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '1901-01-01T00:00:00.000Z'
+    MeshLoadBalancingStrategyHashPolicyConnection:
+      title: Connection
+      type: object
+      required:
+        - type
+      properties:
+        connection:
+          properties:
+            sourceIP:
+              description: Hash on source IP address.
+              type: boolean
+          type: object
+        terminal:
+          description: >-
+            Terminal is a flag that short-circuits the hash computing. This
+            field provides
+
+            a ‘fallback’ style of configuration: “if a terminal policy doesn’t
+            work, fallback
+
+            to rest of the policy list”, it saves time when the terminal policy
+            works.
+
+            If true, and there is already a hash computed, ignore rest of the
+            list of hash polices.
+          type: boolean
+        type:
+          enum:
+            - Connection
+          type: string
+    MeshLoadBalancingStrategyHashPolicyCookie:
+      title: Cookie
+      type: object
+      required:
+        - type
+      properties:
+        cookie:
+          properties:
+            name:
+              description: The name of the cookie that will be used to obtain the hash key.
+              minLength: 1
+              type: string
+            path:
+              description: The name of the path for the cookie.
+              type: string
+            ttl:
+              description: >-
+                If specified, a cookie with the TTL will be generated if the
+                cookie is not present.
+              type: string
+          required:
+            - name
+          type: object
+        terminal:
+          description: >-
+            Terminal is a flag that short-circuits the hash computing. This
+            field provides
+
+            a ‘fallback’ style of configuration: “if a terminal policy doesn’t
+            work, fallback
+
+            to rest of the policy list”, it saves time when the terminal policy
+            works.
+
+            If true, and there is already a hash computed, ignore rest of the
+            list of hash polices.
+          type: boolean
+        type:
+          enum:
+            - Cookie
+          type: string
+    MeshLoadBalancingStrategyHashPolicyFilterState:
+      title: FilterState
+      type: object
+      required:
+        - type
+      properties:
+        filterState:
+          properties:
+            key:
+              description: >-
+                The name of the Object in the per-request filterState, which is
+
+                an Envoy::Hashable object. If there is no data associated with
+                the key,
+
+                or the stored object is not Envoy::Hashable, no hash will be
+                produced.
+              minLength: 1
+              type: string
+          required:
+            - key
+          type: object
+        terminal:
+          description: >-
+            Terminal is a flag that short-circuits the hash computing. This
+            field provides
+
+            a ‘fallback’ style of configuration: “if a terminal policy doesn’t
+            work, fallback
+
+            to rest of the policy list”, it saves time when the terminal policy
+            works.
+
+            If true, and there is already a hash computed, ignore rest of the
+            list of hash polices.
+          type: boolean
+        type:
+          enum:
+            - FilterState
+          type: string
+    MeshLoadBalancingStrategyHashPolicyHeader:
+      title: Header
+      type: object
+      required:
+        - type
+      properties:
+        header:
+          properties:
+            name:
+              description: >-
+                The name of the request header that will be used to obtain the
+                hash key.
+              minLength: 1
+              type: string
+          required:
+            - name
+          type: object
+        terminal:
+          description: >-
+            Terminal is a flag that short-circuits the hash computing. This
+            field provides
+
+            a ‘fallback’ style of configuration: “if a terminal policy doesn’t
+            work, fallback
+
+            to rest of the policy list”, it saves time when the terminal policy
+            works.
+
+            If true, and there is already a hash computed, ignore rest of the
+            list of hash polices.
+          type: boolean
+        type:
+          enum:
+            - Header
+          type: string
+    MeshLoadBalancingStrategyHashPolicyQueryParameter:
+      title: QueryParameter
+      type: object
+      required:
+        - type
+      properties:
+        queryParameter:
+          properties:
+            name:
+              description: >-
+                The name of the URL query parameter that will be used to obtain
+                the hash key.
+
+                If the parameter is not present, no hash will be produced. Query
+                parameter names
+
+                are case-sensitive.
+              minLength: 1
+              type: string
+          required:
+            - name
+          type: object
+        terminal:
+          description: >-
+            Terminal is a flag that short-circuits the hash computing. This
+            field provides
+
+            a ‘fallback’ style of configuration: “if a terminal policy doesn’t
+            work, fallback
+
+            to rest of the policy list”, it saves time when the terminal policy
+            works.
+
+            If true, and there is already a hash computed, ignore rest of the
+            list of hash polices.
+          type: boolean
+        type:
+          enum:
+            - QueryParameter
+          type: string
+    MeshLoadBalancingStrategyLoadBalancerLeastRequest:
+      title: LeastRequest
+      type: object
+      required:
+        - type
+      properties:
+        leastRequest:
+          description: >-
+            LeastRequest selects N random available hosts as specified in
+            'choiceCount' (2 by default)
+
+            and picks the host which has the fewest active requests
+          properties:
+            activeRequestBias:
+              anyOf:
+                - type: integer
+                - type: string
+              description: >-
+                ActiveRequestBias refers to dynamic weights applied when hosts
+                have varying load
+
+                balancing weights. A higher value here aggressively reduces the
+                weight of endpoints
+
+                that are currently handling active requests. In essence, the
+                higher the ActiveRequestBias
+
+                value, the more forcefully it reduces the load balancing weight
+                of endpoints that are
+
+                actively serving requests.
+              x-kubernetes-int-or-string: true
+            choiceCount:
+              description: >-
+                ChoiceCount is the number of random healthy hosts from which the
+                host with
+
+                the fewest active requests will be chosen. Defaults to 2 so that
+                Envoy performs
+
+                two-choice selection if the field is not set.
+              format: int32
+              minimum: 2
+              type: integer
+          type: object
+        type:
+          enum:
+            - LeastRequest
+          type: string
+    MeshLoadBalancingStrategyLoadBalancerMaglev:
+      title: Maglev
+      type: object
+      required:
+        - type
+      properties:
+        maglev:
+          description: >-
+            Maglev implements consistent hashing to upstream hosts. Maglev can
+            be used as
+
+            a drop in replacement for the ring hash load balancer any place in
+            which
+
+            consistent hashing is desired.
+          properties:
+            tableSize:
+              description: >-
+                The table size for Maglev hashing. Maglev aims for “minimal
+                disruption”
+
+                rather than an absolute guarantee. Minimal disruption means that
+                when
+
+                the set of upstream hosts change, a connection will likely be
+                sent
+
+                to the same upstream as it was before. Increasing the table size
+                reduces
+
+                the amount of disruption. The table size must be prime number
+                limited to 5000011.
+
+                If it is not specified, the default is 65537.
+              format: int32
+              maximum: 5000011
+              minimum: 1
+              type: integer
+          type: object
+        type:
+          enum:
+            - Maglev
+          type: string
+    MeshLoadBalancingStrategyLoadBalancerRandom:
+      title: Random
+      type: object
+      required:
+        - type
+      properties:
+        random:
+          description: >-
+            Random selects a random available host. The random load balancer
+            generally
+
+            performs better than round-robin if no health checking policy is
+            configured.
+
+            Random selection avoids bias towards the host in the set that comes
+            after a failed host.
+          type: object
+        type:
+          enum:
+            - Random
+          type: string
+    MeshLoadBalancingStrategyLoadBalancerRingHash:
+      title: RingHash
+      type: object
+      required:
+        - type
+      properties:
+        ringHash:
+          description: >-
+            RingHash  implements consistent hashing to upstream hosts. Each host
+            is mapped
+
+            onto a circle (the “ring”) by hashing its address; each request is
+            then routed
+
+            to a host by hashing some property of the request, and finding the
+            nearest
+
+            corresponding host clockwise around the ring.
+          properties:
+            hashFunction:
+              description: >-
+                HashFunction is a function used to hash hosts onto the ketama
+                ring.
+
+                The value defaults to XX_HASH. Available values – XX_HASH,
+                MURMUR_HASH_2.
+              enum:
+                - XXHash
+                - MurmurHash2
+              type: string
+            maxRingSize:
+              description: >-
+                Maximum hash ring size. Defaults to 8M entries, and limited to
+                8M entries,
+
+                but can be lowered to further constrain resource use.
+              format: int32
+              maximum: 8000000
+              minimum: 1
+              type: integer
+            minRingSize:
+              description: >-
+                Minimum hash ring size. The larger the ring is (that is,
+
+                the more hashes there are for each provided host) the better the
+                request distribution
+
+                will reflect the desired weights. Defaults to 1024 entries, and
+                limited to 8M entries.
+              format: int32
+              maximum: 8000000
+              minimum: 1
+              type: integer
+          type: object
+        type:
+          enum:
+            - RingHash
+          type: string
+    MeshLoadBalancingStrategyLoadBalancerRoundRobin:
+      title: RoundRobin
+      type: object
+      required:
+        - type
+      properties:
+        roundRobin:
+          description: |-
+            RoundRobin is a load balancing algorithm that distributes requests
+            across available upstream hosts in round-robin order.
+          type: object
+        type:
+          enum:
+            - RoundRobin
+          type: string
     MeshLoadBalancingStrategyItem:
       type: object
       description: >-
@@ -11248,312 +11086,59 @@ components:
 
                           ignoring the rest of the hash policy list.
                         items:
-                          properties:
-                            connection:
-                              properties:
-                                sourceIP:
-                                  description: Hash on source IP address.
-                                  type: boolean
-                              type: object
-                            cookie:
-                              properties:
-                                name:
-                                  description: >-
-                                    The name of the cookie that will be used to
-                                    obtain the hash key.
-                                  minLength: 1
-                                  type: string
-                                path:
-                                  description: The name of the path for the cookie.
-                                  type: string
-                                ttl:
-                                  description: >-
-                                    If specified, a cookie with the TTL will be
-                                    generated if the cookie is not present.
-                                  type: string
-                              required:
-                                - name
-                              type: object
-                            filterState:
-                              properties:
-                                key:
-                                  description: >-
-                                    The name of the Object in the per-request
-                                    filterState, which is
-
-                                    an Envoy::Hashable object. If there is no
-                                    data associated with the key,
-
-                                    or the stored object is not Envoy::Hashable,
-                                    no hash will be produced.
-                                  minLength: 1
-                                  type: string
-                              required:
-                                - key
-                              type: object
-                            header:
-                              properties:
-                                name:
-                                  description: >-
-                                    The name of the request header that will be
-                                    used to obtain the hash key.
-                                  minLength: 1
-                                  type: string
-                              required:
-                                - name
-                              type: object
-                            queryParameter:
-                              properties:
-                                name:
-                                  description: >-
-                                    The name of the URL query parameter that
-                                    will be used to obtain the hash key.
-
-                                    If the parameter is not present, no hash
-                                    will be produced. Query parameter names
-
-                                    are case-sensitive.
-                                  minLength: 1
-                                  type: string
-                              required:
-                                - name
-                              type: object
-                            terminal:
-                              description: >-
-                                Terminal is a flag that short-circuits the hash
-                                computing. This field provides
-
-                                a ‘fallback’ style of configuration: “if a
-                                terminal policy doesn’t work, fallback
-
-                                to rest of the policy list”, it saves time when
-                                the terminal policy works.
-
-                                If true, and there is already a hash computed,
-                                ignore rest of the list of hash polices.
-                              type: boolean
-                            type:
-                              enum:
-                                - Header
-                                - Cookie
-                                - Connection
-                                - QueryParameter
-                                - FilterState
-                              type: string
-                          required:
-                            - type
-                          type: object
                           oneOf:
-                            - properties:
-                                header: {}
-                                type:
-                                  enum:
-                                    - Header
-                            - properties:
-                                cookie: {}
-                                type:
-                                  enum:
-                                    - Cookie
-                            - properties:
-                                connection: {}
-                                type:
-                                  enum:
-                                    - Connection
-                            - properties:
-                                queryParameter: {}
-                                type:
-                                  enum:
-                                    - QueryParameter
-                            - properties:
-                                filterState: {}
-                                type:
-                                  enum:
-                                    - FilterState
+                            - $ref: >-
+                                #/components/schemas/MeshLoadBalancingStrategyHashPolicyHeader
+                            - $ref: >-
+                                #/components/schemas/MeshLoadBalancingStrategyHashPolicyCookie
+                            - $ref: >-
+                                #/components/schemas/MeshLoadBalancingStrategyHashPolicyConnection
+                            - $ref: >-
+                                #/components/schemas/MeshLoadBalancingStrategyHashPolicyQueryParameter
+                            - $ref: >-
+                                #/components/schemas/MeshLoadBalancingStrategyHashPolicyFilterState
+                          discriminator:
+                            mapping:
+                              Connection: >-
+                                #/components/schemas/MeshLoadBalancingStrategyHashPolicyConnection
+                              Cookie: >-
+                                #/components/schemas/MeshLoadBalancingStrategyHashPolicyCookie
+                              FilterState: >-
+                                #/components/schemas/MeshLoadBalancingStrategyHashPolicyFilterState
+                              Header: >-
+                                #/components/schemas/MeshLoadBalancingStrategyHashPolicyHeader
+                              QueryParameter: >-
+                                #/components/schemas/MeshLoadBalancingStrategyHashPolicyQueryParameter
+                            propertyName: type
                         type: array
                       loadBalancer:
                         description: >-
                           LoadBalancer allows to specify load balancing
                           algorithm.
-                        properties:
-                          leastRequest:
-                            description: >-
-                              LeastRequest selects N random available hosts as
-                              specified in 'choiceCount' (2 by default)
-
-                              and picks the host which has the fewest active
-                              requests
-                            properties:
-                              activeRequestBias:
-                                anyOf:
-                                  - type: integer
-                                  - type: string
-                                description: >-
-                                  ActiveRequestBias refers to dynamic weights
-                                  applied when hosts have varying load
-
-                                  balancing weights. A higher value here
-                                  aggressively reduces the weight of endpoints
-
-                                  that are currently handling active requests.
-                                  In essence, the higher the ActiveRequestBias
-
-                                  value, the more forcefully it reduces the load
-                                  balancing weight of endpoints that are
-
-                                  actively serving requests.
-                                x-kubernetes-int-or-string: true
-                              choiceCount:
-                                description: >-
-                                  ChoiceCount is the number of random healthy
-                                  hosts from which the host with
-
-                                  the fewest active requests will be chosen.
-                                  Defaults to 2 so that Envoy performs
-
-                                  two-choice selection if the field is not set.
-                                format: int32
-                                minimum: 2
-                                type: integer
-                            type: object
-                          maglev:
-                            description: >-
-                              Maglev implements consistent hashing to upstream
-                              hosts. Maglev can be used as
-
-                              a drop in replacement for the ring hash load
-                              balancer any place in which
-
-                              consistent hashing is desired.
-                            properties:
-                              tableSize:
-                                description: >-
-                                  The table size for Maglev hashing. Maglev aims
-                                  for “minimal disruption”
-
-                                  rather than an absolute guarantee. Minimal
-                                  disruption means that when
-
-                                  the set of upstream hosts change, a connection
-                                  will likely be sent
-
-                                  to the same upstream as it was before.
-                                  Increasing the table size reduces
-
-                                  the amount of disruption. The table size must
-                                  be prime number limited to 5000011.
-
-                                  If it is not specified, the default is 65537.
-                                format: int32
-                                maximum: 5000011
-                                minimum: 1
-                                type: integer
-                            type: object
-                          random:
-                            description: >-
-                              Random selects a random available host. The random
-                              load balancer generally
-
-                              performs better than round-robin if no health
-                              checking policy is configured.
-
-                              Random selection avoids bias towards the host in
-                              the set that comes after a failed host.
-                            type: object
-                          ringHash:
-                            description: >-
-                              RingHash  implements consistent hashing to
-                              upstream hosts. Each host is mapped
-
-                              onto a circle (the “ring”) by hashing its address;
-                              each request is then routed
-
-                              to a host by hashing some property of the request,
-                              and finding the nearest
-
-                              corresponding host clockwise around the ring.
-                            properties:
-                              hashFunction:
-                                description: >-
-                                  HashFunction is a function used to hash hosts
-                                  onto the ketama ring.
-
-                                  The value defaults to XX_HASH. Available
-                                  values – XX_HASH, MURMUR_HASH_2.
-                                enum:
-                                  - XXHash
-                                  - MurmurHash2
-                                type: string
-                              maxRingSize:
-                                description: >-
-                                  Maximum hash ring size. Defaults to 8M
-                                  entries, and limited to 8M entries,
-
-                                  but can be lowered to further constrain
-                                  resource use.
-                                format: int32
-                                maximum: 8000000
-                                minimum: 1
-                                type: integer
-                              minRingSize:
-                                description: >-
-                                  Minimum hash ring size. The larger the ring is
-                                  (that is,
-
-                                  the more hashes there are for each provided
-                                  host) the better the request distribution
-
-                                  will reflect the desired weights. Defaults to
-                                  1024 entries, and limited to 8M entries.
-                                format: int32
-                                maximum: 8000000
-                                minimum: 1
-                                type: integer
-                            type: object
-                          roundRobin:
-                            description: >-
-                              RoundRobin is a load balancing algorithm that
-                              distributes requests
-
-                              across available upstream hosts in round-robin
-                              order.
-                            type: object
-                          type:
-                            enum:
-                              - RoundRobin
-                              - LeastRequest
-                              - RingHash
-                              - Random
-                              - Maglev
-                            type: string
-                        required:
-                          - type
-                        type: object
                         oneOf:
-                          - properties:
-                              roundRobin: {}
-                              type:
-                                enum:
-                                  - RoundRobin
-                          - properties:
-                              leastRequest: {}
-                              type:
-                                enum:
-                                  - LeastRequest
-                          - properties:
-                              ringHash: {}
-                              type:
-                                enum:
-                                  - RingHash
-                          - properties:
-                              random: {}
-                              type:
-                                enum:
-                                  - Random
-                          - properties:
-                              maglev: {}
-                              type:
-                                enum:
-                                  - Maglev
+                          - $ref: >-
+                              #/components/schemas/MeshLoadBalancingStrategyLoadBalancerRoundRobin
+                          - $ref: >-
+                              #/components/schemas/MeshLoadBalancingStrategyLoadBalancerLeastRequest
+                          - $ref: >-
+                              #/components/schemas/MeshLoadBalancingStrategyLoadBalancerRingHash
+                          - $ref: >-
+                              #/components/schemas/MeshLoadBalancingStrategyLoadBalancerRandom
+                          - $ref: >-
+                              #/components/schemas/MeshLoadBalancingStrategyLoadBalancerMaglev
+                        discriminator:
+                          mapping:
+                            LeastRequest: >-
+                              #/components/schemas/MeshLoadBalancingStrategyLoadBalancerLeastRequest
+                            Maglev: >-
+                              #/components/schemas/MeshLoadBalancingStrategyLoadBalancerMaglev
+                            Random: >-
+                              #/components/schemas/MeshLoadBalancingStrategyLoadBalancerRandom
+                            RingHash: >-
+                              #/components/schemas/MeshLoadBalancingStrategyLoadBalancerRingHash
+                            RoundRobin: >-
+                              #/components/schemas/MeshLoadBalancingStrategyLoadBalancerRoundRobin
+                          propertyName: type
                       localityAwareness:
                         description: >-
                           LocalityAwareness contains configuration for locality
@@ -11756,6 +11341,99 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '1901-01-01T00:00:00.000Z'
+    MeshMetricBackendOpenTelemetry:
+      title: OpenTelemetry
+      type: object
+      required:
+        - type
+      properties:
+        openTelemetry:
+          description: OpenTelemetry backend configuration
+          properties:
+            backendRef:
+              description: >-
+                BackendRef is a reference to a MeshOpenTelemetryBackend resource
+                that
+
+                defines the collector endpoint.
+              properties:
+                kind:
+                  description: Kind of the backend resource.
+                  enum:
+                    - MeshOpenTelemetryBackend
+                  type: string
+                labels:
+                  additionalProperties:
+                    type: string
+                  description: >-
+                    Labels to match the referenced resource. When multiple
+                    resources match,
+
+                    the oldest by creation time wins.
+                  type: object
+              required:
+                - kind
+              type: object
+            refreshInterval:
+              description: >-
+                RefreshInterval defines how frequent metrics should be pushed to
+                collector
+              type: string
+          type: object
+        type:
+          description: >-
+            Type of the backend that will be used to collect metrics. At the
+            moment only Prometheus backend is available.
+          enum:
+            - OpenTelemetry
+          type: string
+    MeshMetricBackendPrometheus:
+      title: Prometheus
+      type: object
+      required:
+        - type
+      properties:
+        prometheus:
+          description: Prometheus backend configuration.
+          properties:
+            clientId:
+              description: >-
+                ClientId of the Prometheus backend. Needed when using MADS for
+                DP discovery.
+              type: string
+            path:
+              default: /metrics
+              description: >-
+                Path on which a dataplane should expose HTTP endpoint with
+                Prometheus metrics.
+              type: string
+            port:
+              default: 5670
+              description: >-
+                Port on which a dataplane should expose HTTP endpoint with
+                Prometheus metrics.
+              format: int32
+              type: integer
+            tls:
+              description: Configuration of TLS for prometheus listener.
+              properties:
+                mode:
+                  default: Disabled
+                  description: Configuration of TLS for Prometheus listener.
+                  enum:
+                    - Disabled
+                    - ProvidedTLS
+                    - ActiveMTLSBackend
+                  type: string
+              type: object
+          type: object
+        type:
+          description: >-
+            Type of the backend that will be used to collect metrics. At the
+            moment only Prometheus backend is available.
+          enum:
+            - Prometheus
+          type: string
     MeshMetricItem:
       type: object
       description: >-
@@ -11839,97 +11517,14 @@ components:
                 backends:
                   description: Backends list that will be used to collect metrics.
                   items:
-                    properties:
-                      openTelemetry:
-                        description: OpenTelemetry backend configuration
-                        properties:
-                          backendRef:
-                            description: >-
-                              BackendRef is a reference to a
-                              MeshOpenTelemetryBackend resource that
-
-                              defines the collector endpoint.
-                            properties:
-                              kind:
-                                description: Kind of the backend resource.
-                                enum:
-                                  - MeshOpenTelemetryBackend
-                                type: string
-                              labels:
-                                additionalProperties:
-                                  type: string
-                                description: >-
-                                  Labels to match the referenced resource. When
-                                  multiple resources match,
-
-                                  the oldest by creation time wins.
-                                type: object
-                            required:
-                              - kind
-                            type: object
-                          refreshInterval:
-                            description: >-
-                              RefreshInterval defines how frequent metrics
-                              should be pushed to collector
-                            type: string
-                        type: object
-                      prometheus:
-                        description: Prometheus backend configuration.
-                        properties:
-                          clientId:
-                            description: >-
-                              ClientId of the Prometheus backend. Needed when
-                              using MADS for DP discovery.
-                            type: string
-                          path:
-                            default: /metrics
-                            description: >-
-                              Path on which a dataplane should expose HTTP
-                              endpoint with Prometheus metrics.
-                            type: string
-                          port:
-                            default: 5670
-                            description: >-
-                              Port on which a dataplane should expose HTTP
-                              endpoint with Prometheus metrics.
-                            format: int32
-                            type: integer
-                          tls:
-                            description: Configuration of TLS for prometheus listener.
-                            properties:
-                              mode:
-                                default: Disabled
-                                description: Configuration of TLS for Prometheus listener.
-                                enum:
-                                  - Disabled
-                                  - ProvidedTLS
-                                  - ActiveMTLSBackend
-                                type: string
-                            type: object
-                        type: object
-                      type:
-                        description: >-
-                          Type of the backend that will be used to collect
-                          metrics. At the moment only Prometheus backend is
-                          available.
-                        enum:
-                          - Prometheus
-                          - OpenTelemetry
-                        type: string
-                    required:
-                      - type
-                    type: object
                     oneOf:
-                      - properties:
-                          prometheus: {}
-                          type:
-                            enum:
-                              - Prometheus
-                      - properties:
-                          openTelemetry: {}
-                          type:
-                            enum:
-                              - OpenTelemetry
+                      - $ref: '#/components/schemas/MeshMetricBackendPrometheus'
+                      - $ref: '#/components/schemas/MeshMetricBackendOpenTelemetry'
+                    discriminator:
+                      mapping:
+                        OpenTelemetry: '#/components/schemas/MeshMetricBackendOpenTelemetry'
+                        Prometheus: '#/components/schemas/MeshMetricBackendPrometheus'
+                      propertyName: type
                   type: array
                 sidecar:
                   description: Sidecar metrics collection configuration
@@ -14822,6 +14417,127 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '1901-01-01T00:00:00.000Z'
+    MeshTraceBackendDatadog:
+      title: Datadog
+      type: object
+      required:
+        - type
+      properties:
+        datadog:
+          description: Datadog backend configuration.
+          properties:
+            splitService:
+              default: false
+              description: >-
+                Determines if datadog service name should be split based on
+                traffic
+
+                direction and destination. For example, with `splitService:
+                true` and a
+
+                `backend` service that communicates with a couple of databases,
+                you would
+
+                get service names like `backend_INBOUND`,
+                `backend_OUTBOUND_db1`, and
+
+                `backend_OUTBOUND_db2` in Datadog.
+              type: boolean
+            url:
+              description: >-
+                Address of Datadog collector, only host and port are allowed (no
+                paths,
+
+                fragments etc.)
+              type: string
+          required:
+            - url
+          type: object
+        type:
+          enum:
+            - Datadog
+          type: string
+    MeshTraceBackendOpenTelemetry:
+      title: OpenTelemetry
+      type: object
+      required:
+        - type
+      properties:
+        openTelemetry:
+          description: OpenTelemetry backend configuration.
+          properties:
+            backendRef:
+              description: >-
+                BackendRef is a reference to a MeshOpenTelemetryBackend resource
+                that
+
+                defines the collector endpoint.
+              properties:
+                kind:
+                  description: Kind of the backend resource.
+                  enum:
+                    - MeshOpenTelemetryBackend
+                  type: string
+                labels:
+                  additionalProperties:
+                    type: string
+                  description: >-
+                    Labels to match the referenced resource. When multiple
+                    resources match,
+
+                    the oldest by creation time wins.
+                  type: object
+              required:
+                - kind
+              type: object
+          type: object
+        type:
+          enum:
+            - OpenTelemetry
+          type: string
+    MeshTraceBackendZipkin:
+      title: Zipkin
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          enum:
+            - Zipkin
+          type: string
+        zipkin:
+          description: Zipkin backend configuration.
+          properties:
+            apiVersion:
+              default: httpJson
+              description: >-
+                Version of the API.
+
+                https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
+              enum:
+                - httpJson
+                - httpProto
+              type: string
+            sharedSpanContext:
+              default: true
+              description: >-
+                Determines whether client and server spans will share the same
+                span
+
+                context.
+
+                https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
+              type: boolean
+            traceId128bit:
+              default: false
+              description: Generate 128bit traces.
+              type: boolean
+            url:
+              description: Address of Zipkin collector.
+              type: string
+          required:
+            - url
+          type: object
     MeshTraceItem:
       type: object
       description: >-
@@ -14888,123 +14604,16 @@ components:
                     array for now.
                   items:
                     description: Only one of zipkin, datadog or openTelemetry can be used.
-                    properties:
-                      datadog:
-                        description: Datadog backend configuration.
-                        properties:
-                          splitService:
-                            default: false
-                            description: >-
-                              Determines if datadog service name should be split
-                              based on traffic
-
-                              direction and destination. For example, with
-                              `splitService: true` and a
-
-                              `backend` service that communicates with a couple
-                              of databases, you would
-
-                              get service names like `backend_INBOUND`,
-                              `backend_OUTBOUND_db1`, and
-
-                              `backend_OUTBOUND_db2` in Datadog.
-                            type: boolean
-                          url:
-                            description: >-
-                              Address of Datadog collector, only host and port
-                              are allowed (no paths,
-
-                              fragments etc.)
-                            type: string
-                        required:
-                          - url
-                        type: object
-                      openTelemetry:
-                        description: OpenTelemetry backend configuration.
-                        properties:
-                          backendRef:
-                            description: >-
-                              BackendRef is a reference to a
-                              MeshOpenTelemetryBackend resource that
-
-                              defines the collector endpoint.
-                            properties:
-                              kind:
-                                description: Kind of the backend resource.
-                                enum:
-                                  - MeshOpenTelemetryBackend
-                                type: string
-                              labels:
-                                additionalProperties:
-                                  type: string
-                                description: >-
-                                  Labels to match the referenced resource. When
-                                  multiple resources match,
-
-                                  the oldest by creation time wins.
-                                type: object
-                            required:
-                              - kind
-                            type: object
-                        type: object
-                      type:
-                        enum:
-                          - Zipkin
-                          - Datadog
-                          - OpenTelemetry
-                        type: string
-                      zipkin:
-                        description: Zipkin backend configuration.
-                        properties:
-                          apiVersion:
-                            default: httpJson
-                            description: >-
-                              Version of the API.
-
-                              https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
-                            enum:
-                              - httpJson
-                              - httpProto
-                            type: string
-                          sharedSpanContext:
-                            default: true
-                            description: >-
-                              Determines whether client and server spans will
-                              share the same span
-
-                              context.
-
-                              https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
-                            type: boolean
-                          traceId128bit:
-                            default: false
-                            description: Generate 128bit traces.
-                            type: boolean
-                          url:
-                            description: Address of Zipkin collector.
-                            type: string
-                        required:
-                          - url
-                        type: object
-                    required:
-                      - type
-                    type: object
                     oneOf:
-                      - properties:
-                          type:
-                            enum:
-                              - Zipkin
-                          zipkin: {}
-                      - properties:
-                          datadog: {}
-                          type:
-                            enum:
-                              - Datadog
-                      - properties:
-                          openTelemetry: {}
-                          type:
-                            enum:
-                              - OpenTelemetry
+                      - $ref: '#/components/schemas/MeshTraceBackendZipkin'
+                      - $ref: '#/components/schemas/MeshTraceBackendDatadog'
+                      - $ref: '#/components/schemas/MeshTraceBackendOpenTelemetry'
+                    discriminator:
+                      mapping:
+                        Datadog: '#/components/schemas/MeshTraceBackendDatadog'
+                        OpenTelemetry: '#/components/schemas/MeshTraceBackendOpenTelemetry'
+                        Zipkin: '#/components/schemas/MeshTraceBackendZipkin'
+                      propertyName: type
                   maxItems: 1
                   type: array
                 sampling:
@@ -17889,200 +17498,16 @@ components:
           description: Spec is the specification of the Kuma MeshIdentity resource.
           properties:
             provider:
-              properties:
-                bundled:
-                  description: >-
-                    Bundled provides information about certificates that are
-                    generated by the control plane,
-
-                    either autogenerated or provided by the user.
-                  properties:
-                    autogenerate:
-                      description: >-
-                        Autogenerate configures the control plane to use
-                        self-signed certificates.
-                      properties:
-                        enabled:
-                          type: boolean
-                      type: object
-                    ca:
-                      description: CA has configuration related to the CA
-                      properties:
-                        certificate:
-                          description: >-
-                            Certificate allows the user to specify a custom
-                            certificate.
-                          properties:
-                            envVar:
-                              properties:
-                                name:
-                                  type: string
-                              required:
-                                - name
-                              type: object
-                            file:
-                              properties:
-                                path:
-                                  type: string
-                              required:
-                                - path
-                              type: object
-                            insecureInline:
-                              properties:
-                                value:
-                                  type: string
-                              required:
-                                - value
-                              type: object
-                            secretRef:
-                              properties:
-                                kind:
-                                  enum:
-                                    - Secret
-                                  type: string
-                                name:
-                                  type: string
-                              required:
-                                - kind
-                                - name
-                              type: object
-                            type:
-                              enum:
-                                - File
-                                - Secret
-                                - EnvVar
-                                - InsecureInline
-                              type: string
-                          required:
-                            - type
-                          type: object
-                        privateKey:
-                          description: >-
-                            PrivateKey allows the user to specify a custom
-                            private key.
-                          properties:
-                            envVar:
-                              properties:
-                                name:
-                                  type: string
-                              required:
-                                - name
-                              type: object
-                            file:
-                              properties:
-                                path:
-                                  type: string
-                              required:
-                                - path
-                              type: object
-                            insecureInline:
-                              properties:
-                                value:
-                                  type: string
-                              required:
-                                - value
-                              type: object
-                            secretRef:
-                              properties:
-                                kind:
-                                  enum:
-                                    - Secret
-                                  type: string
-                                name:
-                                  type: string
-                              required:
-                                - kind
-                                - name
-                              type: object
-                            type:
-                              enum:
-                                - File
-                                - Secret
-                                - EnvVar
-                                - InsecureInline
-                              type: string
-                          required:
-                            - type
-                          type: object
-                      type: object
-                    certificateParameters:
-                      description: >-
-                        CertificateParameters allows users to define certificate
-                        generation parameters.
-                      properties:
-                        expiry:
-                          type: string
-                      type: object
-                    insecureAllowSelfSigned:
-                      description: >-
-                        InsecureAllowSelfSigned allows users to enable the use
-                        of self-signed certificates.
-                      type: boolean
-                    meshTrustCreation:
-                      description: >-
-                        MeshTrustCreation defines whether a MeshTrust resource
-                        should be automatically created
-
-                        from an existing MeshIdentity. If not defined, the
-                        control plane automatically generates a MeshTrust.
-                      enum:
-                        - Enabled
-                        - Disabled
-                      type: string
-                  type: object
-                extension:
-                  description: Extension indicates that custom provider is used.
-                  properties:
-                    config:
-                      description: Config is a freeform configuration for the extension.
-                      x-kubernetes-preserve-unknown-fields: true
-                    name:
-                      description: Name is the name of the extension provider.
-                      type: string
-                  required:
-                    - name
-                  type: object
-                spire:
-                  description: Spire indicates that SPIRE is used for certificate delivery.
-                  properties:
-                    agent:
-                      description: Spire agent configuration
-                      properties:
-                        timeout:
-                          description: >-
-                            Connection timeout to the socket exposed by Spire
-                            agent
-
-                            Default 1 second.
-                          type: string
-                      type: object
-                  type: object
-                type:
-                  description: Type specifies the type of certificate provider.
-                  enum:
-                    - Bundled
-                    - Spire
-                    - Extension
-                  type: string
-              required:
-                - type
-              type: object
               oneOf:
-                - properties:
-                    bundled: {}
-                    type:
-                      enum:
-                        - Bundled
-                - properties:
-                    spire: {}
-                    type:
-                      enum:
-                        - Spire
-                - properties:
-                    extension: {}
-                    type:
-                      enum:
-                        - Extension
+                - $ref: '#/components/schemas/MeshIdentityProviderBundled'
+                - $ref: '#/components/schemas/MeshIdentityProviderSpire'
+                - $ref: '#/components/schemas/MeshIdentityProviderExtension'
+              discriminator:
+                mapping:
+                  Bundled: '#/components/schemas/MeshIdentityProviderBundled'
+                  Extension: '#/components/schemas/MeshIdentityProviderExtension'
+                  Spire: '#/components/schemas/MeshIdentityProviderSpire'
+                propertyName: type
             selector:
               properties:
                 dataplane:
@@ -18191,6 +17616,200 @@ components:
               type: string
           type: object
           readOnly: true
+    MeshIdentityProviderBundled:
+      title: Bundled
+      type: object
+      required:
+        - type
+      properties:
+        bundled:
+          description: >-
+            Bundled provides information about certificates that are generated
+            by the control plane,
+
+            either autogenerated or provided by the user.
+          properties:
+            autogenerate:
+              description: >-
+                Autogenerate configures the control plane to use self-signed
+                certificates.
+              properties:
+                enabled:
+                  type: boolean
+              type: object
+            ca:
+              description: CA has configuration related to the CA
+              properties:
+                certificate:
+                  description: Certificate allows the user to specify a custom certificate.
+                  properties:
+                    envVar:
+                      properties:
+                        name:
+                          type: string
+                      required:
+                        - name
+                      type: object
+                    file:
+                      properties:
+                        path:
+                          type: string
+                      required:
+                        - path
+                      type: object
+                    insecureInline:
+                      properties:
+                        value:
+                          type: string
+                      required:
+                        - value
+                      type: object
+                    secretRef:
+                      properties:
+                        kind:
+                          enum:
+                            - Secret
+                          type: string
+                        name:
+                          type: string
+                      required:
+                        - kind
+                        - name
+                      type: object
+                    type:
+                      enum:
+                        - File
+                        - Secret
+                        - EnvVar
+                        - InsecureInline
+                      type: string
+                  required:
+                    - type
+                  type: object
+                privateKey:
+                  description: PrivateKey allows the user to specify a custom private key.
+                  properties:
+                    envVar:
+                      properties:
+                        name:
+                          type: string
+                      required:
+                        - name
+                      type: object
+                    file:
+                      properties:
+                        path:
+                          type: string
+                      required:
+                        - path
+                      type: object
+                    insecureInline:
+                      properties:
+                        value:
+                          type: string
+                      required:
+                        - value
+                      type: object
+                    secretRef:
+                      properties:
+                        kind:
+                          enum:
+                            - Secret
+                          type: string
+                        name:
+                          type: string
+                      required:
+                        - kind
+                        - name
+                      type: object
+                    type:
+                      enum:
+                        - File
+                        - Secret
+                        - EnvVar
+                        - InsecureInline
+                      type: string
+                  required:
+                    - type
+                  type: object
+              type: object
+            certificateParameters:
+              description: >-
+                CertificateParameters allows users to define certificate
+                generation parameters.
+              properties:
+                expiry:
+                  type: string
+              type: object
+            insecureAllowSelfSigned:
+              description: >-
+                InsecureAllowSelfSigned allows users to enable the use of
+                self-signed certificates.
+              type: boolean
+            meshTrustCreation:
+              description: >-
+                MeshTrustCreation defines whether a MeshTrust resource should be
+                automatically created
+
+                from an existing MeshIdentity. If not defined, the control plane
+                automatically generates a MeshTrust.
+              enum:
+                - Enabled
+                - Disabled
+              type: string
+          type: object
+        type:
+          description: Type specifies the type of certificate provider.
+          enum:
+            - Bundled
+          type: string
+    MeshIdentityProviderExtension:
+      title: Extension
+      type: object
+      required:
+        - type
+      properties:
+        extension:
+          description: Extension indicates that custom provider is used.
+          properties:
+            config:
+              description: Config is a freeform configuration for the extension.
+              x-kubernetes-preserve-unknown-fields: true
+            name:
+              description: Name is the name of the extension provider.
+              type: string
+          required:
+            - name
+          type: object
+        type:
+          description: Type specifies the type of certificate provider.
+          enum:
+            - Extension
+          type: string
+    MeshIdentityProviderSpire:
+      title: Spire
+      type: object
+      required:
+        - type
+      properties:
+        spire:
+          description: Spire indicates that SPIRE is used for certificate delivery.
+          properties:
+            agent:
+              description: Spire agent configuration
+              properties:
+                timeout:
+                  description: |-
+                    Connection timeout to the socket exposed by Spire agent
+                    Default 1 second.
+                  type: string
+              type: object
+          type: object
+        type:
+          description: Type specifies the type of certificate provider.
+          enum:
+            - Spire
+          type: string
     MeshMultiZoneServiceItem:
       type: object
       description: >-

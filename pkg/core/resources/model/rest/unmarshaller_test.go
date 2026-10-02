@@ -7,6 +7,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
+	mlbs_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	mtp_api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 )
 
@@ -240,5 +241,50 @@ spec:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(res.Descriptor().Name).To(Equal(core_model.ResourceType("MeshTrafficPermission")))
+	})
+})
+
+// The spec describes unions as a oneOf of named members, which the structural
+// schema validating requests cannot follow. These guard that flattening them
+// back keeps validating the union's properties.
+var _ = Describe("UnmarshalStrict of a discriminated union", func() {
+	desc := mlbs_api.MeshLoadBalancingStrategyResourceTypeDescriptor
+
+	withLoadBalancer := func(loadBalancer string) []byte {
+		return []byte(`{
+			"type": "MeshLoadBalancingStrategy",
+			"name": "mlbs-1",
+			"mesh": "default",
+			"spec": {
+				"targetRef": {"kind": "Mesh"},
+				"to": [{"targetRef": {"kind": "Mesh"}, "default": {"loadBalancer": ` + loadBalancer + `}}]
+			}
+		}`)
+	}
+
+	DescribeTable("should accept",
+		func(loadBalancer string) {
+			_, err := rest.JSON.UnmarshalStrict(withLoadBalancer(loadBalancer), desc)
+
+			Expect(err).ToNot(HaveOccurred())
+		},
+		Entry("a variant with no config", `{"type": "RoundRobin"}`),
+		Entry("a variant with its config", `{"type": "RingHash", "ringHash": {"minRingSize": 1024}}`),
+	)
+
+	It("should reject an unknown field inside a variant", func() {
+		_, err := rest.JSON.UnmarshalStrict(withLoadBalancer(`{"type": "RingHash", "ringHash": {"bogus": 1}}`), desc)
+
+		Expect(err).To(HaveOccurred())
+		Expect(err.(*validators.ValidationError).Violations).To(Equal([]validators.Violation{
+			{Field: "spec.to[0].default.loadBalancer.ringHash.bogus", Message: "unknown field"},
+		}))
+	})
+
+	It("should reject a value the discriminator does not allow", func() {
+		_, err := rest.JSON.UnmarshalStrict(withLoadBalancer(`{"type": "Bogus"}`), desc)
+
+		Expect(err).To(HaveOccurred())
+		Expect(validators.IsValidationError(err)).To(BeTrue())
 	})
 })

@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
@@ -12,13 +13,22 @@ import (
 )
 
 var _ = Describe("generated schema", func() {
-	It("should describe the loadBalancer union with a oneOf", func() {
+	It("should describe the loadBalancer union as a discriminated union of named members", func() {
 		contents, err := os.ReadFile("rest.yaml")
 		Expect(err).ToNot(HaveOccurred())
+		var spec map[string]any
+		Expect(yaml.Unmarshal(contents, &spec)).To(Succeed())
 
-		// Each branch pairs a type with the property it selects, so consumers do
-		// not have to infer the mapping.
-		Expect(string(contents)).To(MatchRegexp(`(?s)oneOf:.*roundRobin: \{\}.*- RoundRobin`))
+		schemas := spec["components"].(map[string]any)["schemas"].(map[string]any)
+		loadBalancer := schemas["MeshLoadBalancingStrategyItem"].(map[string]any)["properties"].(map[string]any)["spec"].(map[string]any)["properties"].(map[string]any)["to"].(map[string]any)["items"].(map[string]any)["properties"].(map[string]any)["default"].(map[string]any)["properties"].(map[string]any)["loadBalancer"].(map[string]any)
+
+		// Each value names the member holding the property it selects, so
+		// consumers do not have to infer the mapping.
+		Expect(loadBalancer).ToNot(HaveKey("properties"))
+		Expect(loadBalancer["discriminator"]).To(HaveKeyWithValue("propertyName", "type"))
+		Expect(loadBalancer["discriminator"]).To(HaveKeyWithValue("mapping",
+			HaveKeyWithValue("RingHash", "#/components/schemas/MeshLoadBalancingStrategyLoadBalancerRingHash")))
+		Expect(schemas["MeshLoadBalancingStrategyLoadBalancerRingHash"]).To(HaveKeyWithValue("properties", HaveKey("ringHash")))
 	})
 })
 

@@ -210,105 +210,16 @@ components:
                     array for now.
                   items:
                     description: Only one of zipkin, datadog or openTelemetry can be used.
-                    properties:
-                      datadog:
-                        description: Datadog backend configuration.
-                        properties:
-                          splitService:
-                            default: false
-                            description: |-
-                              Determines if datadog service name should be split based on traffic
-                              direction and destination. For example, with `splitService: true` and a
-                              `backend` service that communicates with a couple of databases, you would
-                              get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
-                              `backend_OUTBOUND_db2` in Datadog.
-                            type: boolean
-                          url:
-                            description: |-
-                              Address of Datadog collector, only host and port are allowed (no paths,
-                              fragments etc.)
-                            type: string
-                        required:
-                          - url
-                        type: object
-                      openTelemetry:
-                        description: OpenTelemetry backend configuration.
-                        properties:
-                          backendRef:
-                            description: |-
-                              BackendRef is a reference to a MeshOpenTelemetryBackend resource that
-                              defines the collector endpoint.
-                            properties:
-                              kind:
-                                description: Kind of the backend resource.
-                                enum:
-                                  - MeshOpenTelemetryBackend
-                                type: string
-                              labels:
-                                additionalProperties:
-                                  type: string
-                                description: |-
-                                  Labels to match the referenced resource. When multiple resources match,
-                                  the oldest by creation time wins.
-                                type: object
-                            required:
-                              - kind
-                            type: object
-                        type: object
-                      type:
-                        enum:
-                          - Zipkin
-                          - Datadog
-                          - OpenTelemetry
-                        type: string
-                      zipkin:
-                        description: Zipkin backend configuration.
-                        properties:
-                          apiVersion:
-                            default: httpJson
-                            description: |-
-                              Version of the API.
-                              https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
-                            enum:
-                              - httpJson
-                              - httpProto
-                            type: string
-                          sharedSpanContext:
-                            default: true
-                            description: |-
-                              Determines whether client and server spans will share the same span
-                              context.
-                              https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
-                            type: boolean
-                          traceId128bit:
-                            default: false
-                            description: Generate 128bit traces.
-                            type: boolean
-                          url:
-                            description: Address of Zipkin collector.
-                            type: string
-                        required:
-                          - url
-                        type: object
-                    required:
-                      - type
-                    type: object
                     oneOf:
-                      - properties:
-                          type:
-                            enum:
-                              - Zipkin
-                          zipkin: {}
-                      - properties:
-                          datadog: {}
-                          type:
-                            enum:
-                              - Datadog
-                      - properties:
-                          openTelemetry: {}
-                          type:
-                            enum:
-                              - OpenTelemetry
+                      - $ref: '#/components/schemas/MeshTraceBackendZipkin'
+                      - $ref: '#/components/schemas/MeshTraceBackendDatadog'
+                      - $ref: '#/components/schemas/MeshTraceBackendOpenTelemetry'
+                    discriminator:
+                      mapping:
+                        Datadog: '#/components/schemas/MeshTraceBackendDatadog'
+                        OpenTelemetry: '#/components/schemas/MeshTraceBackendOpenTelemetry'
+                        Zipkin: '#/components/schemas/MeshTraceBackendZipkin'
+                      propertyName: type
                   maxItems: 1
                   type: array
                 sampling:
@@ -477,6 +388,109 @@ components:
               type: array
           type: object
           readOnly: true
+    MeshTraceBackendDatadog:
+      title: Datadog
+      type: object
+      required:
+        - type
+      properties:
+        datadog:
+          description: Datadog backend configuration.
+          properties:
+            splitService:
+              default: false
+              description: |-
+                Determines if datadog service name should be split based on traffic
+                direction and destination. For example, with `splitService: true` and a
+                `backend` service that communicates with a couple of databases, you would
+                get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
+                `backend_OUTBOUND_db2` in Datadog.
+              type: boolean
+            url:
+              description: |-
+                Address of Datadog collector, only host and port are allowed (no paths,
+                fragments etc.)
+              type: string
+          required:
+            - url
+          type: object
+        type:
+          enum:
+            - Datadog
+          type: string
+    MeshTraceBackendOpenTelemetry:
+      title: OpenTelemetry
+      type: object
+      required:
+        - type
+      properties:
+        openTelemetry:
+          description: OpenTelemetry backend configuration.
+          properties:
+            backendRef:
+              description: |-
+                BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+                defines the collector endpoint.
+              properties:
+                kind:
+                  description: Kind of the backend resource.
+                  enum:
+                    - MeshOpenTelemetryBackend
+                  type: string
+                labels:
+                  additionalProperties:
+                    type: string
+                  description: |-
+                    Labels to match the referenced resource. When multiple resources match,
+                    the oldest by creation time wins.
+                  type: object
+              required:
+                - kind
+              type: object
+          type: object
+        type:
+          enum:
+            - OpenTelemetry
+          type: string
+    MeshTraceBackendZipkin:
+      title: Zipkin
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          enum:
+            - Zipkin
+          type: string
+        zipkin:
+          description: Zipkin backend configuration.
+          properties:
+            apiVersion:
+              default: httpJson
+              description: |-
+                Version of the API.
+                https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
+              enum:
+                - httpJson
+                - httpProto
+              type: string
+            sharedSpanContext:
+              default: true
+              description: |-
+                Determines whether client and server spans will share the same span
+                context.
+                https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
+              type: boolean
+            traceId128bit:
+              default: false
+              description: Generate 128bit traces.
+              type: boolean
+            url:
+              description: Address of Zipkin collector.
+              type: string
+          required:
+            - url
+          type: object
   responses:
     MeshTraceItem:
       description: Successful response

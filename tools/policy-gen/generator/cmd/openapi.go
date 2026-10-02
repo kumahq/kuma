@@ -68,24 +68,6 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 				return err
 			}
 
-			// Describe discriminated unions with a oneOf, which controller-gen
-			// cannot express, so consumers do not have to infer which property a
-			// given `type` selects. Appended to the enrichment expression so the
-			// generated file keeps its key order.
-			crdProperties, err := unions.CRDProperties(crdPath)
-			if err != nil {
-				return err
-			}
-			// The enrichment merges the CRD properties into `.properties`, so a
-			// union at `spec.foo` in the CRD lands at `.properties.spec.foo`.
-			unionAssignments, err := unions.Assignments(crdProperties, []string{"properties"})
-			if err != nil {
-				return err
-			}
-			if unionAssignments != "" {
-				unionAssignments = "\n  | " + unionAssignments
-			}
-
 			// Enrich schema with CRD information
 			yqEnrichSchema := exec.CommandContext(cmd.Context(), //nolint:gosec
 				localArgs.yqBin, "e", "-i",
@@ -95,7 +77,7 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
       | del(.apiVersion, .metadata, .kind)
     ) * {"type": {"enum": [$crd.spec.names.kind]}}
   | .description = $crd.spec.versions[0].schema.openAPIV3Schema.description
-  | (.properties | select(has("status")).status) |= . + {"readOnly": true}%s`, crdPath, unionAssignments),
+  | (.properties | select(has("status")).status) |= . + {"readOnly": true}`, crdPath),
 				tmpSchemaPath,
 			)
 			yqEnrichSchema.Stderr = cmd.ErrOrStderr()
@@ -103,10 +85,30 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 				return err
 			}
 
+			// Describe discriminated unions, which controller-gen cannot express, so
+			// consumers do not have to infer which property a given `type` selects.
+			// Their member schemas go next to the item in `components.schemas`, so
+			// this is applied to rest.yaml rather than to the schema. Appended to the
+			// merge expression so the generated file keeps its key order.
+			crdProperties, err := unions.CRDProperties(crdPath)
+			if err != nil {
+				return err
+			}
+			// The enrichment merges the CRD properties into `.properties`, so a
+			// union at `spec.foo` in the CRD lands at `.properties.spec.foo`.
+			itemSchema := pconfig.Name + "Item"
+			unionAssignments, err := unions.Assignments(crdProperties, []string{"components", "schemas", itemSchema, "properties"}, pconfig.Name)
+			if err != nil {
+				return err
+			}
+			if unionAssignments != "" {
+				unionAssignments = "\n  | " + unionAssignments
+			}
+
 			// Merge schema.yaml into rest.yaml by replacing the $ref
 			yqMerge := exec.CommandContext(cmd.Context(), //nolint:gosec
 				localArgs.yqBin, "e", "-i",
-				fmt.Sprintf(`.components.schemas.%sItem = load(%q)`, pconfig.Name, tmpSchemaPath),
+				fmt.Sprintf(`.components.schemas.%s = load(%q)%s`, itemSchema, tmpSchemaPath, unionAssignments),
 				tmpRestPath,
 			)
 			yqMerge.Stderr = cmd.ErrOrStderr()

@@ -46,6 +46,10 @@ func init() {
 		if !ok {
 			panic(fmt.Errorf("MeshCircuitBreakerItem schema not found"))
 		}
+		// Structural schemas cannot follow the $refs the spec describes unions with
+		if err := model.FlattenDiscriminatedUnions(schemaItem, schemas); err != nil {
+			panic(err)
+		}
 
 		// Marshal the extracted schema back to YAML to unmarshal into JSONSchemaProps
 		schemaBytes, err := yaml.Marshal(schemaItem)

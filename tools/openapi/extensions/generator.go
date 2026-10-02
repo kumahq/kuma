@@ -134,7 +134,7 @@ func Generate(ctx context.Context, opts Options) error {
 		return err
 	}
 
-	expression, err := patchExpression(wrappers, schemas)
+	expression, err := patchExpression(spec, wrappers, schemas)
 	if err != nil {
 		return err
 	}
@@ -205,7 +205,11 @@ func itemSchema(point core_extensions.Point) string {
 func checkExtensionPoint(spec map[string]any, point core_extensions.Point) error {
 	item := itemSchema(point)
 	where := item + "." + strings.Join(point.SchemaPath, ".")
-	node, ok := dig(spec, append([]string{"components", "schemas", item}, propertyPath(point.SchemaPath)...))
+	path, err := extensionPointPath(spec, point)
+	if err != nil {
+		return fmt.Errorf("%s: %w", where, err)
+	}
+	node, ok := dig(spec, path)
 	if !ok {
 		return fmt.Errorf("%s does not have a %s schema to document", point.ResourceType, where)
 	}
@@ -225,6 +229,49 @@ func checkExtensionPoint(spec map[string]any, point core_extensions.Point) error
 	return nil
 }
 
+// extensionPointPath is the path of the extension point's node in the document.
+//
+// The point can sit inside a discriminated union, whose node has no properties of
+// its own, only a oneOf of member schemas in `components.schemas`: MeshIdentity's
+// `spec.provider.extension` is the `extension` of the provider's Extension member.
+// The path then continues from the one member that has the property. A path that
+// leads nowhere is returned as is, for the caller to report.
+func extensionPointPath(spec map[string]any, point core_extensions.Point) ([]string, error) {
+	path := []string{"components", "schemas", itemSchema(point)}
+	for _, segment := range point.SchemaPath {
+		node, _ := dig(spec, path)
+		obj, _ := node.(map[string]any)
+		if properties, ok := obj["properties"].(map[string]any); ok {
+			if _, ok := properties[segment]; ok {
+				path = append(path, "properties", segment)
+				continue
+			}
+		}
+		oneOf, _ := obj["oneOf"].([]any)
+		var members []string
+		for _, entry := range oneOf {
+			ref, _ := entry.(map[string]any)["$ref"].(string)
+			name, ok := strings.CutPrefix(ref, "#/components/schemas/")
+			if !ok {
+				continue
+			}
+			if _, ok := dig(spec, []string{"components", "schemas", name, "properties", segment}); ok {
+				members = append(members, name)
+			}
+		}
+		switch len(members) {
+		case 0:
+			path = append(path, "properties", segment)
+		case 1:
+			path = []string{"components", "schemas", members[0], "properties", segment}
+		default:
+			// Every member would need the same patch, which nothing asks for yet.
+			return nil, fmt.Errorf("%q is in more than one member of a union: %s", segment, strings.Join(members, ", "))
+		}
+	}
+	return path, nil
+}
+
 func dig(node any, path []string) (any, bool) {
 	for _, key := range path {
 		obj, ok := node.(map[string]any)
@@ -236,16 +283,6 @@ func dig(node any, path []string) (any, bool) {
 		}
 	}
 	return node, true
-}
-
-// propertyPath interleaves `properties` into a schema path, so {"spec", "extension"}
-// addresses `properties.spec.properties.extension`.
-func propertyPath(schemaPath []string) []string {
-	path := make([]string, 0, len(schemaPath)*2)
-	for _, segment := range schemaPath {
-		path = append(path, "properties", segment)
-	}
-	return path
 }
 
 func writePackage(pkgDir string, wrappers []wrapper) error {
@@ -373,7 +410,7 @@ func configSchemas(crdDir string, wrappers []wrapper) (map[string]any, error) {
 
 // patchExpression renders the yq program that adds every config schema to
 // `components.schemas` and points the extension nodes at them.
-func patchExpression(wrappers []wrapper, schemas map[string]any) (string, error) {
+func patchExpression(spec map[string]any, wrappers []wrapper, schemas map[string]any) (string, error) {
 	var assignments []string
 
 	for _, w := range wrappers {
@@ -386,7 +423,7 @@ func patchExpression(wrappers []wrapper, schemas map[string]any) (string, error)
 
 		// The config is a resource spec like any other, so it can hold unions of
 		// its own that controller-gen cannot express.
-		unionAssignments, err := unions.Assignments(schemas[w.kind], schemaPath)
+		unionAssignments, err := unions.Assignments(schemas[w.kind], schemaPath, w.schemaName)
 		if err != nil {
 			return "", err
 		}
@@ -400,7 +437,10 @@ func patchExpression(wrappers []wrapper, schemas map[string]any) (string, error)
 		if err != nil {
 			return "", err
 		}
-		path := append([]string{"components", "schemas", itemSchema(point)}, propertyPath(point.SchemaPath)...)
+		path, err := extensionPointPath(spec, point)
+		if err != nil {
+			return "", err
+		}
 		assignments = append(assignments, fmt.Sprintf("%s.oneOf = %s", unions.YQPath(path), oneOf))
 	}
 
