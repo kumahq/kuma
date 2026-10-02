@@ -172,108 +172,105 @@ components:
                     array for now.
                   items:
                     description: Only one of zipkin, datadog or openTelemetry can be used.
-                    properties:
-                      datadog:
-                        description: Datadog backend configuration.
-                        properties:
-                          splitService:
-                            default: false
-                            description: |-
-                              Determines if datadog service name should be split based on traffic
-                              direction and destination. For example, with `splitService: true` and a
-                              `backend` service that communicates with a couple of databases, you would
-                              get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
-                              `backend_OUTBOUND_db2` in Datadog.
-                            type: boolean
-                          url:
-                            description: |-
-                              Address of Datadog collector, only host and port are allowed (no paths,
-                              fragments etc.)
-                            type: string
-                        required:
-                          - url
-                        type: object
-                      openTelemetry:
-                        description: OpenTelemetry backend configuration.
-                        properties:
-                          backendRef:
-                            description: |-
-                              BackendRef is a reference to a MeshOpenTelemetryBackend resource that
-                              defines the collector endpoint.
-                            properties:
-                              kind:
-                                description: Kind of the backend resource.
-                                enum:
-                                  - MeshOpenTelemetryBackend
-                                type: string
-                              labels:
-                                additionalProperties:
-                                  type: string
-                                description: |-
-                                  Labels to match the referenced resource. When multiple resources match,
-                                  the oldest by creation time wins.
-                                type: object
-                            required:
-                              - kind
-                            type: object
-                        type: object
-                      type:
-                        enum:
-                          - Zipkin
-                          - Datadog
-                          - OpenTelemetry
-                        type: string
-                      zipkin:
-                        description: Zipkin backend configuration.
-                        properties:
-                          apiVersion:
-                            default: httpJson
-                            description: |-
-                              Version of the API.
-                              https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
-                            enum:
-                              - httpJson
-                              - httpProto
-                            type: string
-                          sharedSpanContext:
-                            default: true
-                            description: |-
-                              Determines whether client and server spans will share the same span
-                              context.
-                              https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
-                            type: boolean
-                          traceId128bit:
-                            default: false
-                            description: Generate 128bit traces.
-                            type: boolean
-                          url:
-                            description: Address of Zipkin collector.
-                            type: string
-                        required:
-                          - url
-                        type: object
-                    required:
-                      - type
                     type: object
                     oneOf:
-                      - properties:
+                      - title: Zipkin
+                        type: object
+                        required:
+                          - type
+                        properties:
                           type:
-                            enum:
-                              - Zipkin
-                          zipkin: {}
-                        title: Zipkin
-                      - properties:
-                          datadog: {}
+                            type: string
+                            const: Zipkin
+                          zipkin:
+                            description: Zipkin backend configuration.
+                            properties:
+                              apiVersion:
+                                default: httpJson
+                                description: |-
+                                  Version of the API.
+                                  https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
+                                enum:
+                                  - httpJson
+                                  - httpProto
+                                type: string
+                              sharedSpanContext:
+                                default: true
+                                description: |-
+                                  Determines whether client and server spans will share the same span
+                                  context.
+                                  https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
+                                type: boolean
+                              traceId128bit:
+                                default: false
+                                description: Generate 128bit traces.
+                                type: boolean
+                              url:
+                                description: Address of Zipkin collector.
+                                type: string
+                            required:
+                              - url
+                            type: object
+                      - title: Datadog
+                        type: object
+                        required:
+                          - type
+                        properties:
                           type:
-                            enum:
-                              - Datadog
-                        title: Datadog
-                      - properties:
-                          openTelemetry: {}
+                            type: string
+                            const: Datadog
+                          datadog:
+                            description: Datadog backend configuration.
+                            properties:
+                              splitService:
+                                default: false
+                                description: |-
+                                  Determines if datadog service name should be split based on traffic
+                                  direction and destination. For example, with `splitService: true` and a
+                                  `backend` service that communicates with a couple of databases, you would
+                                  get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
+                                  `backend_OUTBOUND_db2` in Datadog.
+                                type: boolean
+                              url:
+                                description: |-
+                                  Address of Datadog collector, only host and port are allowed (no paths,
+                                  fragments etc.)
+                                type: string
+                            required:
+                              - url
+                            type: object
+                      - title: OpenTelemetry
+                        type: object
+                        required:
+                          - type
+                        properties:
                           type:
-                            enum:
-                              - OpenTelemetry
-                        title: OpenTelemetry
+                            type: string
+                            const: OpenTelemetry
+                          openTelemetry:
+                            description: OpenTelemetry backend configuration.
+                            properties:
+                              backendRef:
+                                description: |-
+                                  BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+                                  defines the collector endpoint.
+                                properties:
+                                  kind:
+                                    description: Kind of the backend resource.
+                                    enum:
+                                      - MeshOpenTelemetryBackend
+                                    type: string
+                                  labels:
+                                    additionalProperties:
+                                      type: string
+                                    description: |-
+                                      Labels to match the referenced resource. When multiple resources match,
+                                      the oldest by creation time wins.
+                                    type: object
+                                required:
+                                  - kind
+                                type: object
+                            type: object
                   maxItems: 1
                   type: array
                 sampling:
