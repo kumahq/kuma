@@ -813,6 +813,10 @@ spec:
               memory: 16Mi
             limits:
               memory: 16Mi
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 20
 ---
 apiVersion: apps/v1
 kind: Deployment
