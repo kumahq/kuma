@@ -141,7 +141,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			continue
 		}
 		mids := identityByMesh[mesh.Meta.GetName()]
-		identities := s.buildIdentities(dpps, mids)
+		identities := s.buildIdentities(dpps, mids, mesh.MTLSEnabled())
 		if !reflect.DeepEqual(pointer.Deref(ms.Spec.Identities), identities) {
 			changeReasons = append(changeReasons, "identities")
 			ms.Spec.Identities = &identities
@@ -297,21 +297,25 @@ func (s *StatusUpdater) buildTLS(
 	}
 }
 
-func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, meshIdentities []*meshidentity_api.MeshIdentityResource) []meshservice_api.MeshServiceIdentity {
+func (s *StatusUpdater) buildIdentities(dpps []*core_mesh.DataplaneResource, meshIdentities []*meshidentity_api.MeshIdentityResource, mtlsEnabled bool) []meshservice_api.MeshServiceIdentity {
 	serviceTagIdentities := map[string]struct{}{}
 	spiffeIDs := map[string]struct{}{}
 	for _, dpp := range dpps {
-		tagIdentities := dpp.Spec.TagSet()[mesh_proto.ServiceTag]
-		if len(tagIdentities) == 0 {
-			// No kuma.io/service tag once Experimental.InboundTagsDisabled
-			// strips inbound tags. Fall back to the workload label, same as
-			// the mTLS identity path and MeshService generation.
-			if workload := dpp.GetMeta().GetLabels()[metadata.KumaWorkload]; workload != "" {
-				serviceTagIdentities[workload] = struct{}{}
+		// Only the Mesh mTLS CA issues certificates for a ServiceTag identity, so
+		// without it nothing presents one; 3.0 zones also reject the type.
+		if mtlsEnabled {
+			tagIdentities := dpp.Spec.TagSet()[mesh_proto.ServiceTag]
+			if len(tagIdentities) == 0 {
+				// No kuma.io/service tag once Experimental.InboundTagsDisabled
+				// strips inbound tags. Fall back to the workload label, same as
+				// the mTLS identity path and MeshService generation.
+				if workload := dpp.GetMeta().GetLabels()[metadata.KumaWorkload]; workload != "" {
+					serviceTagIdentities[workload] = struct{}{}
+				}
 			}
-		}
-		for service := range tagIdentities {
-			serviceTagIdentities[service] = struct{}{}
+			for service := range tagIdentities {
+				serviceTagIdentities[service] = struct{}{}
+			}
 		}
 		for _, identity := range meshidentity_api.AllMatched(dpp.Meta.GetLabels(), meshIdentities) {
 			if identity.Status == nil || (!identity.Status.IsInitialized() && !identity.Status.IsPartiallyReady()) {

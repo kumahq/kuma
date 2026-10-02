@@ -37,6 +37,16 @@ Before upgrading to 3.0:
 2. Rewrite `caCert`, `clientCert` and `clientKey` on every `MeshExternalService` to the new shape.
 3. Upgrade to 3.0, global control plane first.
 
+### `MeshService` identities list `ServiceTag` only when the mesh has `mtls`
+
+A zone control plane now writes a `ServiceTag` entry into `MeshService.spec.identities` only when the mesh has `mtls` enabled. In a mesh secured by `MeshIdentity` alone, the list contains only `SpiffeID` entries. Nothing changes on the data plane: the `ServiceTag` value is a SAN issued only by the `Mesh.mtls` CA, so without it no proxy presents one.
+
+3.0 accepts only `SpiffeID` identities, and a 3.0 Kubernetes zone rejects a `MeshService` synced from another zone that still lists a `ServiceTag` one.
+
+**Action required**
+
+Before upgrading to 3.0, upgrade every zone control plane to 2.14.6 or later and remove `mtls` from the mesh once the `MeshIdentity` migration is complete. Each zone then rewrites its `MeshService` identities within one status update interval.
+
 ## Upgrade to `2.14.5`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because it changes behaviour existing deployments may rely on.

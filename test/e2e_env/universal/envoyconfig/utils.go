@@ -19,14 +19,20 @@ import (
 	"github.com/kumahq/kuma/v2/test/framework/envs/universal"
 )
 
+// waitMeshServiceReady expects a ServiceTag identity when called without SPIFFE
+// IDs (a Mesh mTLS mesh) and only SPIFFE IDs otherwise (a MeshIdentity-only mesh).
 func waitMeshServiceReady(mesh, name string, spiffeIDs ...string) {
 	Eventually(func(g Gomega) {
 		spec, status, err := GetMeshServiceStatus(universal.Cluster, name, mesh)
 		g.Expect(err).ToNot(HaveOccurred())
-		g.Expect(spec.Identities).To(HaveValue(ContainElement(meshservice_api.MeshServiceIdentity{
-			Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-			Value: name,
-		})))
+		if len(spiffeIDs) == 0 {
+			g.Expect(spec.Identities).To(HaveValue(ContainElement(meshservice_api.MeshServiceIdentity{
+				Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+				Value: name,
+			})))
+		} else {
+			g.Expect(spec.Identities).To(HaveValue(HaveEach(HaveField("Type", BeEquivalentTo(meshservice_api.MeshServiceIdentitySpiffeIDType)))))
+		}
 		for _, spiffeID := range spiffeIDs {
 			g.Expect(spec.Identities).To(HaveValue(ContainElement(meshservice_api.MeshServiceIdentity{
 				Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
