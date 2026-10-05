@@ -856,6 +856,78 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(clusterYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "zone_egress_sni.cluster.golden.yaml")))
 	})
 
+	It("should keep SNI rule timeouts on a zone-egress cluster owned by a MeshExternalService", func() {
+		rs := core_xds.NewResourceSet()
+		for _, res := range []core_xds.Resource{
+			zoneEgressListenerResource(),
+			{
+				Name:     "mes-http",
+				Origin:   metadata.OriginEgress,
+				Resource: test_xds.ClusterWithName("mes-http"),
+				Protocol: core_meta.ProtocolHTTP,
+				ResourceOrigin: kri.Identifier{
+					ResourceType: "MeshExternalService",
+					Mesh:         "default",
+					Name:         "aws-aurora",
+				},
+			},
+		} {
+			r := res
+			rs.Add(&r)
+		}
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(xds_context.NewResources()).
+			Build()
+
+		meshTimeout := api.NewMeshTimeoutResource()
+		meshTimeout.SetMeta(&test_model.ResourceMeta{
+			Mesh:   "default",
+			Name:   "zone-egress-timeout",
+			Labels: map[string]string{},
+		})
+		meshTimeout.Spec = &api.MeshTimeout{
+			TargetRef: &common_api.TopLevelTargetRef{
+				Kind: common_api.TopLevelTargetRefKindDataplane,
+			},
+			Rules: &[]api.Rule{{
+				Matches: &[]common_api.Match{{
+					SNI: &common_api.SNIMatch{
+						Type:  common_api.SNIExactMatchType,
+						Value: "sni.extsvc.default.zone-1.aws-aurora.8443",
+					},
+				}},
+				Default: api.Conf{
+					ConnectionTimeout: test.ParseDuration("7s"),
+					IdleTimeout:       test.ParseDuration("13s"),
+					Http: &api.Http{
+						RequestTimeout: test.ParseDuration("2s"),
+					},
+				},
+			}},
+		}
+		Expect(meshTimeout.Validate()).To(Succeed())
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(zoneEgressOnlyDataplane()).
+			WithZone("zone-1").
+			WithPolicies(xds_builders.MatchedPolicies().
+				With(func(policies *core_xds.MatchedPolicies) {
+					policies.Dynamic[api.MeshTimeoutType] = core_xds.TypedMatchingPolicies{
+						DataplanePolicies: []core_model.Resource{meshTimeout},
+					}
+				})).
+			Build()
+
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(rs, xdsCtx, proxy)).To(Succeed())
+
+		clusterYaml, err := util_yaml.GetResourcesToYaml(rs, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(clusterYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "zone_egress_sni_mes_owned.cluster.golden.yaml")))
+	})
+
 	It("should merge overlapping SNI rules before configuring a zone-egress filter chain", func() {
 		rs := core_xds.NewResourceSet()
 		for _, res := range []core_xds.Resource{

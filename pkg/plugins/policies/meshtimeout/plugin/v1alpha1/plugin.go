@@ -53,9 +53,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToInbounds(policies.FromRules, listeners.Inbound, clusters.Inbound, proxy.Dataplane); err != nil {
 		return err
 	}
-	if err := applyToZoneProxyListeners(policies, listeners, clusters, proxy); err != nil {
-		return err
-	}
 
 	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
 
@@ -67,7 +64,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			return err
 		}
 	}
-	return nil
+
+	return applyToZoneProxyListeners(policies, listeners, clusters, proxy)
 }
 
 func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, inboundClusters map[string]*envoy_cluster.Cluster, dataplane *core_mesh.DataplaneResource) error {
