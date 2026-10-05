@@ -100,7 +100,7 @@ jobs:
           repository: ${{ env.REPO }}
           ref: ${{ env.BRANCH_NAME }}
           token: ${{ steps.github-app-token.outputs.token }}
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
         with:
           version: 2026.9.9
         if: steps.parse-commands.outputs.has_command == 'true'
