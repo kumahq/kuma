@@ -3,10 +3,10 @@
 #/meshes/default/dataplanes/foo 400 method=PUT
 # Mesh is not the same in the request
 #/meshes/default/dataplanes/dp-3 400 method=PUT
-# Tags present but missing kuma.io/service
+# Type is not the same in the request
 #/meshes/default/dataplanes/dp-4 400 method=PUT
-# Invalid resource content
-#/meshes/default/dataplanes/dp-5 400 method=PUT
+# Tags present without kuma.io/service
+#/meshes/default/dataplanes/dp-4 201 method=PUT
 # Body is not a valid json
 #/meshes/default/dataplanes/dp-5 400 method=PUT
 # Invalid mesh and name
