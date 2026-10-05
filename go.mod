@@ -77,7 +77,11 @@ require (
 	golang.org/x/sync v0.23.0
 	golang.org/x/sys v0.48.0
 	golang.org/x/text v0.42.0
+<<<<<<< HEAD
 	golang.org/x/tools v0.51.0
+=======
+	golang.org/x/tools v0.50.0
+>>>>>>> a5a73b1a37 (chore(deps): bump google.golang.org/genproto/googleapis/* from b142276 to 8a89bd6 (#18953))
 	google.golang.org/genproto/googleapis/api v0.0.0-20260928230214-8a89bd6388cc
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260928230214-8a89bd6388cc
 	google.golang.org/grpc v1.84.0
