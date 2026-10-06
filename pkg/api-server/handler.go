@@ -76,7 +76,7 @@ type statusResponse struct {
 }
 
 // created responds with 201 Created.
-func created(body any) any {
+func created(body any) statusResponse {
 	return statusResponse{status: http.StatusCreated, body: body}
 }
 

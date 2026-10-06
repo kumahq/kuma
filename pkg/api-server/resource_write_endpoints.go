@@ -27,6 +27,7 @@ func (r *resourceCrudHandler) createOnlyResource(request *restful.Request) (any,
 	if err != nil {
 		return nil, withTitle(err, "Failed to retrieve Mesh")
 	}
+
 	bodyBytes, err := io.ReadAll(request.Request.Body)
 	if err != nil {
 		return nil, withTitle(err, "Could not process a resource")
@@ -35,15 +36,17 @@ func (r *resourceCrudHandler) createOnlyResource(request *restful.Request) (any,
 	if err != nil {
 		return nil, withTitle(err, "Could not process a resource")
 	}
+
 	name := resourceRest.GetMeta().Name
 	if err := r.validateResourceRequest(name, meshName, resourceRest, nil); err != nil {
 		return nil, withTitle(err, "Could not process a resource")
 	}
-	body, err := r.createResource(request.Request.Context(), name, meshName, resourceRest)
+
+	result, err := r.createResource(request.Request.Context(), name, meshName, resourceRest)
 	if err != nil {
 		return nil, err
 	}
-	result := body.(statusResponse)
+
 	result.headers = http.Header{
 		"Location": {strings.TrimRight(request.Request.URL.EscapedPath(), "/") + "/" + url.PathEscape(name)},
 	}
@@ -115,7 +118,7 @@ func (r *resourceCrudHandler) createResource(
 	name string,
 	meshName string,
 	resRest rest.Resource,
-) (any, error) {
+) (statusResponse, error) {
 	if err := r.resourceAccess.ValidateCreate(
 		ctx,
 		core_model.ResourceKey{Mesh: meshName, Name: name},
@@ -123,7 +126,7 @@ func (r *resourceCrudHandler) createResource(
 		r.descriptor,
 		user.FromCtx(ctx),
 	); err != nil {
-		return nil, withTitle(err, "Access Denied")
+		return statusResponse{}, withTitle(err, "Access Denied")
 	}
 
 	r.applyBeforeWriteHook(resRest, meshName, name)
@@ -141,11 +144,11 @@ func (r *resourceCrudHandler) createResource(
 		Labels:      res.GetMeta().GetLabels(),
 	}, r.cp)
 	if err != nil {
-		return nil, withTitle(err, "Could not compute labels for a resource")
+		return statusResponse{}, withTitle(err, "Could not compute labels for a resource")
 	}
 
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
-		return nil, withTitle(err, "Failed to create a resource")
+		return statusResponse{}, withTitle(err, "Failed to create a resource")
 	}
 
 	return created(api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(res)}), nil

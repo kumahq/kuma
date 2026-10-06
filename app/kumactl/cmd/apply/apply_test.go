@@ -226,6 +226,7 @@ var _ = Describe("kumactl apply", func() {
 	})
 
 	It("reports a creation race without overwriting the other writer", func() {
+		// given
 		originalStore := store
 		store = &createAfterLookupStore{ResourceStore: originalStore}
 		rootCmd.SetArgs([]string{
@@ -235,8 +236,15 @@ var _ = Describe("kumactl apply", func() {
 		output := &bytes.Buffer{}
 		rootCmd.SetOut(output)
 		rootCmd.SetErr(output)
-		Expect(rootCmd.Execute()).To(HaveOccurred())
+
+		// when
+		err := rootCmd.Execute()
+
+		// then
+		Expect(err).To(HaveOccurred())
 		Expect(output.String()).To(ContainSubstring("already exists"))
+
+		// and then
 		winner := mesh.NewMeshResource()
 		Expect(originalStore.Get(context.Background(), winner, core_store.GetByKey("sample", core_model.NoMesh))).To(Succeed())
 		Expect(winner.GetMeta().GetLabels()).To(HaveKeyWithValue("writer", "concurrent"))
@@ -544,7 +552,6 @@ spec:
 	)
 })
 
-// Insert a competing resource after the client's absent-resource observation.
 type createAfterLookupStore struct{ core_store.ResourceStore }
 
 func (s *createAfterLookupStore) Get(ctx context.Context, res core_model.Resource, fs ...core_store.GetOptionsFunc) error {

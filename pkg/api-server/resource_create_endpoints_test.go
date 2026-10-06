@@ -22,40 +22,58 @@ import (
 var _ = Describe("Create-only resource endpoints", func() {
 	request := func(address, method, path, body string) (int, http.Header, []byte) {
 		GinkgoHelper()
+
 		req, err := http.NewRequestWithContext(context.Background(), method, "http://"+address+path, bytes.NewBufferString(body))
 		Expect(err).NotTo(HaveOccurred())
 		req.Header.Set("Content-Type", "application/json")
+
 		resp, err := http.DefaultClient.Do(req)
 		Expect(err).NotTo(HaveOccurred())
 		defer resp.Body.Close()
+
 		data, err := io.ReadAll(resp.Body)
 		Expect(err).NotTo(HaveOccurred())
+
 		return resp.StatusCode, resp.Header, data
 	}
 
 	DescribeTable("creates once and preserves the original on conflict", func(collection, body, replacement string) {
+		// given
 		resourceStore := memory.NewStore()
 		Expect(resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))).To(Succeed())
-		api, _, stop := StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithConfigMutator(func(c *config.ApiServerConfig) { c.BasePath = "/api" }))
+		api, _, stop := StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithConfigMutator(func(c *config.ApiServerConfig) {
+			c.BasePath = "/api"
+		}))
 		defer stop()
 		collection = "/api" + collection
+
+		// when
 		status, headers, data := request(api.Address(), http.MethodPost, collection, body)
+
+		// then
 		Expect(status).To(Equal(http.StatusCreated), string(data))
 		Expect(headers.Get("Location")).To(Equal(collection + "/test"))
+
 		var warnings map[string]any
 		Expect(json.Unmarshal(data, &warnings)).To(Succeed())
+
+		// and then
 		status, _, before := request(api.Address(), http.MethodGet, collection+"/test", "")
 		Expect(status).To(Equal(http.StatusOK))
+
 		status, headers, data = request(api.Address(), http.MethodPost, collection, replacement)
 		Expect(status).To(Equal(http.StatusConflict), string(data))
 		Expect(headers.Get("Location")).To(BeEmpty())
+
 		var conflict map[string]any
 		Expect(json.Unmarshal(data, &conflict)).To(Succeed())
 		Expect(conflict["status"]).To(BeNumerically("==", 409))
 		Expect(conflict["detail"]).To(ContainSubstring("test"))
+
 		status, _, after := request(api.Address(), http.MethodGet, collection+"/test", "")
 		Expect(status).To(Equal(http.StatusOK))
 		Expect(after).To(MatchJSON(before))
+
 		status, _, data = request(api.Address(), http.MethodPut, collection+"/test", replacement)
 		Expect(status).To(Equal(http.StatusOK), string(data))
 		status, _, data = request(api.Address(), http.MethodDelete, collection+"/test", "")
@@ -69,11 +87,16 @@ var _ = Describe("Create-only resource endpoints", func() {
 	)
 
 	DescribeTable("rejects invalid creation", func(collection, body string, expected int) {
+		// given
 		resourceStore := memory.NewStore()
 		Expect(resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))).To(Succeed())
 		api, _, stop := StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
 		defer stop()
+
+		// when
 		status, headers, data := request(api.Address(), http.MethodPost, collection, body)
+
+		// then
 		Expect(status).To(Equal(expected), string(data))
 		Expect(headers.Get("Location")).To(BeEmpty())
 	},
@@ -85,13 +108,19 @@ var _ = Describe("Create-only resource endpoints", func() {
 	)
 
 	It("returns deprecation warnings when creating a resource", func() {
+		// given
 		resourceStore := memory.NewStore()
 		Expect(resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))).To(Succeed())
 		api, _, stop := StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
 		defer stop()
+
+		// when
 		status, _, data := request(api.Address(), http.MethodPost, "/meshes/default/meshratelimits",
 			`{"type":"MeshRateLimit","name":"warning","mesh":"default","spec":{"targetRef":{"kind":"Dataplane"},"rules":[{"default":{"local":{"http":{"onRateLimit":{"status":123}}}}}]}}`)
+
+		// then
 		Expect(status).To(Equal(http.StatusCreated), string(data))
+
 		var result struct {
 			Warnings []string `json:"warnings"`
 		}
@@ -100,19 +129,26 @@ var _ = Describe("Create-only resource endpoints", func() {
 	})
 
 	It("enforces ownership labels on creation", func() {
+		// given
 		resourceStore := memory.NewStore()
 		Expect(resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))).To(Succeed())
 		api, _, stop := StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithZone("zone-1"))
 		defer stop()
+
+		// when
 		status, _, data := request(api.Address(), http.MethodPost, "/meshes/default/meshtrafficpermissions",
 			`{"type":"MeshTrafficPermission","name":"test","mesh":"default","labels":{"kuma.io/origin":"global"},"spec":{"targetRef":{"kind":"Mesh"},"rules":[{"default":{"allow":[{"spiffeID":{"type":"Prefix","value":"spiffe://example"}}]}}]}}`)
+
+		// then
 		Expect(status).To(Equal(http.StatusBadRequest), string(data))
 		Expect(string(data)).To(ContainSubstring("origin"))
 	})
 
 	It("allows only one concurrent create and preserves the winner", func() {
+		// given
 		api, _, stop := StartApiServer(NewTestApiServerConfigurer())
 		defer stop()
+
 		const count = 8
 		statuses := make([]int, count)
 		bodies := make([][]byte, count)
@@ -125,8 +161,12 @@ var _ = Describe("Create-only resource endpoints", func() {
 				statuses[i], _, bodies[i] = request(api.Address(), http.MethodPost, "/meshes", fmt.Sprintf(`{"type":"Mesh","name":"race","labels":{"writer":"%d"}}`, i))
 			})
 		}
+
+		// when
 		close(start)
 		wg.Wait()
+
+		// then
 		winner := -1
 		for i, status := range statuses {
 			if status == http.StatusCreated {
@@ -136,7 +176,10 @@ var _ = Describe("Create-only resource endpoints", func() {
 				Expect(status).To(Equal(http.StatusConflict), string(bodies[i]))
 			}
 		}
+
 		Expect(winner).To(BeNumerically(">=", 0))
+
+		// and then
 		status, _, data := request(api.Address(), http.MethodGet, "/meshes/race", "")
 		Expect(status).To(Equal(http.StatusOK))
 		var result struct {
