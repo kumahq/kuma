@@ -131,8 +131,8 @@ func deleteMeshResourcesKubernetes(cluster Cluster, mesh string, mode core.CpMod
 		// Delete only resources owned by this CP: those matching the CP mode
 		// in their origin label and those without an origin label at all.
 		// Resources synced from other CPs (origin != mode) are managed by the
-		// originating CP and must be skipped — the REST API rejects writes to
-		// them (see pkg/api-server/resource_endpoints.go validateOriginForWrite).
+		// originating CP and must be skipped — the admission webhook rejects deleting
+		// them (see resource_labels.ValidateOwnership).
 		selectors := []string{
 			fmt.Sprintf("%s=%s,%s=%s", mesh_proto.MeshTag, mesh, mesh_proto.ResourceOriginLabel, originLabelFor(mode)),
 			fmt.Sprintf("%s=%s,!%s", mesh_proto.MeshTag, mesh, mesh_proto.ResourceOriginLabel),

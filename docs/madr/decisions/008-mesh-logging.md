@@ -1,3 +1,7 @@
+---
+outdated: "3.0: `from` is replaced by `spec.rules`, `MeshSubset`/`MeshServiceSubset`/`MeshGateway` targets are removed, and legacy TrafficLog and `Mesh.spec.logging` are gone."
+---
+
 # MeshAccessLog
 
 * Status: accepted

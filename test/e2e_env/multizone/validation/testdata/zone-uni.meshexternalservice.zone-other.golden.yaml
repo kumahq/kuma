@@ -8,14 +8,14 @@ HTTP/1.1 400 Bad Request
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/zone\"]",
-   "reason": "kuma.io/zone label should have kuma-4 value"
+   "reason": "label \"kuma.io/zone\" is managed by the control plane: got \"other-zone\", expected \"kuma-4\""
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"kuma.io/zone\"]",
-   "message": "kuma.io/zone label should have kuma-4 value"
+   "message": "label \"kuma.io/zone\" is managed by the control plane: got \"other-zone\", expected \"kuma-4\""
   }
  ]
 }

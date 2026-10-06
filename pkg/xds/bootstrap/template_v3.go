@@ -106,6 +106,7 @@ func genConfig(parameters configParameters, enableReloadableTokens bool, _ *core
 			Layers: runtimeLayers,
 		},
 		StatsConfig: &envoy_metrics_v3.StatsConfig{
+			// Envoy runs a regex tag (std::regex) on every stat name unless the regex starts with "^<token>\.", so scope tags to a root token
 			StatsTags: []*envoy_metrics_v3.TagSpecifier{
 				{
 					TagName:  "name",
@@ -113,15 +114,28 @@ func genConfig(parameters configParameters, enableReloadableTokens bool, _ *core
 				},
 				{
 					TagName:  "status",
-					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^grpc.*streams_closed(_([0-9]+))"},
+					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^grpc\\..*streams_closed(_([0-9]+))"},
 				},
 				{
 					TagName:  "worker",
-					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "(worker_([0-9]+)\\.)"},
+					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^listener\\..*?(worker_([0-9]+)\\.)"},
 				},
 				{
-					TagName:  "listener",
-					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "((.+?)\\.)rbac\\."},
+					TagName:  "worker",
+					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^listener_manager\\..*?(worker_([0-9]+)\\.)"},
+				},
+				{
+					TagName:  "worker",
+					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^server\\..*?(worker_([0-9]+)\\.)"},
+				},
+				{
+					TagName:  "worker",
+					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^thread_local_cluster_manager\\..*?(worker_([0-9]+)\\.)"},
+				},
+				{
+					TagName: "listener",
+					// no root token (network RBAC stats start with the listener stat prefix), "^" at least avoids a quadratic retry at every offset
+					TagValue: &envoy_metrics_v3.TagSpecifier_Regex{Regex: "^((.+?)\\.)rbac\\."},
 				},
 			},
 		},

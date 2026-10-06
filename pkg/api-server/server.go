@@ -577,7 +577,7 @@ func SetupServer(rt runtime.Runtime) error {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			xds_context.WithAllowAllOutbound(cfg.Defaults.AllowAllOutbound),
+			xds_context.WithRestrictOutbound(cfg.Defaults.IsOutboundRestricted()),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

@@ -5933,32 +5933,11 @@ components:
       description: Zone statistics
       required:
         - controlPlanes
-        - zoneEgresses
-        - zoneIngresses
       properties:
         controlPlanes:
           description: Control Planes statistics
           allOf:
             - $ref: '#/components/schemas/BaseStatus'
-        zoneEgresses:
-          description: Zone Egresses statistics
-          allOf:
-            - $ref: '#/components/schemas/BaseStatus'
-        zoneIngresses:
-          description: Zone Ingresses statistics
-          allOf:
-            - $ref: '#/components/schemas/BaseStatus'
-    DataplanesStats:
-      type: object
-      title: Dataplanes Stats
-      description: Dataplanes statistics
-      required:
-        - standard
-      properties:
-        standard:
-          description: Standard dataplane proxy statistics
-          allOf:
-            - $ref: '#/components/schemas/FullStatus'
     PoliciesStats:
       type: object
       title: Policies Stats
@@ -6021,7 +6000,7 @@ components:
         dataplanes:
           description: Dataplane proxy statistics
           allOf:
-            - $ref: '#/components/schemas/DataplanesStats'
+            - $ref: '#/components/schemas/FullStatus'
         policies:
           description: Policies statistics
           allOf:
@@ -7397,7 +7376,7 @@ components:
                     mesh. If not specified, no services in the mesh are
                     reachable, unless
 
-                    the control plane sets KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND.
+                    the control plane disables KUMA_DEFAULTS_RESTRICT_OUTBOUND.
                   properties:
                     refs:
                       items:
@@ -15900,7 +15879,8 @@ components:
                         mesh. If not specified, no services in the mesh are
                         reachable, unless
 
-                        the control plane sets KUMA_DEFAULTS_ALLOW_ALL_OUTBOUND.
+                        the control plane disables
+                        KUMA_DEFAULTS_RESTRICT_OUTBOUND.
                       properties:
                         refs:
                           items:
@@ -16265,42 +16245,6 @@ components:
                   type: integer
                 total:
                   type: integer
-              type: object
-            dataplanesByType:
-              properties:
-                gateway:
-                  properties:
-                    offline:
-                      type: integer
-                    online:
-                      type: integer
-                    partiallyDegraded:
-                      type: integer
-                    total:
-                      type: integer
-                  type: object
-                gatewayDelegated:
-                  properties:
-                    offline:
-                      type: integer
-                    online:
-                      type: integer
-                    partiallyDegraded:
-                      type: integer
-                    total:
-                      type: integer
-                  type: object
-                standard:
-                  properties:
-                    offline:
-                      type: integer
-                    online:
-                      type: integer
-                    partiallyDegraded:
-                      type: integer
-                    total:
-                      type: integer
-                  type: object
               type: object
             dpVersions:
               properties:
@@ -16720,42 +16664,6 @@ components:
               type: integer
             total:
               type: integer
-          type: object
-        dataplanesByType:
-          properties:
-            gateway:
-              properties:
-                offline:
-                  type: integer
-                online:
-                  type: integer
-                partiallyDegraded:
-                  type: integer
-                total:
-                  type: integer
-              type: object
-            gatewayDelegated:
-              properties:
-                offline:
-                  type: integer
-                online:
-                  type: integer
-                partiallyDegraded:
-                  type: integer
-                total:
-                  type: integer
-              type: object
-            standard:
-              properties:
-                offline:
-                  type: integer
-                online:
-                  type: integer
-                partiallyDegraded:
-                  type: integer
-                total:
-                  type: integer
-              type: object
           type: object
         dpVersions:
           properties:
@@ -21336,27 +21244,15 @@ components:
             partiallyDegraded: 1
           external:
             total: 1
-          internalByStatus:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
         zones:
           controlPlanes:
             online: 1
             total: 1
-          zoneEgresses:
-            online: 1
-            total: 1
-          zoneIngresses:
-            online: 1
-            total: 1
         dataplanes:
-          standard:
-            total: 4
-            online: 2
-            offline: 1
-            partiallyDegraded: 1
+          total: 4
+          online: 2
+          offline: 1
+          partiallyDegraded: 1
         policies:
           total: 100
         meshes:

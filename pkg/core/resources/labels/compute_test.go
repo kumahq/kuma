@@ -166,25 +166,25 @@ var _ = Describe("ComputePolicyRole", func() {
 })
 
 var _ = Describe("Compute", func() {
-	legacyProxyTypeLabel := "kuma.io/" + "proxy-type"
-
 	type testCase struct {
 		r              core_model.Resource
 		mode           core.CpMode
 		isK8s          bool
 		localZone      string
+		trusted        bool
 		expectedLabels map[string]string
 	}
 
 	DescribeTable("should return correct label map",
 		func(given testCase) {
 			labels, err := resource_labels.Compute(resource_labels.Write{
-				Descriptor:  given.r.Descriptor(),
-				Spec:        given.r.GetSpec(),
-				Namespace:   resource_labels.GetNamespace(given.r.GetMeta(), "kuma-system"),
-				Mesh:        given.r.GetMeta().GetMesh(),
-				DisplayName: given.r.GetMeta().GetName(),
-				Labels:      given.r.GetMeta().GetLabels(),
+				Descriptor:    given.r.Descriptor(),
+				Spec:          given.r.GetSpec(),
+				Namespace:     resource_labels.GetNamespace(given.r.GetMeta(), "kuma-system"),
+				Mesh:          given.r.GetMeta().GetMesh(),
+				DisplayName:   given.r.GetMeta().GetName(),
+				Labels:        given.r.GetMeta().GetLabels(),
+				TrustedWriter: given.trusted,
 			}, resource_labels.ControlPlane{Mode: given.mode, IsK8s: given.isK8s, Zone: given.localZone})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(labels).To(Equal(given.expectedLabels))
@@ -205,6 +205,7 @@ var _ = Describe("Compute", func() {
 				"kuma.io/env":          "kubernetes",
 				"kuma.io/mesh":         "mesh-1",
 				"kuma.io/origin":       "zone",
+				"kuma.io/policy-role":  "system",
 				"kuma.io/zone":         "zone-1",
 			},
 		}),
@@ -251,6 +252,7 @@ var _ = Describe("Compute", func() {
 				"kuma.io/display-name": "idle-timeout",
 				"kuma.io/mesh":         "mesh-1",
 				"kuma.io/origin":       "global",
+				"kuma.io/policy-role":  "system",
 			},
 		}),
 		Entry("plugin originated policy on zone-k8s on custom namespace", testCase{
@@ -380,6 +382,7 @@ var _ = Describe("Compute", func() {
 				"kuma.io/env":          "universal",
 				"kuma.io/mesh":         "mesh-1",
 				"kuma.io/origin":       "zone",
+				"kuma.io/policy-role":  "system",
 				"kuma.io/zone":         "zone-1",
 			},
 		}),
@@ -404,6 +407,7 @@ var _ = Describe("Compute", func() {
 				"kuma.io/env":          "kubernetes",
 				"kuma.io/mesh":         "mesh-1",
 				"kuma.io/origin":       "zone",
+				"kuma.io/policy-role":  "system",
 				"kuma.io/zone":         "zone-1",
 			},
 		}),
@@ -441,7 +445,7 @@ var _ = Describe("Compute", func() {
 				"kuma.io/env":          "universal",
 			},
 		}),
-		Entry("namespace and service-account labels are kept on k8s zone", testCase{
+		Entry("service-account label supplied by an untrusted writer is removed on k8s zone", testCase{
 			mode:      core.Zone,
 			isK8s:     true,
 			localZone: "zone-1",
@@ -459,10 +463,32 @@ var _ = Describe("Compute", func() {
 				return r
 			}(),
 			expectedLabels: map[string]string{
-				"k8s.kuma.io/namespace":       "app-ns",
+				"k8s.kuma.io/namespace": "app-ns",
+				"kuma.io/display-name":  "idle-timeout",
+				"kuma.io/policy-role":   "consumer",
+				"kuma.io/mesh":          "mesh-1",
+				"kuma.io/origin":        "zone",
+				"kuma.io/zone":          "zone-1",
+				"kuma.io/env":           "kubernetes",
+			},
+		}),
+		Entry("service-account label is kept for a trusted writer on k8s zone", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			trusted:   true,
+			r: builders.Dataplane().
+				WithName("backend-1").
+				WithServices("backend").
+				WithMesh("mesh-1").
+				WithLabels(map[string]string{
+					mesh_proto.ResourceOriginLabel: "zone",
+					metadata.KumaServiceAccount:    "sa-1",
+				}).
+				Build(),
+			expectedLabels: map[string]string{
 				"k8s.kuma.io/service-account": "sa-1",
-				"kuma.io/display-name":        "idle-timeout",
-				"kuma.io/policy-role":         "consumer",
+				"kuma.io/display-name":        "backend-1",
 				"kuma.io/mesh":                "mesh-1",
 				"kuma.io/origin":              "zone",
 				"kuma.io/zone":                "zone-1",
@@ -575,7 +601,6 @@ var _ = Describe("Compute", func() {
 				WithMesh("mesh-1").
 				WithServices("backend").
 				WithLabels(map[string]string{
-					legacyProxyTypeLabel:           "sidecar",
 					"kuma.io/listener-zoneingress": "enabled",
 					"kuma.io/listener-zoneegress":  "enabled",
 				}).

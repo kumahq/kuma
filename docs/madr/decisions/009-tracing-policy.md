@@ -1,3 +1,7 @@
+---
+outdated: "3.0: `MeshSubset`/`MeshServiceSubset`/`MeshGateway` targets and legacy TrafficTrace/TrafficRoute are removed; OpenTelemetry backends are referenced through MeshOpenTelemetryBackend."
+---
+
 # Traffic tracing policy
 
 - Status: accepted

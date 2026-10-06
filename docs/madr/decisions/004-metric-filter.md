@@ -1,3 +1,7 @@
+---
+outdated: "3.0: `Mesh.spec.metrics` is removed, so the Mesh-level filtering examples no longer apply; metrics are configured with MeshMetric."
+---
+
 # Metrics filtering
 
 * Status: accepted

@@ -234,6 +234,7 @@ func ExecuteStoreTests(
 				// given
 				name := "to-be-updated.demo"
 				resource := createResource(name, "foo", "bar")
+				creationTime := resource.Meta.GetCreationTime()
 
 				// when
 				resource.Spec.Match.Port = 81
@@ -241,6 +242,8 @@ func ExecuteStoreTests(
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
+				Expect(resource.Meta.GetLabels()).To(HaveKeyWithValue("foo", "bar"))
+				Expect(resource.Meta.GetCreationTime()).To(Equal(creationTime))
 
 				res := meshexternalservice_api.NewMeshExternalServiceResource()
 				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))

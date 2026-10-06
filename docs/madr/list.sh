@@ -2,12 +2,13 @@
 # List MADRs with their status, summary and tags.
 #
 # Output format:
-#   <file> [<status>] <summary> #tag #tag
+#   <file> [<status>] <summary> #tag #tag [!outdated]
 #
 # Usage:
 #   ./list.sh                              # list all MADRs
 #   ./list.sh | grep '\[accepted\]'        # example: filter by status using grep
 #   ./list.sh | grep '#zone-egress'        # example: filter by tag using grep
+#   ./list.sh | grep '!outdated'           # example: MADRs partly outdated by a release
 
 set -euo pipefail
 
@@ -27,6 +28,7 @@ for file in "${DECISIONS_DIR}"/*.md; do
     fm && /^status:/ { status = tolower(value()) }
     fm && /^summary:/ { summary = value() }
     fm && /^tags:/ { tags = value(); gsub(/[\[\]]/, "", tags) }
+    fm && /^outdated:/ { outdated = 1 }
 
     # fall back to the "* Status: ..." bullet for MADRs without front matter
     !fm && !status && tolower($0) ~ /^[*-] status:/ {
@@ -40,6 +42,7 @@ for file in "${DECISIONS_DIR}"/*.md; do
       if (summary) line = line " " summary
       n = split(tags, t, / *, */)
       for (i = 1; i <= n; i++) if (t[i]) line = line " #" t[i]
+      if (outdated) line = line " !outdated"
       print line
     }
   ' "$file"
