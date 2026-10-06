@@ -25,7 +25,7 @@ func TestResourceRoutes(t *testing.T) {
 				WsPath: "resources",
 			},
 			expected: []resourceRoute{
-				{role: meshCRUDListRoute, pathRole: primaryResourcePath},
+				{pathRole: primaryResourcePath},
 			},
 		},
 		{
@@ -36,16 +36,16 @@ func TestResourceRoutes(t *testing.T) {
 				AlternativeWsPath: "resource-aliases",
 			},
 			expected: []resourceRoute{
-				{role: meshCRUDListRoute, pathRole: primaryResourcePath},
-				{role: meshCRUDListRoute, pathRole: aliasResourcePath},
+				{pathRole: primaryResourcePath},
+				{pathRole: aliasResourcePath},
 			},
 		},
 		{
 			name:       "global primary and alias paths",
 			descriptor: system.GlobalSecretResourceTypeDescriptor,
 			expected: []resourceRoute{
-				{role: globalCRUDListRoute, pathRole: primaryResourcePath},
-				{role: globalCRUDListRoute, pathRole: aliasResourcePath},
+				{pathRole: primaryResourcePath},
+				{pathRole: aliasResourcePath},
 			},
 		},
 		{

@@ -270,13 +270,6 @@ func NewApiServer(
 	return newApiServer, nil
 }
 
-type resourceRouteRole int
-
-const (
-	meshCRUDListRoute resourceRouteRole = iota
-	globalCRUDListRoute
-)
-
 type resourcePathRole int
 
 const (
@@ -285,7 +278,6 @@ const (
 )
 
 type resourceRoute struct {
-	role     resourceRouteRole
 	pathRole resourcePathRole
 }
 
@@ -298,10 +290,8 @@ func resourceRoutes(descriptor model.ResourceTypeDescriptor) []resourceRoute {
 	var routes []resourceRoute
 	for _, pathRole := range pathRoles {
 		switch descriptor.Scope {
-		case model.ScopeMesh:
-			routes = append(routes, resourceRoute{role: meshCRUDListRoute, pathRole: pathRole})
-		case model.ScopeGlobal:
-			routes = append(routes, resourceRoute{role: globalCRUDListRoute, pathRole: pathRole})
+		case model.ScopeMesh, model.ScopeGlobal:
+			routes = append(routes, resourceRoute{pathRole: pathRole})
 		}
 	}
 	return routes
@@ -312,7 +302,7 @@ func (r resourceRoute) pathPrefix(descriptor model.ResourceTypeDescriptor) strin
 	if r.pathRole == aliasResourcePath {
 		path = descriptor.AlternativeWsPath
 	}
-	if r.role == meshCRUDListRoute {
+	if descriptor.Scope == model.ScopeMesh {
 		return "/meshes/{mesh}/" + path
 	}
 	return "/" + path

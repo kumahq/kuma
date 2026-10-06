@@ -27,7 +27,7 @@ var pathParam = regexp.MustCompile(`\{[^}]+\}`)
 // family of routes with a generic parameter (e.g.
 // "/meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes") while the
 // server registers one concrete route per resource type. The last segment is
-// kept literal so that routes of different resource types stay distinguishable. // EXC:FILE011:documents-a-non-obvious-invariant
+// kept literal so that routes of different resource types stay distinguishable.
 func normalizePath(path string, wsPaths []string) string {
 	p := pathParam.ReplaceAllString(path, "{}")
 	segments := strings.Split(p, "/")
