@@ -9,6 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/api-server/filters"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model/rest"
@@ -23,11 +24,10 @@ import (
 type resourceCrudHandler struct {
 	resourceEndpointsContext
 
-	federatedZone   bool
+	cp              resource_labels.ControlPlane
 	k8sMapper       k8s.ResourceMapperFunc
 	filter          func(request *restful.Request) (store.ListFilterFunc, error)
 	systemNamespace string
-	isK8s           bool
 }
 
 // overviewForResource merges a resource with its insight. A missing insight is

@@ -68,7 +68,8 @@ var _ = Describe("DefaultProxyProfile", func() {
 						},
 						Spec: &mesh_proto.Mesh{},
 					},
-					Resources: resources,
+					Resources:       resources,
+					BaseMeshContext: &xds_context.BaseMeshContext{},
 				},
 			}
 

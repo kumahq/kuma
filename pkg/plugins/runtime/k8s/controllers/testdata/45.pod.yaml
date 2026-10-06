@@ -13,8 +13,9 @@ metadata:
     kuma.io/reachable-backends: |
       refs:
       - kind: MeshService
-        name: demo-app
-        namespace: kuma-demo
+        labels:
+          kuma.io/display-name: demo-app
+          k8s.kuma.io/namespace: kuma-demo
         port: 5000
 spec:
   containers:

@@ -14,7 +14,7 @@
       {
         "port": 8082,
         "targetPort": 80,
-        "protocol": "tcp"
+        "appProtocol": "tcp"
       }
     ]
   },

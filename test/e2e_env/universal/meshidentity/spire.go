@@ -171,9 +171,13 @@ spec:
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 
 		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				universal.Cluster, "demo-client", "test-server.svc.mesh.local",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
 			s, err := admin.GetStats("listener.*_80.ssl.handshake")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(s).To(stats.BeGreaterThanZero())
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(s).To(stats.BeGreaterThanZero())
 		}, "30s", "1s").Should(Succeed())
 	})
 }

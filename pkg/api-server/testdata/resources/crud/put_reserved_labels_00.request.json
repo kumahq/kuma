@@ -1,0 +1,7 @@
+{
+  "type": "MeshTimeout",
+  "mesh": "default",
+  "name": "mt-unknown-key",
+  "labels": { "kuma.io/foo": "bar", "k8s.kuma.io/baz": "qux" },
+  "spec": { "targetRef": { "kind": "Mesh" }, "to": [ { "targetRef": { "kind": "Mesh" }, "default": { "idleTimeout": "2s" } } ] }
+}

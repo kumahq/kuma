@@ -14,6 +14,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_user "github.com/kumahq/kuma/v3/pkg/core/user"
@@ -182,7 +183,7 @@ func TestDeleteResourcePrecedence(t *testing.T) {
 		})
 		resManager := &recordingResourceManager{events: &events, existing: mesh}
 		handler := newContractCrudHandler(resManager, &recordingResourceAccess{events: &events, deleteErr: accessErr})
-		handler.mode = config_core.Global
+		handler.cp = resource_labels.ControlPlane{Mode: config_core.Global}
 
 		_, err := handler.deleteResource(newCrudRequest(http.MethodDelete, "/meshes/mesh-1", "mesh-1", ""))
 

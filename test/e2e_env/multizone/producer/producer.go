@@ -124,10 +124,12 @@ spec:
         kind: MeshService
         labels:
           kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: %s
+          kuma.io/zone: %s
       default:
         http:
           requestTimeout: 2s
-`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
+`, k8sZoneNamespace, mesh, k8sZoneNamespace, Kuma2))(multizone.KubeZone2)).To(Succeed())
 
 		Eventually(func(g Gomega) {
 			out, err := k8s.RunKubectlAndGetOutputContextE(
@@ -211,6 +213,8 @@ spec:
         kind: MeshService
         labels:
           kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: %s
+          kuma.io/zone: %s
       rules:
         - matches:
             - path:
@@ -223,7 +227,7 @@ spec:
                   add:
                     - name: x-set-response-delay-ms
                       value: "3000"
-`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
+`, k8sZoneNamespace, mesh, k8sZoneNamespace, Kuma2))(multizone.KubeZone2)).To(Succeed())
 
 		// check that MeshHTTPRoute 'add-response-delay-header' makes response time more than 3s
 		Eventually(func(g Gomega) {
@@ -250,10 +254,12 @@ spec:
         kind: MeshHTTPRoute
         labels:
           kuma.io/display-name: add-response-delay-header
+          k8s.kuma.io/namespace: %s
+          kuma.io/zone: %s
       default:
         http:
           requestTimeout: 2s
-`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
+`, k8sZoneNamespace, mesh, k8sZoneNamespace, Kuma2))(multizone.KubeZone2)).To(Succeed())
 
 		// check 'timeout-on-http-route' synced to test-client's zone
 		Eventually(func(g Gomega) {
@@ -292,6 +298,8 @@ spec:
         kind: MeshService
         labels:
           kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: %s
+          kuma.io/zone: %s
       rules:
         - matches:
             - path:
@@ -303,7 +311,7 @@ spec:
                 labels:
                   kuma.io/display-name: test-server
                 port: 80
-`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
+`, k8sZoneNamespace, mesh, k8sZoneNamespace, Kuma2))(multizone.KubeZone2)).To(Succeed())
 
 		Expect(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -319,6 +327,8 @@ spec:
         kind: MeshService
         labels:
           kuma.io/display-name: test-server
+          k8s.kuma.io/namespace: %s
+          kuma.io/zone: %s
       rules:
         - matches:
             - path:
@@ -330,7 +340,7 @@ spec:
                 labels:
                   kuma.io/display-name: test-server
                 port: 80
-`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
+`, k8sZoneNamespace, mesh, k8sZoneNamespace, Kuma2))(multizone.KubeZone2)).To(Succeed())
 
 		Expect(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -346,12 +356,14 @@ spec:
         kind: MeshHTTPRoute
         labels:
           kuma.io/display-name: to-test-server
+          k8s.kuma.io/namespace: %s
+          kuma.io/zone: %s
       default:
         http:
           numRetries: 5
           retryOn:
             - "503"
-`, k8sZoneNamespace, mesh))(multizone.KubeZone2)).To(Succeed())
+`, k8sZoneNamespace, mesh, k8sZoneNamespace, Kuma2))(multizone.KubeZone2)).To(Succeed())
 
 		lastId := 0
 		generateNewId := func() string {

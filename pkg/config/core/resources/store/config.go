@@ -91,13 +91,11 @@ var _ config.Config = &CacheStoreConfig{}
 type CacheStoreConfig struct {
 	config.BaseConfig
 
-	Enabled        bool                  `json:"enabled" envconfig:"kuma_store_cache_enabled"`
 	ExpirationTime config_types.Duration `json:"expirationTime" envconfig:"kuma_store_cache_expiration_time"`
 }
 
 func DefaultCacheStoreConfig() CacheStoreConfig {
 	return CacheStoreConfig{
-		Enabled:        true,
 		ExpirationTime: config_types.Duration{Duration: time.Second},
 	}
 }

@@ -8,22 +8,14 @@ HTTP/1.1 400 Bad Request
  "invalid_parameters": [
   {
    "field": "labels[\"kuma.io/origin\"]",
-   "reason": "unknown resource origin \"bogus\""
-  },
-  {
-   "field": "labels[\"kuma.io/origin\"]",
-   "reason": "the origin label must be set to 'zone'"
+   "reason": "label \"kuma.io/origin\" is managed by the control plane: got \"bogus\", expected \"zone\""
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
    "field": "labels[\"kuma.io/origin\"]",
-   "message": "unknown resource origin \"bogus\""
-  },
-  {
-   "field": "labels[\"kuma.io/origin\"]",
-   "message": "the origin label must be set to 'zone'"
+   "message": "label \"kuma.io/origin\" is managed by the control plane: got \"bogus\", expected \"zone\""
   }
  ]
 }

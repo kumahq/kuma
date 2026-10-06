@@ -109,9 +109,12 @@ const (
 	KumaEnvoyAdminPort                  = "kuma.io/envoy-admin-port"
 	KumaTransparentProxyingAnnotation   = "kuma.io/transparent-proxying"
 	KumaTransparentProxyingIPFamilyMode = "kuma.io/transparent-proxying-ip-family-mode"
-	KumaReachableBackends               = "kuma.io/reachable-backends"
-	CNCFNetworkAnnotation               = "k8s.v1.cni.cncf.io/networks"
-	KumaCNI                             = "kuma-cni"
+	// Written by the 2.14 injector, read and never written by 3.0. Gone in 3.1.
+	KumaTransparentProxyingInboundPortAnnotation  = "kuma.io/transparent-proxying-inbound-port"
+	KumaTransparentProxyingOutboundPortAnnotation = "kuma.io/transparent-proxying-outbound-port"
+	KumaReachableBackends                         = "kuma.io/reachable-backends"
+	CNCFNetworkAnnotation                         = "k8s.v1.cni.cncf.io/networks"
+	KumaCNI                                       = "kuma-cni"
 )
 
 // Annotations related to the gateway

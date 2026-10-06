@@ -25,9 +25,7 @@ func NewDataplaneManager(
 	return &dataplaneManager{
 		ResourceManager: core_manager.NewResourceManager(store),
 		store:           store,
-		zone:            zone,
-		mode:            mode,
-		isK8s:           isK8s,
+		cp:              resource_labels.ControlPlane{Mode: mode, Zone: zone, IsK8s: isK8s},
 		systemNamespace: systemNamespace,
 		validator:       validator,
 	}
@@ -36,9 +34,7 @@ func NewDataplaneManager(
 type dataplaneManager struct {
 	core_manager.ResourceManager
 	store           core_store.ResourceStore
-	zone            string
-	mode            string
-	isK8s           bool
+	cp              resource_labels.ControlPlane
 	systemNamespace string
 	validator       Validator
 }
@@ -60,17 +56,14 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 	if err := dp.Default(); err != nil {
 		return err
 	}
-	labels, err := resource_labels.Compute(
-		resource.Descriptor(),
-		resource.GetSpec(),
-		opts.Labels,
-		opts.Mesh,
-		opts.Name,
-		resource_labels.WithNamespace(resource_labels.UnsetNamespace),
-		resource_labels.WithMode(m.mode),
-		resource_labels.WithK8s(m.isK8s),
-		resource_labels.WithZone(m.zone),
-	)
+	labels, err := resource_labels.Compute(resource_labels.Write{
+		Descriptor:  resource.Descriptor(),
+		Spec:        resource.GetSpec(),
+		Namespace:   resource_labels.UnsetNamespace,
+		Mesh:        opts.Mesh,
+		DisplayName: opts.Name,
+		Labels:      opts.Labels,
+	}, m.cp)
 	if err != nil {
 		return err
 	}
@@ -109,17 +102,14 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 	}
 
 	opts := core_store.NewUpdateOptions(fs...)
-	labels, err := resource_labels.Compute(
-		resource.Descriptor(),
-		resource.GetSpec(),
-		opts.Labels,
-		resource.GetMeta().GetMesh(),
-		resource.GetMeta().GetName(),
-		resource_labels.WithNamespace(resource_labels.GetNamespace(resource.GetMeta(), m.systemNamespace)),
-		resource_labels.WithMode(m.mode),
-		resource_labels.WithK8s(m.isK8s),
-		resource_labels.WithZone(m.zone),
-	)
+	labels, err := resource_labels.Compute(resource_labels.Write{
+		Descriptor:  resource.Descriptor(),
+		Spec:        resource.GetSpec(),
+		Namespace:   resource_labels.GetNamespace(resource.GetMeta(), m.systemNamespace),
+		Mesh:        resource.GetMeta().GetMesh(),
+		DisplayName: resource.GetMeta().GetName(),
+		Labels:      opts.Labels,
+	}, m.cp)
 	if err != nil {
 		return err
 	}

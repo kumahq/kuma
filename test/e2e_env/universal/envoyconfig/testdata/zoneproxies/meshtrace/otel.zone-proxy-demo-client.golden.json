@@ -183,7 +183,10 @@
                     "resourceApiVersion": "V3"
                   }
                 }
-              ]
+              ],
+              "tlsParams": {
+                "tlsMaximumProtocolVersion": "TLSv1_3"
+              }
             },
             "sni": "sni.extsvc.envoyconfig-zoneproxies.kuma-3.mes-zone-proxy.80"
           }
@@ -254,7 +257,10 @@
                     "resourceApiVersion": "V3"
                   }
                 }
-              ]
+              ],
+              "tlsParams": {
+                "tlsMaximumProtocolVersion": "TLSv1_3"
+              }
             },
             "sni": "sni.msvc.envoyconfig-zoneproxies.kuma-3.zone-proxy-demo-client.3000"
           }
@@ -320,7 +326,10 @@
                     "resourceApiVersion": "V3"
                   }
                 }
-              ]
+              ],
+              "tlsParams": {
+                "tlsMaximumProtocolVersion": "TLSv1_3"
+              }
             },
             "sni": "sni.msvc.envoyconfig-zoneproxies.kuma-3.zone-proxy-test-server.80"
           }
@@ -574,7 +583,7 @@
                 "metadata": {
                   "filterMetadata": {
                     "envoy.lb": {
-                      "kuma.io/access": "external",
+                      "access": "external",
                       "kuma.io/display-name": "mes-zone-proxy",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",
@@ -582,7 +591,7 @@
                       "kuma.io/zone": "kuma-3"
                     },
                     "envoy.transport_socket_match": {
-                      "kuma.io/access": "external",
+                      "access": "external",
                       "kuma.io/display-name": "mes-zone-proxy",
                       "kuma.io/env": "universal",
                       "kuma.io/mesh": "envoyconfig-zoneproxies",

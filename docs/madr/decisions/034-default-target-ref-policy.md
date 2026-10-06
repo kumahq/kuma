@@ -1,10 +1,10 @@
+---
+outdated: "3.0: `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` and legacy policies are removed, so the compatibility mode described here no longer exists."
+---
+
 # TargetRef policies as a default
 
 * Status: accepted
-
-> Note: `KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES` was removed in Kuma 3.0.0.
-> The compatibility mode described below is no longer available in 3.0.0 and
-> newer releases.
 
 Technical Story: https://github.com/kumahq/kuma/issues/8467
 

@@ -45,16 +45,6 @@ resources:
       sourceAddress:
         address: 127.0.0.6
         portValue: 0
-- name: self_transparentproxy_passthrough_outbound_ipv4
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    circuitBreakers:
-      thresholds:
-      - trackRemaining: true
-    connectTimeout: 5s
-    lbPolicy: CLUSTER_PROVIDED
-    name: self_transparentproxy_passthrough_outbound_ipv4
-    type: ORIGINAL_DST
 - name: system_envoy_admin
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster

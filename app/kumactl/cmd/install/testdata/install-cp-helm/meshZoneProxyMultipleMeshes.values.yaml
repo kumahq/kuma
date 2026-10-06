@@ -16,6 +16,7 @@ meshes:
         registry: registry.k8s.io
         repository: pause
         tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
+  # mesh-2 keeps the preStop hook off, mesh-1 renders it from the default.
   - name: mesh-2
     ingress:
       enabled: true
@@ -27,6 +28,7 @@ meshes:
         tag: "3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"
     egress:
       enabled: true
+      preStopSleepSeconds: 0
       deployment:
         replicas: 1
       image:

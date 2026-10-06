@@ -35,9 +35,16 @@ status: {}
 type: MeshAccessLog
 ---
 creationTime: "0001-01-01T00:00:00Z"
-kri: kri_mal_default___mal-with-origin_
+kri: kri_mal_default_zone-1_kuma-system_mal-with-origin_
 labels:
+  k8s.kuma.io/namespace: kuma-system
+  kuma.io/display-name: mal-with-origin
+  kuma.io/env: kubernetes
+  kuma.io/mesh: default
   kuma.io/origin: zone
+  kuma.io/policy-role: system
+  kuma.io/zone: zone-1
+  team: payments
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: mal-with-origin

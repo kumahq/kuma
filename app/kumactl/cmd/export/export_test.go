@@ -115,7 +115,7 @@ var _ = Describe("kumactl export", func() {
 				samples.SampleSigningKeyGlobalSecret(),
 				samples.MeshAccessLogWithFileBackend(),
 				samples.MeshTimeoutInCustomNamespace(),
-				samples.MeshAccessLogWithZoneOriginLabel(),
+				samples.MeshAccessLogWithZoneLabels(),
 			},
 			args: []string{
 				"--format=universal",
@@ -156,7 +156,7 @@ var _ = Describe("kumactl export", func() {
 				samples.SampleSigningKeyGlobalSecret(),
 				samples.MeshAccessLogWithFileBackend(),
 				samples.DataplaneBackend(),
-				samples.MeshAccessLogWithZoneOriginLabel(),
+				samples.MeshAccessLogWithZoneLabels(),
 			},
 			args: []string{
 				"--profile", "federation-with-policies",

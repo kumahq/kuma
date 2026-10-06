@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not process a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "labels[\"kuma.io/kds-sync\"]",
+   "reason": "label \"kuma.io/kds-sync\" must be enabled or disabled, got \"Disabled\""
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "labels[\"kuma.io/kds-sync\"]",
+   "message": "label \"kuma.io/kds-sync\" must be enabled or disabled, got \"Disabled\""
+  }
+ ]
+}

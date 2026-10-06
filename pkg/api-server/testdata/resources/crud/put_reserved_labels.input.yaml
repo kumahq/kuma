@@ -1,0 +1,16 @@
+# Unknown reserved key is rejected
+#/meshes/default/meshtimeouts/mt-unknown-key 400 method=PUT
+# Key outside the reserved prefixes is accepted
+#/meshes/default/meshtimeouts/mt-user-key 201 method=PUT
+# kds-sync accepts disabled
+#/meshes/default/meshtimeouts/mt-kds-sync 201 method=PUT
+# kds-sync rejects Disabled, also on update
+#/meshes/default/meshtimeouts/mt-kds-sync 400 method=PUT
+# effect accepts shadow
+#/meshes/default/meshtimeouts/mt-effect 201 method=PUT
+# effect rejects any other value, also on update
+#/meshes/default/meshtimeouts/mt-effect 400 method=PUT
+# managed-by is set by the control plane
+#/meshes/default/meshservices/backend 400 method=PUT
+type: Mesh
+name: default

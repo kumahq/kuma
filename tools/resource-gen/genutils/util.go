@@ -80,12 +80,10 @@ type ResourceInfo struct {
 	AlternativeWsPath        string
 	KdsDirection             string
 	SkipKDSHash              bool
-	AllowToInspect           bool
 	StorageVersion           bool
 	IsPolicy                 bool
 	SingularDisplayName      string
 	PluralDisplayName        string
-	IsExperimental           bool
 	AdditionalPrinterColumns []string
 	HasInsights              bool
 	IsProxy                  bool
@@ -105,11 +103,9 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		Global:                   r.Global,
 		ShortName:                r.ShortName,
 		ScopeNamespace:           r.ScopeNamespace,
-		AllowToInspect:           r.AllowToInspect,
 		StorageVersion:           r.StorageVersion,
 		SingularDisplayName:      core_model.DisplayName(r.Type),
 		PluralDisplayName:        r.PluralDisplayName,
-		IsExperimental:           r.IsExperimental,
 		AdditionalPrinterColumns: r.AdditionalPrinterColumns,
 		HasInsights:              r.HasInsights,
 		IsProxy:                  r.IsProxy,
@@ -127,11 +123,6 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		if !r.Ws.ReadOnly {
 			out.KumactlSingular = r.Ws.Name
 			out.KumactlPlural = pluralResourceName
-			// Keep the typo to preserve backward compatibility
-			if out.KumactlSingular == "health-check" {
-				out.KumactlSingular = "healthcheck"
-				out.KumactlPlural = "healthchecks"
-			}
 		}
 		if r.Ws.AliasName != "" {
 			pluralAliasResourceName := r.Ws.AliasPlural
@@ -157,7 +148,7 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 	}
 	// Working around the fact we don't really differentiate policies from the rest of resources:
 	// Anything global can't be a policy as it need to be on a mesh. Anything with locked Ws config is something internal and therefore not a policy
-	out.IsPolicy = !out.SkipRegistration && !out.Global && !out.WsAdminOnly && !out.WsReadOnly && out.ResourceType != "Dataplane" && out.ResourceType != "ExternalService"
+	out.IsPolicy = !out.SkipRegistration && !out.Global && !out.WsAdminOnly && !out.WsReadOnly && out.ResourceType != "Dataplane"
 
 	if p := desc.Parent(); p != nil {
 		if _, ok := p.(protoreflect.MessageDescriptor); ok {

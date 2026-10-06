@@ -38,9 +38,6 @@ mesh: lp-mesh
 name: lp-dp-1
 labels:
   color: blue
-  kuma.io/owner: ignored
-  kuma.io/protocol: http
-  kuma.io/display-name: lp-svc
   kuma.io/workload: lp-svc
   team: payments
 networking:
@@ -57,8 +54,7 @@ networking:
 			g.Expect(labels).To(HaveKeyWithValue("color", "blue"))
 			g.Expect(labels).To(HaveKeyWithValue("team", "payments"))
 
-			g.Expect(labels).ToNot(HaveKey("kuma.io/owner"))
-			g.Expect(labels).ToNot(HaveKey("kuma.io/protocol"))
+			g.Expect(labels).ToNot(HaveKey(metadata.KumaWorkload))
 
 			g.Expect(labels).To(HaveKeyWithValue(metadata.KumaMeshLabel, meshName))
 			g.Expect(labels).To(HaveKeyWithValue(mesh_proto.ManagedByLabel, "meshservice-generator"))
@@ -74,8 +70,6 @@ mesh: lp-mesh
 name: lp-dp-1
 labels:
   color: blue
-  kuma.io/protocol: http
-  kuma.io/display-name: lp-svc
   kuma.io/workload: lp-svc
   team: platform
   tier: backend
@@ -102,8 +96,6 @@ type: Dataplane
 mesh: lp-mesh
 name: lp-dp-1
 labels:
-  kuma.io/protocol: http
-  kuma.io/display-name: lp-svc
   kuma.io/workload: lp-svc
 networking:
   address: 192.168.10.10

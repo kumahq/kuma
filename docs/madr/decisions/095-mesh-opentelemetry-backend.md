@@ -1,3 +1,12 @@
+---
+title: Shared telemetry backend resource for observability policies
+status: accepted
+date: 2026-03-16
+tags: [observability, otel, meshmetric, meshtrace, meshaccesslog, policy, api]
+summary: Introduces the mesh-scoped `MeshOpenTelemetryBackend` resource so MeshMetric, MeshTrace and MeshAccessLog reference one collector via `backendRef` instead of each duplicating the endpoint; inline `endpoint` is deprecated and removed in 3.0.
+related: [100-otel-env-bootstrap-runtime, 096-observability-dashboards]
+---
+
 # Shared telemetry backend resource for observability policies
 
 - Status: accepted

@@ -6,6 +6,7 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/pkg/errors"
 
+	common_tls "github.com/kumahq/kuma/v3/api/common/v1alpha1/tls"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v3/pkg/core/metadata"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/core"
@@ -192,7 +193,8 @@ func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envo
 				proxy.WorkloadIdentity.IdentitySourceConfigurer(),
 			),
 		})).
-		Configure(bldrs_tls.KumaAlpnProtocol())
+		Configure(bldrs_tls.KumaAlpnProtocol()).
+		Configure(bldrs_tls.TlsMaxVersion(pointer.To(common_tls.TLSVersion13)))
 	return bldrs_tls.NewUpstreamTLSContext().
 		Configure(bldrs_tls.SNI(sni)).
 		Configure(bldrs_tls.UpstreamCommonTlsContext(commonTlsContext)).

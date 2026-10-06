@@ -385,13 +385,11 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		{{- if ne .KumactlPluralAlias ""}}
 		KumactlListArgAlias: "{{.KumactlPluralAlias}}",
 		{{- end }}
-		AllowToInspect: {{.AllowToInspect}},
 		IsPolicy: {{.IsPolicy}},
 		SingularDisplayName: "{{.SingularDisplayName}}",
 		PluralDisplayName: "{{.PluralDisplayName}}",
 		{{- if ne .ShortName "" }}
 		ShortName: "{{.ShortName}}",{{- end}}
-		IsExperimental: {{.IsExperimental}},
         IsProxy: {{.IsProxy}},
         AffectsPolicyMatching: {{.AffectsPolicyMatching}},
 {{- if .HasInsights}}

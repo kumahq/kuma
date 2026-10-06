@@ -231,7 +231,7 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		// Attribute the batch to the connecting peer's declared client-id
 		// (s.clientID), not the ControlPlane.Identifier in the payload. The
 		// client-id is request metadata the peer declares; verifying it per
-		// connection is the (enterprise) zone-token filter's job, not this
+		// connection is the job of the KDS authenticator (pkg/kds/auth), not this
 		// path's. The two match in ordinary sync, so this only changes behavior
 		// when they diverge.
 		ControlPlaneId:      s.clientID,
@@ -285,10 +285,9 @@ func (s *stream) NACK(resourceType core_model.ResourceType, err error) error {
 func (s *stream) mapRemovedResources(removedResourceNames []string) []core_model.ResourceKey {
 	removed := []core_model.ResourceKey{}
 	for _, resourceName := range removedResourceNames {
-		index := strings.LastIndex(resourceName, ".")
 		var rk core_model.ResourceKey
-		if index != -1 {
-			rk = core_model.WithMesh(resourceName[index+1:], resourceName[:index])
+		if name, mesh, found := strings.CutLast(resourceName, "."); found {
+			rk = core_model.WithMesh(mesh, name)
 		} else {
 			rk = core_model.WithoutMesh(resourceName)
 		}

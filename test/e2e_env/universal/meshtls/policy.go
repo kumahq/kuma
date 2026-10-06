@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
 	. "github.com/kumahq/kuma/v3/test/framework"
 	"github.com/kumahq/kuma/v3/test/framework/client"
 	"github.com/kumahq/kuma/v3/test/framework/envoy_admin/stats"
@@ -274,22 +275,22 @@ spec:
 		}, "30s", "500ms").Should(Succeed())
 	})
 
-	It("should tls version for 1.3", func() {
+	It("should negotiate tls 1.3 with only the minimum version set", func() {
 		// given
 		admin := universal.Cluster.GetApp(testServerName).GetEnvoyAdminTunnel()
+		clientAdmin := universal.Cluster.GetApp("mesh-tls-demo-client").GetEnvoyAdminTunnel()
 
 		policy := fmt.Sprintf(`
 type: MeshTLS
 mesh: %s
-name: mesh-tls-version-13
+name: mesh-tls-min-version-13
 spec:
   targetRef:
     kind: Mesh
   rules:
     - default:
         tlsVersion:
-          min: TLS13
-          max: TLS13`, meshName)
+          min: TLS13`, meshName)
 		// given the mesh in its default strict mode
 
 		// then
@@ -303,19 +304,30 @@ spec:
 		}, "30s", "1s").Should(Succeed())
 
 		// and
-		// uses tls version 1.2
+		// uses tls version 1.3
 		Eventually(func(g Gomega) {
-			s, err := admin.GetStats("listener.(.*)_80.ssl.versions.TLSv1.2")
+			s, err := admin.GetStats("listener.(.*)_80.ssl.versions.TLSv1.3")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s).To(stats.BeGreaterThanZero())
 		}, "30s", "1s").Should(Succeed())
 
 		// when
-		// applied MeshTLS policy to set 1.3 version on test-server
+		// applied MeshTLS policy with only the minimum version
 		Expect(universal.Cluster.Install(YamlUniversal(policy))).To(Succeed())
 
 		// then
-		// can access test-server from service in the mesh
+		// the demo client received the policy
+		Eventually(func(g Gomega) {
+			cd, err := clientAdmin.GetConfigDump()
+			g.Expect(err).ToNot(HaveOccurred())
+			clusters, err := util_proto.ToJSON(&cd.Cluster)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(string(clusters)).To(ContainSubstring(`"tlsMinimumProtocolVersion":"TLSv1_3"`))
+		}, "30s", "1s").Should(Succeed())
+		Expect(admin.ResetCounters()).To(Succeed())
+
+		// and
+		// can access test-server from service in the mesh over tls 1.3
 		Eventually(func(g Gomega) {
 			responses, err := client.CollectEchoResponse(
 				universal.Cluster, "mesh-tls-demo-client", "mesh-tls-test-server.svc.mesh.local",
@@ -323,8 +335,6 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(responses.Instance).To(Equal("test-server"))
 
-			// and
-			// uses tls version 1.3
 			s, err := admin.GetStats("listener.(.*)_80.ssl.versions.TLSv1.3")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s).To(stats.BeGreaterThanZero())
@@ -362,9 +372,9 @@ spec:
 		}, "30s", "1s").Should(Succeed())
 
 		// and
-		// uses tls version 1.2
+		// uses tls version 1.3
 		Eventually(func(g Gomega) {
-			s, err := admin.GetStats("listener.(.*)_80.ssl.versions.TLSv1.2")
+			s, err := admin.GetStats("listener.(.*)_80.ssl.versions.TLSv1.3")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(s).To(stats.BeGreaterThanZero())
 		}, "30s", "1s").Should(Succeed())

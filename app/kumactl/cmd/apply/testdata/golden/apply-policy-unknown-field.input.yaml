@@ -1,0 +1,17 @@
+type: MeshTrafficPermission
+mesh: default
+name: mtp-1
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Exact
+              value: spiffe://trust-domain/ns/default

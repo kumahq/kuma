@@ -11,14 +11,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/v3/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/validator"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	k8s_common "github.com/kumahq/kuma/v3/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -66,7 +66,20 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 	if err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
-	if resp := h.IsOperationAllowed(req.UserInfo, coreRes, req.Namespace); !resp.Allowed {
+	privileged := h.isPrivilegedUser(h.AllowedUsers, req.UserInfo)
+	var previousRes core_model.Resource
+	var storedLabels map[string]string
+	switch {
+	case req.Operation == v1.Delete:
+		storedLabels = k8s.SuppliedLabels(k8sObj)
+	case req.Operation == v1.Update && !privileged:
+		var previousObj k8s_model.KubernetesObject
+		if previousRes, previousObj, err = h.decode(req.Kind.Kind, req.OldObject); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
+		storedLabels = k8s.SuppliedLabels(previousObj)
+	}
+	if resp := h.IsOperationAllowed(req, coreRes, storedLabels); !resp.Allowed {
 		return resp
 	}
 
@@ -79,11 +92,11 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
-		if err := h.validateLabels(coreRes.GetMeta()); err.HasViolations() {
+		if err := h.validateLabels(coreRes, req.Namespace, privileged); err.HasViolations() {
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
-		if !h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) && coreRes.Descriptor().Scope == core_model.ScopeMesh {
+		if !privileged && coreRes.Descriptor().Scope == core_model.ScopeMesh {
 			if err := h.validateMeshOwnerReference(k8sObj); err.HasViolations() {
 				return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 			}
@@ -101,14 +114,7 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 		// IsOperationAllowed: a KDS sync replaying a resource the user recreated with a
 		// new value upstream must not be wedged by a guard that exists to protect the
 		// user from an in-place edit.
-		if req.Operation == v1.Update && !h.isPrivilegedUser(h.AllowedUsers, req.UserInfo) {
-			previousRes, previousObj, err := h.decode(req.Kind.Kind, req.OldObject)
-			if err != nil {
-				return admission.Errored(http.StatusBadRequest, err)
-			}
-			if resp := h.validateOriginNotChanged(previousObj, k8sObj); resp != nil {
-				return *resp
-			}
+		if previousRes != nil {
 			if err := validator.ValidateUpdate(previousRes, coreRes); err != nil {
 				if kumaErr, ok := err.(*validators.ValidationError); ok {
 					return convertSpecValidationError(kumaErr, coreRes.Descriptor().IsPluginOriginated, k8sObj)
@@ -140,35 +146,17 @@ func (h *validatingHandler) decode(kind string, raw kube_runtime.RawExtension) (
 	return coreRes, k8sObj, nil
 }
 
-// Without this a zone user could take over a Global-synced policy by re-applying it:
-// the defaulting webhook recomputes kuma.io/origin to 'zone' for a non-privileged
-// writer, and the Global->Zone KDS stream then wedges on AlreadyExists.
-func (h *validatingHandler) validateOriginNotChanged(oldObj, newObj k8s_model.KubernetesObject) *admission.Response {
-	// a non-federated zone owns everything in its store
-	if h.Mode != core.Global && !h.FederatedZone {
-		return nil
-	}
-	oldOrigin, ok := oldObj.GetLabels()[mesh_proto.ResourceOriginLabel]
-	if !ok {
-		return nil
-	}
-	if newOrigin := newObj.GetLabels()[mesh_proto.ResourceOriginLabel]; newOrigin != oldOrigin {
-		return forbiddenResponse(fmt.Sprintf(
-			"Operation not allowed. '%s' label is immutable, cannot be changed from '%s' to '%s'",
-			mesh_proto.ResourceOriginLabel, oldOrigin, newOrigin,
-		))
-	}
-	return nil
-}
-
-func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validators.ValidationError {
+func (h *validatingHandler) validateLabels(r core_model.Resource, ns string, trustedWriter bool) validators.ValidationError {
 	var verr validators.ValidationError
-	labelsPath := validators.Root().Field("labels")
-	if origin, ok := core_model.ResourceOrigin(rm); ok {
-		if err := origin.IsValid(); err != nil {
-			verr.AddViolationAt(labelsPath.Key(mesh_proto.ResourceOriginLabel), err.Error())
-		}
-	}
+	verr.AddError("labels", resource_labels.ValidateFormat(resource_labels.Write{
+		Descriptor:    r.Descriptor(),
+		Spec:          r.GetSpec(),
+		Namespace:     resource_labels.NewNamespace(ns, ns == h.SystemNamespace),
+		Mesh:          r.GetMeta().GetMesh(),
+		DisplayName:   r.GetMeta().GetName(),
+		Labels:        r.GetMeta().GetLabels(),
+		TrustedWriter: trustedWriter,
+	}))
 	return verr
 }
 

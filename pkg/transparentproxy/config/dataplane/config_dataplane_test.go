@@ -11,17 +11,25 @@ import (
 type dummyMeta struct {
 	transparentProxy *tproxy_dp.DataplaneConfig
 	dnsPort          uint32
+	ipv6Enabled      bool
 }
 
 func (d *dummyMeta) GetTransparentProxy() *tproxy_dp.DataplaneConfig { return d.transparentProxy }
 
 func (d *dummyMeta) GetDNSPort() uint32 { return d.dnsPort }
 
+func (d *dummyMeta) GetIPv6Enabled() bool { return d.ipv6Enabled }
+
 type dummyDP struct {
-	address string
+	address          string
+	transparentProxy *tproxy_dp.DataplaneConfig
 }
 
 func (d *dummyDP) GetAddress() string { return d.address }
+
+func (d *dummyDP) GetLegacyTransparentProxy() *tproxy_dp.DataplaneConfig {
+	return d.transparentProxy
+}
 
 var _ = Describe("DataplaneConfig functions", func() {
 	Describe("Enabled", func() {

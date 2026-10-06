@@ -143,7 +143,7 @@ query       = *( pchar / "/" / "?" )
 
 #### Envoy resource names
 
-For the context, there is already [MADR](036-internal-listeners.md) that regulated the name of internal listeners.
+For the context, there is already [MADR](https://github.com/kumahq/kuma/blob/46c23d9abaf50781c4fe24f2e8374942f0efb60e/docs/madr/decisions/036-internal-listeners.md) that regulated the name of internal listeners.
 Also, there was [work](https://docs.google.com/document/d/1OIZK82Tr-4El2FfdlBn7WNRZ7FatkTuEcZKH0FlSTMA/edit?tab=t.0#heading=h.n6cmlf1eel2z) related to Envoy cluster name unification, but it's not finished.
 Discoveries in this work helped me to fill the tables.
 
@@ -206,7 +206,7 @@ Column "Correlated Resources" provides the Kuma resources that could be used for
 | VirtualHost      | listener's name                                                                                                                                                                                                                                                             | –                    |
 | Internal Cluster | `kuma:readiness`<br>`kuma:envoy:admin`<br>`kuma:metrics:hijacker` (will be removed in the future)<br>`_kuma:metrics:opentelemetry:<backendName>`<br>`tracing:<backendName>` (will be removed in the future)<br>`access_log_sink`<br>`ads_cluster`<br>`meshtrace:<provider>` | –                    |
 
-Following the  [Internal listeners naming convention](036-internal-listeners.md) we need to rename internal listeners and clusters to start with `_`.
+Following the  [Internal listeners naming convention](https://github.com/kumahq/kuma/blob/46c23d9abaf50781c4fe24f2e8374942f0efb60e/docs/madr/decisions/036-internal-listeners.md) we need to rename internal listeners and clusters to start with `_`.
 Additionally, we need to get rid of `:` in internal entities names and use `_` instead.
 
 #### Envoy stats

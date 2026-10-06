@@ -53,13 +53,33 @@ spec:
     matchLabels:
       {{- include "kuma.mesh.zoneproxy.selectorLabels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 6 }}
   template:
+    {{- /* Keep the chart and app version out of the pod template: a change
+           rolls the zone proxies on every control plane upgrade, while the
+           old control plane still injects, so they return with the old
+           kuma-dp. Operators restart them after the upgrade instead. A
+           chart-rendered ConfigMap or Secret mounted here needs a checksum/
+           annotation of a template that renders no version labels. */}}
     metadata:
       annotations:
         kuma.io/reachable-backends: '{"refs":[]}'
+        {{- with $dep.podAnnotations }}
+        {{- if hasKey . "kuma.io/reachable-backends" }}
+        {{- fail (printf "meshes[%s].%s.deployment.podAnnotations: kuma.io/reachable-backends is set by the chart" $meshName $role) }}
+        {{- end }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
       labels:
-        {{- include "kuma.mesh.zoneproxy.labels" (dict "root" $ "meshName" $meshName "role" $role) | nindent 8 }}
-        kuma.io/sidecar-injection: enabled
-        k8s.kuma.io/zone-proxy-type: {{ $role }}
+        {{- $podLabels := include "kuma.mesh.zoneproxy.podLabels" (dict "root" $ "meshName" $meshName "role" $role) }}
+        {{- $chartLabels := fromYaml $podLabels }}
+        {{- range $key, $value := $dep.podLabels }}
+        {{- if hasKey $chartLabels $key }}
+        {{- fail (printf "meshes[%s].%s.deployment.podLabels: %s is set by the chart" $meshName $role $key) }}
+        {{- end }}
+        {{- end }}
+        {{- $podLabels | nindent 8 }}
+        {{- with $dep.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- if and $dep.podSpec $dep.podSpec.resources }}
       resources: {{ toYaml $dep.podSpec.resources | nindent 8 }}
@@ -120,6 +140,26 @@ spec:
               memory: 16Mi
             limits:
               memory: 16Mi
+          {{- end }}
+          {{- if eq $role "egress" }}
+          {{- /* Clients reach a zone egress by pod IP straight out of EDS, so a
+                 terminating pod keeps receiving requests until the control plane
+                 recomputes endpoints and pushes them. Outlive that propagation:
+                 it costs the store cache TTL plus the xDS refresh interval plus
+                 the push itself, so this has to be raised alongside those.
+                 A zone ingress needs no such hook: it is addressed through its
+                 Service, which drops terminating pods from the backend set. */}}
+          {{- $preStopSleep := int (include "kuma.mesh.zoneproxy.setting" (dict "cfg" $cfg "defaults" $defaults "field" "preStopSleepSeconds")) }}
+          {{- if gt $preStopSleep 0 }}
+          {{- $grace := int (include "kuma.mesh.zoneproxy.setting" (dict "cfg" $cfg "defaults" $defaults "field" "terminationGracePeriodSeconds")) }}
+          {{- if ge $preStopSleep $grace }}
+          {{- fail (printf "meshes[%s].egress: preStopSleepSeconds (%d) must be lower than terminationGracePeriodSeconds (%d), otherwise the pod is killed before the hook completes" $meshName $preStopSleep $grace) }}
+          {{- end }}
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: {{ $preStopSleep }}
+          {{- end }}
           {{- end }}
 {{- end }}
 
