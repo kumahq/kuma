@@ -18,7 +18,7 @@ var _ = Describe("generated schema", func() {
 
 		// Each branch pins a type with const and holds only the property it
 		// selects, so consumers do not have to infer the mapping.
-		Expect(string(contents)).To(MatchRegexp(`(?s)oneOf:.*title: RoundRobin.*const: RoundRobin.*roundRobin:`))
+		Expect(string(contents)).To(MatchRegexp(`(?s)oneOf:.*title: LoadBalancerRoundRobin.*const: RoundRobin.*roundRobin:`))
 	})
 })
 

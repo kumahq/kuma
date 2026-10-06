@@ -111,13 +111,12 @@ var _ = Describe("Assignments", func() {
 		// the variant properties happen to be in, and copy the variant schema by
 		// path so it keeps its key order.
 		Expect(expr).To(Equal(`."components"."schemas"."VaultConfig".oneOf = [` +
-			`{"title": "Server", "type": "object", "required": ["type"], "properties": {` +
-			`"type": {"type": "string", "const": "Server"}, ` +
+			`{"title": "VaultConfigServer", "type": "object", "required": ["type"], "properties": {` +
+			`"type": {"type": "string", "enum": ["Server"], "const": "Server"}, ` +
 			`"server": ."components"."schemas"."VaultConfig"."properties"."server"}}, ` +
-			`{"title": "Agent", "type": "object", "required": ["type"], "properties": {` +
-			`"type": {"type": "string", "const": "Agent"}, ` +
-			`"agent": ."components"."schemas"."VaultConfig"."properties"."agent"}}]` +
-			"\n  | " + `del(."components"."schemas"."VaultConfig".properties, ."components"."schemas"."VaultConfig".required)`))
+			`{"title": "VaultConfigAgent", "type": "object", "required": ["type"], "properties": {` +
+			`"type": {"type": "string", "enum": ["Agent"], "const": "Agent"}, ` +
+			`"agent": ."components"."schemas"."VaultConfig"."properties"."agent"}}]`))
 	})
 
 	It("should keep the discriminator description and the required shared properties", func() {
@@ -134,8 +133,8 @@ var _ = Describe("Assignments", func() {
 		expr, err := Assignments(schema, []string{"b"})
 
 		Expect(err).ToNot(HaveOccurred())
-		Expect(expr).To(ContainSubstring(`{"title": "Tcp", "type": "object", "required": ["type","name"], "properties": {` +
-			`"type": {"description": "Type of the backend.", "type": "string", "const": "Tcp"}, ` +
+		Expect(expr).To(ContainSubstring(`{"title": "BTcp", "type": "object", "required": ["type","name"], "properties": {` +
+			`"type": {"description": "Type of the backend.", "type": "string", "enum": ["Tcp"], "const": "Tcp"}, ` +
 			`"tcp": ."b"."properties"."tcp", "name": ."b"."properties"."name"}}`))
 	})
 
@@ -164,6 +163,18 @@ var _ = Describe("Assignments", func() {
 		Expect(inner).To(BeNumerically(">=", 0))
 		Expect(outer).To(BeNumerically(">", inner))
 	})
+})
+
+var _ = Describe("field", func() {
+	DescribeTable("should name the property holding the union",
+		func(path []string, expected string) {
+			Expect(Site{Path: path}.field()).To(Equal(expected))
+		},
+		Entry("object property", []string{"properties", "spec", "properties", "default", "properties", "loadBalancer"}, "loadBalancer"),
+		Entry("array item", []string{"properties", "backendRefs", "items", "properties", "filters", "items"}, "filters"),
+		Entry("schema of its own", []string{"components", "schemas", "VaultConfig"}, "vaultConfig"),
+		Entry("root", nil, ""),
+	)
 })
 
 var _ = Describe("variantProperty", func() {

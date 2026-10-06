@@ -75,6 +75,9 @@ docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES) | docs/generated docs
 		mkdir -p $(BUILD_DIR)/oapitmp-rewritten/$$(dirname $$f); \
 		sed 's|"/specs/|"$(BUILD_DIR)/oapitmp-rewritten/|g; s|'"'"'/specs/|'"'"'$(BUILD_DIR)/oapitmp-rewritten/|g; s| /specs/| $(BUILD_DIR)/oapitmp-rewritten/|g; s|: /specs/|: $(BUILD_DIR)/oapitmp-rewritten/|g' $$f > $(BUILD_DIR)/oapitmp-rewritten/$$f; \
 	done
+	@# rest.yaml keeps the properties of a union node for control plane defaulting, but generators (Speakeasy) merge them into every oneOf branch
+	@find $(BUILD_DIR)/oapitmp-rewritten/policies $(BUILD_DIR)/oapitmp-rewritten/resources -name rest.yaml -exec \
+		$(YQ) -i '(.. | select(tag == "!!map" and has("oneOf") and has("properties")) | select(.oneOf | all_c(.properties.type.const != null))) |= del(.properties, .required)' {} \;
 	@echo "Bundling individual OpenAPI specs..."
 	@mkdir -p $(BUILD_DIR)/openapi-bundled
 	@cd $(BUILD_DIR)/oapitmp-rewritten && \

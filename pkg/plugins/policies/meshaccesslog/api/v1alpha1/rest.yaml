@@ -169,15 +169,273 @@ components:
                     properties:
                       backends:
                         items:
+                          properties:
+                            file:
+                              description: FileBackend defines configuration for file based access logs
+                              properties:
+                                format:
+                                  description: |-
+                                    Format of access logs. Placeholders available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  properties:
+                                    json:
+                                      example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        required:
+                                          - key
+                                          - value
+                                        type: object
+                                      type: array
+                                    omitEmptyValues:
+                                      default: false
+                                      type: boolean
+                                    plain:
+                                      example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                      type: string
+                                    type:
+                                      enum:
+                                        - Plain
+                                        - Json
+                                      type: string
+                                  required:
+                                    - type
+                                  type: object
+                                  oneOf:
+                                    - title: FormatPlain
+                                      type: object
+                                      required:
+                                        - type
+                                      properties:
+                                        type:
+                                          type: string
+                                          enum:
+                                            - Plain
+                                          const: Plain
+                                        plain:
+                                          example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                          type: string
+                                        omitEmptyValues:
+                                          default: false
+                                          type: boolean
+                                    - title: FormatJson
+                                      type: object
+                                      required:
+                                        - type
+                                      properties:
+                                        type:
+                                          type: string
+                                          enum:
+                                            - Json
+                                          const: Json
+                                        json:
+                                          example:
+                                            - key: start_time
+                                              value: '%START_TIME%'
+                                            - key: bytes_received
+                                              value: '%BYTES_RECEIVED%'
+                                          items:
+                                            properties:
+                                              key:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                              - key
+                                              - value
+                                            type: object
+                                          type: array
+                                        omitEmptyValues:
+                                          default: false
+                                          type: boolean
+                                path:
+                                  description: Path to a file that logs will be written to
+                                  example: /tmp/access.log
+                                  minLength: 1
+                                  type: string
+                              required:
+                                - path
+                              type: object
+                            openTelemetry:
+                              description: Defines an OpenTelemetry logging backend.
+                              properties:
+                                attributes:
+                                  description: |-
+                                    Attributes defines custom OpenTelemetry attributes. Keys must be static
+                                    OpenTelemetry attribute names. Values can contain placeholders available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  example:
+                                    - key: mesh
+                                      value: '%KUMA_MESH%'
+                                  items:
+                                    properties:
+                                      key:
+                                        description: Key is the OpenTelemetry attribute name.
+                                        pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
+                                        type: string
+                                      value:
+                                        description: Value can contain Kuma placeholders.
+                                        type: string
+                                    required:
+                                      - key
+                                      - value
+                                    type: object
+                                  type: array
+                                backendRef:
+                                  description: |-
+                                    BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+                                    defines the collector endpoint.
+                                  properties:
+                                    kind:
+                                      description: Kind of the backend resource.
+                                      enum:
+                                        - MeshOpenTelemetryBackend
+                                      type: string
+                                    labels:
+                                      additionalProperties:
+                                        type: string
+                                      description: |-
+                                        Labels to match the referenced resource. When multiple resources match,
+                                        the oldest by creation time wins.
+                                      type: object
+                                  required:
+                                    - kind
+                                  type: object
+                                body:
+                                  description: |-
+                                    Body is a raw string or an OTLP any value as described at
+                                    https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
+                                    It can contain placeholders available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  example:
+                                    kvlistValue:
+                                      values:
+                                        - key: mesh
+                                          value:
+                                            stringValue: '%KUMA_MESH%'
+                                  x-kubernetes-preserve-unknown-fields: true
+                              type: object
+                            tcp:
+                              description: TCPBackend defines a TCP logging backend.
+                              properties:
+                                address:
+                                  description: Address of the TCP logging backend
+                                  example: 127.0.0.1:5000
+                                  minLength: 1
+                                  type: string
+                                format:
+                                  description: |-
+                                    Format of access logs. Placeholders available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  properties:
+                                    json:
+                                      example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        required:
+                                          - key
+                                          - value
+                                        type: object
+                                      type: array
+                                    omitEmptyValues:
+                                      default: false
+                                      type: boolean
+                                    plain:
+                                      example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                      type: string
+                                    type:
+                                      enum:
+                                        - Plain
+                                        - Json
+                                      type: string
+                                  required:
+                                    - type
+                                  type: object
+                                  oneOf:
+                                    - title: FormatPlain
+                                      type: object
+                                      required:
+                                        - type
+                                      properties:
+                                        type:
+                                          type: string
+                                          enum:
+                                            - Plain
+                                          const: Plain
+                                        plain:
+                                          example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                          type: string
+                                        omitEmptyValues:
+                                          default: false
+                                          type: boolean
+                                    - title: FormatJson
+                                      type: object
+                                      required:
+                                        - type
+                                      properties:
+                                        type:
+                                          type: string
+                                          enum:
+                                            - Json
+                                          const: Json
+                                        json:
+                                          example:
+                                            - key: start_time
+                                              value: '%START_TIME%'
+                                            - key: bytes_received
+                                              value: '%BYTES_RECEIVED%'
+                                          items:
+                                            properties:
+                                              key:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                              - key
+                                              - value
+                                            type: object
+                                          type: array
+                                        omitEmptyValues:
+                                          default: false
+                                          type: boolean
+                              required:
+                                - address
+                              type: object
+                            type:
+                              enum:
+                                - Tcp
+                                - File
+                                - OpenTelemetry
+                              type: string
+                          required:
+                            - type
                           type: object
                           oneOf:
-                            - title: Tcp
+                            - title: BackendsTcp
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - Tcp
                                   const: Tcp
                                 tcp:
                                   description: TCPBackend defines a TCP logging backend.
@@ -191,15 +449,48 @@ components:
                                       description: |-
                                         Format of access logs. Placeholders available on
                                         https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                      properties:
+                                        json:
+                                          example:
+                                            - key: start_time
+                                              value: '%START_TIME%'
+                                            - key: bytes_received
+                                              value: '%BYTES_RECEIVED%'
+                                          items:
+                                            properties:
+                                              key:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                              - key
+                                              - value
+                                            type: object
+                                          type: array
+                                        omitEmptyValues:
+                                          default: false
+                                          type: boolean
+                                        plain:
+                                          example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                          type: string
+                                        type:
+                                          enum:
+                                            - Plain
+                                            - Json
+                                          type: string
+                                      required:
+                                        - type
                                       type: object
                                       oneOf:
-                                        - title: Plain
+                                        - title: FormatPlain
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Plain
                                               const: Plain
                                             plain:
                                               example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -207,13 +498,15 @@ components:
                                             omitEmptyValues:
                                               default: false
                                               type: boolean
-                                        - title: Json
+                                        - title: FormatJson
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Json
                                               const: Json
                                             json:
                                               example:
@@ -238,13 +531,15 @@ components:
                                   required:
                                     - address
                                   type: object
-                            - title: File
+                            - title: BackendsFile
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - File
                                   const: File
                                 file:
                                   description: FileBackend defines configuration for file based access logs
@@ -253,15 +548,48 @@ components:
                                       description: |-
                                         Format of access logs. Placeholders available on
                                         https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                      properties:
+                                        json:
+                                          example:
+                                            - key: start_time
+                                              value: '%START_TIME%'
+                                            - key: bytes_received
+                                              value: '%BYTES_RECEIVED%'
+                                          items:
+                                            properties:
+                                              key:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                              - key
+                                              - value
+                                            type: object
+                                          type: array
+                                        omitEmptyValues:
+                                          default: false
+                                          type: boolean
+                                        plain:
+                                          example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                          type: string
+                                        type:
+                                          enum:
+                                            - Plain
+                                            - Json
+                                          type: string
+                                      required:
+                                        - type
                                       type: object
                                       oneOf:
-                                        - title: Plain
+                                        - title: FormatPlain
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Plain
                                               const: Plain
                                             plain:
                                               example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -269,13 +597,15 @@ components:
                                             omitEmptyValues:
                                               default: false
                                               type: boolean
-                                        - title: Json
+                                        - title: FormatJson
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Json
                                               const: Json
                                             json:
                                               example:
@@ -305,13 +635,15 @@ components:
                                   required:
                                     - path
                                   type: object
-                            - title: OpenTelemetry
+                            - title: BackendsOpenTelemetry
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - OpenTelemetry
                                   const: OpenTelemetry
                                 openTelemetry:
                                   description: Defines an OpenTelemetry logging backend.
@@ -457,15 +789,273 @@ components:
                     properties:
                       backends:
                         items:
+                          properties:
+                            file:
+                              description: FileBackend defines configuration for file based access logs
+                              properties:
+                                format:
+                                  description: |-
+                                    Format of access logs. Placeholders available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  properties:
+                                    json:
+                                      example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        required:
+                                          - key
+                                          - value
+                                        type: object
+                                      type: array
+                                    omitEmptyValues:
+                                      default: false
+                                      type: boolean
+                                    plain:
+                                      example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                      type: string
+                                    type:
+                                      enum:
+                                        - Plain
+                                        - Json
+                                      type: string
+                                  required:
+                                    - type
+                                  type: object
+                                  oneOf:
+                                    - title: FormatPlain
+                                      type: object
+                                      required:
+                                        - type
+                                      properties:
+                                        type:
+                                          type: string
+                                          enum:
+                                            - Plain
+                                          const: Plain
+                                        plain:
+                                          example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                          type: string
+                                        omitEmptyValues:
+                                          default: false
+                                          type: boolean
+                                    - title: FormatJson
+                                      type: object
+                                      required:
+                                        - type
+                                      properties:
+                                        type:
+                                          type: string
+                                          enum:
+                                            - Json
+                                          const: Json
+                                        json:
+                                          example:
+                                            - key: start_time
+                                              value: '%START_TIME%'
+                                            - key: bytes_received
+                                              value: '%BYTES_RECEIVED%'
+                                          items:
+                                            properties:
+                                              key:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                              - key
+                                              - value
+                                            type: object
+                                          type: array
+                                        omitEmptyValues:
+                                          default: false
+                                          type: boolean
+                                path:
+                                  description: Path to a file that logs will be written to
+                                  example: /tmp/access.log
+                                  minLength: 1
+                                  type: string
+                              required:
+                                - path
+                              type: object
+                            openTelemetry:
+                              description: Defines an OpenTelemetry logging backend.
+                              properties:
+                                attributes:
+                                  description: |-
+                                    Attributes defines custom OpenTelemetry attributes. Keys must be static
+                                    OpenTelemetry attribute names. Values can contain placeholders available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  example:
+                                    - key: mesh
+                                      value: '%KUMA_MESH%'
+                                  items:
+                                    properties:
+                                      key:
+                                        description: Key is the OpenTelemetry attribute name.
+                                        pattern: ^[a-z]([a-z0-9]|[._][a-z0-9])*$
+                                        type: string
+                                      value:
+                                        description: Value can contain Kuma placeholders.
+                                        type: string
+                                    required:
+                                      - key
+                                      - value
+                                    type: object
+                                  type: array
+                                backendRef:
+                                  description: |-
+                                    BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+                                    defines the collector endpoint.
+                                  properties:
+                                    kind:
+                                      description: Kind of the backend resource.
+                                      enum:
+                                        - MeshOpenTelemetryBackend
+                                      type: string
+                                    labels:
+                                      additionalProperties:
+                                        type: string
+                                      description: |-
+                                        Labels to match the referenced resource. When multiple resources match,
+                                        the oldest by creation time wins.
+                                      type: object
+                                  required:
+                                    - kind
+                                  type: object
+                                body:
+                                  description: |-
+                                    Body is a raw string or an OTLP any value as described at
+                                    https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
+                                    It can contain placeholders available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  example:
+                                    kvlistValue:
+                                      values:
+                                        - key: mesh
+                                          value:
+                                            stringValue: '%KUMA_MESH%'
+                                  x-kubernetes-preserve-unknown-fields: true
+                              type: object
+                            tcp:
+                              description: TCPBackend defines a TCP logging backend.
+                              properties:
+                                address:
+                                  description: Address of the TCP logging backend
+                                  example: 127.0.0.1:5000
+                                  minLength: 1
+                                  type: string
+                                format:
+                                  description: |-
+                                    Format of access logs. Placeholders available on
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  properties:
+                                    json:
+                                      example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        required:
+                                          - key
+                                          - value
+                                        type: object
+                                      type: array
+                                    omitEmptyValues:
+                                      default: false
+                                      type: boolean
+                                    plain:
+                                      example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                      type: string
+                                    type:
+                                      enum:
+                                        - Plain
+                                        - Json
+                                      type: string
+                                  required:
+                                    - type
+                                  type: object
+                                  oneOf:
+                                    - title: FormatPlain
+                                      type: object
+                                      required:
+                                        - type
+                                      properties:
+                                        type:
+                                          type: string
+                                          enum:
+                                            - Plain
+                                          const: Plain
+                                        plain:
+                                          example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                          type: string
+                                        omitEmptyValues:
+                                          default: false
+                                          type: boolean
+                                    - title: FormatJson
+                                      type: object
+                                      required:
+                                        - type
+                                      properties:
+                                        type:
+                                          type: string
+                                          enum:
+                                            - Json
+                                          const: Json
+                                        json:
+                                          example:
+                                            - key: start_time
+                                              value: '%START_TIME%'
+                                            - key: bytes_received
+                                              value: '%BYTES_RECEIVED%'
+                                          items:
+                                            properties:
+                                              key:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                              - key
+                                              - value
+                                            type: object
+                                          type: array
+                                        omitEmptyValues:
+                                          default: false
+                                          type: boolean
+                              required:
+                                - address
+                              type: object
+                            type:
+                              enum:
+                                - Tcp
+                                - File
+                                - OpenTelemetry
+                              type: string
+                          required:
+                            - type
                           type: object
                           oneOf:
-                            - title: Tcp
+                            - title: BackendsTcp
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - Tcp
                                   const: Tcp
                                 tcp:
                                   description: TCPBackend defines a TCP logging backend.
@@ -479,15 +1069,48 @@ components:
                                       description: |-
                                         Format of access logs. Placeholders available on
                                         https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                      properties:
+                                        json:
+                                          example:
+                                            - key: start_time
+                                              value: '%START_TIME%'
+                                            - key: bytes_received
+                                              value: '%BYTES_RECEIVED%'
+                                          items:
+                                            properties:
+                                              key:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                              - key
+                                              - value
+                                            type: object
+                                          type: array
+                                        omitEmptyValues:
+                                          default: false
+                                          type: boolean
+                                        plain:
+                                          example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                          type: string
+                                        type:
+                                          enum:
+                                            - Plain
+                                            - Json
+                                          type: string
+                                      required:
+                                        - type
                                       type: object
                                       oneOf:
-                                        - title: Plain
+                                        - title: FormatPlain
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Plain
                                               const: Plain
                                             plain:
                                               example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -495,13 +1118,15 @@ components:
                                             omitEmptyValues:
                                               default: false
                                               type: boolean
-                                        - title: Json
+                                        - title: FormatJson
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Json
                                               const: Json
                                             json:
                                               example:
@@ -526,13 +1151,15 @@ components:
                                   required:
                                     - address
                                   type: object
-                            - title: File
+                            - title: BackendsFile
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - File
                                   const: File
                                 file:
                                   description: FileBackend defines configuration for file based access logs
@@ -541,15 +1168,48 @@ components:
                                       description: |-
                                         Format of access logs. Placeholders available on
                                         https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                      properties:
+                                        json:
+                                          example:
+                                            - key: start_time
+                                              value: '%START_TIME%'
+                                            - key: bytes_received
+                                              value: '%BYTES_RECEIVED%'
+                                          items:
+                                            properties:
+                                              key:
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                              - key
+                                              - value
+                                            type: object
+                                          type: array
+                                        omitEmptyValues:
+                                          default: false
+                                          type: boolean
+                                        plain:
+                                          example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                          type: string
+                                        type:
+                                          enum:
+                                            - Plain
+                                            - Json
+                                          type: string
+                                      required:
+                                        - type
                                       type: object
                                       oneOf:
-                                        - title: Plain
+                                        - title: FormatPlain
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Plain
                                               const: Plain
                                             plain:
                                               example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -557,13 +1217,15 @@ components:
                                             omitEmptyValues:
                                               default: false
                                               type: boolean
-                                        - title: Json
+                                        - title: FormatJson
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Json
                                               const: Json
                                             json:
                                               example:
@@ -593,13 +1255,15 @@ components:
                                   required:
                                     - path
                                   type: object
-                            - title: OpenTelemetry
+                            - title: BackendsOpenTelemetry
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - OpenTelemetry
                                   const: OpenTelemetry
                                 openTelemetry:
                                   description: Defines an OpenTelemetry logging backend.

@@ -190,9 +190,73 @@ components:
                 backends:
                   description: Backends list that will be used to collect metrics.
                   items:
+                    properties:
+                      openTelemetry:
+                        description: OpenTelemetry backend configuration
+                        properties:
+                          backendRef:
+                            description: |-
+                              BackendRef is a reference to a MeshOpenTelemetryBackend resource that
+                              defines the collector endpoint.
+                            properties:
+                              kind:
+                                description: Kind of the backend resource.
+                                enum:
+                                  - MeshOpenTelemetryBackend
+                                type: string
+                              labels:
+                                additionalProperties:
+                                  type: string
+                                description: |-
+                                  Labels to match the referenced resource. When multiple resources match,
+                                  the oldest by creation time wins.
+                                type: object
+                            required:
+                              - kind
+                            type: object
+                          refreshInterval:
+                            description: RefreshInterval defines how frequent metrics should be pushed to collector
+                            type: string
+                        type: object
+                      prometheus:
+                        description: Prometheus backend configuration.
+                        properties:
+                          clientId:
+                            description: ClientId of the Prometheus backend. Needed when using MADS for DP discovery.
+                            type: string
+                          path:
+                            default: /metrics
+                            description: Path on which a dataplane should expose HTTP endpoint with Prometheus metrics.
+                            type: string
+                          port:
+                            default: 5670
+                            description: Port on which a dataplane should expose HTTP endpoint with Prometheus metrics.
+                            format: int32
+                            type: integer
+                          tls:
+                            description: Configuration of TLS for prometheus listener.
+                            properties:
+                              mode:
+                                default: Disabled
+                                description: Configuration of TLS for Prometheus listener.
+                                enum:
+                                  - Disabled
+                                  - ProvidedTLS
+                                  - ActiveMTLSBackend
+                                type: string
+                            type: object
+                        type: object
+                      type:
+                        description: Type of the backend that will be used to collect metrics. At the moment only Prometheus backend is available.
+                        enum:
+                          - Prometheus
+                          - OpenTelemetry
+                        type: string
+                    required:
+                      - type
                     type: object
                     oneOf:
-                      - title: Prometheus
+                      - title: BackendsPrometheus
                         type: object
                         required:
                           - type
@@ -200,6 +264,8 @@ components:
                           type:
                             description: Type of the backend that will be used to collect metrics. At the moment only Prometheus backend is available.
                             type: string
+                            enum:
+                              - Prometheus
                             const: Prometheus
                           prometheus:
                             description: Prometheus backend configuration.
@@ -229,7 +295,7 @@ components:
                                     type: string
                                 type: object
                             type: object
-                      - title: OpenTelemetry
+                      - title: BackendsOpenTelemetry
                         type: object
                         required:
                           - type
@@ -237,6 +303,8 @@ components:
                           type:
                             description: Type of the backend that will be used to collect metrics. At the moment only Prometheus backend is available.
                             type: string
+                            enum:
+                              - OpenTelemetry
                             const: OpenTelemetry
                           openTelemetry:
                             description: OpenTelemetry backend configuration

@@ -6492,13 +6492,15 @@ components:
                         items:
                           type: object
                           oneOf:
-                            - title: Tcp
+                            - title: BackendsTcp
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - Tcp
                                   const: Tcp
                                 tcp:
                                   description: TCPBackend defines a TCP logging backend.
@@ -6516,13 +6518,15 @@ components:
                                         https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                       type: object
                                       oneOf:
-                                        - title: Plain
+                                        - title: FormatPlain
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Plain
                                               const: Plain
                                             plain:
                                               example: >-
@@ -6532,13 +6536,15 @@ components:
                                             omitEmptyValues:
                                               default: false
                                               type: boolean
-                                        - title: Json
+                                        - title: FormatJson
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Json
                                               const: Json
                                             json:
                                               example:
@@ -6563,13 +6569,15 @@ components:
                                   required:
                                     - address
                                   type: object
-                            - title: File
+                            - title: BackendsFile
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - File
                                   const: File
                                 file:
                                   description: >-
@@ -6584,13 +6592,15 @@ components:
                                         https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                       type: object
                                       oneOf:
-                                        - title: Plain
+                                        - title: FormatPlain
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Plain
                                               const: Plain
                                             plain:
                                               example: >-
@@ -6600,13 +6610,15 @@ components:
                                             omitEmptyValues:
                                               default: false
                                               type: boolean
-                                        - title: Json
+                                        - title: FormatJson
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Json
                                               const: Json
                                             json:
                                               example:
@@ -6638,13 +6650,15 @@ components:
                                   required:
                                     - path
                                   type: object
-                            - title: OpenTelemetry
+                            - title: BackendsOpenTelemetry
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - OpenTelemetry
                                   const: OpenTelemetry
                                 openTelemetry:
                                   description: Defines an OpenTelemetry logging backend.
@@ -6836,13 +6850,15 @@ components:
                         items:
                           type: object
                           oneOf:
-                            - title: Tcp
+                            - title: BackendsTcp
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - Tcp
                                   const: Tcp
                                 tcp:
                                   description: TCPBackend defines a TCP logging backend.
@@ -6860,13 +6876,15 @@ components:
                                         https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                       type: object
                                       oneOf:
-                                        - title: Plain
+                                        - title: FormatPlain
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Plain
                                               const: Plain
                                             plain:
                                               example: >-
@@ -6876,13 +6894,15 @@ components:
                                             omitEmptyValues:
                                               default: false
                                               type: boolean
-                                        - title: Json
+                                        - title: FormatJson
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Json
                                               const: Json
                                             json:
                                               example:
@@ -6907,13 +6927,15 @@ components:
                                   required:
                                     - address
                                   type: object
-                            - title: File
+                            - title: BackendsFile
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - File
                                   const: File
                                 file:
                                   description: >-
@@ -6928,13 +6950,15 @@ components:
                                         https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                       type: object
                                       oneOf:
-                                        - title: Plain
+                                        - title: FormatPlain
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Plain
                                               const: Plain
                                             plain:
                                               example: >-
@@ -6944,13 +6968,15 @@ components:
                                             omitEmptyValues:
                                               default: false
                                               type: boolean
-                                        - title: Json
+                                        - title: FormatJson
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - Json
                                               const: Json
                                             json:
                                               example:
@@ -6982,13 +7008,15 @@ components:
                                   required:
                                     - path
                                   type: object
-                            - title: OpenTelemetry
+                            - title: BackendsOpenTelemetry
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - OpenTelemetry
                                   const: OpenTelemetry
                                 openTelemetry:
                                   description: Defines an OpenTelemetry logging backend.
@@ -8798,13 +8826,15 @@ components:
                                     items:
                                       type: object
                                       oneOf:
-                                        - title: RequestHeaderModifier
+                                        - title: FiltersRequestHeaderModifier
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - RequestHeaderModifier
                                               const: RequestHeaderModifier
                                             requestHeaderModifier:
                                               description: >-
@@ -8861,13 +8891,15 @@ components:
                                                     - name
                                                   x-kubernetes-list-type: map
                                               type: object
-                                        - title: ResponseHeaderModifier
+                                        - title: FiltersResponseHeaderModifier
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - ResponseHeaderModifier
                                               const: ResponseHeaderModifier
                                             responseHeaderModifier:
                                               description: >-
@@ -8924,13 +8956,15 @@ components:
                                                     - name
                                                   x-kubernetes-list-type: map
                                               type: object
-                                        - title: RequestRedirect
+                                        - title: FiltersRequestRedirect
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - RequestRedirect
                                               const: RequestRedirect
                                             requestRedirect:
                                               properties:
@@ -8970,23 +9004,27 @@ components:
                                                     as-is.
                                                   type: object
                                                   oneOf:
-                                                    - title: ReplaceFullPath
+                                                    - title: PathReplaceFullPath
                                                       type: object
                                                       required:
                                                         - type
                                                       properties:
                                                         type:
                                                           type: string
+                                                          enum:
+                                                            - ReplaceFullPath
                                                           const: ReplaceFullPath
                                                         replaceFullPath:
                                                           type: string
-                                                    - title: ReplacePrefixMatch
+                                                    - title: PathReplacePrefixMatch
                                                       type: object
                                                       required:
                                                         - type
                                                       properties:
                                                         type:
                                                           type: string
+                                                          enum:
+                                                            - ReplacePrefixMatch
                                                           const: ReplacePrefixMatch
                                                         replacePrefixMatch:
                                                           type: string
@@ -9021,13 +9059,15 @@ components:
                                                     - 308
                                                   type: integer
                                               type: object
-                                        - title: URLRewrite
+                                        - title: FiltersURLRewrite
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - URLRewrite
                                               const: URLRewrite
                                             urlRewrite:
                                               properties:
@@ -9050,34 +9090,40 @@ components:
                                                   description: Path defines a path rewrite.
                                                   type: object
                                                   oneOf:
-                                                    - title: ReplaceFullPath
+                                                    - title: PathReplaceFullPath
                                                       type: object
                                                       required:
                                                         - type
                                                       properties:
                                                         type:
                                                           type: string
+                                                          enum:
+                                                            - ReplaceFullPath
                                                           const: ReplaceFullPath
                                                         replaceFullPath:
                                                           type: string
-                                                    - title: ReplacePrefixMatch
+                                                    - title: PathReplacePrefixMatch
                                                       type: object
                                                       required:
                                                         - type
                                                       properties:
                                                         type:
                                                           type: string
+                                                          enum:
+                                                            - ReplacePrefixMatch
                                                           const: ReplacePrefixMatch
                                                         replacePrefixMatch:
                                                           type: string
                                               type: object
-                                        - title: RequestMirror
+                                        - title: FiltersRequestMirror
                                           type: object
                                           required:
                                             - type
                                           properties:
                                             type:
                                               type: string
+                                              enum:
+                                                - RequestMirror
                                               const: RequestMirror
                                             requestMirror:
                                               properties:
@@ -9175,13 +9221,15 @@ components:
                               items:
                                 type: object
                                 oneOf:
-                                  - title: RequestHeaderModifier
+                                  - title: FiltersRequestHeaderModifier
                                     type: object
                                     required:
                                       - type
                                     properties:
                                       type:
                                         type: string
+                                        enum:
+                                          - RequestHeaderModifier
                                         const: RequestHeaderModifier
                                       requestHeaderModifier:
                                         description: >-
@@ -9238,13 +9286,15 @@ components:
                                               - name
                                             x-kubernetes-list-type: map
                                         type: object
-                                  - title: ResponseHeaderModifier
+                                  - title: FiltersResponseHeaderModifier
                                     type: object
                                     required:
                                       - type
                                     properties:
                                       type:
                                         type: string
+                                        enum:
+                                          - ResponseHeaderModifier
                                         const: ResponseHeaderModifier
                                       responseHeaderModifier:
                                         description: >-
@@ -9301,13 +9351,15 @@ components:
                                               - name
                                             x-kubernetes-list-type: map
                                         type: object
-                                  - title: RequestRedirect
+                                  - title: FiltersRequestRedirect
                                     type: object
                                     required:
                                       - type
                                     properties:
                                       type:
                                         type: string
+                                        enum:
+                                          - RequestRedirect
                                         const: RequestRedirect
                                       requestRedirect:
                                         properties:
@@ -9347,23 +9399,27 @@ components:
                                               as-is.
                                             type: object
                                             oneOf:
-                                              - title: ReplaceFullPath
+                                              - title: PathReplaceFullPath
                                                 type: object
                                                 required:
                                                   - type
                                                 properties:
                                                   type:
                                                     type: string
+                                                    enum:
+                                                      - ReplaceFullPath
                                                     const: ReplaceFullPath
                                                   replaceFullPath:
                                                     type: string
-                                              - title: ReplacePrefixMatch
+                                              - title: PathReplacePrefixMatch
                                                 type: object
                                                 required:
                                                   - type
                                                 properties:
                                                   type:
                                                     type: string
+                                                    enum:
+                                                      - ReplacePrefixMatch
                                                     const: ReplacePrefixMatch
                                                   replacePrefixMatch:
                                                     type: string
@@ -9398,13 +9454,15 @@ components:
                                               - 308
                                             type: integer
                                         type: object
-                                  - title: URLRewrite
+                                  - title: FiltersURLRewrite
                                     type: object
                                     required:
                                       - type
                                     properties:
                                       type:
                                         type: string
+                                        enum:
+                                          - URLRewrite
                                         const: URLRewrite
                                       urlRewrite:
                                         properties:
@@ -9427,34 +9485,40 @@ components:
                                             description: Path defines a path rewrite.
                                             type: object
                                             oneOf:
-                                              - title: ReplaceFullPath
+                                              - title: PathReplaceFullPath
                                                 type: object
                                                 required:
                                                   - type
                                                 properties:
                                                   type:
                                                     type: string
+                                                    enum:
+                                                      - ReplaceFullPath
                                                     const: ReplaceFullPath
                                                   replaceFullPath:
                                                     type: string
-                                              - title: ReplacePrefixMatch
+                                              - title: PathReplacePrefixMatch
                                                 type: object
                                                 required:
                                                   - type
                                                 properties:
                                                   type:
                                                     type: string
+                                                    enum:
+                                                      - ReplacePrefixMatch
                                                     const: ReplacePrefixMatch
                                                   replacePrefixMatch:
                                                     type: string
                                         type: object
-                                  - title: RequestMirror
+                                  - title: FiltersRequestMirror
                                     type: object
                                     required:
                                       - type
                                     properties:
                                       type:
                                         type: string
+                                        enum:
+                                          - RequestMirror
                                         const: RequestMirror
                                       requestMirror:
                                         properties:
@@ -10205,13 +10269,15 @@ components:
                         items:
                           type: object
                           oneOf:
-                            - title: Header
+                            - title: HashPoliciesHeader
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - Header
                                   const: Header
                                 header:
                                   properties:
@@ -10239,13 +10305,15 @@ components:
                                     computed, ignore rest of the list of hash
                                     polices.
                                   type: boolean
-                            - title: Cookie
+                            - title: HashPoliciesCookie
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - Cookie
                                   const: Cookie
                                 cookie:
                                   properties:
@@ -10282,13 +10350,15 @@ components:
                                     computed, ignore rest of the list of hash
                                     polices.
                                   type: boolean
-                            - title: Connection
+                            - title: HashPoliciesConnection
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - Connection
                                   const: Connection
                                 connection:
                                   properties:
@@ -10311,13 +10381,15 @@ components:
                                     computed, ignore rest of the list of hash
                                     polices.
                                   type: boolean
-                            - title: QueryParameter
+                            - title: HashPoliciesQueryParameter
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - QueryParameter
                                   const: QueryParameter
                                 queryParameter:
                                   properties:
@@ -10350,13 +10422,15 @@ components:
                                     computed, ignore rest of the list of hash
                                     polices.
                                   type: boolean
-                            - title: FilterState
+                            - title: HashPoliciesFilterState
                               type: object
                               required:
                                 - type
                               properties:
                                 type:
                                   type: string
+                                  enum:
+                                    - FilterState
                                   const: FilterState
                                 filterState:
                                   properties:
@@ -10398,13 +10472,15 @@ components:
                           algorithm.
                         type: object
                         oneOf:
-                          - title: RoundRobin
+                          - title: LoadBalancerRoundRobin
                             type: object
                             required:
                               - type
                             properties:
                               type:
                                 type: string
+                                enum:
+                                  - RoundRobin
                                 const: RoundRobin
                               roundRobin:
                                 description: >-
@@ -10414,13 +10490,15 @@ components:
                                   across available upstream hosts in round-robin
                                   order.
                                 type: object
-                          - title: LeastRequest
+                          - title: LoadBalancerLeastRequest
                             type: object
                             required:
                               - type
                             properties:
                               type:
                                 type: string
+                                enum:
+                                  - LeastRequest
                                 const: LeastRequest
                               leastRequest:
                                 description: >-
@@ -10467,13 +10545,15 @@ components:
                                     minimum: 2
                                     type: integer
                                 type: object
-                          - title: RingHash
+                          - title: LoadBalancerRingHash
                             type: object
                             required:
                               - type
                             properties:
                               type:
                                 type: string
+                                enum:
+                                  - RingHash
                                 const: RingHash
                               ringHash:
                                 description: >-
@@ -10527,13 +10607,15 @@ components:
                                     minimum: 1
                                     type: integer
                                 type: object
-                          - title: Random
+                          - title: LoadBalancerRandom
                             type: object
                             required:
                               - type
                             properties:
                               type:
                                 type: string
+                                enum:
+                                  - Random
                                 const: Random
                               random:
                                 description: >-
@@ -10546,13 +10628,15 @@ components:
                                   Random selection avoids bias towards the host
                                   in the set that comes after a failed host.
                                 type: object
-                          - title: Maglev
+                          - title: LoadBalancerMaglev
                             type: object
                             required:
                               - type
                             properties:
                               type:
                                 type: string
+                                enum:
+                                  - Maglev
                                 const: Maglev
                               maglev:
                                 description: >-
@@ -10875,7 +10959,7 @@ components:
                   items:
                     type: object
                     oneOf:
-                      - title: Prometheus
+                      - title: BackendsPrometheus
                         type: object
                         required:
                           - type
@@ -10886,6 +10970,8 @@ components:
                               metrics. At the moment only Prometheus backend is
                               available.
                             type: string
+                            enum:
+                              - Prometheus
                             const: Prometheus
                           prometheus:
                             description: Prometheus backend configuration.
@@ -10923,7 +11009,7 @@ components:
                                     type: string
                                 type: object
                             type: object
-                      - title: OpenTelemetry
+                      - title: BackendsOpenTelemetry
                         type: object
                         required:
                           - type
@@ -10934,6 +11020,8 @@ components:
                               metrics. At the moment only Prometheus backend is
                               available.
                             type: string
+                            enum:
+                              - OpenTelemetry
                             const: OpenTelemetry
                           openTelemetry:
                             description: OpenTelemetry backend configuration
@@ -13928,13 +14016,15 @@ components:
                     description: Only one of zipkin, datadog or openTelemetry can be used.
                     type: object
                     oneOf:
-                      - title: Zipkin
+                      - title: BackendsZipkin
                         type: object
                         required:
                           - type
                         properties:
                           type:
                             type: string
+                            enum:
+                              - Zipkin
                             const: Zipkin
                           zipkin:
                             description: Zipkin backend configuration.
@@ -13969,13 +14059,15 @@ components:
                             required:
                               - url
                             type: object
-                      - title: Datadog
+                      - title: BackendsDatadog
                         type: object
                         required:
                           - type
                         properties:
                           type:
                             type: string
+                            enum:
+                              - Datadog
                             const: Datadog
                           datadog:
                             description: Datadog backend configuration.
@@ -14007,13 +14099,15 @@ components:
                             required:
                               - url
                             type: object
-                      - title: OpenTelemetry
+                      - title: BackendsOpenTelemetry
                         type: object
                         required:
                           - type
                         properties:
                           type:
                             type: string
+                            enum:
+                              - OpenTelemetry
                             const: OpenTelemetry
                           openTelemetry:
                             description: OpenTelemetry backend configuration.
@@ -16929,7 +17023,7 @@ components:
             provider:
               type: object
               oneOf:
-                - title: Bundled
+                - title: ProviderBundled
                   type: object
                   required:
                     - type
@@ -16937,6 +17031,8 @@ components:
                     type:
                       description: Type specifies the type of certificate provider.
                       type: string
+                      enum:
+                        - Bundled
                       const: Bundled
                     bundled:
                       description: >-
@@ -17078,7 +17174,7 @@ components:
                             - Disabled
                           type: string
                       type: object
-                - title: Spire
+                - title: ProviderSpire
                   type: object
                   required:
                     - type
@@ -17086,6 +17182,8 @@ components:
                     type:
                       description: Type specifies the type of certificate provider.
                       type: string
+                      enum:
+                        - Spire
                       const: Spire
                     spire:
                       description: >-
@@ -17104,7 +17202,7 @@ components:
                               type: string
                           type: object
                       type: object
-                - title: Extension
+                - title: ProviderExtension
                   type: object
                   required:
                     - type
@@ -17112,6 +17210,8 @@ components:
                     type:
                       description: Type specifies the type of certificate provider.
                       type: string
+                      enum:
+                        - Extension
                       const: Extension
                     extension:
                       description: Extension indicates that custom provider is used.

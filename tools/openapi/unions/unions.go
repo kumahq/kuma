@@ -183,13 +183,18 @@ func CRDProperties(crdPath string) (map[string]any, error) {
 // schema with a oneOf, with each path prefixed by base.
 //
 // Each branch is a closed variant: `type` pinned with `const` plus only the
-// property that value selects (and any properties shared by all variants). The
-// union node keeps no `properties` of its own, otherwise generators merge them
-// into every branch and the branches become indistinguishable. Generators that
-// name inline oneOf members by title (Speakeasy) get a name per branch, and the
-// const lets them tell the branches apart when decoding. A variant that carries
-// no configuration can still be written as just `type: <value>`, since only
-// `type` is required.
+// property that value selects (and any properties shared by all variants).
+// Generators that name inline oneOf members by title (Speakeasy) get a name per
+// branch, and the const lets them tell the branches apart when decoding. `type`
+// also carries a single-value `enum`, since the control plane validates against
+// rest.yaml with kube-openapi, which ignores `const`. A variant that carries no
+// configuration can still be written as just `type: <value>`, since only `type`
+// is required.
+//
+// The union node keeps its `properties`, which the control plane needs for
+// defaulting and pruning. Generators merge them into every branch, so the
+// published document drops them (see `docs/generated/openapi.yaml` in
+// mk/docs.mk).
 //
 // The unions are found in the parsed schema rather than in the file being edited
 // so the assignments can be appended to the yq call that writes it: that keeps the
@@ -215,11 +220,7 @@ func Assignments(schema any, base []string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		path := YQPath(site.Path)
-		assignments = append(assignments,
-			fmt.Sprintf("%s.oneOf = %s", path, oneOf),
-			fmt.Sprintf("del(%s.properties, %s.required)", path, path),
-		)
+		assignments = append(assignments, fmt.Sprintf("%s.oneOf = %s", YQPath(site.Path), oneOf))
 	}
 	return strings.Join(assignments, "\n  | "), nil
 }
@@ -237,13 +238,13 @@ func (s Site) oneOf() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		discriminator := fmt.Sprintf(`{"type": "string", "const": %s}`, value)
+		discriminator := fmt.Sprintf(`{"type": "string", "enum": [%s], "const": %s}`, value, value)
 		if s.Description != "" {
 			description, err := json.Marshal(s.Description)
 			if err != nil {
 				return "", err
 			}
-			discriminator = fmt.Sprintf(`{"description": %s, "type": "string", "const": %s}`, description, value)
+			discriminator = fmt.Sprintf(`{"description": %s, "type": "string", "enum": [%s], "const": %s}`, description, value, value)
 		}
 		fields := []string{fmt.Sprintf(`"type": %s`, discriminator)}
 		for _, name := range append([]string{b.Property}, s.Shared...) {
@@ -253,10 +254,45 @@ func (s Site) oneOf() (string, error) {
 			}
 			fields = append(fields, fmt.Sprintf("%s: %s%s", key, properties, YQPath([]string{name})))
 		}
+		title, err := json.Marshal(upperFirst(s.field()) + b.Value)
+		if err != nil {
+			return "", err
+		}
 		branches = append(branches, fmt.Sprintf(`{"title": %s, "type": "object", "required": %s, "properties": {%s}}`,
-			value, required, strings.Join(fields, ", ")))
+			title, required, strings.Join(fields, ", ")))
 	}
 	return "[" + strings.Join(branches, ", ") + "]", nil
+}
+
+// field names the property holding the union, which prefixes the branch titles.
+// Generators that name a oneOf member by its title (Speakeasy) nest the variant
+// under it, so a bare `LeastRequest` title gives
+// `least_request = { least_request = {...} }`, while `LoadBalancerLeastRequest`
+// gives `load_balancer_least_request = { least_request = {...} }`. It is the
+// last key following a `properties` map in the path, so array items resolve to
+// the array, e.g. `filters` for `...properties.filters.items`. A union that is a
+// schema of its own falls back to the schema name.
+func (s Site) field() string {
+	var field string
+	for i := 0; i+1 < len(s.Path); i++ {
+		if s.Path[i] == "properties" {
+			i++
+			field = s.Path[i]
+		}
+	}
+	if field == "" && len(s.Path) > 0 {
+		field = s.Path[len(s.Path)-1]
+	}
+	return lowerFirst(field)
+}
+
+func upperFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	r := []rune(s)
+	r[0] = unicode.ToUpper(r[0])
+	return string(r)
 }
 
 // YQPath renders map keys as a yq path expression.
