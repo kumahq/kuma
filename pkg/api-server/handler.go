@@ -29,6 +29,11 @@ func handle(fn handlerFunc) restful.RouteFunction {
 		}
 		status := http.StatusOK
 		if sr, ok := body.(statusResponse); ok {
+			for name, values := range sr.headers {
+				for _, value := range values {
+					response.AddHeader(name, value)
+				}
+			}
 			status = sr.status
 			body = sr.body
 		}
@@ -65,8 +70,9 @@ func withTitle(err error, title string) error {
 
 // statusResponse wraps a body with a non-200 status code.
 type statusResponse struct {
-	status int
-	body   any
+	status  int
+	body    any
+	headers http.Header
 }
 
 // created responds with 201 Created.

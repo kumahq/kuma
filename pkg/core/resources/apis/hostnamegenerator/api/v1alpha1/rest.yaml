@@ -61,6 +61,43 @@ paths:
         '404':
           $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
   /hostnamegenerators:
+    post:
+      operationId: postHostnameGenerator
+      summary: Creates HostnameGenerator entity
+      description: Creates a resource using the name in the body. An existing resource is never modified. Requires Kuma 3.0 or later.
+      tags: ["HostnameGenerator"]
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HostnameGeneratorItem'
+      responses:
+        '201':
+          description: Resource created
+          headers:
+            Location:
+              description: URL of the created resource
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    readOnly: true
+                    items:
+                      type: string
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: "../../base/specs/common/error_schema.yaml#/components/schemas/Error"
     get:
       operationId: getHostnameGeneratorList
       summary: Returns a list of HostnameGenerator.

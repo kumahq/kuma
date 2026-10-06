@@ -132,6 +132,45 @@ paths:
       summary: Returns a list of Zone.
       tags:
       - Zone
+    post:
+      description: Creates a resource using the name in the body. An existing resource
+        is never modified. Requires Kuma 3.0 or later.
+      operationId: postZone
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneItem'
+        description: Resource to create
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                properties:
+                  warnings:
+                    items:
+                      type: string
+                    readOnly: true
+                    type: array
+                type: object
+          description: Resource created
+          headers:
+            Location:
+              description: URL of the created resource
+              schema:
+                format: uri-reference
+                type: string
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: ../../base/specs/common/error_schema.yaml#/components/schemas/Error
+          description: A resource with this identity already exists
+      summary: Creates Zone entity
+      tags:
+      - Zone
   /zones/{name}:
     delete:
       operationId: deleteZone

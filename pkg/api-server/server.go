@@ -327,6 +327,7 @@ func registerResourceRoutes(ws *restful.WebService, endpoints resourceEndpoints)
 		pathPrefix := route.pathPrefix(endpoints.descriptor)
 		switch route.role {
 		case meshCRUDListRoute, globalCRUDListRoute:
+			endpoints.addCreateEndpoint(ws, pathPrefix)
 			endpoints.addCreateOrUpdateEndpoint(ws, pathPrefix)
 			endpoints.addDeleteEndpoint(ws, pathPrefix)
 			endpoints.addFindEndpoint(ws, pathPrefix)

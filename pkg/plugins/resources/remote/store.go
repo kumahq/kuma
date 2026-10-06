@@ -45,7 +45,7 @@ func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...stor
 		Mesh:   opts.Mesh,
 		Labels: maps.Clone(opts.Labels),
 	}
-	if err := s.upsert(ctx, res, meta); err != nil {
+	if err := s.write(ctx, res, meta, http.MethodPost); err != nil {
 		return err
 	}
 	return nil
@@ -59,16 +59,16 @@ func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...stor
 		Mesh:   res.GetMeta().GetMesh(),
 		Labels: maps.Clone(opts.Labels),
 	}
-	if err := s.upsert(ctx, res, meta); err != nil {
+	if err := s.write(ctx, res, meta, http.MethodPut); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest_v1alpha1.ResourceMeta) error {
+func (s *remoteStore) write(ctx context.Context, res model.Resource, meta rest_v1alpha1.ResourceMeta, method string) error {
 	resourceApi, err := s.api.GetResourceApi(res.Descriptor().Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to construct URI to update a %q", res.Descriptor().Name)
+		return errors.Wrapf(err, "failed to construct URI to write a %q", res.Descriptor().Name)
 	}
 	resCopy := res.Descriptor().NewObject()
 	resCopy.SetMeta(meta)
@@ -80,7 +80,11 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest_
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, resourceApi.Item(meta.Mesh, meta.Name), bytes.NewReader(b))
+	uri := resourceApi.Item(meta.Mesh, meta.Name)
+	if method == http.MethodPost {
+		uri = resourceApi.List(meta.Mesh)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, uri, bytes.NewReader(b))
 	if err != nil {
 		return err
 	}
@@ -101,7 +105,9 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest_
 		}
 		if len(resp.Warnings) > 0 {
 			// todo(lobkovilya): there must be a better way to pass warnings back to the store's caller
-			ctx.Value(WarningsCallback).(func([]string))(resp.Warnings)
+			if callback, ok := ctx.Value(WarningsCallback).(func([]string)); ok {
+				callback(resp.Warnings)
+			}
 		}
 	case http.StatusMethodNotAllowed:
 		return errors.Errorf("%s", string(b))

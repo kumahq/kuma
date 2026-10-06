@@ -3,6 +3,7 @@ package api_server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -379,4 +380,27 @@ func expectTitledError(g *WithT, err error, title string) {
 	var titled *titledError
 	g.Expect(errors.As(err, &titled)).To(BeTrue())
 	g.Expect(titled.title).To(Equal(title))
+}
+
+func TestCreateOnlyResourceAuthorization(t *testing.T) {
+	for _, denied := range []bool{false, true} {
+		t.Run(fmt.Sprintf("denied=%t", denied), func(t *testing.T) {
+			g := NewWithT(t)
+			events := []string{}
+			manager := &recordingResourceManager{events: &events, getErr: errors.New("must not look up the resource")}
+			access := &recordingResourceAccess{events: &events}
+			if denied {
+				access.createErr = errors.New("denied")
+			}
+			handler := newContractCrudHandler(manager, access)
+			_, err := handler.createOnlyResource(newCrudRequest(http.MethodPost, "/meshes", "", `{"type":"Mesh","name":"test"}`))
+			if denied {
+				expectTitledError(g, err, "Access Denied")
+				g.Expect(events).To(Equal([]string{"authorize-create"}))
+			} else {
+				g.Expect(err).NotTo(HaveOccurred())
+				g.Expect(events).To(Equal([]string{"authorize-create", "create"}))
+			}
+		})
+	}
 }

@@ -79,6 +79,50 @@ paths:
         '404':
           $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
   /meshes/{mesh}/meshpassthroughs:
+    post:
+      operationId: postMeshPassthrough
+      summary: Creates MeshPassthrough entity
+      description: Creates a resource using the name in the body. An existing resource is never modified. Requires Kuma 3.0 or later.
+      tags: ["MeshPassthrough"]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshPassthroughItem'
+      responses:
+        '201':
+          description: Resource created
+          headers:
+            Location:
+              description: URL of the created resource
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    readOnly: true
+                    items:
+                      type: string
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: "../../base/specs/common/error_schema.yaml#/components/schemas/Error"
     get:
       operationId: getMeshPassthroughList
       summary: Returns a list of MeshPassthrough in the mesh.

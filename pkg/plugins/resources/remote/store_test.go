@@ -161,7 +161,8 @@ var _ = Describe("RemoteStore", func() {
 			// setup
 			name := "res-1"
 			store := setupStore("create_update.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/meshexternalservices/%s", name)))
+				Expect(req.Method).To(Equal(http.MethodPost))
+				Expect(req.URL.Path).To(Equal("/meshes/default/meshexternalservices"))
 				bytes, err := io.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(bytes).To(MatchJSON(`
@@ -209,7 +210,8 @@ var _ = Describe("RemoteStore", func() {
 			// setup
 			meshName := "someMesh"
 			store := setupStore("create_update.json", func(req *http.Request) {
-				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
+				Expect(req.Method).To(Equal(http.MethodPost))
+				Expect(req.URL.Path).To(Equal("/meshes"))
 				bytes, err := io.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(bytes).To(MatchJSON(`{"name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z","kri": "kri_m____someMesh_"}`))
@@ -263,6 +265,7 @@ var _ = Describe("RemoteStore", func() {
 			// setup
 			name := "res-1"
 			store := setupStore("create_update.json", func(req *http.Request) {
+				Expect(req.Method).To(Equal(http.MethodPut))
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/default/meshexternalservices/%s", name)))
 				bytes, err := io.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
@@ -597,3 +600,41 @@ type RoundTripperFunc func(*http.Request) (*http.Response, error)
 func (f RoundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
+
+var _ = Describe("Create-only remote writes", func() {
+	It("reports conflicts and unsupported servers without retrying PUT", func() {
+		for _, code := range []int{http.StatusConflict, http.StatusMethodNotAllowed, http.StatusNotFound} {
+			requests := 0
+			client := &http.Client{Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+				requests++
+				Expect(req.Method).To(Equal(http.MethodPost))
+				Expect(req.URL.Path).To(Equal("/meshes"))
+				return &http.Response{StatusCode: code, Body: io.NopCloser(strings.NewReader(fmt.Sprintf(`{"status":%d,"title":"Creation failed","detail":"test"}`, code)))}, nil
+			})}
+			api := &core_rest.ApiDescriptor{Resources: map[core_model.ResourceType]core_rest.ResourceApi{
+				core_mesh.MeshType: core_rest.NewResourceApi(core_model.ScopeGlobal, "meshes"),
+			}}
+			resource := core_mesh.NewMeshResource()
+			err := remote.NewStore(client, api).Create(context.Background(), resource, core_store.CreateByKey("test", core_model.NoMesh))
+			Expect(err).To(HaveOccurred())
+			Expect(requests).To(Equal(1))
+			Expect(resource.GetMeta()).To(BeNil())
+		}
+	})
+
+	It("delivers creation warnings and tolerates callers without a callback", func() {
+		client := &http.Client{Transport: RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+			Expect(req.Method).To(Equal(http.MethodPost))
+			return &http.Response{StatusCode: http.StatusCreated, Body: io.NopCloser(strings.NewReader(`{"warnings":["deprecated field"]}`))}, nil
+		})}
+		api := &core_rest.ApiDescriptor{Resources: map[core_model.ResourceType]core_rest.ResourceApi{
+			core_mesh.MeshType: core_rest.NewResourceApi(core_model.ScopeGlobal, "meshes"),
+		}}
+		var warnings []string
+		ctx := context.WithValue(context.Background(), remote.WarningsCallback, func(w []string) { warnings = w })
+		for _, ctx := range []context.Context{ctx, context.Background()} {
+			Expect(remote.NewStore(client, api).Create(ctx, core_mesh.NewMeshResource(), core_store.CreateByKey("test", core_model.NoMesh))).To(Succeed())
+		}
+		Expect(warnings).To(Equal([]string{"deprecated field"}))
+	})
+})

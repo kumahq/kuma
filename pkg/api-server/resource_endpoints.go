@@ -65,6 +65,8 @@ func (r *resourceEndpoints) route(ws *restful.WebService, method, path string) *
 	switch method {
 	case http.MethodGet:
 		rb = ws.GET(path)
+	case http.MethodPost:
+		rb = ws.POST(path)
 	case http.MethodPut:
 		rb = ws.PUT(path)
 	case http.MethodDelete:
@@ -204,6 +206,19 @@ func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix s
 			Param(ws.PathParameter("name", "a pattern to select only resources that contain these characters").DataType("string")).
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
+	}
+}
+
+func (r *resourceEndpoints) addCreateEndpoint(ws *restful.WebService, pathPrefix string) {
+	if r.descriptor.ReadOnly {
+		ws.Route(r.route(ws, http.MethodPost, pathPrefix).To(handle(r.methodNotAllowed(r.readOnlyMessage()))).
+			Doc("Not allowed in read-only mode.").
+			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
+	} else {
+		ws.Route(r.route(ws, http.MethodPost, pathPrefix).To(handle(r.createOnlyResource)).
+			Doc(fmt.Sprintf("Creates a %s", r.descriptor.WsPath)).
+			Returns(http.StatusCreated, "Created", nil).
+			Returns(http.StatusConflict, "Already exists", nil))
 	}
 }
 

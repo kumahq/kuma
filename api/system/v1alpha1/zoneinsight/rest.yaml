@@ -307,6 +307,14 @@ paths:
       summary: Returns a list of ZoneInsight.
       tags:
       - ZoneInsight
+    post:
+      operationId: postZoneInsight
+      responses:
+        "405":
+          description: This resource is read-only
+      summary: Creation of ZoneInsight is not allowed
+      tags:
+      - ZoneInsight
   /zone-insights/{name}:
     get:
       operationId: getZoneInsight

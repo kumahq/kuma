@@ -91,6 +91,71 @@ paths:
     {{- end}}
 
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}:
+    {{- if not .ReadOnly}}
+    post:
+      operationId: post{{ .Name }}
+      summary: Creates {{ .Name }} entity
+      description: Creates a resource using the name in the body. An existing resource is never modified. Requires Kuma 3.0 or later.
+      tags: [ "{{ .Name }}" ]
+      {{- if eq .Scope "Mesh"}}
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      {{- end}}
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/{{.Name}}Item'
+      responses:
+        '201':
+          description: Resource created
+          headers:
+            Location:
+              description: URL of the created resource
+              schema:
+                type: string
+                format: uri-reference
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warnings:
+                    type: array
+                    readOnly: true
+                    items:
+                      type: string
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: "../../{{ .ErrorSchema }}#/components/schemas/Error"
+    {{- else}}
+    post:
+      operationId: post{{ .Name }}
+      summary: Creation of {{ .Name }} is not allowed
+      tags: [ "{{ .Name }}" ]
+      {{- if eq .Scope "Mesh"}}
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      {{- end}}
+      responses:
+        '405':
+          description: This resource is read-only
+    {{- end}}
     get:
       operationId: get{{ .Name }}List
       {{- if eq .Scope "Mesh"}}

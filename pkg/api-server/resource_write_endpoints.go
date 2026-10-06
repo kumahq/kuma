@@ -3,6 +3,9 @@ package api_server
 import (
 	"context"
 	"io"
+	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/emicklei/go-restful/v3"
 
@@ -16,6 +19,36 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/user"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
 )
+
+// createOnlyResource relies on the store's atomic Create operation for uniqueness.
+// A duplicate must never be retried as an update.
+func (r *resourceCrudHandler) createOnlyResource(request *restful.Request) (any, error) {
+	meshName, err := r.meshFromRequest(request)
+	if err != nil {
+		return nil, withTitle(err, "Failed to retrieve Mesh")
+	}
+	bodyBytes, err := io.ReadAll(request.Request.Body)
+	if err != nil {
+		return nil, withTitle(err, "Could not process a resource")
+	}
+	resourceRest, err := rest.JSON.UnmarshalStrict(bodyBytes, r.descriptor)
+	if err != nil {
+		return nil, withTitle(err, "Could not process a resource")
+	}
+	name := resourceRest.GetMeta().Name
+	if err := r.validateResourceRequest(name, meshName, resourceRest, nil); err != nil {
+		return nil, withTitle(err, "Could not process a resource")
+	}
+	body, err := r.createResource(request.Request.Context(), name, meshName, resourceRest)
+	if err != nil {
+		return nil, err
+	}
+	result := body.(statusResponse)
+	result.headers = http.Header{
+		"Location": {strings.TrimRight(request.Request.URL.EscapedPath(), "/") + "/" + url.PathEscape(name)},
+	}
+	return result, nil
+}
 
 func (r *resourceCrudHandler) createOrUpdateResource(request *restful.Request) (any, error) {
 	name := request.PathParameter("name")

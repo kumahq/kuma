@@ -225,6 +225,23 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Meta.GetMesh()).To(Equal(core_model.NoMesh))
 	})
 
+	It("reports a creation race without overwriting the other writer", func() {
+		originalStore := store
+		store = &createAfterLookupStore{ResourceStore: originalStore}
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+			"apply", "-f", filepath.Join("testdata", "golden", "apply-mesh.input.yaml"),
+		})
+		output := &bytes.Buffer{}
+		rootCmd.SetOut(output)
+		rootCmd.SetErr(output)
+		Expect(rootCmd.Execute()).To(HaveOccurred())
+		Expect(output.String()).To(ContainSubstring("already exists"))
+		winner := mesh.NewMeshResource()
+		Expect(originalStore.Get(context.Background(), winner, core_store.GetByKey("sample", core_model.NoMesh))).To(Succeed())
+		Expect(winner.GetMeta().GetLabels()).To(HaveKeyWithValue("writer", "concurrent"))
+	})
+
 	It("should return kuma api server error", func() {
 		// setup
 		rootCtx.Runtime.NewResourceStore = func(util_http.Client) core_store.ResourceStore {
@@ -526,3 +543,14 @@ spec:
 		test.EntriesForFolder("golden"),
 	)
 })
+
+// Insert a competing resource after the client's absent-resource observation.
+type createAfterLookupStore struct{ core_store.ResourceStore }
+
+func (s *createAfterLookupStore) Get(ctx context.Context, res core_model.Resource, fs ...core_store.GetOptionsFunc) error {
+	opts := core_store.NewGetOptions(fs...)
+	if err := s.Create(ctx, res, core_store.CreateByKey(opts.Name, opts.Mesh), core_store.CreateWithLabels(map[string]string{"writer": "concurrent"})); err != nil {
+		return err
+	}
+	return core_store.ErrorResourceNotFound(res.Descriptor().Name, opts.Name, opts.Mesh)
+}
