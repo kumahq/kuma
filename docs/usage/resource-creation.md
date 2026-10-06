@@ -19,7 +19,7 @@ curl -i -X POST http://localhost:5681/meshes \
 POST takes `name` from the request body. The body must match the collection's
 resource type and mesh. The same authorization, validation, label computation,
 ownership, and read-only restrictions as PUT apply. Writable alternate collection
-paths also accept POST. Cross-mesh list endpoints are not creation endpoints.
+paths also accept POST. Mesh-scoped resources must be created under their mesh.
 
 A successful POST returns the existing JSON warnings response and a `Location`
 header containing the resource's item path, including the configured API base

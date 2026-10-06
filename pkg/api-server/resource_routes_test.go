@@ -25,8 +25,7 @@ func TestResourceRoutes(t *testing.T) {
 				WsPath: "resources",
 			},
 			expected: []resourceRoute{
-				{role: meshCRUDListRoute, pathRole: primaryResourcePath},
-				{role: crossMeshListRoute, pathRole: primaryResourcePath},
+				{pathRole: primaryResourcePath},
 			},
 		},
 		{
@@ -37,18 +36,16 @@ func TestResourceRoutes(t *testing.T) {
 				AlternativeWsPath: "resource-aliases",
 			},
 			expected: []resourceRoute{
-				{role: meshCRUDListRoute, pathRole: primaryResourcePath},
-				{role: crossMeshListRoute, pathRole: primaryResourcePath},
-				{role: meshCRUDListRoute, pathRole: aliasResourcePath},
-				{role: crossMeshListRoute, pathRole: aliasResourcePath},
+				{pathRole: primaryResourcePath},
+				{pathRole: aliasResourcePath},
 			},
 		},
 		{
 			name:       "global primary and alias paths",
 			descriptor: system.GlobalSecretResourceTypeDescriptor,
 			expected: []resourceRoute{
-				{role: globalCRUDListRoute, pathRole: primaryResourcePath},
-				{role: globalCRUDListRoute, pathRole: aliasResourcePath},
+				{pathRole: primaryResourcePath},
+				{pathRole: aliasResourcePath},
 			},
 		},
 		{
@@ -103,13 +100,11 @@ func TestRegisterResourceRoutes(t *testing.T) {
 					http.MethodDelete + " /meshes/{mesh}/resources/{name}",
 					http.MethodGet + " /meshes/{mesh}/resources/{name}",
 					http.MethodGet + " /meshes/{mesh}/resources",
-					http.MethodGet + " /resources",
 					http.MethodPost + " /meshes/{mesh}/resource-aliases",
 					http.MethodPut + " /meshes/{mesh}/resource-aliases/{name}",
 					http.MethodDelete + " /meshes/{mesh}/resource-aliases/{name}",
 					http.MethodGet + " /meshes/{mesh}/resource-aliases/{name}",
 					http.MethodGet + " /meshes/{mesh}/resource-aliases",
-					http.MethodGet + " /resource-aliases",
 				}))
 				g.Expect(metadataCalls).To(Equal([]string{
 					http.MethodPost,
@@ -117,11 +112,9 @@ func TestRegisterResourceRoutes(t *testing.T) {
 					http.MethodDelete,
 					http.MethodGet,
 					http.MethodGet,
-					http.MethodGet,
 					http.MethodPost,
 					http.MethodPut,
 					http.MethodDelete,
-					http.MethodGet,
 					http.MethodGet,
 					http.MethodGet,
 				}))

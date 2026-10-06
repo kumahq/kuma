@@ -8,6 +8,12 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Cross-mesh resource list endpoints removed
+
+The API server no longer serves the endpoints that list mesh-scoped resources across all meshes, for example `GET /meshaccesslogs`. The same applies to every other mesh-scoped resource type, including `GET /dataplanes`, `GET /meshservices`, `GET /secrets` and the `/_overview` variants, which now return `404`.
+
+List a specific mesh instead: `GET /meshes/{mesh}/meshaccesslogs`, `GET /meshes/{mesh}/dataplanes`, and so on. Global-scoped resources such as `GET /globalsecrets` are unchanged.
+
 ### Outbound mTLS negotiates TLS 1.3
 
 Outbound mesh mTLS connections now allow TLS 1.3. Previously Envoy's client default capped them at TLS 1.2, so mesh traffic negotiated TLS 1.2 even though inbound listeners accepted TLS 1.3. A `MeshTLS` or `MeshExternalService` `tlsVersion.max` that is unset or `TLSAuto` now resolves to TLS 1.3 on the client side, which also fixes `min: TLS13` without `max` failing every connection with `NO_SUPPORTED_VERSIONS_ENABLED`.
@@ -21,6 +27,14 @@ None for most meshes. TLS 1.3 cipher suites are not configurable, so `tlsCiphers
 From now on, `kuma.io/` and `k8s.kuma.io/` are reserved label prefixes.
 Every unknown label under these prefixes will be rejected on create and update.
 On Universal this includes the labels of the `Dataplane` passed to `kuma-dp run`: a proxy whose `Dataplane` carries an unknown reserved label, such as a leftover `kuma.io/gateway: "true"`, or an invalid label value fails to register until the label is fixed.
+
+### Control plane sets `GOMEMLIMIT` itself to 90% of the cgroup memory limit
+
+The Helm chart used to set `GOMEMLIMIT` to the full `controlPlane.resources.limits.memory`. `GOMEMLIMIT` only covers memory the Go runtime manages, so with no headroom left for the rest, such as the mapped `kuma-cp` binary, the container could be OOM killed before the garbage collector reacted. `kuma-cp` now reads the cgroup memory limit at startup and sets `GOMEMLIMIT` to 90% of it. This also covers limits the chart does not know about, such as a `LimitRange` default or a VPA, and Universal deployments under a cgroup. The chart no longer renders the `GOMEMLIMIT` environment variable and `controlPlane.runtime.goMemLimit.divisor` is removed.
+
+**Action required**
+
+None. Set the `AUTOMEMLIMIT` environment variable to choose another fraction, for example `AUTOMEMLIMIT=0.85`, or to `off` to disable it. Set `GOMEMLIMIT` explicitly to use an exact value, in which case `kuma-cp` leaves it as is. On Kubernetes use `controlPlane.envVars` for either. Remove `controlPlane.runtime.goMemLimit` from your values if you set it.
 
 ### Control-plane-owned labels are rejected when they differ from the computed value
 
