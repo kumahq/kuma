@@ -388,21 +388,6 @@ paths:
       summary: Returns a list of DataplaneInsight in the mesh.
       tags:
       - DataplaneInsight
-    post:
-      operationId: postDataplaneInsight
-      parameters:
-      - description: name of the mesh
-        in: path
-        name: mesh
-        required: true
-        schema:
-          type: string
-      responses:
-        "405":
-          description: This resource is read-only
-      summary: Creation of DataplaneInsight is not allowed
-      tags:
-      - DataplaneInsight
   /meshes/{mesh}/dataplane-insights/{name}:
     get:
       operationId: getDataplaneInsight

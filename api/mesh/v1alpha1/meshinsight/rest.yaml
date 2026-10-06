@@ -28,13 +28,6 @@ paths:
           schema:
             type: string
   /mesh-insights:
-    post:
-      operationId: postMeshInsight
-      summary: Creation of MeshInsight is not allowed
-      tags: [ "MeshInsight" ]
-      responses:
-        '405':
-          description: This resource is read-only
     get:
       operationId: getMeshInsightList
       summary: List mesh insights

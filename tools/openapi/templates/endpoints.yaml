@@ -115,46 +115,13 @@ paths:
               $ref: '#/components/schemas/{{.Name}}Item'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/{{.Name}}CreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
             application/json:
               schema:
                 $ref: "../../{{ .ErrorSchema }}#/components/schemas/Error"
-    {{- else}}
-    post:
-      operationId: post{{ .Name }}
-      summary: Creation of {{ .Name }} is not allowed
-      tags: [ "{{ .Name }}" ]
-      {{- if eq .Scope "Mesh"}}
-      parameters:
-        - in: path
-          name: mesh
-          schema:
-            type: string
-          required: true
-          description: name of the mesh
-      {{- end}}
-      responses:
-        '405':
-          description: This resource is read-only
     {{- end}}
     get:
       operationId: get{{ .Name }}List

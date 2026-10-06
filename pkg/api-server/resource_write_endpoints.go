@@ -3,9 +3,6 @@ package api_server
 import (
 	"context"
 	"io"
-	"net/http"
-	"net/url"
-	"strings"
 
 	"github.com/emicklei/go-restful/v3"
 
@@ -42,15 +39,7 @@ func (r *resourceCrudHandler) createOnlyResource(request *restful.Request) (any,
 		return nil, withTitle(err, "Could not process a resource")
 	}
 
-	result, err := r.createResource(request.Request.Context(), name, meshName, resourceRest)
-	if err != nil {
-		return nil, err
-	}
-
-	result.headers = http.Header{
-		"Location": {strings.TrimRight(request.Request.URL.EscapedPath(), "/") + "/" + url.PathEscape(name)},
-	}
-	return result, nil
+	return r.createResource(request.Request.Context(), name, meshName, resourceRest)
 }
 
 func (r *resourceCrudHandler) createOrUpdateResource(request *restful.Request) (any, error) {
@@ -118,7 +107,7 @@ func (r *resourceCrudHandler) createResource(
 	name string,
 	meshName string,
 	resRest rest.Resource,
-) (statusResponse, error) {
+) (any, error) {
 	if err := r.resourceAccess.ValidateCreate(
 		ctx,
 		core_model.ResourceKey{Mesh: meshName, Name: name},
@@ -126,7 +115,7 @@ func (r *resourceCrudHandler) createResource(
 		r.descriptor,
 		user.FromCtx(ctx),
 	); err != nil {
-		return statusResponse{}, withTitle(err, "Access Denied")
+		return nil, withTitle(err, "Access Denied")
 	}
 
 	r.applyBeforeWriteHook(resRest, meshName, name)
@@ -144,11 +133,11 @@ func (r *resourceCrudHandler) createResource(
 		Labels:      res.GetMeta().GetLabels(),
 	}, r.cp)
 	if err != nil {
-		return statusResponse{}, withTitle(err, "Could not compute labels for a resource")
+		return nil, withTitle(err, "Could not compute labels for a resource")
 	}
 
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
-		return statusResponse{}, withTitle(err, "Failed to create a resource")
+		return nil, withTitle(err, "Failed to create a resource")
 	}
 
 	return created(api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(res)}), nil

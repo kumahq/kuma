@@ -100,23 +100,7 @@ paths:
               $ref: '#/components/schemas/MeshIdentityItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshIdentityCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:

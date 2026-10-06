@@ -891,23 +891,7 @@ paths:
               $ref: '#/components/schemas/MeshAccessLogItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshAccessLogCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -1062,23 +1046,8 @@ paths:
               $ref: '#/components/schemas/MeshCircuitBreakerItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: >-
+            #/components/responses/MeshCircuitBreakerCreateOrUpdateSuccessResponse
         '409':
           description: A resource with this identity already exists
           content:
@@ -1233,23 +1202,8 @@ paths:
               $ref: '#/components/schemas/MeshFaultInjectionItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: >-
+            #/components/responses/MeshFaultInjectionCreateOrUpdateSuccessResponse
         '409':
           description: A resource with this identity already exists
           content:
@@ -1402,23 +1356,7 @@ paths:
               $ref: '#/components/schemas/MeshHealthCheckItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshHealthCheckCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -1571,23 +1509,7 @@ paths:
               $ref: '#/components/schemas/MeshHTTPRouteItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshHTTPRouteCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -1743,23 +1665,8 @@ paths:
               $ref: '#/components/schemas/MeshLoadBalancingStrategyItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: >-
+            #/components/responses/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse
         '409':
           description: A resource with this identity already exists
           content:
@@ -1912,23 +1819,7 @@ paths:
               $ref: '#/components/schemas/MeshMetricItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshMetricCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -2081,23 +1972,7 @@ paths:
               $ref: '#/components/schemas/MeshPassthroughItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshPassthroughCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -2250,23 +2125,7 @@ paths:
               $ref: '#/components/schemas/MeshProxyPatchItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshProxyPatchCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -2419,23 +2278,7 @@ paths:
               $ref: '#/components/schemas/MeshRateLimitItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshRateLimitCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -2588,23 +2431,7 @@ paths:
               $ref: '#/components/schemas/MeshRetryItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshRetryCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -2757,23 +2584,7 @@ paths:
               $ref: '#/components/schemas/MeshTCPRouteItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshTCPRouteCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -2926,23 +2737,7 @@ paths:
               $ref: '#/components/schemas/MeshTimeoutItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshTimeoutCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -3095,23 +2890,7 @@ paths:
               $ref: '#/components/schemas/MeshTLSItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshTLSCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -3264,23 +3043,7 @@ paths:
               $ref: '#/components/schemas/MeshTraceItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshTraceCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -3435,23 +3198,8 @@ paths:
               $ref: '#/components/schemas/MeshTrafficPermissionItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: >-
+            #/components/responses/MeshTrafficPermissionCreateOrUpdateSuccessResponse
         '409':
           description: A resource with this identity already exists
           content:
@@ -3568,23 +3316,7 @@ paths:
         required: true
       responses:
         '201':
-          content:
-            application/json:
-              schema:
-                properties:
-                  warnings:
-                    items:
-                      type: string
-                    readOnly: true
-                    type: array
-                type: object
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                format: uri-reference
-                type: string
+          $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
         '409':
           content:
             application/json:
@@ -3714,21 +3446,6 @@ paths:
         '200':
           $ref: '#/components/responses/DataplaneInsightList'
       summary: Returns a list of DataplaneInsight in the mesh.
-      tags:
-        - DataplaneInsight
-    post:
-      operationId: postDataplaneInsight
-      parameters:
-        - description: name of the mesh
-          in: path
-          name: mesh
-          required: true
-          schema:
-            type: string
-      responses:
-        '405':
-          description: This resource is read-only
-      summary: Creation of DataplaneInsight is not allowed
       tags:
         - DataplaneInsight
   /meshes/{mesh}/dataplane-insights/{name}:
@@ -3872,7 +3589,7 @@ paths:
               $ref: '#/components/schemas/GlobalSecretItem'
       responses:
         '201':
-          $ref: '#/components/responses/GlobalSecretCreateSuccessResponse'
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -3981,7 +3698,7 @@ paths:
               $ref: '#/components/schemas/GlobalSecretItem'
       responses:
         '201':
-          $ref: '#/components/responses/GlobalSecretCreateSuccessResponse'
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -4066,23 +3783,7 @@ paths:
         required: true
       responses:
         '201':
-          content:
-            application/json:
-              schema:
-                properties:
-                  warnings:
-                    items:
-                      type: string
-                    readOnly: true
-                    type: array
-                type: object
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                format: uri-reference
-                type: string
+          $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
         '409':
           content:
             application/json:
@@ -4175,14 +3876,6 @@ paths:
           schema:
             type: string
   /mesh-insights:
-    post:
-      operationId: postMeshInsight
-      summary: Creation of MeshInsight is not allowed
-      tags:
-        - MeshInsight
-      responses:
-        '405':
-          description: This resource is read-only
     get:
       operationId: getMeshInsightList
       summary: List mesh insights
@@ -4302,23 +3995,7 @@ paths:
         required: true
       responses:
         '201':
-          content:
-            application/json:
-              schema:
-                properties:
-                  warnings:
-                    items:
-                      type: string
-                    readOnly: true
-                    type: array
-                type: object
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                format: uri-reference
-                type: string
+          $ref: '#/components/responses/SecretCreateOrUpdateSuccessResponse'
         '409':
           content:
             application/json:
@@ -4458,23 +4135,7 @@ paths:
         required: true
       responses:
         '201':
-          content:
-            application/json:
-              schema:
-                properties:
-                  warnings:
-                    items:
-                      type: string
-                    readOnly: true
-                    type: array
-                type: object
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                format: uri-reference
-                type: string
+          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
         '409':
           content:
             application/json:
@@ -4580,14 +4241,6 @@ paths:
         '200':
           $ref: '#/components/responses/ZoneInsightList'
       summary: Returns a list of ZoneInsight.
-      tags:
-        - ZoneInsight
-    post:
-      operationId: postZoneInsight
-      responses:
-        '405':
-          description: This resource is read-only
-      summary: Creation of ZoneInsight is not allowed
       tags:
         - ZoneInsight
   /zone-insights/{name}:
@@ -4714,23 +4367,8 @@ paths:
               $ref: '#/components/schemas/HostnameGeneratorItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: >-
+            #/components/responses/HostnameGeneratorCreateOrUpdateSuccessResponse
         '409':
           description: A resource with this identity already exists
           content:
@@ -4879,23 +4517,8 @@ paths:
               $ref: '#/components/schemas/MeshExternalServiceItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: >-
+            #/components/responses/MeshExternalServiceCreateOrUpdateSuccessResponse
         '409':
           description: A resource with this identity already exists
           content:
@@ -5048,23 +4671,7 @@ paths:
               $ref: '#/components/schemas/MeshIdentityItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshIdentityCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -5219,23 +4826,8 @@ paths:
               $ref: '#/components/schemas/MeshMultiZoneServiceItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: >-
+            #/components/responses/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
         '409':
           description: A resource with this identity already exists
           content:
@@ -5390,23 +4982,8 @@ paths:
               $ref: '#/components/schemas/MeshOpenTelemetryBackendItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: >-
+            #/components/responses/MeshOpenTelemetryBackendCreateOrUpdateSuccessResponse
         '409':
           description: A resource with this identity already exists
           content:
@@ -5559,23 +5136,7 @@ paths:
               $ref: '#/components/schemas/MeshServiceItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshServiceCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -5728,23 +5289,7 @@ paths:
               $ref: '#/components/schemas/MeshTrustItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshTrustCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -5897,23 +5442,7 @@ paths:
               $ref: '#/components/schemas/MeshZoneAddressItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/MeshZoneAddressCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -6066,23 +5595,7 @@ paths:
               $ref: '#/components/schemas/WorkloadItem'
       responses:
         '201':
-          description: Resource created
-          headers:
-            Location:
-              description: URL of the created resource
-              schema:
-                type: string
-                format: uri-reference
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  warnings:
-                    type: array
-                    readOnly: true
-                    items:
-                      type: string
+          $ref: '#/components/responses/WorkloadCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -20770,24 +20283,6 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/DataplaneOverviewWithMeta'
-    GlobalSecretCreateSuccessResponse:
-      description: Resource created
-      headers:
-        Location:
-          description: URL of the created resource
-          schema:
-            type: string
-            format: uri-reference
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              warnings:
-                type: array
-                readOnly: true
-                items:
-                  type: string
     GlobalSecretItem:
       description: Successful response
       content:

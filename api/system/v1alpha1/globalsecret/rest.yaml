@@ -77,7 +77,7 @@ paths:
               $ref: '#/components/schemas/GlobalSecretItem'
       responses:
         '201':
-          $ref: '#/components/responses/GlobalSecretCreateSuccessResponse'
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -181,7 +181,7 @@ paths:
               $ref: '#/components/schemas/GlobalSecretItem'
       responses:
         '201':
-          $ref: '#/components/responses/GlobalSecretCreateSuccessResponse'
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
         '409':
           description: A resource with this identity already exists
           content:
@@ -247,24 +247,6 @@ components:
           type: string
 
   responses:
-    GlobalSecretCreateSuccessResponse:
-      description: Resource created
-      headers:
-        Location:
-          description: URL of the created resource
-          schema:
-            type: string
-            format: uri-reference
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              warnings:
-                type: array
-                readOnly: true
-                items:
-                  type: string
     GlobalSecretItem:
       description: Successful response
       content:

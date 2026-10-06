@@ -100,12 +100,29 @@ var _ = Describe("OpenAPI conformance", func() {
 		defer stop()
 
 		spec := specPaths()
+		readOnlyPosts := map[string]bool{}
+		for _, desc := range registry.Global().ObjectDescriptors(model.HasWsEnabled()) {
+			if !desc.ReadOnly {
+				continue
+			}
+			for _, path := range []string{desc.WsPath, desc.AlternativeWsPath} {
+				if path == "" {
+					continue
+				}
+				path = "/" + path
+				if desc.Scope == model.ScopeMesh {
+					path = "/meshes/{mesh}" + path
+				}
+				readOnlyPosts["POST "+normalizePath(path, wsPaths)] = true
+			}
+		}
+
 		usedAllowlist := map[string]bool{}
 		var missingInSpec []string
 		for _, route := range apiServer.Routes() {
 			method, path, _ := strings.Cut(route, " ")
 			normalized := method + " " + normalizePath(path, wsPaths)
-			if spec[normalized] {
+			if spec[normalized] || readOnlyPosts[normalized] {
 				continue
 			}
 			if _, allowed := undocumentedRoutes[normalized]; allowed {

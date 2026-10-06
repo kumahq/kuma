@@ -20,7 +20,7 @@ import (
 )
 
 var _ = Describe("Create-only resource endpoints", func() {
-	request := func(address, method, path, body string) (int, http.Header, []byte) {
+	request := func(address, method, path, body string) (int, []byte) {
 		GinkgoHelper()
 
 		req, err := http.NewRequestWithContext(context.Background(), method, "http://"+address+path, bytes.NewBufferString(body))
@@ -34,7 +34,7 @@ var _ = Describe("Create-only resource endpoints", func() {
 		data, err := io.ReadAll(resp.Body)
 		Expect(err).NotTo(HaveOccurred())
 
-		return resp.StatusCode, resp.Header, data
+		return resp.StatusCode, data
 	}
 
 	DescribeTable("creates once and preserves the original on conflict", func(collection, body, replacement string) {
@@ -48,37 +48,35 @@ var _ = Describe("Create-only resource endpoints", func() {
 		collection = "/api" + collection
 
 		// when
-		status, headers, data := request(api.Address(), http.MethodPost, collection, body)
+		status, data := request(api.Address(), http.MethodPost, collection, body)
 
 		// then
 		Expect(status).To(Equal(http.StatusCreated), string(data))
-		Expect(headers.Get("Location")).To(Equal(collection + "/test"))
 
 		var warnings map[string]any
 		Expect(json.Unmarshal(data, &warnings)).To(Succeed())
 
 		// and then
-		status, _, before := request(api.Address(), http.MethodGet, collection+"/test", "")
+		status, before := request(api.Address(), http.MethodGet, collection+"/test", "")
 		Expect(status).To(Equal(http.StatusOK))
 
-		status, headers, data = request(api.Address(), http.MethodPost, collection, replacement)
+		status, data = request(api.Address(), http.MethodPost, collection, replacement)
 		Expect(status).To(Equal(http.StatusConflict), string(data))
-		Expect(headers.Get("Location")).To(BeEmpty())
 
 		var conflict map[string]any
 		Expect(json.Unmarshal(data, &conflict)).To(Succeed())
 		Expect(conflict["status"]).To(BeNumerically("==", 409))
 		Expect(conflict["detail"]).To(ContainSubstring("test"))
 
-		status, _, after := request(api.Address(), http.MethodGet, collection+"/test", "")
+		status, after := request(api.Address(), http.MethodGet, collection+"/test", "")
 		Expect(status).To(Equal(http.StatusOK))
 		Expect(after).To(MatchJSON(before))
 
-		status, _, data = request(api.Address(), http.MethodPut, collection+"/test", replacement)
+		status, data = request(api.Address(), http.MethodPut, collection+"/test", replacement)
 		Expect(status).To(Equal(http.StatusOK), string(data))
-		status, _, data = request(api.Address(), http.MethodDelete, collection+"/test", "")
+		status, data = request(api.Address(), http.MethodDelete, collection+"/test", "")
 		Expect(status).To(Equal(http.StatusOK), string(data))
-		status, _, data = request(api.Address(), http.MethodPut, collection+"/test", body)
+		status, data = request(api.Address(), http.MethodPut, collection+"/test", body)
 		Expect(status).To(Equal(http.StatusCreated), string(data))
 	},
 		Entry("global Mesh", "/meshes", `{"type":"Mesh","name":"test","labels":{"test":"original"}}`, `{"type":"Mesh","name":"test","labels":{"test":"replacement"}}`),
@@ -94,11 +92,10 @@ var _ = Describe("Create-only resource endpoints", func() {
 		defer stop()
 
 		// when
-		status, headers, data := request(api.Address(), http.MethodPost, collection, body)
+		status, data := request(api.Address(), http.MethodPost, collection, body)
 
 		// then
 		Expect(status).To(Equal(expected), string(data))
-		Expect(headers.Get("Location")).To(BeEmpty())
 	},
 		Entry("malformed JSON", "/meshes", `{`, 400),
 		Entry("missing name", "/meshes", `{"type":"Mesh"}`, 400),
@@ -115,7 +112,7 @@ var _ = Describe("Create-only resource endpoints", func() {
 		defer stop()
 
 		// when
-		status, _, data := request(api.Address(), http.MethodPost, "/meshes/default/meshratelimits",
+		status, data := request(api.Address(), http.MethodPost, "/meshes/default/meshratelimits",
 			`{"type":"MeshRateLimit","name":"warning","mesh":"default","spec":{"targetRef":{"kind":"Dataplane"},"rules":[{"default":{"local":{"http":{"onRateLimit":{"status":123}}}}}]}}`)
 
 		// then
@@ -136,7 +133,7 @@ var _ = Describe("Create-only resource endpoints", func() {
 		defer stop()
 
 		// when
-		status, _, data := request(api.Address(), http.MethodPost, "/meshes/default/meshtrafficpermissions",
+		status, data := request(api.Address(), http.MethodPost, "/meshes/default/meshtrafficpermissions",
 			`{"type":"MeshTrafficPermission","name":"test","mesh":"default","labels":{"kuma.io/origin":"global"},"spec":{"targetRef":{"kind":"Mesh"},"rules":[{"default":{"allow":[{"spiffeID":{"type":"Prefix","value":"spiffe://example"}}]}}]}}`)
 
 		// then
@@ -158,7 +155,7 @@ var _ = Describe("Create-only resource endpoints", func() {
 			wg.Go(func() {
 				defer GinkgoRecover()
 				<-start
-				statuses[i], _, bodies[i] = request(api.Address(), http.MethodPost, "/meshes", fmt.Sprintf(`{"type":"Mesh","name":"race","labels":{"writer":"%d"}}`, i))
+				statuses[i], bodies[i] = request(api.Address(), http.MethodPost, "/meshes", fmt.Sprintf(`{"type":"Mesh","name":"race","labels":{"writer":"%d"}}`, i))
 			})
 		}
 
@@ -180,7 +177,7 @@ var _ = Describe("Create-only resource endpoints", func() {
 		Expect(winner).To(BeNumerically(">=", 0))
 
 		// and then
-		status, _, data := request(api.Address(), http.MethodGet, "/meshes/race", "")
+		status, data := request(api.Address(), http.MethodGet, "/meshes/race", "")
 		Expect(status).To(Equal(http.StatusOK))
 		var result struct {
 			Labels map[string]string `json:"labels"`
