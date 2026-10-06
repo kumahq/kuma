@@ -42,7 +42,7 @@ var _ = Describe("Cross-mesh list endpoints", Ordered, func() {
 			{path: "/meshservices", status: http.StatusNotFound},
 			{path: "/secrets", status: http.StatusNotFound},
 			{path: "/dataplane-insights", status: http.StatusNotFound},
-			{path: "/dataplane-insights/_overview", status: http.StatusNotFound},
+			{path: "/dataplanes/_overview", status: http.StatusNotFound},
 			{path: "/meshes/default/meshaccesslogs", status: http.StatusOK},
 			{path: "/meshes/default/dataplanes", status: http.StatusOK},
 			{path: "/meshes/default/secrets", status: http.StatusOK},
