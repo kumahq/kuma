@@ -237,9 +237,6 @@ func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix
 func (r *resourceEndpointsContext) meshFromRequest(request *restful.Request) (string, error) {
 	if r.descriptor.Scope == core_model.ScopeMesh {
 		meshName := request.PathParameter("mesh")
-		if meshName == "" { // Handle lists across all meshes
-			return "", nil
-		}
 		mRes := core_mesh.MeshResourceTypeDescriptor.NewObject()
 		if err := r.resManager.Get(request.Request.Context(), mRes, store.GetByKey(meshName, core_model.NoMesh)); err != nil {
 			return "", err

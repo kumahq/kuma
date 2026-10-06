@@ -8,6 +8,12 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Cross-mesh resource list endpoints removed
+
+The API server no longer serves the endpoints that list mesh-scoped resources across all meshes, for example `GET /meshaccesslogs`. The same applies to every other mesh-scoped resource type, including `GET /dataplanes`, `GET /meshservices`, `GET /secrets` and the `/_overview` variants, which now return `404`.
+
+List a specific mesh instead: `GET /meshes/{mesh}/meshaccesslogs`, `GET /meshes/{mesh}/dataplanes`, and so on. Global-scoped resources such as `GET /globalsecrets` are unchanged.
+
 ### Outbound mTLS negotiates TLS 1.3
 
 Outbound mesh mTLS connections now allow TLS 1.3. Previously Envoy's client default capped them at TLS 1.2, so mesh traffic negotiated TLS 1.2 even though inbound listeners accepted TLS 1.3. A `MeshTLS` or `MeshExternalService` `tlsVersion.max` that is unset or `TLSAuto` now resolves to TLS 1.3 on the client side, which also fixes `min: TLS13` without `max` failing every connection with `NO_SUPPORTED_VERSIONS_ENABLED`.
