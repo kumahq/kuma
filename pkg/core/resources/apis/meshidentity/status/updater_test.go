@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers/bundled"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -43,7 +44,7 @@ var _ = Describe("Updater", func() {
 
 		updater, err := New(logr.Discard(), 50*time.Millisecond, resManager, resManager, providers.IdentityProviders{
 			"Bundled": bundledProvider,
-		}, "east")
+		}, resource_labels.ControlPlane{Mode: config_core.Zone, Zone: "east"})
 		Expect(err).ToNot(HaveOccurred())
 		stopCh = make(chan struct{})
 		go func(stopCh chan struct{}) {

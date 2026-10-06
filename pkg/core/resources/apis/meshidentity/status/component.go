@@ -5,6 +5,7 @@ import (
 
 	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
 )
@@ -24,7 +25,7 @@ func Setup(rt runtime.Runtime) error {
 		rt.ResourceManager(),
 		rt.ReadOnlyResourceManager(),
 		rt.IdentityProviders(),
-		rt.Config().Multizone.Zone.Name,
+		resource_labels.ControlPlaneFromConfig(rt.Config()),
 	)
 	if err != nil {
 		return err
