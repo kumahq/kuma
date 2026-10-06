@@ -21,10 +21,7 @@ type Configurer struct {
 
 func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
 	clustersAccumulator := map[string]core_meta.Protocol{}
-	filterChainMatches, err := GetOrderedMatchers(c.Conf)
-	if err != nil {
-		return err
-	}
+	filterChainMatches := GetOrderedMatchers(c.Conf)
 
 	if hasIPv4Matches(filterChainMatches) {
 		if err := c.configureListener(filterChainMatches, ipv4, clustersAccumulator, false, c.IPv6Enabled); err != nil {

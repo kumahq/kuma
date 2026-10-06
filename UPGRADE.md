@@ -8,6 +8,26 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.6`
 
+### `MeshPassthrough` validates matches by the Envoy filter chain they resolve to
+
+Validation of `MeshPassthrough` now follows the filter chains of the generated passthrough listener, the same way 3.0 does.
+Two matches conflict only when they resolve to the same filter chain on the same port (or both have no port):
+
+- domains with two of `grpc`, `http` and `http2`, which share one filter chain per port
+- the same address spelled differently, an IP and a CIDR covering only that IP (`10.0.0.1` and `10.0.0.1/32`), a CIDR with host bits (`10.0.0.1/24` and `10.0.0.0/24`) or another textual form of the same IPv6 address
+- `tcp` and `mysql` on the same address, both generate an identical TCP proxy filter chain
+
+Matches that resolve to distinct filter chains are no longer rejected, for example `tls` or `tcp` next to `http` on the same port, or `http` on a domain next to `http2` on an IP on the same port.
+This lets you add a `port` to every `Domain` match before upgrading to 3.0, which requires it.
+A match with a port next to a match without one is not a conflict either: the port-specific match owns its port and the match without a port covers the remaining ports.
+
+An already applied policy with a conflict is not re-validated on upgrade.
+Instead of sending Envoy a listener it rejects or failing config generation, the control plane keeps the first match of the colliding pair in `appendMatch` order, drops the later one and names it in a debug log of the `MeshPassthrough` component.
+
+**Action required**
+
+If a `MeshPassthrough` policy contains matches like the above, resolve the conflict (pick one protocol per port and one spelling per address), otherwise the next edit of the policy is rejected by validation.
+
 ### `MeshExternalService` TLS verification accepts the `SecureDataSource` shape
 
 3.0 reads `spec.tls.verification.caCert`, `.clientCert` and `.clientKey` on `MeshExternalService` only in the `SecureDataSource` shape. 2.14.6 accepts both shapes, so resources can be rewritten before upgrading to 3.0. The old `secret`, `inline` and `inlineString` fields keep working on 2.14 and now produce a deprecation warning.

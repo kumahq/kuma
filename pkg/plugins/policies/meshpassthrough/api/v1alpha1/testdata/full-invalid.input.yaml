@@ -76,20 +76,3 @@ default:
     value: example.com
     port: 7070
     protocol: grpc
-  - type: Domain
-    value: portless.example.com
-    protocol: http
-  - type: Domain
-    value: on-port.example.com
-    port: 8181
-    protocol: http2
-  - type: Domain
-    value: portless.example.com
-    protocol: grpc
-  - type: IP
-    value: 172.1.1.5
-    protocol: tcp
-  - type: IP
-    value: 172.1.1.5
-    port: 3307
-    protocol: mysql

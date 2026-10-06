@@ -1,9 +1,12 @@
 package v1alpha1
 
 import (
+	"slices"
+
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	"github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	"github.com/kumahq/kuma/v2/pkg/core/naming"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
@@ -22,6 +25,8 @@ import (
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
+
+var logger = core.Log.WithName("MeshPassthrough")
 
 type plugin struct{}
 
@@ -62,10 +67,24 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return nil
 	}
 	listeners := policies_xds.GatherListeners(rs)
-	if err := applyToOutboundPassthrough(ctx, rs, policies.SingleItemRules, listeners, proxy); err != nil {
-		return err
+	warnings, err := applyToOutboundPassthrough(ctx, rs, policies.SingleItemRules, listeners, proxy)
+	if len(warnings) > 0 {
+		// the same conflict reproduces on every proxy the policy matches and on
+		// every reconciliation, so it stays at debug level like other dropped config
+		logger.V(1).Info("some matches were dropped, they resolve to a filter chain another match already configures", "proxy", proxy.Id.String(), "warnings", warnings)
+		addWarnings(proxy, policies, warnings...)
 	}
-	return nil
+	return err
+}
+
+// policies are kept in a map by value and the slice may be shared with the policy
+// matching cache, so write an extended copy back instead of appending in place
+func addWarnings(proxy *core_xds.Proxy, policies core_xds.TypedMatchingPolicies, warnings ...string) {
+	if len(warnings) == 0 {
+		return
+	}
+	policies.Warnings = append(slices.Clone(policies.Warnings), warnings...)
+	proxy.Policies.Dynamic[api.MeshPassthroughType] = policies
 }
 
 func applyToOutboundPassthrough(
@@ -74,9 +93,9 @@ func applyToOutboundPassthrough(
 	rules core_rules.SingleItemRules,
 	listeners policies_xds.Listeners,
 	proxy *core_xds.Proxy,
-) error {
+) ([]string, error) {
 	if len(rules.Rules) == 0 {
-		return nil
+		return nil, nil
 	}
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
@@ -90,15 +109,15 @@ func applyToOutboundPassthrough(
 	if disableDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
 		// remove clusters because they were added in TransparentProxyGenerator
 		removeDefaultPassthroughCluster(rs, unifiedNaming)
-		return nil
+		return nil, nil
 	}
 	if enableDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
 		// add clusters because they were not added in TransparentProxyGenerator
-		return addDefaultPassthroughClusters(rs, proxy.APIVersion, unifiedNaming)
+		return nil, addDefaultPassthroughClusters(rs, proxy.APIVersion, unifiedNaming)
 	}
 	if ctx.Mesh.Resource.Spec.IsPassthrough() && conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == "All" {
 		// clusters were added in TransparentProxyGenerator, do nothing
-		return nil
+		return nil, nil
 	}
 
 	if conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == "Matched" || conf.PassthroughMode == nil {
@@ -110,13 +129,10 @@ func applyToOutboundPassthrough(
 				Conf:              conf,
 				IPv6Enabled:       proxy.Metadata.IPv6Enabled,
 			}
-			err := configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
-			if err != nil {
-				return err
-			}
+			return conf.Warnings(), configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func removeDefaultPassthroughCluster(rs *core_xds.ResourceSet, unifiedNaming bool) {
