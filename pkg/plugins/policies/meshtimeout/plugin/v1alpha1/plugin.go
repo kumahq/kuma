@@ -55,6 +55,10 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
+	if err := applyToZoneProxyListeners(policies, listeners, clusters, proxy); err != nil {
+		return err
+	}
+
 	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
 
 	for _, r := range util_slices.Filter(rs.List(), isOutboundServiceResource) {
@@ -65,8 +69,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 			return err
 		}
 	}
-
-	return applyToZoneProxyListeners(policies, listeners, clusters, proxy)
+	return nil
 }
 
 // Zone proxies take timeouts only from rules, spec.to[] is a no-op there (MADR 103).
