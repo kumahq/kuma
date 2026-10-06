@@ -11,34 +11,13 @@
       "value": "7s"
     },
     {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/idleTimeout",
-      "value": "3600s"
-    },
-    {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/idleTimeout",
-      "value": "13s"
-    },
-    {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxConnectionDuration",
-      "value": "0s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxConnectionDuration",
-      "value": "40s"
-    },
-    {
-      "op": "remove",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxStreamDuration",
-      "value": "0s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxStreamDuration",
-      "value": "30s"
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/kri_extsvc_envoyconfig-zoneproxies_kuma-3__mes-zone-proxy_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions",
+      "value": {
+        "idleTimeout": "13s",
+        "maxConnectionDuration": "40s",
+        "maxStreamDuration": "30s"
+      }
     },
     {
       "op": "add",
