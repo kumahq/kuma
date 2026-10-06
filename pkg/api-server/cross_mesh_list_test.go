@@ -47,10 +47,15 @@ var _ = Describe("Cross-mesh list endpoints", Ordered, func() {
 			{path: "/meshes/default/dataplanes", status: http.StatusOK},
 			{path: "/meshes/default/secrets", status: http.StatusOK},
 		}
-		for _, tc := range cases {
-			resp, err := http.Get(fmt.Sprintf("http://%s%s", apiServer.Address(), tc.path))
+		get := func(path string) *http.Response {
+			resp, err := http.Get(fmt.Sprintf("http://%s%s", apiServer.Address(), path))
 			Expect(err).ToNot(HaveOccurred())
+			return resp
+		}
+		for _, tc := range cases {
+			resp := get(tc.path)
 			Expect(resp).To(HaveHTTPStatus(tc.status), tc.path)
+			Expect(resp.Body.Close()).To(Succeed())
 		}
 	})
 })
