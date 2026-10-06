@@ -794,26 +794,6 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.inbound[0].address
                   message: address has to be valid IP address`,
 		}),
-		Entry("networking.inbound: empty service tag", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: 192.168.0.1
-                  inbound:
-                    - port: 1234
-                      tags:
-                        version: "v1"
-                  outbound:
-                    - port: 3333
-                      tags:
-                        kuma.io/service: redis`,
-			expected: `
-                violations:
-                - field: networking.inbound[0].tags["kuma.io/service"]
-                  message: tag has to exist`,
-		}),
 		Entry("networking.inbound: empty tag value", testCase{
 			dataplane: `
                 type: Dataplane
@@ -1677,7 +1657,7 @@ var _ = Describe("Dataplane", func() {
 		}),
 	)
 
-	Describe("service tag requirement based on inbound tags presence", func() {
+	Describe("service tag validation", func() {
 		It("should allow dataplane with empty inbound tags (InboundTagsDisabled)", func() {
 			// setup
 			dataplane := core_mesh.NewDataplaneResource()
@@ -1696,7 +1676,7 @@ var _ = Describe("Dataplane", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should require service tag when inbound has other tags", func() {
+		It("should allow inbound tags without service tag", func() {
 			// setup
 			dataplane := core_mesh.NewDataplaneResource()
 
@@ -1711,14 +1691,8 @@ var _ = Describe("Dataplane", func() {
 `), dataplane.Spec)
 			Expect(err).ToNot(HaveOccurred())
 
-			// then - has tags but no service tag = old setup, service tag required
-			verr := dataplane.Validate()
-			actual, err := yaml.Marshal(verr)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(`
-                violations:
-                - field: networking.inbound[0].tags["kuma.io/service"]
-                  message: tag has to exist`))
+			// Inbound tags no longer define the gateway service identity.
+			Expect(dataplane.Validate()).ToNot(HaveOccurred())
 		})
 
 		It("should allow dataplane with empty gateway tags (InboundTagsDisabled)", func() {
