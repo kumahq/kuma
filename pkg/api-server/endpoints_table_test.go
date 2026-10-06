@@ -72,4 +72,42 @@ var _ = Describe("Endpoints", func() {
 		Entry(nil, "/policies"),
 		Entry(nil, "/who-am-i"),
 	)
+
+	Describe("global mode", func() {
+		var globalApiServer *api_server.ApiServer
+		var globalResourceStore store.ResourceStore
+		stopGlobal := func() {}
+
+		BeforeAll(func() {
+			globalResourceStore = memory.NewStore()
+			globalApiServer, _, stopGlobal = StartApiServer(NewTestApiServerConfigurer().WithGlobal().WithStore(store.NewPaginationStore(globalResourceStore)))
+		})
+
+		AfterAll(func() {
+			stopGlobal()
+		})
+
+		DescribeTable("resources CRUD", func(inputFile string) {
+			apiTest(inputFile, globalApiServer, globalResourceStore)
+		}, test.EntriesForFolder("resources/crud/global"))
+	})
+
+	Describe("federated zone mode", func() {
+		var zoneApiServer *api_server.ApiServer
+		var zoneResourceStore store.ResourceStore
+		stopZone := func() {}
+
+		BeforeAll(func() {
+			zoneResourceStore = memory.NewStore()
+			zoneApiServer, _, stopZone = StartApiServer(NewTestApiServerConfigurer().WithZone("zone-1").WithStore(store.NewPaginationStore(zoneResourceStore)))
+		})
+
+		AfterAll(func() {
+			stopZone()
+		})
+
+		DescribeTable("resources CRUD", func(inputFile string) {
+			apiTest(inputFile, zoneApiServer, zoneResourceStore)
+		}, test.EntriesForFolder("resources/crud/zone"))
+	})
 }, Ordered)

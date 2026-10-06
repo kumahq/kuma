@@ -498,6 +498,16 @@ func (r *resourceEndpoints) updateResource(
 		return
 	}
 
+	if stored, ok := currentRes.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]; ok && stored != labels[mesh_proto.ResourceOriginLabel] {
+		var err validators.ValidationError
+		err.AddViolationAt(
+			validators.RootedAt("labels").Key(mesh_proto.ResourceOriginLabel),
+			fmt.Sprintf("is immutable, cannot be changed from %q to %q", stored, labels[mesh_proto.ResourceOriginLabel]),
+		)
+		rest_errors.HandleError(ctx, response, &err, "Could not update a resource")
+		return
+	}
+
 	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not update a resource")
 		return
@@ -603,14 +613,12 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 	}
 
 	if r.mode != config_core.Global {
-		if origin != mesh_proto.GlobalResourceOrigin {
-			zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-			if ok && zoneTag != r.zoneName {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
-			}
-			if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
-			}
+		zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+		if ok && zoneTag != r.zoneName {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
+		}
+		if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
 		}
 	}
 

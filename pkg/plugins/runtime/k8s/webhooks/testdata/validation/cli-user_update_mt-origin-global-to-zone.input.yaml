@@ -1,0 +1,34 @@
+# user=cli-user,operation=UPDATE,namespace=kuma-system
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: backend-v3
+  labels:
+    kuma.io/origin: zone
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 30s
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: backend-v3
+  labels:
+    kuma.io/origin: global
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 19s
