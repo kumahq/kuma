@@ -121,8 +121,8 @@ the global control plane read-only on the zone. The
 **Action required**
 
 Remove `multizone.zone.disableOriginLabelValidation` from your configuration.
-A control plane started with the setting still present fails to load its
-configuration.
+A control plane started with the setting still present ignores it.
+
 ### The resource store cache can no longer be disabled
 
 The resource store cache (`store.cache.enabled`,
@@ -1393,7 +1393,9 @@ upgrading. Audit with:
 
 ```bash
 kubectl get meshservices -A -o yaml | grep -B5 'dataplaneTags:'
-kumactl get meshservices -o yaml --all-meshes | grep -B5 'dataplaneTags:'
+for mesh in $(kumactl get meshes -o json | jq -r '.items[].name'); do
+  kumactl get meshservices --mesh "$mesh" -o yaml
+done | grep -B5 'dataplaneTags:'
 ```
 
 ```yaml
