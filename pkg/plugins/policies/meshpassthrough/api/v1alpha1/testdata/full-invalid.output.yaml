@@ -30,3 +30,8 @@ violations:
   message: port must be defined for Mysql protocol
 - field: spec.default.appendMatch[13].value
   message: provided DNS has incorrect value
+- field: spec.default.appendMatch[15].value
+  message: value 172.1.1.2 is already defined for this port and protocol
+- field: spec.default.appendMatch[18].port
+  message: 'using the same port in multiple matches requires the same protocol for
+    the following protocols: [grpc http http2]'

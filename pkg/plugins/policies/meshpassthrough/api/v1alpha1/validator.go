@@ -45,7 +45,9 @@ func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TargetRef) v
 
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
-	portAndProtocol := map[uint32]ProtocolType{}
+	// http, http2 and grpc build the same filter chain match, other protocols differ
+	// in the transport or application protocol, so only L7 protocols are compared
+	l7ProtocolOnPort := map[uint32]ProtocolType{}
 	type portProtocol struct {
 		port     uint32
 		protocol ProtocolType
@@ -59,14 +61,20 @@ func validateDefault(conf Conf) validators.ValidationError {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be a valid (1-65535)")
 		}
 		if match.Port != nil {
-			if value, found := portAndProtocol[pointer.Deref[uint32](match.Port)]; found && value != match.Protocol && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
-				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort))
-			} else {
-				portAndProtocol[pointer.Deref[uint32](match.Port)] = match.Protocol
+			if slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
+				if protocol, found := l7ProtocolOnPort[*match.Port]; !found {
+					l7ProtocolOnPort[*match.Port] = match.Protocol
+				} else if protocol != match.Protocol {
+					verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort))
+				}
 			}
 			key := portProtocol{
 				port:     *match.Port,
 				protocol: match.Protocol,
+			}
+			// tcp and mysql build the same filter chain match
+			if key.protocol == MysqlProtocol {
+				key.protocol = TcpProtocol
 			}
 			if _, found := uniqueDomains[key]; found {
 				if _, found := uniqueDomains[key][match.Value]; found {

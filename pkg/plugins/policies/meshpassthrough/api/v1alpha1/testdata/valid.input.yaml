@@ -25,3 +25,23 @@ default:
     value: 172.1.1.1
     port: 3306
     protocol: mysql
+  - type: CIDR
+    value: 10.0.0.0/8
+    port: 9999
+    protocol: tcp
+  - type: Domain
+    value: other.example.com
+    port: 9999
+    protocol: http
+  - type: Domain
+    value: secure.example.com
+    port: 9999
+    protocol: tls
+  - type: Domain
+    value: grpc.example.com
+    port: 443
+    protocol: tls
+  - type: Domain
+    value: grpc.example.com
+    port: 443
+    protocol: grpc
