@@ -572,23 +572,6 @@ func (r *resourceEndpoints) updateResource(
 
 	r.clearMeshTrustOrigin(newResRest, meshName, currentRes.GetMeta().GetName())
 
-	// Compute labels for current state BEFORE modifying spec
-	currentLabels, err := core_model.ComputeLabels(
-		currentRes.Descriptor(),
-		currentRes.GetSpec(),
-		currentRes.GetMeta().GetLabels(),
-		meshName,
-		currentRes.GetMeta().GetName(),
-		core_model.WithNamespace(core_model.GetNamespace(currentRes.GetMeta(), r.systemNamespace)),
-		core_model.WithMode(r.mode),
-		core_model.WithK8s(r.isK8s),
-		core_model.WithZone(r.zoneName),
-	)
-	if err != nil {
-		rest_errors.HandleError(ctx, response, err, "Could not compute current labels")
-		return
-	}
-
 	_ = currentRes.SetSpec(newResRest.GetSpec())
 
 	// Compute labels for new request
@@ -608,10 +591,12 @@ func (r *resourceEndpoints) updateResource(
 		return
 	}
 
-	// Validate immutable labels by comparing computed results
-	if validationErr := r.validateImmutableLabels(currentLabels, labels); validationErr.HasViolations() {
+	if stored, ok := currentRes.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]; ok && stored != labels[mesh_proto.ResourceOriginLabel] {
 		var err validators.ValidationError
-		err.AddError("labels", validationErr)
+		err.AddViolationAt(
+			validators.RootedAt("labels").Key(mesh_proto.ResourceOriginLabel),
+			fmt.Sprintf("is immutable, cannot be changed from %q to %q", stored, labels[mesh_proto.ResourceOriginLabel]),
+		)
 		rest_errors.HandleError(ctx, response, &err, "Could not update a resource")
 		return
 	}
@@ -721,14 +706,12 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 	}
 
 	if r.mode != config_core.Global {
-		if origin != mesh_proto.GlobalResourceOrigin {
-			zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-			if ok && zoneTag != r.zoneName {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
-			}
-			if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
-				err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
-			}
+		zoneTag, ok := resource.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+		if ok && zoneTag != r.zoneName {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
+		}
+		if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
+			err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
 		}
 	}
 
@@ -744,33 +727,6 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 			err.AddViolationAt(validators.Root().Key(k), msg)
 		}
 	}
-	return err
-}
-
-func (r *resourceEndpoints) validateImmutableLabels(currentComputedLabels, newComputedLabels map[string]string) validators.ValidationError {
-	var err validators.ValidationError
-
-	immutableLabels := []string{
-		mesh_proto.ZoneTag,
-	}
-
-	for _, label := range immutableLabels {
-		currentVal, currentExists := currentComputedLabels[label]
-		newVal, newExists := newComputedLabels[label]
-
-		if currentExists && !newExists {
-			err.AddViolationAt(
-				validators.Root().Key(label),
-				fmt.Sprintf("is immutable, cannot be removed (was %q)", currentVal),
-			)
-		} else if currentExists && currentVal != newVal {
-			err.AddViolationAt(
-				validators.Root().Key(label),
-				fmt.Sprintf("is immutable, cannot be changed from %q to %q", currentVal, newVal),
-			)
-		}
-	}
-
 	return err
 }
 
