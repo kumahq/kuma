@@ -53,6 +53,14 @@ func validateDefault(conf Conf) validators.ValidationError {
 		protocol ProtocolType
 	}
 	uniqueDomains := map[portProtocol]map[string]bool{}
+	type chainMatch struct {
+		index    int
+		protocol ProtocolType
+		key      string
+	}
+	var portlessMatches []chainMatch
+	var ports []uint32
+	matchesOnPort := map[uint32][]chainMatch{}
 	for i, match := range pointer.Deref(conf.AppendMatch) {
 		if match.Protocol == MysqlProtocol && match.Port == nil {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be defined for Mysql protocol")
@@ -60,14 +68,24 @@ func validateDefault(conf Conf) validators.ValidationError {
 		if match.Port != nil && pointer.Deref[uint32](match.Port) == 0 || pointer.Deref[uint32](match.Port) > math.MaxUint16 {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be a valid (1-65535)")
 		}
-		if match.Port != nil {
-			if slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
-				if protocol, found := l7ProtocolOnPort[*match.Port]; !found {
-					l7ProtocolOnPort[*match.Port] = match.Protocol
-				} else if protocol != match.Protocol {
-					verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort))
-				}
+		// matches without a port share port 0, the generator rejects different L7 protocols there too
+		if slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
+			if protocol, found := l7ProtocolOnPort[pointer.Deref(match.Port)]; !found {
+				l7ProtocolOnPort[pointer.Deref(match.Port)] = match.Protocol
+			} else if protocol != match.Protocol {
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort))
 			}
+		}
+		chain := chainMatch{index: i, protocol: match.Protocol, key: filterChainKey(match)}
+		if match.Port == nil {
+			portlessMatches = append(portlessMatches, chain)
+		} else {
+			if _, found := matchesOnPort[*match.Port]; !found {
+				ports = append(ports, *match.Port)
+			}
+			matchesOnPort[*match.Port] = append(matchesOnPort[*match.Port], chain)
+		}
+		if match.Port != nil {
 			key := portProtocol{
 				port:     *match.Port,
 				protocol: match.Protocol,
@@ -126,5 +144,34 @@ func validateDefault(conf Conf) validators.ValidationError {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("type"), fmt.Sprintf("provided type %s is not supported, one of Domain, IP, or CIDR is supported", match.Type))
 		}
 	}
+	// the generator copies a match without a port onto every port used by other matches
+	for _, portless := range portlessMatches {
+		for _, port := range ports {
+			idx := slices.IndexFunc(matchesOnPort[port], func(other chainMatch) bool {
+				return other.key == portless.key && other.protocol != portless.protocol
+			})
+			if idx >= 0 {
+				other := matchesOnPort[port][idx]
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(portless.index).Field("port"), fmt.Sprintf("a match without a port is also applied to port %d, where appendMatch[%d] with protocol %s builds the same filter chain", port, other.index, other.protocol))
+				break
+			}
+		}
+	}
 	return verr
+}
+
+// filterChainKey identifies the filter chain match a match builds, apart from the port:
+// L7 domains share one chain per protocol, other matches get a chain per value
+func filterChainKey(match Match) string {
+	l7 := slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol)
+	switch {
+	case l7 && match.Type == "Domain":
+		return "l7"
+	case l7:
+		return "l7/" + match.Value
+	case match.Protocol == MysqlProtocol:
+		return string(TcpProtocol) + "/" + match.Value
+	default:
+		return string(match.Protocol) + "/" + match.Value
+	}
 }

@@ -45,3 +45,14 @@ default:
     value: grpc.example.com
     port: 443
     protocol: grpc
+  - type: IP
+    value: 172.1.1.6
+    protocol: http
+  - type: Domain
+    value: on-port.example.com
+    port: 8181
+    protocol: http
+  - type: IP
+    value: 172.1.1.4
+    port: 8282
+    protocol: http2

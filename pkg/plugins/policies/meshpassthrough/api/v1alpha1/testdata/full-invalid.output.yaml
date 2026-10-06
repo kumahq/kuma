@@ -35,3 +35,18 @@ violations:
 - field: spec.default.appendMatch[18].port
   message: 'using the same port in multiple matches requires the same protocol for
     the following protocols: [grpc http http2]'
+- field: spec.default.appendMatch[21].port
+  message: 'using the same port in multiple matches requires the same protocol for
+    the following protocols: [grpc http http2]'
+- field: spec.default.appendMatch[10].port
+  message: a match without a port is also applied to port 8080, where appendMatch[6]
+    with protocol http2 builds the same filter chain
+- field: spec.default.appendMatch[19].port
+  message: a match without a port is also applied to port 8080, where appendMatch[6]
+    with protocol http2 builds the same filter chain
+- field: spec.default.appendMatch[21].port
+  message: a match without a port is also applied to port 8080, where appendMatch[5]
+    with protocol http builds the same filter chain
+- field: spec.default.appendMatch[22].port
+  message: a match without a port is also applied to port 3307, where appendMatch[23]
+    with protocol mysql builds the same filter chain
