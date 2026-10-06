@@ -855,7 +855,7 @@ spec:
           lifecycle:
             preStop:
               sleep:
-                seconds: 20
+                seconds: 15
 ---
 apiVersion: apps/v1
 kind: Deployment
