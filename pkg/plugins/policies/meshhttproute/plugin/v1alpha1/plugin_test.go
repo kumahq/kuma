@@ -3797,6 +3797,97 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("gateway-meshexternalservice-mesh-scoped-egress", func() outboundsTestCase {
+			// A global MES has no zone, so the gateway must pick the KRI SNI from the egress SANs,
+			// like sidecars do, otherwise the mesh-scoped zone egress matches no filter chain.
+			meshExtSvc := meshexternalservice_api.MeshExternalServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "example", Mesh: "default",
+					Labels: map[string]string{"app": "example"},
+				},
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Port:     9090,
+						Protocol: core_meta.ProtocolHTTP,
+					},
+					Endpoints: &[]meshexternalservice_api.Endpoint{{
+						Address: "example.com",
+						Port:    10000,
+					}},
+				},
+				Status: &meshexternalservice_api.MeshExternalServiceStatus{
+					VIP: meshexternalservice_api.VIP{IP: "10.20.20.1"},
+				},
+			}
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{{
+						Match: map[string]string{mesh_proto.ServiceTag: "sample-gateway"},
+					}},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{{
+							Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+							Port:     8080,
+						}},
+					},
+				},
+			}
+			mc := meshContextWithResources(builders.Mesh(), gateway, &meshExtSvc)
+			mc.ZoneEgresses = []core_xds.ZoneEgressInstance{
+				{Address: "10.0.0.1", Port: 10002, SAN: "spiffe://default/zone-egress"},
+			}
+
+			commonRules := core_rules.ToRules{
+				Rules: core_rules.Rules{
+					test_policies.NewRule(subsetutils.MeshSubset(), api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{Type: api.PathPrefix, Value: "/"},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]common_api.BackendRef{{
+									Kind:   common_api.MeshExternalService,
+									Labels: &map[string]string{"app": "example"},
+									Port:   pointer.To(uint32(9090)),
+									Weight: pointer.To(uint(100)),
+								}},
+							},
+						}},
+					}),
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithMeshContext(mc).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing()).
+					WithSecretsTracker(envoy.NewSecretsTracker(core_model.DefaultMesh, nil)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): commonRules,
+									},
+								},
+							}),
+					).
+					WithWorkloadIdentity(&core_xds.WorkloadIdentity{
+						IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+							return bldrs_tls.SdsSecretConfigSource(
+								"identity_cert:secret:default",
+								bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+							)
+						},
+					}).
+					Build(),
+			}
+		}()),
 		Entry("gateway-meshservice-labels-without-port", func() outboundsTestCase {
 			gateway := &core_mesh.MeshGatewayResource{
 				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},

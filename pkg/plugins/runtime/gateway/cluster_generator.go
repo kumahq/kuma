@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
@@ -169,15 +170,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	service := destinationname.MustResolve(false, dest, port)
 	var mtls clusters.ClusterBuilderOpt
 	if backendRef.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType {
-		var sni string
-		if meshCtx.ZonesWithMeshScopedProxy[backendRef.Resource.Zone] {
-			if errs := core_sni.ValidateKRI(backendRef.Resource); len(errs) > 0 {
-				return nil, "", nil
-			}
-			sni = core_sni.FromKRI(backendRef.Resource)
-		} else {
-			sni = meshroute.SniForBackendRef(backendRef, dest, port, systemNamespace)
-		}
+		sni := meshroute.SniForBackendRef(backendRef, dest, port, systemNamespace)
 		if proxy.WorkloadIdentity == nil {
 			mtls = clusters.ClientSideMultiIdentitiesMTLS(
 				proxy.SecretsTracker,
@@ -190,7 +183,14 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 				len(meshCtx.CAsByTrustDomain) > 0,
 			)
 		} else {
-			upstreamCtx, err := meshroute.UpstreamTLSContext(proxy, sni, meshroute.Identities(backendRef, meshCtx, true))
+			sans := meshroute.Identities(backendRef, meshCtx, true)
+			// MES goes through the zone egress, so match the sidecar rule: a mesh-scoped egress only accepts the KRI SNI.
+			if egressSANs := meshCtx.ZoneEgressSANs(); len(egressSANs) > 0 {
+				// Zone proxies key the SNI by port name, a backendRef may use the number.
+				sni = core_sni.FromKRI(kri.WithSectionName(backendRef.Resource, port.GetName()))
+				sans = egressSANs
+			}
+			upstreamCtx, err := meshroute.UpstreamTLSContext(proxy, sni, sans)
 			if err != nil {
 				return nil, "", err
 			}
