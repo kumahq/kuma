@@ -157,8 +157,11 @@ func (m *dataplaneManager) setGatewayClusterTag(dp *core_mesh.DataplaneResource,
 		return
 	}
 	skipTagGeneration := mesh.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive
-	if len(dp.Spec.Networking.Gateway.Tags) == 0 && skipTagGeneration {
-		return
+	if skipTagGeneration {
+		delete(dp.Spec.Networking.Gateway.Tags, mesh_proto.ZoneTag)
+		if len(dp.Spec.Networking.Gateway.Tags) == 0 {
+			return
+		}
 	}
 	if dp.Spec.Networking.Gateway.Tags == nil {
 		dp.Spec.Networking.Gateway.Tags = make(map[string]string)
