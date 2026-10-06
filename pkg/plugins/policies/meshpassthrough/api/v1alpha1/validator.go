@@ -72,18 +72,20 @@ func validateDefault(conf Conf) validators.ValidationError {
 				port:     *match.Port,
 				protocol: match.Protocol,
 			}
-			// tcp and mysql build the same filter chain match
-			if key.protocol == MysqlProtocol {
-				key.protocol = TcpProtocol
-			}
-			if _, found := uniqueDomains[key]; found {
-				if _, found := uniqueDomains[key][match.Value]; found {
-					verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), fmt.Sprintf("value %s is already defined for this port and protocol", match.Value))
-				} else {
+			if uniqueDomains[key][match.Value] {
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), fmt.Sprintf("value %s is already defined for this port and protocol", match.Value))
+			} else {
+				keys := []portProtocol{key}
+				// tcp and mysql build the same filter chain match, so the value is taken for both
+				if match.Protocol == TcpProtocol || match.Protocol == MysqlProtocol {
+					keys = []portProtocol{{port: key.port, protocol: TcpProtocol}, {port: key.port, protocol: MysqlProtocol}}
+				}
+				for _, key := range keys {
+					if uniqueDomains[key] == nil {
+						uniqueDomains[key] = map[string]bool{}
+					}
 					uniqueDomains[key][match.Value] = true
 				}
-			} else {
-				uniqueDomains[key] = map[string]bool{match.Value: true}
 			}
 		}
 		if !slices.Contains(allMatchProtocols, string(match.Protocol)) {
