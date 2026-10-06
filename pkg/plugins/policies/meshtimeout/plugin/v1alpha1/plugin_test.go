@@ -1308,6 +1308,58 @@ var _ = Describe("MeshTimeout", func() {
 		Expect(clusterYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "zone_egress_sni_mes_owned.cluster.golden.yaml")))
 	})
 
+	It("should not apply to MeshExternalService rules on a zone-egress cluster", func() {
+		mesID := kri.Identifier{
+			ResourceType: "MeshExternalService",
+			Mesh:         "default",
+			Name:         "aws-aurora",
+		}
+		rs := core_xds.NewResourceSet()
+		for _, res := range []core_xds.Resource{
+			zoneEgressListenerResource(),
+			{
+				Name:           "mes-http",
+				Origin:         metadata.OriginEgress,
+				Resource:       test_xds.ClusterWithName("mes-http"),
+				Protocol:       core_meta.ProtocolHTTP,
+				ResourceOrigin: mesID,
+			},
+		} {
+			r := res
+			rs.Add(&r)
+		}
+
+		xdsCtx := *xds_builders.Context().
+			WithMeshBuilder(samples.MeshDefaultBuilder()).
+			WithResources(xds_context.NewResources()).
+			Build()
+
+		proxy := xds_builders.Proxy().
+			WithDataplane(zoneEgressOnlyDataplane()).
+			WithZone("zone-1").
+			WithPolicies(xds_builders.MatchedPolicies().
+				WithPolicy(api.MeshTimeoutType, core_rules.ToRules{
+					ResourceRules: map[kri.Identifier]outbound.ResourceRule{
+						mesID: {
+							Conf: []any{
+								api.Conf{
+									ConnectionTimeout: test.ParseDuration("20s"),
+									IdleTimeout:       test.ParseDuration("21s"),
+								},
+							},
+						},
+					},
+				}, core_rules.FromRules{})).
+			Build()
+
+		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		Expect(plugin.Apply(rs, xdsCtx, proxy)).To(Succeed())
+
+		clusterYaml, err := util_yaml.GetResourcesToYaml(rs, envoy_resource.ClusterType)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(clusterYaml).To(matchers.MatchGoldenYAML(filepath.Join("..", "testdata", "zone_egress_to_mes_noop.cluster.golden.yaml")))
+	})
+
 	It("should merge overlapping SNI rules before configuring a zone-egress filter chain", func() {
 		rs := core_xds.NewResourceSet()
 		for _, res := range []core_xds.Resource{
