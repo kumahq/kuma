@@ -274,7 +274,6 @@ type resourceRouteRole int
 
 const (
 	meshCRUDListRoute resourceRouteRole = iota
-	crossMeshListRoute
 	globalCRUDListRoute
 )
 
@@ -300,10 +299,7 @@ func resourceRoutes(descriptor model.ResourceTypeDescriptor) []resourceRoute {
 	for _, pathRole := range pathRoles {
 		switch descriptor.Scope {
 		case model.ScopeMesh:
-			routes = append(routes,
-				resourceRoute{role: meshCRUDListRoute, pathRole: pathRole},
-				resourceRoute{role: crossMeshListRoute, pathRole: pathRole},
-			)
+			routes = append(routes, resourceRoute{role: meshCRUDListRoute, pathRole: pathRole})
 		case model.ScopeGlobal:
 			routes = append(routes, resourceRoute{role: globalCRUDListRoute, pathRole: pathRole})
 		}
@@ -325,15 +321,10 @@ func (r resourceRoute) pathPrefix(descriptor model.ResourceTypeDescriptor) strin
 func registerResourceRoutes(ws *restful.WebService, endpoints resourceEndpoints) {
 	for _, route := range resourceRoutes(endpoints.descriptor) {
 		pathPrefix := route.pathPrefix(endpoints.descriptor)
-		switch route.role {
-		case meshCRUDListRoute, globalCRUDListRoute:
-			endpoints.addCreateOrUpdateEndpoint(ws, pathPrefix)
-			endpoints.addDeleteEndpoint(ws, pathPrefix)
-			endpoints.addFindEndpoint(ws, pathPrefix)
-			endpoints.addListEndpoint(ws, pathPrefix)
-		case crossMeshListRoute:
-			endpoints.addListEndpoint(ws, pathPrefix)
-		}
+		endpoints.addCreateOrUpdateEndpoint(ws, pathPrefix)
+		endpoints.addDeleteEndpoint(ws, pathPrefix)
+		endpoints.addFindEndpoint(ws, pathPrefix)
+		endpoints.addListEndpoint(ws, pathPrefix)
 	}
 }
 

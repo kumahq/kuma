@@ -26,7 +26,6 @@ func TestResourceRoutes(t *testing.T) {
 			},
 			expected: []resourceRoute{
 				{role: meshCRUDListRoute, pathRole: primaryResourcePath},
-				{role: crossMeshListRoute, pathRole: primaryResourcePath},
 			},
 		},
 		{
@@ -38,9 +37,7 @@ func TestResourceRoutes(t *testing.T) {
 			},
 			expected: []resourceRoute{
 				{role: meshCRUDListRoute, pathRole: primaryResourcePath},
-				{role: crossMeshListRoute, pathRole: primaryResourcePath},
 				{role: meshCRUDListRoute, pathRole: aliasResourcePath},
-				{role: crossMeshListRoute, pathRole: aliasResourcePath},
 			},
 		},
 		{
@@ -102,22 +99,18 @@ func TestRegisterResourceRoutes(t *testing.T) {
 					http.MethodDelete + " /meshes/{mesh}/resources/{name}",
 					http.MethodGet + " /meshes/{mesh}/resources/{name}",
 					http.MethodGet + " /meshes/{mesh}/resources",
-					http.MethodGet + " /resources",
 					http.MethodPut + " /meshes/{mesh}/resource-aliases/{name}",
 					http.MethodDelete + " /meshes/{mesh}/resource-aliases/{name}",
 					http.MethodGet + " /meshes/{mesh}/resource-aliases/{name}",
 					http.MethodGet + " /meshes/{mesh}/resource-aliases",
-					http.MethodGet + " /resource-aliases",
 				}))
 				g.Expect(metadataCalls).To(Equal([]string{
 					http.MethodPut,
 					http.MethodDelete,
 					http.MethodGet,
 					http.MethodGet,
-					http.MethodGet,
 					http.MethodPut,
 					http.MethodDelete,
-					http.MethodGet,
 					http.MethodGet,
 					http.MethodGet,
 				}))
