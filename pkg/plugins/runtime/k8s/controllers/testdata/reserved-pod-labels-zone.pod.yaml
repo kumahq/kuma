@@ -1,0 +1,22 @@
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: example
+    kuma.io/zone: zone-uni
+    kuma.io/env: universal
+    kuma.io/origin: global
+    kuma.io/kds-sync: disabled
+    kuma.io/mesh: other-mesh
+    kuma.io/display-name: custom
+    kuma.io/proxy-type: gateway
+    kuma.io/workload: custom-workload
+    k8s.kuma.io/namespace: other-ns
+    k8s.kuma.io/service-account: other-sa
+spec:
+  serviceAccountName: default
+  containers:
+    - ports:
+        - containerPort: 8080
+status:
+  podIP: 192.168.0.1
