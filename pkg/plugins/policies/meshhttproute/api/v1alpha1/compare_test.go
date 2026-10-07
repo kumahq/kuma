@@ -130,6 +130,28 @@ var _ = Describe("SortRules", func() {
 			singleHeaderMatch,
 		}))
 	})
+	It("treats a match without a path as PathPrefix /", func() {
+		rootPrefixMatch := api.Match{
+			Path: &api.PathMatch{
+				Type:  api.PathPrefix,
+				Value: "/",
+			},
+		}
+		Expect(sort([]api.Match{
+			rootPrefixMatch,
+			singleHeaderMatch,
+		})).To(Equal([]api.Match{
+			singleHeaderMatch,
+			rootPrefixMatch,
+		}))
+		Expect(sort([]api.Match{
+			rootPrefixMatch,
+			methodMatch,
+		})).To(Equal([]api.Match{
+			methodMatch,
+			rootPrefixMatch,
+		}))
+	})
 	It("handles AND matches", func() {
 		Expect(sort([]api.Match{
 			exactMatch,

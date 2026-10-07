@@ -9,14 +9,16 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
+// rootPrefix is what Gateway API assumes for a match without a path, so such a
+// match ties with an explicit `PathPrefix /` and later criteria decide.
+var rootPrefix = PathMatch{Type: PathPrefix, Value: "/"}
+
 func comparePath(a *PathMatch, b *PathMatch) int {
-	switch {
-	case a != nil && b == nil:
-		return -1
-	case a == nil && b != nil:
-		return 1
-	case a == nil && b == nil:
-		return 0
+	if a == nil {
+		a = &rootPrefix
+	}
+	if b == nil {
+		b = &rootPrefix
 	}
 
 	switch {
