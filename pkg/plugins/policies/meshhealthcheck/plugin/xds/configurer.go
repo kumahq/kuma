@@ -275,6 +275,9 @@ func buildHealthCheck(conf api.Conf) *envoy_core.HealthCheck {
 	if conf.InitialJitter != nil {
 		hc.InitialJitter = util_proto.Duration(conf.InitialJitter.Duration)
 	}
+	if conf.UnhealthyInterval != nil {
+		hc.UnhealthyInterval = util_proto.Duration(conf.UnhealthyInterval.Duration)
+	}
 	if conf.IntervalJitter != nil {
 		hc.IntervalJitter = util_proto.Duration(conf.IntervalJitter.Duration)
 	}
