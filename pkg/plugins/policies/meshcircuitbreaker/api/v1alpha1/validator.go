@@ -87,6 +87,19 @@ func validateConnectionLimits(path validators.PathBuilder, limits *ConnectionLim
 	verr.Add(validators.ValidateIntegerGreaterThanZeroOrNil(path.Field("maxPendingRequests"), limits.MaxPendingRequests))
 	verr.Add(validators.ValidateIntegerGreaterThanZeroOrNil(path.Field("maxRetries"), limits.MaxRetries))
 	verr.Add(validators.ValidateIntegerGreaterThanZeroOrNil(path.Field("maxRequests"), limits.MaxRequests))
+	verr.Add(validateRetryBudget(path.Field("retryBudget"), limits.RetryBudget))
+
+	return verr
+}
+
+func validateRetryBudget(path validators.PathBuilder, retryBudget *RetryBudget) validators.ValidationError {
+	var verr validators.ValidationError
+	if retryBudget == nil {
+		return verr
+	}
+
+	verr.Add(validators.ValidatePercentageOrNil(path.Field("budgetPercent"), retryBudget.BudgetPercent))
+	verr.Add(validators.ValidateIntegerGreaterThanZeroOrNil(path.Field("minRetryConcurrency"), retryBudget.MinRetryConcurrency))
 
 	return verr
 }
