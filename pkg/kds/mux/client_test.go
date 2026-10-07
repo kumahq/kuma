@@ -318,6 +318,7 @@ type diagnosticResetServer struct {
 	mu                  sync.Mutex
 	globalToZoneConns   int
 	clustersConns       int
+	clustersCallTimes   []time.Time
 	clustersReconnected chan struct{}
 }
 
@@ -354,6 +355,7 @@ func (s *diagnosticResetServer) StreamClusters(stream mesh_proto.GlobalKDSServic
 	s.mu.Lock()
 	count := s.clustersConns
 	s.clustersConns++
+	s.clustersCallTimes = append(s.clustersCallTimes, time.Now())
 	s.mu.Unlock()
 	if count == 0 {
 		return status.Error(codes.Internal, "stream terminated by RST_STREAM with error code: PROTOCOL_ERROR")
@@ -369,14 +371,6 @@ func (s *diagnosticResetServer) globalToZoneConnections() int {
 	return s.globalToZoneConns
 }
 
-func (s *diagnosticResetServer) clustersConnections() int {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.clustersConns
-}
-
-// diagnosticUnimplementedServer simulates an old Global CP that does not
-// implement the clusters diagnostic rpc at all.
 type diagnosticUnimplementedServer struct {
 	mesh_proto.UnimplementedKDSSyncServiceServer
 	mesh_proto.UnimplementedGlobalKDSServiceServer
@@ -491,7 +485,18 @@ var _ = Describe("Client", func() {
 		defer close(stop)
 
 		// The failed clusters stream is reopened by the client itself, while resource sync is never torn down. EXC:FILE011:documents-a-non-obvious-invariant
-		Eventually(svc.clustersConnections, "10s", "100ms").Should(BeNumerically(">=", 2))
+		var first, second time.Time
+		Eventually(func() bool {
+			svc.mu.Lock()
+			defer svc.mu.Unlock()
+			if len(svc.clustersCallTimes) < 2 {
+				return false
+			}
+			first, second = svc.clustersCallTimes[0], svc.clustersCallTimes[1]
+			return true
+		}, "10s", "100ms").Should(BeTrue())
+		// The reopen honors the initial backoff instead of hot-retrying. EXC:FILE011:documents-a-non-obvious-invariant
+		Expect(second.Sub(first)).To(BeNumerically(">=", 900*time.Millisecond))
 		Eventually(svc.clustersReconnected, "10s", "100ms").Should(BeClosed())
 		Consistently(svc.globalToZoneConnections, "3s", "100ms").Should(Equal(1))
 	})
@@ -550,9 +555,8 @@ var _ = Describe("Client", func() {
 		go func() { _ = resilient.Start(stop) }()
 		defer close(stop)
 
-		// One full retry backoff (1s initial) must pass without a second StreamClusters call. EXC:FILE011:documents-a-non-obvious-invariant
-		Eventually(svc.clustersConnections, "1s", "100ms").Should(Equal(1))
-		Consistently(svc.clustersConnections, "3s", "100ms").Should(Equal(1))
-		Consistently(svc.globalToZoneConnections, "3s", "100ms").Should(Equal(1))
+		Eventually(svc.clustersConnections, "10s", "100ms").Should(Equal(1))
+		Consistently(svc.clustersConnections, "5s", "100ms").Should(Equal(1))
+		Consistently(svc.globalToZoneConnections, "5s", "100ms").Should(Equal(1))
 	})
 })

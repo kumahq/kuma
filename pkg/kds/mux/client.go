@@ -381,6 +381,7 @@ func (c *client) runDiagnosticRPC[
 ) {
 	backoff := diagnosticRPCInitialBackoff
 	for ctx.Err() == nil {
+		attemptStart := time.Now()
 		stream, err := open(ctx)
 		if err == nil {
 			processingErrorsCh := startProcessing(stream)
@@ -391,6 +392,10 @@ func (c *client) runDiagnosticRPC[
 		}
 		if classifyDiagnosticStreamError(log, err) != reopenDiagnosticStream {
 			return
+		}
+		// A long-lived stream was healthy, not failing: reset the backoff so repeated idle resets do not pin it at the cap. EXC:FILE011:documents-a-non-obvious-invariant
+		if attempt := time.Since(attemptStart); attempt > backoff {
+			backoff = diagnosticRPCInitialBackoff
 		}
 		select {
 		case <-time.After(backoff):
