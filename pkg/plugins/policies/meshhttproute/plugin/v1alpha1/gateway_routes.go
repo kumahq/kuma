@@ -399,10 +399,8 @@ func makeHttpRouteEntry(
 		}
 	}
 
-	// A rule with neither backends nor a redirect reaches a gateway from a
-	// top-level Mesh route, where backendRefs are not required. Envoy rejects a
-	// route without an action together with the whole route configuration, so
-	// treat it like an unresolved backend instead of taking the listener down.
+	// Top-level Mesh routes don't require backendRefs; a route without an action
+	// fails snapshot validation and blocks every xDS update for the gateway.
 	if len(entry.Action.Forward) == 0 && entry.Action.Redirect == nil {
 		entry.Action.Forward = []route.Destination{{
 			Destination:   map[string]string{mesh_proto.ServiceTag: metadata.UnresolvedBackendServiceTag},
