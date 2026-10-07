@@ -393,8 +393,8 @@ func (c *client) runDiagnosticRPC[
 		if classifyDiagnosticStreamError(log, err) != reopenDiagnosticStream {
 			return
 		}
-		// A long-lived stream was healthy, not failing: reset the backoff so repeated idle resets do not pin it at the cap. EXC:FILE011:documents-a-non-obvious-invariant
-		if attempt := time.Since(attemptStart); attempt > backoff {
+		// A stream that outlived the initial backoff was working, not failing fast: reset the backoff so any reset cadence recovers from the cap, not only one above it. EXC:FILE011:documents-a-non-obvious-invariant
+		if attempt := time.Since(attemptStart); attempt > diagnosticRPCInitialBackoff {
 			backoff = diagnosticRPCInitialBackoff
 		}
 		select {
