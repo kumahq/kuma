@@ -203,6 +203,7 @@ type envoyAdminErrServer struct {
 	mesh_proto.UnimplementedGlobalKDSServiceServer
 	mu                sync.Mutex
 	globalToZoneConns int
+	xdsConfigsConns   int
 }
 
 func (s *envoyAdminErrServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
@@ -225,6 +226,9 @@ func (s *envoyAdminErrServer) HealthCheck(_ context.Context, _ *mesh_proto.ZoneH
 }
 
 func (s *envoyAdminErrServer) StreamXDSConfigs(_ mesh_proto.GlobalKDSService_StreamXDSConfigsServer) error {
+	s.mu.Lock()
+	s.xdsConfigsConns++
+	s.mu.Unlock()
 	return status.Error(codes.ResourceExhausted, "could not receive a message: grpc: received message after decompression larger than max (20000000 vs. 10485760)")
 }
 
@@ -302,6 +306,17 @@ var _ = Describe("Client", func() {
 		go func() { _ = resilient.Start(stop) }()
 		defer close(stop)
 
+		// Retrying the oversized message would resend it in a loop, so the stream must be opened exactly once. EXC:FILE011:documents-a-non-obvious-invariant
+		Eventually(func() int {
+			svc.mu.Lock()
+			defer svc.mu.Unlock()
+			return svc.xdsConfigsConns
+		}, "10s", "100ms").Should(Equal(1))
+		Consistently(func() int {
+			svc.mu.Lock()
+			defer svc.mu.Unlock()
+			return svc.xdsConfigsConns
+		}, "3s", "100ms").Should(Equal(1))
 		Eventually(svc.connections, "10s", "100ms").Should(Equal(1))
 		// The failing rpc stays down, everything else keeps running on the
 		// same connection.
