@@ -22,4 +22,8 @@ spec:
             name: {{ include "kuma.controlPlane.serviceName" . }}
             port:
               number: {{ .Values.controlPlane.ingress.servicePort }}
+  {{- with .Values.controlPlane.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 {{- end }}
