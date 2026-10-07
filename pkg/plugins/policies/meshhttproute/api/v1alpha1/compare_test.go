@@ -151,6 +151,44 @@ var _ = Describe("SortRules", func() {
 			methodMatch,
 			rootPrefixMatch,
 		}))
+		queryParamMatch := api.Match{
+			QueryParams: &[]api.QueryParamsMatch{{
+				Type:  api.ExactQueryMatch,
+				Name:  "param",
+				Value: "value",
+			}},
+		}
+		Expect(sort([]api.Match{
+			rootPrefixMatch,
+			queryParamMatch,
+		})).To(Equal([]api.Match{
+			queryParamMatch,
+			rootPrefixMatch,
+		}))
+		// Equal on every criterion, so input order is kept.
+		Expect(sort([]api.Match{
+			{},
+			rootPrefixMatch,
+		})).To(Equal([]api.Match{
+			{},
+			rootPrefixMatch,
+		}))
+		Expect(sort([]api.Match{
+			rootPrefixMatch,
+			{},
+		})).To(Equal([]api.Match{
+			rootPrefixMatch,
+			{},
+		}))
+		// Regex ordering is implementation-specific in Gateway API; a prefix,
+		// including the implied root prefix, ranks above any regex.
+		Expect(sort([]api.Match{
+			regexMatch,
+			singleHeaderMatch,
+		})).To(Equal([]api.Match{
+			singleHeaderMatch,
+			regexMatch,
+		}))
 	})
 	It("handles AND matches", func() {
 		Expect(sort([]api.Match{
