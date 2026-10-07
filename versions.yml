@@ -84,6 +84,6 @@
   branch: release-2.14
 - edition: kuma
   version: preview
-  release: 2.15.x
+  release: 3.0.x
   branch: master
   label: dev
