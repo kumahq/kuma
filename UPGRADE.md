@@ -23,10 +23,14 @@ A match with a port next to a match without one is not a conflict either: the po
 
 An already applied policy with a conflict is not re-validated on upgrade.
 Instead of sending Envoy a listener it rejects or failing config generation, the control plane keeps the first match of the colliding pair in `appendMatch` order, drops the later one and names it in a debug log of the `MeshPassthrough` component.
+When the dropped match is `mysql` and the kept one is `tcp` on the same address and port, the TLS and HTTP inspectors stay disabled on that port, so `mysql` traffic keeps working through the `tcp` filter chain.
 
 **Action required**
 
 If a `MeshPassthrough` policy contains matches like the above, resolve the conflict (pick one protocol per port and one spelling per address), otherwise the next edit of the policy is rejected by validation.
+
+Upgrade every zone control plane to 2.14.6 before applying a policy the previous validator rejected, and before upgrading the global control plane to 3.0.
+A global control plane on 2.14.6 or 3.0 accepts such policies and syncs them to zones, and a zone on an older 2.14 patch fails to generate configuration for the proxies the policy selects, so they stop receiving updates.
 
 ### `MeshExternalService` TLS verification accepts the `SecureDataSource` shape
 

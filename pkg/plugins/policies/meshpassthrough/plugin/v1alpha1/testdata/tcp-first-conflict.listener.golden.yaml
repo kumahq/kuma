@@ -24,10 +24,18 @@ resources:
     - name: envoy.filters.listener.original_dst
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.original_dst.v3.OriginalDst
-    - name: envoy.filters.listener.tls_inspector
+    - filterDisabled:
+        destinationPortRange:
+          end: 3307
+          start: 3306
+      name: envoy.filters.listener.tls_inspector
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-    - name: envoy.filters.listener.http_inspector
+    - filterDisabled:
+        destinationPortRange:
+          end: 3307
+          start: 3306
+      name: envoy.filters.listener.http_inspector
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.http_inspector.v3.HttpInspector
     name: outbound:passthrough:ipv4
