@@ -572,6 +572,15 @@ func (c *SidecarContainer) PostProcess() error {
 	)
 }
 
+func validatePullPolicy(pullPolicy string) error {
+	switch pullPolicy {
+	case "", "Always", "IfNotPresent", "Never":
+		return nil
+	default:
+		return errors.Errorf(".ImagePullPolicy must be one of 'Always', 'IfNotPresent' or 'Never'")
+	}
+}
+
 func (c *SidecarContainer) Validate() error {
 	var errs error
 	if c.Image == "" {
@@ -579,6 +588,9 @@ func (c *SidecarContainer) Validate() error {
 	}
 	if c.IpFamilyMode != "" && c.IpFamilyMode != "ipv4" && c.IpFamilyMode != "dualstack" {
 		errs = multierr.Append(errs, errors.Errorf(".IpFamilyMode must be either 'ipv4' or 'dualstack'"))
+	}
+	if err := validatePullPolicy(c.ImagePullPolicy); err != nil {
+		errs = multierr.Append(errs, err)
 	}
 	if 65535 < c.RedirectPortInbound {
 		errs = multierr.Append(errs, errors.Errorf(".RedirectPortInbound must be in the range [0, 65535]"))
@@ -615,6 +627,9 @@ func (c *InitContainer) Validate() error {
 	var errs error
 	if c.Image == "" {
 		errs = multierr.Append(errs, errors.Errorf(".Image must be non-empty"))
+	}
+	if err := validatePullPolicy(c.ImagePullPolicy); err != nil {
+		errs = multierr.Append(errs, err)
 	}
 	if err := c.Resources.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Resources is not valid"))
