@@ -79,6 +79,9 @@ var _ = Describe("Config loader", func() {
 				}
 
 				Expect(util_maps.AllKeys(testEnvs)).To(ConsistOf(util_maps.AllKeys(configEnvs)), "config values are not overridden in the test. Add overrides for them with a value that is different than default.")
+
+				Expect(cfg.Runtime.Kubernetes.Injector.InitContainer.ImagePullPolicy).To(Equal("Always"))
+				Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ImagePullPolicy).To(Equal("Never"))
 			}
 
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
@@ -926,6 +929,7 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE":                                            "/tmp/ca.crt",
 				"KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME":                                 "28s",
 				"KUMA_INJECTOR_INIT_CONTAINER_IMAGE":                                                       "test-image:test",
+				"KUMA_INJECTOR_INIT_CONTAINER_IMAGE_PULL_POLICY":                                           "Always",
 				"KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU":                                      "30m",
 				"KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY":                                   "30Mi",
 				"KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU":                                        "200m",
@@ -948,6 +952,7 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_DRAIN_TIME":                            "33s",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_GUI":                                   "1212",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE":                                 "image:test",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE_PULL_POLICY":                     "Never",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_INITIAL_DELAY_SECONDS":  "10",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_PERIOD_SECONDS":         "8",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_FAILURE_THRESHOLD":      "31",

@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"log/slog"
 	"time"
 
+	"github.com/KimMachineGun/automemlimit/memlimit"
+	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 
 	api_server "github.com/kumahq/kuma/v3/pkg/api-server"
@@ -49,6 +52,11 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 		Short: "Launch Control Plane",
 		Long:  `Launch Control Plane.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			// GOMEMLIMIT only covers memory the Go runtime manages, so leave the rest of the
+			// cgroup limit as headroom for what it does not, such as the mapped kuma-cp binary.
+			if _, err := memlimit.Set(memlimit.WithLogger(slog.New(logr.ToSlogHandler(runLog)))); err != nil {
+				runLog.Error(err, "unable to set GOMEMLIMIT from the cgroup memory limit")
+			}
 			cfg := kuma_cp.DefaultConfig()
 			err := config.Load(args.configPath, &cfg)
 			if err != nil {

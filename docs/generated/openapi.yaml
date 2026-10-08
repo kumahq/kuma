@@ -867,6 +867,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshaccesslogs:
+    post:
+      operationId: postMeshAccessLog
+      summary: Creates MeshAccessLog entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshAccessLog
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshAccessLogItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshAccessLogCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshAccessLogList
       summary: Returns a list of MeshAccessLog in the mesh.
@@ -908,45 +951,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshAccessLogList'
-  /meshaccesslogs:
-    get:
-      operationId: getMeshAccessLogListAllMeshes
-      summary: Returns a list of MeshAccessLog across all meshes.
-      tags:
-        - MeshAccessLog
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshAccessLogList'
@@ -1030,6 +1034,50 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshcircuitbreakers:
+    post:
+      operationId: postMeshCircuitBreaker
+      summary: Creates MeshCircuitBreaker entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshCircuitBreaker
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshCircuitBreakerItem'
+      responses:
+        '201':
+          $ref: >-
+            #/components/responses/MeshCircuitBreakerCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshCircuitBreakerList
       summary: Returns a list of MeshCircuitBreaker in the mesh.
@@ -1071,45 +1119,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshCircuitBreakerList'
-  /meshcircuitbreakers:
-    get:
-      operationId: getMeshCircuitBreakerListAllMeshes
-      summary: Returns a list of MeshCircuitBreaker across all meshes.
-      tags:
-        - MeshCircuitBreaker
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshCircuitBreakerList'
@@ -1193,6 +1202,50 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshfaultinjections:
+    post:
+      operationId: postMeshFaultInjection
+      summary: Creates MeshFaultInjection entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshFaultInjection
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshFaultInjectionItem'
+      responses:
+        '201':
+          $ref: >-
+            #/components/responses/MeshFaultInjectionCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshFaultInjectionList
       summary: Returns a list of MeshFaultInjection in the mesh.
@@ -1234,45 +1287,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshFaultInjectionList'
-  /meshfaultinjections:
-    get:
-      operationId: getMeshFaultInjectionListAllMeshes
-      summary: Returns a list of MeshFaultInjection across all meshes.
-      tags:
-        - MeshFaultInjection
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshFaultInjectionList'
@@ -1354,6 +1368,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshhealthchecks:
+    post:
+      operationId: postMeshHealthCheck
+      summary: Creates MeshHealthCheck entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshHealthCheck
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshHealthCheckItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshHealthCheckCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshHealthCheckList
       summary: Returns a list of MeshHealthCheck in the mesh.
@@ -1395,45 +1452,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshHealthCheckList'
-  /meshhealthchecks:
-    get:
-      operationId: getMeshHealthCheckListAllMeshes
-      summary: Returns a list of MeshHealthCheck across all meshes.
-      tags:
-        - MeshHealthCheck
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshHealthCheckList'
@@ -1515,6 +1533,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshhttproutes:
+    post:
+      operationId: postMeshHTTPRoute
+      summary: Creates MeshHTTPRoute entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshHTTPRoute
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshHTTPRouteItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshHTTPRouteCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshHTTPRouteList
       summary: Returns a list of MeshHTTPRoute in the mesh.
@@ -1556,45 +1617,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshHTTPRouteList'
-  /meshhttproutes:
-    get:
-      operationId: getMeshHTTPRouteListAllMeshes
-      summary: Returns a list of MeshHTTPRoute across all meshes.
-      tags:
-        - MeshHTTPRoute
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshHTTPRouteList'
@@ -1679,6 +1701,50 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshloadbalancingstrategies:
+    post:
+      operationId: postMeshLoadBalancingStrategy
+      summary: Creates MeshLoadBalancingStrategy entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshLoadBalancingStrategy
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshLoadBalancingStrategyItem'
+      responses:
+        '201':
+          $ref: >-
+            #/components/responses/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshLoadBalancingStrategyList
       summary: Returns a list of MeshLoadBalancingStrategy in the mesh.
@@ -1720,45 +1786,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshLoadBalancingStrategyList'
-  /meshloadbalancingstrategies:
-    get:
-      operationId: getMeshLoadBalancingStrategyListAllMeshes
-      summary: Returns a list of MeshLoadBalancingStrategy across all meshes.
-      tags:
-        - MeshLoadBalancingStrategy
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshLoadBalancingStrategyList'
@@ -1840,6 +1867,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshmetrics:
+    post:
+      operationId: postMeshMetric
+      summary: Creates MeshMetric entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshMetric
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshMetricItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshMetricCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshMetricList
       summary: Returns a list of MeshMetric in the mesh.
@@ -1881,45 +1951,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshMetricList'
-  /meshmetrics:
-    get:
-      operationId: getMeshMetricListAllMeshes
-      summary: Returns a list of MeshMetric across all meshes.
-      tags:
-        - MeshMetric
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshMetricList'
@@ -2001,6 +2032,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshpassthroughs:
+    post:
+      operationId: postMeshPassthrough
+      summary: Creates MeshPassthrough entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshPassthrough
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshPassthroughItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshPassthroughCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshPassthroughList
       summary: Returns a list of MeshPassthrough in the mesh.
@@ -2042,45 +2116,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshPassthroughList'
-  /meshpassthroughs:
-    get:
-      operationId: getMeshPassthroughListAllMeshes
-      summary: Returns a list of MeshPassthrough across all meshes.
-      tags:
-        - MeshPassthrough
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshPassthroughList'
@@ -2162,6 +2197,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshproxypatches:
+    post:
+      operationId: postMeshProxyPatch
+      summary: Creates MeshProxyPatch entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshProxyPatch
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshProxyPatchItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshProxyPatchCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshProxyPatchList
       summary: Returns a list of MeshProxyPatch in the mesh.
@@ -2203,45 +2281,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshProxyPatchList'
-  /meshproxypatches:
-    get:
-      operationId: getMeshProxyPatchListAllMeshes
-      summary: Returns a list of MeshProxyPatch across all meshes.
-      tags:
-        - MeshProxyPatch
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshProxyPatchList'
@@ -2323,6 +2362,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshratelimits:
+    post:
+      operationId: postMeshRateLimit
+      summary: Creates MeshRateLimit entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshRateLimit
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshRateLimitItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshRateLimitCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshRateLimitList
       summary: Returns a list of MeshRateLimit in the mesh.
@@ -2364,45 +2446,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshRateLimitList'
-  /meshratelimits:
-    get:
-      operationId: getMeshRateLimitListAllMeshes
-      summary: Returns a list of MeshRateLimit across all meshes.
-      tags:
-        - MeshRateLimit
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshRateLimitList'
@@ -2484,6 +2527,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshretries:
+    post:
+      operationId: postMeshRetry
+      summary: Creates MeshRetry entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshRetry
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshRetryItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshRetryCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshRetryList
       summary: Returns a list of MeshRetry in the mesh.
@@ -2525,45 +2611,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshRetryList'
-  /meshretries:
-    get:
-      operationId: getMeshRetryListAllMeshes
-      summary: Returns a list of MeshRetry across all meshes.
-      tags:
-        - MeshRetry
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshRetryList'
@@ -2645,6 +2692,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtcproutes:
+    post:
+      operationId: postMeshTCPRoute
+      summary: Creates MeshTCPRoute entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshTCPRoute
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshTCPRouteItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshTCPRouteCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshTCPRouteList
       summary: Returns a list of MeshTCPRoute in the mesh.
@@ -2686,45 +2776,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshTCPRouteList'
-  /meshtcproutes:
-    get:
-      operationId: getMeshTCPRouteListAllMeshes
-      summary: Returns a list of MeshTCPRoute across all meshes.
-      tags:
-        - MeshTCPRoute
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshTCPRouteList'
@@ -2806,6 +2857,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtimeouts:
+    post:
+      operationId: postMeshTimeout
+      summary: Creates MeshTimeout entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshTimeout
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshTimeoutItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshTimeoutCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshTimeoutList
       summary: Returns a list of MeshTimeout in the mesh.
@@ -2847,45 +2941,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshTimeoutList'
-  /meshtimeouts:
-    get:
-      operationId: getMeshTimeoutListAllMeshes
-      summary: Returns a list of MeshTimeout across all meshes.
-      tags:
-        - MeshTimeout
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshTimeoutList'
@@ -2967,6 +3022,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtlses:
+    post:
+      operationId: postMeshTLS
+      summary: Creates MeshTLS entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshTLS
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshTLSItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshTLSCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshTLSList
       summary: Returns a list of MeshTLS in the mesh.
@@ -3008,45 +3106,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshTLSList'
-  /meshtlses:
-    get:
-      operationId: getMeshTLSListAllMeshes
-      summary: Returns a list of MeshTLS across all meshes.
-      tags:
-        - MeshTLS
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshTLSList'
@@ -3128,6 +3187,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtraces:
+    post:
+      operationId: postMeshTrace
+      summary: Creates MeshTrace entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshTrace
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshTraceItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshTraceCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshTraceList
       summary: Returns a list of MeshTrace in the mesh.
@@ -3169,45 +3271,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshTraceList'
-  /meshtraces:
-    get:
-      operationId: getMeshTraceListAllMeshes
-      summary: Returns a list of MeshTrace across all meshes.
-      tags:
-        - MeshTrace
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshTraceList'
@@ -3291,6 +3354,50 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtrafficpermissions:
+    post:
+      operationId: postMeshTrafficPermission
+      summary: Creates MeshTrafficPermission entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshTrafficPermission
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshTrafficPermissionItem'
+      responses:
+        '201':
+          $ref: >-
+            #/components/responses/MeshTrafficPermissionCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshTrafficPermissionList
       summary: Returns a list of MeshTrafficPermission in the mesh.
@@ -3335,84 +3442,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTrafficPermissionList'
-  /meshtrafficpermissions:
-    get:
-      operationId: getMeshTrafficPermissionListAllMeshes
-      summary: Returns a list of MeshTrafficPermission across all meshes.
-      tags:
-        - MeshTrafficPermission
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshTrafficPermissionList'
-  /dataplanes:
-    get:
-      operationId: getDataplaneListAllMeshes
-      parameters:
-        - description: offset in the list of entities
-          in: query
-          name: offset
-          required: false
-          schema:
-            example: 0
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-      responses:
-        '200':
-          $ref: '#/components/responses/DataplaneList'
-      summary: Returns a list of Dataplane across all meshes.
-      tags:
-        - Dataplane
   /meshes/{mesh}/dataplanes:
     get:
       operationId: getDataplaneList
@@ -3456,6 +3485,49 @@ paths:
         '200':
           $ref: '#/components/responses/DataplaneList'
       summary: Returns a list of Dataplane in the mesh.
+      tags:
+        - Dataplane
+    post:
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      operationId: postDataplane
+      parameters:
+        - description: name of the mesh
+          in: path
+          name: mesh
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataplaneItem'
+        description: Resource to create
+        required: true
+      responses:
+        '201':
+          $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Invalid resource
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+          description: Parent mesh not found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: A resource with this identity already exists
+      summary: Creates Dataplane entity
       tags:
         - Dataplane
   /meshes/{mesh}/dataplanes/{name}:
@@ -3535,45 +3607,6 @@ paths:
       summary: Creates or Updates Dataplane entity
       tags:
         - Dataplane
-  /dataplane-insights:
-    get:
-      operationId: getDataplaneInsightListAllMeshes
-      parameters:
-        - description: offset in the list of entities
-          in: query
-          name: offset
-          required: false
-          schema:
-            example: 0
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-      responses:
-        '200':
-          $ref: '#/components/responses/DataplaneInsightList'
-      summary: Returns a list of DataplaneInsight across all meshes.
-      tags:
-        - DataplaneInsight
   /meshes/{mesh}/dataplane-insights:
     get:
       operationId: getDataplaneInsightList
@@ -3743,6 +3776,36 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /globalsecrets:
+    post:
+      operationId: postGlobalSecret
+      summary: Creates GlobalSecret entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - GlobalSecret
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalSecretItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getGlobalSecretList
       summary: Returns a list of GlobalSecret entities.
@@ -3828,6 +3891,36 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /global-secrets:
+    post:
+      operationId: postGlobalSecretAlias
+      summary: Creates GlobalSecret entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - GlobalSecret
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalSecretItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getGlobalSecretListAlias
       summary: Returns a list of GlobalSecret entities.
@@ -3890,6 +3983,36 @@ paths:
         '200':
           $ref: '#/components/responses/MeshList'
       summary: Returns a list of Mesh.
+      tags:
+        - Mesh
+    post:
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      operationId: postMesh
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshItem'
+        description: Resource to create
+        required: true
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Invalid resource
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: A resource with this identity already exists
+      summary: Creates Mesh entity
       tags:
         - Mesh
   /meshes/{name}:
@@ -4073,6 +4196,49 @@ paths:
       summary: Returns a list of Secret in the mesh.
       tags:
         - Secret
+    post:
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      operationId: postSecret
+      parameters:
+        - description: name of the mesh
+          in: path
+          name: mesh
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecretItem'
+        description: Resource to create
+        required: true
+      responses:
+        '201':
+          $ref: '#/components/responses/SecretCreateOrUpdateSuccessResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Invalid resource
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+          description: Parent mesh not found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: A resource with this identity already exists
+      summary: Creates Secret entity
+      tags:
+        - Secret
   /meshes/{mesh}/secrets/{name}:
     delete:
       operationId: deleteSecret
@@ -4150,45 +4316,6 @@ paths:
       summary: Creates or Updates Secret entity
       tags:
         - Secret
-  /secrets:
-    get:
-      operationId: getSecretListAllMeshes
-      parameters:
-        - description: offset in the list of entities
-          in: query
-          name: offset
-          required: false
-          schema:
-            example: 0
-            type: integer
-        - description: the number of items per page
-          in: query
-          name: size
-          required: false
-          schema:
-            default: 100
-            maximum: 1000
-            minimum: 1
-            type: integer
-        - description: filter by labels when multiple filters are present, they are ANDed
-          example:
-            label.k8s.kuma.io/namespace: my-ns
-          in: query
-          name: filter
-          required: false
-          schema:
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-            type: object
-      responses:
-        '200':
-          $ref: '#/components/responses/SecretList'
-      summary: Returns a list of Secret across all meshes.
-      tags:
-        - Secret
   /zones:
     get:
       operationId: getZoneList
@@ -4226,6 +4353,36 @@ paths:
         '200':
           $ref: '#/components/responses/ZoneList'
       summary: Returns a list of Zone.
+      tags:
+        - Zone
+    post:
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      operationId: postZone
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZoneItem'
+        description: Resource to create
+        required: true
+      responses:
+        '201':
+          $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Invalid resource
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: A resource with this identity already exists
+      summary: Creates Zone entity
       tags:
         - Zone
   /zones/{name}:
@@ -4433,6 +4590,37 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /hostnamegenerators:
+    post:
+      operationId: postHostnameGenerator
+      summary: Creates HostnameGenerator entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - HostnameGenerator
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HostnameGeneratorItem'
+      responses:
+        '201':
+          $ref: >-
+            #/components/responses/HostnameGeneratorCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getHostnameGeneratorList
       summary: Returns a list of HostnameGenerator.
@@ -4551,6 +4739,50 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshexternalservices:
+    post:
+      operationId: postMeshExternalService
+      summary: Creates MeshExternalService entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshExternalService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshExternalServiceItem'
+      responses:
+        '201':
+          $ref: >-
+            #/components/responses/MeshExternalServiceCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshExternalServiceList
       summary: Returns a list of MeshExternalService in the mesh.
@@ -4592,45 +4824,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshExternalServiceList'
-  /meshexternalservices:
-    get:
-      operationId: getMeshExternalServiceListAllMeshes
-      summary: Returns a list of MeshExternalService across all meshes.
-      tags:
-        - MeshExternalService
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshExternalServiceList'
@@ -4712,6 +4905,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshidentities:
+    post:
+      operationId: postMeshIdentity
+      summary: Creates MeshIdentity entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshIdentity
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshIdentityItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshIdentityCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshIdentityList
       summary: Returns a list of MeshIdentity in the mesh.
@@ -4753,45 +4989,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshIdentityList'
-  /meshidentities:
-    get:
-      operationId: getMeshIdentityListAllMeshes
-      summary: Returns a list of MeshIdentity across all meshes.
-      tags:
-        - MeshIdentity
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshIdentityList'
@@ -4875,6 +5072,50 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshmultizoneservices:
+    post:
+      operationId: postMeshMultiZoneService
+      summary: Creates MeshMultiZoneService entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshMultiZoneService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshMultiZoneServiceItem'
+      responses:
+        '201':
+          $ref: >-
+            #/components/responses/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshMultiZoneServiceList
       summary: Returns a list of MeshMultiZoneService in the mesh.
@@ -4916,45 +5157,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshMultiZoneServiceList'
-  /meshmultizoneservices:
-    get:
-      operationId: getMeshMultiZoneServiceListAllMeshes
-      summary: Returns a list of MeshMultiZoneService across all meshes.
-      tags:
-        - MeshMultiZoneService
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshMultiZoneServiceList'
@@ -5038,6 +5240,50 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshopentelemetrybackends:
+    post:
+      operationId: postMeshOpenTelemetryBackend
+      summary: Creates MeshOpenTelemetryBackend entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshOpenTelemetryBackend
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshOpenTelemetryBackendItem'
+      responses:
+        '201':
+          $ref: >-
+            #/components/responses/MeshOpenTelemetryBackendCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshOpenTelemetryBackendList
       summary: Returns a list of MeshOpenTelemetryBackend in the mesh.
@@ -5079,45 +5325,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshOpenTelemetryBackendList'
-  /meshopentelemetrybackends:
-    get:
-      operationId: getMeshOpenTelemetryBackendListAllMeshes
-      summary: Returns a list of MeshOpenTelemetryBackend across all meshes.
-      tags:
-        - MeshOpenTelemetryBackend
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshOpenTelemetryBackendList'
@@ -5199,6 +5406,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshservices:
+    post:
+      operationId: postMeshService
+      summary: Creates MeshService entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshServiceItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshServiceCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshServiceList
       summary: Returns a list of MeshService in the mesh.
@@ -5240,45 +5490,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshServiceList'
-  /meshservices:
-    get:
-      operationId: getMeshServiceListAllMeshes
-      summary: Returns a list of MeshService across all meshes.
-      tags:
-        - MeshService
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshServiceList'
@@ -5360,6 +5571,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtrusts:
+    post:
+      operationId: postMeshTrust
+      summary: Creates MeshTrust entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshTrust
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshTrustItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshTrustCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshTrustList
       summary: Returns a list of MeshTrust in the mesh.
@@ -5401,45 +5655,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshTrustList'
-  /meshtrusts:
-    get:
-      operationId: getMeshTrustListAllMeshes
-      summary: Returns a list of MeshTrust across all meshes.
-      tags:
-        - MeshTrust
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshTrustList'
@@ -5521,6 +5736,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshzoneaddresses:
+    post:
+      operationId: postMeshZoneAddress
+      summary: Creates MeshZoneAddress entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - MeshZoneAddress
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshZoneAddressItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshZoneAddressCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getMeshZoneAddressList
       summary: Returns a list of MeshZoneAddress in the mesh.
@@ -5562,45 +5820,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshZoneAddressList'
-  /meshzoneaddresses:
-    get:
-      operationId: getMeshZoneAddressListAllMeshes
-      summary: Returns a list of MeshZoneAddress across all meshes.
-      tags:
-        - MeshZoneAddress
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshZoneAddressList'
@@ -5682,6 +5901,49 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/workloads:
+    post:
+      operationId: postWorkload
+      summary: Creates Workload entity
+      description: >-
+        Creates a resource using the name in the body. An existing resource is
+        never modified. Requires Kuma 3.0 or later.
+      tags:
+        - Workload
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkloadItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/WorkloadCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       operationId: getWorkloadList
       summary: Returns a list of Workload in the mesh.
@@ -5723,45 +5985,6 @@ paths:
             type: string
           required: true
           description: name of the mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/WorkloadList'
-  /workloads:
-    get:
-      operationId: getWorkloadListAllMeshes
-      summary: Returns a list of Workload across all meshes.
-      tags:
-        - Workload
-      parameters:
-        - in: query
-          name: offset
-          description: offset in the list of entities
-          required: false
-          schema:
-            type: integer
-            example: 0
-        - in: query
-          name: size
-          description: the number of items per page
-          required: false
-          schema:
-            type: integer
-            default: 100
-            maximum: 1000
-            minimum: 1
-        - in: query
-          name: filter
-          description: filter by labels when multiple filters are present, they are ANDed
-          required: false
-          schema:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                type: string
-          example:
-            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/WorkloadList'
@@ -7589,17 +7812,6 @@ components:
                                   required:
                                     - type
                                   type: object
-                                  oneOf:
-                                    - properties:
-                                        plain: {}
-                                        type:
-                                          enum:
-                                            - Plain
-                                    - properties:
-                                        json: {}
-                                        type:
-                                          enum:
-                                            - Json
                                 path:
                                   description: Path to a file that logs will be written to
                                   example: /tmp/access.log
@@ -7727,17 +7939,6 @@ components:
                                   required:
                                     - type
                                   type: object
-                                  oneOf:
-                                    - properties:
-                                        plain: {}
-                                        type:
-                                          enum:
-                                            - Plain
-                                    - properties:
-                                        json: {}
-                                        type:
-                                          enum:
-                                            - Json
                               required:
                                 - address
                               type: object
@@ -7750,22 +7951,6 @@ components:
                           required:
                             - type
                           type: object
-                          oneOf:
-                            - properties:
-                                tcp: {}
-                                type:
-                                  enum:
-                                    - Tcp
-                            - properties:
-                                file: {}
-                                type:
-                                  enum:
-                                    - File
-                            - properties:
-                                openTelemetry: {}
-                                type:
-                                  enum:
-                                    - OpenTelemetry
                         type: array
                     type: object
                   matches:
@@ -7929,17 +8114,6 @@ components:
                                   required:
                                     - type
                                   type: object
-                                  oneOf:
-                                    - properties:
-                                        plain: {}
-                                        type:
-                                          enum:
-                                            - Plain
-                                    - properties:
-                                        json: {}
-                                        type:
-                                          enum:
-                                            - Json
                                 path:
                                   description: Path to a file that logs will be written to
                                   example: /tmp/access.log
@@ -8067,17 +8241,6 @@ components:
                                   required:
                                     - type
                                   type: object
-                                  oneOf:
-                                    - properties:
-                                        plain: {}
-                                        type:
-                                          enum:
-                                            - Plain
-                                    - properties:
-                                        json: {}
-                                        type:
-                                          enum:
-                                            - Json
                               required:
                                 - address
                               type: object
@@ -8090,22 +8253,6 @@ components:
                           required:
                             - type
                           type: object
-                          oneOf:
-                            - properties:
-                                tcp: {}
-                                type:
-                                  enum:
-                                    - Tcp
-                            - properties:
-                                file: {}
-                                type:
-                                  enum:
-                                    - File
-                            - properties:
-                                openTelemetry: {}
-                                type:
-                                  enum:
-                                    - OpenTelemetry
                         type: array
                     type: object
                   targetRef:
@@ -10001,17 +10148,6 @@ components:
                                               required:
                                                 - type
                                               type: object
-                                              oneOf:
-                                                - properties:
-                                                    replaceFullPath: {}
-                                                    type:
-                                                      enum:
-                                                        - ReplaceFullPath
-                                                - properties:
-                                                    replacePrefixMatch: {}
-                                                    type:
-                                                      enum:
-                                                        - ReplacePrefixMatch
                                             port:
                                               description: >-
                                                 Port is the port to be used in the value
@@ -10138,47 +10274,10 @@ components:
                                               required:
                                                 - type
                                               type: object
-                                              oneOf:
-                                                - properties:
-                                                    replaceFullPath: {}
-                                                    type:
-                                                      enum:
-                                                        - ReplaceFullPath
-                                                - properties:
-                                                    replacePrefixMatch: {}
-                                                    type:
-                                                      enum:
-                                                        - ReplacePrefixMatch
                                           type: object
                                       required:
                                         - type
                                       type: object
-                                      oneOf:
-                                        - properties:
-                                            requestHeaderModifier: {}
-                                            type:
-                                              enum:
-                                                - RequestHeaderModifier
-                                        - properties:
-                                            responseHeaderModifier: {}
-                                            type:
-                                              enum:
-                                                - ResponseHeaderModifier
-                                        - properties:
-                                            requestRedirect: {}
-                                            type:
-                                              enum:
-                                                - RequestRedirect
-                                        - properties:
-                                            type:
-                                              enum:
-                                                - URLRewrite
-                                            urlRewrite: {}
-                                        - properties:
-                                            requestMirror: {}
-                                            type:
-                                              enum:
-                                                - RequestMirror
                                     type: array
                                   kind:
                                     description: Kind of the referenced resource
@@ -10378,17 +10477,6 @@ components:
                                         required:
                                           - type
                                         type: object
-                                        oneOf:
-                                          - properties:
-                                              replaceFullPath: {}
-                                              type:
-                                                enum:
-                                                  - ReplaceFullPath
-                                          - properties:
-                                              replacePrefixMatch: {}
-                                              type:
-                                                enum:
-                                                  - ReplacePrefixMatch
                                       port:
                                         description: >-
                                           Port is the port to be used in the value
@@ -10515,47 +10603,10 @@ components:
                                         required:
                                           - type
                                         type: object
-                                        oneOf:
-                                          - properties:
-                                              replaceFullPath: {}
-                                              type:
-                                                enum:
-                                                  - ReplaceFullPath
-                                          - properties:
-                                              replacePrefixMatch: {}
-                                              type:
-                                                enum:
-                                                  - ReplacePrefixMatch
                                     type: object
                                 required:
                                   - type
                                 type: object
-                                oneOf:
-                                  - properties:
-                                      requestHeaderModifier: {}
-                                      type:
-                                        enum:
-                                          - RequestHeaderModifier
-                                  - properties:
-                                      responseHeaderModifier: {}
-                                      type:
-                                        enum:
-                                          - ResponseHeaderModifier
-                                  - properties:
-                                      requestRedirect: {}
-                                      type:
-                                        enum:
-                                          - RequestRedirect
-                                  - properties:
-                                      type:
-                                        enum:
-                                          - URLRewrite
-                                      urlRewrite: {}
-                                  - properties:
-                                      requestMirror: {}
-                                      type:
-                                        enum:
-                                          - RequestMirror
                               type: array
                           type: object
                         matches:
@@ -11343,32 +11394,6 @@ components:
                           required:
                             - type
                           type: object
-                          oneOf:
-                            - properties:
-                                header: {}
-                                type:
-                                  enum:
-                                    - Header
-                            - properties:
-                                cookie: {}
-                                type:
-                                  enum:
-                                    - Cookie
-                            - properties:
-                                connection: {}
-                                type:
-                                  enum:
-                                    - Connection
-                            - properties:
-                                queryParameter: {}
-                                type:
-                                  enum:
-                                    - QueryParameter
-                            - properties:
-                                filterState: {}
-                                type:
-                                  enum:
-                                    - FilterState
                         type: array
                       loadBalancer:
                         description: >-
@@ -11528,32 +11553,6 @@ components:
                         required:
                           - type
                         type: object
-                        oneOf:
-                          - properties:
-                              roundRobin: {}
-                              type:
-                                enum:
-                                  - RoundRobin
-                          - properties:
-                              leastRequest: {}
-                              type:
-                                enum:
-                                  - LeastRequest
-                          - properties:
-                              ringHash: {}
-                              type:
-                                enum:
-                                  - RingHash
-                          - properties:
-                              random: {}
-                              type:
-                                enum:
-                                  - Random
-                          - properties:
-                              maglev: {}
-                              type:
-                                enum:
-                                  - Maglev
                       localityAwareness:
                         description: >-
                           LocalityAwareness contains configuration for locality
@@ -11919,17 +11918,6 @@ components:
                     required:
                       - type
                     type: object
-                    oneOf:
-                      - properties:
-                          prometheus: {}
-                          type:
-                            enum:
-                              - Prometheus
-                      - properties:
-                          openTelemetry: {}
-                          type:
-                            enum:
-                              - OpenTelemetry
                   type: array
                 sidecar:
                   description: Sidecar metrics collection configuration
@@ -14989,22 +14977,6 @@ components:
                     required:
                       - type
                     type: object
-                    oneOf:
-                      - properties:
-                          type:
-                            enum:
-                              - Zipkin
-                          zipkin: {}
-                      - properties:
-                          datadog: {}
-                          type:
-                            enum:
-                              - Datadog
-                      - properties:
-                          openTelemetry: {}
-                          type:
-                            enum:
-                              - OpenTelemetry
                   maxItems: 1
                   type: array
                 sampling:
@@ -18067,22 +18039,6 @@ components:
               required:
                 - type
               type: object
-              oneOf:
-                - properties:
-                    bundled: {}
-                    type:
-                      enum:
-                        - Bundled
-                - properties:
-                    spire: {}
-                    type:
-                      enum:
-                        - Spire
-                - properties:
-                    extension: {}
-                    type:
-                      enum:
-                        - Extension
             selector:
               properties:
                 dataplane:
