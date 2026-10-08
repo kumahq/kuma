@@ -141,8 +141,15 @@ func ZoneIngressWithInboundTagsDisabled() {
 	})
 
 	It("should reach the Kubernetes MeshService from another zone after the backend moves", func() {
-		// a new pod has a new address, so the request succeeds only if the ingress config updates
+		// with a new address, the request succeeds only if the ingress config updates
+		oldIP, err := PodIPOfApp(zone1, "test-server", namespace)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(zone1.KillAppPod("test-server", namespace)).To(Succeed())
+		newIP, err := PodIPOfApp(zone1, "test-server", namespace)
+		Expect(err).ToNot(HaveOccurred())
+		AddReportEntry("test-server pod addresses", fmt.Sprintf("old %s, new %s", oldIP, newIP))
+		Expect(newIP).ToNot(BeEmpty())
+		Expect(newIP).ToNot(Equal(oldIP))
 
 		Eventually(func(g Gomega) {
 			resp, err := client.CollectEchoResponse(zone4, "zone4-demo-client", backendURL)
