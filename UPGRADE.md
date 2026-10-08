@@ -18,7 +18,47 @@ Before this change, the mode produced a plaintext endpoint.
 
 Give each remote scraper a client certificate that the mesh trusts before the upgrade. To keep a plaintext endpoint, set the mode to `Disabled`.
 
-MADS now sends `https` for this mode. A Prometheus server in the mesh with `kuma.io/direct-access-services` gets the mesh certificate from its sidecar only with mesh mTLS. For that Prometheus server, set the scrape scheme to `http`.
+MADS now sends `https` for this mode. The hint does not supply a client certificate. A remote scraper must use `https` and its own client certificate.
+
+Only one 2.14 setup needs `http`. It has all of these conditions:
+
+- The mesh has mesh mTLS and an enabled `Mesh.metrics` Prometheus backend.
+- The Prometheus server runs in the mesh with `kuma.io/direct-access-services`, for example from `kumactl install observability`.
+- The `ActiveMTLSBackend` backend uses the same port as `Mesh.metrics`.
+- The Prometheus server and the targets use mesh mTLS certificates. They do not have a workload identity.
+- With a `MeshTrust`, the trust bundle also has the mesh CA for the trust domain of the mesh. The control plane adds this CA when mesh mTLS is enabled.
+
+Direct access covers only the inbound ports and the `Mesh.metrics` port of each dataplane. On that port, the sidecar of the Prometheus server adds its mesh certificate. Give these backends a dedicated `clientId`, and scrape them in a dedicated job. Set `http` in that job only:
+
+```yaml
+# MeshMetric
+spec:
+  default:
+    backends:
+      - type: Prometheus
+        prometheus:
+          clientId: legacy-mtls # only for these backends
+          port: 5670 # the Mesh.metrics port
+          tls:
+            mode: ActiveMTLSBackend
+```
+
+```yaml
+# Prometheus
+scrape_configs:
+  - job_name: kuma-dataplanes-legacy-mtls
+    kuma_sd_configs:
+      - server: http://kuma-control-plane.kuma-system:5676
+        client_id: legacy-mtls
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: .+:5670
+        action: keep
+      - target_label: __scheme__
+        replacement: http
+```
+
+Do not set `http` in a different job. A different `MeshMetric` port, or a path with a workload identity, needs `https` and a client certificate that the mesh trusts. Do not use this override for `ProvidedTLS` targets, for a mesh with only `MeshIdentity`, for a scraper outside the mesh, or on 3.0.
 
 ### `MeshPassthrough` validates matches by the Envoy filter chain they resolve to
 
