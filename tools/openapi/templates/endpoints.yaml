@@ -116,6 +116,20 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/{{.Name}}CreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: "../../{{ .ErrorSchema }}#/components/schemas/Error"
+        {{- if eq .Scope "Mesh"}}
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: "../../{{ .ErrorSchema }}#/components/schemas/NotFoundError"
+        {{- end}}
         '409':
           description: A resource with this identity already exists
           content:

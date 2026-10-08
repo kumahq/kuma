@@ -452,6 +452,18 @@ paths:
       responses:
         "201":
           $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: ../../base/specs/common/error_schema.yaml#/components/schemas/Error
+          description: Invalid resource
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: ../../base/specs/common/error_schema.yaml#/components/schemas/NotFoundError
+          description: Parent mesh not found
         "409":
           content:
             application/json:

@@ -101,6 +101,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshRetryCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: "../../base/specs/common/error_schema.yaml#/components/schemas/Error"
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: "../../base/specs/common/error_schema.yaml#/components/schemas/NotFoundError"
         '409':
           description: A resource with this identity already exists
           content:

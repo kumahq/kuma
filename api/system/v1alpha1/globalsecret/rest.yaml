@@ -78,6 +78,12 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '../../base/specs/common/error_schema.yaml#/components/schemas/Error'
         '409':
           description: A resource with this identity already exists
           content:
@@ -182,6 +188,12 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '../../base/specs/common/error_schema.yaml#/components/schemas/Error'
         '409':
           description: A resource with this identity already exists
           content:

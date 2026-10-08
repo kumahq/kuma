@@ -146,6 +146,12 @@ paths:
       responses:
         "201":
           $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: ../../base/specs/common/error_schema.yaml#/components/schemas/Error
+          description: Invalid resource
         "409":
           content:
             application/json:

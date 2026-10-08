@@ -892,6 +892,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshAccessLogCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -1048,6 +1060,18 @@ paths:
         '201':
           $ref: >-
             #/components/responses/MeshCircuitBreakerCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -1204,6 +1228,18 @@ paths:
         '201':
           $ref: >-
             #/components/responses/MeshFaultInjectionCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -1357,6 +1393,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshHealthCheckCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -1510,6 +1558,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshHTTPRouteCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -1667,6 +1727,18 @@ paths:
         '201':
           $ref: >-
             #/components/responses/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -1820,6 +1892,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshMetricCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -1973,6 +2057,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshPassthroughCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -2126,6 +2222,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshProxyPatchCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -2279,6 +2387,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshRateLimitCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -2432,6 +2552,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshRetryCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -2585,6 +2717,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshTCPRouteCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -2738,6 +2882,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshTimeoutCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -2891,6 +3047,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshTLSCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -3044,6 +3212,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshTraceCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -3200,6 +3380,18 @@ paths:
         '201':
           $ref: >-
             #/components/responses/MeshTrafficPermissionCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -3317,6 +3509,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Invalid resource
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+          description: Parent mesh not found
         '409':
           content:
             application/json:
@@ -3590,6 +3794,12 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: A resource with this identity already exists
           content:
@@ -3699,6 +3909,12 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: A resource with this identity already exists
           content:
@@ -3784,6 +4000,12 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Invalid resource
         '409':
           content:
             application/json:
@@ -3996,6 +4218,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/SecretCreateOrUpdateSuccessResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Invalid resource
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+          description: Parent mesh not found
         '409':
           content:
             application/json:
@@ -4136,6 +4370,12 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/ZoneCreateOrUpdateSuccessResponse'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Invalid resource
         '409':
           content:
             application/json:
@@ -4369,6 +4609,12 @@ paths:
         '201':
           $ref: >-
             #/components/responses/HostnameGeneratorCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: A resource with this identity already exists
           content:
@@ -4519,6 +4765,18 @@ paths:
         '201':
           $ref: >-
             #/components/responses/MeshExternalServiceCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -4672,6 +4930,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshIdentityCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -4828,6 +5098,18 @@ paths:
         '201':
           $ref: >-
             #/components/responses/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -4984,6 +5266,18 @@ paths:
         '201':
           $ref: >-
             #/components/responses/MeshOpenTelemetryBackendCreateOrUpdateSuccessResponse
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -5137,6 +5431,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshServiceCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -5290,6 +5596,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshTrustCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -5443,6 +5761,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/MeshZoneAddressCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
@@ -5596,6 +5926,18 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/WorkloadCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
         '409':
           description: A resource with this identity already exists
           content:
