@@ -8,6 +8,12 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Empty MeshTrafficPermission match entries
+
+Remove or replace each empty match object in MeshTrafficPermission before you upgrade a control plane. Check `rules[].default.allow`, `rules[].default.deny`, and `rules[].default.allowWithShadowDeny`. Each entry must contain `spiffeID`, `sni`, or both. Keep an empty action list only when another action has at least one valid match.
+
+The 2.14 validator accepted empty match objects. The 3.0 validator rejects those entries on create and update. This check also applies to KDS policy writes through the Kubernetes admission webhook. Correct the stored resources on 2.14 before the upgrade. The correction does not rewrite stored policies.
+
 ### Cross-mesh resource list endpoints removed
 
 The API server no longer serves the endpoints that list mesh-scoped resources across all meshes, for example `GET /meshaccesslogs`. The same applies to every other mesh-scoped resource type, including `GET /dataplanes`, `GET /meshservices`, `GET /secrets` and the `/_overview` variants, which now return `404`.
