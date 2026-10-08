@@ -1,12 +1,15 @@
 package xds
 
 import (
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/v3/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v3/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/v3/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v3/pkg/xds/generator"
 )
 
 var log = core.Log.WithName("MeshMetric")
@@ -33,6 +36,10 @@ func (pc *PrometheusConfigurer) ConfigureCluster(proxy *core_xds.Proxy) (envoy_c
 }
 
 func (pc *PrometheusConfigurer) ConfigureListener(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
+	if pc.Backend.Tls != nil && pc.Backend.Tls.Mode == api.ActiveMTLSBackend {
+		return pc.activeMTLSBackendListener(proxy)
+	}
+
 	var listener envoy_common.NamedResource
 	var err error
 
@@ -72,6 +79,29 @@ func (pc *PrometheusConfigurer) providedTlsListener(proxy *core_xds.Proxy) (envo
 					CertPath: proxy.Metadata.MetricsCertPath,
 					KeyPath:  proxy.Metadata.MetricsKeyPath,
 				}),
+				envoy_listeners.StaticEndpoints(pc.IPv6Enabled, pc.ListenerName, pc.staticEndpoint()),
+			),
+		)).
+		Build()
+}
+
+// activeMTLSBackendListener requires a client certificate that the mesh trusts, except for
+// scrapes from the dataplane host. Without a workload identity only these local scrapes work.
+func (pc *PrometheusConfigurer) activeMTLSBackendListener(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
+	listener := pc.baseSecuredListenerBuilder(proxy, envoy_listeners.MatchSourceType(envoy_listener.FilterChainMatch_SAME_IP_OR_LOOPBACK))
+
+	downstreamTLS, err := generator.MeshIdentityDownstreamTLS(proxy)
+	if err != nil {
+		return nil, err
+	}
+	if downstreamTLS == nil {
+		return listener.Build()
+	}
+
+	return listener.
+		Configure(envoy_listeners.FilterChain(
+			envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
+				envoy_listeners.DownstreamTlsContext(downstreamTLS),
 				envoy_listeners.StaticEndpoints(pc.IPv6Enabled, pc.ListenerName, pc.staticEndpoint()),
 			),
 		)).
