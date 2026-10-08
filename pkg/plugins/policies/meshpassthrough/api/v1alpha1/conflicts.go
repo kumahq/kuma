@@ -230,6 +230,13 @@ func (c Conflicts) IsDropped(index int) bool {
 	return found
 }
 
+// IsInvalid reports a match dropped because the generator can't build a filter chain
+// from it, rather than because another match already configures its chain.
+func (c Conflicts) IsInvalid(index int) bool {
+	conflict, found := c.dropped[index]
+	return found && conflict.field == ""
+}
+
 func (c Conflicts) IsSuppressed(matcher FilterChainMatcher) bool {
 	_, found := c.suppressed[matcher]
 	return found

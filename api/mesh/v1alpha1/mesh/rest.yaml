@@ -142,6 +142,35 @@ paths:
       summary: Returns a list of Mesh.
       tags:
       - Mesh
+    post:
+      description: Creates a resource using the name in the body. An existing resource
+        is never modified. Requires Kuma 3.0 or later.
+      operationId: postMesh
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshItem'
+        description: Resource to create
+        required: true
+      responses:
+        "201":
+          $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: ../../base/specs/common/error_schema.yaml#/components/schemas/Error
+          description: Invalid resource
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: ../../base/specs/common/error_schema.yaml#/components/schemas/Error
+          description: A resource with this identity already exists
+      summary: Creates Mesh entity
+      tags:
+      - Mesh
   /meshes/{name}:
     delete:
       operationId: deleteMesh

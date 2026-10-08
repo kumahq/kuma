@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	core_extensions "github.com/kumahq/kuma/v3/pkg/core/resources/extensions"
-	"github.com/kumahq/kuma/v3/tools/openapi/unions"
 )
 
 // group is the API group of the throwaway CRDs. Nothing installs them; the group
@@ -357,7 +356,7 @@ func configSchemas(crdDir string, wrappers []wrapper) (map[string]any, error) {
 			return nil, fmt.Errorf("controller-gen produced no schema for the %q extension of %s",
 				w.ext.Value, w.ext.Point.ResourceType)
 		}
-		properties, err := unions.CRDProperties(path)
+		properties, err := crdProperties(path)
 		if err != nil {
 			return nil, err
 		}
@@ -382,17 +381,7 @@ func patchExpression(wrappers []wrapper, schemas map[string]any) (string, error)
 			return "", err
 		}
 		schemaPath := []string{"components", "schemas", w.schemaName}
-		assignments = append(assignments, fmt.Sprintf("%s = %s", unions.YQPath(schemaPath), encoded))
-
-		// The config is a resource spec like any other, so it can hold unions of
-		// its own that controller-gen cannot express.
-		unionAssignments, err := unions.Assignments(schemas[w.kind], schemaPath)
-		if err != nil {
-			return "", err
-		}
-		if unionAssignments != "" {
-			assignments = append(assignments, unionAssignments)
-		}
+		assignments = append(assignments, fmt.Sprintf("%s = %s", yqPath(schemaPath), encoded))
 	}
 
 	for _, point := range points(wrappers) {
@@ -401,7 +390,7 @@ func patchExpression(wrappers []wrapper, schemas map[string]any) (string, error)
 			return "", err
 		}
 		path := append([]string{"components", "schemas", itemSchema(point)}, propertyPath(point.SchemaPath)...)
-		assignments = append(assignments, fmt.Sprintf("%s.oneOf = %s", unions.YQPath(path), oneOf))
+		assignments = append(assignments, fmt.Sprintf("%s.oneOf = %s", yqPath(path), oneOf))
 	}
 
 	return strings.Join(assignments, "\n  | ") + "\n", nil
@@ -491,4 +480,39 @@ func upperFirst(s string) string {
 	r := []rune(s)
 	r[0] = unicode.ToUpper(r[0])
 	return string(r)
+}
+
+// crdProperties reads the top-level `properties` of a controller-gen CRD.
+func crdProperties(crdPath string) (map[string]any, error) {
+	raw, err := os.ReadFile(crdPath)
+	if err != nil {
+		return nil, err
+	}
+	var crd struct {
+		Spec struct {
+			Versions []struct {
+				Schema struct {
+					OpenAPIV3Schema struct {
+						Properties map[string]any `json:"properties"`
+					} `json:"openAPIV3Schema"`
+				} `json:"schema"`
+			} `json:"versions"`
+		} `json:"spec"`
+	}
+	if err := yaml.Unmarshal(raw, &crd); err != nil {
+		return nil, err
+	}
+	if len(crd.Spec.Versions) == 0 {
+		return nil, nil
+	}
+	return crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties, nil
+}
+
+// yqPath renders map keys as a yq path expression.
+func yqPath(path []string) string {
+	var sb strings.Builder
+	for _, key := range path {
+		fmt.Fprintf(&sb, ".%q", key)
+	}
+	return sb.String()
 }

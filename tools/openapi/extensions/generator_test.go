@@ -217,23 +217,6 @@ var _ = Describe("patchExpression", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(expr).To(matchers.MatchGoldenEqual(golden("patch-expression.golden.yq")))
 	})
-
-	// The config is a resource spec like any other, so its own discriminated
-	// unions have to be described too.
-	It("should describe a union inside the config", func() {
-		schemas := map[string]any{"FakeResourceVault": map[string]any{
-			"properties": map[string]any{
-				"type":   map[string]any{"enum": []any{"Server", "Agent"}},
-				"server": map[string]any{"type": "object"},
-				"agent":  map[string]any{"type": "object"},
-			},
-		}}
-
-		expr, err := patchExpression(fakeWrappers("vault"), schemas)
-
-		Expect(err).ToNot(HaveOccurred())
-		Expect(expr).To(matchers.MatchGoldenEqual(golden("patch-expression-union.golden.yq")))
-	})
 })
 
 var _ = Describe("writePackage", func() {

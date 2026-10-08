@@ -564,6 +564,8 @@ spec:
               value: "/var/run/secrets/kuma.io/tls-cert/tls.key"
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: "kuma-ci/kuma-init:greatest"
+            - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE_PULL_POLICY
+              value: "IfNotPresent"
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU
               value: "0"
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY
@@ -614,6 +616,8 @@ spec:
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
               value: "kuma-ci/kuma-dp:greatest"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE_PULL_POLICY
+              value: "IfNotPresent"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
               value: "kuma-transparent-proxy-config"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
@@ -624,12 +628,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: GOMEMLIMIT
-              valueFrom:
-                resourceFieldRef:
-                  containerName: control-plane
-                  resource: limits.memory
-                  divisor: "1"
             - name: GOMAXPROCS
               valueFrom:
                 resourceFieldRef:
