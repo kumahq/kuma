@@ -8,17 +8,13 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.6`
 
-<<<<<<< HEAD
-### `MeshExternalService` TLS verification accepts the `SecureDataSource` shape
-=======
 ### Empty MeshTrafficPermission match entries
 
 Remove or replace each empty match object in MeshTrafficPermission before you upgrade a control plane. Check `rules[].default.allow`, `rules[].default.deny`, and `rules[].default.allowWithShadowDeny`. Each entry must contain `spiffeID`, `sni`, or both. Keep an empty action list only when another action has at least one valid match.
 
-The 2.14 validator accepted empty match objects. The 3.0 validator rejects those entries on create and update. This check also applies to KDS policy writes through the Kubernetes admission webhook. Correct the stored resources on 2.14 before the upgrade. The correction does not rewrite stored policies.
+Earlier 2.14 versions accepted empty match objects. The 2.14.6 validator rejects these entries on create and update. Correct stored policies before you upgrade the control plane. This change does not rewrite stored policies.
 
-### Cross-mesh resource list endpoints removed
->>>>>>> 44ccedb8bc (fix(meshtrafficpermission): reject empty match entries (#19020))
+### `MeshExternalService` TLS verification accepts the `SecureDataSource` shape
 
 3.0 reads `spec.tls.verification.caCert`, `.clientCert` and `.clientKey` on `MeshExternalService` only in the `SecureDataSource` shape. 2.14.6 accepts both shapes, so resources can be rewritten before upgrading to 3.0. The old `secret`, `inline` and `inlineString` fields keep working on 2.14 and now produce a deprecation warning.
 

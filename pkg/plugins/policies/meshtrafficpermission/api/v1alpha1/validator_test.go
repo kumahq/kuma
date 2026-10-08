@@ -164,9 +164,6 @@ rules:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-<<<<<<< HEAD
-			Entry("empty 'from' array", testCase{
-=======
 			Entry("empty allow match", testCase{
 				inputYaml: `
 targetRef:
@@ -212,8 +209,7 @@ violations:
     message: must specify at least one of 'spiffeID' or 'sni'
 `,
 			}),
-			Entry("rules not defined", testCase{
->>>>>>> 44ccedb8bc (fix(meshtrafficpermission): reject empty match entries (#19020))
+			Entry("empty 'from' array", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
