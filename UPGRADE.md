@@ -10,13 +10,17 @@ does not have any particular instructions.
 
 ### `MeshMetric` `ActiveMTLSBackend` requires a client certificate
 
-The `ActiveMTLSBackend` TLS mode of a `MeshMetric` Prometheus backend now secures the endpoint with the workload identity of the dataplane. A scraper on a different host must send a client certificate that the mesh trusts. The certificate must chain to a `MeshTrust` CA bundle, or to the SPIRE bundle, and must contain a SPIFFE ID in that trust domain. Scrapes from the dataplane host stay plaintext. A dataplane without a workload identity accepts only these local scrapes. MADS sends `https` for this mode.
+The `ActiveMTLSBackend` TLS mode of a `MeshMetric` Prometheus backend now secures the endpoint with the workload identity of the dataplane. A scraper on a different host must send a client certificate that the mesh trusts. The certificate must chain to a `MeshTrust` CA bundle, or to the SPIRE bundle, and must contain a SPIFFE ID in that trust domain. Scrapes from the dataplane host stay plaintext. A dataplane without a workload identity accepts only these local scrapes.
 
 Before this change, the mode produced a plaintext endpoint.
 
 **Action required**
 
 Give each remote scraper a client certificate that the mesh trusts before the upgrade. To keep a plaintext endpoint, set the mode to `Disabled`.
+
+MADS sends `https` for this mode. The hint does not supply a client certificate. 3.0 has no direct access mTLS, so a remote scraper must use `https` and its own client certificate, also in the mesh.
+
+A scraper on the dataplane host must use `http` on the backend port and path, although MADS sends `https`. The endpoint accepts only plaintext from the dataplane host. This mode has no local TLS.
 
 ### Empty MeshTrafficPermission match entries
 
