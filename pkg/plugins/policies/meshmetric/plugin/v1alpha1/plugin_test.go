@@ -379,6 +379,17 @@ var _ = Describe("MeshMetric", func() {
 			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
 			proxy:   activeMTLSBackendProxy(nil),
 		}),
+		Entry("active_mtls_backend_ipv6", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
+			proxy: func() *core_xds.Proxy {
+				proxy := activeMTLSBackendProxy(&core_xds.WorkloadIdentity{
+					ManagementMode:           core_xds.KumaManagementMode,
+					IdentitySourceConfigurer: sdsSecret("identity-cert", bldrs_core.Sds()),
+				})
+				proxy.Dataplane.Spec.Networking.Address = "fd00::1"
+				return proxy
+			}(),
+		}),
 		Entry("otel_and_prometheus", testCase{
 			context: *xds_builders.Context().WithMeshBuilder(
 				samples.MeshDefaultBuilder(),
