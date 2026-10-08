@@ -83,22 +83,6 @@ func TestCreateOrUpdateResourcePrecedence(t *testing.T) {
 		g.Expect(events).To(Equal([]string{"lookup"}))
 	})
 
-	t.Run("denied create does not write", func(t *testing.T) {
-		g := NewWithT(t)
-		events := []string{}
-		resManager := &recordingResourceManager{
-			events: &events,
-			getErr: store.ErrorResourceNotFound(core_mesh.MeshType, "mesh-1", core_model.NoMesh),
-		}
-		handler := newContractCrudHandler(resManager, &recordingResourceAccess{events: &events, createErr: accessErr})
-
-		_, err := handler.createOrUpdateResource(newCrudRequest(http.MethodPut, "/meshes/mesh-1", "mesh-1", validBody))
-
-		expectTitledError(g, err, "Access Denied")
-		g.Expect(errors.Is(err, accessErr)).To(BeTrue())
-		g.Expect(events).To(Equal([]string{"lookup", "authorize-create"}))
-	})
-
 	t.Run("request validation precedes update authorization", func(t *testing.T) {
 		g := NewWithT(t)
 		events := []string{}
@@ -382,25 +366,40 @@ func expectTitledError(g *WithT, err error, title string) {
 	g.Expect(titled.title).To(Equal(title))
 }
 
-func TestCreateOnlyResourceAuthorization(t *testing.T) {
-	for _, denied := range []bool{false, true} {
-		t.Run(fmt.Sprintf("denied=%t", denied), func(t *testing.T) {
-			g := NewWithT(t)
-			events := []string{}
-			manager := &recordingResourceManager{events: &events, getErr: errors.New("must not look up the resource")}
-			access := &recordingResourceAccess{events: &events}
-			if denied {
-				access.createErr = errors.New("denied")
-			}
-			handler := newContractCrudHandler(manager, access)
-			_, err := handler.createOnlyResource(newCrudRequest(http.MethodPost, "/meshes", "", `{"type":"Mesh","name":"test"}`))
-			if denied {
-				expectTitledError(g, err, "Access Denied")
-				g.Expect(events).To(Equal([]string{"authorize-create"}))
-			} else {
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(events).To(Equal([]string{"authorize-create", "create"}))
-			}
-		})
+func TestResourceCreationAuthorization(t *testing.T) {
+	for _, method := range []string{http.MethodPost, http.MethodPut} {
+		for _, denied := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/denied=%t", method, denied), func(t *testing.T) {
+				g := NewWithT(t)
+				events := []string{}
+				manager := &recordingResourceManager{events: &events, getErr: store.ErrorResourceNotFound(core_mesh.MeshType, "test", core_model.NoMesh)}
+				accessErr := errors.New("denied")
+				access := &recordingResourceAccess{events: &events}
+				if denied {
+					access.createErr = accessErr
+				}
+				handler := newContractCrudHandler(manager, access)
+				create := handler.createOnlyResource
+				path, name := "/meshes", ""
+				expected := []string{}
+				if method == http.MethodPut {
+					create = handler.createOrUpdateResource
+					path, name = "/meshes/test", "test"
+					expected = append(expected, "lookup")
+				}
+				expected = append(expected, "authorize-create")
+
+				_, err := create(newCrudRequest(method, path, name, `{"type":"Mesh","name":"test"}`))
+
+				if denied {
+					expectTitledError(g, err, "Access Denied")
+					g.Expect(errors.Is(err, accessErr)).To(BeTrue())
+				} else {
+					g.Expect(err).NotTo(HaveOccurred())
+					expected = append(expected, "create")
+				}
+				g.Expect(events).To(Equal(expected))
+			})
+		}
 	}
 }

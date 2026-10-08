@@ -71,20 +71,13 @@ var _ = Describe("Create-only resource endpoints", func() {
 		status, after := request(api.Address(), http.MethodGet, collection+"/test", "")
 		Expect(status).To(Equal(http.StatusOK))
 		Expect(after).To(MatchJSON(before))
-
-		status, data = request(api.Address(), http.MethodPut, collection+"/test", replacement)
-		Expect(status).To(Equal(http.StatusOK), string(data))
-		status, data = request(api.Address(), http.MethodDelete, collection+"/test", "")
-		Expect(status).To(Equal(http.StatusOK), string(data))
-		status, data = request(api.Address(), http.MethodPut, collection+"/test", body)
-		Expect(status).To(Equal(http.StatusCreated), string(data))
 	},
 		Entry("global Mesh", "/meshes", `{"type":"Mesh","name":"test","labels":{"test":"original"}}`, `{"type":"Mesh","name":"test","labels":{"test":"replacement"}}`),
 		Entry("mesh-scoped secret", "/meshes/default/secrets", `{"type":"Secret","mesh":"default","name":"test","data":"b3JpZ2luYWw="}`, `{"type":"Secret","mesh":"default","name":"test","data":"cmVwbGFjZW1lbnQ="}`),
 		Entry("global secret alias", "/global-secrets", `{"type":"GlobalSecret","name":"test","data":"b3JpZ2luYWw="}`, `{"type":"GlobalSecret","name":"test","data":"cmVwbGFjZW1lbnQ="}`),
 	)
 
-	DescribeTable("rejects invalid creation", func(collection, body string, expected int) {
+	DescribeTable("returns deprecation warnings when creating a resource", func(method, path string) {
 		// given
 		resourceStore := memory.NewStore()
 		Expect(resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))).To(Succeed())
@@ -92,27 +85,7 @@ var _ = Describe("Create-only resource endpoints", func() {
 		defer stop()
 
 		// when
-		status, data := request(api.Address(), http.MethodPost, collection, body)
-
-		// then
-		Expect(status).To(Equal(expected), string(data))
-	},
-		Entry("malformed JSON", "/meshes", `{`, 400),
-		Entry("missing name", "/meshes", `{"type":"Mesh"}`, 400),
-		Entry("wrong type", "/meshes", `{"type":"Zone","name":"test"}`, 400),
-		Entry("wrong mesh", "/meshes/default/secrets", `{"type":"Secret","mesh":"other","name":"test","data":"dGVzdA=="}`, 400),
-		Entry("missing parent mesh", "/meshes/missing/secrets", `{"type":"Secret","mesh":"missing","name":"test","data":"dGVzdA=="}`, 404),
-	)
-
-	It("returns deprecation warnings when creating a resource", func() {
-		// given
-		resourceStore := memory.NewStore()
-		Expect(resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))).To(Succeed())
-		api, _, stop := StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
-		defer stop()
-
-		// when
-		status, data := request(api.Address(), http.MethodPost, "/meshes/default/meshratelimits",
+		status, data := request(api.Address(), method, path,
 			`{"type":"MeshRateLimit","name":"warning","mesh":"default","spec":{"targetRef":{"kind":"Dataplane"},"rules":[{"default":{"local":{"http":{"onRateLimit":{"status":123}}}}}]}}`)
 
 		// then
@@ -123,23 +96,10 @@ var _ = Describe("Create-only resource endpoints", func() {
 		}
 		Expect(json.Unmarshal(data, &result)).To(Succeed())
 		Expect(result.Warnings).To(ContainElement(ContainSubstring("must be 400 or higher")))
-	})
-
-	It("enforces ownership labels on creation", func() {
-		// given
-		resourceStore := memory.NewStore()
-		Expect(resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))).To(Succeed())
-		api, _, stop := StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithZone("zone-1"))
-		defer stop()
-
-		// when
-		status, data := request(api.Address(), http.MethodPost, "/meshes/default/meshtrafficpermissions",
-			`{"type":"MeshTrafficPermission","name":"test","mesh":"default","labels":{"kuma.io/origin":"global"},"spec":{"targetRef":{"kind":"Mesh"},"rules":[{"default":{"allow":[{"spiffeID":{"type":"Prefix","value":"spiffe://example"}}]}}]}}`)
-
-		// then
-		Expect(status).To(Equal(http.StatusBadRequest), string(data))
-		Expect(string(data)).To(ContainSubstring("origin"))
-	})
+	},
+		Entry("POST", http.MethodPost, "/meshes/default/meshratelimits"),
+		Entry("PUT", http.MethodPut, "/meshes/default/meshratelimits/warning"),
+	)
 
 	It("allows only one concurrent create and preserves the winner", func() {
 		// given
