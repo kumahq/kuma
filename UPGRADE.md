@@ -8,6 +8,16 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.6`
 
+### `MeshMetric` `ActiveMTLSBackend` requires a client certificate
+
+The `ActiveMTLSBackend` TLS mode of a `MeshMetric` Prometheus backend now secures the endpoint. The listener uses the workload identity of the dataplane. Without a workload identity, it uses the mesh mTLS backend, the same as the `Mesh.metrics` endpoint. A scraper on a different host must send a client certificate that the mesh trusts. Scrapes from the dataplane host stay plaintext. A dataplane without a workload identity and without mesh mTLS accepts only these local scrapes.
+
+Before this change, the mode produced a plaintext endpoint.
+
+**Action required**
+
+Give each remote scraper a client certificate that the mesh trusts before the upgrade. To keep a plaintext endpoint, set the mode to `Disabled`.
+
 ### `MeshPassthrough` validates matches by the Envoy filter chain they resolve to
 
 Validation of `MeshPassthrough` now follows the filter chains of the generated passthrough listener, the same way 3.0 does.
