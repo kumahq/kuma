@@ -2,14 +2,12 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations:
-    k8s.v1.cni.cncf.io/networks: kuma-cni
+    docs: Documentation
     kubectl.kubernetes.io/default-container: busybox
-    kuma.io/application-probe-proxy-port: "0"
+    kuma.io/application-probe-proxy-port: "9000"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/sidecar-injected: "true"
-    traffic.kuma.io/exclude-inbound-ports: "8080"
     traffic.kuma.io/transparent-proxy-config: |
-      cniMode: true
       ipFamilyMode: dualstack
       kumaDPUser: "5678"
       redirect:
@@ -22,9 +20,9 @@ metadata:
         inbound:
           enabled: true
           excludePorts:
-          - 8080
+          - 9000
           - 9902
-          port: 15055
+          port: 15006
         outbound:
           enabled: true
           port: 15001
@@ -48,15 +46,17 @@ spec:
       readOnly: true
   initContainers:
   - args:
-    - --config-file=/tmp/.kumactl
-    - --transparent-proxy-config=/tmp/transparent-proxy/base/config.yaml
+    - --config=/tmp/transparent-proxy/base/config.yaml
     command:
     - /usr/bin/kumactl
     - install
-    - transparent-proxy-validator
+    - transparent-proxy
+    env:
+    - name: XTABLES_LOCKFILE
+      value: /tmp/xtables.lock
     image: kuma/kuma-init:latest
     imagePullPolicy: Always
-    name: kuma-validation
+    name: kuma-init
     resources:
       limits:
         memory: 50M
@@ -64,16 +64,18 @@ spec:
         cpu: 20m
         memory: 20M
     securityContext:
-      allowPrivilegeEscalation: false
       capabilities:
+        add:
+        - NET_ADMIN
+        - NET_RAW
         drop:
         - ALL
       readOnlyRootFilesystem: true
-      runAsGroup: 5678
-      runAsUser: 5678
+      runAsGroup: 0
+      runAsUser: 0
     volumeMounts:
     - mountPath: /tmp
-      name: kuma-sidecar-tmp
+      name: kuma-init-tmp
     - mountPath: /tmp/transparent-proxy/base
       name: transparent-proxy-base
       readOnly: true
@@ -94,7 +96,7 @@ spec:
           apiVersion: v1
           fieldPath: status.podIP
     - name: KUMA_APPLICATION_PROBE_PROXY_PORT
-      value: "0"
+      value: "9000"
     - name: KUMA_CONTROL_PLANE_CA_CERT
       value: |
         -----BEGIN CERTIFICATE-----
@@ -140,7 +142,7 @@ spec:
           apiVersion: v1
           fieldPath: metadata.namespace
     image: kuma/kuma-sidecar:latest
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Never
     lifecycle:
       preStop:
         exec:
@@ -186,10 +188,14 @@ spec:
       runAsGroup: 5678
       runAsUser: 5678
     startupProbe:
+      failureThreshold: 213
       httpGet:
         path: /ready
         port: 9902
+      initialDelaySeconds: 261
+      periodSeconds: 26
       successThreshold: 1
+      timeoutSeconds: 24
     volumeMounts:
     - mountPath: /tmp
       name: kuma-sidecar-tmp
@@ -199,6 +205,13 @@ spec:
     - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
       name: default-token-w7dxf
       readOnly: true
+  - command:
+    - sh
+    - -c
+    - sleep 5
+    image: busybox
+    name: init
+    resources: {}
   volumes:
   - name: default-token-w7dxf
     secret:

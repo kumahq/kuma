@@ -135,7 +135,7 @@ A Helm chart for the Kuma Control Plane
 | cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
 | cni.containerSecurityContext | object | `{"readOnlyRootFilesystem":true,"runAsGroup":0,"runAsNonRoot":false,"runAsUser":0}` | Security context at the container level for cni |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
-| dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
+| dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the injected kuma-dp sidecar and kuma-init containers (Always, IfNotPresent, Never). |
 | dataPlane.image.tag | string | `nil` | Kuma DP Image Tag. When not specified, the value is copied from global.tag |
 | dataPlane.initImage.repository | string | `"kuma-init"` | The Kuma DP init image repository |
 | dataPlane.initImage.tag | string | `nil` | Kuma DP init image tag When not specified, the value is copied from global.tag |

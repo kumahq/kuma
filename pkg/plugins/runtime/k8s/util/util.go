@@ -15,6 +15,13 @@ import (
 
 type ServicePredicate func(*kube_core.Service) bool
 
+func PullPolicy(policy string) kube_core.PullPolicy {
+	if policy == "" {
+		return kube_core.PullIfNotPresent
+	}
+	return kube_core.PullPolicy(policy)
+}
+
 func MatchServiceThatSelectsPod(pod *kube_core.Pod, ignoredLabels []string) ServicePredicate {
 	return func(svc *kube_core.Service) bool {
 		selector := maps.Clone(svc.Spec.Selector)

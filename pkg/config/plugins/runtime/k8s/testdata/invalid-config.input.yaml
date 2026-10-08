@@ -5,6 +5,7 @@ admissionServer:
 injector:
   sidecarContainer:
     image:
+    imagePullPolicy: bogus
     redirectPortOutbound: 423456
     redirectPortInbound: 423457
     uid: -1
@@ -12,6 +13,7 @@ injector:
     drainTime: 0s
   initContainer:
     image:
+    imagePullPolicy: bogus
     resources:
       requests:
         cpu: 20m

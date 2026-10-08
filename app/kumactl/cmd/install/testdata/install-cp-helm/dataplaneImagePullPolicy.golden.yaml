@@ -561,23 +561,23 @@ spec:
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-init:0.0.1"
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE_PULL_POLICY
-              value: "IfNotPresent"
+              value: "Always"
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU
-              value: "200m"
+              value: "0"
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_MEMORY
-              value: "64Mi"
+              value: "50M"
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
-              value: "50m"
+              value: "20m"
             - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
-              value: "32Mi"
+              value: "20M"
             - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
-              value: "500m"
+              value: "0"
             - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
-              value: "256Mi"
+              value: "512Mi"
             - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_CPU
-              value: "100m"
+              value: "50m"
             - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY
-              value: "128Mi"
+              value: "64Mi"
             - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_CPU
               value: "0"
             - name: KUMA_INJECTOR_VALIDATION_CONTAINER_RESOURCES_LIMITS_MEMORY
@@ -607,7 +607,7 @@ spec:
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-dp:0.0.1"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE_PULL_POLICY
-              value: "IfNotPresent"
+              value: "Always"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
               value: "kuma-transparent-proxy-config"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE

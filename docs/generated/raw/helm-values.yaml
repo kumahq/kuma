@@ -457,7 +457,7 @@ dataPlane:
   image:
     # -- The Kuma DP image repository
     repository: "kuma-dp"
-    # -- Kuma DP ImagePullPolicy
+    # -- Image pull policy for the injected kuma-dp sidecar and kuma-init containers (Always, IfNotPresent, Never).
     pullPolicy: IfNotPresent
     # -- Kuma DP Image Tag. When not specified, the value is copied from global.tag
     tag:
