@@ -115,6 +115,18 @@ rules:
             type: Exact
             value: sni.extsvc.default.zone-1.aws-aurora.8443
 `),
+			Entry("empty action arrays with a valid allow match", `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      deny: []
+      allowWithShadowDeny: []
+      allow:
+        - spiffeID:
+            type: Prefix
+            value: spiffe://trust.domain
+`),
 			Entry("spiffeID and sni combined in the same match", `
 targetRef:
   kind: Dataplane
@@ -152,7 +164,56 @@ rules:
 				// then
 				Expect(actual).To(MatchYAML(given.expected))
 			},
+<<<<<<< HEAD
 			Entry("empty 'from' array", testCase{
+=======
+			Entry("empty allow match", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      allow:
+        - {}
+`,
+				expected: `
+violations:
+  - field: spec.rules[0].allow[0]
+    message: must specify at least one of 'spiffeID' or 'sni'
+`,
+			}),
+			Entry("empty deny match", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      deny:
+        - {}
+`,
+				expected: `
+violations:
+  - field: spec.rules[0].deny[0]
+    message: must specify at least one of 'spiffeID' or 'sni'
+`,
+			}),
+			Entry("empty shadow deny match", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      allowWithShadowDeny:
+        - {}
+`,
+				expected: `
+violations:
+  - field: spec.rules[0].allowWithShadowDeny[0]
+    message: must specify at least one of 'spiffeID' or 'sni'
+`,
+			}),
+			Entry("rules not defined", testCase{
+>>>>>>> 44ccedb8bc (fix(meshtrafficpermission): reject empty match entries (#19020))
 				inputYaml: `
 targetRef:
   kind: MeshService
