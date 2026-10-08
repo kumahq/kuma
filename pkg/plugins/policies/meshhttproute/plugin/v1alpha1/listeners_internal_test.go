@@ -381,7 +381,7 @@ var _ = Describe("prepareRoutes", func() {
 		Expect(matched.UnresolvedBackendRefsWeight).To(BeZero())
 	})
 
-	DescribeTable("derives the all-zero backendRefs flag only for explicit non-empty zero-weight refs", func(backendRefs []api.BackendRef, expectedAllZero bool) {
+	DescribeTable("derives the all-zero backendRefs flag only for explicit non-empty zero-weight refs", func(backendRefs []api.BackendRef, expectedAllZero bool, expectedAllUnresolved bool) {
 		backend := builders.MeshService().
 			WithName("backend").
 			WithMesh(core_model.DefaultMesh).
@@ -449,14 +449,15 @@ var _ = Describe("prepareRoutes", func() {
 		}
 		Expect(matched).ToNot(BeNil())
 		Expect(matched.AllBackendRefsHaveZeroWeight).To(Equal(expectedAllZero))
+		Expect(matched.AllBackendRefsUnresolved).To(Equal(expectedAllUnresolved))
 	},
 		Entry("all explicit backendRefs have zero weight", []api.BackendRef{{
 			BackendRef: builders.BackendRefMeshService("payments", "kuma-demo", "", uint32(8080), uint(0)),
-		}}, true),
+		}}, true, false),
 		Entry("unresolvable explicit backendRefs with zero weight still set the all-zero flag", []api.BackendRef{{
 			BackendRef: builders.BackendRefMeshService("missing-backend", "kuma-demo", "", uint32(8080), uint(0)),
-		}}, true),
-		Entry("explicit empty backendRefs do not set the all-zero flag", []api.BackendRef{}, false),
+		}}, true, true),
+		Entry("explicit empty backendRefs do not set the all-zero flag", []api.BackendRef{}, false, true),
 	)
 
 	DescribeTable("should keep resolved backendRefs while tracking missing-port declared weight", func(refPorts []uint32, refWeights []uint, expectedAllUnresolved bool, expectedResolved []uint32, expectedUnresolvedWeight uint) {

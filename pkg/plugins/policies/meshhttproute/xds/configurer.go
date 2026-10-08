@@ -37,6 +37,9 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 	for _, match := range matches {
 		directResponseStatus := c.DirectResponseStatus
 		if directResponseStatus == 0 && !hasTerminalFilter(c.Filters) {
+			// Invalid all-zero refs keep 500: a missing or non-HTTP backend is a
+			// configuration error even when its declared weight is 0. Only a
+			// non-empty list of valid backends whose weights are all zero is 503.
 			switch {
 			case c.AllBackendRefsUnresolved:
 				// A rule whose backendRefs all fail to resolve answers 500, unless a
