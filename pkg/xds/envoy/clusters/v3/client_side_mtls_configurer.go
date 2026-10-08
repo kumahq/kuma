@@ -8,6 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	util_maps "github.com/kumahq/kuma/v2/pkg/util/maps"
 	"github.com/kumahq/kuma/v2/pkg/util/proto"
 	envoy_metadata "github.com/kumahq/kuma/v2/pkg/xds/envoy/metadata/v3"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy/tags"
@@ -26,6 +27,9 @@ type ClientSideMTLSConfigurer struct {
 	VerifyIdentities      []string
 	UnifiedResourceNaming bool
 	UseMeshTrust          bool
+	// ZoneSNIs overrides SNI for endpoints in the given zones, keyed on the
+	// kuma.io/zone endpoint metadata. Only applies when Tags is empty.
+	ZoneSNIs map[string]string
 }
 
 var _ ClusterConfigurer = &ClientSideMTLSConfigurer{}
@@ -49,6 +53,19 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 			return err
 		}
 		cluster.TransportSocket = transportSocket
+		for _, zone := range util_maps.SortedKeys(c.ZoneSNIs) {
+			ts, err := c.createTransportSocket(c.ZoneSNIs[zone])
+			if err != nil {
+				return err
+			}
+			cluster.TransportSocketMatches = append(cluster.TransportSocketMatches, &envoy_cluster.Cluster_TransportSocketMatch{
+				Name: zone,
+				Match: &structpb.Struct{
+					Fields: envoy_metadata.MetadataFields(tags.Tags{mesh_proto.ZoneTag: zone}),
+				},
+				TransportSocket: ts,
+			})
+		}
 	case len(distinctTags) == 1:
 		sni := tls.SNIFromTags(c.Tags[0].WithTags("mesh", meshName))
 		transportSocket, err := c.createTransportSocket(sni)

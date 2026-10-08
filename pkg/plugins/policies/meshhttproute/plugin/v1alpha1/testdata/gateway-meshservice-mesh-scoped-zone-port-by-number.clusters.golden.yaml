@@ -1,0 +1,40 @@
+resources:
+- name: default_backend__remote-zone_msvc_80-d2c4a07517559f37
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: default_backend__remote-zone_msvc_80-d2c4a07517559f37
+    perConnectionBufferLimitBytes: 32768
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://default/backend
+                sanType: URI
+            validationContextSdsSecretConfig:
+              name: mesh_ca:secret:default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert:secret:default
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: sni.msvc.default.remote-zone.backend.test-port
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          httpProtocolOptions: {}

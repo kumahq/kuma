@@ -1,0 +1,40 @@
+resources:
+- name: default_example___extsvc_9090-002a82941d77ad60
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: default_example___extsvc_9090-002a82941d77ad60
+    perConnectionBufferLimitBytes: 32768
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://default/zone-egress
+                sanType: URI
+            validationContextSdsSecretConfig:
+              name: system_trust_bundle
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert:secret:default
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: sni.extsvc.default.example.9090
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          httpProtocolOptions: {}
