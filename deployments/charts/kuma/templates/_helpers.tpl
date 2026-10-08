@@ -229,6 +229,8 @@ env:
   value: {{ .Values.cni.enabled | quote }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
   value: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE_PULL_POLICY
+  value: {{ .Values.dataPlane.image.pullPolicy | quote }}
 - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_CPU
   value: {{ .Values.dataPlane.sidecarContainer.resources.requests.cpu | default "50m" | quote }}
 - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY
@@ -239,6 +241,8 @@ env:
   value: {{ .Values.dataPlane.sidecarContainer.resources.limits.memory | default "512Mi" | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
   value: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.initImage "root" $) | quote }}
+- name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE_PULL_POLICY
+  value: {{ .Values.dataPlane.image.pullPolicy | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
   value: {{ .Values.dataPlane.initContainer.resources.requests.cpu | default "20m" | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY

@@ -25,11 +25,12 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				RedirectPortInbound:  15006,
 				RedirectPortOutbound: 15001,
 				DataplaneContainer: DataplaneContainer{
-					Image:     "kuma/kuma-dp:latest",
-					UID:       5678,
-					GID:       5678,
-					DrainTime: config_types.Duration{Duration: 30 * time.Second},
-					EnvVars:   map[string]string{},
+					Image:           "kuma/kuma-dp:latest",
+					ImagePullPolicy: "IfNotPresent",
+					UID:             5678,
+					GID:             5678,
+					DrainTime:       config_types.Duration{Duration: 30 * time.Second},
+					EnvVars:         map[string]string{},
 					ReadinessProbe: SidecarReadinessProbe{
 						InitialDelaySeconds: 1,
 						TimeoutSeconds:      3,
@@ -63,7 +64,8 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			},
 			ContainerPatches: []string{},
 			InitContainer: InitContainer{
-				Image: "kuma/kuma-init:latest",
+				Image:           "kuma/kuma-init:latest",
+				ImagePullPolicy: "IfNotPresent",
 				Resources: InitContainerResources{
 					Requests: InitContainerResourceRequests{
 						CPU:    "20m",
@@ -281,6 +283,8 @@ type SidecarTraffic struct {
 type DataplaneContainer struct {
 	// Image name.
 	Image string `json:"image,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_image"`
+	// ImagePullPolicy is the pull policy for the Kuma DP image; one of Always, IfNotPresent, Never.
+	ImagePullPolicy string `json:"imagePullPolicy,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_image_pull_policy"`
 	// User ID.
 	UID int64 `json:"uid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_uid"`
 	// Group ID.
@@ -391,6 +395,8 @@ type InitContainer struct {
 
 	// Image name.
 	Image string `json:"image,omitempty" envconfig:"kuma_injector_init_container_image"`
+	// ImagePullPolicy is the pull policy for the Kuma init image; one of Always, IfNotPresent, Never.
+	ImagePullPolicy string `json:"imagePullPolicy,omitempty" envconfig:"kuma_injector_init_container_image_pull_policy"`
 	// Compute resource requirements.
 	Resources InitContainerResources `json:"resources,omitempty"`
 }

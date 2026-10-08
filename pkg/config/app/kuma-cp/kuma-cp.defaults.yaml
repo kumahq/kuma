@@ -271,6 +271,8 @@ runtime:
       sidecarContainer:
         # Image name.
         image: kuma/kuma-dp:latest # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
+        # Image pull policy for the Kuma DP image; one of Always, IfNotPresent, Never.
+        imagePullPolicy: IfNotPresent # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE_PULL_POLICY
         # Redirect port for inbound traffic.
         redirectPortInbound: 15006 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND
         # IP family mode enabled for traffic redirection, can be 'dualstack' or 'ipv4'
@@ -338,6 +340,8 @@ runtime:
       initContainer:
         # Image name.
         image: kuma/kuma-init:latest # ENV: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
+        # Image pull policy for the Kuma init image; one of Always, IfNotPresent, Never.
+        imagePullPolicy: IfNotPresent # ENV: KUMA_INJECTOR_INIT_CONTAINER_IMAGE_PULL_POLICY
         # Compute resource requirements.
         resources:
           # Minimum amount of compute resources required.
