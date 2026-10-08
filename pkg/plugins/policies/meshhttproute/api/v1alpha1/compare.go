@@ -75,8 +75,8 @@ func compareQueryParams(a []QueryParamsMatch, b []QueryParamsMatch) int {
 
 // CompareMatch orders the rules according to Gateway API precedence:
 // https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteRule
-// We treat RegularExpression matches, which are implementation-specific, the
-// same as prefix matches, the longer length match has priority.
+// RegularExpression matches, which are implementation-specific, rank below
+// Exact and PathPrefix matches; among themselves the longer one has priority.
 func CompareMatch(a Match, b Match) int {
 	if p := comparePath(a.Path, b.Path); p != 0 {
 		return p
