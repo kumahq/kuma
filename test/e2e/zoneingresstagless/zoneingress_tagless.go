@@ -155,7 +155,7 @@ func ZoneIngressWithInboundTagsDisabled() {
 }
 
 // storedAvailableServices returns the tags of the available services that the
-// Kubernetes store holds for the mesh of this test
+// local ZoneIngress in the Kubernetes store holds for the mesh of this test
 func storedAvailableServices() ([]map[string]string, error) {
 	out, err := k8s.RunKubectlAndGetOutputContextE(zone1.GetTesting(), context.Background(),
 		zone1.GetKubectlOptions(Config.KumaNamespace), "get", "zoneingresses", "-o", "json")
@@ -165,6 +165,7 @@ func storedAvailableServices() ([]map[string]string, error) {
 	var list struct {
 		Items []struct {
 			Spec struct {
+				Zone              string `json:"zone"`
 				AvailableServices []struct {
 					Mesh string            `json:"mesh"`
 					Tags map[string]string `json:"tags"`
@@ -175,16 +176,22 @@ func storedAvailableServices() ([]map[string]string, error) {
 	if err := json.Unmarshal([]byte(out), &list); err != nil {
 		return nil, err
 	}
-	if len(list.Items) == 0 {
-		return nil, fmt.Errorf("no ZoneIngress in %s", Kuma1)
-	}
+	local := false
 	var tags []map[string]string
 	for _, item := range list.Items {
+		// the global syncs the ZoneIngresses of other zones with spec.zone set
+		if item.Spec.Zone != "" && item.Spec.Zone != Kuma1 {
+			continue
+		}
+		local = true
 		for _, svc := range item.Spec.AvailableServices {
 			if svc.Mesh == meshName {
 				tags = append(tags, svc.Tags)
 			}
 		}
+	}
+	if !local {
+		return nil, fmt.Errorf("no local ZoneIngress in %s", Kuma1)
 	}
 	return tags, nil
 }
