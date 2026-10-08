@@ -21,6 +21,19 @@ func MatchTransportProtocol[T ~string](transport T) FilterChainBuilderOpt {
 	)
 }
 
+// MatchSourceType sets the connection source type match for the filter chain.
+func MatchSourceType(sourceType envoy_listener.FilterChainMatch_ConnectionSourceType) FilterChainBuilderOpt {
+	return AddFilterChainConfigurer(
+		v3.FilterChainMustConfigureFunc(func(chain *envoy_listener.FilterChain) {
+			if chain.FilterChainMatch == nil {
+				chain.FilterChainMatch = &envoy_listener.FilterChainMatch{}
+			}
+
+			chain.FilterChainMatch.SourceType = sourceType
+		}),
+	)
+}
+
 // MatchServerNames appends the giver server names to the filter chain
 // match. These names are matches against the client SNI name for TLS
 // sockets.

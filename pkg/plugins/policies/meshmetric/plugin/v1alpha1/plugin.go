@@ -126,7 +126,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	openTelemetryBackends := filterOpenTelemetryBackends(conf.Backends)
 
 	unifiedNaming := unified_naming.Enabled(proxy.Metadata, ctx.Mesh.Resource)
-	err := configurePrometheus(rs, proxy, prometheusBackends, unifiedNaming)
+	err := configurePrometheus(rs, proxy, ctx.Mesh, prometheusBackends, unifiedNaming)
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func removeResourcesConfiguredByMesh(rs *core_xds.ResourceSet, listener *envoy_l
 	}
 }
 
-func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, prometheusBackends []*api.PrometheusBackend, unifiedNaming bool) error {
+func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, meshCtx xds_context.MeshContext, prometheusBackends []*api.PrometheusBackend, unifiedNaming bool) error {
 	if len(prometheusBackends) == 0 {
 		return nil
 	}
@@ -182,9 +182,12 @@ func configurePrometheus(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, promet
 				systemName,
 				fmt.Sprintf("_%s", envoy_names.GetMetricsHijackerClusterName()),
 			),
-			StatPrefix:  getNameOrDefault(systemName, ""),
-			StatsPath:   PrometheusDataplaneStatsPath,
-			IPv6Enabled: proxy.Metadata.GetIPv6Enabled(),
+			StatPrefix:            getNameOrDefault(systemName, ""),
+			StatsPath:             PrometheusDataplaneStatsPath,
+			IPv6Enabled:           proxy.Metadata.GetIPv6Enabled(),
+			Mesh:                  meshCtx.Resource,
+			UnifiedResourceNaming: unifiedNaming,
+			UseMeshTrust:          len(meshCtx.CAsByTrustDomain) > 0,
 		}
 
 		cluster, err := configurer.ConfigureCluster(proxy)
