@@ -105,15 +105,12 @@ func ZoneIngressWithInboundTagsDisabled() {
 	})
 
 	It("should drop inbound tags when the zone control plane disables them", func() {
-		kubectl := zone1.GetKubectlOptions(Config.KumaNamespace)
-		Expect(k8s.RunKubectlContextE(zone1.GetTesting(), context.Background(), kubectl,
+		// stop first: a rollout leaves the old pod terminating, and the new port-forward can attach to it
+		Expect(zone1.StopControlPlane()).To(Succeed())
+		Expect(k8s.RunKubectlContextE(zone1.GetTesting(), context.Background(), zone1.GetKubectlOptions(Config.KumaNamespace),
 			"set", "env", "deployment/"+Config.KumaServiceName, "KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED=true",
 		)).To(Succeed())
-		Expect(k8s.RunKubectlContextE(zone1.GetTesting(), context.Background(), kubectl,
-			"rollout", "status", "deployment/"+Config.KumaServiceName, "--timeout=5m",
-		)).To(Succeed())
-		Expect(zone1.WaitControlPlaneLeader()).To(Succeed())
-		Expect(zone1.GetKuma().(*K8sControlPlane).FinalizeAdd()).To(Succeed())
+		Expect(zone1.RestartControlPlane()).To(Succeed())
 		Expect(WaitForZoneOnline(global, Kuma1)).To(Succeed())
 
 		Eventually(func(g Gomega) {
