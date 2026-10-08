@@ -18,6 +18,8 @@ Before this change, the mode produced a plaintext endpoint.
 
 Give each remote scraper a client certificate that the mesh trusts before the upgrade. To keep a plaintext endpoint, set the mode to `Disabled`.
 
+MADS now sends `https` for this mode. A Prometheus server in the mesh with `kuma.io/direct-access-services` gets the mesh certificate from its sidecar only with mesh mTLS. For that Prometheus server, set the scrape scheme to `http`.
+
 ### `MeshPassthrough` validates matches by the Envoy filter chain they resolve to
 
 Validation of `MeshPassthrough` now follows the filter chains of the generated passthrough listener, the same way 3.0 does.
