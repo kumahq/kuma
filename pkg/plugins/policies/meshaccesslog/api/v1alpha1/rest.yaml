@@ -209,17 +209,6 @@ components:
                                   required:
                                     - type
                                   type: object
-                                  oneOf:
-                                    - properties:
-                                        plain: {}
-                                        type:
-                                          enum:
-                                            - Plain
-                                    - properties:
-                                        json: {}
-                                        type:
-                                          enum:
-                                            - Json
                                 path:
                                   description: Path to a file that logs will be written to
                                   example: /tmp/access.log
@@ -331,17 +320,6 @@ components:
                                   required:
                                     - type
                                   type: object
-                                  oneOf:
-                                    - properties:
-                                        plain: {}
-                                        type:
-                                          enum:
-                                            - Plain
-                                    - properties:
-                                        json: {}
-                                        type:
-                                          enum:
-                                            - Json
                               required:
                                 - address
                               type: object
@@ -354,22 +332,6 @@ components:
                           required:
                             - type
                           type: object
-                          oneOf:
-                            - properties:
-                                tcp: {}
-                                type:
-                                  enum:
-                                    - Tcp
-                            - properties:
-                                file: {}
-                                type:
-                                  enum:
-                                    - File
-                            - properties:
-                                openTelemetry: {}
-                                type:
-                                  enum:
-                                    - OpenTelemetry
                         type: array
                     type: object
                   matches:
@@ -495,17 +457,6 @@ components:
                                   required:
                                     - type
                                   type: object
-                                  oneOf:
-                                    - properties:
-                                        plain: {}
-                                        type:
-                                          enum:
-                                            - Plain
-                                    - properties:
-                                        json: {}
-                                        type:
-                                          enum:
-                                            - Json
                                 path:
                                   description: Path to a file that logs will be written to
                                   example: /tmp/access.log
@@ -617,17 +568,6 @@ components:
                                   required:
                                     - type
                                   type: object
-                                  oneOf:
-                                    - properties:
-                                        plain: {}
-                                        type:
-                                          enum:
-                                            - Plain
-                                    - properties:
-                                        json: {}
-                                        type:
-                                          enum:
-                                            - Json
                               required:
                                 - address
                               type: object
@@ -640,22 +580,6 @@ components:
                           required:
                             - type
                           type: object
-                          oneOf:
-                            - properties:
-                                tcp: {}
-                                type:
-                                  enum:
-                                    - Tcp
-                            - properties:
-                                file: {}
-                                type:
-                                  enum:
-                                    - File
-                            - properties:
-                                openTelemetry: {}
-                                type:
-                                  enum:
-                                    - OpenTelemetry
                         type: array
                     type: object
                   targetRef:
