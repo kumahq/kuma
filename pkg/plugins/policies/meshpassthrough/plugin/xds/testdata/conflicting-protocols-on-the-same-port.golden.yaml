@@ -1,0 +1,19 @@
+- MatchType: 2
+  Port: 8080
+  Protocol: tcp
+  Routes: []
+  Value: other.com
+- MatchType: 2
+  Port: 9001
+  Protocol: http
+  Routes:
+  - MatchType: 2
+    Value: anotherhttp.com
+  Value: ""
+- MatchType: 2
+  Port: 8080
+  Protocol: http
+  Routes:
+  - MatchType: 2
+    Value: example.com
+  Value: ""

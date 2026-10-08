@@ -9,6 +9,7 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/meshpassthrough/metadata"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	xds_listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 )
 
@@ -21,10 +22,7 @@ type Configurer struct {
 
 func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
 	clustersAccumulator := map[string]core_meta.Protocol{}
-	filterChainMatches, err := GetOrderedMatchers(c.Conf)
-	if err != nil {
-		return err
-	}
+	filterChainMatches := GetOrderedMatchers(c.Conf)
 
 	if hasIPv4Matches(filterChainMatches) {
 		if err := c.configureListener(filterChainMatches, ipv4, clustersAccumulator, false, c.IPv6Enabled); err != nil {
@@ -61,7 +59,7 @@ func (c Configurer) configureListener(
 	if listener == nil {
 		return nil
 	}
-	listenerFiltersExcludedOnPorts := []uint32{}
+	listenerFiltersExcludedOnPorts := mysqlPorts(c.Conf)
 	// remove default filter chain provided by `transparent_proxy_generator`
 	listener.FilterChains = []*envoy_listener.FilterChain{}
 	for _, matcher := range orderedFilterChainMatches {
@@ -75,9 +73,6 @@ func (c Configurer) configureListener(
 			Routes:            matcher.Routes,
 			IsIPv6:            isIPv6,
 			IPv6Enabled:       ipv6Enabled,
-		}
-		if matcher.Protocol == core_meta.Protocol(api.MysqlProtocol) {
-			listenerFiltersExcludedOnPorts = append(listenerFiltersExcludedOnPorts, matcher.Port)
 		}
 		err := configurer.Configure(listener, clustersAccumulator)
 		if err != nil {
@@ -123,6 +118,22 @@ func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener, l
 		err = configurer.Configure(listener)
 	}
 	return err
+}
+
+// mysqlPorts lists the ports the inspectors are disabled on: the mysql server speaks
+// first, so an inspector waiting for the client stalls the connection. A mysql match
+// dropped for a tcp match on the same address and port still counts, the tcp chain
+// carries its traffic.
+func mysqlPorts(conf api.Conf) []uint32 {
+	conflicts := api.FindConflicts(conf)
+	ports := []uint32{}
+	for i, match := range pointer.Deref(conf.AppendMatch) {
+		if match.Protocol != api.MysqlProtocol || match.Port == nil || conflicts.IsInvalid(i) || slices.Contains(ports, *match.Port) {
+			continue
+		}
+		ports = append(ports, *match.Port)
+	}
+	return ports
 }
 
 func hasIPv4Matches(orderedMatchers []FilterChainMatch) bool {

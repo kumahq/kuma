@@ -8,6 +8,30 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.6`
 
+### `MeshPassthrough` validates matches by the Envoy filter chain they resolve to
+
+Validation of `MeshPassthrough` now follows the filter chains of the generated passthrough listener, the same way 3.0 does.
+Two matches conflict only when they resolve to the same filter chain on the same port (or both have no port):
+
+- domains with two of `grpc`, `http` and `http2`, which share one filter chain per port
+- the same address spelled differently, an IP and a CIDR covering only that IP (`10.0.0.1` and `10.0.0.1/32`), a CIDR with host bits (`10.0.0.1/24` and `10.0.0.0/24`) or another textual form of the same IPv6 address
+- `tcp` and `mysql` on the same address, both generate an identical TCP proxy filter chain
+
+Matches that resolve to distinct filter chains are no longer rejected, for example `tls` or `tcp` next to `http` on the same port, or `http` on a domain next to `http2` on an IP on the same port.
+This lets you add a `port` to every `Domain` match before upgrading to 3.0, which requires it.
+A match with a port next to a match without one is not a conflict either: the port-specific match owns its port and the match without a port covers the remaining ports.
+
+An already applied policy with a conflict is not re-validated on upgrade.
+Instead of sending Envoy a listener it rejects or failing config generation, the control plane keeps the first match of the colliding pair in `appendMatch` order, drops the later one and names it in a debug log of the `MeshPassthrough` component.
+When the dropped match is `mysql` and the kept one is `tcp` on the same address and port, the TLS and HTTP inspectors stay disabled on that port, so `mysql` traffic keeps working through the `tcp` filter chain.
+
+**Action required**
+
+If a `MeshPassthrough` policy contains matches like the above, resolve the conflict (pick one protocol per port and one spelling per address), otherwise the next edit of the policy is rejected by validation.
+
+Upgrade every zone control plane to 2.14.6 before applying a policy the previous validator rejected, and before upgrading the global control plane to 3.0.
+A global control plane on 2.14.6 or 3.0 accepts such policies and syncs them to zones, and a zone on an older 2.14 patch fails to generate configuration for the proxies the policy selects, so they stop receiving updates.
+
 ### Empty MeshTrafficPermission match entries
 
 Remove or replace each empty match object in MeshTrafficPermission before you upgrade a control plane. Check `rules[].default.allow`, `rules[].default.deny`, and `rules[].default.allowWithShadowDeny`. Each entry must contain `spiffeID`, `sni`, or both. Keep an empty action list only when another action has at least one valid match.

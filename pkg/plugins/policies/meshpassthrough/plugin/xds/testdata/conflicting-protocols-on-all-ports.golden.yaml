@@ -1,0 +1,14 @@
+- MatchType: 2
+  Port: 0
+  Protocol: http
+  Routes:
+  - MatchType: 2
+    Value: datadog.datadog.svc.cluster.local
+  Value: ""
+- MatchType: 2
+  Port: 4317
+  Protocol: grpc
+  Routes:
+  - MatchType: 2
+    Value: datadog.datadog.svc.cluster.local
+  Value: ""
