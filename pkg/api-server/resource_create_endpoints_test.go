@@ -1,0 +1,148 @@
+package api_server_test
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"sync"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	config "github.com/kumahq/kuma/v3/pkg/config/api-server"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+)
+
+var _ = Describe("Create-only resource endpoints", func() {
+	request := func(address, method, path, body string) (int, []byte) {
+		GinkgoHelper()
+
+		req, err := http.NewRequestWithContext(context.Background(), method, "http://"+address+path, bytes.NewBufferString(body))
+		Expect(err).NotTo(HaveOccurred())
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err := http.DefaultClient.Do(req)
+		Expect(err).NotTo(HaveOccurred())
+		defer resp.Body.Close()
+
+		data, err := io.ReadAll(resp.Body)
+		Expect(err).NotTo(HaveOccurred())
+
+		return resp.StatusCode, data
+	}
+
+	DescribeTable("creates once and preserves the original on conflict", func(collection, body, replacement string) {
+		// given
+		resourceStore := memory.NewStore()
+		Expect(resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))).To(Succeed())
+		api, _, stop := StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore).WithConfigMutator(func(c *config.ApiServerConfig) {
+			c.BasePath = "/api"
+		}))
+		defer stop()
+		collection = "/api" + collection
+
+		// when
+		status, data := request(api.Address(), http.MethodPost, collection, body)
+
+		// then
+		Expect(status).To(Equal(http.StatusCreated), string(data))
+
+		var warnings map[string]any
+		Expect(json.Unmarshal(data, &warnings)).To(Succeed())
+
+		// and then
+		status, before := request(api.Address(), http.MethodGet, collection+"/test", "")
+		Expect(status).To(Equal(http.StatusOK))
+
+		status, data = request(api.Address(), http.MethodPost, collection, replacement)
+		Expect(status).To(Equal(http.StatusConflict), string(data))
+
+		var conflict map[string]any
+		Expect(json.Unmarshal(data, &conflict)).To(Succeed())
+		Expect(conflict["status"]).To(BeNumerically("==", 409))
+		Expect(conflict["detail"]).To(ContainSubstring("test"))
+
+		status, after := request(api.Address(), http.MethodGet, collection+"/test", "")
+		Expect(status).To(Equal(http.StatusOK))
+		Expect(after).To(MatchJSON(before))
+	},
+		Entry("global Mesh", "/meshes", `{"type":"Mesh","name":"test","labels":{"test":"original"}}`, `{"type":"Mesh","name":"test","labels":{"test":"replacement"}}`),
+		Entry("mesh-scoped secret", "/meshes/default/secrets", `{"type":"Secret","mesh":"default","name":"test","data":"b3JpZ2luYWw="}`, `{"type":"Secret","mesh":"default","name":"test","data":"cmVwbGFjZW1lbnQ="}`),
+		Entry("global secret alias", "/global-secrets", `{"type":"GlobalSecret","name":"test","data":"b3JpZ2luYWw="}`, `{"type":"GlobalSecret","name":"test","data":"cmVwbGFjZW1lbnQ="}`),
+	)
+
+	DescribeTable("returns deprecation warnings when creating a resource", func(method, path string) {
+		// given
+		resourceStore := memory.NewStore()
+		Expect(resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))).To(Succeed())
+		api, _, stop := StartApiServer(NewTestApiServerConfigurer().WithStore(resourceStore))
+		defer stop()
+
+		// when
+		status, data := request(api.Address(), method, path,
+			`{"type":"MeshRateLimit","name":"warning","mesh":"default","spec":{"targetRef":{"kind":"Dataplane"},"rules":[{"default":{"local":{"http":{"onRateLimit":{"status":123}}}}}]}}`)
+
+		// then
+		Expect(status).To(Equal(http.StatusCreated), string(data))
+
+		var result struct {
+			Warnings []string `json:"warnings"`
+		}
+		Expect(json.Unmarshal(data, &result)).To(Succeed())
+		Expect(result.Warnings).To(ContainElement(ContainSubstring("must be 400 or higher")))
+	},
+		Entry("POST", http.MethodPost, "/meshes/default/meshratelimits"),
+		Entry("PUT", http.MethodPut, "/meshes/default/meshratelimits/warning"),
+	)
+
+	It("allows only one concurrent create and preserves the winner", func() {
+		// given
+		api, _, stop := StartApiServer(NewTestApiServerConfigurer())
+		defer stop()
+
+		const count = 8
+		statuses := make([]int, count)
+		bodies := make([][]byte, count)
+		start := make(chan struct{})
+		var wg sync.WaitGroup
+		for i := range count {
+			wg.Go(func() {
+				defer GinkgoRecover()
+				<-start
+				statuses[i], bodies[i] = request(api.Address(), http.MethodPost, "/meshes", fmt.Sprintf(`{"type":"Mesh","name":"race","labels":{"writer":"%d"}}`, i))
+			})
+		}
+
+		// when
+		close(start)
+		wg.Wait()
+
+		// then
+		winner := -1
+		for i, status := range statuses {
+			if status == http.StatusCreated {
+				Expect(winner).To(Equal(-1))
+				winner = i
+			} else {
+				Expect(status).To(Equal(http.StatusConflict), string(bodies[i]))
+			}
+		}
+
+		Expect(winner).To(BeNumerically(">=", 0))
+
+		// and then
+		status, data := request(api.Address(), http.MethodGet, "/meshes/race", "")
+		Expect(status).To(Equal(http.StatusOK))
+		var result struct {
+			Labels map[string]string `json:"labels"`
+		}
+		Expect(json.Unmarshal(data, &result)).To(Succeed())
+		Expect(result.Labels["writer"]).To(Equal(fmt.Sprint(winner)))
+	})
+})

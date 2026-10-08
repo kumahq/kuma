@@ -311,6 +311,7 @@ func (r resourceRoute) pathPrefix(descriptor model.ResourceTypeDescriptor) strin
 func registerResourceRoutes(ws *restful.WebService, endpoints resourceEndpoints) {
 	for _, route := range resourceRoutes(endpoints.descriptor) {
 		pathPrefix := route.pathPrefix(endpoints.descriptor)
+		endpoints.addCreateEndpoint(ws, pathPrefix)
 		endpoints.addCreateOrUpdateEndpoint(ws, pathPrefix)
 		endpoints.addDeleteEndpoint(ws, pathPrefix)
 		endpoints.addFindEndpoint(ws, pathPrefix)

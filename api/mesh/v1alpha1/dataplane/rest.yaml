@@ -431,6 +431,48 @@ paths:
       summary: Returns a list of Dataplane in the mesh.
       tags:
       - Dataplane
+    post:
+      description: Creates a resource using the name in the body. An existing resource
+        is never modified. Requires Kuma 3.0 or later.
+      operationId: postDataplane
+      parameters:
+      - description: name of the mesh
+        in: path
+        name: mesh
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataplaneItem'
+        description: Resource to create
+        required: true
+      responses:
+        "201":
+          $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: ../../base/specs/common/error_schema.yaml#/components/schemas/Error
+          description: Invalid resource
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: ../../base/specs/common/error_schema.yaml#/components/schemas/NotFoundError
+          description: Parent mesh not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: ../../base/specs/common/error_schema.yaml#/components/schemas/Error
+          description: A resource with this identity already exists
+      summary: Creates Dataplane entity
+      tags:
+      - Dataplane
   /meshes/{mesh}/dataplanes/{name}:
     delete:
       operationId: deleteDataplane

@@ -79,6 +79,46 @@ paths:
         '404':
           $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
   /meshes/{mesh}/meshratelimits:
+    post:
+      operationId: postMeshRateLimit
+      summary: Creates MeshRateLimit entity
+      description: Creates a resource using the name in the body. An existing resource is never modified. Requires Kuma 3.0 or later.
+      tags: ["MeshRateLimit"]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshRateLimitItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshRateLimitCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: "../../base/specs/common/error_schema.yaml#/components/schemas/Error"
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: "../../base/specs/common/error_schema.yaml#/components/schemas/NotFoundError"
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: "../../base/specs/common/error_schema.yaml#/components/schemas/Error"
     get:
       operationId: getMeshRateLimitList
       summary: Returns a list of MeshRateLimit in the mesh.

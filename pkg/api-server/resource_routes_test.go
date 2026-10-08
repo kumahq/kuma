@@ -95,20 +95,24 @@ func TestRegisterResourceRoutes(t *testing.T) {
 				registerResourceRoutes(ws, endpoints)
 
 				g.Expect(routeMethodPaths(ws)).To(Equal([]string{
+					http.MethodPost + " /meshes/{mesh}/resources",
 					http.MethodPut + " /meshes/{mesh}/resources/{name}",
 					http.MethodDelete + " /meshes/{mesh}/resources/{name}",
 					http.MethodGet + " /meshes/{mesh}/resources/{name}",
 					http.MethodGet + " /meshes/{mesh}/resources",
+					http.MethodPost + " /meshes/{mesh}/resource-aliases",
 					http.MethodPut + " /meshes/{mesh}/resource-aliases/{name}",
 					http.MethodDelete + " /meshes/{mesh}/resource-aliases/{name}",
 					http.MethodGet + " /meshes/{mesh}/resource-aliases/{name}",
 					http.MethodGet + " /meshes/{mesh}/resource-aliases",
 				}))
 				g.Expect(metadataCalls).To(Equal([]string{
+					http.MethodPost,
 					http.MethodPut,
 					http.MethodDelete,
 					http.MethodGet,
 					http.MethodGet,
+					http.MethodPost,
 					http.MethodPut,
 					http.MethodDelete,
 					http.MethodGet,
@@ -130,10 +134,12 @@ func TestRegisterResourceRoutes(t *testing.T) {
 		registerResourceRoutes(ws, endpoints)
 
 		g.Expect(routeMethodPaths(ws)).To(Equal([]string{
+			http.MethodPost + " /globalsecrets",
 			http.MethodPut + " /globalsecrets/{name}",
 			http.MethodDelete + " /globalsecrets/{name}",
 			http.MethodGet + " /globalsecrets/{name}",
 			http.MethodGet + " /globalsecrets",
+			http.MethodPost + " /global-secrets",
 			http.MethodPut + " /global-secrets/{name}",
 			http.MethodDelete + " /global-secrets/{name}",
 			http.MethodGet + " /global-secrets/{name}",

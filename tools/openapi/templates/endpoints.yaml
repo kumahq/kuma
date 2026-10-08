@@ -91,6 +91,52 @@ paths:
     {{- end}}
 
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}:
+    {{- if not .ReadOnly}}
+    post:
+      operationId: post{{ .Name }}
+      summary: Creates {{ .Name }} entity
+      description: Creates a resource using the name in the body. An existing resource is never modified. Requires Kuma 3.0 or later.
+      tags: [ "{{ .Name }}" ]
+      {{- if eq .Scope "Mesh"}}
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      {{- end}}
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/{{.Name}}Item'
+      responses:
+        '201':
+          $ref: '#/components/responses/{{.Name}}CreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: "../../{{ .ErrorSchema }}#/components/schemas/Error"
+        {{- if eq .Scope "Mesh"}}
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: "../../{{ .ErrorSchema }}#/components/schemas/NotFoundError"
+        {{- end}}
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: "../../{{ .ErrorSchema }}#/components/schemas/Error"
+    {{- end}}
     get:
       operationId: get{{ .Name }}List
       {{- if eq .Scope "Mesh"}}

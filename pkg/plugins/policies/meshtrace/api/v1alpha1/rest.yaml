@@ -79,6 +79,46 @@ paths:
         '404':
           $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
   /meshes/{mesh}/meshtraces:
+    post:
+      operationId: postMeshTrace
+      summary: Creates MeshTrace entity
+      description: Creates a resource using the name in the body. An existing resource is never modified. Requires Kuma 3.0 or later.
+      tags: ["MeshTrace"]
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshTraceItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/MeshTraceCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: "../../base/specs/common/error_schema.yaml#/components/schemas/Error"
+        '404':
+          description: Parent mesh not found
+          content:
+            application/json:
+              schema:
+                $ref: "../../base/specs/common/error_schema.yaml#/components/schemas/NotFoundError"
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: "../../base/specs/common/error_schema.yaml#/components/schemas/Error"
     get:
       operationId: getMeshTraceList
       summary: Returns a list of MeshTrace in the mesh.
