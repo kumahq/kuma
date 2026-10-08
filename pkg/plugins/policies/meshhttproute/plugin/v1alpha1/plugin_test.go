@@ -931,6 +931,185 @@ var _ = Describe("MeshHTTPRoute", func() {
 				proxy: proxy,
 			}
 		}()),
+		Entry("default-meshservice-mesh-scoped-zone-no-identity", func() outboundsTestCase {
+			// A proxy still on legacy mTLS must send the KRI SNI to a zone served by a
+			// mesh-scoped zone proxy, which has no filter chain for the hash-based SNI.
+			// MeshService located in a remote zone that exposes a mesh-scoped zone proxy.
+			// The cluster SNI must use the KRI-derived format (sni.msvc.<mesh>.<zone>.<name>.<port>)
+			// instead of the legacy hash-based format.
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("default_backend__remote-zone_msvc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "app", "backend"))
+			meshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend", Mesh: "default",
+					Labels: map[string]string{
+						mesh_proto.ZoneTag:             "remote-zone",
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{{
+						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+						Value: "backend",
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
+			}
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithMeshBuilder(builders.Mesh().WithBuiltinMTLSBackend("builtin").WithEnabledMTLSBackend("builtin")).
+					WithEndpointMap(outboundTargets).
+					WithResources(resources).
+					With(func(ctx *xds_context.Context) {
+						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"remote-zone": true}
+					}).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(builders.Dataplane().
+						WithName("web-01").
+						WithAddress("192.168.0.2").
+						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
+					).
+					WithOutbounds(xds_types.Outbounds{{
+						Resource: kri.WithSectionName(kri.From(&meshSvc), "80"),
+						Address:  "10.0.0.1",
+						Port:     80,
+					}}).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithSecretsTracker(envoy.NewSecretsTracker(core_model.DefaultMesh, nil)).
+					Build(),
+			}
+		}()),
+		Entry("default-meshmultizoneservice-mixed-zones-no-identity", func() outboundsTestCase {
+			// Same mixed MZMS for a proxy still on legacy mTLS: the SNI follows the zone proxy, so the
+			// KRI SNI stays the default and "legacy-zone" gets a transport_socket_match with the hash-based SNI.
+			newMeshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend-new", Mesh: "default",
+					Labels: map[string]string{
+						"service":                      "backend",
+						mesh_proto.ZoneTag:             "new-zone",
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{
+						{Type: meshservice_api.MeshServiceIdentityServiceTagType, Value: "backend"},
+					},
+					State: meshservice_api.StateAvailable,
+				},
+				Status: &meshservice_api.MeshServiceStatus{},
+			}
+			legacyMeshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend-legacy", Mesh: "default",
+					Labels: map[string]string{
+						"service":                      "backend",
+						mesh_proto.ZoneTag:             "legacy-zone",
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{
+						{Type: meshservice_api.MeshServiceIdentityServiceTagType, Value: "backend"},
+					},
+					State: meshservice_api.StateAvailable,
+				},
+				Status: &meshservice_api.MeshServiceStatus{},
+			}
+			meshMZSvc := meshmultizoneservice_api.MeshMultiZoneServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "multi-backend", Mesh: "default"},
+				Spec: &meshmultizoneservice_api.MeshMultiZoneService{
+					Selector: meshmultizoneservice_api.Selector{
+						MeshService: common_api.LabelSelector{
+							MatchLabels: &map[string]string{"service": "backend"},
+						},
+					},
+					Ports: []meshmultizoneservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+				},
+				Status: &meshmultizoneservice_api.MeshMultiZoneServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.2"}},
+					MeshServices: []meshmultizoneservice_api.MatchedMeshService{
+						{Name: "backend-new", Zone: "new-zone", Mesh: "default"},
+						{Name: "backend-legacy", Zone: "legacy-zone", Mesh: "default"},
+					},
+				},
+			}
+			meshZoneAddress := meshzoneaddress_api.MeshZoneAddressResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "mza-new-zone", Mesh: "default",
+					Labels: map[string]string{mesh_proto.ZoneTag: "new-zone"},
+				},
+				Spec: &meshzoneaddress_api.MeshZoneAddress{
+					Address: "10.20.20.20",
+					Port:    15050,
+				},
+			}
+			zoneIngress := builders.ZoneIngress().
+				WithZone("legacy-zone").
+				WithAddress("10.10.10.1").
+				WithAdvertisedAddress("10.10.10.10").
+				WithAdvertisedPort(15050).
+				Build()
+
+			dp := builders.Dataplane().
+				WithName("web-01").
+				WithAddress("192.168.0.2").
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
+				Build()
+			mc := meshContextWithResources(builders.Mesh(), dp, &newMeshSvc, &legacyMeshSvc, &meshMZSvc, &meshZoneAddress, zoneIngress)
+
+			builder := &sync.DataplaneProxyBuilder{
+				Zone:       "zone-1",
+				APIVersion: envoy.APIV3,
+			}
+			proxy, err := builder.Build(context.Background(), core_model.ResourceKey{Name: dp.GetMeta().GetName(), Mesh: dp.GetMeta().GetMesh()}, &core_xds.DataplaneMetadata{}, *mc)
+			Expect(err).ToNot(HaveOccurred())
+
+			proxy.Outbounds = xds_types.Outbounds{{
+				Address:  "10.0.0.2",
+				Port:     80,
+				Resource: kri.WithSectionName(kri.From(&meshMZSvc), "80"),
+			}}
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithMeshContext(mc).
+					With(func(ctx *xds_context.Context) {
+						// "new-zone" has a mesh-scoped zone proxy; "legacy-zone" only a ZoneIngress
+						ctx.Mesh.ZonesWithMeshScopedProxy = map[string]bool{"new-zone": true}
+					}).
+					Build(),
+				proxy: proxy,
+			}
+		}()),
 		Entry("default-meshmultizoneservice", func() outboundsTestCase {
 			backendDP := builders.Dataplane().
 				WithName("backend").
@@ -3381,6 +3560,331 @@ var _ = Describe("MeshHTTPRoute", func() {
 								},
 							}),
 					).
+					Build(),
+			}
+		}()),
+		Entry("gateway-meshmultizoneservice-mixed-zones-no-identity", func() outboundsTestCase {
+			// A gateway on legacy mTLS must pick the SNI per zone proxy like a sidecar: KRI SNI by
+			// default for the mesh-scoped "new-zone", hash-based SNI for the legacy-only "legacy-zone".
+			newMeshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend-new", Mesh: "default",
+					Labels: map[string]string{
+						"service":                      "backend",
+						mesh_proto.ZoneTag:             "new-zone",
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{
+						{Type: meshservice_api.MeshServiceIdentityServiceTagType, Value: "backend"},
+					},
+					State: meshservice_api.StateAvailable,
+				},
+				Status: &meshservice_api.MeshServiceStatus{},
+			}
+			legacyMeshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend-legacy", Mesh: "default",
+					Labels: map[string]string{
+						"service":                      "backend",
+						mesh_proto.ZoneTag:             "legacy-zone",
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{
+						{Type: meshservice_api.MeshServiceIdentityServiceTagType, Value: "backend"},
+					},
+					State: meshservice_api.StateAvailable,
+				},
+				Status: &meshservice_api.MeshServiceStatus{},
+			}
+			meshMZSvc := meshmultizoneservice_api.MeshMultiZoneServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "multi-backend", Mesh: "default"},
+				Spec: &meshmultizoneservice_api.MeshMultiZoneService{
+					Selector: meshmultizoneservice_api.Selector{
+						MeshService: common_api.LabelSelector{
+							MatchLabels: &map[string]string{"service": "backend"},
+						},
+					},
+					Ports: []meshmultizoneservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_meta.ProtocolHTTP,
+					}},
+				},
+				Status: &meshmultizoneservice_api.MeshMultiZoneServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.2"}},
+					MeshServices: []meshmultizoneservice_api.MatchedMeshService{
+						{Name: "backend-new", Zone: "new-zone", Mesh: "default"},
+						{Name: "backend-legacy", Zone: "legacy-zone", Mesh: "default"},
+					},
+				},
+			}
+			meshZoneAddress := meshzoneaddress_api.MeshZoneAddressResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "mza-new-zone", Mesh: "default",
+					Labels: map[string]string{mesh_proto.ZoneTag: "new-zone"},
+				},
+				Spec: &meshzoneaddress_api.MeshZoneAddress{
+					Address: "10.20.20.20",
+					Port:    15050,
+				},
+			}
+			zoneIngress := builders.ZoneIngress().
+				WithZone("legacy-zone").
+				WithAddress("10.10.10.1").
+				WithAdvertisedAddress("10.10.10.10").
+				WithAdvertisedPort(15050).
+				Build()
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{{
+						Match: map[string]string{mesh_proto.ServiceTag: "sample-gateway"},
+					}},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{{
+							Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+							Port:     8080,
+						}},
+					},
+				},
+			}
+			mc := meshContextWithResources(builders.Mesh(), gateway, &newMeshSvc, &legacyMeshSvc, &meshMZSvc, &meshZoneAddress, zoneIngress)
+
+			commonRules := core_rules.ToRules{
+				Rules: core_rules.Rules{
+					test_policies.NewRule(subsetutils.MeshSubset(), api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{Type: api.PathPrefix, Value: "/"},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]common_api.BackendRef{{
+									Kind:   common_api.MeshMultiZoneService,
+									Name:   pointer.To("multi-backend"),
+									Port:   pointer.To(uint32(80)),
+									Weight: pointer.To(uint(100)),
+								}},
+							},
+						}},
+					}),
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithMeshContext(mc).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing()).
+					WithSecretsTracker(envoy.NewSecretsTracker(core_model.DefaultMesh, nil)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): commonRules,
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("gateway-meshservice-mesh-scoped-zone-port-by-number", func() outboundsTestCase {
+			// A gateway backendRef addressing a named port by number must produce the
+			// port-name SNI, otherwise it matches no filter chain on the zone proxy.
+			meshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "backend", Mesh: "default",
+					Labels: map[string]string{
+						mesh_proto.ZoneTag:             "remote-zone",
+						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+						"app":                          "backend",
+					},
+				},
+				Spec: &meshservice_api.MeshService{
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  pointer.To(intstr.FromInt(8084)),
+						AppProtocol: core_meta.ProtocolHTTP,
+						Name:        pointer.To("test-port"),
+					}},
+					Identities: &[]meshservice_api.MeshServiceIdentity{{
+						Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+						Value: "backend",
+					}},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{IP: "10.0.0.1"}},
+				},
+			}
+			meshZoneAddress := meshzoneaddress_api.MeshZoneAddressResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "mza-remote-zone", Mesh: "default",
+					Labels: map[string]string{mesh_proto.ZoneTag: "remote-zone"},
+				},
+				Spec: &meshzoneaddress_api.MeshZoneAddress{
+					Address: "10.20.20.20",
+					Port:    15050,
+				},
+			}
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{{
+						Match: map[string]string{mesh_proto.ServiceTag: "sample-gateway"},
+					}},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{{
+							Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+							Port:     8080,
+						}},
+					},
+				},
+			}
+			mc := meshContextWithResources(builders.Mesh(), gateway, &meshSvc, &meshZoneAddress)
+
+			commonRules := core_rules.ToRules{
+				Rules: core_rules.Rules{
+					test_policies.NewRule(subsetutils.MeshSubset(), api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{Type: api.PathPrefix, Value: "/"},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]common_api.BackendRef{{
+									Kind:   common_api.MeshService,
+									Labels: &map[string]string{"app": "backend"},
+									Port:   pointer.To(uint32(80)),
+									Weight: pointer.To(uint(100)),
+								}},
+							},
+						}},
+					}),
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithMeshContext(mc).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing()).
+					WithSecretsTracker(envoy.NewSecretsTracker(core_model.DefaultMesh, nil)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): commonRules,
+									},
+								},
+							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("gateway-meshexternalservice-mesh-scoped-egress", func() outboundsTestCase {
+			// A global MES has no zone, so the gateway must pick the KRI SNI from the egress SANs,
+			// like sidecars do, otherwise the mesh-scoped zone egress matches no filter chain.
+			meshExtSvc := meshexternalservice_api.MeshExternalServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Name: "example", Mesh: "default",
+					Labels: map[string]string{"app": "example"},
+				},
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type:     meshexternalservice_api.HostnameGeneratorType,
+						Port:     9090,
+						Protocol: core_meta.ProtocolHTTP,
+					},
+					Endpoints: &[]meshexternalservice_api.Endpoint{{
+						Address: "example.com",
+						Port:    10000,
+					}},
+				},
+				Status: &meshexternalservice_api.MeshExternalServiceStatus{
+					VIP: meshexternalservice_api.VIP{IP: "10.20.20.1"},
+				},
+			}
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{{
+						Match: map[string]string{mesh_proto.ServiceTag: "sample-gateway"},
+					}},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{{
+							Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+							Port:     8080,
+						}},
+					},
+				},
+			}
+			mc := meshContextWithResources(builders.Mesh(), gateway, &meshExtSvc)
+			mc.ZoneEgresses = []core_xds.ZoneEgressInstance{
+				{Address: "10.0.0.1", Port: 10002, SAN: "spiffe://default/zone-egress"},
+			}
+
+			commonRules := core_rules.ToRules{
+				Rules: core_rules.Rules{
+					test_policies.NewRule(subsetutils.MeshSubset(), api.PolicyDefault{
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{Type: api.PathPrefix, Value: "/"},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]common_api.BackendRef{{
+									Kind:   common_api.MeshExternalService,
+									Labels: &map[string]string{"app": "example"},
+									Port:   pointer.To(uint32(9090)),
+									Weight: pointer.To(uint(100)),
+								}},
+							},
+						}},
+					}),
+				},
+			}
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().
+					WithMeshContext(mc).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithRouting(xds_builders.Routing()).
+					WithSecretsTracker(envoy.NewSecretsTracker(core_model.DefaultMesh, nil)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
+								ToRules: core_rules.GatewayToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): commonRules,
+									},
+								},
+							}),
+					).
+					WithWorkloadIdentity(&core_xds.WorkloadIdentity{
+						IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+							return bldrs_tls.SdsSecretConfigSource(
+								"identity_cert:secret:default",
+								bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+							)
+						},
+					}).
 					Build(),
 			}
 		}()),

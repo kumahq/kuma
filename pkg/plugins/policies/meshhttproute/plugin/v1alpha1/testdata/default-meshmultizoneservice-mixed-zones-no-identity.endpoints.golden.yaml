@@ -1,0 +1,38 @@
+resources:
+- name: default_multi-backend___mzsvc_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: default_multi-backend___mzsvc_80
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 10.10.10.10
+              portValue: 15050
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/zone: legacy-zone
+            envoy.transport_socket_match:
+              kuma.io/zone: legacy-zone
+      locality:
+        zone: legacy-zone
+      priority: 1
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 10.20.20.20
+              portValue: 15050
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/zone: new-zone
+            envoy.transport_socket_match:
+              kuma.io/zone: new-zone
+      locality:
+        zone: new-zone
+      priority: 1

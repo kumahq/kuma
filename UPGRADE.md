@@ -32,6 +32,12 @@ If a `MeshPassthrough` policy contains matches like the above, resolve the confl
 Upgrade every zone control plane to 2.14.6 before applying a policy the previous validator rejected, and before upgrading the global control plane to 3.0.
 A global control plane on 2.14.6 or 3.0 accepts such policies and syncs them to zones, and a zone on an older 2.14 patch fails to generate configuration for the proxies the policy selects, so they stop receiving updates.
 
+### Empty MeshTrafficPermission match entries
+
+Remove or replace each empty match object in MeshTrafficPermission before you upgrade a control plane. Check `rules[].default.allow`, `rules[].default.deny`, and `rules[].default.allowWithShadowDeny`. Each entry must contain `spiffeID`, `sni`, or both. Keep an empty action list only when another action has at least one valid match.
+
+Earlier 2.14 versions accepted empty match objects. The 2.14.6 validator rejects these entries on create and update. Correct stored policies before you upgrade the control plane. This change does not rewrite stored policies.
+
 ### `MeshExternalService` TLS verification accepts the `SecureDataSource` shape
 
 3.0 reads `spec.tls.verification.caCert`, `.clientCert` and `.clientKey` on `MeshExternalService` only in the `SecureDataSource` shape. 2.14.6 accepts both shapes, so resources can be rewritten before upgrading to 3.0. The old `secret`, `inline` and `inlineString` fields keep working on 2.14 and now produce a deprecation warning.

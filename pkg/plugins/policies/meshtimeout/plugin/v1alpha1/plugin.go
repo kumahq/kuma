@@ -35,6 +35,7 @@ import (
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	listeners_v3 "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/v2/pkg/xds/envoy/names"
+	generator_metadata "github.com/kumahq/kuma/v2/pkg/xds/generator/metadata"
 )
 
 var _ core_plugins.PolicyPlugin = &plugin{}
@@ -88,7 +89,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	rctx := outbound.RootContext[api.Conf](ctx.Mesh.Resource, policies.ToRules.ResourceRules)
 
-	for _, r := range util_slices.Filter(rs.List(), core_xds.HasAssociatedServiceResource) {
+	for _, r := range util_slices.Filter(rs.List(), isOutboundServiceResource) {
 		svcCtx := rctx.
 			WithID(kri.NoSectionName(r.ResourceOrigin)).
 			WithID(r.ResourceOrigin)
@@ -97,6 +98,14 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		}
 	}
 	return nil
+}
+
+// Zone proxies take timeouts only from rules, spec.to[] is a no-op there (MADR 103).
+func isOutboundServiceResource(r *core_xds.Resource) bool {
+	if r.Origin == generator_metadata.OriginEgress || r.Origin == generator_metadata.OriginIngress {
+		return false
+	}
+	return core_xds.HasAssociatedServiceResource(r)
 }
 
 func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, inboundClusters map[string]*envoy_cluster.Cluster, dataplane *core_mesh.DataplaneResource, unifiedNaming bool) error {

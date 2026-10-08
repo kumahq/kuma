@@ -78,6 +78,7 @@ func ClientSideMultiIdentitiesMTLS(
 	mesh *core_mesh.MeshResource,
 	upstreamTLSReady bool,
 	sni string,
+	zoneSNIs map[string]string,
 	identities []string,
 	useMeshTrust bool,
 ) ClusterBuilderOpt {
@@ -89,6 +90,7 @@ func ClientSideMultiIdentitiesMTLS(
 			UpstreamService:       "*",
 			LocalMesh:             mesh,
 			SNI:                   sni,
+			ZoneSNIs:              zoneSNIs,
 			Tags:                  nil,
 			UpstreamTLSReady:      upstreamTLSReady,
 			VerifyIdentities:      identities,
