@@ -522,6 +522,14 @@ meshZoneProxyDefaults:
     restartPolicy: Always
     # -- Default number of seconds to wait before force killing the zone ingress pod.
     terminationGracePeriodSeconds: 40
+    # -- Seconds a terminating zone ingress keeps serving before shutdown, applied as a
+    # preStop sleep hook. Remote zones reach a zone ingress through its Service, and
+    # the load balancer and kube-proxy stop routing to a terminating pod only after
+    # they observe the endpoint change, so a pod that goes away sooner drops the
+    # cross-zone requests still landing on it. Raise this if your load balancer
+    # deregisters targets slowly. Must be lower than terminationGracePeriodSeconds,
+    # otherwise the chart fails to render. Set to 0 to drop the hook.
+    preStopSleepSeconds: 20
     # -- Whether to automountServiceAccountToken for zone ingress. Optionally set to false
     automountServiceAccountToken: true
     # -- Default image pull policy for the zone ingress pause container.
@@ -582,6 +590,10 @@ meshes:
       # -- (int) Per-mesh override for the pod termination grace period. Falls back
       # to meshZoneProxyDefaults.ingress.terminationGracePeriodSeconds when unset.
       terminationGracePeriodSeconds:
+      # -- (int) Per-mesh override for the preStop sleep duration. Falls back to
+      # meshZoneProxyDefaults.ingress.preStopSleepSeconds when unset. Set to 0 to
+      # drop the hook.
+      preStopSleepSeconds:
       # -- (bool) Per-mesh override for automountServiceAccountToken. Falls back to
       # meshZoneProxyDefaults.ingress.automountServiceAccountToken when unset.
       automountServiceAccountToken:
