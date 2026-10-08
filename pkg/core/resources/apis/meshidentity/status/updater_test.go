@@ -44,7 +44,7 @@ var _ = Describe("Updater", func() {
 
 		updater, err := New(logr.Discard(), 50*time.Millisecond, resManager, resManager, providers.IdentityProviders{
 			"Bundled": bundledProvider,
-		}, resource_labels.ControlPlane{Mode: config_core.Zone, Zone: "east"})
+		}, resource_labels.ControlPlane{Mode: config_core.Zone, Zone: "east"}, "kuma-system")
 		Expect(err).ToNot(HaveOccurred())
 		stopCh = make(chan struct{})
 		go func(stopCh chan struct{}) {

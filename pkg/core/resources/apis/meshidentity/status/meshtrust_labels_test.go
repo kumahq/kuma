@@ -29,7 +29,7 @@ var _ = Describe("Generated MeshTrust labels", func() {
 			resManager := manager.NewResourceManager(memory.NewStore())
 			Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
 			cp := resource_labels.ControlPlane{Mode: config_core.Zone, Zone: "east", IsK8s: isK8s}
-			updater, err := New(logr.Discard(), 0, resManager, resManager, nil, cp)
+			updater, err := New(logr.Discard(), 0, resManager, resManager, nil, cp, "kuma-system")
 			Expect(err).ToNot(HaveOccurred())
 
 			name := "identity"
@@ -106,4 +106,29 @@ var _ = Describe("Generated MeshTrust labels", func() {
 		Entry("Kubernetes local identity", true, false),
 		Entry("Kubernetes global identity", true, true),
 	)
+
+	It("does not take over a MeshTrust synced from global", func() {
+		// KDS hashes a global MeshTrust and a global MeshIdentity of the same name
+		// to the same storage key, so the identity's lookup can find a synced trust.
+		ctx := context.Background()
+		resManager := manager.NewResourceManager(memory.NewStore())
+		Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
+		cp := resource_labels.ControlPlane{Mode: config_core.Zone, Zone: "east"}
+		updater, err := New(logr.Discard(), 0, resManager, resManager, nil, cp, "kuma-system")
+		Expect(err).ToNot(HaveOccurred())
+
+		globalLabels := map[string]string{
+			mesh_proto.DisplayName:         "identity",
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
+		}
+		identity := builders.MeshIdentity().WithName("identity-hashed").WithSpiffeID("default.east.mesh.local", "/service").Build()
+		identity.Meta.(*test_model.ResourceMeta).Labels = globalLabels
+		Expect(resManager.Create(ctx, builders.MeshTrust().Build(), store.CreateByKey("identity-hashed", "default"), store.CreateWithLabels(globalLabels))).To(Succeed())
+
+		Expect(updater.createOrUpdateMeshTrust(ctx, identity, []byte(builders.MeshTrust().Build().Spec.CABundles[0].PEM.Value))).To(Succeed())
+
+		trust := meshtrust_api.NewMeshTrustResource()
+		Expect(resManager.Get(ctx, trust, store.GetByKey("identity-hashed", "default"))).To(Succeed())
+		Expect(trust.GetMeta().GetLabels()).To(Equal(globalLabels))
+	})
 })

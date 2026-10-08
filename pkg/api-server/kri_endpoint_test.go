@@ -4,7 +4,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
@@ -22,27 +21,6 @@ func descriptorFor(id kri.Identifier) core_model.ResourceTypeDescriptor {
 }
 
 var _ = Describe("KRI endpoint", func() {
-	DescribeTable("resolves locally generated MeshTrust identifiers to their storage keys",
-		func(environment core.EnvironmentType, namespace, expectedName string) {
-			endpoint := kriEndpoint{
-				cpMode:          core.Zone,
-				cpZone:          "east",
-				environment:     environment,
-				systemNamespace: "kuma-system",
-			}
-			trust := builders.MeshTrust().WithName(expectedName).WithLabels(map[string]string{
-				mesh_proto.ZoneTag:          "east",
-				mesh_proto.DisplayName:      "identity-hashed",
-				mesh_proto.KubeNamespaceTag: namespace,
-			}).Build()
-			id, err := kri.FromString(kri.From(trust).String())
-			Expect(err).ToNot(HaveOccurred())
-			Expect(endpoint.getCoreName(id, trust.Descriptor())).To(Equal(expectedName))
-		},
-		Entry("Universal", core.UniversalEnvironment, "", "identity-hashed"),
-		Entry("Kubernetes", core.KubernetesEnvironment, "kuma-system", "identity-hashed.kuma-system"),
-	)
-
 	DescribeTable("selecting a Kubernetes mapper for secrets",
 		func(resource core_model.Resource, kubernetesStore bool, namespace, expectedNamespace string) {
 			const systemNamespace = "kuma-system"

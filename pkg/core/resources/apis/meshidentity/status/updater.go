@@ -35,6 +35,7 @@ type IdentityProviderReconciler struct {
 	reconcileInterval time.Duration
 	providers         providers.IdentityProviders
 	cp                resource_labels.ControlPlane
+	systemNamespace   string
 }
 
 var _ component.Component = &IdentityProviderReconciler{}
@@ -46,6 +47,7 @@ func New(
 	roResManager manager.ReadOnlyResourceManager,
 	providers providers.IdentityProviders,
 	cp resource_labels.ControlPlane,
+	systemNamespace string,
 ) (*IdentityProviderReconciler, error) {
 	return &IdentityProviderReconciler{
 		logger:            logger,
@@ -54,6 +56,7 @@ func New(
 		roResManager:      roResManager,
 		providers:         providers,
 		cp:                cp,
+		systemNamespace:   systemNamespace,
 	}, nil
 }
 
@@ -253,12 +256,13 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 		existingLabels = meshTrust.GetMeta().GetLabels()
 	}
 	labels, err := resource_labels.Compute(resource_labels.Write{
-		Descriptor:  meshTrust.Descriptor(),
-		Spec:        meshTrust.GetSpec(),
-		Namespace:   resource_labels.GetNamespace(identity.GetMeta(), ""),
-		Mesh:        meshName,
-		DisplayName: displayName,
-		Labels:      existingLabels,
+		Descriptor:    meshTrust.Descriptor(),
+		Spec:          meshTrust.GetSpec(),
+		Namespace:     resource_labels.GetNamespace(identity.GetMeta(), i.systemNamespace),
+		Mesh:          meshName,
+		DisplayName:   displayName,
+		Labels:        existingLabels,
+		TrustedWriter: true,
 	}, i.cp)
 	if err != nil {
 		return err

@@ -26,6 +26,7 @@ func Setup(rt runtime.Runtime) error {
 		rt.ReadOnlyResourceManager(),
 		rt.IdentityProviders(),
 		resource_labels.ControlPlaneFromConfig(rt.Config()),
+		rt.Config().Store.Kubernetes.SystemNamespace,
 	)
 	if err != nil {
 		return err
