@@ -11,6 +11,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v2/pkg/core/user"
 	"github.com/kumahq/kuma/v2/pkg/core/xds"
 	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
@@ -148,8 +149,17 @@ func (t *ZoneAvailableServicesTracker) updateZoneIngresses(ctx context.Context) 
 		if availableServicesEqual(availableServices, zi.Spec.GetAvailableServices()) {
 			continue
 		}
-		zi.Spec.AvailableServices = availableServices
+		// On Kubernetes zi.Spec is shared with the store's conversion cache, so update a
+		// copy: an in-place change would reach later reads even if the update is rejected
+		spec := proto.CloneOf(zi.Spec)
+		spec.AvailableServices = availableServices
+		zi.Spec = spec
 		if err := t.resManager.Update(ctx, zi); err != nil {
+			// A conflict usually means our previous update hasn't reached the informer yet
+			if store.IsConflict(err) {
+				t.logger.V(1).Info("ZoneIngress changed in the meantime, will retry", "name", zi.GetMeta().GetName())
+				continue
+			}
 			t.logger.Error(err, "couldn't update ZoneIngress, will retry", "name", zi.GetMeta().GetName())
 		} else {
 			names = append(names, zi.GetMeta().GetName())
