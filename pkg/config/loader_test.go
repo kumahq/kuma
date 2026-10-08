@@ -79,6 +79,9 @@ var _ = Describe("Config loader", func() {
 				}
 
 				Expect(util_maps.AllKeys(testEnvs)).To(ConsistOf(util_maps.AllKeys(configEnvs)), "config values are not overridden in the test. Add overrides for them with a value that is different than default.")
+
+				Expect(cfg.Runtime.Kubernetes.Injector.InitContainer.ImagePullPolicy).To(Equal("Always"))
+				Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ImagePullPolicy).To(Equal("Never"))
 			}
 
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
