@@ -18,9 +18,15 @@ Before this change, the mode produced a plaintext endpoint.
 
 Give each remote scraper a client certificate that the mesh trusts before the upgrade. To keep a plaintext endpoint, set the mode to `Disabled`.
 
-MADS now sends `https` for this mode. The hint does not supply a client certificate. A remote scraper must use `https` and its own client certificate.
+MADS now sends `https` for this mode. The hint does not supply a client certificate.
 
-Only one 2.14 setup needs `http`. It has all of these conditions:
+A scraper on the dataplane host must use `http` on the backend port and path, although MADS sends `https`. The endpoint accepts only plaintext from the dataplane host. This mode has no local TLS.
+
+A remote scraper uses `https` and its own client certificate that the mesh trusts. Before a scraper uses `https`, make sure that no legacy direct access TLS wraps the connection to the metrics port. If this TLS wraps the connection, the endpoint gets a TLS ClientHello as HTTP, and the scrape fails.
+
+On 2.14, a Prometheus server in the mesh with `kuma.io/direct-access-services` gets this TLS from its sidecar when the mesh has mesh mTLS. Direct access covers only the inbound ports and the `Mesh.metrics` port of each dataplane. This TLS does not depend on the workload identity of the target. To move a target to `https`, scrape it with a scraper outside the mesh. That scraper has no sidecar, so no legacy TLS wraps the connection.
+
+While the legacy TLS wraps the port, the scraper must use `http`, because the sidecar already adds TLS. The example below shows one setup with `http`. It is an example, not a full list:
 
 - The mesh has mesh mTLS and an enabled `Mesh.metrics` Prometheus backend.
 - The Prometheus server runs in the mesh with `kuma.io/direct-access-services`, for example from `kumactl install observability`.
@@ -28,7 +34,7 @@ Only one 2.14 setup needs `http`. It has all of these conditions:
 - The Prometheus server and the targets use mesh mTLS certificates. They do not have a workload identity.
 - With a `MeshTrust`, the trust bundle also has the mesh CA for the trust domain of the mesh. The control plane adds this CA when mesh mTLS is enabled.
 
-Direct access covers only the inbound ports and the `Mesh.metrics` port of each dataplane. On that port, the sidecar of the Prometheus server adds its mesh certificate. Give these backends a dedicated `clientId`, and scrape them in a dedicated job. Set `http` in that job only:
+Give these backends a dedicated `clientId`, and scrape them in a dedicated job. Set `http` in that job only:
 
 ```yaml
 # MeshMetric
@@ -58,7 +64,7 @@ scrape_configs:
         replacement: http
 ```
 
-Do not set `http` in a different job. A different `MeshMetric` port, or a path with a workload identity, needs `https` and a client certificate that the mesh trusts. Do not use this override for `ProvidedTLS` targets, for a mesh with only `MeshIdentity`, for a scraper outside the mesh, or on 3.0.
+Do not set `http` in a different job. Do not use this override for `ProvidedTLS` targets, for a port that direct access does not cover, for a mesh without mesh mTLS, for a scraper outside the mesh, or on 3.0.
 
 ### `MeshPassthrough` validates matches by the Envoy filter chain they resolve to
 
