@@ -13,61 +13,19 @@ resources:
       name: '*'
       routes:
       - match:
-          path: /omitted
-        name: +R4vu+bA6SYZayTZTbZAjuHCx8/ha2LGgeJRCB2SCR0=
+          prefix: /
+        name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
         route:
           clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
           idleTimeout: 5s
           weightedClusters:
             clusters:
-            - name: kuma.io/unresolved-backend
+            - name: backend-26cb64fa4e85e7b7
               requestHeadersToAdd:
               - header:
                   key: x-kuma-tags
                   value: '&kuma.io/service=sample-gateway&'
-              weight: 1
-      - match:
-          path: /empty
-        name: 51WocT5nEw5J5K0gCajSegRu8KhiVrUlA9M+bfwFVV0=
-        route:
-          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-          idleTimeout: 5s
-          weightedClusters:
-            clusters:
-            - name: kuma.io/unresolved-backend
-              requestHeadersToAdd:
-              - header:
-                  key: x-kuma-tags
-                  value: '&kuma.io/service=sample-gateway&'
-              weight: 1
-      - match:
-          prefix: /omitted/
-        name: +R4vu+bA6SYZayTZTbZAjuHCx8/ha2LGgeJRCB2SCR0=
-        route:
-          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-          idleTimeout: 5s
-          weightedClusters:
-            clusters:
-            - name: kuma.io/unresolved-backend
-              requestHeadersToAdd:
-              - header:
-                  key: x-kuma-tags
-                  value: '&kuma.io/service=sample-gateway&'
-              weight: 1
-      - match:
-          prefix: /empty/
-        name: 51WocT5nEw5J5K0gCajSegRu8KhiVrUlA9M+bfwFVV0=
-        route:
-          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
-          idleTimeout: 5s
-          weightedClusters:
-            clusters:
-            - name: kuma.io/unresolved-backend
-              requestHeadersToAdd:
-              - header:
-                  key: x-kuma-tags
-                  value: '&kuma.io/service=sample-gateway&'
-              weight: 1
+              weight: 100
       - match:
           prefix: /
         name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=

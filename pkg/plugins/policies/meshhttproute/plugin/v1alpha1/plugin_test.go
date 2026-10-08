@@ -3290,7 +3290,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 		Entry("gateway-rules-without-backendrefs", func() outboundsTestCase {
 			// A top-level Mesh MeshHTTPRoute also applies to builtin gateways, and
 			// validation requires backendRefs only for top-level MeshGateway routes,
-			// so these rules reach the gateway with nothing to forward to.
+			// so its rules reach the gateway with nothing to forward to. The
+			// `backend` rule also merges with the gateway's own `/` rule.
 			gateway := &core_mesh.MeshGatewayResource{
 				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
 				Spec: &mesh_proto.MeshGateway{
@@ -3311,9 +3312,68 @@ var _ = Describe("MeshHTTPRoute", func() {
 					},
 				},
 			}
+			gatewayRoute := &api.MeshHTTPRouteResource{
+				Meta: &test_model.ResourceMeta{Name: "gateway-route", Mesh: "default"},
+				Spec: &api.MeshHTTPRoute{
+					TargetRef: builders.TargetRefMeshGateway("sample-gateway"),
+					To: &[]api.To{{
+						TargetRef: builders.TargetRefMesh(),
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{Type: api.PathPrefix, Value: "/"},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]common_api.BackendRef{{
+									TargetRef: builders.TargetRefService("backend"),
+									Weight:    pointer.To(uint(100)),
+								}},
+							},
+						}},
+					}},
+				},
+			}
+			sidecarRoute := &api.MeshHTTPRouteResource{
+				Meta: &test_model.ResourceMeta{Name: "sidecar-route", Mesh: "default"},
+				Spec: &api.MeshHTTPRoute{
+					TargetRef: pointer.To(builders.TargetRefMesh()),
+					To: &[]api.To{
+						{
+							TargetRef: builders.TargetRefService("backend"),
+							Rules: []api.Rule{{
+								Matches: []api.Match{{
+									Path: &api.PathMatch{Type: api.PathPrefix, Value: "/"},
+								}},
+								Default: api.RuleConf{BackendRefs: &[]common_api.BackendRef{}},
+							}},
+						},
+						{
+							TargetRef: builders.TargetRefService("other"),
+							Rules: []api.Rule{{
+								Matches: []api.Match{{
+									Path: &api.PathMatch{Type: api.PathPrefix, Value: "/api"},
+								}},
+								Default: api.RuleConf{
+									Filters: &[]api.Filter{{
+										Type: api.RequestHeaderModifierType,
+										RequestHeaderModifier: &api.HeaderModifier{
+											Add: &[]api.HeaderKeyValue{{
+												Name:  "x-env",
+												Value: "prod",
+											}},
+										},
+									}},
+								},
+							}},
+						},
+					},
+				},
+			}
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
 				Items: []*core_mesh.MeshGatewayResource{gateway},
+			}
+			resources.MeshLocalResources[api.MeshHTTPRouteType] = &api.MeshHTTPRouteResourceList{
+				Items: []*api.MeshHTTPRouteResource{gatewayRoute, sidecarRoute},
 			}
 			outboundTargets := xds_builders.EndpointMap().
 				AddEndpoint("backend", xds_builders.Endpoint().
@@ -3327,55 +3387,19 @@ var _ = Describe("MeshHTTPRoute", func() {
 				WithResources(resources).
 				WithEndpointMap(outboundTargets).Build()
 
-			commonRules := core_rules.ToRules{
-				Rules: core_rules.Rules{
-					{
-						Subset: subsetutils.MeshSubset(),
-						Conf: api.PolicyDefault{
-							Rules: []api.Rule{
-								{
-									Matches: []api.Match{{
-										Path: &api.PathMatch{Type: api.PathPrefix, Value: "/"},
-									}},
-									Default: api.RuleConf{
-										BackendRefs: &[]common_api.BackendRef{{
-											TargetRef: builders.TargetRefService("backend"),
-											Weight:    pointer.To(uint(100)),
-										}},
-									},
-								},
-								{
-									Matches: []api.Match{{
-										Path: &api.PathMatch{Type: api.PathPrefix, Value: "/empty"},
-									}},
-									Default: api.RuleConf{BackendRefs: &[]common_api.BackendRef{}},
-								},
-								{
-									Matches: []api.Match{{
-										Path: &api.PathMatch{Type: api.PathPrefix, Value: "/omitted"},
-									}},
-									Default: api.RuleConf{},
-								},
-							},
-						},
-					},
-				},
-			}
+			dataplane := samples.GatewayDataplaneBuilder()
+			matched, err := plugin.NewPlugin().(core_plugins.PolicyPlugin).MatchedPolicies(dataplane.Build(), resources)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(matched.Warnings).To(BeEmpty())
 
 			return outboundsTestCase{
 				xdsContext: *xdsContext,
 				proxy: xds_builders.Proxy().
-					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithDataplane(dataplane).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
-							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
-								ToRules: core_rules.GatewayToRules{
-									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
-										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): commonRules,
-									},
-								},
-							}),
+							WithGatewayPolicy(api.MeshHTTPRouteType, matched.GatewayRules),
 					).
 					Build(),
 			}
