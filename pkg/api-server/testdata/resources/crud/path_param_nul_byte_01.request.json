@@ -1,0 +1,9 @@
+{
+  "type": "MeshRetry",
+  "name": "mr%00x",
+  "mesh": "default",
+  "spec": {
+    "targetRef": {"kind": "Mesh"},
+    "http": {"requestTimeout": "10s"}
+  }
+}
