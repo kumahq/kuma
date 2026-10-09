@@ -6472,7 +6472,6 @@ components:
       required:
         - status
         - title
-        - instance
         - type
         - detail
       properties:

@@ -57,7 +57,7 @@ type Error struct {
 	//
 	//
 	// Example: portal:trace:2287285207635123011
-	Instance string `json:"instance"`
+	Instance *string `json:"instance,omitempty"`
 
 	// InvalidParameters All 400 errors **MUST** return an `invalid_parameters` key in the response.
 	// Used to indicate which fields have invalid values when validated.
@@ -115,7 +115,7 @@ type NotFoundError struct {
 	//
 	//
 	// Example: portal:trace:2287285207635123011
-	Instance string `json:"instance"`
+	Instance *string `json:"instance,omitempty"`
 
 	// InvalidParameters All 400 errors **MUST** return an `invalid_parameters` key in the response.
 	// Used to indicate which fields have invalid values when validated.

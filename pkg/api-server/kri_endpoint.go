@@ -51,7 +51,10 @@ func (k *kriEndpoint) findByKriRoute(withInsight bool) handlerFunc {
 		kriParam := request.PathParameter("kri")
 		identifier, err := kri.FromString(kriParam)
 		if err != nil {
-			return nil, withTitle(rest_errors.NewBadRequestError(err.Error()), "Could not parse KRI")
+			return nil, rest_errors.NewBadRequestError(err.Error())
+		}
+		if kri.HasExtraSegments(kriParam) {
+			return nil, withTitle(rest_errors.NewNotFoundError(""), "Could not retrieve a resource")
 		}
 
 		descriptor, err := getDescriptor(identifier.ResourceType)
@@ -60,7 +63,7 @@ func (k *kriEndpoint) findByKriRoute(withInsight bool) handlerFunc {
 		}
 
 		if withInsight && !descriptor.HasInsights() {
-			return nil, withTitle(rest_errors.NewBadRequestError(fmt.Sprintf("resource type %s does not have an overview", identifier.ResourceType)), "Could not retrieve an overview")
+			return nil, rest_errors.NewBadRequestError(fmt.Sprintf("resource type %s does not have an overview", identifier.ResourceType))
 		}
 
 		name := k.getCoreName(identifier, *descriptor)
