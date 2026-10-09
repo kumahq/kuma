@@ -4,5 +4,7 @@
 #/zones/k8s-zone%00 400
 #/meshes/defa%00ult/meshretries 400
 #/_kri/kri_msvc_default_default__ma%00x_ 400
+#/meshes/default/meshaccesslogs/ma%41x 400
+#/meshes/default/meshretries?name=ma%00x 400
 type: Mesh
 name: default
