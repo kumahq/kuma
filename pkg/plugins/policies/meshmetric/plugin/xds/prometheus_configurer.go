@@ -93,8 +93,8 @@ func (pc *PrometheusConfigurer) providedTlsListener(proxy *core_xds.Proxy) (envo
 }
 
 // activeMTLSBackendListener requires a client certificate that the mesh trusts, except for
-// scrapes from the dataplane host. The workload identity has priority over the mesh mTLS
-// backend. Without both, only these local scrapes work.
+// scrapes from the dataplane address or from a loopback address. The workload identity has
+// priority over the mesh mTLS backend. Without both, only these local scrapes work.
 func (pc *PrometheusConfigurer) activeMTLSBackendListener(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
 	listener := pc.baseSecuredListenerBuilder(proxy, envoy_listeners.MatchSourceType(envoy_listener.FilterChainMatch_SAME_IP_OR_LOOPBACK))
 
@@ -110,7 +110,7 @@ func (pc *PrometheusConfigurer) activeMTLSBackendListener(proxy *core_xds.Proxy)
 	case pc.Mesh.MTLSEnabled():
 		mtls = envoy_listeners.ServerSideMTLS(pc.Mesh, proxy.SecretsTracker, nil, nil, pc.UnifiedResourceNaming, pc.UseMeshTrust)
 	default:
-		log.Info("ActiveMTLSBackend listener accepts only scrapes from the dataplane host because the dataplane has no workload identity and the mesh has no mTLS", "dataplane", proxy.Id.String())
+		log.V(1).Info("ActiveMTLSBackend listener accepts only scrapes from the dataplane address or from a loopback address because the dataplane has no workload identity and the mesh has no mTLS", "dataplane", proxy.Id.String())
 		return listener.Build()
 	}
 
