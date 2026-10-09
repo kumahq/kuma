@@ -195,6 +195,11 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 	}))
 
 	result.Add(validateServiceProbe(inbound.ServiceProbe))
+	result.Add(validators.ValidateEnumDefined(
+		validators.RootedAt("state"),
+		inbound.GetState(),
+		mesh_proto.Dataplane_Networking_Inbound_State_name,
+	))
 
 	return result
 }
@@ -288,11 +293,72 @@ func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_Transparent
 func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validators.ValidationError {
 	var result validators.ValidationError
 
+<<<<<<< HEAD
 	validateProtocol := func(path validators.PathBuilder, selector map[string]string) validators.ValidationError {
 		var result validators.ValidationError
 		if protocol, exist := selector[mesh_proto.ProtocolTag]; exist {
 			if core_meta.ParseProtocol(protocol) != core_meta.ProtocolTCP {
 				result.AddViolationAt(path.Key(mesh_proto.ProtocolTag), fmt.Sprintf(`other values than tcp are not allowed, provided value %q`, protocol))
+=======
+	nameSet := map[string]struct{}{}
+	// collect inbound names for collision detection
+	for _, inbound := range networking.GetInbound() {
+		if n := inbound.GetSectionName(); n != "" {
+			nameSet[n] = struct{}{}
+		}
+	}
+
+	addrPortType := map[string]mesh_proto.Dataplane_Networking_Listener_Type{}
+
+	for i, l := range networking.GetListeners() {
+		indexPath := path.Index(i)
+
+		if l.GetType() == mesh_proto.Dataplane_Networking_Listener_Unspecified {
+			result.AddViolationAt(indexPath.Field("type"), "type must be ZoneIngress or ZoneEgress")
+		}
+		result.Add(validators.ValidateEnumDefined(
+			indexPath.Field("type"),
+			l.GetType(),
+			mesh_proto.Dataplane_Networking_Listener_Type_name,
+		))
+		result.Add(validators.ValidateEnumDefined(
+			indexPath.Field("state"),
+			l.GetState(),
+			mesh_proto.Dataplane_Networking_Listener_State_name,
+		))
+		result.Add(validateAddress(indexPath, l.GetAddress()))
+		result.Add(ValidatePort(indexPath.Field("port"), l.GetPort()))
+
+		// name uniqueness across inbounds and listeners
+		if l.GetName() != "" {
+			if _, exists := nameSet[l.GetName()]; exists {
+				result.AddViolationAt(indexPath.Field("name"), fmt.Sprintf("name %q must be unique across inbounds and listeners", l.GetName()))
+			}
+			nameSet[l.GetName()] = struct{}{}
+		}
+
+		// address:port must not be shared between listeners
+		key := fmt.Sprintf("%s:%d", l.GetAddress(), l.GetPort())
+		if existingType, exists := addrPortType[key]; exists {
+			if existingType == l.GetType() {
+				result.AddViolationAt(indexPath, fmt.Sprintf("address:port %s is already used by another listener", key))
+			} else {
+				result.AddViolationAt(indexPath, fmt.Sprintf("address:port %s is used by listeners of different types", key))
+			}
+		} else {
+			addrPortType[key] = l.GetType()
+		}
+
+		// address:port must not collide with inbound ports
+		for _, inbound := range networking.GetInbound() {
+			inboundAddr := inbound.GetAddress()
+			if inboundAddr == "" {
+				inboundAddr = networking.GetAddress()
+			}
+			if fmt.Sprintf("%s:%d", inboundAddr, inbound.GetPort()) == key {
+				result.AddViolationAt(indexPath, fmt.Sprintf("address:port %s collides with an inbound listener", key))
+				break
+>>>>>>> dae7ae7af6 (fix(dataplane): reject unknown enum values (#19055))
 			}
 		}
 		return result
