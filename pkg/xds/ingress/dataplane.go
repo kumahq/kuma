@@ -151,6 +151,11 @@ func GetIngressAvailableServices(
 			continue
 		}
 		for _, dpInbound := range dp.Spec.GetNetworking().GetHealthyInbounds() {
+			// Inbounds without kuma.io/service (e.g. with inboundTagsDisabled) aren't
+			// reachable through a ZoneIngress, and their entry would fail ZoneIngress validation
+			if dpInbound.GetService() == "" {
+				continue
+			}
 			tags := map[string]string{}
 			for key, value := range dpInbound.Tags {
 				hasPrefix := func(tagFilter string) bool {

@@ -51,7 +51,7 @@ var _ = Describe("Ingress Dataplane", func() {
                       port: 1010
                       servicePort: 2020
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "1"
                         region: eu
 `,
@@ -62,7 +62,7 @@ var _ = Describe("Ingress Dataplane", func() {
                       port: 1010
                       servicePort: 2020
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "2"
                         region: us
 `,
@@ -73,7 +73,7 @@ var _ = Describe("Ingress Dataplane", func() {
                       port: 1010
                       servicePort: 2020
                       tags:
-                        service: backend
+                        kuma.io/service: backend
                         version: "2"
                         region: us
 `,
@@ -83,13 +83,13 @@ var _ = Describe("Ingress Dataplane", func() {
             - instances: 1
               mesh: default
               tags:
-                service: backend
+                kuma.io/service: backend
                 region: eu
                 version: "1"
             - instances: 2
               mesh: default
               tags:
-                service: backend
+                kuma.io/service: backend
                 region: us
                 version: "2"
 `,
@@ -104,7 +104,7 @@ var _ = Describe("Ingress Dataplane", func() {
                   port: 1010
                   servicePort: 2020
                   tags:
-                    service: b1
+                    kuma.io/service: b1
 `,
 					`
             networking:
@@ -113,7 +113,7 @@ var _ = Describe("Ingress Dataplane", func() {
                   port: 1010
                   servicePort: 2020
                   tags:
-                    service: b2
+                    kuma.io/service: b2
 `,
 				},
 				"mesh2": {
@@ -124,7 +124,7 @@ var _ = Describe("Ingress Dataplane", func() {
                   port: 1010
                   servicePort: 2020
                   tags:
-                    service: b1
+                    kuma.io/service: b1
 `,
 				},
 			},
@@ -132,15 +132,15 @@ var _ = Describe("Ingress Dataplane", func() {
             - instances: 1
               mesh: mesh1
               tags:
-                service: b1
+                kuma.io/service: b1
             - instances: 1
               mesh: mesh1
               tags:
-                service: b2
+                kuma.io/service: b2
             - instances: 1
               mesh: mesh2
               tags:
-                service: b1
+                kuma.io/service: b1
 `,
 		}),
 		Entry("use filters", testCase{
@@ -200,6 +200,43 @@ var _ = Describe("Ingress Dataplane", func() {
                 version: "2"
 `,
 		}),
+		Entry("skip inbounds without kuma.io/service", testCase{
+			dataplanes: map[string][]string{
+				"default": {
+					`
+                networking:
+                  inbound:
+                    - address: 127.0.0.1
+                      port: 1010
+                      servicePort: 2020
+`,
+					`
+                networking:
+                  inbound:
+                    - address: 127.0.0.1
+                      port: 1010
+                      servicePort: 2020
+                      tags:
+                        version: "1"
+`,
+					`
+                networking:
+                  inbound:
+                    - address: 127.0.0.1
+                      port: 1010
+                      servicePort: 2020
+                      tags:
+                        kuma.io/service: backend
+`,
+				},
+			},
+			expected: `
+            - instances: 1
+              mesh: default
+              tags:
+                kuma.io/service: backend
+`,
+		}),
 	)
 
 	It("should not update store if ingress haven't changed", func() {
@@ -207,27 +244,27 @@ var _ = Describe("Ingress Dataplane", func() {
 			{
 				Instances: 1,
 				Tags: map[string]string{
-					"service": "backend",
-					"version": "v1",
-					"region":  "eu",
+					mesh_proto.ServiceTag: "backend",
+					"version":             "v1",
+					"region":              "eu",
 				},
 				Mesh: "mesh1",
 			},
 			{
 				Instances: 2,
 				Tags: map[string]string{
-					"service": "web",
-					"version": "v2",
-					"region":  "us",
+					mesh_proto.ServiceTag: "web",
+					"version":             "v2",
+					"region":              "us",
 				},
 				Mesh: "mesh1",
 			},
 			{
 				Instances: 1,
 				Tags: map[string]string{
-					"service":          "httpbin",
-					"version":          "v1",
-					mesh_proto.ZoneTag: "zone-1",
+					mesh_proto.ServiceTag: "httpbin",
+					"version":             "v1",
+					mesh_proto.ZoneTag:    "zone-1",
 				},
 				Mesh:            "mesh1",
 				ExternalService: true,
@@ -244,9 +281,9 @@ var _ = Describe("Ingress Dataplane", func() {
 						Address: "127.0.0.1",
 					},
 					Tags: map[string]string{
-						"service":          "httpbin",
-						"version":          "v1",
-						mesh_proto.ZoneTag: "zone-1",
+						mesh_proto.ServiceTag: "httpbin",
+						"version":             "v1",
+						mesh_proto.ZoneTag:    "zone-1",
 					},
 				},
 			},
@@ -259,9 +296,9 @@ var _ = Describe("Ingress Dataplane", func() {
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
 								Tags: map[string]string{
-									"service": "backend",
-									"version": "v1",
-									"region":  "eu",
+									mesh_proto.ServiceTag: "backend",
+									"version":             "v1",
+									"region":              "eu",
 								},
 							},
 						},
@@ -275,9 +312,9 @@ var _ = Describe("Ingress Dataplane", func() {
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
 								Tags: map[string]string{
-									"service": "web",
-									"version": "v2",
-									"region":  "us",
+									mesh_proto.ServiceTag: "web",
+									"version":             "v2",
+									"region":              "us",
 								},
 							},
 						},
@@ -291,9 +328,9 @@ var _ = Describe("Ingress Dataplane", func() {
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
 								Tags: map[string]string{
-									"service": "web",
-									"version": "v2",
-									"region":  "us",
+									mesh_proto.ServiceTag: "web",
+									"version":             "v2",
+									"region":              "us",
 								},
 							},
 						},
@@ -315,9 +352,9 @@ var _ = Describe("Ingress Dataplane", func() {
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
 								Tags: map[string]string{
-									"service": "backend",
-									"version": "v1",
-									"region":  "eu",
+									mesh_proto.ServiceTag: "backend",
+									"version":             "v1",
+									"region":              "eu",
 								},
 							},
 						},
@@ -331,9 +368,9 @@ var _ = Describe("Ingress Dataplane", func() {
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
 								Tags: map[string]string{
-									"service": "web",
-									"version": "v2",
-									"region":  "us",
+									mesh_proto.ServiceTag: "web",
+									"version":             "v2",
+									"region":              "us",
 								},
 							},
 						},
@@ -347,9 +384,9 @@ var _ = Describe("Ingress Dataplane", func() {
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
 								Tags: map[string]string{
-									"service": "web",
-									"version": "v1",
-									"region":  "eu",
+									mesh_proto.ServiceTag: "web",
+									"version":             "v1",
+									"region":              "eu",
 								},
 							},
 						},
@@ -361,27 +398,27 @@ var _ = Describe("Ingress Dataplane", func() {
 			{
 				Instances: 1,
 				Tags: map[string]string{
-					"service": "backend",
-					"version": "v1",
-					"region":  "eu",
+					mesh_proto.ServiceTag: "backend",
+					"version":             "v1",
+					"region":              "eu",
 				},
 				Mesh: "mesh1",
 			},
 			{
 				Instances: 1,
 				Tags: map[string]string{
-					"service": "web",
-					"version": "v1",
-					"region":  "eu",
+					mesh_proto.ServiceTag: "web",
+					"version":             "v1",
+					"region":              "eu",
 				},
 				Mesh: "mesh2",
 			},
 			{
 				Instances: 1,
 				Tags: map[string]string{
-					"service": "web",
-					"version": "v2",
-					"region":  "us",
+					mesh_proto.ServiceTag: "web",
+					"version":             "v2",
+					"region":              "us",
 				},
 				Mesh: "mesh2",
 			},
@@ -400,9 +437,9 @@ var _ = Describe("Ingress Dataplane", func() {
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
 								Tags: map[string]string{
-									"service": "backend",
-									"version": "v1",
-									"region":  "eu",
+									mesh_proto.ServiceTag: "backend",
+									"version":             "v1",
+									"region":              "eu",
 								},
 							},
 						},
@@ -416,9 +453,9 @@ var _ = Describe("Ingress Dataplane", func() {
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
 								Tags: map[string]string{
-									"service": "backend",
-									"version": "v1",
-									"region":  "eu",
+									mesh_proto.ServiceTag: "backend",
+									"version":             "v1",
+									"region":              "eu",
 								},
 							},
 						},
@@ -430,18 +467,18 @@ var _ = Describe("Ingress Dataplane", func() {
 			{
 				Instances: 1,
 				Tags: map[string]string{
-					"service": "backend",
-					"version": "v1",
-					"region":  "eu",
+					mesh_proto.ServiceTag: "backend",
+					"version":             "v1",
+					"region":              "eu",
 				},
 				Mesh: "mesh1",
 			},
 			{
 				Instances: 1,
 				Tags: map[string]string{
-					"service": "backend",
-					"version": "v1",
-					"region":  "eu",
+					mesh_proto.ServiceTag: "backend",
+					"version":             "v1",
+					"region":              "eu",
 				},
 				Mesh: "mesh2",
 			},

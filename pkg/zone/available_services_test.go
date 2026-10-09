@@ -2,7 +2,9 @@ package zone_test
 
 import (
 	"context"
+	"errors"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -228,4 +230,67 @@ var _ = Describe("AvailableServices Tracker", func() {
 			}).Should(Succeed())
 		})
 	})
+
+	It("should not modify a listed ZoneIngress spec when the update is rejected", func() {
+		resourceStore := memory.NewStore()
+		resManager := manager.NewResourceManager(resourceStore)
+		Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
+		Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
+		metrics, err := core_metrics.NewMetrics("Zone")
+		Expect(err).ToNot(HaveOccurred())
+		meshCache, err := cache_mesh.NewCache(1*time.Second, xds_context.NewMeshContextBuilder(
+			resManager,
+			server.MeshResourceTypes(),
+			net.LookupIP,
+			"zone",
+			vips.NewPersistence(resManager, config_manager.NewConfigManager(resourceStore), false),
+			".mesh",
+			80,
+			xds_context.AnyToAnyReachableServicesGraphBuilder,
+			nil,
+		), metrics)
+		Expect(err).ToNot(HaveOccurred())
+		rejecting := &rejectingManager{ResourceManager: resManager, spec: builders.ZoneIngress().Build().Spec}
+		tracker, err := zone.NewZoneAvailableServicesTracker(core.Log.WithName("test"), metrics, rejecting, meshCache, 20*time.Millisecond, nil, "zone")
+		Expect(err).ToNot(HaveOccurred())
+
+		stop := make(chan struct{})
+		done := make(chan struct{})
+		go func() {
+			defer GinkgoRecover()
+			Expect(tracker.Start(stop)).To(Succeed())
+			close(done)
+		}()
+		defer func() {
+			close(stop)
+			Eventually(done).Should(BeClosed())
+		}()
+
+		Eventually(rejecting.updates.Load).Should(BeNumerically(">", 1))
+		Expect(rejecting.spec.AvailableServices).To(BeEmpty())
+	})
 })
+
+// rejectingManager mimics the Kubernetes store's conversion cache: every List
+// returns a new ZoneIngress around the same spec, and every Update is rejected
+type rejectingManager struct {
+	manager.ResourceManager
+	spec    *mesh_proto.ZoneIngress
+	updates atomic.Int32
+}
+
+func (m *rejectingManager) List(ctx context.Context, list core_model.ResourceList, fs ...store.ListOptionsFunc) error {
+	zis, ok := list.(*core_mesh.ZoneIngressResourceList)
+	if !ok {
+		return m.ResourceManager.List(ctx, list, fs...)
+	}
+	zi := core_mesh.NewZoneIngressResource()
+	zi.SetMeta(&test_model.ResourceMeta{Name: "zi-1"})
+	zi.Spec = m.spec
+	return zis.AddItem(zi)
+}
+
+func (m *rejectingManager) Update(context.Context, core_model.Resource, ...store.UpdateOptionsFunc) error {
+	m.updates.Add(1)
+	return errors.New("rejected")
+}
