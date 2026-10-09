@@ -2,9 +2,11 @@ package v1alpha1
 
 import (
 	"fmt"
+	"strings"
 	"text/template"
 
 	"github.com/pkg/errors"
+	"github.com/spiffe/go-spiffe/v2/spiffeid"
 
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/validators"
@@ -56,25 +58,60 @@ func immutableFieldMessage(previous string, current string) string {
 	)
 }
 
+// validateSPIFFEID renders each template with sample values so a template that
+// the control plane cannot execute, or that renders into a SPIFFE ID the
+// spiffe library rejects, is rejected here instead of failing identity
+// generation for every dataplane the identity matches. The stubs carry a value
+// for every field a template can reference: whether a dataplane actually
+// provides one, such as the namespace on Universal, depends on where it runs,
+// so a template that only renders with some fields empty stays valid.
 func validateSPIFFEID(spiffeID SpiffeID) validators.ValidationError {
 	var verr validators.ValidationError
-	if pointer.Deref(spiffeID.TrustDomain) != "" {
-		_, err := template.New("").
-			Funcs(map[string]any{"label": func(key string) (string, error) { return "", nil }}).
-			Parse(pointer.Deref(spiffeID.TrustDomain))
+	if trustDomain := pointer.Deref(spiffeID.TrustDomain); trustDomain != "" {
+		rendered, err := renderTemplateStub(trustDomain, trustDomainTemplateData{
+			Mesh: "mesh",
+			Zone: "zone",
+		})
 		if err != nil {
-			verr.AddViolation("trustDomain", errors.Wrap(err, "couldn't parse template").Error())
+			verr.AddViolation("trustDomain", err.Error())
+		} else if _, err := spiffeid.TrustDomainFromString(rendered); err != nil {
+			verr.AddViolation("trustDomain", fmt.Sprintf("template renders to %q which is not a valid SPIFFE ID trust domain: %s", rendered, err))
 		}
 	}
-	if pointer.Deref(spiffeID.Path) != "" {
-		_, err := template.New("").
-			Funcs(map[string]any{"label": func(key string) (string, error) { return "", nil }}).
-			Parse(pointer.Deref(spiffeID.Path))
+	if path := pointer.Deref(spiffeID.Path); path != "" {
+		rendered, err := renderTemplateStub(path, spiffeIDTemplateData{
+			TrustDomain:    sampleTrustDomain,
+			Namespace:      "namespace",
+			ServiceAccount: "service-account",
+			Workload:       "workload",
+		})
 		if err != nil {
-			verr.AddViolation("path", errors.Wrap(err, "couldn't parse template").Error())
+			verr.AddViolation("path", err.Error())
+		} else if err := spiffeid.ValidatePath(rendered); err != nil {
+			verr.AddViolation("path", fmt.Sprintf("template renders to %q which is not a valid SPIFFE ID path: %s", rendered, err))
 		}
 	}
 	return verr
+}
+
+const sampleTrustDomain = "trust-domain"
+
+// renderTemplateStub parses and executes a template the way issuance does. The
+// label function resolves to a sample value because a template can reference
+// any dataplane label and validation cannot know which ones a dataplane
+// carries.
+func renderTemplateStub(tmpl string, data any) (string, error) {
+	parsed, err := template.New("").Funcs(map[string]any{
+		"label": func(string) (string, error) { return "label", nil },
+	}).Parse(tmpl)
+	if err != nil {
+		return "", errors.Wrap(err, "couldn't parse template")
+	}
+	var sb strings.Builder
+	if err := parsed.Execute(&sb, data); err != nil {
+		return "", errors.Wrap(err, "couldn't render template with stub values")
+	}
+	return sb.String(), nil
 }
 
 func validateProvider(provider Provider) validators.ValidationError {
