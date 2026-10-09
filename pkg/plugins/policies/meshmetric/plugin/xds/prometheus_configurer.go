@@ -1,13 +1,17 @@
 package xds
 
 import (
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+
 	"github.com/kumahq/kuma/v2/pkg/core"
+	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
 	api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/v2/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/v2/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator"
 )
 
 var log = core.Log.WithName("MeshMetric")
@@ -20,6 +24,11 @@ type PrometheusConfigurer struct {
 	EndpointAddress string
 	StatsPath       string
 	IPv6Enabled     bool
+	// Mesh, UnifiedResourceNaming and UseMeshTrust configure the mesh mTLS chain of ActiveMTLSBackend
+	// for a dataplane without a workload identity.
+	Mesh                  *core_mesh.MeshResource
+	UnifiedResourceNaming bool
+	UseMeshTrust          bool
 }
 
 func (pc *PrometheusConfigurer) ConfigureCluster(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
@@ -34,6 +43,10 @@ func (pc *PrometheusConfigurer) ConfigureCluster(proxy *core_xds.Proxy) (envoy_c
 }
 
 func (pc *PrometheusConfigurer) ConfigureListener(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
+	if pc.Backend.Tls != nil && pc.Backend.Tls.Mode == api.ActiveMTLSBackend {
+		return pc.activeMTLSBackendListener(proxy)
+	}
+
 	var listener envoy_common.NamedResource
 	var err error
 
@@ -73,6 +86,38 @@ func (pc *PrometheusConfigurer) providedTlsListener(proxy *core_xds.Proxy) (envo
 					CertPath: proxy.Metadata.MetricsCertPath,
 					KeyPath:  proxy.Metadata.MetricsKeyPath,
 				}),
+				envoy_listeners.StaticEndpoints(pc.IPv6Enabled, pc.ListenerName, pc.staticEndpoint()),
+			),
+		)).
+		Build()
+}
+
+// activeMTLSBackendListener requires a client certificate that the mesh trusts, except for
+// scrapes from the dataplane address or from a loopback address. The workload identity has
+// priority over the mesh mTLS backend. Without both, only these local scrapes work.
+func (pc *PrometheusConfigurer) activeMTLSBackendListener(proxy *core_xds.Proxy) (envoy_common.NamedResource, error) {
+	listener := pc.baseSecuredListenerBuilder(proxy, envoy_listeners.MatchSourceType(envoy_listener.FilterChainMatch_SAME_IP_OR_LOOPBACK))
+
+	downstreamTLS, err := generator.MeshIdentityDownstreamTLS(proxy)
+	if err != nil {
+		return nil, err
+	}
+
+	var mtls envoy_listeners.FilterChainBuilderOpt
+	switch {
+	case downstreamTLS != nil:
+		mtls = envoy_listeners.DownstreamTlsContext(downstreamTLS)
+	case pc.Mesh.MTLSEnabled():
+		mtls = envoy_listeners.ServerSideMTLS(pc.Mesh, proxy.SecretsTracker, nil, nil, pc.UnifiedResourceNaming, pc.UseMeshTrust)
+	default:
+		log.V(1).Info("ActiveMTLSBackend listener accepts only scrapes from the dataplane address or from a loopback address because the dataplane has no workload identity and the mesh has no mTLS", "dataplane", proxy.Id.String())
+		return listener.Build()
+	}
+
+	return listener.
+		Configure(envoy_listeners.FilterChain(
+			envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).Configure(
+				mtls,
 				envoy_listeners.StaticEndpoints(pc.IPv6Enabled, pc.ListenerName, pc.staticEndpoint()),
 			),
 		)).

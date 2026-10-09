@@ -163,7 +163,9 @@ const (
 	// * KUMA_DATAPLANE_RUNTIME_METRICS_CERT_PATH
 	// * KUMA_DATAPLANE_RUNTIME_METRICS_KEY_PATH
 	ProvidedTLS TlsMode = "ProvidedTLS"
-	// ActiveMTLSBackend means that control-plane delivers certificates to the prometheus listener.
-	// This should be used when prometheus is running inside the Mesh.
+	// ActiveMTLSBackend means that the listener uses the workload identity of the dataplane,
+	// or the mesh mTLS backend, and requires a client certificate that the mesh trusts. Scrapes
+	// from the dataplane address or from a loopback address stay plaintext. Without a workload
+	// identity and without mesh mTLS, the listener accepts only these local scrapes.
 	ActiveMTLSBackend TlsMode = "ActiveMTLSBackend"
 )
