@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Bad Request",
+ "detail": "bad request: name: invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_', '.' symbols.",
+ "details": "bad request: name: invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_', '.' symbols."
+}

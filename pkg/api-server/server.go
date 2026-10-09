@@ -160,6 +160,7 @@ func NewApiServer(
 		Path(apiBasePath).
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
+	ws.Filter(rejectInvalidNamePathParams)
 
 	addResourcesEndpoints(
 		ws,
