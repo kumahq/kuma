@@ -95,6 +95,7 @@ func (pc *PrometheusConfigurer) activeMTLSBackendListener(proxy *core_xds.Proxy)
 		return nil, err
 	}
 	if downstreamTLS == nil {
+		log.Info("ActiveMTLSBackend listener accepts only scrapes from the dataplane host because the dataplane has no workload identity", "dataplane", proxy.Id.String())
 		return listener.Build()
 	}
 
