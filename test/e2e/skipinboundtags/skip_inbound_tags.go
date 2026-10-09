@@ -18,18 +18,15 @@ import (
 
 var KubeCluster *K8sCluster
 
-func SkipInboundTags() {
-	meshName := "skip-inbound-tags"
-	namespace := "skip-inbound-tags-ns"
-
-	meshIdentity := fmt.Sprintf(`
+func meshIdentityYAML(meshName string) string {
+	return fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshIdentity
 metadata:
-  name: identity-skip-inbound-tags
-  namespace: %s
+  name: identity-%[2]s
+  namespace: %[1]s
   labels:
-    kuma.io/mesh: %s
+    kuma.io/mesh: %[2]s
     kuma.io/origin: zone
 spec:
   selector:
@@ -48,6 +45,13 @@ spec:
       autogenerate:
         enabled: true
 `, Config.KumaNamespace, meshName)
+}
+
+func SkipInboundTags() {
+	meshName := "skip-inbound-tags"
+	namespace := "skip-inbound-tags-ns"
+
+	meshIdentity := meshIdentityYAML(meshName)
 
 	BeforeAll(func() {
 		err := NewClusterSetup().

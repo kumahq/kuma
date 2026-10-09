@@ -470,6 +470,21 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:           "48.dataplane.yaml",
 			inboundTagsDisabled: true,
 		}),
+		// a-preview selects the Pod and sorts first, so b-active, which reaches the Pod through
+		// ignoredServiceSelectorLabels, must not take over the port either
+		Entry("49. Two Services on one port, one matching only on the ignored label sorts last", testCase{
+			pod:                 "49.pod.yaml",
+			servicesForPod:      "49.services-for-pod.yaml",
+			dataplane:           "49.dataplane.yaml",
+			inboundTagsDisabled: true,
+		}),
+		// with inbound tags enabled the inbound carries the Service's kuma.io/service tag, so it stays
+		// Ignored until the Service selector fully matches the Pod
+		Entry("50. Pod that the Service selector does not fully match gets an Ignored inbound with inbound tags", testCase{
+			pod:            "47.pod.yaml",
+			servicesForPod: "47.services-for-pod.yaml",
+			dataplane:      "50.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
