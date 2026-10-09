@@ -38,6 +38,7 @@ type meshContextBuilder struct {
 	ipFunc                 lookup.LookupIPFunc
 	zone                   string
 	withPolicyMatchingHash bool
+	restrictOutbound       bool
 }
 
 // MeshContextBuilderOption configures optional behavior of the MeshContextBuilder.
@@ -48,6 +49,13 @@ type MeshContextBuilderOption func(*meshContextBuilder)
 func WithPolicyMatchingHash() MeshContextBuilderOption {
 	return func(m *meshContextBuilder) {
 		m.withPolicyMatchingHash = true
+	}
+}
+
+// WithRestrictOutbound makes a data plane proxy without reachableBackends reach no destination in the mesh.
+func WithRestrictOutbound(restrict bool) MeshContextBuilderOption {
+	return func(m *meshContextBuilder) {
+		m.restrictOutbound = restrict
 	}
 }
 
@@ -83,10 +91,11 @@ func NewMeshContextBuilder(
 	}
 
 	builder := &meshContextBuilder{
-		rm:      rm,
-		typeSet: typeSet,
-		ipFunc:  ipFunc,
-		zone:    zone,
+		rm:               rm,
+		typeSet:          typeSet,
+		ipFunc:           ipFunc,
+		zone:             zone,
+		restrictOutbound: true,
 	}
 	for _, opt := range opts {
 		opt(builder)
@@ -166,7 +175,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		DataplanesByName:                topology.DataplanesByName,
 		EndpointMap:                     topology.EndpointMap,
 		VIPDomains:                      baseMeshContext.VIPDomains,
-		VIPOutbounds:                    baseMeshContext.VIPOutbounds,
 		DataSourceLoader:                loader,
 		CAsByTrustDomain:                getCAsByTrustDomain(resources.MeshTrusts().Items),
 		ZoneEgresses:                    topology.ZoneEgresses,
@@ -319,7 +327,7 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		typeHashes:       typeHashes,
 		Mesh:             mesh,
 		ResourceMap:      rmap,
-		DestinationIndex: NewDestinationIndex(destinations...),
+		DestinationIndex: NewDestinationIndex(destinations...).WithRestrictOutbound(m.restrictOutbound),
 		VIPDomains:       vipDomains(destinationResources),
 		VIPOutbounds:     vipOutbounds(destinationResources),
 	}, nil

@@ -16,7 +16,9 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -53,7 +55,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		resManager = core_manager.NewResourceManager(store)
 		ctx, cancel = context.WithCancel(context.Background())
 
-		dpLifecycle := NewDataplaneLifecycle(ctx, resManager, authenticator, 0*time.Second, cpInstanceID, 0*time.Second)
+		dpLifecycle := NewDataplaneLifecycle(ctx, resManager, authenticator, 0*time.Second, cpInstanceID, 0*time.Second, resource_labels.ControlPlane{Mode: config_core.Zone, Zone: "zone-1"})
 		callbacks = util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(dpLifecycle))
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
@@ -174,6 +176,57 @@ var _ = Describe("Dataplane Lifecycle", func() {
               }
             }
             `),
+	)
+
+	DescribeTable("should reject a DP with invalid labels instead of registering it", func(labels string, expectedErr string) {
+		// given
+		req := envoy_sd.DeltaDiscoveryRequest{
+			Node: &envoy_core.Node{
+				Id: "default.backend-01",
+				Metadata: &structpb.Struct{
+					Fields: map[string]*structpb.Value{
+						"dataplane.resource": {
+							Kind: &structpb.Value_StringValue{
+								StringValue: fmt.Sprintf(`
+                                {
+                                  "type": "Dataplane",
+                                  "mesh": "default",
+                                  "name": "backend-01",
+                                  "labels": %s,
+                                  "networking": {
+                                    "address": "127.0.0.1",
+                                    "inbound": [
+                                      {
+                                        "port": 22022,
+                                        "servicePort": 8443
+                                      }
+                                    ]
+                                  }
+                                }
+                                `, labels),
+							},
+						},
+					},
+				},
+			},
+		}
+		const streamId = 123
+		ctx := metadata.NewIncomingContext(context.Background(), map[string][]string{
+			"authorization": {"token"},
+		})
+		Expect(callbacks.OnDeltaStreamOpen(ctx, streamId, "")).To(Succeed())
+
+		// when
+		err := callbacks.OnStreamDeltaRequest(streamId, &req)
+
+		// then
+		Expect(err).To(MatchError(ContainSubstring(expectedErr)))
+		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
+		Expect(core_store.IsNotFound(err)).To(BeTrue())
+	},
+		Entry("unknown reserved key", `{"kuma.io/gateway": "true"}`, `label "kuma.io/gateway" is reserved and not known to this control plane`),
+		Entry("control plane owned label with a wrong value", `{"kuma.io/zone": "zone-2"}`, `label "kuma.io/zone" is managed by the control plane: got "zone-2", expected "zone-1"`),
+		Entry("malformed value", `{"app": "not valid!!"}`, `a valid label must be an empty string or consist of alphanumeric characters`),
 	)
 
 	It("should not override extisting DP with different service", func() {

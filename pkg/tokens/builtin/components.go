@@ -3,6 +3,7 @@ package builtin
 import (
 	store_config "github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
+	"github.com/kumahq/kuma/v3/pkg/config/multizone"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -56,4 +57,28 @@ func NewDataplaneTokenValidator(resManager manager.ReadOnlyResourceManager, stor
 			storeType,
 		), nil
 	}), nil
+}
+
+// NewZoneTokenValidator validates Zone Tokens on Global CP, where the signing keys are stored.
+func NewZoneTokenValidator(resManager manager.ReadOnlyResourceManager, storeType store_config.StoreType, cfg multizone.KDSZoneTokenValidatorConfig) (zone.Validator, error) {
+	publicKeys, err := tokens.PublicKeyFromConfig(cfg.PublicKeys)
+	if err != nil {
+		return nil, err
+	}
+	staticSigningKeyAccessor, err := tokens.NewStaticSigningKeyAccessor(publicKeys)
+	if err != nil {
+		return nil, err
+	}
+	accessors := []tokens.SigningKeyAccessor{staticSigningKeyAccessor}
+	if cfg.UseSecrets {
+		accessors = append(accessors, tokens.NewSigningKeyAccessor(resManager, system.ZoneTokenSigningKeyPrefix))
+	}
+	return zone.NewValidator(
+		tokens.NewValidator(
+			log.WithName("zone-token"),
+			accessors,
+			tokens.NewRevocations(resManager, model.ResourceKey{Name: system.ZoneTokenRevocations}),
+			storeType,
+		),
+	), nil
 }

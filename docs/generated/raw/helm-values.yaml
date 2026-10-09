@@ -53,6 +53,15 @@ controlPlane:
   # -- Only used in `zone` mode
   kdsGlobalAddress: ""
 
+  # Zone Token this Zone CP presents to the Global CP over KDS. Only used in `zone` mode.
+  zoneToken:
+    # -- Name of the K8s Secret with the Zone Token. The Secret is mounted as a file,
+    # so a rotated token is picked up on the next KDS stream without restarting the CP.
+    # Leave empty to send no token.
+    secretName: ""
+    # -- Key of the Secret that holds the token
+    key: "token"
+
   # -- Number of replicas of the Kuma CP. Ignored when autoscaling is enabled
   replicas: 1
 
@@ -227,9 +236,6 @@ controlPlane:
   runtime:
     # -- Divisor for GOMAXPROCS (resourceFieldRef divisor for limits.cpu)
     goMaxProcs:
-      divisor: "1"
-    # -- Divisor for GOMEMLIMIT (resourceFieldRef divisor for limits.memory)
-    goMemLimit:
       divisor: "1"
 
   # -- Pod lifecycle settings (useful for adding a preStop hook, when
@@ -451,7 +457,7 @@ dataPlane:
   image:
     # -- The Kuma DP image repository
     repository: "kuma-dp"
-    # -- Kuma DP ImagePullPolicy
+    # -- Image pull policy for the injected kuma-dp sidecar and kuma-init containers (Always, IfNotPresent, Never).
     pullPolicy: IfNotPresent
     # -- Kuma DP Image Tag. When not specified, the value is copied from global.tag
     tag:
@@ -516,6 +522,14 @@ meshZoneProxyDefaults:
     restartPolicy: Always
     # -- Default number of seconds to wait before force killing the zone ingress pod.
     terminationGracePeriodSeconds: 40
+    # -- Seconds a terminating zone ingress keeps serving before shutdown, applied as a
+    # preStop sleep hook. Remote zones reach a zone ingress through its Service, and
+    # the load balancer and kube-proxy stop routing to a terminating pod only after
+    # they observe the endpoint change, so a pod that goes away sooner drops the
+    # cross-zone requests still landing on it. Raise this if your load balancer
+    # deregisters targets slowly. Must be lower than terminationGracePeriodSeconds,
+    # otherwise the chart fails to render. Set to 0 to drop the hook.
+    preStopSleepSeconds: 20
     # -- Whether to automountServiceAccountToken for zone ingress. Optionally set to false
     automountServiceAccountToken: true
     # -- Default image pull policy for the zone ingress pause container.
@@ -576,6 +590,10 @@ meshes:
       # -- (int) Per-mesh override for the pod termination grace period. Falls back
       # to meshZoneProxyDefaults.ingress.terminationGracePeriodSeconds when unset.
       terminationGracePeriodSeconds:
+      # -- (int) Per-mesh override for the preStop sleep duration. Falls back to
+      # meshZoneProxyDefaults.ingress.preStopSleepSeconds when unset. Set to 0 to
+      # drop the hook.
+      preStopSleepSeconds:
       # -- (bool) Per-mesh override for automountServiceAccountToken. Falls back to
       # meshZoneProxyDefaults.ingress.automountServiceAccountToken when unset.
       automountServiceAccountToken:
@@ -610,6 +628,12 @@ meshes:
         annotations: {}
         # -- Labels to add to the Deployment resource.
         labels: {}
+        # -- Labels to add to the zone proxy pods. Must not override the labels the
+        # chart sets on them.
+        podLabels: {}
+        # -- Annotations to add to the zone proxy pods, for example kuma.io/* sidecar
+        # settings. Must not override kuma.io/reachable-backends.
+        podAnnotations: {}
         # -- Subset of Kubernetes PodSpec fields applied to the pod template
         # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
         #  priorityClassName, securityContext, containerSecurityContext, resources,
@@ -677,6 +701,12 @@ meshes:
         annotations: {}
         # -- Labels to add to the Deployment resource.
         labels: {}
+        # -- Labels to add to the zone proxy pods. Must not override the labels the
+        # chart sets on them.
+        podLabels: {}
+        # -- Annotations to add to the zone proxy pods, for example kuma.io/* sidecar
+        # settings. Must not override kuma.io/reachable-backends.
+        podAnnotations: {}
         # -- Subset of Kubernetes PodSpec fields applied to the pod template
         # (nodeSelector, tolerations, affinity, topologySpreadConstraints,
         #  priorityClassName, securityContext, containerSecurityContext, resources,
@@ -705,7 +735,7 @@ kubectl:
     # -- The kubectl image repository
     repository: kubectl
     # -- The kubectl image tag
-    tag: v1.37.0@sha256:5ed410ebac5dc976cc717098994dcdb29bbbd38f6bd65f582311f5be4ba719cf
+    tag: v1.37.1@sha256:b7cab618e281b1ee7484e7b706a96e2135fbb6e072c2a573a7dab4e87d7f2385
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:

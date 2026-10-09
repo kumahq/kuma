@@ -1,3 +1,12 @@
+---
+title: Source Envoy listener tags from resource labels
+status: accepted
+date: 2026-07-23
+tags: [meshproxypatch, xds, listeners, labels, kri, meshservice, inbound-tags]
+summary: `listenerTags` matching silently stops working once identity moves off tags, so every otherwise-empty `io.kuma.tags` gets a synthesized `kuma.io/unified-name` — the destination KRI outbound, `self_inbound_dp_<port>` inbound.
+related: [101-sni-format-improvements, 103-universal-meshservice-generation]
+---
+
 # Source Envoy listener tags from resource labels
 
 * Status: accepted

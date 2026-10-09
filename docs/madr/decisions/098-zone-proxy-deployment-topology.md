@@ -1,3 +1,12 @@
+---
+title: Zone Proxy Deployment Topology
+status: accepted
+date: 2026-03-11
+tags: [zone-proxy, zone-ingress, zone-egress, helm, deployment, multizone]
+summary: Separate ingress and egress Deployments stay the recommended default for independent scaling and failure isolation; `combinedProxies` is an opt-in single-Deployment topology for dev and resource-constrained zones.
+related: [094-zone-proxy-deployment-model, 095-mesh-scoped-zone-ingress-egress, 097-zone-proxy-sidecar-deployment]
+---
+
 # Zone Proxy Deployment Topology
 
 * Status: accepted

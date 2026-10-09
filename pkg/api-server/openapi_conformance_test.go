@@ -27,8 +27,7 @@ var pathParam = regexp.MustCompile(`\{[^}]+\}`)
 // family of routes with a generic parameter (e.g.
 // "/meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes") while the
 // server registers one concrete route per resource type. The last segment is
-// kept literal so that cross-mesh list routes ("/meshmetrics") stay
-// distinguishable from each other.
+// kept literal so that routes of different resource types stay distinguishable.
 func normalizePath(path string, wsPaths []string) string {
 	p := pathParam.ReplaceAllString(path, "{}")
 	segments := strings.Split(p, "/")
@@ -101,12 +100,29 @@ var _ = Describe("OpenAPI conformance", func() {
 		defer stop()
 
 		spec := specPaths()
+		readOnlyPosts := map[string]bool{}
+		for _, desc := range registry.Global().ObjectDescriptors(model.HasWsEnabled()) {
+			if !desc.ReadOnly {
+				continue
+			}
+			for _, path := range []string{desc.WsPath, desc.AlternativeWsPath} {
+				if path == "" {
+					continue
+				}
+				path = "/" + path
+				if desc.Scope == model.ScopeMesh {
+					path = "/meshes/{mesh}" + path
+				}
+				readOnlyPosts["POST "+normalizePath(path, wsPaths)] = true
+			}
+		}
+
 		usedAllowlist := map[string]bool{}
 		var missingInSpec []string
 		for _, route := range apiServer.Routes() {
 			method, path, _ := strings.Cut(route, " ")
 			normalized := method + " " + normalizePath(path, wsPaths)
-			if spec[normalized] {
+			if spec[normalized] || readOnlyPosts[normalized] {
 				continue
 			}
 			if _, allowed := undocumentedRoutes[normalized]; allowed {

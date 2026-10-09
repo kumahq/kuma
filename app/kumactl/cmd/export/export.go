@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	kumactl_cmd "github.com/kumahq/kuma/v3/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/printers"
@@ -17,8 +16,10 @@ import (
 	"github.com/kumahq/kuma/v3/app/kumactl/pkg/output/yaml"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/v3/pkg/core/resources/apis/system"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 )
 
 type exportContext struct {
@@ -42,18 +43,23 @@ const (
 	formatKubernetes = "kubernetes"
 )
 
-// A federation export is applied to the global control plane, which owns what it
-// stores and rejects a zone label outright, so both labels go before the resource
-// leaves the zone.
 var excludedLabelsPerProfile = map[string]map[string]struct{}{
-	profileFederation: {
-		mesh_proto.ResourceOriginLabel: struct{}{},
-		mesh_proto.ZoneTag:             struct{}{},
-	},
-	profileFederationWithPolicies: {
-		mesh_proto.ResourceOriginLabel: struct{}{},
-		mesh_proto.ZoneTag:             struct{}{},
-	},
+	profileFederation:             federationExcludedLabels(),
+	profileFederationWithPolicies: federationExcludedLabels(),
+}
+
+// A federation export is applied to the global control plane, which rejects a
+// control-plane-owned label whose value differs from the one it computes itself, so
+// they go before the resource leaves the zone. The mesh label stays: on Kubernetes it
+// is what places a policy in its mesh, and the global computes the same value from it.
+func federationExcludedLabels() map[string]struct{} {
+	excluded := map[string]struct{}{}
+	for _, key := range resource_labels.ControlPlaneOwned() {
+		if key != metadata.KumaMeshLabel {
+			excluded[key] = struct{}{}
+		}
+	}
+	return excluded
 }
 
 var allProfiles = []string{
@@ -297,7 +303,7 @@ func resourcesTypesToDump(cmd *cobra.Command, ectx *exportContext) ([]model.Reso
 			if !res.IncludeInFederation { // base decision on `IncludeInFederation` field
 				continue
 			}
-			if res.Policy != nil && res.Policy.IsTargetRef { // do not include new policies
+			if res.Policy != nil { // do not include policies
 				continue
 			}
 		case profileFederationWithPolicies:

@@ -55,7 +55,7 @@ spec:
     - install
     - transparent-proxy-validator
     image: kuma/kuma-init:latest
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Always
     name: kuma-validation
     resources:
       limits:

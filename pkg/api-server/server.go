@@ -165,6 +165,7 @@ func NewApiServer(
 		ws,
 		defs,
 		rt.ResourceManager(),
+		rt.ReadOnlyResourceManager(),
 		cfg,
 		rt.Access().ResourceAccess,
 		rt.GlobalInsightService(),
@@ -173,7 +174,7 @@ func NewApiServer(
 		rt.RouteMetadataProvider(),
 	)
 	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
-	addInspectEndpoints(ws, rt.ResourceManager(), rt.Access().ResourceAccess)
+	addInspectEndpoints(ws, rt.ReadOnlyResourceManager(), rt.Access().ResourceAccess)
 	addInspectEnvoyAdminEndpoints(ws, rt.ResourceManager(), rt.Access().EnvoyAdminAccess, rt.EnvoyAdminClient())
 	addInspectMeshServiceEndpoints(ws, rt.ResourceManager(), cfg.Mode == config_core.Global)
 	guiUrl := ""
@@ -269,14 +270,6 @@ func NewApiServer(
 	return newApiServer, nil
 }
 
-type resourceRouteRole int
-
-const (
-	meshCRUDListRoute resourceRouteRole = iota
-	crossMeshListRoute
-	globalCRUDListRoute
-)
-
 type resourcePathRole int
 
 const (
@@ -285,7 +278,6 @@ const (
 )
 
 type resourceRoute struct {
-	role     resourceRouteRole
 	pathRole resourcePathRole
 }
 
@@ -298,13 +290,8 @@ func resourceRoutes(descriptor model.ResourceTypeDescriptor) []resourceRoute {
 	var routes []resourceRoute
 	for _, pathRole := range pathRoles {
 		switch descriptor.Scope {
-		case model.ScopeMesh:
-			routes = append(routes,
-				resourceRoute{role: meshCRUDListRoute, pathRole: pathRole},
-				resourceRoute{role: crossMeshListRoute, pathRole: pathRole},
-			)
-		case model.ScopeGlobal:
-			routes = append(routes, resourceRoute{role: globalCRUDListRoute, pathRole: pathRole})
+		case model.ScopeMesh, model.ScopeGlobal:
+			routes = append(routes, resourceRoute{pathRole: pathRole})
 		}
 	}
 	return routes
@@ -315,7 +302,7 @@ func (r resourceRoute) pathPrefix(descriptor model.ResourceTypeDescriptor) strin
 	if r.pathRole == aliasResourcePath {
 		path = descriptor.AlternativeWsPath
 	}
-	if r.role == meshCRUDListRoute {
+	if descriptor.Scope == model.ScopeMesh {
 		return "/meshes/{mesh}/" + path
 	}
 	return "/" + path
@@ -324,15 +311,11 @@ func (r resourceRoute) pathPrefix(descriptor model.ResourceTypeDescriptor) strin
 func registerResourceRoutes(ws *restful.WebService, endpoints resourceEndpoints) {
 	for _, route := range resourceRoutes(endpoints.descriptor) {
 		pathPrefix := route.pathPrefix(endpoints.descriptor)
-		switch route.role {
-		case meshCRUDListRoute, globalCRUDListRoute:
-			endpoints.addCreateOrUpdateEndpoint(ws, pathPrefix)
-			endpoints.addDeleteEndpoint(ws, pathPrefix)
-			endpoints.addFindEndpoint(ws, pathPrefix)
-			endpoints.addListEndpoint(ws, pathPrefix)
-		case crossMeshListRoute:
-			endpoints.addListEndpoint(ws, pathPrefix)
-		}
+		endpoints.addCreateEndpoint(ws, pathPrefix)
+		endpoints.addCreateOrUpdateEndpoint(ws, pathPrefix)
+		endpoints.addDeleteEndpoint(ws, pathPrefix)
+		endpoints.addFindEndpoint(ws, pathPrefix)
+		endpoints.addListEndpoint(ws, pathPrefix)
 	}
 }
 
@@ -340,6 +323,7 @@ func addResourcesEndpoints(
 	ws *restful.WebService,
 	defs []model.ResourceTypeDescriptor,
 	resManager manager.ResourceManager,
+	readOnlyResManager manager.ReadOnlyResourceManager,
 	cfg *kuma_cp.Config,
 	resourceAccess resources_access.ResourceAccess,
 	globalInsightService globalinsight.GlobalInsightService,
@@ -348,7 +332,7 @@ func addResourcesEndpoints(
 	routeMetadataProvider runtime.RouteMetadataProvider,
 ) {
 	globalInsightsEndpoints := globalInsightsEndpoints{
-		resManager:     resManager,
+		resManager:     readOnlyResManager,
 		resourceAccess: resourceAccess,
 	}
 	globalInsightsEndpoints.addEndpoint(ws)
@@ -358,7 +342,7 @@ func addResourcesEndpoints(
 	}
 	globalInsightEndpoint.addEndpoint(ws)
 
-	newDataplaneLayoutEndpoint(resManager, meshContextBuilder, resourceAccess, cfg.Multizone.Zone.Name, cfg.Environment).addEndpoint(ws)
+	newDataplaneLayoutEndpoint(readOnlyResManager, meshContextBuilder, resourceAccess, cfg.Multizone.Zone.Name, cfg.Environment).addEndpoint(ws)
 
 	var k8sMapper k8s.ResourceMapperFunc
 	var k8sSecretMapper k8s.ResourceMapperFunc
@@ -397,6 +381,7 @@ func addResourcesEndpoints(
 			},
 			inspect: &resourceInspectHandler{
 				resourceEndpointsContext: endpointsCtx,
+				readOnlyResManager:       readOnlyResManager,
 				meshContextBuilder:       meshContextBuilder,
 				xdsHooks:                 xdsHooks,
 				knownInternalAddresses:   cfg.IPAM.KnownInternalCIDRs,
@@ -567,10 +552,14 @@ func SetupServer(rt runtime.Runtime) error {
 	apiServer, err := NewApiServer(
 		rt,
 		xds_context.NewMeshContextBuilder(
-			rt.ResourceManager(),
+			// Read through the cached read-only manager so hot inspection
+			// endpoints (_rules, _policies, dataplane layout) don't hit the
+			// store on every request. Mirrors initializeMeshCache in bootstrap.
+			rt.ReadOnlyResourceManager(),
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
+			xds_context.WithRestrictOutbound(cfg.Defaults.IsOutboundRestricted()),
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

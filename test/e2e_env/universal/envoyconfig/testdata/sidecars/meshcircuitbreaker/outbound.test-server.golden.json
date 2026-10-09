@@ -89,7 +89,10 @@
                     "resourceApiVersion": "V3"
                   }
                 }
-              ]
+              ],
+              "tlsParams": {
+                "tlsMaximumProtocolVersion": "TLSv1_3"
+              }
             },
             "sni": "sni.msvc.envoyconfig.kuma-3.demo-client.3000"
           }
@@ -182,7 +185,10 @@
                     "resourceApiVersion": "V3"
                   }
                 }
-              ]
+              ],
+              "tlsParams": {
+                "tlsMaximumProtocolVersion": "TLSv1_3"
+              }
             },
             "sni": "sni.msvc.envoyconfig.kuma-3.test-server.80"
           }

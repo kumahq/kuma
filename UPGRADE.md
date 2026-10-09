@@ -8,6 +8,89 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Empty MeshTrafficPermission match entries
+
+Remove or replace each empty match object in MeshTrafficPermission before you upgrade a control plane. Check `rules[].default.allow`, `rules[].default.deny`, and `rules[].default.allowWithShadowDeny`. Each entry must contain `spiffeID`, `sni`, or both. Keep an empty action list only when another action has at least one valid match.
+
+The 2.14 validator accepted empty match objects. The 3.0 validator rejects those entries on create and update. This check also applies to KDS policy writes through the Kubernetes admission webhook. Correct the stored resources on 2.14 before the upgrade. The correction does not rewrite stored policies.
+
+### Cross-mesh resource list endpoints removed
+
+The API server no longer serves the endpoints that list mesh-scoped resources across all meshes, for example `GET /meshaccesslogs`. The same applies to every other mesh-scoped resource type, including `GET /dataplanes`, `GET /meshservices`, `GET /secrets` and the `/_overview` variants, which now return `404`.
+
+List a specific mesh instead: `GET /meshes/{mesh}/meshaccesslogs`, `GET /meshes/{mesh}/dataplanes`, and so on. Global-scoped resources such as `GET /globalsecrets` are unchanged.
+
+### Outbound mTLS negotiates TLS 1.3
+
+Outbound mesh mTLS connections now allow TLS 1.3. Previously Envoy's client default capped them at TLS 1.2, so mesh traffic negotiated TLS 1.2 even though inbound listeners accepted TLS 1.3. A `MeshTLS` or `MeshExternalService` `tlsVersion.max` that is unset or `TLSAuto` now resolves to TLS 1.3 on the client side, which also fixes `min: TLS13` without `max` failing every connection with `NO_SUPPORTED_VERSIONS_ENABLED`.
+
+**Action required**
+
+None for most meshes. TLS 1.3 cipher suites are not configurable, so `tlsCiphers` no longer restricts connections that negotiate TLS 1.3. To keep outbound traffic on TLS 1.2, set `tlsVersion.max: TLS12` in `MeshTLS` or `MeshExternalService`.
+
+### Reserved label prefixes
+
+From now on, `kuma.io/` and `k8s.kuma.io/` are reserved label prefixes.
+Every unknown label under these prefixes will be rejected on create and update.
+On Universal this includes the labels of the `Dataplane` passed to `kuma-dp run`: a proxy whose `Dataplane` carries an unknown reserved label, such as a leftover `kuma.io/gateway: "true"`, or an invalid label value fails to register until the label is fixed.
+
+### Control plane sets `GOMEMLIMIT` itself to 90% of the cgroup memory limit
+
+The Helm chart used to set `GOMEMLIMIT` to the full `controlPlane.resources.limits.memory`. `GOMEMLIMIT` only covers memory the Go runtime manages, so with no headroom left for the rest, such as the mapped `kuma-cp` binary, the container could be OOM killed before the garbage collector reacted. `kuma-cp` now reads the cgroup memory limit at startup and sets `GOMEMLIMIT` to 90% of it. This also covers limits the chart does not know about, such as a `LimitRange` default or a VPA, and Universal deployments under a cgroup. The chart no longer renders the `GOMEMLIMIT` environment variable and `controlPlane.runtime.goMemLimit.divisor` is removed.
+
+**Action required**
+
+None. Set the `AUTOMEMLIMIT` environment variable to choose another fraction, for example `AUTOMEMLIMIT=0.85`, or to `off` to disable it. Set `GOMEMLIMIT` explicitly to use an exact value, in which case `kuma-cp` leaves it as is. On Kubernetes use `controlPlane.envVars` for either. Remove `controlPlane.runtime.goMemLimit` from your values if you set it.
+
+### Control-plane-owned labels are rejected when they differ from the computed value
+
+The control plane computes `kuma.io/origin`, `kuma.io/zone`, `kuma.io/env`, `kuma.io/mesh`, `kuma.io/display-name`, `kuma.io/policy-role`, `k8s.kuma.io/namespace`, `k8s.kuma.io/service-account`, `kuma.io/listener-zoneingress` and `kuma.io/listener-zoneegress` on every write. Depending on the label and the platform, a value you supplied used to be either rejected or silently replaced. Now, on both Kubernetes and Universal, a supplied value that differs from the computed one is rejected, and an equal or absent one is accepted. On an update, a value equal to the stored one is accepted too, so re-applying a stored resource with `kubectl apply` or `kumactl apply` keeps working; the stored value is then replaced with the computed one, for example when the edit changes the policy role.
+
+`kuma.io/managed-by`, `kuma.io/deletion-grace-period-started-at`, `k8s.kuma.io/service-name` and `k8s.kuma.io/is-headless-service` are set only by the control plane's own controllers, and `k8s.kuma.io/service-account` only by the pod controller. You cannot set any of them, not even to their stored value: an update of a generated `MeshService`, `Workload` or `Dataplane` that carries them is rejected, because accepting it would drop the label.
+
+On Universal, plugin policies now also carry `kuma.io/policy-role: system`.
+
+`kumactl export --profile federation` and `--profile federation-with-policies` now leave out every control-plane-owned label except `kuma.io/mesh`, so the global control plane accepts the output.
+
+**Action required**
+
+Remove these labels from your manifests, or set them to the value the control plane shows on the stored resource. Don't edit a resource the control plane generated; change what it is generated from, such as the `Service` or the `Pod`. Re-export any federation output made with an older `kumactl` before applying it to the global control plane.
+
+### Zone Token issuance moved to the KDS auth configuration
+
+A Zone Token now has one job, authenticating a Zone CP to a Global CP over KDS, so the setting that gates its issuance sits with the rest of the KDS authentication configuration. `dpServer.authn.zoneProxy` is removed, it configured the authentication of zone proxies, which are ordinary data plane proxies authenticating with a dataplane token since 3.0.0.
+
+| Removed | Use instead |
+|---|---|
+| `dpServer.authn.zoneProxy.zoneToken.enableIssuer` | `multizone.global.kds.auth.zoneToken.enableIssuer` |
+| `KUMA_DP_SERVER_AUTHN_ZONE_PROXY_ZONE_TOKEN_ENABLE_ISSUER` | `KUMA_MULTIZONE_GLOBAL_KDS_AUTH_ZONE_TOKEN_ENABLE_ISSUER` |
+| `dpServer.authn.zoneProxy.zoneToken.validator` | `multizone.global.kds.auth.zoneToken.validator` |
+| `dpServer.authn.zoneProxy.zoneToken.validator.useSecrets` | `multizone.global.kds.auth.zoneToken.validator.useSecrets` |
+| `KUMA_DP_SERVER_AUTHN_ZONE_PROXY_ZONE_TOKEN_VALIDATOR_USE_SECRETS` | `KUMA_MULTIZONE_GLOBAL_KDS_AUTH_ZONE_TOKEN_VALIDATOR_USE_SECRETS` |
+| `dpServer.authn.zoneProxy.zoneToken.validator.publicKeys` | `multizone.global.kds.auth.zoneToken.validator.publicKeys` |
+| `dpServer.authn.zoneProxy.type` | none, it was read by nothing |
+| `KUMA_DP_SERVER_AUTHN_ZONE_PROXY_TYPE` | none, it was read by nothing |
+
+**Action required**
+
+Only if you set `enableIssuer` to `false` to mint Zone Tokens offline. Move it to `multizone.global.kds.auth.zoneToken.enableIssuer` on the Global CP, the removed setting is ignored and the issuer is enabled again. The other removed settings had no effect, `dpServer.authn.zoneProxy.zoneToken.validator` was read by nothing and `dpServer.authn.zoneProxy.type` was autoconfigured and never consumed.
+
+### Resources with fields that are not in the schema are rejected
+
+Applying a policy or resource with a field that does not exist in its schema now fails with `400` listing every unknown field, for example `spec.from: unknown field`. Previously such fields were silently dropped, so a policy written for an older version, such as a `MeshTrafficPermission` with `spec.from` instead of `spec.rules`, was stored without it and looked applied while doing nothing. The check covers policies and resources with a generated schema; legacy resources without one, such as `Mesh`, still drop unknown fields silently. It applies to the Kuma API server and `kumactl apply`. On Kubernetes, `kubectl apply` behavior is unchanged: the API server prunes unknown fields and prints a warning.
+
+**Action required**
+
+Fix manifests that stop applying: remove the reported field or use its current equivalent, for example `spec.rules` instead of `spec.from` on inbound policies.
+
+### Zone token secrets are no longer synced to zones
+
+A zone token is validated on Global CP only, so Global CP stops sending `zone-token-revocations` over KDS and stops deriving `zone-token-signing-public-key-*` from `zone-token-signing-key-*` for the zones. The copies zones already have are deleted on the first KDS sync after the upgrade.
+
+**Action required**
+
+None. A zone older than `3.0.0` reads these secrets only to authenticate a standalone `ZoneIngress` or `ZoneEgress` on Universal, and those have to be replaced with zone proxy `Dataplane` resources before upgrading (see [`ZoneIngress` and `ZoneEgress` resources removed](#zoneingress-and-zoneegress-resources-removed)). Zone proxy `Dataplane` resources authenticate with a dataplane token.
+
 ### DPP configuration refresh interval default raised to 10s
 
 `xdsServer.dataplaneConfigurationRefreshInterval` (`KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL`) now defaults to `10s` instead of `1s`. The control plane regenerates the xDS configuration of every connected proxy on this interval, so a 1s default kept the control plane busy and scaled poorly with the number of data plane proxies.
@@ -58,8 +141,8 @@ the global control plane read-only on the zone. The
 **Action required**
 
 Remove `multizone.zone.disableOriginLabelValidation` from your configuration.
-A control plane started with the setting still present fails to load its
-configuration.
+A control plane started with the setting still present ignores it.
+
 ### The resource store cache can no longer be disabled
 
 The resource store cache (`store.cache.enabled`,
@@ -213,6 +296,14 @@ and a global control plane serves whatever a zone sent it, so a client that
 reads from a global control plane federated with zones on an older version
 should still fall back to `127.0.0.1`.
 
+### Outbounds that pick a `MeshService` port by number use the port name
+
+A `Dataplane` outbound with `backendRef: {kind: MeshService, name: backend, port: 80}`, where port `80` is named `http`, used to get the port number as its section name. Following the resource identifier design, where the section name is the port name, it now gets `http`. The Envoy listener, cluster and stat prefix of such an outbound change from `..._backend_80` to `..._backend_http`. Transparent proxy outbounds already used the port name and are unchanged.
+
+**Action required**
+
+Policies that target the port with `sectionName: http` now apply to these outbounds. Before, they were skipped and the service-level or `Mesh` rule applied instead. Check such policies before upgrading. Update dashboards and alerts that match on the old `_80` stat prefix.
+
 ### KDS full resync is periodic again, not every second
 
 Removing the polling KDS watchdog carried the poll loop's `refreshInterval` of
@@ -336,6 +427,14 @@ The `readOnly` field returned by `GET /_resources` now reports whether generic `
 
 Dynamic clients should use `readOnly` as the capability of the current control plane, not as an intrinsic property of the resource type. No action is needed for Kubernetes installations using the default read-only API configuration.
 
+### `policy.hasFromTargetRef`, `policy.isFromAsRules` and `policy.isTargetRef` are removed from `GET /_resources`
+
+`hasFromTargetRef` and `isFromAsRules` in the `policy` object returned by `GET /_resources` have been hardcoded to `false` since the `from`-style targetRef was dropped, and `isTargetRef` has been `true` for every policy, so none of them described anything. They are removed from the response.
+
+**Action required**
+
+Treat every entry with a `policy` object as a targetRef policy. To tell whether a policy applies to inbound traffic, read `policy.hasRulesTargetRef` instead of `policy.hasFromTargetRef`.
+
 ### The legacy per-policy inspect paths `{policy}/{name}/dataplanes` are removed
 
 `GET /meshes/{mesh}/{policyType}/{policyName}/dataplanes` for every inspectable policy type is removed and answers `404`. The replacement `GET /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes` returns the list of dataplanes the policy matches.
@@ -390,7 +489,7 @@ None for most users. If you have a `NetworkPolicy`, a monitoring check, or a `Co
 
 ### The `k8s.kuma.io/service-account` label on a `Dataplane` is managed by the control plane
 
-On Kubernetes this label is computed by the control plane from the Pod's ServiceAccount and is not meant to be set by hand. The admission webhook now rejects any `Dataplane` create or update that carries `k8s.kuma.io/service-account`, unless the request comes from the control plane itself or from another user listed in `runtime.kubernetes.allowedUsers`, on both Zone and Global control planes. A proxy is also rejected at xDS authentication when the label on its `Dataplane` does not match the ServiceAccount of its Pod. Other resource types are unaffected, as are resources synced over KDS and resources written by the control plane.
+On Kubernetes this label is computed by the control plane from the Pod's ServiceAccount and is not meant to be set by hand. The admission webhook now rejects any `Dataplane` create or update that carries `k8s.kuma.io/service-account`, unless the request comes from the control plane itself or from another user listed in `runtime.kubernetes.allowedUsers`, on both Zone and Global control planes. A proxy is also rejected at xDS authentication when the label on its `Dataplane` does not match the ServiceAccount of its Pod. Resources synced over KDS and resources written by the control plane are unaffected.
 
 **Action required**
 
@@ -475,7 +574,7 @@ None. Existing generated `MeshHTTPRoute`s are backfilled with the timestamp labe
 The built-in gateway implementation was removed over the previous releases, and the Dataplane validator has been rejecting `networking.gateway.type: BUILTIN` since then. The remaining API surface is now gone too:
 
 - `Dataplane.networking.gateway` is gone entirely, `type` and `tags` with it — see [`kuma.io/gateway` is removed](#kumaiogateway-is-removed). A `Dataplane` carrying `type: BUILTIN` no longer produces the `BUILTIN gateways are no longer supported, use DELEGATED instead` validation error; the whole message is ignored and what remains is an ordinary `Dataplane`.
-- `MeshInsight.dataplanesByType.gatewayBuiltin` and the `gateway_builtin` `ServiceInsight` service type are removed, as are `dataplanesByType.gateway` and `dataplanesByType.gatewayDelegated` — see [`kuma.io/gateway` is removed](#kumaiogateway-is-removed).
+- `MeshInsight.dataplanesByType.gatewayBuiltin` and the `gateway_builtin` `ServiceInsight` service type are removed, and so is the rest of `dataplanesByType` — see [The dataplane and zone proxy breakdowns are removed from the insights](#the-dataplane-and-zone-proxy-breakdowns-are-removed-from-the-insights).
 - `GET /meshes/{mesh}/dataplanes+insights?gateway=builtin` is no longer a valid filter. Neither is any other `gateway=` value.
 - `GET /meshes/{mesh}/service-insights?type=gateway_builtin` is no longer a valid filter and returns `400`. Use `type=gateway_delegated`.
 - The `gatewayBuiltin` object disappears from the `/global-insight` response, in both `dataplanes` and `services`.
@@ -487,6 +586,19 @@ All three protobuf ordinals are reserved, so they can never be reused for someth
 Stop consuming the `gatewayBuiltin` fields and the `gateway=builtin` / `type=gateway_builtin` filters if you query the API directly.
 
 A `Dataplane` still carrying `type: BUILTIN` keeps loading after the upgrade, because the whole `networking.gateway` message is ignored rather than parsed, so it no longer has to be deleted first. It becomes an ordinary `Dataplane` with no inbounds. Find them with `kumactl get dataplanes -o yaml` per mesh, or `kubectl get dataplanes -A -o yaml`, grep for `BUILTIN`, and delete the ones you no longer serve traffic with. Drop `type: BUILTIN` from any manifest you keep under source control.
+
+### The dataplane and zone proxy breakdowns are removed from the insights
+
+`MeshInsight.dataplanesByType` is removed. `MeshInsight.dataplanes` already carries the same totals across every proxy in the mesh, and once gateways stopped being marked (see [`kuma.io/gateway` is removed](#kumaiogateway-is-removed)) `standard` was the only split left, repeating those totals.
+
+The `/global-insight` response changes with it:
+
+- `dataplanes.standard` is replaced by a flat `dataplanes` object with `total`, `online`, `offline` and `partiallyDegraded`.
+- `zones.zoneIngresses` and `zones.zoneEgresses` are removed. They were fed by `ZoneIngressInsight` and `ZoneEgressInsight`, which went away when zone proxies became `Dataplane`s with listeners, and had been reporting zero since.
+
+**Action required**
+
+If you read `/global-insight`, take the dataplane totals from `dataplanes` instead of `dataplanes.standard`. Zone proxy counts are no longer served by the insight API; list the `Dataplane`s instead.
 
 ### Control plane RBAC is narrowed on Kubernetes
 
@@ -635,7 +747,7 @@ The standalone `ZoneIngress`, `ZoneEgress`, `ZoneIngressInsight` and `ZoneEgress
 
 The control plane ClusterRole no longer grants access to these four CRDs, and the validating webhook no longer intercepts them.
 
-`globalInsight.zones.zoneIngresses` and `globalInsight.zones.zoneEgresses` are still present in the API response but report `0` until zone proxy counts are surfaced from `MeshInsight`.
+`globalInsight.zones.zoneIngresses` and `globalInsight.zones.zoneEgresses` are removed from the API response, see [The dataplane and zone proxy breakdowns are removed from the insights](#the-dataplane-and-zone-proxy-breakdowns-are-removed-from-the-insights).
 
 **Action required**
 
@@ -755,6 +867,49 @@ Policies that select real resources through `spec.targetRef` or `spec.to[].targe
 **Action required**
 
 Migrate any policy that still selects those resources by `name` and/or `namespace` to use `labels` instead before upgrading. `sectionName` remains supported for `Dataplane` inbound selection and `MeshService` port selection.
+
+### `reachableBackends` refs select backends by `labels` only
+
+`name` and `namespace` have been removed from `Dataplane.networking.transparentProxying.reachableBackends.refs[]` and from the `kuma.io/reachable-backends` annotation. Every ref now requires `kind` and `labels`, and `port` stays optional to narrow the ref to a single port.
+
+Refs still using `name` or `namespace` resolve to nothing. Validation runs only on writes, so an existing `Dataplane` is not re-validated, and the control plane drops the unknown fields when it reads the stored spec. The proxy then receives no outbound clusters, even with `KUMA_DEFAULTS_RESTRICT_OUTBOUND=false`, until every ref is rewritten. New writes fail validation with `labels: must not be empty`, and on Kubernetes the pod converter rejects an annotation that still sets `name` or `namespace`.
+
+**Action required:** rewrite every ref before upgrading. `name` becomes the `kuma.io/display-name` label and `namespace` becomes the `k8s.kuma.io/namespace` label.
+
+Before:
+
+```yaml
+kuma.io/reachable-backends: |
+  refs:
+  - kind: MeshService
+    name: redis
+    namespace: redis-system
+    port: 6379
+```
+
+After:
+
+```yaml
+kuma.io/reachable-backends: |
+  refs:
+  - kind: MeshService
+    labels:
+      kuma.io/display-name: redis
+      k8s.kuma.io/namespace: redis-system
+    port: 6379
+```
+
+### Data plane proxies without `reachableBackends` get no outbounds
+
+A data plane proxy without `reachableBackends` now gets no generated outbounds, so it cannot reach any service through the transparent proxy. This includes pods injected by a 2.14 control plane, whose `Dataplane` keeps the redirect ports in the spec.
+
+**Action required:** define `reachableBackends` on every data plane proxy before upgrading, or set `defaults.restrictOutbound` (`KUMA_DEFAULTS_RESTRICT_OUTBOUND`) to `false` to restore the previous allow-all behavior.
+
+### Outbound passthrough defaults to `None`
+
+A transparent proxy data plane proxy that no `MeshPassthrough` policy selects now drops traffic to destinations outside the mesh instead of forwarding it to the original destination. This behaves as if a `MeshPassthrough` with `passthroughMode: None` targets it. Proxies without a transparent proxy or with bound outbounds are not affected, and a policy with `passthroughMode: All` keeps passthrough on.
+
+**Action required:** before upgrading, allow the external destinations your workloads use with `MeshExternalService` or a `MeshPassthrough` policy (`passthroughMode: Matched` with `appendMatch`, or `passthroughMode: All`), or set `defaults.restrictOutbound` (`KUMA_DEFAULTS_RESTRICT_OUTBOUND`) to `false` to restore the previous behavior.
 
 ### A `MeshHTTPRoute` rule whose backendRefs all fail to resolve answers 500
 
@@ -994,14 +1149,28 @@ already behaviourally identical, so no other changes are required.
 
 ### `meshServices` removed from the `Mesh` schema
 
-The `meshServices` field (and its `mode` enum) has been removed from the
-`Mesh` resource spec. Unified resource naming is now unconditional,
+The `meshServices` field (and its `mode` enum) no longer has any effect on
+the `Mesh` resource. Unified resource naming is now unconditional,
 regardless of what the mesh's former `meshServices.mode` was set to.
+
+The field remains in the schema as deprecated so that stored values survive
+the upgrade and keep syncing to zones over KDS: zones before 3.0 read a
+missing field as `Disabled`, which makes them delete every generated
+`MeshService`, skip mesh-scoped zone proxy listeners, and stop serving
+`MeshService` outbounds and DNS. Zones on 3.0 ignore the field, and writes
+setting it to any mode other than `Exclusive` are rejected, because that
+mode would silently behave as `Exclusive`.
 
 **Action required**
 
-None. A `Mesh` spec that still sets `meshServices` continues to apply
-successfully; the field is silently ignored by the control plane.
+Set `meshServices.mode: Exclusive` on every mesh before upgrading the
+global control plane, including meshes that never set the field: a 2.x
+zone reads a missing field as `Disabled`. The 3.0 global then keeps syncing
+the stored mode, and 2.x zones keep serving `MeshServices` until they are
+upgraded. A mesh that still carries another mode when the global is
+upgraded is rejected by 3.0 zones over KDS until it is set to `Exclusive`.
+A write that carries the field with `Exclusive` still applies and returns a
+deprecation warning; drop the field from your manifests.
 
 ### `routing.zoneEgress` removed from the `Mesh` schema
 
@@ -1108,11 +1277,36 @@ Complete the migration described in the previous section, then drop the
 top-level `ingress` and `egress` blocks from your values files and the removed
 flags from any `kumactl install control-plane` invocation.
 
-Most legacy settings map onto `meshes[].ingress` / `meshes[].egress`. These have
-no equivalent there: `podAnnotations`, `annotations`, `logLevel`, `drainTime`,
-`lifecycle`, `livenessProbe`, `readinessProbe`, `startupProbe`, `dns.policy`,
-`dns.config`, `service.enabled` and `service.nodePort`. Drain time and probes
-are now control-plane-wide sidecar injector settings.
+Most legacy settings map onto `meshes[].ingress` / `meshes[].egress`;
+`podAnnotations` moves to `deployment.podAnnotations`, next to the new
+`deployment.podLabels`. These have no equivalent there: `annotations`,
+`logLevel`, `drainTime`, `lifecycle`, `livenessProbe`, `readinessProbe`,
+`startupProbe`, `dns.policy`, `dns.config`, `service.enabled` and
+`service.nodePort`. Drain time and probes are now control-plane-wide sidecar
+injector settings.
+
+### Mesh-scoped zone proxies keep their `kuma-dp` until you restart them
+
+Zone proxy pods deployed through `meshes[]` no longer carry the `helm.sh/chart`
+and `app.kubernetes.io/version` labels, so upgrading the control plane leaves
+them running, like any other data plane proxy. Previously every version upgrade
+rolled them while the old control plane was still injecting sidecars, so they
+restarted and came back with the old `kuma-dp` anyway.
+
+Upgrading from a 2.14 patch that predates this change still rolls them once,
+because their pod template changes: the version labels go away and the egress
+`preStopSleepSeconds` default rises from 15 to 20 seconds. They come back with
+the 2.14 `kuma-dp`.
+
+**Action required**
+
+After the control plane upgrade, restart the zone proxies to move them to the
+new `kuma-dp`. Replace `kuma-system` if you installed the control plane in
+another namespace:
+
+```sh
+kubectl rollout restart deployment -n kuma-system -l kuma.io/mesh
+```
 
 ### Standalone zone proxy inspect endpoints and `kumactl inspect` commands removed
 
@@ -1219,7 +1413,9 @@ upgrading. Audit with:
 
 ```bash
 kubectl get meshservices -A -o yaml | grep -B5 'dataplaneTags:'
-kumactl get meshservices -o yaml --all-meshes | grep -B5 'dataplaneTags:'
+for mesh in $(kumactl get meshes -o json | jq -r '.items[].name'); do
+  kumactl get meshservices --mesh "$mesh" -o yaml
+done | grep -B5 'dataplaneTags:'
 ```
 
 ```yaml
@@ -1373,13 +1569,13 @@ On Universal, drop `kuma.io/gateway: "true"` from the labels of gateway `Datapla
 - A `Dataplane` may declare both inbounds and zone proxy listeners without the validator rejecting it. The messages `inbound cannot be defined for delegated gateways` and `listeners cannot be defined for delegated gateways` are gone.
 - `DataplaneOverview` status for a proxy with no inbounds and no listeners is `Online` while it is connected, which is what gateways reported before. Proxies that do declare inbounds are unaffected.
 - `MeshMetric` no longer emits `gateway` for `kuma.proxy_role`; a former gateway reports `sidecar`. Update dashboards and alerts that select on it.
-- `MeshInsight.dataplanesByType.gateway` and `.gatewayDelegated` are removed, field numbers 2 and 4 reserved. Every proxy is counted under `standard`.
+- `MeshInsight.dataplanesByType.gateway` and `.gatewayDelegated` are removed, and so is the rest of `dataplanesByType` — see [The dataplane and zone proxy breakdowns are removed from the insights](#the-dataplane-and-zone-proxy-breakdowns-are-removed-from-the-insights).
 - `dataplanes.gatewayDelegated` and `services.gatewayDelegated` are removed from the `/global-insight` response.
 - `GET /meshes/{mesh}/dataplanes/_overview?gateway=` is no longer a valid filter and is ignored, and `kumactl inspect dataplanes --gateway` is removed.
 - A `Service` or `Pod` that was skipped for carrying the annotation now gets a `MeshService` like any other workload, unless the `Service` carries `kuma.io/ignore: "true"`.
 - The injected sidecar of a former gateway pod gets the regular application probe proxy port instead of `0`, so its probes are proxied.
 - The control plane no longer writes `kuma.io/zone` into a gateway's tags, and KDS no longer rewrites a zone tag inside a synced `Dataplane` spec. The `kds_zone_attribution_rewrites_total` metric is removed with it; zone attribution on labels is unaffected.
-- A `kuma.io/gateway` label left on a stored `Dataplane` by an older control plane is deleted the next time that `Dataplane` is written, so a `targetRef` or `MeshLoadBalancingStrategy` affinity key that still selects on it stops matching. Move those to a label the control plane does not manage.
+- A `kuma.io/gateway` or `kuma.io/proxy-type` label left on a stored `Dataplane` by an older control plane is no longer deleted on every write. On Kubernetes the control plane drops it on the next reconcile of the Pod; on Universal it goes away when kuma-dp registers the proxy again, and a kuma-dp `Dataplane` that still carries either label fails to register (see [Reserved label prefixes](#reserved-label-prefixes)). A `targetRef` or `MeshLoadBalancingStrategy` affinity key that selects on them stops matching; move those to a label the control plane does not manage.
 
 Also move any key you use in a `MeshLoadBalancingStrategy` `localZone.affinityTags` from `networking.gateway.tags` to the `Dataplane`'s labels — an affinity key that exists only as a gateway tag stops matching and its locality group is dropped.
 
@@ -2325,15 +2521,19 @@ also applies when `spec.extension` is set, even though an extension owns the res
 
 **Action required**
 
-Rewrite `caCert`, `clientCert` and `clientKey` on every `MeshExternalService` to the new
-shape as part of the upgrade.
+Rewrite the resources on 2.14 before upgrading the global control plane. 2.14.6 and later accept both shapes (see [Upgrade to `2.14.6`](#upgrade-to-2146)):
+
+1. Upgrade the global control plane and every zone control plane to 2.14.6 or later.
+2. Rewrite `caCert`, `clientCert` and `clientKey` on every `MeshExternalService` to the new shape.
+3. Upgrade to 3.0, global control plane first.
 
 **Warning**: a `MeshExternalService` written in the old shape after the upgrade is rejected
 at write time, because the missing `type` discriminator is a validation violation. Resources
 already stored in the old shape are not rejected — the control plane cannot read their TLS
 material, so the destination is dropped from the xDS config of every proxy routing to it,
-with an error logged on the control plane. Plan the rewrite together with the upgrade to
-avoid an outage on those destinations.
+with an error logged on the control plane. Rewriting after the global is on 3.0 is too late:
+it accepts only the new shape, and zones older than 2.14.6 drop the new fields, so their
+proxies silently fall back to the system CA.
 
 ### Inbound `tags` removed from `Dataplane`
 
@@ -2378,6 +2578,16 @@ Since 2.14.0 every generated cluster carries a `DEFAULT`-priority circuit breake
 **Action required**
 
 Review every `MeshProxyPatch` that patches `circuitBreakers`. Where the same cluster is also covered by a `MeshCircuitBreaker`, the patch now overrides that policy for each field it sets, instead of being ignored — `MeshProxyPatch` runs last, so it wins the fields it names and the policy keeps the rest. Remove patches you wrote before 2.14.0 and no longer rely on, and drop any workaround you put in place because the patch appeared to do nothing.
+
+## Upgrade to `2.14.6`
+
+### `MeshExternalService` TLS verification accepts the `SecureDataSource` shape
+
+2.14.6 accepts both shapes of `spec.tls.verification.caCert`, `.clientCert` and `.clientKey` on `MeshExternalService`, so resources can be rewritten to the shape 3.0 requires before upgrading. The old `secret`, `inline` and `inlineString` fields keep working on 2.14 and produce a deprecation warning. A single data source cannot mix both shapes, and the `File` and `EnvVar` types are rejected.
+
+**Action required**
+
+Before upgrading to 3.0, upgrade every control plane to 2.14.6 or later, then rewrite each `MeshExternalService` as described in [`MeshExternalService` TLS verification uses the `SecureDataSource` shape](#meshexternalservice-tls-verification-uses-the-securedatasource-shape). A zone on an older 2.14 does not know the new fields: they are dropped (pruned on Kubernetes), and the proxy silently falls back to the system CA.
 
 ## Upgrade to `2.13.7`
 

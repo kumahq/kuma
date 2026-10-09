@@ -21,9 +21,13 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
+	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 	util_slices "github.com/kumahq/kuma/v3/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/generator/zoneproxy"
+	xds_sync "github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
 
 type dataplaneLayoutEndpoint struct {
@@ -92,6 +96,7 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request) (any, er
 		}
 	})
 
+	identity := dle.readyIdentity(request, meshName, dataplane)
 	meshResources := baseMeshContext.Resources()
 	listeners := []api_common.DataplaneListener{}
 	for _, listener := range dataplane.Spec.GetNetworking().GetListeners() {
@@ -105,10 +110,18 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request) (any, er
 			proxyResourceName = naming.ContextualZoneIngressListenerName(sectionName)
 			clusters = clustersForDestinations(zoneproxy.IngressDestinations(meshResources), allPorts)
 		case v1alpha1.Dataplane_Networking_Listener_ZoneEgress:
+			// The egress listener needs a workload identity for its mTLS
+			if identity == nil {
+				continue
+			}
 			listenerType = api_common.ZoneEgress
 			proxyResourceName = naming.ContextualZoneEgressListenerName(sectionName)
 			clusters = clustersForDestinations(zoneproxy.EgressDestinations(meshResources), firstPort)
 		default:
+			continue
+		}
+		// A zone proxy listener without destinations is not generated
+		if len(clusters) == 0 {
 			continue
 		}
 		listeners = append(listeners, api_common.DataplaneListener{
@@ -121,13 +134,29 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request) (any, er
 	}
 
 	outbounds := []api_common.DataplaneOutbound{}
-	reachableOutbounds, _ := baseMeshContext.DestinationIndex.GetReachableBackends(dataplane)
-	for outboundKri, port := range reachableOutbounds {
+	metadata := dle.dataplaneMetadata(request, meshName, dataplaneName)
+	tpEnabled := tproxy_dp.GetDataplaneConfig(dataplane, metadata).Enabled()
+	resolved := xds_sync.ResolveOutbounds(baseMeshContext, dataplane, tpEnabled, metadata.HasFeature(xds_types.FeatureBindOutbounds))
+	seen := map[kri.Identifier]struct{}{}
+	for _, outbound := range resolved {
+		id := outbound.Resource
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		destination := baseMeshContext.DestinationIndex.GetDestinationByKRI(id)
+		if destination == nil {
+			continue
+		}
+		port, ok := destination.FindPortByName(id.SectionName)
+		if !ok {
+			continue
+		}
+		seen[id] = struct{}{}
 		outbounds = append(outbounds, api_common.DataplaneOutbound{
-			Kri:               outboundKri.String(),
+			Kri:               id.String(),
 			Port:              port.GetValue(),
 			Protocol:          string(port.GetProtocol()),
-			ProxyResourceName: outboundKri.String(),
+			ProxyResourceName: id.String(),
 		})
 	}
 
@@ -141,7 +170,7 @@ func (dle *dataplaneLayoutEndpoint) getLayout(request *restful.Request) (any, er
 		Labels:    dataplane.GetMeta().GetLabels(),
 		Listeners: listeners,
 		Outbounds: outbounds,
-		SpiffeId:  dle.computeSpiffeID(request, meshName, dataplane),
+		SpiffeId:  dle.computeSpiffeID(meshName, dataplane, identity),
 	}
 
 	return networkingLayout, nil
@@ -186,15 +215,30 @@ func clustersForDestinations(
 	return clusters
 }
 
-func (dle *dataplaneLayoutEndpoint) computeSpiffeID(request *restful.Request, meshName string, dataplane *core_mesh.DataplaneResource) *string {
-	ctx := request.Request.Context()
+func (dle *dataplaneLayoutEndpoint) dataplaneMetadata(request *restful.Request, meshName, dataplaneName string) *core_xds.DataplaneMetadata {
+	insight := core_mesh.NewDataplaneInsightResource()
+	if err := dle.resManager.Get(request.Request.Context(), insight, store.GetByKey(dataplaneName, meshName)); err != nil {
+		log.V(1).Info("could not get DataplaneInsight", "mesh", meshName, "dataplane", dataplaneName, "err", err)
+		return nil
+	}
+	return core_xds.DataplaneMetadataFromXdsMetadata(insight.Spec.GetMetadata())
+}
+
+func (dle *dataplaneLayoutEndpoint) readyIdentity(request *restful.Request, meshName string, dataplane *core_mesh.DataplaneResource) *meshidentity_api.MeshIdentityResource {
 	identities := &meshidentity_api.MeshIdentityResourceList{}
-	if err := dle.resManager.List(ctx, identities, store.ListByMesh(meshName)); err != nil {
+	if err := dle.resManager.List(request.Request.Context(), identities, store.ListByMesh(meshName)); err != nil {
 		log.V(1).Info("could not list MeshIdentity resources", "mesh", meshName, "err", err)
 		return nil
 	}
 	identity, ok := meshidentity_api.BestMatched(dataplane.GetMeta().GetLabels(), identities.Items)
 	if !ok || !identity.Status.IsInitialized() {
+		return nil
+	}
+	return identity
+}
+
+func (dle *dataplaneLayoutEndpoint) computeSpiffeID(meshName string, dataplane *core_mesh.DataplaneResource, identity *meshidentity_api.MeshIdentityResource) *string {
+	if identity == nil {
 		return nil
 	}
 	trustDomain, err := identity.GetTrustDomain(dle.zone)

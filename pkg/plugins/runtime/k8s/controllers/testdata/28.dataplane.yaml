@@ -19,19 +19,23 @@ spec:
       reachableBackends:
         refs:
         - kind: MeshService
-          name: demo-app
-          namespace: kuma-demo
+          labels:
+            k8s.kuma.io/namespace: kuma-demo
+            kuma.io/display-name: demo-app
           port: 5000
         - kind: MeshService
-          name: redis
-          namespace: redis-system
+          labels:
+            k8s.kuma.io/namespace: redis-system
+            kuma.io/display-name: redis
         - kind: MeshService
           labels:
             kuma.io/display-name: xyz
             kuma.io/zone: east
         - kind: MeshExternalService
-          name: demo-app
-          namespace: kuma-system
+          labels:
+            k8s.kuma.io/namespace: kuma-system
+            kuma.io/display-name: demo-app
         - kind: MeshExternalService
           labels:
             kuma.io/display-name: httpbin
+        - kind: MeshMultiZoneService

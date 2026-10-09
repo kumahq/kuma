@@ -328,7 +328,8 @@ components:
                     Reachable backend via transparent proxy when running with
                     MeshExternalService, MeshService and MeshMultiZoneService. Setting an
                     explicit list of refs can dramatically improve the performance of the
-                    mesh. If not specified, all services in the mesh are reachable.
+                    mesh. If not specified, no services in the mesh are reachable, unless
+                    the control plane disables KUMA_DEFAULTS_RESTRICT_OUTBOUND.
                   properties:
                     refs:
                       items:
@@ -342,18 +343,13 @@ components:
                               type: string
                             description: Labels used to select backends
                             type: object
-                          name:
-                            description: Name of the backend.
-                            type: string
-                          namespace:
-                            description: Namespace of the backend. Might be empty
-                            type: string
                           port:
                             description: Port of the backend.
                             format: uint32
                             type: integer
                         required:
                         - kind
+                        - labels
                         type: object
                       type: array
                   type: object
@@ -389,46 +385,6 @@ info:
   version: v1alpha1
 openapi: 3.1.0
 paths:
-  /dataplanes:
-    get:
-      operationId: getDataplaneListAllMeshes
-      parameters:
-      - description: offset in the list of entities
-        in: query
-        name: offset
-        required: false
-        schema:
-          example: 0
-          type: integer
-      - description: the number of items per page
-        in: query
-        name: size
-        required: false
-        schema:
-          default: 100
-          maximum: 1000
-          minimum: 1
-          type: integer
-      - description: filter by labels when multiple filters are present, they are
-          ANDed
-        example:
-          label.k8s.kuma.io/namespace: my-ns
-        in: query
-        name: filter
-        required: false
-        schema:
-          properties:
-            key:
-              type: string
-            value:
-              type: string
-          type: object
-      responses:
-        "200":
-          $ref: '#/components/responses/DataplaneList'
-      summary: Returns a list of Dataplane across all meshes.
-      tags:
-      - Dataplane
   /meshes/{mesh}/dataplanes:
     get:
       operationId: getDataplaneList
@@ -473,6 +429,48 @@ paths:
         "200":
           $ref: '#/components/responses/DataplaneList'
       summary: Returns a list of Dataplane in the mesh.
+      tags:
+      - Dataplane
+    post:
+      description: Creates a resource using the name in the body. An existing resource
+        is never modified. Requires Kuma 3.0 or later.
+      operationId: postDataplane
+      parameters:
+      - description: name of the mesh
+        in: path
+        name: mesh
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataplaneItem'
+        description: Resource to create
+        required: true
+      responses:
+        "201":
+          $ref: '#/components/responses/DataplaneCreateOrUpdateSuccessResponse'
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: ../../base/specs/common/error_schema.yaml#/components/schemas/Error
+          description: Invalid resource
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: ../../base/specs/common/error_schema.yaml#/components/schemas/NotFoundError
+          description: Parent mesh not found
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: ../../base/specs/common/error_schema.yaml#/components/schemas/Error
+          description: A resource with this identity already exists
+      summary: Creates Dataplane entity
       tags:
       - Dataplane
   /meshes/{mesh}/dataplanes/{name}:

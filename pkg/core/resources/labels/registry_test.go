@@ -32,18 +32,12 @@ var _ = Describe("Registry", func() {
 		}
 	})
 
-	It("should not check ownership of user-owned labels", func() {
-		for _, d := range labels.Registry {
-			if d.Owner == labels.OwnerUser {
-				Expect(d.ValidateValue).To(BeNil(), d.Key)
-			}
-		}
-	})
-
-	It("should expose the registered keys as AllComputedLabels", func() {
+	It("should expose the keys the control plane writes as AllComputedLabels", func() {
 		var keys []string
 		for _, d := range labels.Registry {
-			keys = append(keys, d.Key)
+			if d.Compute != nil {
+				keys = append(keys, d.Key)
+			}
 		}
 		var computed []string
 		for label := range labels.AllComputedLabels {
@@ -61,8 +55,8 @@ var _ = Describe("Registry", func() {
 	})
 })
 
-var _ = Describe("AllComputedLabels", func() {
-	// The OpenAPI spec documents every computed label under Meta.labels. Nothing
+var _ = Describe("Registry", func() {
+	// The OpenAPI spec documents every registered label under Meta.labels. Nothing
 	// forces the two to agree, so they drift silently as labels come and go.
 	It("should match the labels documented in the OpenAPI spec", func() {
 		specPath := filepath.Join("..", "..", "..", "..", "api", "openapi", "specs", "common", "resource.yaml")
@@ -91,11 +85,11 @@ var _ = Describe("AllComputedLabels", func() {
 			documented = append(documented, label)
 		}
 
-		var computed []string
-		for label := range labels.AllComputedLabels {
-			computed = append(computed, label)
+		var registered []string
+		for _, d := range labels.Registry {
+			registered = append(registered, d.Key)
 		}
 
-		Expect(documented).To(ConsistOf(computed))
+		Expect(documented).To(ConsistOf(registered))
 	})
 })

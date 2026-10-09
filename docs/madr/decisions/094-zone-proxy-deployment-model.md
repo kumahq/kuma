@@ -1,3 +1,12 @@
+---
+title: Zone Proxy Deployment Model
+status: accepted
+date: 2026-02-18
+tags: [zone-proxy, zone-ingress, zone-egress, helm, kubernetes, multizone, deployment]
+summary: Defines how mesh-scoped zone proxies are deployed via Helm — a per-mesh `meshes` list, empty by default (explicit opt-in), per-mesh Services in kuma-system, additive migration next to the legacy `ingress`/`egress` keys.
+related: [090-zone-egress-identity, 095-mesh-scoped-zone-ingress-egress, 097-zone-proxy-sidecar-deployment, 098-zone-proxy-deployment-topology, 099-allow-multiple-meshes-per-k8s-ns]
+---
+
 # Zone Proxy Deployment Model
 
 * Status: accepted
@@ -392,7 +401,7 @@ Users can use NodePort or Ingress controllers to reduce LB count if needed.
 
 All meshes' zone proxies are deployed in the `kuma-system` namespace.
 
-> **This reverses [MADR 093](093-disallow-multiple-meshes-per-k8s-ns.md) (accepted).**
+> **This reverses [MADR 093](https://github.com/kumahq/kuma/blob/46c23d9abaf50781c4fe24f2e8374942f0efb60e/docs/madr/decisions/093-disallow-multiple-meshes-per-k8s-ns.md) (accepted).**
 
 **Why**: The chart deploys zone proxies for multiple meshes into `kuma-system`. Requiring separate namespaces for each mesh's infrastructure components adds operational complexity with no benefit — zone proxies are infrastructure, not application workloads.
 

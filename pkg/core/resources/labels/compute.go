@@ -20,11 +20,6 @@ type Namespace struct {
 
 var UnsetNamespace = Namespace{}
 
-// Labels the control plane used to compute and no longer does. They are
-// deleted on every proxy write so a resource created by an older control plane
-// stops carrying them, instead of keeping a value nothing maintains.
-var removedLabels = []string{"kuma.io/proxy-type", "kuma.io/gateway"}
-
 func NewNamespace(value string, system bool) Namespace {
 	return Namespace{
 		value:  value,
@@ -55,7 +50,7 @@ func Compute(w Write, cp ControlPlane) (map[string]string, error) {
 		if d.Compute == nil {
 			continue
 		}
-		v, ok, err := d.Compute(w, cp)
+		v, ok, err := d.Compute(d.Key, w, cp)
 		if err != nil {
 			return nil, err
 		}
@@ -65,17 +60,14 @@ func Compute(w Write, cp ControlPlane) (map[string]string, error) {
 			delete(labels, d.Key)
 		}
 	}
-	if w.Descriptor.IsProxy {
-		for _, k := range removedLabels {
-			delete(labels, k)
-		}
-	}
 	return labels, nil
 }
 
-func ComputePolicyRole(p core_model.Policy, ns Namespace) (mesh_proto.PolicyRole, error) {
+// ComputePolicyRole classifies a policy from its own placement and its to[] items.
+// zone is the policy's own kuma.io/zone; it is empty for a policy that does not
+// originate from a zone.
+func ComputePolicyRole(p core_model.Policy, ns Namespace, zone string) (mesh_proto.PolicyRole, error) {
 	if ns.system || ns == UnsetNamespace {
-		// on Universal the value is always empty
 		return mesh_proto.SystemPolicyRole, nil
 	}
 
@@ -89,31 +81,26 @@ func ComputePolicyRole(p core_model.Policy, ns Namespace) (mesh_proto.PolicyRole
 		return mesh_proto.WorkloadOwnerPolicyRole, nil
 	}
 
-	hasSameOrOmittedNamespace := func(tr common_api.TargetRef) bool {
-		labelNamespace := pointer.Deref(tr.Labels)[mesh_proto.KubeNamespaceTag]
-		return labelNamespace == "" || labelNamespace == ns.value
-	}
-
-	// selectsSingleResourceByDisplayName reports whether ref identifies a single
-	// resource by display-name (+ optional namespace) rather than an arbitrary
-	// subset of resources via other label selectors.
-	selectsSingleResourceByDisplayName := func(tr common_api.TargetRef) bool {
+	// selectsOwnResource reports whether ref names a single resource the policy's
+	// own namespace owns. A label selector is resolved as a subset match over the
+	// whole mesh, so only display-name, namespace and zone together pin it to one
+	// resource. Accepting fewer labels would let a producer policy, which is
+	// applied to every dataplane in the mesh and synced to the other zones, attach
+	// to a resource of another namespace or zone.
+	selectsOwnResource := func(tr common_api.TargetRef) bool {
 		labels := pointer.Deref(tr.Labels)
-		if labels[mesh_proto.DisplayName] == "" {
+		if len(labels) != 3 || zone == "" {
 			return false
 		}
-		for k := range labels {
-			if k != mesh_proto.DisplayName && k != mesh_proto.KubeNamespaceTag {
-				return false
-			}
-		}
-		return true
+		return labels[mesh_proto.DisplayName] != "" &&
+			labels[mesh_proto.KubeNamespaceTag] == ns.value &&
+			labels[mesh_proto.ZoneTag] == zone
 	}
 
 	isProducerItem := func(tr common_api.TargetRef) bool {
 		switch tr.Kind {
 		case common_api.MeshService, common_api.MeshHTTPRoute:
-			return selectsSingleResourceByDisplayName(tr) && hasSameOrOmittedNamespace(tr)
+			return selectsOwnResource(tr)
 		default:
 			return false
 		}

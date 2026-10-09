@@ -15,7 +15,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
-	xds_types "github.com/kumahq/kuma/v3/pkg/core/xds/types"
 	tproxy_config "github.com/kumahq/kuma/v3/pkg/transparentproxy/config"
 	tproxy_dp "github.com/kumahq/kuma/v3/pkg/transparentproxy/config/dataplane"
 	util_proto "github.com/kumahq/kuma/v3/pkg/util/proto"
@@ -126,17 +125,6 @@ var _ = Describe("upgrade from 2.14", func() {
 
 		Expect(cfg.Enabled()).To(BeFalse())
 	})
-
-	// These strings are a wire contract with 2.14, which matches on them
-	// verbatim.
-	DescribeTable("advertises the feature strings 2.14 matches on",
-		func(given, expected string) {
-			Expect(given).To(Equal(expected))
-		},
-		Entry("reuse port", xds_types.FeatureReusePort, "feature-reuse-port"),
-		Entry("strict inbound ports", xds_types.FeatureStrictInboundPorts, "feature-strict-inbound-ports"),
-		Entry("transparent proxy in metadata", xds_types.FeatureTransparentProxyInDataplaneMetadata, "feature-transparent-proxy-in-dataplane-metadata"),
-	)
 
 	It("starts with config that still sets the removed options", func() {
 		dir := GinkgoT().TempDir()

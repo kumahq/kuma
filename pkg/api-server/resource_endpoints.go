@@ -65,6 +65,8 @@ func (r *resourceEndpoints) route(ws *restful.WebService, method, path string) *
 	switch method {
 	case http.MethodGet:
 		rb = ws.GET(path)
+	case http.MethodPost:
+		rb = ws.POST(path)
 	case http.MethodPut:
 		rb = ws.PUT(path)
 	case http.MethodDelete:
@@ -207,6 +209,19 @@ func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix s
 	}
 }
 
+func (r *resourceEndpoints) addCreateEndpoint(ws *restful.WebService, pathPrefix string) {
+	if r.descriptor.ReadOnly {
+		ws.Route(r.route(ws, http.MethodPost, pathPrefix).To(handle(r.methodNotAllowed(r.readOnlyMessage()))).
+			Doc("Not allowed in read-only mode.").
+			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
+	} else {
+		ws.Route(r.route(ws, http.MethodPost, pathPrefix).To(handle(r.createOnlyResource)).
+			Doc(fmt.Sprintf("Creates a %s", r.descriptor.WsPath)).
+			Returns(http.StatusCreated, "Created", nil).
+			Returns(http.StatusConflict, "Already exists", nil))
+	}
+}
+
 func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pathPrefix string) {
 	if r.descriptor.ReadOnly {
 		ws.Route(r.route(ws, http.MethodPut, pathPrefix+"/{name}").To(handle(r.methodNotAllowed(r.readOnlyMessage()))).
@@ -237,9 +252,6 @@ func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix
 func (r *resourceEndpointsContext) meshFromRequest(request *restful.Request) (string, error) {
 	if r.descriptor.Scope == core_model.ScopeMesh {
 		meshName := request.PathParameter("mesh")
-		if meshName == "" { // Handle lists across all meshes
-			return "", nil
-		}
 		mRes := core_mesh.MeshResourceTypeDescriptor.NewObject()
 		if err := r.resManager.Get(request.Request.Context(), mRes, store.GetByKey(meshName, core_model.NoMesh)); err != nil {
 			return "", err

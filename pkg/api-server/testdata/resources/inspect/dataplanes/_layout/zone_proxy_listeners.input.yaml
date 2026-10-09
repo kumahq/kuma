@@ -7,6 +7,7 @@ name: dp-zone-proxy
 mesh: default
 labels:
   kuma.io/zone: test-zone
+  kuma.io/workload: zone-proxy
 networking:
   address: 127.0.0.1
   listeners:
@@ -38,6 +39,9 @@ spec:
       targetPort: 8080
       appProtocol: tcp
       name: secondary-port
+status:
+  vips:
+    - ip: 240.0.0.1
 ---
 type: MeshService
 name: remote-server
@@ -55,6 +59,9 @@ spec:
       targetPort: 80
       appProtocol: http
       name: main-port
+status:
+  vips:
+    - ip: 240.0.0.2
 ---
 type: MeshMultiZoneService
 name: multizone-server
@@ -67,6 +74,9 @@ spec:
   ports:
     - port: 80
       appProtocol: http
+status:
+  vips:
+    - ip: 240.0.0.3
 ---
 type: MeshExternalService
 name: mes-1
@@ -79,3 +89,29 @@ spec:
   endpoints:
     - address: 127.0.0.1
       port: 8080
+status:
+  vip:
+    ip: 242.0.0.4
+---
+type: MeshIdentity
+name: identity-1
+mesh: default
+labels:
+  kuma.io/zone: test-zone
+spec:
+  selector:
+    dataplane:
+      matchLabels:
+        kuma.io/zone: test-zone
+  provider:
+    type: Bundled
+    bundled:
+      insecureAllowSelfSigned: true
+      autogenerate:
+        enabled: true
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: Ready
+      message: Successfully initialized

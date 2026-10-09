@@ -35,6 +35,8 @@ type Write struct {
 	DisplayName string
 	// Labels as submitted. Read-only.
 	Labels map[string]string
+	// StoredLabels of the object an update or delete replaces, nil on create. Read-only.
+	StoredLabels map[string]string
 	// TrustedWriter: the labels come from a control plane (the store, KDS, GC, the
 	// storage-version migrator, the CP's own k8s controllers), not from a user.
 	TrustedWriter bool
@@ -50,18 +52,23 @@ type StoredResource struct {
 	Spec       core_model.ResourceSpec
 	Namespace  Namespace
 	IsLocal    bool
+	// Labels as stored. Read-only, and only for the rules that need a label this
+	// control plane does not recompute on read.
+	Labels map[string]string
 }
 
-// NewStoredResource derives IsLocal: KDS only writes into the system namespace, so
-// anything outside it is local; inside it, and on Universal, the stored origin is trusted
-// because the API server recomputes it on every write and the CP is the only other writer.
 func NewStoredResource(res core_model.Resource, ns Namespace, storedLabels map[string]string, cp ControlPlane) StoredResource {
 	return StoredResource{
 		Descriptor: res.Descriptor(),
 		Spec:       res.GetSpec(),
 		Namespace:  ns,
-		IsLocal:    (ns.value != "" && !ns.system) || core_model.IsLocallyOriginated(cp.Mode, storedLabels),
+		IsLocal:    isLocal(ns, storedLabels, cp),
+		Labels:     storedLabels,
 	}
+}
+
+func isLocal(ns Namespace, storedLabels map[string]string, cp ControlPlane) bool {
+	return (ns.value != "" && !ns.system) || core_model.IsLocallyOriginated(cp.Mode, storedLabels)
 }
 
 // EnforcedReadLabels recomputes the control-plane-owned labels from the object's own
@@ -73,7 +80,7 @@ func EnforcedReadLabels(r StoredResource, cp ControlPlane) map[string]string {
 		if d.EnforceOnRead == nil {
 			continue
 		}
-		v, ok := d.EnforceOnRead(r, cp)
+		v, ok := d.EnforceOnRead(d.Key, r, cp)
 		if !ok {
 			continue
 		}

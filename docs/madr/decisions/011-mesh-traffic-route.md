@@ -1,3 +1,7 @@
+---
+outdated: "3.0: `from`, `MeshGateway`, `MeshServiceSubset` backends and legacy TrafficRoute are removed."
+---
+
 # `MeshTrafficRoute`
 
 - Status: accepted

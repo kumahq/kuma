@@ -129,7 +129,7 @@ name: mes-zone-proxy
 mesh: %s
 labels:
   kuma.io/origin: zone
-  kuma.io/access: external
+  access: external
   kuma.io/display-name: mes-zone-proxy
 spec:
   match:

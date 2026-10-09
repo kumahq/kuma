@@ -128,19 +128,23 @@ var _ = Describe("Resource Endpoints", func() {
 })
 
 var _ = Describe("Read-only Resource Endpoints", func() {
-	It("should retain explicit PUT and DELETE routes", func() {
+	It("should retain explicit POST, PUT and DELETE routes", func() {
 		apiServer, _, stop := StartApiServer(NewTestApiServerConfigurer().WithGlobal())
 		defer stop()
 
 		const detail = "On global control plane you can not modify dataplane resources with 'kumactl apply' or via the HTTP API." +
 			" You can still use 'kumactl' or the HTTP API to modify them on the zone control plane.\n"
-		for _, method := range []string{http.MethodPut, http.MethodDelete} {
+		for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodDelete} {
 			func() {
 				By(method)
+				resourcePath := "/meshes/default/dataplanes"
+				if method != http.MethodPost {
+					resourcePath += "/dp-1"
+				}
 				request, err := http.NewRequestWithContext(
 					context.Background(),
 					method,
-					fmt.Sprintf("http://%s/meshes/default/dataplanes/dp-1", apiServer.Address()),
+					"http://"+apiServer.Address()+resourcePath,
 					bytes.NewBufferString("not-json"),
 				)
 				Expect(err).ToNot(HaveOccurred())
@@ -290,6 +294,45 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 	})
 
+	It("should return 400 when resource contains a field that is not in the schema", func() {
+		// given
+		apiServer, store, stop := createServer(false)
+		defer stop()
+		createMesh(store)
+
+		// when
+		request, err := http.NewRequestWithContext(
+			context.Background(),
+			http.MethodPut,
+			fmt.Sprintf("http://%s/meshes/%s/meshtrafficpermissions/%s", apiServer.Address(), mesh, "mtp-1"),
+			bytes.NewBufferString(`{
+				"type": "MeshTrafficPermission",
+				"name": "mtp-1",
+				"mesh": "mesh-1",
+				"spec": {
+					"targetRef": {"kind": "Mesh"},
+					"from": [{"targetRef": {"kind": "Mesh"}, "default": {"action": "Allow"}}],
+					"rules": [{"default": {"allow": [{"spiffeID": {"type": "Exact", "value": "spiffe://trust-domain/ns/default"}}]}}]
+				}
+			}`),
+		)
+		Expect(err).ToNot(HaveOccurred())
+		request.Header.Add("content-type", "application/json")
+		resp, err := http.DefaultClient.Do(request)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+		bytes, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onUnknownField.golden.json")))
+
+		// and the resource was not created
+		actualMtp := v1alpha1.NewMeshTrafficPermissionResource()
+		err = store.Get(context.Background(), actualMtp, core_store.GetByKey("mtp-1", mesh))
+		Expect(core_store.IsNotFound(err)).To(BeTrue())
+	})
+
 	DescribeTable(
 		"should set origin label automatically",
 		func(federatedZone bool) {
@@ -326,6 +369,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 				mesh_proto.MeshTag:             mesh,
 				mesh_proto.EnvTag:              "universal",
 				mesh_proto.DisplayName:         "mtp-1",
+				mesh_proto.PolicyRoleLabel:     "system",
 			}))
 		},
 		Entry("non-federated zone", false),

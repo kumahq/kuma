@@ -2,16 +2,20 @@ package webhooks
 
 import (
 	"fmt"
+	"net/http"
 	"slices"
 	"strings"
 
+	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/v3/pkg/config/core"
 	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/v3/pkg/version"
 )
 
@@ -26,9 +30,19 @@ const (
 	StorageVersionMigratorUser  = "system:serviceaccount:kube-system:storage-version-migrator-controller"
 )
 
-func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.UserInfo, r core_model.Resource, ns string) admission.Response {
-	if c.isPrivilegedUser(c.AllowedUsers, userInfo) {
+func (c *ResourceAdmissionChecker) IsOperationAllowed(req admission.Request, r core_model.Resource, storedLabels map[string]string) admission.Response {
+	if c.isPrivilegedUser(c.AllowedUsers, req.UserInfo) {
 		return admission.Allowed("")
+	}
+	ns := req.Namespace
+
+	// The labels are read from the raw object: r's meta already has the read-time
+	// enforced labels overlaid and a name.namespace name.
+	var supplied metav1.PartialObjectMetadata
+	if req.Operation != admissionv1.Delete {
+		if err := yaml.Unmarshal(req.Object.Raw, &supplied); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
+		}
 	}
 
 	if ns != "" {
@@ -39,12 +53,13 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 	}
 
 	if err := resource_labels.ValidateOwnership(resource_labels.Write{
-		Descriptor:  r.Descriptor(),
-		Spec:        r.GetSpec(),
-		Namespace:   resource_labels.NewNamespace(ns, ns == c.SystemNamespace),
-		Mesh:        r.GetMeta().GetMesh(),
-		DisplayName: r.GetMeta().GetName(),
-		Labels:      r.GetMeta().GetLabels(),
+		Descriptor:   r.Descriptor(),
+		Spec:         r.GetSpec(),
+		Namespace:    resource_labels.NewNamespace(ns, ns == c.SystemNamespace),
+		Mesh:         r.GetMeta().GetMesh(),
+		DisplayName:  supplied.GetName(),
+		Labels:       k8s.SuppliedLabels(&supplied),
+		StoredLabels: storedLabels,
 	}, c.ControlPlane); err.HasViolations() {
 		return *forbiddenResponse("Operation not allowed. " + err.Violations[0].Message)
 	}
@@ -60,11 +75,11 @@ func (c *ResourceAdmissionChecker) isNamespaceAllowed(r core_model.Resource, ns 
 	switch c.ControlPlane.Mode {
 	case core.Global:
 		if ns != c.SystemNamespace {
-			return admission.Denied(fmt.Sprintf("on Global CP the policy can be created only in the system namespace:%s", c.SystemNamespace))
+			return admission.Denied(fmt.Sprintf("on Global CP the resource must be in the system namespace:%s", c.SystemNamespace))
 		}
 	case core.Zone:
 		if r.Descriptor().AllowedOnSystemNamespaceOnly && ns != c.SystemNamespace {
-			return admission.Denied(fmt.Sprintf("resource type %v can be created only in the system namespace:%s", r.Descriptor().Name, c.SystemNamespace))
+			return admission.Denied(fmt.Sprintf("resource type %v must be in the system namespace:%s", r.Descriptor().Name, c.SystemNamespace))
 		}
 	}
 	return admission.Allowed("")

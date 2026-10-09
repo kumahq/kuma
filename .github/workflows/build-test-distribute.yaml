@@ -14,7 +14,7 @@ env:
   # Parent of the checkout, to keep CI tools out of the SBOM.
   CI_TOOLS_DIR: ${{ github.workspace }}/../.ci_tools
   # renovate: datasource=github-tags depName=golangci-lint packageName=golangci/golangci-lint versioning=semver
-  GOLANGCI_LINT_VERSION: "v2.13.2"
+  GOLANGCI_LINT_VERSION: "v2.14.0"
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 concurrency:
   group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.event_name == 'push' && github.sha || github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.ref_name) }}
@@ -82,7 +82,7 @@ jobs:
       #   1. fork PR                            -> free GitHub-hosted runners (security)
       #   2. master (push, or PR targeting it)  -> free GitHub-hosted runners
       #   3. vars.RUNNERS_PR_<ARCH>             -> pull_request runs, per-arch
-      #   4. vars.RUNNERS_MASTER_<ARCH>         -> per-branch + per-arch override
+      #   4. vars.RUNNERS_MASTER_<ARCH>    -> per-branch + per-arch override
       #   5. vars.RUNNERS_<ARCH>                -> global per-arch override
       #   6. default                            -> the standard self-hosted Kong pool
       # Each variable is a JSON object of size to label array, spliced in raw, so a caller
@@ -155,7 +155,7 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.9.0
+          version: 2026.9.12
         env:
           GITHUB_TOKEN: ${{ github.token }}
       # Module contents are a pure function of go.sum, so one immutable entry
@@ -277,7 +277,7 @@ jobs:
             go-build-${{ runner.os }}-
       - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
         with:
-          version: 2026.9.0
+          version: 2026.9.12
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0

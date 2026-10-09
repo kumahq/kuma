@@ -249,8 +249,20 @@ func ListByResourceKeys(rk []core_model.ResourceKey) ListOptionsFunc {
 	}
 }
 
-func (l *ListOptions) IsCacheable() bool {
-	return l.FilterFunc == nil
+// HasInMemoryOptions returns true if some options can't be served from a cache entry keyed by HashCode:
+// filter funcs can't be hashed, resource keys aren't part of HashCode and a cached list doesn't keep pagination.
+// Such lists should cache BaseOptions and apply the rest in memory with FilterAndPaginate.
+func (l *ListOptions) HasInMemoryOptions() bool {
+	return l.FilterFunc != nil || len(l.ResourceKeys) > 0 || l.PageSize != 0 || l.PageOffset != ""
+}
+
+// BaseOptions returns the options HasInMemoryOptions doesn't cover.
+func (l *ListOptions) BaseOptions() []ListOptionsFunc {
+	base := []ListOptionsFunc{ListByMesh(l.Mesh), ListByNameContains(l.NameContains)}
+	if l.Ordered {
+		base = append(base, ListOrdered())
+	}
+	return base
 }
 
 func (l *ListOptions) HashCode() string {

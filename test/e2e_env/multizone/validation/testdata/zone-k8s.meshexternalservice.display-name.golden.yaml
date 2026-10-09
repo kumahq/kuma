@@ -1,1 +1,1 @@
-meshexternalservice.kuma.io/mes-display-name created
+error while running command: exit status 1; Error from server (Forbidden): error when creating "STDIN": admission webhook "mesh.defaulter.kuma-admission.kuma.io" denied the request: Operation not allowed. label "kuma.io/display-name" is managed by the control plane: got "my-custom-name", expected "mes-display-name"

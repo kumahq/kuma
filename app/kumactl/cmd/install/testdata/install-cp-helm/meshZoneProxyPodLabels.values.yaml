@@ -1,0 +1,14 @@
+meshes:
+  - name: default
+    ingress:
+      enabled: true
+      deployment:
+        podLabels:
+          team: platform
+        podAnnotations:
+          kuma.io/envoy-log-level: debug
+    egress:
+      enabled: true
+      deployment:
+        podLabels:
+          team: platform

@@ -19,6 +19,7 @@ type InstallControlPlaneArgs struct {
 	ControlPlane_tls_general_caBundle     string            `helm:"controlPlane.tls.general.caBundle"`
 	ControlPlane_tls_apiServer_secret     string            `helm:"controlPlane.tls.apiServer.secretName"`
 	ControlPlane_tls_kdsZoneClient_secret string            `helm:"controlPlane.tls.kdsZoneClient.secretName"`
+	ControlPlane_zoneToken_secret         string            `helm:"controlPlane.zoneToken.secretName,omitempty"`
 	ControlPlane_injectorFailurePolicy    string            `helm:"controlPlane.injectorFailurePolicy"`
 	ControlPlane_secrets                  []ImageEnvSecret  `helm:"controlPlane.secrets"`
 	ControlPlane_envVars                  map[string]string `helm:"controlPlane.envVars"`
@@ -48,6 +49,9 @@ type InstallControlPlaneArgs struct {
 	Values                                []string
 	SkipKinds                             []string
 	SkipCRDs                              bool
+	// ZoneTokenPath is a file with a Zone Token, kumactl turns it into the Secret
+	// controlPlane.zoneToken.secretName points at. With HELM create the Secret yourself.
+	ZoneTokenPath string
 	// APIVersions is a hidden, internal option
 	APIVersions []string
 	DumpValues  bool

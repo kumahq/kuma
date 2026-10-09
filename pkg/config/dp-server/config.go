@@ -53,7 +53,6 @@ type DpServerConfig struct {
 const (
 	DpServerAuthServiceAccountToken = "serviceAccountToken"
 	DpServerAuthDpToken             = "dpToken"
-	DpServerAuthZoneToken           = "zoneToken"
 	DpServerAuthNone                = "none"
 )
 
@@ -90,8 +89,6 @@ func (a *DpServerConfig) Validate() error {
 type DpServerAuthnConfig struct {
 	// Configuration for data plane proxy authentication.
 	DpProxy DpProxyAuthnConfig `json:"dpProxy"`
-	// Configuration for zone proxy authentication.
-	ZoneProxy ZoneProxyAuthnConfig `json:"zoneProxy"`
 	// If true then Envoy uses Google gRPC instead of Envoy gRPC which lets a proxy reload the auth data (service account token, dp token etc.) from path without proxy restart.
 	// This is enabled on Kubernetes.
 	EnableReloadableTokens bool `json:"enableReloadableTokens" envconfig:"kuma_dp_server_authn_enable_reloadable_tokens"`
@@ -100,56 +97,6 @@ type DpServerAuthnConfig struct {
 func (d DpServerAuthnConfig) Validate() error {
 	if err := d.DpProxy.Validate(); err != nil {
 		return errors.Wrap(err, ".DpProxy is not valid")
-	}
-	if err := d.ZoneProxy.Validate(); err != nil {
-		return errors.Wrap(err, ".ZoneProxy is not valid")
-	}
-	return nil
-}
-
-type ZoneTokenAuthnConfig struct {
-	// If true the control plane token issuer is enabled. It's recommended to set it to false when all the tokens are issued offline.
-	EnableIssuer bool `json:"enableIssuer" envconfig:"kuma_dp_server_authn_zone_proxy_zone_token_enable_issuer"`
-	// Zone Token validator configuration
-	Validator ZoneTokenValidatorConfig `json:"validator"`
-}
-
-func (c ZoneTokenAuthnConfig) Validate() error {
-	if err := c.Validator.Validate(); err != nil {
-		return errors.Wrap(err, ".Validator is not valida")
-	}
-	return nil
-}
-
-type ZoneProxyAuthnConfig struct {
-	// Type of authentication. Available values: "serviceAccountToken", "zoneToken", "none".
-	// If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "zoneToken" on Universal.
-	Type string `json:"type" envconfig:"kuma_dp_server_authn_zone_proxy_type"`
-	// Configuration for zoneToken authentication method.
-	ZoneToken ZoneTokenAuthnConfig `json:"zoneToken"`
-}
-
-func (c ZoneProxyAuthnConfig) Validate() error {
-	if c.Type == DpServerAuthZoneToken {
-		if err := c.ZoneToken.Validate(); err != nil {
-			return errors.Wrap(err, ".ZoneToken is not valid")
-		}
-	}
-	return nil
-}
-
-type ZoneTokenValidatorConfig struct {
-	// If true then Kuma secrets with prefix "zone-token-signing-key" are considered as signing keys.
-	UseSecrets bool `json:"useSecrets" envconfig:"kuma_dp_server_authn_zone_proxy_zone_token_validator_use_secrets"`
-	// List of public keys used to validate the token
-	PublicKeys []config_types.PublicKey `json:"publicKeys"`
-}
-
-func (z ZoneTokenValidatorConfig) Validate() error {
-	for i, key := range z.PublicKeys {
-		if err := key.Validate(); err != nil {
-			return errors.Wrapf(err, ".PublicKeys[%d] is not valid", i)
-		}
 	}
 	return nil
 }
@@ -212,16 +159,6 @@ func DefaultDpServerConfig() *DpServerConfig {
 					Validator: DpTokenValidatorConfig{
 						UseSecrets: true,
 						PublicKeys: []config_types.MeshedPublicKey{},
-					},
-				},
-			},
-			ZoneProxy: ZoneProxyAuthnConfig{
-				Type: "", // autoconfigured from the environment
-				ZoneToken: ZoneTokenAuthnConfig{
-					EnableIssuer: true,
-					Validator: ZoneTokenValidatorConfig{
-						UseSecrets: true,
-						PublicKeys: []config_types.PublicKey{},
 					},
 				},
 			},

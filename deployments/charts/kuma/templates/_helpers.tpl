@@ -229,6 +229,8 @@ env:
   value: {{ .Values.cni.enabled | quote }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
   value: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE_PULL_POLICY
+  value: {{ .Values.dataPlane.image.pullPolicy | quote }}
 - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_CPU
   value: {{ .Values.dataPlane.sidecarContainer.resources.requests.cpu | default "50m" | quote }}
 - name: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY
@@ -239,6 +241,8 @@ env:
   value: {{ .Values.dataPlane.sidecarContainer.resources.limits.memory | default "512Mi" | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
   value: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.initImage "root" $) | quote }}
+- name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE_PULL_POLICY
+  value: {{ .Values.dataPlane.image.pullPolicy | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU
   value: {{ .Values.dataPlane.initContainer.resources.requests.cpu | default "20m" | quote }}
 - name: KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY
@@ -277,6 +281,10 @@ env:
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
 {{- end }}
+{{- if include "kuma.zoneTokenSecretName" . }}
+- name: KUMA_MULTIZONE_ZONE_KDS_AUTH_TOKEN_PATH
+  value: /var/run/secrets/kuma.io/zone-token/{{ .Values.controlPlane.zoneToken.key }}
+{{- end }}
 - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
   value: "false"
 - name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
@@ -297,6 +305,15 @@ env:
 {{- end }}
 - name: KUMA_PLUGIN_POLICIES_ENABLED
   value: {{ include "kuma.pluginPoliciesEnabled" . | quote }}
+{{- end }}
+
+{{/*
+Name of the Secret with the Zone Token, empty unless this is a Zone CP configured with one.
+*/}}
+{{- define "kuma.zoneTokenSecretName" -}}
+{{- if eq .Values.controlPlane.mode "zone" -}}
+{{ .Values.controlPlane.zoneToken.secretName }}
+{{- end -}}
 {{- end }}
 
 {{- define "kuma.controlPlane.tls.general.caSecretName" -}}
@@ -342,6 +359,10 @@ env:
 - name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
 {{- end }}
+{{- if include "kuma.zoneTokenSecretName" . }}
+- name: KUMA_MULTIZONE_ZONE_KDS_AUTH_TOKEN_PATH
+  value: /var/run/secrets/kuma.io/zone-token/{{ .Values.controlPlane.zoneToken.key }}
+{{- end }}
 {{- if .Values.controlPlane.tls.kdsZoneClient.skipVerify }}
 - name: KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY
   value: "true"
@@ -374,3 +395,4 @@ env:
 {{- end }}
 {{- end }}
 {{- end }}
+

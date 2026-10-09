@@ -1,16 +1,10 @@
 Patches: null
 allowed: false
 status:
-  code: 422
-  details:
-    causes:
-    - field: spec.targetRef.kind
-      message: value 'MeshService' is not supported
-      reason: FieldValueInvalid
-    kind: MeshTrafficPermission
-    name: mtp-es
-  message: 'spec.targetRef.kind: value ''MeshService'' is not supported'
+  code: 403
+  message: 'Operation not allowed. label "kuma.io/policy-role" is managed by the control
+    plane: got "workload-owner", expected "system"'
   metadata: {}
-  reason: Invalid
+  reason: Forbidden
   status: Failure
 uid: "12345"

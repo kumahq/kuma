@@ -17,7 +17,8 @@ func ReachableBackends() {
 	// referencing the MeshService rather than the legacy tag-based service list.
 	reachableBackends := `      refs:
       - kind: MeshService
-        name: first-test-server
+        labels:
+          kuma.io/display-name: first-test-server
         port: 80`
 
 	BeforeAll(func() {

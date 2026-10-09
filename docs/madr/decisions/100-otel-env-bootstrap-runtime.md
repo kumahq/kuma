@@ -1,3 +1,12 @@
+---
+title: OTEL env-var bootstrap and runtime resolution
+status: accepted
+date: 2026-03-16
+tags: [observability, otel, kuma-dp, bootstrap, meshmetric, meshtrace, meshaccesslog]
+summary: Lets Kuma reuse `OTEL_EXPORTER_OTLP_*` env vars already present on the proxy — kuma-dp reports a non-secret inventory at bootstrap, the CP returns a typed runtime plan with env policy, and secrets never leave the data plane.
+related: [095-mesh-opentelemetry-backend]
+---
+
 # OTEL env-var bootstrap and runtime resolution
 
 * Status: accepted

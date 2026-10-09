@@ -252,6 +252,15 @@ var _ = Context("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.zone.golden.yaml",
 		}),
+		Entry("should generate Kubernetes resources for Zone with a Zone Token", testCase{
+			extraArgs: []string{
+				"--mode", "zone",
+				"--zone", "zone-1",
+				"--kds-global-address", "grpcs://192.168.0.1:5685",
+				"--zone-token-path", filepath.Join("testdata", "zone-token"),
+			},
+			goldenFile: "install-control-plane.zone-token.golden.yaml",
+		}),
 		Entry("should work with --set", testCase{
 			extraArgs: []string{
 				"--set",
@@ -328,6 +337,18 @@ controlPlane:
 			extraArgs: []string{"--kds-global-address", "http://192.168.0.1:1234", "--mode", "zone", "--zone", "zone-1"},
 			errorMsg:  "controlPlane.kdsGlobalAddress must be a url with scheme grpcs:// or grpc:// got:'http://192.168.0.1:1234'",
 		}),
+		Entry("--zone-token-path with --mode global", errTestCase{
+			extraArgs: []string{"--mode", "global", "--zone-token-path", filepath.Join("testdata", "zone-token")},
+			errorMsg:  "--zone-token-path can only be used with --mode=zone",
+		}),
+		Entry("--zone-token-path points at no file", errTestCase{
+			extraArgs: []string{"--mode", "zone", "--zone", "zone-1", "--zone-token-path", filepath.Join("testdata", "no-such-token")},
+			errorMsg:  "could not read the Zone Token from",
+		}),
+		Entry("--zone-token-path points at an empty file", errTestCase{
+			extraArgs: []string{"--mode", "zone", "--zone", "zone-1", "--zone-token-path", filepath.Join("testdata", "zone-token-empty")},
+			errorMsg:  "is empty",
+		}),
 		Entry("--mode standalone is no longer supported", errTestCase{
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "standalone"},
 			errorMsg:  "controlPlane.mode invalid got:'standalone'",
@@ -370,6 +391,31 @@ controlPlane:
 				"--set", "meshes[0].egress.preStopSleepSeconds=30",
 			},
 			errorMsg: "meshes[default].egress: preStopSleepSeconds (30) must be lower than terminationGracePeriodSeconds (10)",
+		}),
+		Entry("ingress preStopSleepSeconds not lower than terminationGracePeriodSeconds", errTestCase{
+			extraArgs: []string{
+				"--set", "meshes[0].name=default",
+				"--set", "meshes[0].ingress.enabled=true",
+				"--set", "meshes[0].ingress.terminationGracePeriodSeconds=10",
+				"--set", "meshes[0].ingress.preStopSleepSeconds=30",
+			},
+			errorMsg: "meshes[default].ingress: preStopSleepSeconds (30) must be lower than terminationGracePeriodSeconds (10)",
+		}),
+		Entry("with a zone proxy pod label the chart sets", errTestCase{
+			extraArgs: []string{
+				"--set", "meshes[0].name=default",
+				"--set", "meshes[0].ingress.enabled=true",
+				"--set", "meshes[0].ingress.deployment.podLabels.kuma\\.io/sidecar-injection=disabled",
+			},
+			errorMsg: "meshes[default].ingress.deployment.podLabels: kuma.io/sidecar-injection is set by the chart",
+		}),
+		Entry("with a zone proxy pod annotation the chart sets", errTestCase{
+			extraArgs: []string{
+				"--set", "meshes[0].name=default",
+				"--set", "meshes[0].egress.enabled=true",
+				"--set", "meshes[0].egress.deployment.podAnnotations.kuma\\.io/reachable-backends=x",
+			},
+			errorMsg: "meshes[default].egress.deployment.podAnnotations: kuma.io/reachable-backends is set by the chart",
 		}),
 		Entry("with unexpected image tag", errTestCase{
 			extraArgs: []string{"--set", "global.image.tag=1.5.0"},

@@ -43,6 +43,9 @@ import (
 type resourceInspectHandler struct {
 	resourceEndpointsContext
 
+	// readOnlyResManager serves the inspection reads from the store cache.
+	// Writes and the generic CRUD reads stay on resManager for read-after-write consistency.
+	readOnlyResManager     manager.ReadOnlyResourceManager
 	meshContextBuilder     xds_context.MeshContextBuilder
 	xdsHooks               []xds_hooks.ResourceSetHook
 	knownInternalAddresses []string
@@ -62,7 +65,7 @@ func (r *resourceInspectHandler) matchingDataplanesForPolicy() handlerFunc {
 			if err != nil {
 				return nil, withTitle(err, "failed inspect")
 			}
-			if err := r.resManager.List(request.Request.Context(), hl, store.ListByMesh(meshName)); err != nil {
+			if err := r.readOnlyResManager.List(request.Request.Context(), hl, store.ListByMesh(meshName)); err != nil {
 				return nil, withTitle(err, "failed inspect")
 			}
 			dependentResources.MeshLocalResources[dependentType] = hl
@@ -70,7 +73,7 @@ func (r *resourceInspectHandler) matchingDataplanesForPolicy() handlerFunc {
 		return matchingDataplanesForFilter(
 			request,
 			r.descriptor,
-			r.resManager,
+			r.readOnlyResManager,
 			r.resourceAccess,
 			func(policyResource core_model.Resource) store.ListFilterFunc {
 				return func(rs core_model.Resource) bool {
@@ -86,7 +89,7 @@ func (r *resourceInspectHandler) matchingDataplanesForPolicy() handlerFunc {
 func matchingDataplanesForFilter(
 	request *restful.Request,
 	descriptor core_model.ResourceTypeDescriptor,
-	resManager manager.ResourceManager,
+	resManager manager.ReadOnlyResourceManager,
 	resourceAccess access.ResourceAccess,
 	dpFilterForResource func(resource core_model.Resource) store.ListFilterFunc,
 ) (any, error) {
@@ -152,7 +155,7 @@ func (r *resourceInspectHandler) configForProxy() handlerFunc {
 		}
 
 		dataplaneInsight := core_mesh.NewDataplaneInsightResource()
-		err = r.resManager.Get(ctx, dataplaneInsight, store.GetByKey(name, mesh))
+		err = r.readOnlyResManager.Get(ctx, dataplaneInsight, store.GetByKey(name, mesh))
 		if err != nil {
 			return nil, withTitle(err, "Failed to fetch dataplane insight")
 		}
@@ -232,7 +235,7 @@ func (r *resourceInspectHandler) loadDataplaneForInspection(request *restful.Req
 	}
 
 	resource := r.descriptor.NewObject()
-	if err := r.resManager.Get(request.Request.Context(), resource, store.GetByKey(dataplaneName, meshName)); err != nil {
+	if err := r.readOnlyResManager.Get(request.Request.Context(), resource, store.GetByKey(dataplaneName, meshName)); err != nil {
 		return nil, nil, withTitle(err, fmt.Sprintf("Could not retrieve %s", r.descriptor.Name))
 	}
 	if r.descriptor.Name != core_mesh.DataplaneType {

@@ -3,13 +3,19 @@
   "kind": "MeshAccessLog",
   "metadata": {
     "annotations": {
-      "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"kuma.io/v1alpha1\",\"kind\":\"MeshAccessLog\",\"metadata\":{\"annotations\":{},\"labels\":{\"kuma.io/mesh\":\"default\"},\"name\":\"default\",\"namespace\":\"kuma-system\"},\"spec\":{\"from\":[{\"default\":{\"backends\":[{\"file\":{\"path\":\"/tmp/access.log\"},\"type\":\"File\"}]},\"targetRef\":{\"kind\":\"Mesh\"}}],\"targetRef\":{\"kind\":\"Mesh\"},\"to\":[{\"default\":{\"backends\":[{\"file\":{\"path\":\"/tmp/access.log\"},\"type\":\"File\"}]},\"targetRef\":{\"kind\":\"Mesh\"}}]}}\n"
+      "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"kuma.io/v1alpha1\",\"kind\":\"MeshAccessLog\",\"metadata\":{\"annotations\":{},\"labels\":{\"kuma.io/mesh\":\"default\"},\"name\":\"default\",\"namespace\":\"kuma-system\"},\"spec\":{\"from\":[{\"default\":{\"backends\":[{\"file\":{\"path\":\"/tmp/access.log\"},\"type\":\"File\"}]},\"targetRef\":{\"kind\":\"Mesh\"}}],\"targetRef\":{\"kind\":\"Mesh\"},\"to\":[{\"default\":{\"backends\":[{\"file\":{\"path\":\"/tmp/access.log\"},\"type\":\"File\"}]},\"targetRef\":{\"kind\":\"Mesh\"}}]}}\n",
+      "kuma.io/display-name": "default"
     },
     "creationTimestamp": "2024-01-24T09:52:46Z",
     "generation": 1,
     "labels": {
+      "k8s.kuma.io/namespace": "kuma-system",
+      "kuma.io/env": "kubernetes",
       "kuma.io/mesh": "default",
-      "kuma.io/origin": "zone"
+      "kuma.io/origin": "zone",
+      "kuma.io/policy-role": "system",
+      "kuma.io/zone": "zone-1",
+      "team": "payments"
     },
     "name": "default",
     "namespace": "kuma-system",

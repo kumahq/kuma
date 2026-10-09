@@ -26,8 +26,8 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # Change here and `make check` ensures these are used for CI
 # Note: These are _docker image tags_
 # If changing min version, update mk/kind.mk as well
-K8S_MIN_VERSION=v1.34.9-k3s1
-K8S_MAX_VERSION=v1.35.3-k3s1
+K8S_MIN_VERSION=v1.34.11-k3s1
+K8S_MAX_VERSION=v1.37.0-k3s1
 # This should have the same minor version as K8S_MAX_VERSION
 KUBEBUILDER_ASSETS_VERSION=1.33
 
@@ -87,7 +87,7 @@ DASHBOARD_LINTER = $(call _once,DASHBOARD_LINTER,$(shell $(MISE) which dashboard
 # oapi-codegen: mise go: backend installs to CI_TOOLS_BIN_DIR, mise which doesn't find it
 OAPI_CODEGEN = $(call _once,OAPI_CODEGEN,$(shell test -f $(CI_TOOLS_BIN_DIR)/oapi-codegen && echo $(CI_TOOLS_BIN_DIR)/oapi-codegen || command -v oapi-codegen))
 
-LATEST_RELEASE_BRANCH = $(call _once,LATEST_RELEASE_BRANCH,$(shell $(YQ) e '.[] | .branch' versions.yml | grep -v dev | sort -V | tail -n 1))
+LATEST_RELEASE_BRANCH = $(call _once,LATEST_RELEASE_BRANCH,$(shell git for-each-ref --format='%(refname:lstrip=3)' 'refs/remotes/origin/release-*' | grep -Ex 'release-[0-9]+\.[0-9]+' | sort -V | tail -n 1))
 
 .PHONY: dev/protos/deps
 dev/protos/deps: ## Dev: Export third-party proto dependencies with buf
@@ -131,6 +131,11 @@ dev/merge-release:
 	git merge origin/$(LATEST_RELEASE_BRANCH) --no-commit || true
 	git rm -rf $(TAKE_FILES_FROM_MASTER)
 	git checkout HEAD -- $(TAKE_FILES_FROM_MASTER)
+	@# Release branches rename runner variables after the cut, keep master's names
+	@for f in $$(git grep -lE 'RUNNERS_RELEASE_[0-9]+_[0-9]+_'); do \
+		perl -pi -e 's/RUNNERS_RELEASE_\d+_\d+_/RUNNERS_MASTER_/g' "$$f"; \
+		[ -n "$$(git ls-files -u -- "$$f")" ] || git add "$$f"; \
+	done
 	@if git diff --name-status --diff-filter=U --exit-code; then\
 		echo "Run \`git commit\` to finish merge!";\
 	else\

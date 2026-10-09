@@ -27,6 +27,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.mode | string | `"zone"` | Kuma CP modes: zone, global. Deploying a Global Control Plane on Kubernetes is not supported by this Helm chart |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
+| controlPlane.zoneToken.secretName | string | `""` | Name of the K8s Secret with the Zone Token. The Secret is mounted as a file, so a rotated token is picked up on the next KDS stream without restarting the CP. Leave empty to send no token. |
+| controlPlane.zoneToken.key | string | `"token"` | Key of the Secret that holds the token |
 | controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP. Ignored when autoscaling is enabled |
 | controlPlane.restartPolicy | string | `"Always"` | Pod restart policy for the Control Plane. |
 | controlPlane.minReadySeconds | int | `0` | Minimum number of seconds for which a newly created pod should be ready for it to be considered available. |
@@ -72,9 +74,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
 | controlPlane.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | controlPlane.resources | object | `{"limits":{"memory":"256Mi"},"requests":{"cpu":"500m","memory":"256Mi"}}` | Optionally override the resource spec |
-| controlPlane.runtime | object | `{"goMaxProcs":{"divisor":"1"},"goMemLimit":{"divisor":"1"}}` | Go runtime settings for the control plane |
+| controlPlane.runtime | object | `{"goMaxProcs":{"divisor":"1"}}` | Go runtime settings for the control plane |
 | controlPlane.runtime.goMaxProcs | object | `{"divisor":"1"}` | Divisor for GOMAXPROCS (resourceFieldRef divisor for limits.cpu) |
-| controlPlane.runtime.goMemLimit | object | `{"divisor":"1"}` | Divisor for GOMEMLIMIT (resourceFieldRef divisor for limits.memory) |
 | controlPlane.lifecycle | object | `{}` | Pod lifecycle settings (useful for adding a preStop hook, when using AWS ALB or NLB) |
 | controlPlane.terminationGracePeriodSeconds | int | `30` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
 | controlPlane.tls.general.secretName | string | `""` | Secret that contains tls.crt, tls.key [and ca.crt when no controlPlane.tls.general.caSecretName specified] for protecting Kuma in-cluster communication |
@@ -134,7 +135,7 @@ A Helm chart for the Kuma Control Plane
 | cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
 | cni.containerSecurityContext | object | `{"readOnlyRootFilesystem":true,"runAsGroup":0,"runAsNonRoot":false,"runAsUser":0}` | Security context at the container level for cni |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
-| dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
+| dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the injected kuma-dp sidecar and kuma-init containers (Always, IfNotPresent, Never). |
 | dataPlane.image.tag | string | `nil` | Kuma DP Image Tag. When not specified, the value is copied from global.tag |
 | dataPlane.initImage.repository | string | `"kuma-init"` | The Kuma DP init image repository |
 | dataPlane.initImage.tag | string | `nil` | Kuma DP init image tag When not specified, the value is copied from global.tag |
@@ -147,6 +148,7 @@ A Helm chart for the Kuma Control Plane
 | meshZoneProxyDefaults.ingress.replicas | int | `1` | Default number of replicas for zone ingress. Ignored when hpa.enabled is true. |
 | meshZoneProxyDefaults.ingress.restartPolicy | string | `"Always"` | Default pod restart policy for zone ingress. |
 | meshZoneProxyDefaults.ingress.terminationGracePeriodSeconds | int | `40` | Default number of seconds to wait before force killing the zone ingress pod. |
+| meshZoneProxyDefaults.ingress.preStopSleepSeconds | int | `20` | Seconds a terminating zone ingress keeps serving before shutdown, applied as a preStop sleep hook. Remote zones reach a zone ingress through its Service, and the load balancer and kube-proxy stop routing to a terminating pod only after they observe the endpoint change, so a pod that goes away sooner drops the cross-zone requests still landing on it. Raise this if your load balancer deregisters targets slowly. Must be lower than terminationGracePeriodSeconds, otherwise the chart fails to render. Set to 0 to drop the hook. |
 | meshZoneProxyDefaults.ingress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for zone ingress. Optionally set to false |
 | meshZoneProxyDefaults.ingress.imagePullPolicy | string | `"IfNotPresent"` | Default image pull policy for the zone ingress pause container. |
 | meshZoneProxyDefaults.ingress.service.type | string | `"LoadBalancer"` | Default Service type for zone ingress. |
@@ -166,6 +168,7 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].ingress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
 | meshes[0].ingress.restartPolicy | string | `nil` | Per-mesh override for pod restart policy. Falls back to meshZoneProxyDefaults.ingress.restartPolicy when unset. |
 | meshes[0].ingress.terminationGracePeriodSeconds | int | `nil` | Per-mesh override for the pod termination grace period. Falls back to meshZoneProxyDefaults.ingress.terminationGracePeriodSeconds when unset. |
+| meshes[0].ingress.preStopSleepSeconds | int | `nil` | Per-mesh override for the preStop sleep duration. Falls back to meshZoneProxyDefaults.ingress.preStopSleepSeconds when unset. Set to 0 to drop the hook. |
 | meshes[0].ingress.automountServiceAccountToken | bool | `nil` | Per-mesh override for automountServiceAccountToken. Falls back to meshZoneProxyDefaults.ingress.automountServiceAccountToken when unset. |
 | meshes[0].ingress.imagePullPolicy | string | `nil` | Per-mesh override for the pause container image pull policy. Falls back to meshZoneProxyDefaults.ingress.imagePullPolicy when unset. |
 | meshes[0].ingress.serviceAccountAnnotations | object | `{}` | Annotations to add to the zone ingress Service Account. |
@@ -175,10 +178,12 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].ingress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].ingress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
 | meshes[0].ingress.service.labels | object | `{}` | Labels to add to the Service resource. |
-| meshes[0].ingress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":null}` | Deployment-level settings. |
+| meshes[0].ingress.deployment | object | `{"annotations":{},"labels":{},"podAnnotations":{},"podLabels":{},"podSpec":{},"replicas":null}` | Deployment-level settings. |
 | meshes[0].ingress.deployment.replicas | int | `nil` | Number of replicas. Ignored when hpa.enabled is true. Falls back to meshZoneProxyDefaults.<role>.replicas when unset. |
 | meshes[0].ingress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].ingress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
+| meshes[0].ingress.deployment.podLabels | object | `{}` | Labels to add to the zone proxy pods. Must not override the labels the chart sets on them. |
+| meshes[0].ingress.deployment.podAnnotations | object | `{}` | Annotations to add to the zone proxy pods, for example kuma.io/* sidecar settings. Must not override kuma.io/reachable-backends. |
 | meshes[0].ingress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
 | meshes[0].ingress.hpa | object | `{"enabled":false,"maxReplicas":5,"minReplicas":2,"targetCPUUtilizationPercentage":80}` | Horizontal Pod Autoscaler settings. |
 | meshes[0].ingress.pdb | object | `{"enabled":false,"maxUnavailable":1}` | Pod Disruption Budget settings. |
@@ -196,10 +201,12 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].egress.service.spec | object | `{}` | Additional Service spec fields (externalIPs, loadBalancerIP, loadBalancerSourceRanges, etc.). Merged directly into the Service spec. |
 | meshes[0].egress.service.annotations | object | `{}` | Annotations to add to the Service resource. |
 | meshes[0].egress.service.labels | object | `{}` | Labels to add to the Service resource. |
-| meshes[0].egress.deployment | object | `{"annotations":{},"labels":{},"podSpec":{},"replicas":null}` | Deployment-level settings. |
+| meshes[0].egress.deployment | object | `{"annotations":{},"labels":{},"podAnnotations":{},"podLabels":{},"podSpec":{},"replicas":null}` | Deployment-level settings. |
 | meshes[0].egress.deployment.replicas | int | `nil` | Number of replicas. Ignored when hpa.enabled is true. Falls back to meshZoneProxyDefaults.<role>.replicas when unset. |
 | meshes[0].egress.deployment.annotations | object | `{}` | Annotations to add to the Deployment resource. |
 | meshes[0].egress.deployment.labels | object | `{}` | Labels to add to the Deployment resource. |
+| meshes[0].egress.deployment.podLabels | object | `{}` | Labels to add to the zone proxy pods. Must not override the labels the chart sets on them. |
+| meshes[0].egress.deployment.podAnnotations | object | `{}` | Annotations to add to the zone proxy pods, for example kuma.io/* sidecar settings. Must not override kuma.io/reachable-backends. |
 | meshes[0].egress.deployment.podSpec | object | `{}` | Subset of Kubernetes PodSpec fields applied to the pod template (nodeSelector, tolerations, affinity, topologySpreadConstraints,  priorityClassName, securityContext, containerSecurityContext, resources,  containerResources). |
 | meshes[0].egress.hpa.enabled | bool | `false` |  |
 | meshes[0].egress.hpa.minReplicas | int | `2` |  |
@@ -211,7 +218,7 @@ A Helm chart for the Kuma Control Plane
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"registry.k8s.io"` | The kubectl image registry |
 | kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"v1.37.0@sha256:5ed410ebac5dc976cc717098994dcdb29bbbd38f6bd65f582311f5be4ba719cf"` | The kubectl image tag |
+| kubectl.image.tag | string | `"v1.37.1@sha256:b7cab618e281b1ee7484e7b706a96e2135fbb6e072c2a573a7dab4e87d7f2385"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.annotations | object | `{}` | Extra annotations to add to hook Job resources. Useful for tools like ArgoCD that need to control job lifecycle (e.g. argocd.argoproj.io/hook-delete-policy). |
