@@ -10,9 +10,12 @@ on:
       IS_PULL_REQUEST:
         required: true
         type: boolean
-      IS_RELEASE_TAG:
+      RUN_UNIT:
         required: true
-        type: boolean
+        type: string
+      RUN_E2E:
+        required: true
+        type: string
 permissions:
   contents: read
 env:
@@ -24,7 +27,7 @@ env:
 jobs:
   test_unit:
     timeout-minutes: 30
-    if: ${{ !(contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || inputs.IS_RELEASE_TAG) }}
+    if: ${{ inputs.RUN_UNIT != 'false' }}
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name != github.repository)
@@ -148,13 +151,12 @@ jobs:
             | .test_e2e_env.parallelism = [4]
             | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ env.K8S_MIN_VERSION}}"}]
           FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
-          SKIP_E2E_TESTS: ${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || inputs.IS_RELEASE_TAG }}
+          SKIP_E2E_TESTS: ${{ inputs.RUN_E2E == 'false' }}
         run: |-
           BASE_MATRIX_ALL="$BASE_MATRIX"
           if [[ "$FULL_MATRIX" != "true" ]]; then
             BASE_MATRIX_ALL=$(echo "$BASE_MATRIX_ALL" | jq -r "$OVERRIDE_JQ_CMD")
           fi
-          # Skip e2e tests if the PR has the label "ci/skip-e2e-test" or "ci/skip-test"
           if [[ "$SKIP_E2E_TESTS" == "true" ]]; then
             BASE_MATRIX_ALL='{}'
           fi
