@@ -322,6 +322,23 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   port: 10001`,
 		),
+		Entry("dataplane with known inbound and listener enum values", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  name: http
+                  state: Ignored
+              listeners:
+                - type: ZoneEgress
+                  address: 192.168.0.1
+                  port: 10002
+                  name: ze-main
+                  state: NotReady`,
+		),
 	)
 
 	type testCase struct {
@@ -994,6 +1011,57 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.listeners[0]
                   message: 'address:port 192.168.0.1:8080 collides with an inbound listener'`,
+		}),
+		Entry("inbound state out of range", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 8080
+                      name: http
+                      state: 9`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].state
+                  message: has an unknown value 9`,
+		}),
+		Entry("listener type out of range", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  listeners:
+                    - type: 7
+                      address: 192.168.0.1
+                      port: 10001
+                      name: zi-main`,
+			expected: `
+                violations:
+                - field: networking.listeners[0].type
+                  message: has an unknown value 7`,
+		}),
+		Entry("listener state out of range", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  listeners:
+                    - type: ZoneIngress
+                      address: 192.168.0.1
+                      port: 10001
+                      name: zi-main
+                      state: 5`,
+			expected: `
+                violations:
+                - field: networking.listeners[0].state
+                  message: has an unknown value 5`,
 		}),
 	)
 

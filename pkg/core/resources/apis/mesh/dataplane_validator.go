@@ -118,6 +118,11 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 	}
 
 	result.Add(validateServiceProbe(inbound.ServiceProbe))
+	result.Add(validators.ValidateEnumDefined(
+		validators.RootedAt("state"),
+		inbound.GetState(),
+		mesh_proto.Dataplane_Networking_Inbound_State_name,
+	))
 
 	return result
 }
@@ -209,6 +214,16 @@ func validateListeners(networking *mesh_proto.Dataplane_Networking) validators.V
 		if l.GetType() == mesh_proto.Dataplane_Networking_Listener_Unspecified {
 			result.AddViolationAt(indexPath.Field("type"), "type must be ZoneIngress or ZoneEgress")
 		}
+		result.Add(validators.ValidateEnumDefined(
+			indexPath.Field("type"),
+			l.GetType(),
+			mesh_proto.Dataplane_Networking_Listener_Type_name,
+		))
+		result.Add(validators.ValidateEnumDefined(
+			indexPath.Field("state"),
+			l.GetState(),
+			mesh_proto.Dataplane_Networking_Listener_State_name,
+		))
 		result.Add(validateAddress(indexPath, l.GetAddress()))
 		result.Add(ValidatePort(indexPath.Field("port"), l.GetPort()))
 
