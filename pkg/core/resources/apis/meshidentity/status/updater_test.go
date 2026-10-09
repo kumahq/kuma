@@ -170,7 +170,7 @@ var _ = Describe("Updater", func() {
 		Expect(errors.As(err, &verr)).To(BeTrue())
 		Expect(verr.Violations).To(ContainElement(validators.Violation{
 			Field:   "spec.spiffeID.trustDomain",
-			Message: `template renders to "{.incorrect}.name" which is not a valid SPIFFE ID: trust domain characters are limited to lowercase letters, numbers, dots, dashes, and underscores`,
+			Message: `template renders to "{.incorrect}.name" which is not a valid SPIFFE ID trust domain: trust domain characters are limited to lowercase letters, numbers, dots, dashes, and underscores`,
 		}))
 	})
 
