@@ -1,0 +1,7 @@
+#/meshes/default/meshaccesslogs/ma-1%00 400
+#/meshes/default/meshretries/mr%00x 400 method=PUT
+#/meshes/default/meshretries/ma%00x 400 method=DELETE
+#/zones/k8s-zone%00 400
+#/meshes/defa%00ult/meshretries 400
+type: Mesh
+name: default
