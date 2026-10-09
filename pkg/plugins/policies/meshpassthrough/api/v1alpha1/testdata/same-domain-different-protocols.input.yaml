@@ -1,0 +1,12 @@
+targetRef:
+  kind: Dataplane
+default:
+  passthroughMode: Matched
+  appendMatch:
+  - type: Domain
+    value: datadog.datadog.svc.cluster.local
+    protocol: grpc
+    port: 4317
+  - type: Domain
+    value: datadog.datadog.svc.cluster.local
+    protocol: http

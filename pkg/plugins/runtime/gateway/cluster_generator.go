@@ -7,10 +7,12 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/core/kri"
 	core_meta "github.com/kumahq/kuma/v2/pkg/core/metadata"
 	unified_naming "github.com/kumahq/kuma/v2/pkg/core/naming/unified-naming"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/core/destinationname"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_sni "github.com/kumahq/kuma/v2/pkg/core/resources/sni"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/plugins/policies/core/rules/resolve"
@@ -166,37 +168,48 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	protocol := route.InferServiceProtocol(port.GetProtocol(), routeProtocol)
 
 	service := destinationname.MustResolve(false, dest, port)
-	var sni string
-	if meshCtx.ZonesWithMeshScopedProxy[backendRef.Resource.Zone] {
-		if errs := core_sni.ValidateKRI(backendRef.Resource); len(errs) > 0 {
-			return nil, "", nil
+	var mtls clusters.ClusterBuilderOpt
+	if backendRef.Resource.ResourceType == meshexternalservice_api.MeshExternalServiceType {
+		sni := meshroute.SniForBackendRef(backendRef, dest, port, systemNamespace)
+		if proxy.WorkloadIdentity == nil {
+			mtls = clusters.ClientSideMultiIdentitiesMTLS(
+				proxy.SecretsTracker,
+				unifiedNaming,
+				meshCtx.Resource,
+				true, // TODO we just assume this atm?...
+				sni,
+				nil,
+				meshroute.Identities(backendRef, meshCtx, false),
+				len(meshCtx.CAsByTrustDomain) > 0,
+			)
+		} else {
+			sans := meshroute.Identities(backendRef, meshCtx, true)
+			// MES goes through the zone egress, so match the sidecar rule: a mesh-scoped egress only accepts the KRI SNI.
+			if egressSANs := meshCtx.ZoneEgressSANs(); len(egressSANs) > 0 {
+				// Zone proxies key the SNI by port name, a backendRef may use the number.
+				sni = core_sni.FromKRI(kri.WithSectionName(backendRef.Resource, port.GetName()))
+				sans = egressSANs
+			}
+			upstreamCtx, err := meshroute.UpstreamTLSContext(proxy, sni, sans)
+			if err != nil {
+				return nil, "", err
+			}
+			mtls = clusters.UpstreamTLSContext(upstreamCtx)
 		}
-		sni = core_sni.FromKRI(backendRef.Resource)
 	} else {
-		sni = meshroute.SniForBackendRef(backendRef, dest, port, systemNamespace)
+		var err error
+		mtls, err = meshroute.ClientMTLS(proxy, meshCtx, backendRef, dest, port, systemNamespace, unifiedNaming, true)
+		if err != nil {
+			return nil, "", err
+		}
 	}
 	edsClusterBuilder := clusters.NewClusterBuilder(proxy.APIVersion, service).
 		Configure(
 			clusters.EdsCluster(),
 			clusters.LB(nil /* TODO(jpeach) uses default Round Robin*/),
 			clusters.ConnectionBufferLimit(DefaultConnectionBuffer),
-		).
-		ConfigureIf(proxy.WorkloadIdentity == nil, clusters.ClientSideMultiIdentitiesMTLS(
-			proxy.SecretsTracker,
-			unifiedNaming,
-			meshCtx.Resource,
-			true, // TODO we just assume this atm?...
-			sni,
-			meshroute.Identities(backendRef, meshCtx, false),
-			len(meshCtx.CAsByTrustDomain) > 0,
-		))
-	if proxy.WorkloadIdentity != nil {
-		upstreamCtx, err := meshroute.UpstreamTLSContext(proxy, sni, meshroute.Identities(backendRef, meshCtx, true))
-		if err != nil {
-			return nil, "", err
-		}
-		edsClusterBuilder.Configure(clusters.UpstreamTLSContext(upstreamCtx))
-	}
+			mtls,
+		)
 	switch protocol {
 	case core_meta.ProtocolHTTP2, core_meta.ProtocolGRPC:
 		edsClusterBuilder.Configure(clusters.Http2FromEdge())

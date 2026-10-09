@@ -59,6 +59,9 @@ func validateMatches(field string, matches []common_api.Match) validators.Valida
 	for idx, match := range matches {
 		path := validators.RootedAt(field).Index(idx)
 		verr.AddErrorAt(path, mesh.ValidateMatch(match))
+		if match.SpiffeID == nil && match.SNI == nil {
+			verr.AddViolationAt(path, "must specify at least one of 'spiffeID' or 'sni'")
+		}
 	}
 	return verr
 }

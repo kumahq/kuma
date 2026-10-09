@@ -246,6 +246,7 @@ A Helm chart for the Kuma Control Plane
 | zoneProxyImage.registry | string | `"registry.k8s.io"` | The pause image registry |
 | zoneProxyImage.repository | string | `"pause"` | The pause image repository |
 | zoneProxyImage.tag | string | `"3.10@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a"` | The pause image tag |
+| meshZoneProxyDefaults.ingress.preStopSleepSeconds | int | `15` | Seconds a terminating zone ingress keeps serving before shutdown, applied as a preStop sleep hook. Remote zones reach a zone ingress through its Service, and the load balancer and kube-proxy stop routing to a terminating pod only after they observe the endpoint change, so a pod that goes away sooner drops the cross-zone requests still landing on it. Raise this if your load balancer deregisters targets slowly. Must be lower than terminationGracePeriodSeconds, otherwise the chart fails to render. Set to 0 to drop the hook. |
 | meshZoneProxyDefaults.ingress.service.type | string | `"LoadBalancer"` | Default Service type for zone ingress. |
 | meshZoneProxyDefaults.ingress.service.port | int | `10001` | Default port for zone ingress Service. |
 | meshZoneProxyDefaults.ingress.service.targetPort | int | `10001` | Container port the zone ingress listens on. Do not change unless the zone proxy binary is reconfigured. |
@@ -255,6 +256,7 @@ A Helm chart for the Kuma Control Plane
 | meshZoneProxyDefaults.egress.service.targetPort | int | `10002` | Container port the zone egress listens on. Do not change unless the zone proxy binary is reconfigured. |
 | meshes[0].name | string | `"default"` | The mesh must already exist or be created separately; this Helm chart will not create it. |
 | meshes[0].ingress.enabled | bool | `false` | Deploy a zone ingress for this mesh. |
+| meshes[0].ingress.preStopSleepSeconds | int | `nil` | Per-mesh override for the preStop sleep duration. Falls back to meshZoneProxyDefaults.ingress.preStopSleepSeconds when unset. Set to 0 to drop the hook. |
 | meshes[0].ingress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
 | meshes[0].ingress.service.name | string | `""` | Override the auto-generated Service name (max 63 chars). Auto-generated: <name>-<mesh>-ingress (where <name> is the chart name or nameOverride) |
 | meshes[0].ingress.service.type | string | `nil` | Per-mesh override for Service type. Falls back to meshZoneProxyDefaults.ingress.service.type when unset. |

@@ -7,7 +7,6 @@ metadata:
     kuma.io/display-name: ""
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
-    kuma.io/sidecar-injection: enabled
     kuma.io/workload: postgres-account
     tier: database
 spec:

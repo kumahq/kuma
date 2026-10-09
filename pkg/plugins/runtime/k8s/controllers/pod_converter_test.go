@@ -17,6 +17,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/v2/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/controllers"
@@ -41,6 +42,7 @@ func Parse[T any](values []string) ([]T, error) {
 
 var _ = Describe("PodToDataplane(..)", func() {
 	type testCase struct {
+		mode                config_core.CpMode
 		pod                 string
 		servicesForPod      string
 		otherDataplanes     string
@@ -128,6 +130,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			converter := PodConverter{
+				Mode:          given.mode,
 				ServiceGetter: serviceGetter,
 				InboundConverter: InboundConverter{
 					NameExtractor: NameExtractor{
@@ -345,6 +348,26 @@ var _ = Describe("PodToDataplane(..)", func() {
 			existingDataplane: "update-dataplane.existing-dataplane.yaml",
 			otherServices:     "update-dataplane.other-services.yaml",
 			dataplane:         "update-dataplane.dataplane.yaml",
+		}),
+		Entry("Reserved pod labels and stale Dataplane labels are dropped", testCase{
+			pod:               "reserved-pod-labels.pod.yaml",
+			servicesForPod:    "reserved-pod-labels.services-for-pod.yaml",
+			existingDataplane: "reserved-pod-labels.existing-dataplane.yaml",
+			dataplane:         "reserved-pod-labels.dataplane.yaml",
+		}),
+		Entry("Reserved pod labels are recomputed by a zone control plane", testCase{
+			mode:              config_core.Zone,
+			pod:               "reserved-pod-labels-zone.pod.yaml",
+			servicesForPod:    "reserved-pod-labels.services-for-pod.yaml",
+			existingDataplane: "reserved-pod-labels.existing-dataplane.yaml",
+			dataplane:         "reserved-pod-labels-zone.dataplane.yaml",
+		}),
+		Entry("Reserved labels removed from the Pod are dropped from the Dataplane", testCase{
+			mode:              config_core.Zone,
+			pod:               "reserved-pod-labels-removed.pod.yaml",
+			servicesForPod:    "reserved-pod-labels.services-for-pod.yaml",
+			existingDataplane: "reserved-pod-labels-removed.existing-dataplane.yaml",
+			dataplane:         "reserved-pod-labels-zone.dataplane.yaml",
 		}),
 		Entry("Multiple services selecting a single port deduplicated when inbound tags disabled", testCase{
 			pod:                 "duplicated-inbounds.pod.yaml",

@@ -8,6 +8,94 @@ does not have any particular instructions.
 
 ## Upgrade to `2.14.6`
 
+### `MeshMetric` `ActiveMTLSBackend` requires a client certificate
+
+The `ActiveMTLSBackend` TLS mode of a `MeshMetric` Prometheus backend now secures the endpoint. The listener uses the workload identity of the dataplane. Without a workload identity, it uses the mesh mTLS backend, the same as the `Mesh.metrics` endpoint. A scraper from a different address, also one on the same node, must send a client certificate that the mesh trusts. Scrapes from the dataplane address or from a loopback address stay plaintext. A dataplane without a workload identity and without mesh mTLS accepts only these local scrapes.
+
+Before this change, the mode produced a plaintext endpoint.
+
+**Action required**
+
+Give each remote scraper a client certificate that the mesh trusts before the upgrade. To keep a plaintext endpoint, set the mode to `Disabled`.
+
+MADS now sends `https` for this mode. The hint does not supply a client certificate.
+
+A scraper that connects from the dataplane address or from a loopback address must use `http` on the backend port and path, although MADS sends `https`. The endpoint accepts plaintext only from these addresses. This mode has no local TLS.
+
+A remote scraper uses `https` and its own client certificate that the mesh trusts. Before a scraper uses `https`, make sure that no legacy direct access TLS wraps the connection to the metrics port. If this TLS wraps the connection, the endpoint gets a TLS ClientHello as HTTP, and the scrape fails.
+
+On 2.14, a Prometheus server in the mesh with `kuma.io/direct-access-services` gets this TLS from its sidecar when the mesh has mesh mTLS. Direct access covers only the inbound ports and the `Mesh.metrics` port of each dataplane. This TLS does not depend on the workload identity of the target. To move a target to `https`, scrape it with a scraper outside the mesh. That scraper has no sidecar, so no legacy TLS wraps the connection.
+
+While the legacy TLS wraps the port, the scraper must use `http`, because the sidecar already adds TLS. The example below shows one setup with `http`. It is an example, not a full list:
+
+- The mesh has mesh mTLS and an enabled `Mesh.metrics` Prometheus backend.
+- The Prometheus server runs in the mesh with `kuma.io/direct-access-services`, for example from `kumactl install observability`.
+- The `ActiveMTLSBackend` backend uses the same port as `Mesh.metrics`.
+- The Prometheus server and the targets use mesh mTLS certificates. They do not have a workload identity.
+- With a `MeshTrust`, the trust bundle also has the mesh CA for the trust domain of the mesh. The control plane adds this CA when mesh mTLS is enabled.
+
+Give these backends a dedicated `clientId`, and scrape them in a dedicated job. Set `http` in that job only:
+
+```yaml
+# MeshMetric
+spec:
+  default:
+    backends:
+      - type: Prometheus
+        prometheus:
+          clientId: legacy-mtls # only for these backends
+          port: 5670 # the Mesh.metrics port
+          tls:
+            mode: ActiveMTLSBackend
+```
+
+```yaml
+# Prometheus
+scrape_configs:
+  - job_name: kuma-dataplanes-legacy-mtls
+    kuma_sd_configs:
+      - server: http://kuma-control-plane.kuma-system:5676
+        client_id: legacy-mtls
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: .+:5670
+        action: keep
+      - target_label: __scheme__
+        replacement: http
+```
+
+Do not set `http` in a different job. Do not use this override for `ProvidedTLS` targets, for a port that direct access does not cover, for a mesh without mesh mTLS, for a scraper outside the mesh, or on 3.0.
+
+### `MeshPassthrough` validates matches by the Envoy filter chain they resolve to
+
+Validation of `MeshPassthrough` now follows the filter chains of the generated passthrough listener, the same way 3.0 does.
+Two matches conflict only when they resolve to the same filter chain on the same port (or both have no port):
+
+- domains with two of `grpc`, `http` and `http2`, which share one filter chain per port
+- the same address spelled differently, an IP and a CIDR covering only that IP (`10.0.0.1` and `10.0.0.1/32`), a CIDR with host bits (`10.0.0.1/24` and `10.0.0.0/24`) or another textual form of the same IPv6 address
+- `tcp` and `mysql` on the same address, both generate an identical TCP proxy filter chain
+
+Matches that resolve to distinct filter chains are no longer rejected, for example `tls` or `tcp` next to `http` on the same port, or `http` on a domain next to `http2` on an IP on the same port.
+This lets you add a `port` to every `Domain` match before upgrading to 3.0, which requires it.
+A match with a port next to a match without one is not a conflict either: the port-specific match owns its port and the match without a port covers the remaining ports.
+
+An already applied policy with a conflict is not re-validated on upgrade.
+Instead of sending Envoy a listener it rejects or failing config generation, the control plane keeps the first match of the colliding pair in `appendMatch` order, drops the later one and names it in a debug log of the `MeshPassthrough` component.
+When the dropped match is `mysql` and the kept one is `tcp` on the same address and port, the TLS and HTTP inspectors stay disabled on that port, so `mysql` traffic keeps working through the `tcp` filter chain.
+
+**Action required**
+
+If a `MeshPassthrough` policy contains matches like the above, resolve the conflict (pick one protocol per port and one spelling per address), otherwise the next edit of the policy is rejected by validation.
+
+Upgrade every zone control plane to 2.14.6 before applying a policy the previous validator rejected, and before upgrading the global control plane to 3.0.
+A global control plane on 2.14.6 or 3.0 accepts such policies and syncs them to zones, and a zone on an older 2.14 patch fails to generate configuration for the proxies the policy selects, so they stop receiving updates.
+
+### Empty MeshTrafficPermission match entries
+
+Remove or replace each empty match object in MeshTrafficPermission before you upgrade a control plane. Check `rules[].default.allow`, `rules[].default.deny`, and `rules[].default.allowWithShadowDeny`. Each entry must contain `spiffeID`, `sni`, or both. Keep an empty action list only when another action has at least one valid match.
+
+Earlier 2.14 versions accepted empty match objects. The 2.14.6 validator rejects these entries on create and update. Correct stored policies before you upgrade the control plane. This change does not rewrite stored policies.
+
 ### `MeshExternalService` TLS verification accepts the `SecureDataSource` shape
 
 3.0 reads `spec.tls.verification.caCert`, `.clientCert` and `.clientKey` on `MeshExternalService` only in the `SecureDataSource` shape. 2.14.6 accepts both shapes, so resources can be rewritten before upgrading to 3.0. The old `secret`, `inline` and `inlineString` fields keep working on 2.14 and now produce a deprecation warning.

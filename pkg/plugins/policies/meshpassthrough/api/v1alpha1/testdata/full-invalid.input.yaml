@@ -56,3 +56,23 @@ default:
     value: "*.hello@world"
     port: 443
     protocol: tls
+  - type: IP
+    value: 172.1.1.2
+    port: 3306
+    protocol: tcp
+  - type: IP
+    value: 172.1.1.2
+    port: 3306
+    protocol: mysql
+  - type: Domain
+    value: example.com
+    port: 7070
+    protocol: http
+  - type: IP
+    value: 172.1.1.3
+    port: 7070
+    protocol: tcp
+  - type: Domain
+    value: example.com
+    port: 7070
+    protocol: grpc
