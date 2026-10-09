@@ -5,6 +5,7 @@ info:
   version: v1alpha1
   x-ref-schema-name: ZoneOverview
 security:
+  - BasicAuth: []
   - BearerAuth: []
   - {}
 paths:
@@ -5989,6 +5990,9 @@ paths:
           $ref: '#/components/responses/WorkloadList'
 components:
   securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
     BearerAuth:
       type: http
       scheme: bearer

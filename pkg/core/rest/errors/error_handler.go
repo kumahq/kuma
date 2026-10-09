@@ -30,22 +30,12 @@ import (
 // writes them as plain text, which breaks clients that validate responses
 // against the API spec.
 func HandleServiceError(serviceError restful.ServiceError, request *restful.Request, response *restful.Response) {
-	ctx := request.Request.Context()
-	logger := kuma_log.AddFieldsFromCtx(logr.FromContextOrDiscard(ctx), ctx, context.Background())
-	kumaErr := &types.Error{
+	title := http.StatusText(serviceError.Code)
+	HandleError(request.Request.Context(), response, &types.Error{
 		Status: serviceError.Code,
-		Title:  http.StatusText(serviceError.Code),
+		Title:  title,
 		Detail: strings.TrimPrefix(serviceError.Message, fmt.Sprintf("%d: ", serviceError.Code)),
-		Type:   "/std-errors",
-	}
-	if span := trace.SpanFromContext(ctx); span.IsRecording() {
-		span.RecordError(serviceError, trace.WithStackTrace(true))
-		kumaErr.Instance = span.SpanContext().TraceID().String()
-	}
-	kumaErr.Details = kumaErr.Detail
-	if err := response.WriteHeaderAndJson(kumaErr.Status, kumaErr, "application/json"); err != nil {
-		logger.Error(err, "Could not write the error response")
-	}
+	}, title)
 }
 
 func HandleError(ctx context.Context, response *restful.Response, err error, title string) {
