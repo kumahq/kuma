@@ -1,0 +1,8 @@
+spiffeID:
+  trustDomain: "{{ .Mesh }}.mesh.local"
+  path: "/x//{{ .Workload }}"
+provider:
+  type: Bundled
+  bundled:
+    autogenerate:
+      enabled: true
