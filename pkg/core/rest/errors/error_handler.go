@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/emicklei/go-restful/v3"
 	"github.com/go-logr/logr"
@@ -22,6 +24,25 @@ import (
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 )
+
+// HandleServiceError renders go-restful routing failures (unmatched paths,
+// unsupported methods) in the standard error envelope. The go-restful default
+// writes them as plain text, which breaks clients that validate responses
+// against the API spec.
+func HandleServiceError(serviceError restful.ServiceError, request *restful.Request, response *restful.Response) {
+	ctx := request.Request.Context()
+	logger := kuma_log.AddFieldsFromCtx(logr.FromContextOrDiscard(ctx), ctx, context.Background())
+	kumaErr := &types.Error{
+		Status: serviceError.Code,
+		Title:  http.StatusText(serviceError.Code),
+		Detail: strings.TrimPrefix(serviceError.Message, fmt.Sprintf("%d: ", serviceError.Code)),
+		Type:   "/std-errors",
+	}
+	kumaErr.Details = kumaErr.Detail
+	if err := response.WriteHeaderAndJson(kumaErr.Status, kumaErr, "application/json"); err != nil {
+		logger.Error(err, "Could not write the error response")
+	}
+}
 
 func HandleError(ctx context.Context, response *restful.Response, err error, title string) {
 	log := kuma_log.AddFieldsFromCtx(logr.FromContextOrDiscard(ctx), ctx, context.Background())

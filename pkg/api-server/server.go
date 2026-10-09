@@ -38,6 +38,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
@@ -122,6 +123,7 @@ func NewApiServer(
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
+	container.ServiceErrorHandler(rest_errors.HandleServiceError)
 
 	promMiddleware := middleware.New(middleware.Config{
 		Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
