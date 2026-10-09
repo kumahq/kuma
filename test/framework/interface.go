@@ -640,6 +640,7 @@ type Cluster interface {
 
 type ControlPlane interface {
 	GetName() string
+	Mode() core.CpMode
 	GetMetrics() (string, error)
 	GetMonitoringAssignment(clientId string) (string, error)
 	GetKDSServerAddress() string
