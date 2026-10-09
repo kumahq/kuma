@@ -8,6 +8,27 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### System namespace is labeled on every Helm upgrade
+
+The Helm hook that labels the system namespace with `kuma.io/sidecar-injection: "false"` now runs on `pre-upgrade` as well as `pre-install`.
+Before, a release recovered with `helm upgrade` after a failed first install could leave the namespace unlabeled, so policy admission webhooks didn't select it.
+The hook's `ServiceAccount`, `ClusterRole` and `ClusterRoleBinding` are now also created during upgrades and deleted once the hook finishes.
+Set `patchSystemNamespace: false` to keep managing the label yourself.
+
+### `MeshMetric` `ActiveMTLSBackend` requires a client certificate
+
+The `ActiveMTLSBackend` TLS mode of a `MeshMetric` Prometheus backend now secures the endpoint with the workload identity of the dataplane. A scraper from a different address, also one on the same node, must send a client certificate that the mesh trusts. The certificate must contain a SPIFFE ID and chain to the CA bundle of that trust domain. With the bundled identity, the bundles come from `MeshTrust`. With SPIRE, they are all the bundles that the SPIRE agent serves, federated bundles included. Scrapes from the dataplane address or from a loopback address stay plaintext. A dataplane without a workload identity accepts only these local scrapes.
+
+Before this change, the mode produced a plaintext endpoint.
+
+**Action required**
+
+Give each remote scraper a client certificate that the mesh trusts before the upgrade. To keep a plaintext endpoint, set the mode to `Disabled`.
+
+MADS sends `https` for this mode. The hint does not supply a client certificate. 3.0 has no direct access mTLS, so a remote scraper must use `https` and its own client certificate, also in the mesh.
+
+A scraper that connects from the dataplane address or from a loopback address must use `http` on the backend port and path, although MADS sends `https`. The endpoint accepts plaintext only from these addresses. This mode has no local TLS.
+
 ### Empty MeshTrafficPermission match entries
 
 Remove or replace each empty match object in MeshTrafficPermission before you upgrade a control plane. Check `rules[].default.allow`, `rules[].default.deny`, and `rules[].default.allowWithShadowDeny`. Each entry must contain `spiffeID`, `sni`, or both. Keep an empty action list only when another action has at least one valid match.
@@ -522,6 +543,19 @@ rules:
 ```
 
 Put it on the route itself when the other policies targeting that route should also cover the unmatched traffic, or on a second `MeshHTTPRoute` when they should not.
+
+### A `MeshHTTPRoute` match without a path ranks as `PathPrefix /`
+
+A match that sets only `headers`, `method`, or `queryParams` is now ordered as if it had `path: { type: PathPrefix, value: / }`, which is what the Gateway API assumes. Before, any match with a path ranked above it. Two orderings change without any change to your resources:
+
+- A pathless match next to an explicit `PathPrefix /` match now ties on path, so the method, header count, and query param count decide. A header-only rule (for example a canary on `x-canary: true`) next to a `PathPrefix /` catch-all used to be shadowed by the catch-all and never matched; it now receives the requests that carry the header.
+- A pathless match now ranks above a `RegularExpression` match. With a rule on `/api/.*` and a rule matching only the header `x-debug`, a request to `/api/foo` with `x-debug` used to go to the regex rule and now goes to the header rule.
+
+Exact matches and `PathPrefix` matches longer than `/` still rank above a pathless match. Routes converted from Gateway API `HTTPRoute`s are unaffected, because their matches always carry a path.
+
+**Action required**
+
+Review `MeshHTTPRoute`s that combine pathless matches with a `PathPrefix /` or `RegularExpression` match. If a pathless rule should only apply under a `RegularExpression` path, add that path to the rule. The catch-all from the previous section is safe to add to a route that has header-only rules: it no longer shadows them.
 
 ### RBAC: control plane now reads Gateway API `GRPCRoute`s
 

@@ -73,6 +73,25 @@ var _ = Describe("Generate()", func() {
 		}}))
 	})
 
+	DescribeTable("should select the scheme from the TLS mode",
+		func(mode v1alpha1.TlsMode, scheme string) {
+			// given
+			conf := prometheusConf(nil)
+			(*conf.Backends)[0].Prometheus.Tls = &v1alpha1.PrometheusTls{Mode: mode}
+
+			// when
+			resources, err := Generate(map[*v1alpha1.Conf]*core_mesh.DataplaneResource{conf: dataplane}, DefaultKumaClientId)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resources).To(HaveLen(1))
+			Expect(resources[0].Resource.(*observability_v1.MonitoringAssignment).Targets[0].Scheme).To(Equal(scheme))
+		},
+		Entry("Disabled", v1alpha1.Disabled, "http"),
+		Entry("ProvidedTLS", v1alpha1.ProvidedTLS, "https"),
+		Entry("ActiveMTLSBackend", v1alpha1.ActiveMTLSBackend, "https"),
+	)
+
 	It("should skip a backend with a non-matching clientId", func() {
 		// given
 		meshMetricToDataplane := map[*v1alpha1.Conf]*core_mesh.DataplaneResource{
