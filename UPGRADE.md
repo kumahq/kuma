@@ -544,6 +544,19 @@ rules:
 
 Put it on the route itself when the other policies targeting that route should also cover the unmatched traffic, or on a second `MeshHTTPRoute` when they should not.
 
+### A `MeshHTTPRoute` match without a path ranks as `PathPrefix /`
+
+A match that sets only `headers`, `method`, or `queryParams` is now ordered as if it had `path: { type: PathPrefix, value: / }`, which is what the Gateway API assumes. Before, any match with a path ranked above it. Two orderings change without any change to your resources:
+
+- A pathless match next to an explicit `PathPrefix /` match now ties on path, so the method, header count, and query param count decide. A header-only rule (for example a canary on `x-canary: true`) next to a `PathPrefix /` catch-all used to be shadowed by the catch-all and never matched; it now receives the requests that carry the header.
+- A pathless match now ranks above a `RegularExpression` match. With a rule on `/api/.*` and a rule matching only the header `x-debug`, a request to `/api/foo` with `x-debug` used to go to the regex rule and now goes to the header rule.
+
+Exact matches and `PathPrefix` matches longer than `/` still rank above a pathless match. Routes converted from Gateway API `HTTPRoute`s are unaffected, because their matches always carry a path.
+
+**Action required**
+
+Review `MeshHTTPRoute`s that combine pathless matches with a `PathPrefix /` or `RegularExpression` match. If a pathless rule should only apply under a `RegularExpression` path, add that path to the rule. The catch-all from the previous section is safe to add to a route that has header-only rules: it no longer shadows them.
+
 ### RBAC: control plane now reads Gateway API `GRPCRoute`s
 
 The Helm-installed control plane `ClusterRole` now grants `get`, `list`, and
