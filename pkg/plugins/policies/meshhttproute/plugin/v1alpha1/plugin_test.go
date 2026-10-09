@@ -121,6 +121,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 			resource, err = util_yaml.GetResourcesToYaml(resourceSet, envoy_resource.SecretType)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".secrets.golden.yaml")))
+			// Envoy rejects the whole route configuration when a single route is invalid
+			for _, r := range resourceSet.ListOf(envoy_resource.RouteType) {
+				v, ok := r.Resource.(interface{ ValidateAll() error })
+				Expect(ok).To(BeTrue(), r.Name)
+				Expect(v.ValidateAll()).To(Succeed(), r.Name)
+			}
 		},
 		Entry("default-route", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
@@ -3456,6 +3462,123 @@ var _ = Describe("MeshHTTPRoute", func() {
 									},
 								},
 							}),
+					).
+					Build(),
+			}
+		}()),
+		Entry("gateway-rules-without-backendrefs", func() outboundsTestCase {
+			// A top-level Mesh MeshHTTPRoute also applies to builtin gateways, and
+			// validation requires backendRefs only for top-level MeshGateway routes,
+			// so its rules reach the gateway with nothing to forward to. The
+			// `backend` rule also merges with the gateway's own `/` rule.
+			gateway := &core_mesh.MeshGatewayResource{
+				Meta: &test_model.ResourceMeta{Name: "sample-gateway", Mesh: "default"},
+				Spec: &mesh_proto.MeshGateway{
+					Selectors: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								mesh_proto.ServiceTag: "sample-gateway",
+							},
+						},
+					},
+					Conf: &mesh_proto.MeshGateway_Conf{
+						Listeners: []*mesh_proto.MeshGateway_Listener{
+							{
+								Protocol: mesh_proto.MeshGateway_Listener_HTTP,
+								Port:     8080,
+							},
+						},
+					},
+				},
+			}
+			gatewayRoute := &api.MeshHTTPRouteResource{
+				Meta: &test_model.ResourceMeta{Name: "gateway-route", Mesh: "default"},
+				Spec: &api.MeshHTTPRoute{
+					TargetRef: builders.TargetRefMeshGateway("sample-gateway"),
+					To: &[]api.To{{
+						TargetRef: builders.TargetRefMesh(),
+						Rules: []api.Rule{{
+							Matches: []api.Match{{
+								Path: &api.PathMatch{Type: api.PathPrefix, Value: "/"},
+							}},
+							Default: api.RuleConf{
+								BackendRefs: &[]common_api.BackendRef{{
+									TargetRef: builders.TargetRefService("backend"),
+									Weight:    pointer.To(uint(100)),
+								}},
+							},
+						}},
+					}},
+				},
+			}
+			sidecarRoute := &api.MeshHTTPRouteResource{
+				Meta: &test_model.ResourceMeta{Name: "sidecar-route", Mesh: "default"},
+				Spec: &api.MeshHTTPRoute{
+					TargetRef: pointer.To(builders.TargetRefMesh()),
+					To: &[]api.To{
+						{
+							TargetRef: builders.TargetRefService("backend"),
+							Rules: []api.Rule{{
+								Matches: []api.Match{{
+									Path: &api.PathMatch{Type: api.PathPrefix, Value: "/"},
+								}},
+								Default: api.RuleConf{BackendRefs: &[]common_api.BackendRef{}},
+							}},
+						},
+						{
+							TargetRef: builders.TargetRefService("other"),
+							Rules: []api.Rule{{
+								Matches: []api.Match{{
+									Path: &api.PathMatch{Type: api.PathPrefix, Value: "/api"},
+								}},
+								Default: api.RuleConf{
+									Filters: &[]api.Filter{{
+										Type: api.RequestHeaderModifierType,
+										RequestHeaderModifier: &api.HeaderModifier{
+											Add: &[]api.HeaderKeyValue{{
+												Name:  "x-env",
+												Value: "prod",
+											}},
+										},
+									}},
+								},
+							}},
+						},
+					},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{gateway},
+			}
+			resources.MeshLocalResources[api.MeshHTTPRouteType] = &api.MeshHTTPRouteResourceList{
+				Items: []*api.MeshHTTPRouteResource{gatewayRoute, sidecarRoute},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP), "region", "us"),
+				)
+			xdsContext := xds_builders.Context().
+				WithMeshBuilder(samples.MeshDefaultBuilder()).
+				WithResources(resources).
+				WithEndpointMap(outboundTargets).Build()
+
+			dataplane := samples.GatewayDataplaneBuilder()
+			matched, err := plugin.NewPlugin().(core_plugins.PolicyPlugin).MatchedPolicies(dataplane.Build(), resources)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(matched.Warnings).To(BeEmpty())
+
+			return outboundsTestCase{
+				xdsContext: *xdsContext,
+				proxy: xds_builders.Proxy().
+					WithDataplane(dataplane).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithGatewayPolicy(api.MeshHTTPRouteType, matched.GatewayRules),
 					).
 					Build(),
 			}

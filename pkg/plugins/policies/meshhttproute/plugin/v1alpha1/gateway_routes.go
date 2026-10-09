@@ -195,6 +195,11 @@ func generateEnvoyRouteEntries(
 			slices.Sort(names)
 
 			entry := makeHttpRouteEntry(meshCtx, strings.Join(names, "_"), rule, rules.Rule.BackendRefOrigin, resolver)
+			// Rules from top-level Mesh routes reach the gateway too and may have
+			// no backendRefs; a route without an action fails snapshot validation.
+			if len(entry.Action.Forward) == 0 && entry.Action.Redirect == nil {
+				continue
+			}
 
 			hashedMatches := api.HashMatches(rule.Matches)
 			// The rule matches if any of the matches is successful (it has OR
