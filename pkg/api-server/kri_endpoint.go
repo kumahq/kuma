@@ -53,7 +53,7 @@ func (k *kriEndpoint) findByKriRoute(withInsight bool) handlerFunc {
 			return nil, withTitle(rest_errors.NewBadRequestError(err.Error()), "Could not parse KRI")
 		}
 		if kri.HasExtraSegments(kriParam) {
-			return nil, withTitle(rest_errors.NewNotFoundError(fmt.Sprintf("extra segments in KRI: %q", kriParam)), "Could not retrieve a resource")
+			return nil, withTitle(rest_errors.NewNotFoundError(""), "Could not retrieve a resource")
 		}
 
 		descriptor, err := getDescriptor(identifier.ResourceType)

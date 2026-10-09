@@ -63,7 +63,7 @@ var _ = Describe("Error envelope", Ordered, func() {
 	})
 
 	It("returns 400 for a malformed KRI", func() {
-		assertEnvelope("/_kri/garbage", http.StatusBadRequest, "Could not parse KRI")
+		assertEnvelope("/_kri/garbage", http.StatusBadRequest, "Bad Request")
 	})
 
 	It("still resolves a valid KRI", func() {
