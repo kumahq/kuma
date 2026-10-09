@@ -3,5 +3,6 @@
 #/meshes/default/meshretries/ma%00x 400 method=DELETE
 #/zones/k8s-zone%00 400
 #/meshes/defa%00ult/meshretries 400
+#/_kri/kri_msvc_default_default__ma%00x_ 400
 type: Mesh
 name: default
