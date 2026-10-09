@@ -10,7 +10,7 @@ does not have any particular instructions.
 
 ### `MeshMetric` `ActiveMTLSBackend` requires a client certificate
 
-The `ActiveMTLSBackend` TLS mode of a `MeshMetric` Prometheus backend now secures the endpoint with the workload identity of the dataplane. A scraper on a different host must send a client certificate that the mesh trusts. The certificate must chain to a `MeshTrust` CA bundle, or to the SPIRE bundle, and must contain a SPIFFE ID in that trust domain. Scrapes from the dataplane host stay plaintext. A dataplane without a workload identity accepts only these local scrapes.
+The `ActiveMTLSBackend` TLS mode of a `MeshMetric` Prometheus backend now secures the endpoint with the workload identity of the dataplane. A scraper on a different host must send a client certificate that the mesh trusts. The certificate must contain a SPIFFE ID and chain to the CA bundle of that trust domain. With the bundled identity, the bundles come from `MeshTrust`. With SPIRE, they are all the bundles that the SPIRE agent serves, federated bundles included. Scrapes from the dataplane host stay plaintext. A dataplane without a workload identity accepts only these local scrapes.
 
 Before this change, the mode produced a plaintext endpoint.
 
