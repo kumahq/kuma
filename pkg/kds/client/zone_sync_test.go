@@ -399,7 +399,7 @@ var _ = Describe("KDSSyncClient type allowlist", func() {
 		})
 
 		clientStream.RecvCh <- &envoy_sd.DeltaDiscoveryResponse{
-			TypeUrl: string(system.GlobalSecretType),
+			TypeUrl: string(mesh.MeshType),
 			Nonce:   "nonce-1",
 		}
 
@@ -419,7 +419,7 @@ var _ = Describe("KDSSyncClient type allowlist", func() {
 
 		err := syncClient.Receive()
 
-		Expect(err).To(MatchError(ContainSubstring("GlobalSecret")))
+		Expect(err).To(MatchError(ContainSubstring(string(mesh.MeshType))))
 		Expect(err).To(MatchError(ContainSubstring("not subscribed")))
 		Expect(received).To(BeFalse(), "the store callback must not run for an unsubscribed type")
 	})
