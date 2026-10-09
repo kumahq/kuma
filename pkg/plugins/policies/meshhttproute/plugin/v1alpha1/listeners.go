@@ -108,7 +108,7 @@ func generateFromService(
 				Filters: backendRef.Filters,
 			})
 		}
-		if len(split) == 0 && !route.AllBackendRefsUnresolved && route.DirectResponseStatus == 0 {
+		if len(split) == 0 && !route.AllBackendRefsUnresolved && !route.AllBackendRefsHaveZeroWeight && route.DirectResponseStatus == 0 {
 			continue
 		}
 		// mirrored requests go to a cluster of their own, it has no weight so
@@ -262,14 +262,17 @@ func prepareRoutes(
 		for _, match := range rule.Matches {
 			var refs []api.RouteBackendRef
 			var unresolvedWeight uint
+			hasUnresolvedBackendRefs := false
 
 			for _, br := range backendRefs {
 				rbr, ok := resolve.BackendRef(originID, br.CommonBackendRef(), meshCtx.ResolveResourceIdentifier)
 				if !ok {
+					hasUnresolvedBackendRefs = true
 					unresolvedWeight += pointer.DerefOr(br.Weight, 1)
 					continue
 				}
-				if !backendRefProducesHTTPSplit(meshCtx, rbr) {
+				if !backendRefHasHTTPDestination(meshCtx, rbr) {
+					hasUnresolvedBackendRefs = true
 					if rr := rbr.RealResourceBackendRef(); rr != nil {
 						unresolvedWeight += rr.Weight
 					} else {
@@ -277,11 +280,19 @@ func prepareRoutes(
 					}
 					continue
 				}
+				if rbr.RealResourceBackendRef().Weight == 0 {
+					continue
+				}
 				refs = append(refs, api.RouteBackendRef{
 					BackendRef: rbr,
 					Filters:    pointer.Deref(br.Filters),
 				})
 			}
+
+			// A valid backendRef with zero weight is not unresolved, so a list of
+			// only such refs answers 503. Any unresolved ref in an all-zero list
+			// keeps the 500, so misconfiguration isn't hidden behind the 503.
+			allValidBackendRefsHaveZeroWeight := allBackendRefsHaveZeroWeight && !hasUnresolvedBackendRefs
 
 			routes = append(
 				routes,
@@ -292,7 +303,7 @@ func prepareRoutes(
 					Filters:                      filters,
 					BackendRefs:                  refs,
 					UnresolvedBackendRefsWeight:  unresolvedWeight,
-					AllBackendRefsUnresolved:     hasExplicitBackendRefs && len(refs) == 0,
+					AllBackendRefsUnresolved:     hasExplicitBackendRefs && len(refs) == 0 && !allValidBackendRefsHaveZeroWeight,
 					AllBackendRefsHaveZeroWeight: allBackendRefsHaveZeroWeight,
 					MirrorBackendRefs:            mirrorRefs,
 				},
@@ -337,7 +348,7 @@ func prepareRoutes(
 			route.Match.Path = pointer.To(catchAllPathMatch)
 		}
 
-		if len(route.BackendRefs) == 0 && !route.AllBackendRefsUnresolved && route.DirectResponseStatus == 0 {
+		if len(route.BackendRefs) == 0 && !route.AllBackendRefsUnresolved && !route.AllBackendRefsHaveZeroWeight && route.DirectResponseStatus == 0 {
 			route.BackendRefs = []api.RouteBackendRef{
 				{
 					BackendRef: *svc.DefaultBackendRef(),
@@ -359,12 +370,12 @@ func matchIsCatchAll(match api.Match) bool {
 	return match.Path.Type == api.PathPrefix && match.Path.Value == "/"
 }
 
-func backendRefProducesHTTPSplit(
+func backendRefHasHTTPDestination(
 	meshCtx xds_context.MeshContext,
 	ref resolve.ResolvedBackendRef,
 ) bool {
 	rr := ref.RealResourceBackendRef()
-	if rr == nil || rr.Weight == 0 {
+	if rr == nil {
 		return false
 	}
 
