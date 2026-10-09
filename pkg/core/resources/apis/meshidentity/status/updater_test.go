@@ -2,6 +2,7 @@ package status
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -21,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/store"
+	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	core_metrics "github.com/kumahq/kuma/v2/pkg/metrics"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
@@ -150,7 +152,7 @@ var _ = Describe("Updater", func() {
 		Expect(meshTrust.Spec.CABundles).To(HaveLen(1))
 	})
 
-	It("should fail to reconcile invalid name", func() {
+	It("should reject an identity with an invalid trust domain name", func() {
 		// when
 		Expect(
 			samples.MeshDefaultBuilder().
@@ -161,32 +163,15 @@ var _ = Describe("Updater", func() {
 		identity.Spec.SpiffeID = &meshidentity_api.SpiffeID{
 			TrustDomain: pointer.To("{.incorrect}.name"),
 		}
-		Expect(resManager.Create(context.Background(), identity, store.CreateBy(model.MetaToResourceKey(identity.GetMeta())))).To(Succeed())
 
 		// then
-		Eventually(func(g Gomega) {
-			mid := meshidentity_api.NewMeshIdentityResource()
-			err := resManager.Get(context.Background(), mid, store.GetBy(model.MetaToResourceKey(identity.GetMeta())))
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(mid.Status.Conditions).To(ContainElements(
-				common_api.Condition{
-					Type:    meshidentity_api.ProviderConditionType,
-					Status:  kube_meta.ConditionFalse,
-					Reason:  "ProviderInitializationError",
-					Message: "failed to generate X509 certificate: trust domain characters are limited to lowercase letters, numbers, dots, dashes, and underscores",
-				},
-				common_api.Condition{
-					Type:    meshidentity_api.ReadyConditionType,
-					Status:  kube_meta.ConditionFalse,
-					Reason:  "Failure",
-					Message: "One of initialization steps failed",
-				},
-			))
-		}, "10s", "100ms").Should(Succeed())
-
-		// backend shouldn't be initialized
-		privateKey := system.NewSecretResource()
-		Expect(resManager.Get(context.Background(), privateKey, store.GetByKey(bundled.PrivateKeyName(identity.Meta.GetName()), "default"))).To(HaveOccurred())
+		err := resManager.Create(context.Background(), identity, store.CreateBy(model.MetaToResourceKey(identity.GetMeta())))
+		var verr *validators.ValidationError
+		Expect(errors.As(err, &verr)).To(BeTrue())
+		Expect(verr.Violations).To(ContainElement(validators.Violation{
+			Field:   "spec.spiffeID.trustDomain",
+			Message: `template renders to "{.incorrect}.name" which is not a valid SPIFFE ID trust domain: trust domain characters are limited to lowercase letters, numbers, dots, dashes, and underscores`,
+		}))
 	})
 
 	It("should not initialize provider if secrets already exists", func() {

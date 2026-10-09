@@ -2,6 +2,10 @@ violations:
 - field: spec.spiffeID.trustDomain
   message: 'couldn''t parse template: template: :1: non executable command in pipeline
     stage 2'
+- field: spec.spiffeID.path
+  message: 'template renders to "/ns/.Namespace/sa/{ .ServiceAccount|2 }" which is
+    not a valid SPIFFE ID path: path segment characters are limited to letters, numbers,
+    dots, dashes, and underscores'
 - field: spec.provider.bundled.meshTrustCreation
   message: '"Test" must be one of ["Enabled", "Disabled"]'
 - field: spec.provider.bundled.ca

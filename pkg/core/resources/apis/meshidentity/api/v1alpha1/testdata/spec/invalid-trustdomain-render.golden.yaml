@@ -1,0 +1,5 @@
+violations:
+- field: spec.spiffeID.trustDomain
+  message: 'template renders to "mesh.mesh.local/prod" which is not a valid SPIFFE
+    ID trust domain: trust domain characters are limited to lowercase letters, numbers,
+    dots, dashes, and underscores'
