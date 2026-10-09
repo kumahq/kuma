@@ -158,7 +158,8 @@ const (
 	// * KUMA_DATAPLANE_RUNTIME_METRICS_KEY_PATH
 	ProvidedTLS TlsMode = "ProvidedTLS"
 	// ActiveMTLSBackend means that the listener uses the workload identity of the dataplane
-	// and requires a client certificate that the mesh trusts. Scrapes from the dataplane host
-	// stay plaintext. Without a workload identity, the listener accepts only these local scrapes.
+	// and requires a client certificate that the mesh trusts. Scrapes from the dataplane
+	// address or from a loopback address stay plaintext. Without a workload identity, the
+	// listener accepts only these local scrapes.
 	ActiveMTLSBackend TlsMode = "ActiveMTLSBackend"
 )
