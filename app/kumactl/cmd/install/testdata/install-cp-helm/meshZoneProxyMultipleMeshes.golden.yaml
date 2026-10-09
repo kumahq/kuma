@@ -310,21 +310,7 @@ rules:
       - get
       - patch
       - update
-  - apiGroups:
-    # Gateway API
-      - gateway.networking.k8s.io
-    resources:
-      - grpcroutes
-      - httproutes
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
+  - apiGroups: # Gateway API route status, used by the route reconcilers
       - gateway.networking.k8s.io
     resources:
       - grpcroutes/status
@@ -425,20 +411,7 @@ rules:
       - pods
     verbs:
       - delete
-  - apiGroups:
-      - gateway.networking.k8s.io
-    resources:
-      - grpcroutes
-      - httproutes
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
+  - apiGroups: # Gateway API route status, used by the route reconcilers
       - gateway.networking.k8s.io
     resources:
       - grpcroutes/status
