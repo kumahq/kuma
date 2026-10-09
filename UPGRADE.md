@@ -77,6 +77,16 @@ A zone control plane now writes a `ServiceTag` entry into `MeshService.spec.iden
 
 Before upgrading to 3.0, upgrade every zone control plane to 2.14.6 or later and remove `mtls` from the mesh once the `MeshIdentity` migration is complete. Each zone then rewrites its `MeshService` identities within one status update interval.
 
+### Explicit outbounds use the same section name as transparent proxy outbounds
+
+A `Dataplane` outbound with `backendRef: {kind: MeshService, name: backend, port: 80}`, where port `80` is named `http`, used to get the port number as its section name. It now gets `http`, the same as transparent proxy outbounds and as 3.0. Envoy resource names change only when unified resource naming is enabled on the proxy: the listener, cluster and stat prefix of such an outbound change from `..._backend_80` to `..._backend_http`. Without unified resource naming the names do not contain the section and stay the same.
+
+A `Dataplane` outbound with `backendRef: {kind: MeshExternalService, name: ext}` now gets the `MeshExternalService` match port as its section, whatever `port` the outbound sets, the same as transparent proxy outbounds and as 3.0. Before, it got the outbound `port`, or no section when `port` was not set. With unified resource naming its listener, cluster and stat prefix change the same way.
+
+When its zone control plane is upgraded to 2.14.6, a proxy with unified resource naming gets the renamed clusters. For a few milliseconds, new connections on these outbounds can be closed because the cluster is missing (`NC` in the access log): the old cluster is already removed, or the new one has not received its endpoints yet. Without this change the same rename would happen during the upgrade to 3.0.
+
+**Action required:** policies that target the port with `sectionName: http`, or a `MeshExternalService` with its match port, now apply to these outbounds. Before, they were skipped and the service-level or `Mesh` rule applied instead. Check such policies before upgrading. If unified resource naming is enabled, update dashboards and alerts that match on the old `_80` stat prefix.
+
 ## Upgrade to `2.14.5`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because it changes behaviour existing deployments may rely on.
