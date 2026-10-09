@@ -16620,7 +16620,34 @@ components:
           type: string
     MeshInsightWithMeta:
       allOf:
-        - $ref: '#/components/schemas/Meta'
+        - type: object
+          required:
+            - type
+            - name
+          properties:
+            type:
+              type: string
+              example: MeshInsight
+              description: the type of this resource
+            name:
+              type: string
+              example: default
+              description: the name of the mesh this insight is computed for
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+              description: Labels computed by the control plane, if any.
+            creationTime:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Time at which the resource was created
+            modificationTime:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Time at which the resource was updated
         - $ref: '#/components/schemas/MeshInsight'
     MeshInsight:
       description: MeshInsight defines the observed state of a Mesh.

@@ -57,7 +57,35 @@ components:
   schemas:
     MeshInsightWithMeta:
       allOf:
-        - $ref: '/specs/base/specs/common/resource.yaml#/components/schemas/Meta'
+        # MeshInsight is a global resource without a short name, so the shared Meta
+        # does not fit: it never has a mesh or a kri, and labels are only present
+        # when the store computes them (e.g. kuma.io/display-name on Kubernetes).
+        - type: object
+          required: [type, name]
+          properties:
+            type:
+              type: string
+              example: MeshInsight
+              description: the type of this resource
+            name:
+              type: string
+              example: default
+              description: the name of the mesh this insight is computed for
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+              description: Labels computed by the control plane, if any.
+            creationTime:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Time at which the resource was created
+            modificationTime:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Time at which the resource was updated
         - $ref: '/specs/protoresources/meshinsight/schema.yaml#/components/schemas/MeshInsight'
 
   responses:
