@@ -38,6 +38,10 @@ func HandleServiceError(serviceError restful.ServiceError, request *restful.Requ
 		Detail: strings.TrimPrefix(serviceError.Message, fmt.Sprintf("%d: ", serviceError.Code)),
 		Type:   "/std-errors",
 	}
+	if span := trace.SpanFromContext(ctx); span.IsRecording() {
+		span.RecordError(serviceError, trace.WithStackTrace(true))
+		kumaErr.Instance = span.SpanContext().TraceID().String()
+	}
 	kumaErr.Details = kumaErr.Detail
 	if err := response.WriteHeaderAndJson(kumaErr.Status, kumaErr, "application/json"); err != nil {
 		logger.Error(err, "Could not write the error response")

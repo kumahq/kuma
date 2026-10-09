@@ -32,7 +32,7 @@ var _ = Describe("Error envelope", Ordered, func() {
 		stop()
 	})
 
-	assertEnvelope := func(path string, expectedStatus int) map[string]any {
+	assertEnvelope := func(path string, expectedStatus int, expectedTitle string) map[string]any {
 		resp, err := http.Get(fmt.Sprintf("http://%s%s", apiServer.Address(), path))
 		Expect(err).ToNot(HaveOccurred())
 		defer resp.Body.Close()
@@ -43,27 +43,27 @@ var _ = Describe("Error envelope", Ordered, func() {
 		envelope := map[string]any{}
 		Expect(json.Unmarshal(body, &envelope)).To(Succeed(), string(body))
 		Expect(envelope).To(HaveKeyWithValue("status", float64(expectedStatus)), path)
-		Expect(envelope).To(HaveKey("title"), path)
-		Expect(envelope).To(HaveKey("type"), path)
+		Expect(envelope).To(HaveKeyWithValue("title", expectedTitle), path)
+		Expect(envelope).To(HaveKeyWithValue("type", "/std-errors"), path)
 		Expect(envelope).To(HaveKey("detail"), path)
 		return envelope
 	}
 
 	It("returns the error envelope for unknown resource types", func() {
-		assertEnvelope("/meshes/default/not-a-type", http.StatusNotFound)
+		assertEnvelope("/meshes/default/not-a-type", http.StatusNotFound, "Not Found")
 	})
 
 	It("returns the error envelope for unknown paths", func() {
-		assertEnvelope("/no-such-endpoint", http.StatusNotFound)
+		assertEnvelope("/no-such-endpoint", http.StatusNotFound, "Not Found")
 	})
 
 	It("returns 404 for a KRI with extra segments", func() {
-		envelope := assertEnvelope("/_kri/kri_mal_default___ma-1_extra_more", http.StatusNotFound)
+		envelope := assertEnvelope("/_kri/kri_mal_default___ma-1_extra_more", http.StatusNotFound, "Could not retrieve a resource")
 		Expect(envelope).ToNot(HaveKey("instance"))
 	})
 
 	It("returns 400 for a malformed KRI", func() {
-		assertEnvelope("/_kri/garbage", http.StatusBadRequest)
+		assertEnvelope("/_kri/garbage", http.StatusBadRequest, "Could not parse KRI")
 	})
 
 	It("still resolves a valid KRI", func() {
