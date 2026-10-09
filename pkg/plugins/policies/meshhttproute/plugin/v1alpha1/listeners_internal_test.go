@@ -213,6 +213,9 @@ var _ = Describe("prepareRoutes", func() {
 		Entry("90/10 unresolved share", []string{"payments", "missing-backend"}, []uint{90, 10}, false, []string{"payments"}, uint(10)),
 		Entry("all unresolved missing resources", []string{"missing-backend", "other-missing"}, []uint{30, 70}, true, nil, uint(100)),
 		Entry("all resolved keeps zero unresolved share", []string{"payments", "payments"}, []uint{30, 70}, false, []string{"payments", "payments"}, uint(0)),
+		Entry("mixed weights drop the zero-weight backend", []string{"payments", "payments"}, []uint{1, 0}, false, []string{"payments"}, uint(0)),
+		Entry("all zero-weight resolved backends are not unresolved", []string{"payments", "payments"}, []uint{0, 0}, false, nil, uint(0)),
+		Entry("all zero-weight with an unresolved backend stays unresolved", []string{"payments", "missing-backend"}, []uint{0, 0}, true, nil, uint(0)),
 	)
 
 	It("keeps backendRef-scoped filters on the resolved backend only", func() {
