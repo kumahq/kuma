@@ -8,6 +8,13 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### System namespace is labeled on every Helm upgrade
+
+The Helm hook that labels the system namespace with `kuma.io/sidecar-injection: "false"` now runs on `pre-upgrade` as well as `pre-install`.
+Before, a release recovered with `helm upgrade` after a failed first install could leave the namespace unlabeled, so policy admission webhooks didn't select it.
+The hook's `ServiceAccount`, `ClusterRole` and `ClusterRoleBinding` are now also created during upgrades and deleted once the hook finishes.
+Set `patchSystemNamespace: false` to keep managing the label yourself.
+
 ### `MeshMetric` `ActiveMTLSBackend` requires a client certificate
 
 The `ActiveMTLSBackend` TLS mode of a `MeshMetric` Prometheus backend now secures the endpoint with the workload identity of the dataplane. A scraper from a different address, also one on the same node, must send a client certificate that the mesh trusts. The certificate must contain a SPIFFE ID and chain to the CA bundle of that trust domain. With the bundled identity, the bundles come from `MeshTrust`. With SPIRE, they are all the bundles that the SPIRE agent serves, federated bundles included. Scrapes from the dataplane address or from a loopback address stay plaintext. A dataplane without a workload identity accepts only these local scrapes.
