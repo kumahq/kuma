@@ -165,7 +165,7 @@ const (
 	ProvidedTLS TlsMode = "ProvidedTLS"
 	// ActiveMTLSBackend means that the listener uses the workload identity of the dataplane,
 	// or the mesh mTLS backend, and requires a client certificate that the mesh trusts. Scrapes
-	// from the dataplane host stay plaintext. Without a workload identity and without mesh mTLS,
-	// the listener accepts only these local scrapes.
+	// from the dataplane address or from a loopback address stay plaintext. Without a workload
+	// identity and without mesh mTLS, the listener accepts only these local scrapes.
 	ActiveMTLSBackend TlsMode = "ActiveMTLSBackend"
 )

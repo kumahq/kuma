@@ -10,7 +10,7 @@ does not have any particular instructions.
 
 ### `MeshMetric` `ActiveMTLSBackend` requires a client certificate
 
-The `ActiveMTLSBackend` TLS mode of a `MeshMetric` Prometheus backend now secures the endpoint. The listener uses the workload identity of the dataplane. Without a workload identity, it uses the mesh mTLS backend, the same as the `Mesh.metrics` endpoint. A scraper on a different host must send a client certificate that the mesh trusts. Scrapes from the dataplane host stay plaintext. A dataplane without a workload identity and without mesh mTLS accepts only these local scrapes.
+The `ActiveMTLSBackend` TLS mode of a `MeshMetric` Prometheus backend now secures the endpoint. The listener uses the workload identity of the dataplane. Without a workload identity, it uses the mesh mTLS backend, the same as the `Mesh.metrics` endpoint. A scraper from a different address, also one on the same node, must send a client certificate that the mesh trusts. Scrapes from the dataplane address or from a loopback address stay plaintext. A dataplane without a workload identity and without mesh mTLS accepts only these local scrapes.
 
 Before this change, the mode produced a plaintext endpoint.
 
@@ -20,7 +20,7 @@ Give each remote scraper a client certificate that the mesh trusts before the up
 
 MADS now sends `https` for this mode. The hint does not supply a client certificate.
 
-A scraper on the dataplane host must use `http` on the backend port and path, although MADS sends `https`. The endpoint accepts only plaintext from the dataplane host. This mode has no local TLS.
+A scraper that connects from the dataplane address or from a loopback address must use `http` on the backend port and path, although MADS sends `https`. The endpoint accepts plaintext only from these addresses. This mode has no local TLS.
 
 A remote scraper uses `https` and its own client certificate that the mesh trusts. Before a scraper uses `https`, make sure that no legacy direct access TLS wraps the connection to the metrics port. If this TLS wraps the connection, the endpoint gets a TLS ClientHello as HTTP, and the scrape fails.
 
