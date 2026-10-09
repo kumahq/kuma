@@ -3,13 +3,20 @@ package skipinboundtags
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/v2/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/v2/pkg/util/channels"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	. "github.com/kumahq/kuma/v2/test/framework"
 	"github.com/kumahq/kuma/v2/test/framework/client"
 	"github.com/kumahq/kuma/v2/test/framework/deployments/democlient"
@@ -49,6 +56,43 @@ spec:
         enabled: true
 `, Config.KumaNamespace, meshName)
 
+	// changesvc-test-label is in ignoredServiceSelectorLabels, so the Service selects
+	// both servers once it is stripped, and only one of them with the full selector
+	changeSvcLabels := func(instance string) map[string]string {
+		return map[string]string{
+			"app":                  "changesvc",
+			"changesvc-test-label": instance,
+		}
+	}
+	changeSvcServer := func(instance string) InstallFunc {
+		return testserver.Install(
+			testserver.WithName("changesvc-"+instance),
+			testserver.WithMesh(meshName),
+			testserver.WithNamespace(namespace),
+			testserver.WithEchoArgs("echo", "--instance", "changesvc-"+instance),
+			testserver.WithoutService(),
+			testserver.WithoutWaitingToBeReady(), // WaitForPods assumes that app label is name, but we change this in WithPodLabels
+			testserver.WithPodLabels(changeSvcLabels(instance)),
+		)
+	}
+	changeSvc := func(instance string) *corev1.Service {
+		return &corev1.Service{
+			Kind: "Service", APIVersion: "v1",
+			Name:      "changesvc",
+			Namespace: namespace,
+			Labels:    map[string]string{"kuma.io/mesh": meshName},
+			Spec: corev1.ServiceSpec{
+				Ports: []corev1.ServicePort{{
+					Name:        "main",
+					Port:        80,
+					TargetPort:  intstr.FromString("main"),
+					AppProtocol: pointer.To("http"),
+				}},
+				Selector: changeSvcLabels(instance),
+			},
+		}
+	}
+
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
@@ -72,7 +116,10 @@ spec:
 					democlient.WithMesh(meshName),
 					democlient.WithNamespace(namespace),
 				),
+				changeSvcServer("first"),
+				changeSvcServer("second"),
 			)).
+			Install(YamlK8sObject(changeSvc("first"))).
 			Setup(KubeCluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -136,5 +183,61 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "60s", "1s").MustPassRepeatedly(5).Should(Succeed())
+	})
+
+	It("should not drop requests when the Service selector moves to other pods", func() {
+		doRequest := func() (string, error) {
+			resp, err := client.CollectEchoResponse(
+				KubeCluster,
+				"demo-client",
+				fmt.Sprintf("changesvc.%s.svc.cluster.local", namespace),
+				client.FromKubernetesPod(namespace, "demo-client"),
+			)
+			return resp.Instance, err
+		}
+
+		// remove retries to avoid covering failed requests
+		Expect(DeleteMeshPolicyOrError(
+			KubeCluster,
+			meshretry_api.MeshRetryResourceTypeDescriptor,
+			fmt.Sprintf("mesh-retry-all-%s", meshName),
+		)).To(Succeed())
+
+		// keep service bootstrap outside the selector move
+		Eventually(func(g Gomega) {
+			_, status, err := GetMeshServiceStatus(KubeCluster, "changesvc."+namespace, meshName)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(status.TLS.Status).To(Equal(meshservice_api.TLSReady))
+		}, "60s", "1s").Should(Succeed())
+
+		Eventually(func(g Gomega) {
+			instance, err := doRequest()
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(instance).To(Equal("changesvc-first"))
+		}, "60s", "1s").Should(Succeed())
+
+		var failedErr error
+		closeCh := make(chan struct{})
+		defer close(closeCh)
+		go func() {
+			for !channels.IsClosed(closeCh) {
+				if _, err := doRequest(); err != nil {
+					failedErr = err
+					return
+				}
+				time.Sleep(50 * time.Millisecond)
+			}
+		}()
+
+		// when
+		Expect(KubeCluster.Install(YamlK8sObject(changeSvc("second")))).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			instance, err := doRequest()
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(instance).To(Equal("changesvc-second"))
+		}, "60s", "1s").Should(Succeed())
+		Expect(failedErr).ToNot(HaveOccurred())
 	})
 }

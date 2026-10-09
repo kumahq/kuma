@@ -454,6 +454,31 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:        "44.dataplane.yaml",
 			meshServicesMode: pointer.To(mesh_proto.Mesh_MeshServices_Everywhere),
 		}),
+		Entry("Pod matched only through ignored selector labels gets a ready inbound when inbound tags disabled", testCase{
+			pod:                 "overlapping-inbounds.pod.yaml",
+			servicesForPod:      "ignored-labels-only.services-for-pod.yaml",
+			dataplane:           "ignored-labels-only.dataplane.yaml",
+			inboundTagsDisabled: true,
+		}),
+		Entry("Service matching only through ignored selector labels sorting first does not win deduplication", testCase{
+			pod:                 "overlapping-inbounds.pod.yaml",
+			servicesForPod:      "ignored-labels-sort-first.services-for-pod.yaml",
+			dataplane:           "ignored-labels-sort-first.dataplane.yaml",
+			inboundTagsDisabled: true,
+		}),
+		Entry("Service matching only through ignored selector labels sorting last does not win deduplication", testCase{
+			pod:                 "overlapping-inbounds.pod.yaml",
+			servicesForPod:      "ignored-labels-sort-last.services-for-pod.yaml",
+			dataplane:           "ignored-labels-sort-last.dataplane.yaml",
+			inboundTagsDisabled: true,
+		}),
+		Entry("Pod matched only through ignored selector labels gets an Ignored inbound outside Exclusive mode", testCase{
+			pod:                 "overlapping-inbounds.pod.yaml",
+			servicesForPod:      "ignored-labels-sort-first.services-for-pod.yaml",
+			dataplane:           "ignored-labels-legacy.dataplane.yaml",
+			inboundTagsDisabled: true,
+			meshServicesMode:    pointer.To(mesh_proto.Mesh_MeshServices_Everywhere),
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",

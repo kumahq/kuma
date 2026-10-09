@@ -24,6 +24,7 @@ var _ = framework.E2ESynchronizedBeforeSuite(
 		err := framework.NewClusterSetup().
 			Install(framework.Kuma(config_core.Zone,
 				framework.WithEnv("KUMA_EXPERIMENTAL_INBOUND_TAGS_DISABLED", "true"),
+				framework.WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS", "changesvc-test-label"),
 			)).
 			Setup(skipinboundtags.KubeCluster)
 

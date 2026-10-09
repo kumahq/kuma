@@ -260,6 +260,8 @@ type Injector struct {
 	EBPF EBPF `json:"ebpf"`
 	// IgnoredServiceSelectorLabels defines a list ignored labels in Service selector.
 	// If Pod matches a Service with ignored labels, but does not match it fully, it gets Ignored inbound.
+	// With MeshService mode Exclusive and inbound tags disabled it gets a ready inbound instead, and the
+	// MeshService selector, which still matches the full set of labels, decides which Pods get traffic.
 	// It is useful when you change Service selector and expect traffic to be sent immediately.
 	// An example of this is ArgoCD's BlueGreen deployment and "rollouts-pod-template-hash" selector.
 	IgnoredServiceSelectorLabels []string `json:"ignoredServiceSelectorLabels" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS"`

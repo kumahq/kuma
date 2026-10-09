@@ -56,7 +56,7 @@ func (ic *InboundConverter) tagsOrEmpty(tagsFn func() map[string]string) map[str
 	return tagsFn()
 }
 
-func (ic *InboundConverter) inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service, nodeLabels map[string]string) []*mesh_proto.Dataplane_Networking_Inbound {
+func (ic *InboundConverter) inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Service, nodeLabels map[string]string, markIgnored bool) []*mesh_proto.Dataplane_Networking_Inbound {
 	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 	for idx := range service.Spec.Ports {
 		svcPort := service.Spec.Ports[idx]
@@ -84,7 +84,7 @@ func (ic *InboundConverter) inboundForService(zone string, pod *kube_core.Pod, s
 			health.Ready = false
 		}
 
-		if !kube_labels.SelectorFromSet(service.Spec.Selector).Matches(kube_labels.Set(pod.Labels)) {
+		if markIgnored && !selectsPod(service, pod) {
 			state = mesh_proto.Dataplane_Networking_Inbound_Ignored
 			health.Ready = false
 		}
@@ -155,14 +155,27 @@ func (ic *InboundConverter) inboundForServiceless(zone string, pod *kube_core.Po
 // For Dataplanes when MeshService is disabled we base identity and routing on inbound tags
 // TODO: We should revisit this when we rework identity. More in https://github.com/kumahq/kuma/issues/3339
 func (ic *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	return ic.inboundInterfacesFor(ctx, zone, pod, services)
+	return ic.inboundInterfacesFor(ctx, zone, pod, services, true)
 }
 
 // InboundInterfacesFor should be used when MeshService mode is Exclusive and inbound tags are disabled.
 // This function deduplicates inbounds by address and port.
 // Since inbounds carry no tags in that model we can safely deduplicate them.
+// A Pod reached only through IgnoredServiceSelectorLabels gets ready inbounds instead of Ignored,
+// because the MeshService selector, which keeps the full selector, decides which Pods get traffic.
 func (ic *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
-	inbounds, err := ic.inboundInterfacesFor(ctx, zone, pod, services)
+	// deduplicateInboundsByAddressAndPort keeps the first inbound on a port,
+	// so the protocol has to come from a Service that currently selects the Pod.
+	var selecting, ignoredLabelsOnly []*kube_core.Service
+	for _, svc := range services {
+		if selectsPod(svc, pod) {
+			selecting = append(selecting, svc)
+		} else {
+			ignoredLabelsOnly = append(ignoredLabelsOnly, svc)
+		}
+	}
+
+	inbounds, err := ic.inboundInterfacesFor(ctx, zone, pod, append(selecting, ignoredLabelsOnly...), false)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +183,7 @@ func (ic *InboundConverter) InboundInterfacesFor(ctx context.Context, zone strin
 	return deduplicateInboundsByAddressAndPort(inbounds), nil
 }
 
-func (ic *InboundConverter) inboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+func (ic *InboundConverter) inboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service, markIgnored bool) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	// Node labels only end up on inbound tags, so skip fetching them when tags
 	// are disabled; PodToDataplane copies them onto the Dataplane labels itself.
 	var nodeLabels map[string]string
@@ -191,7 +204,7 @@ func (ic *InboundConverter) inboundInterfacesFor(ctx context.Context, zone strin
 		// ExternalName service. We do not currently support ExternalName
 		// services, so we can safely skip them from processing.
 		if svc.Spec.Type != kube_core.ServiceTypeExternalName {
-			ifaces = append(ifaces, ic.inboundForService(zone, pod, svc, nodeLabels)...)
+			ifaces = append(ifaces, ic.inboundForService(zone, pod, svc, nodeLabels, markIgnored)...)
 		}
 	}
 
@@ -204,6 +217,10 @@ func (ic *InboundConverter) inboundInterfacesFor(ctx context.Context, zone strin
 		ifaces = append(ifaces, ic.inboundForServiceless(zone, pod, name, nodeLabels))
 	}
 	return ifaces, nil
+}
+
+func selectsPod(svc *kube_core.Service, pod *kube_core.Pod) bool {
+	return kube_labels.SelectorFromSet(svc.Spec.Selector).Matches(kube_labels.Set(pod.Labels))
 }
 
 func deduplicateInboundsByAddressAndPort(ifaces []*mesh_proto.Dataplane_Networking_Inbound) []*mesh_proto.Dataplane_Networking_Inbound {
