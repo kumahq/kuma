@@ -8,6 +8,20 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### `MeshMetric` `ActiveMTLSBackend` requires a client certificate
+
+The `ActiveMTLSBackend` TLS mode of a `MeshMetric` Prometheus backend now secures the endpoint with the workload identity of the dataplane. A scraper from a different address, also one on the same node, must send a client certificate that the mesh trusts. The certificate must contain a SPIFFE ID and chain to the CA bundle of that trust domain. With the bundled identity, the bundles come from `MeshTrust`. With SPIRE, they are all the bundles that the SPIRE agent serves, federated bundles included. Scrapes from the dataplane address or from a loopback address stay plaintext. A dataplane without a workload identity accepts only these local scrapes.
+
+Before this change, the mode produced a plaintext endpoint.
+
+**Action required**
+
+Give each remote scraper a client certificate that the mesh trusts before the upgrade. To keep a plaintext endpoint, set the mode to `Disabled`.
+
+MADS sends `https` for this mode. The hint does not supply a client certificate. 3.0 has no direct access mTLS, so a remote scraper must use `https` and its own client certificate, also in the mesh.
+
+A scraper that connects from the dataplane address or from a loopback address must use `http` on the backend port and path, although MADS sends `https`. The endpoint accepts plaintext only from these addresses. This mode has no local TLS.
+
 ### Empty MeshTrafficPermission match entries
 
 Remove or replace each empty match object in MeshTrafficPermission before you upgrade a control plane. Check `rules[].default.allow`, `rules[].default.deny`, and `rules[].default.allowWithShadowDeny`. Each entry must contain `spiffeID`, `sni`, or both. Keep an empty action list only when another action has at least one valid match.
