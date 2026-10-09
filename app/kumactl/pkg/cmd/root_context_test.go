@@ -108,6 +108,14 @@ var _ = Describe("CheckCompatibility", func() {
 			serverProduct: "Kuma",
 			serverVersion: "2.14.5",
 		}),
+		Entry("newer server on the same major version does not warn about dropped fields", checkCompatibilityCase{
+			clientVersion: "2.14.5",
+			serverProduct: "Kuma",
+			serverVersion: "2.15.5",
+			expected: []string{
+				"You are using kumactl version 2.14.5 for Kuma, but the server returned version: Kuma for 2.15.5",
+			},
+		}),
 		Entry("same version but different product warns about mismatch", checkCompatibilityCase{
 			clientVersion: "2.14.5",
 			serverProduct: "Kong Mesh",
