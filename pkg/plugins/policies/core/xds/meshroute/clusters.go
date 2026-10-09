@@ -372,7 +372,12 @@ func Identities(
 				continue
 			}
 			for _, identity := range pointer.Deref(ms.(*meshservice_api.MeshServiceResource).Spec.Identities) {
-				identities[identity.Value] = struct{}{}
+				if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
+					identities[serviceTagTransformer(identity.Value)] = struct{}{}
+				}
+				if identity.Type == meshservice_api.MeshServiceIdentitySpiffeIDType {
+					identities[identity.Value] = struct{}{}
+				}
 			}
 		}
 		result = util_maps.SortedKeys(identities)

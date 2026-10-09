@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/v2/pkg/test/xds"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
@@ -234,4 +235,124 @@ var _ = Describe("GenerateClusters for MeshExternalService", func() {
 		Entry("mesh-scoped pool", meshScopedPool, workloadIdentity),
 		Entry("mesh-scoped pool, proxy without identity", meshScopedPool, nil),
 	)
+})
+
+// During the MeshIdentity migration a MeshService advertises both a ServiceTag identity
+// (legacy mTLS) and a SpiffeID identity (new MeshIdentity). A proxy that already has a
+// workload identity (includeSpiffeID) must accept the legacy certificate as well, so the
+// ServiceTag has to be rendered as spiffe://<mesh>/<service>. MeshService and
+// MeshMultiZoneService backendRefs must produce the same SANs for the same backends.
+var _ = Describe("Identities", func() {
+	const (
+		legacySAN     = "spiffe://default/echo-http"
+		universalSAN  = "spiffe://default.universal-zone.mesh.local/workload/echo-http"
+		kubernetesSAN = "spiffe://default.k8s-zone.mesh.local/ns/echo/sa/echo-http"
+		serviceTag    = "echo-http"
+	)
+
+	msUniversal := func() *meshservice_api.MeshServiceResource {
+		ms := builders.MeshService().
+			WithName("echo-http").
+			WithMesh("default").
+			WithZone("universal-zone").
+			AddIntPortWithName(80, 80, core_meta.ProtocolHTTP, "http").
+			AddServiceTagIdentity(serviceTag).
+			Build()
+		ms.Spec.Identities = pointer.To(append(pointer.Deref(ms.Spec.Identities), meshservice_api.MeshServiceIdentity{
+			Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+			Value: universalSAN,
+		}))
+		return ms
+	}
+
+	msKubernetes := func() *meshservice_api.MeshServiceResource {
+		ms := builders.MeshService().
+			WithName("echo-http").
+			WithMesh("default").
+			WithZone("k8s-zone").
+			AddIntPortWithName(80, 80, core_meta.ProtocolHTTP, "http").
+			AddServiceTagIdentity(serviceTag).
+			Build()
+		ms.Spec.Identities = pointer.To(append(pointer.Deref(ms.Spec.Identities), meshservice_api.MeshServiceIdentity{
+			Type:  meshservice_api.MeshServiceIdentitySpiffeIDType,
+			Value: kubernetesSAN,
+		}))
+		return ms
+	}
+
+	meshContextWith := func(resources ...core_model.Resource) xds_context.MeshContext {
+		return xds_context.MeshContext{
+			Resource: samples.MeshDefault(),
+			BaseMeshContext: &xds_context.BaseMeshContext{
+				DestinationIndex: xds_context.NewDestinationIndex(resources),
+			},
+		}
+	}
+
+	DescribeTable("produces the same SANs for MeshService and MeshMultiZoneService",
+		func(includeSpiffeID bool, expected []string) {
+			// given a MeshMultiZoneService matching the universal MeshService
+			ms := msUniversal()
+			mzms := builders.MeshMultiZoneService().
+				WithName("echo-http-uz").
+				WithMesh("default").
+				WithServiceLabelSelector(map[string]string{"kuma.io/service-name": "echo-http"}).
+				AddMatchedMeshServiceName(kri.From(ms)).
+				AddIntPort(80, core_meta.ProtocolHTTP).
+				Build()
+			meshCtx := meshContextWith(ms, mzms)
+
+			// when
+			msSANs := meshroute.Identities(&resolve.RealResourceBackendRef{Resource: kri.From(ms)}, meshCtx, includeSpiffeID)
+			mzmsSANs := meshroute.Identities(&resolve.RealResourceBackendRef{Resource: kri.From(mzms)}, meshCtx, includeSpiffeID)
+
+			// then both paths accept the same identities
+			Expect(msSANs).To(Equal(expected))
+			Expect(mzmsSANs).To(Equal(expected))
+		},
+		Entry("proxy with a workload identity accepts the legacy SAN (migration stage)",
+			true, []string{universalSAN, legacySAN}),
+		Entry("proxy without a workload identity keeps the raw service tag",
+			false, []string{serviceTag, universalSAN}),
+	)
+
+	It("deduplicates the legacy SAN shared by matched services from different zones", func() {
+		// given matched MeshServices in two zones presenting the same legacy identity
+		msUz := msUniversal()
+		msK8s := msKubernetes()
+		mzms := builders.MeshMultiZoneService().
+			WithName("echo-http-all").
+			WithMesh("default").
+			WithServiceLabelSelector(map[string]string{"kuma.io/service-name": "echo-http"}).
+			AddMatchedMeshServiceName(kri.From(msUz)).
+			AddMatchedMeshServiceName(kri.From(msK8s)).
+			AddIntPort(80, core_meta.ProtocolHTTP).
+			Build()
+		meshCtx := meshContextWith(msUz, msK8s, mzms)
+
+		// when
+		sans := meshroute.Identities(&resolve.RealResourceBackendRef{Resource: kri.From(mzms)}, meshCtx, true)
+
+		// then
+		Expect(sans).To(Equal([]string{kubernetesSAN, universalSAN, legacySAN}))
+	})
+
+	It("skips matched MeshServices missing from the mesh context", func() {
+		// given a MeshMultiZoneService whose matched MeshService is not synced yet
+		ms := msUniversal()
+		mzms := builders.MeshMultiZoneService().
+			WithName("echo-http-uz").
+			WithMesh("default").
+			WithServiceLabelSelector(map[string]string{"kuma.io/service-name": "echo-http"}).
+			AddMatchedMeshServiceName(kri.From(ms)).
+			AddIntPort(80, core_meta.ProtocolHTTP).
+			Build()
+		meshCtx := meshContextWith(mzms)
+
+		// when
+		sans := meshroute.Identities(&resolve.RealResourceBackendRef{Resource: kri.From(mzms)}, meshCtx, true)
+
+		// then
+		Expect(sans).To(BeEmpty())
+	})
 })
