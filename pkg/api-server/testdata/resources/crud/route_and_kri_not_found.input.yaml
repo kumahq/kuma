@@ -1,0 +1,18 @@
+#/meshes/default/not-a-type 404
+#/no-such-endpoint 404
+#/_kri/kri_mtp_default_default__mtp-1_extra_more 404
+type: Mesh
+name: default
+---
+type: MeshTrafficPermission
+name: mtp-1
+mesh: default
+spec:
+  targetRef:
+    kind: Mesh
+  rules:
+    - default:
+        allow:
+          - spiffeID:
+              type: Prefix
+              value: spiffe://default
