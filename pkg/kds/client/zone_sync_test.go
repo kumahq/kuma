@@ -394,7 +394,6 @@ var _ = Describe("KDSSyncClient type allowlist", func() {
 		clientStream := grpc.NewMockDeltaClientStream()
 		kdsStream := kds_client.NewDeltaKDSStream(clientStream, "zone-1", "zone-inst", "", 1)
 		DeferCleanup(func() {
-			close(clientStream.RecvCh)
 			Expect(kdsStream.CloseSend()).To(Succeed())
 		})
 
@@ -402,6 +401,7 @@ var _ = Describe("KDSSyncClient type allowlist", func() {
 			TypeUrl: string(mesh.MeshType),
 			Nonce:   "nonce-1",
 		}
+		close(clientStream.RecvCh)
 
 		received := false
 		syncClient := kds_client.NewKDSSyncClient(
