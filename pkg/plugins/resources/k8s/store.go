@@ -32,16 +32,20 @@ func typeIsUnregistered(err error) bool {
 var _ store.ResourceStore = &KubernetesStore{}
 
 type KubernetesStore struct {
-	Client    kube_client.Client
-	Converter k8s_common.Converter
-	Scheme    *kube_runtime.Scheme
+	Client          kube_client.Client
+	Converter       k8s_common.Converter
+	Scheme          *kube_runtime.Scheme
+	SystemNamespace string
+	IsGlobal        bool
 }
 
-func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme, converter k8s_common.Converter) (store.ResourceStore, error) {
+func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme, converter k8s_common.Converter, systemNamespace string, isGlobal bool) (store.ResourceStore, error) {
 	return &KubernetesStore{
-		Client:    client,
-		Converter: converter,
-		Scheme:    scheme,
+		Client:          client,
+		Converter:       converter,
+		Scheme:          scheme,
+		SystemNamespace: systemNamespace,
+		IsGlobal:        isGlobal,
 	}, nil
 }
 
@@ -174,6 +178,10 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	if err != nil {
 		return err
 	}
+	// The admission webhook enforces this only in namespaces it selects, so enforce it on read too.
+	if (s.IsGlobal || r.Descriptor().AllowedOnSystemNamespaceOnly) && namespace != "" && namespace != s.SystemNamespace {
+		return store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
+	}
 	if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: namespace, Name: name}, obj); err != nil {
 		if kube_apierrs.IsNotFound(err) {
 			return store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
@@ -204,7 +212,12 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	if err := s.Client.List(ctx, obj); err != nil {
 		return errors.Wrap(err, "failed to list k8s resources")
 	}
+	systemNamespaceOnly := s.IsGlobal || rs.NewItem().Descriptor().AllowedOnSystemNamespaceOnly
 	predicate := func(r core_model.Resource) bool {
+		// Same as in Get: objects that skipped the admission webhook must not be read.
+		if ns := r.GetMeta().GetNameExtensions()[core_model.K8sNamespaceComponent]; systemNamespaceOnly && ns != "" && ns != s.SystemNamespace {
+			return false
+		}
 		if opts.Mesh != "" && r.GetMeta().GetMesh() != opts.Mesh {
 			return false
 		}
