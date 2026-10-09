@@ -34,7 +34,7 @@ Facts about what the action produces (this shapes all later steps):
 
 - Head branches: `chore/backport-<release-branch>-<PR>`, pushed to kumahq/kuma directly.
 - Committer and author are both `kumahq[bot]`. That bot-authored cherry-pick commonly trips **DCO** because the bot's `Signed-off-by` is not a human attestation, and it happens even on conflict-free backports, so check DCO on every PR, not just conflicted ones.
-- Labels: the target branch, plus the original PR's labels except `backport`, `ci/auto-merge` and `ci/force-publish`.
+- Labels: the target branch, plus the original PR's labels except `backport` and `ci/force-publish`.
 - On conflict the action runs `git add . && git cherry-pick --continue` **blindly**: conflict markers get committed into files, and files new on master land with master's import paths. The PR is opened as draft with a `conflict` label and the `git status` dump in the body.
 
 ## 3. Resolve conflicts per branch
