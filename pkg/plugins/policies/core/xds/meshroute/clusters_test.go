@@ -21,10 +21,41 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/v2/pkg/test/xds"
+	"github.com/kumahq/kuma/v2/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
 )
+
+var _ = Describe("Identities for MeshMultiZoneService", func() {
+	const workloadID = "spiffe://default.zone-1.mesh.local/workload/echo-http"
+	DescribeTable("preserves certificate identities during the client migration",
+		func(includeSpiffeID bool, expected []string) {
+			first := builders.MeshService().WithLabels(map[string]string{"app": "echo-http"}).WithName("backend-1").WithMesh("default").WithZone("zone-1").AddIntPortWithName(5000, 5000, core_meta.ProtocolHTTP, "http").AddServiceTagIdentity("echo-http").Build()
+			first.Spec.Identities = pointer.To(append(pointer.Deref(first.Spec.Identities), meshservice_api.MeshServiceIdentity{
+				Type: meshservice_api.MeshServiceIdentitySpiffeIDType, Value: workloadID,
+			}))
+			second := builders.MeshService().WithLabels(map[string]string{"app": "echo-http"}).WithName("backend-2").WithMesh("default").WithZone("zone-2").AddIntPortWithName(5000, 5000, core_meta.ProtocolHTTP, "http").AddServiceTagIdentity("echo-http_mesh-demo_svc_5000").Build()
+			second.Spec.Identities = pointer.To(append(pointer.Deref(second.Spec.Identities),
+				meshservice_api.MeshServiceIdentity{Type: meshservice_api.MeshServiceIdentitySpiffeIDType, Value: workloadID},
+				meshservice_api.MeshServiceIdentity{Type: meshservice_api.MeshServiceIdentitySpiffeIDType, Value: "spiffe://default/echo-http"},
+			))
+			service := builders.MeshMultiZoneService().WithName("echo-http").WithMesh("default").
+				WithServiceLabelSelector(map[string]string{"app": "echo-http"}).AddIntPortWithName(5000, core_meta.ProtocolHTTP, "http").
+				AddMatchedMeshServiceName(kri.From(first)).AddMatchedMeshServiceName(kri.From(second)).Build()
+			ctx := xds_context.MeshContext{
+				Resource: samples.MeshMTLS(),
+				BaseMeshContext: &xds_context.BaseMeshContext{
+					DestinationIndex: xds_context.NewDestinationIndex([]core_model.Resource{first, second, service}),
+				},
+			}
+			ref := &resolve.RealResourceBackendRef{Resource: kri.From(service)}
+			Expect(meshroute.Identities(ref, ctx, includeSpiffeID)).To(Equal(expected))
+		},
+		Entry("legacy client keeps service tags", false, []string{"echo-http", "echo-http_mesh-demo_svc_5000", workloadID, "spiffe://default/echo-http"}),
+		Entry("workload identity client verifies legacy URI SANs", true, []string{workloadID, "spiffe://default/echo-http", "spiffe://default/echo-http_mesh-demo_svc_5000"}),
+	)
+})
 
 var _ = Describe("SniForBackendRef", func() {
 	DescribeTable("returns SNI built from resolved port",
