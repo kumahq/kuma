@@ -74,8 +74,8 @@ func validateSPIFFEID(spiffeID SpiffeID) validators.ValidationError {
 		})
 		if err != nil {
 			verr.AddViolation("trustDomain", err.Error())
-		} else if _, err := spiffeid.FromString("spiffe://" + rendered); err != nil {
-			verr.AddViolation("trustDomain", fmt.Sprintf("template renders to %q which is not a valid SPIFFE ID: %s", rendered, err))
+		} else if _, err := spiffeid.TrustDomainFromString(rendered); err != nil {
+			verr.AddViolation("trustDomain", fmt.Sprintf("template renders to %q which is not a valid SPIFFE ID trust domain: %s", rendered, err))
 		}
 	}
 	if path := pointer.Deref(spiffeID.Path); path != "" {
@@ -87,8 +87,8 @@ func validateSPIFFEID(spiffeID SpiffeID) validators.ValidationError {
 		})
 		if err != nil {
 			verr.AddViolation("path", err.Error())
-		} else if _, err := spiffeid.FromString("spiffe://" + sampleTrustDomain + rendered); err != nil {
-			verr.AddViolation("path", fmt.Sprintf("template renders to %q which is not a valid SPIFFE ID: %s", rendered, err))
+		} else if err := spiffeid.ValidatePath(rendered); err != nil {
+			verr.AddViolation("path", fmt.Sprintf("template renders to %q which is not a valid SPIFFE ID path: %s", rendered, err))
 		}
 	}
 	return verr

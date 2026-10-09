@@ -1,4 +1,4 @@
 violations:
 - field: spec.spiffeID.path
-  message: 'template renders to "/x//workload" which is not a valid SPIFFE ID: path
-    cannot contain empty segments'
+  message: 'template renders to "/x//workload" which is not a valid SPIFFE ID path:
+    path cannot contain empty segments'
