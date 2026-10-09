@@ -571,6 +571,25 @@ If you manage the control plane RBAC outside of Helm (for example via GitOps or
 manual manifests), add the same `grpcroutes` read permissions to the control
 plane `ClusterRole`.
 
+### RBAC: control plane no longer manages Gateway API routes
+
+The Helm-installed `-control-plane-workloads` `ClusterRole` and the namespaced
+`-control-plane` `Role` no longer grant `create`, `delete`, `get`, `list`,
+`patch`, `update`, or `watch` on `gateway.networking.k8s.io` `grpcroutes` and
+`httproutes`. Those were leftovers from the removed built-in Gateway; the
+control plane now only reads routes through the `-control-plane` `ClusterRole`
+and patches their `grpcroutes/status` and `httproutes/status` subresources,
+which stay granted.
+
+**Action required**
+
+If you manage the control plane RBAC outside of Helm and relied on the
+`-control-plane-workloads` role for Gateway API route permissions, grant
+`get`, `list`, and `watch` on `grpcroutes` and `httproutes` and `patch` on
+their `status` subresources to the control plane identity. Without the read
+permissions the control plane fails to start its route caches and blocks
+before serving.
+
 ### `MeshLoadBalancingStrategy` cross-zone settings now require a `MeshMultiZoneService` `to` target
 
 `MeshLoadBalancingStrategy.spec.to[].default.localityAwareness.crossZone` is now accepted only when that `to` entry targets a `MeshMultiZoneService`. Create and update validation now rejects the same `crossZone` block on `Mesh`, `MeshService`, and `MeshExternalService` targets.
