@@ -81,6 +81,11 @@ var _ = Describe("Resource Endpoints, origin label on delete", func() {
 			storedOrigin: mesh_proto.ZoneResourceOrigin,
 			status:       http.StatusOK,
 		}),
+		Entry("federated zone rejects deleting a resource without an origin label", testCase{
+			configurer: federatedZone,
+			status:     http.StatusBadRequest,
+			reason:     "the origin label must be set to 'zone'",
+		}),
 		Entry("global rejects deleting a zone-synced copy", testCase{
 			configurer:   global,
 			storedOrigin: mesh_proto.ZoneResourceOrigin,

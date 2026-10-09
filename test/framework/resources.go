@@ -11,6 +11,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/retry"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/v2/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model/rest"
@@ -27,6 +28,7 @@ var kumactlConnectionErrorSubstrings = []string{
 }
 
 func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.ResourceTypeDescriptor) error {
+	mode := cluster.GetKuma().Mode()
 	_, err := retry.DoWithRetryE(
 		cluster.GetTesting(),
 		"delete mesh resources",
@@ -37,11 +39,11 @@ func DeleteMeshResources(cluster Cluster, mesh string, descriptor ...core_model.
 
 			for _, desc := range descriptor {
 				if _, ok := cluster.(*K8sCluster); ok {
-					errs = append(errs, deleteMeshResourcesKubernetes(cluster, mesh, desc))
+					errs = append(errs, deleteMeshResourcesKubernetes(cluster, mesh, mode, desc))
 					continue
 				}
 
-				errs = append(errs, deleteMeshResourcesUniversal(*cluster.GetKumactlOptions(), mesh, desc))
+				errs = append(errs, deleteMeshResourcesUniversal(*cluster.GetKumactlOptions(), mesh, mode, desc))
 			}
 
 			return "", errors.Join(errs...)
@@ -70,12 +72,38 @@ func DeleteMeshPolicyOrError(cluster Cluster, descriptor core_model.ResourceType
 	return err
 }
 
-func deleteMeshResourcesUniversal(kumactl kumactl.KumactlOptions, mesh string, descriptor core_model.ResourceTypeDescriptor) error {
+// isManagedByMode excludes synced copies owned by another control plane.
+func isManagedByMode(meta core_model.ResourceMeta, mode core.CpMode) bool {
+	origin, ok := core_model.ResourceOrigin(meta)
+	if !ok {
+		return true
+	}
+
+	switch mode {
+	case core.Global:
+		return origin == mesh_proto.GlobalResourceOrigin
+	case core.Zone:
+		return origin == mesh_proto.ZoneResourceOrigin
+	}
+
+	return true
+}
+
+func deleteMeshResourcesUniversal(
+	kumactl kumactl.KumactlOptions,
+	mesh string,
+	mode core.CpMode,
+	descriptor core_model.ResourceTypeDescriptor,
+) error {
 	list, err := allResourcesOfType(kumactl, descriptor, mesh)
 	if err != nil {
 		return err
 	}
 	for _, item := range list.GetItems() {
+		if !isManagedByMode(item.GetMeta(), mode) {
+			continue
+		}
+
 		_, err := kumactl.RunKumactlAndGetOutput("delete", descriptor.KumactlArg, item.GetMeta().GetName(), "-m", mesh)
 		if err != nil {
 			return err
@@ -96,13 +124,29 @@ func allResourcesOfType(kumactl kumactl.KumactlOptions, descriptor core_model.Re
 	return list, err
 }
 
-func deleteMeshResourcesKubernetes(cluster Cluster, mesh string, resource core_model.ResourceTypeDescriptor) error {
+func deleteMeshResourcesKubernetes(
+	cluster Cluster,
+	mesh string,
+	mode core.CpMode,
+	resource core_model.ResourceTypeDescriptor,
+) error {
 	args := []string{"delete", strings.ReplaceAll(strings.ToLower(resource.PluralDisplayName), " ", "")}
 	if resource.IsPluginOriginated {
-		// because all new policies have a mesh label, we can just delete by selecting a label
-		args = append(args, "--all-namespaces", "--selector", fmt.Sprintf("%s=%s", mesh_proto.MeshTag, mesh))
-		if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), args...); err != nil {
-			return err
+		selectors := []string{fmt.Sprintf("%s=%s", mesh_proto.MeshTag, mesh)}
+		if mode == core.Global || mode == core.Zone {
+			// Delete local policies and unlabeled resources; skip synced copies.
+			selectors = []string{
+				fmt.Sprintf("%s=%s,%s=%s", mesh_proto.MeshTag, mesh, mesh_proto.ResourceOriginLabel, originLabelFor(mode)),
+				fmt.Sprintf("%s=%s,!%s", mesh_proto.MeshTag, mesh, mesh_proto.ResourceOriginLabel),
+			}
+		}
+
+		for _, selector := range selectors {
+			delArgs := append([]string{}, args...)
+			delArgs = append(delArgs, "--all-namespaces", "--selector", selector)
+			if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), delArgs...); err != nil {
+				return err
+			}
 		}
 	} else {
 		list, err := allResourcesOfType(*cluster.GetKumactlOptions(), resource, mesh)
@@ -110,6 +154,10 @@ func deleteMeshResourcesKubernetes(cluster Cluster, mesh string, resource core_m
 			return err
 		}
 		for _, item := range list.GetItems() {
+			if !isManagedByMode(item.GetMeta(), mode) {
+				continue
+			}
+
 			itemDelArgs := append(args, item.GetMeta().GetName())
 			if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), itemDelArgs...); err != nil {
 				return err
@@ -117,6 +165,14 @@ func deleteMeshResourcesKubernetes(cluster Cluster, mesh string, resource core_m
 		}
 	}
 	return nil
+}
+
+func originLabelFor(mode core.CpMode) string {
+	if mode == core.Global {
+		return string(mesh_proto.GlobalResourceOrigin)
+	}
+
+	return string(mesh_proto.ZoneResourceOrigin)
 }
 
 func WaitForMesh(mesh string, clusters []Cluster) error {
