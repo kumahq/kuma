@@ -656,14 +656,10 @@ paths:
         '500':
           $ref: './common/error_schema.yaml#/components/responses/Internal'
 security:
-  - BasicAuth: []
   - BearerAuth: []
   - {}
 components:
   securitySchemes:
-    BasicAuth:
-      type: http
-      scheme: basic
     BearerAuth:
       type: http
       scheme: bearer
