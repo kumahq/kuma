@@ -1,0 +1,12 @@
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: example
+spec:
+  serviceAccountName: default
+  containers:
+    - ports:
+        - containerPort: 8080
+status:
+  podIP: 192.168.0.1

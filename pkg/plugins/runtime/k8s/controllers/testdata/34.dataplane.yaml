@@ -6,7 +6,6 @@ metadata:
     kuma.io/display-name: ""
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
-    kuma.io/sidecar-injection: enabled
     version: "0.1"
 spec:
   networking:
