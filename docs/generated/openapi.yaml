@@ -16295,7 +16295,38 @@ components:
       type: object
     MeshOverviewWithMeta:
       allOf:
-        - $ref: '#/components/schemas/Meta'
+        - type: object
+          required:
+            - type
+            - name
+          properties:
+            type:
+              type: string
+              example: MeshOverview
+              description: the type of this resource
+            name:
+              type: string
+              example: default
+              description: the name of the mesh this overview describes
+            kri:
+              type: string
+              readOnly: true
+              description: Kuma Resource Identifier (KRI) of the given resource
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+              description: Labels computed by the control plane, if any.
+            creationTime:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Time at which the resource was created
+            modificationTime:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Time at which the resource was updated
         - $ref: '#/components/schemas/MeshOverview'
     DataplaneInsightItem:
       properties:
@@ -17033,7 +17064,38 @@ components:
       type: object
     ZoneOverviewWithMeta:
       allOf:
-        - $ref: '#/components/schemas/Meta'
+        - type: object
+          required:
+            - type
+            - name
+          properties:
+            type:
+              type: string
+              example: ZoneOverview
+              description: the type of this resource
+            name:
+              type: string
+              example: zone-1
+              description: the name of the zone this overview describes
+            kri:
+              type: string
+              readOnly: true
+              description: Kuma Resource Identifier (KRI) of the given resource
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+              description: Labels computed by the control plane, if any.
+            creationTime:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Time at which the resource was created
+            modificationTime:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Time at which the resource was updated
         - $ref: '#/components/schemas/ZoneOverview'
     ZoneOverview:
       description: ZoneOverview defines the projected state of a Zone.
