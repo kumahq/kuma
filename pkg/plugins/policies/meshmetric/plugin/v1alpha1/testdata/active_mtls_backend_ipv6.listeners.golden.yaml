@@ -18,6 +18,8 @@ resources:
             cidrRanges:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
+            - addressPrefix: ::1
+              prefixLen: 128
           routeConfig:
             maxDirectResponseBodySizeBytes: 279
             virtualHosts:
@@ -69,6 +71,8 @@ resources:
             cidrRanges:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
+            - addressPrefix: ::1
+              prefixLen: 128
           routeConfig:
             validateClusters: false
             virtualHosts:
@@ -94,6 +98,8 @@ resources:
             cidrRanges:
             - addressPrefix: 127.0.0.1
               prefixLen: 32
+            - addressPrefix: ::1
+              prefixLen: 128
           routeConfig:
             validateClusters: false
             virtualHosts:

@@ -372,6 +372,7 @@ var _ = Describe("MeshMetric", func() {
 					IdentitySourceConfigurer: sdsSecret("identity-cert", bldrs_core.Sds()),
 				})
 				proxy.Dataplane.Spec.Networking.Address = "fd00::1"
+				proxy.Metadata.IPv6Enabled = true
 				return proxy
 			}(),
 		}),
