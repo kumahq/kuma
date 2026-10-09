@@ -1,0 +1,4 @@
+violations:
+- field: spec.spiffeID.path
+  message: 'couldn''t render template with stub values: template: :1:21: executing
+    "" at <.Name>: can''t evaluate field Name in type v1alpha1.spiffeIDTemplateData'

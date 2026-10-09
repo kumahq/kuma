@@ -135,6 +135,47 @@ A zone control plane now writes a `ServiceTag` entry into `MeshService.spec.iden
 
 Before upgrading to 3.0, upgrade every zone control plane to 2.14.6 or later and remove `mtls` from the mesh once the `MeshIdentity` migration is complete. Each zone then rewrites its `MeshService` identities within one status update interval.
 
+### `MeshIdentity` SPIFFE ID templates are validated at write time
+
+The control plane now executes the `spec.spiffeID.trustDomain` and
+`spec.spiffeID.path` templates with sample values every time a `MeshIdentity`
+is written: on create, on update, and on every KDS sync. A template the control
+plane cannot execute is rejected, for example one that references a field no
+dataplane provides. So is a template that renders into a string that is not a
+valid SPIFFE ID, for example a path with an empty segment. Earlier versions
+only checked that the template parsed and then stored it as is, so identity
+generation failed for every dataplane the identity matched and xDS sync
+stopped.
+
+A template that only renders when some inputs are empty stays valid. Whether a
+dataplane actually provides a value, such as the namespace on Universal,
+depends on where the dataplane runs, and validation cannot know that.
+
+**Action required**
+
+None for templates the control plane can render. Fix any stored `MeshIdentity`
+whose template the new validation rejects before upgrading to 3.0: 3.0 rejects
+such templates too, so a broken identity stops being federated on upgrade and
+a replacement cannot be written until the template renders. Recreate the
+identity under a different name with a template that renders, migrate every
+workload, and delete the old one.
+
+Deleting a broken `MeshIdentity` and creating a valid one under a different
+name does not always converge in a multizone mesh. The control plane names each
+`MeshTrust` after the identity that generated it and does not delete it when
+the identity goes away, and every CA generation issued while the broken
+identity was in place stays in the published bundles. Stale trust domains and
+stale CA generations keep cross-zone mTLS failing with `ssl.fail_verify_error`
+after the migration itself looks complete. A full recovery needs a trust purge:
+
+1. Delete the broken `MeshIdentity` on every control plane that stores it.
+2. Delete the `MeshTrust` resources named after the broken identities. The
+   zone-local copies can only be deleted on their own zone control plane, and
+   the federated global-origin copies on the global control plane.
+3. Recreate the identity with a template that renders, and let the control
+   plane generate and federate a fresh `MeshTrust`.
+4. Restart every data plane proxy so it drops the stale trust bundle.
+
 ## Upgrade to `2.14.5`
 
 Patch releases normally do not require upgrade instructions. The entry below is included because it changes behaviour existing deployments may rely on.

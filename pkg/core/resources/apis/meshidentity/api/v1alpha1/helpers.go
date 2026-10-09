@@ -24,6 +24,23 @@ const (
 	defaultUniversalSpiffeIDPathTemplate = "/workload/{{ .Workload }}"
 )
 
+// trustDomainTemplateData is the data a spiffeID.trustDomain template can
+// reference. The validator renders templates against it too, so a field added
+// here becomes renderable everywhere at once.
+type trustDomainTemplateData struct {
+	Mesh string
+	Zone string
+}
+
+// spiffeIDTemplateData is the data a spiffeID.path template can reference when
+// the control plane renders it for a dataplane.
+type spiffeIDTemplateData struct {
+	TrustDomain    string
+	Namespace      string
+	ServiceAccount string
+	Workload       string
+}
+
 // AllMatched returns a list of MeshIdentity policies that match the given labels and are initialized or in SpiffeIDProviderMode.
 func AllMatched(
 	labels map[string]string,
@@ -117,10 +134,7 @@ func (i *MeshIdentity) GetTrustDomain(meta model.ResourceMeta, localZone string)
 		zone = localZone
 	}
 
-	data := struct {
-		Mesh string
-		Zone string
-	}{
+	data := trustDomainTemplateData{
 		Mesh: meta.GetMesh(),
 		Zone: zone,
 	}
@@ -131,12 +145,7 @@ func (i *MeshIdentity) GetTrustDomain(meta model.ResourceMeta, localZone string)
 func (i *MeshIdentity) GetSpiffeID(trustDomain string, meta model.ResourceMeta, environment config_core.EnvironmentType) (string, error) {
 	spiffeIDTemplate := i.getSpiffeIDTemplate(environment)
 
-	data := struct {
-		TrustDomain    string
-		Namespace      string
-		ServiceAccount string
-		Workload       string
-	}{
+	data := spiffeIDTemplateData{
 		TrustDomain:    trustDomain,
 		Namespace:      meta.GetLabels()[mesh_proto.KubeNamespaceTag],
 		ServiceAccount: meta.GetLabels()[metadata.KumaServiceAccount],
