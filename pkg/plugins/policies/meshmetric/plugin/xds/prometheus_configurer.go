@@ -110,6 +110,7 @@ func (pc *PrometheusConfigurer) activeMTLSBackendListener(proxy *core_xds.Proxy)
 	case pc.Mesh.MTLSEnabled():
 		mtls = envoy_listeners.ServerSideMTLS(pc.Mesh, proxy.SecretsTracker, nil, nil, pc.UnifiedResourceNaming, pc.UseMeshTrust)
 	default:
+		log.Info("ActiveMTLSBackend listener accepts only scrapes from the dataplane host because the dataplane has no workload identity and the mesh has no mTLS", "dataplane", proxy.Id.String())
 		return listener.Build()
 	}
 
