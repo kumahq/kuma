@@ -344,14 +344,31 @@ func CheckCompatibility(fn func() (*types.IndexResponse, error), outStream io.Wr
 		_, _ = fmt.Fprintf(outStream, "WARNING: Failed to retrieve server version, can't check compatibility: %v\n", err.Error())
 		return nil
 	}
+
 	if kuma_version.IsPreviewVersion(kumaBuildVersion.Version) {
+		// A preview server alone is not a mismatch: dev and preview clients talk to preview servers of the same major version. A higher server major version is, because the client silently drops fields it does not know. // EXC:FILE011:documents-why-preview-servers-no-longer-skip-the-check
+		if kuma_version.ServerVersionHigher(kuma_version.Build.Version, kumaBuildVersion.Version) {
+			warnVersionMismatch(outStream, kumaBuildVersion)
+			warnUnknownFieldsDropped(outStream)
+		}
 		return kumaBuildVersion
 	}
 
 	if kumaBuildVersion.Version != kuma_version.Build.Version || kumaBuildVersion.Product != kuma_version.Product {
-		_, _ = fmt.Fprintf(outStream, "WARNING: You are using kumactl version %s for %s, but the server returned version: %s for %s\n", kuma_version.Build.Version, kuma_version.Product, kumaBuildVersion.Product, kumaBuildVersion.Version)
+		warnVersionMismatch(outStream, kumaBuildVersion)
+	}
+	if kuma_version.ServerVersionHigher(kuma_version.Build.Version, kumaBuildVersion.Version) {
+		warnUnknownFieldsDropped(outStream)
 	}
 	return kumaBuildVersion
+}
+
+func warnVersionMismatch(outStream io.Writer, serverVersion *types.IndexResponse) {
+	_, _ = fmt.Fprintf(outStream, "WARNING: You are using kumactl version %s for %s, but the server returned version: %s for %s\n", kuma_version.Build.Version, kuma_version.Product, serverVersion.Product, serverVersion.Version)
+}
+
+func warnUnknownFieldsDropped(outStream io.Writer) {
+	_, _ = fmt.Fprintf(outStream, "WARNING: The server runs a newer major version than kumactl; fields unknown to this client are silently dropped when reading or applying resources.\n")
 }
 
 func (rc *RootContext) FetchServerVersion() (*types.IndexResponse, error) {
