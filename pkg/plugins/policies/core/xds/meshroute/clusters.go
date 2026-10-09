@@ -178,6 +178,14 @@ func UpstreamTLSContext(proxy *core_xds.Proxy, sni string, sans []string) (*envo
 		conf := bldrs_tls.NewSubjectAltNameMatcher().Configure(bldrs_tls.URI(bldrs_matcher.NewStringMatcher().Configure(bldrs_matcher.ExactMatcher(san))))
 		sanMatchers = append(sanMatchers, conf)
 	}
+	if len(sanMatchers) == 0 {
+		// Identities may be unknown yet, e.g. while a matched MeshService is
+		// still syncing. Fail closed on this mesh's SPIFFE prefix, mirroring the
+		// legacy mTLS path, instead of accepting any certificate chaining to
+		// the trust bundle.
+		fallback := bldrs_tls.NewSubjectAltNameMatcher().Configure(bldrs_tls.URI(bldrs_matcher.NewStringMatcher().Configure(bldrs_matcher.PrefixMatcher(tls.MeshSpiffeIDPrefix(proxy.Dataplane.GetMeta().GetMesh())))))
+		sanMatchers = append(sanMatchers, fallback)
+	}
 	var validationSds bldrs_common.Configurer[envoy_tls.CommonTlsContext_CombinedCertificateValidationContext]
 	if proxy.WorkloadIdentity.ExternalValidationSourceConfigurer != nil {
 		validationSds = bldrs_tls.ValidationContextSdsSecretConfig(

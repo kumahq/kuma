@@ -356,3 +356,61 @@ var _ = Describe("Identities", func() {
 		Expect(sans).To(BeEmpty())
 	})
 })
+
+// Identities may be unknown yet, e.g. while a matched MeshService is still syncing.
+// An empty SAN list must not turn into "accept any certificate chaining to the trust
+// bundle" — fail closed on the mesh SPIFFE prefix like the legacy mTLS path does.
+var _ = Describe("UpstreamTLSContext", func() {
+	workloadIdentity := &core_xds.WorkloadIdentity{
+		IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+			return bldrs_tls.SdsSecretConfigSource(
+				"identity_cert:secret:default",
+				bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+			)
+		},
+	}
+
+	proxy := func() *core_xds.Proxy {
+		return &core_xds.Proxy{
+			APIVersion:       envoy_common.APIV3,
+			Dataplane:        samples.DataplaneBackend(),
+			Metadata:         &core_xds.DataplaneMetadata{},
+			WorkloadIdentity: workloadIdentity,
+			SecretsTracker:   envoy_common.NewSecretsTracker(core_model.DefaultMesh, nil),
+		}
+	}
+
+	sanMatchers := func(ctx *envoy_tls.UpstreamTlsContext) []*envoy_tls.SubjectAltNameMatcher {
+		return ctx.GetCommonTlsContext().
+			GetCombinedValidationContext().
+			GetDefaultValidationContext().
+			GetMatchTypedSubjectAltNames()
+	}
+
+	It("falls back to the mesh SPIFFE prefix when no identities are known", func() {
+		// when
+		ctx, err := meshroute.UpstreamTLSContext(proxy(), "backend", nil)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		matchers := sanMatchers(ctx)
+		Expect(matchers).To(HaveLen(1))
+		Expect(matchers[0].GetSanType()).To(Equal(envoy_tls.SubjectAltNameMatcher_URI))
+		Expect(matchers[0].GetMatcher().GetPrefix()).To(Equal("spiffe://default/"))
+	})
+
+	It("uses exact matchers for the given identities", func() {
+		// when
+		ctx, err := meshroute.UpstreamTLSContext(proxy(), "backend", []string{
+			"spiffe://default/backend",
+			"spiffe://default.universal-zone.mesh.local/workload/backend",
+		})
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		matchers := sanMatchers(ctx)
+		Expect(matchers).To(HaveLen(2))
+		Expect(matchers[0].GetMatcher().GetExact()).To(Equal("spiffe://default/backend"))
+		Expect(matchers[1].GetMatcher().GetExact()).To(Equal("spiffe://default.universal-zone.mesh.local/workload/backend"))
+	})
+})
