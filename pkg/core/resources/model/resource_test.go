@@ -18,6 +18,23 @@ import (
 )
 
 var _ = Describe("Resource", func() {
+	DescribeTable("requires the system namespace",
+		func(isGlobal, systemNamespaceOnly, expected bool) {
+			// given
+			desc := core_model.ResourceTypeDescriptor{AllowedOnSystemNamespaceOnly: systemNamespaceOnly}
+
+			// when
+			required := desc.RequiresSystemNamespace(isGlobal)
+
+			// then
+			Expect(required).To(Equal(expected))
+		},
+		Entry("regular type on Zone", false, false, false),
+		Entry("restricted type on Zone", false, true, true),
+		Entry("regular type on Global", true, false, true),
+		Entry("restricted type on Global", true, true, true),
+	)
+
 	It("should return a new resource object", func() {
 		// given
 		desc := policies_api.MeshAccessLogResourceTypeDescriptor
