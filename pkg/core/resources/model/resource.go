@@ -316,6 +316,10 @@ func (d ResourceTypeDescriptor) IsInsight() bool {
 	return strings.HasSuffix(string(d.Name), "Insight")
 }
 
+func (d ResourceTypeDescriptor) RequiresSystemNamespace(isGlobal bool) bool {
+	return isGlobal || d.AllowedOnSystemNamespaceOnly
+}
+
 func (d ResourceTypeDescriptor) IsReadOnly(isGlobal bool, isFederated bool) bool {
 	if d.ReadOnly {
 		return true
