@@ -1,6 +1,8 @@
 # Adding inbounds in runtime / Changing Kube Service for the Pod 
 
-* Status: accepted
+* Status: superseded
+
+In Kuma 3.0, pod readiness determines inbound state and the full MeshService selector determines membership. [#18561](https://github.com/kumahq/kuma/pull/18561) removed `Ignored` production; [#19003](https://github.com/kumahq/kuma/issues/19003) removes the unused state. The rationale below is preserved as historical context.
 
 Technical Story: https://github.com/kumahq/kuma/issues/5086
 

@@ -255,12 +255,9 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentRec
 		Complete(r)
 }
 
-// ServiceToPodsMapper enqueues the Pods a Service change can affect. Ignored
-// selector labels are stripped before listing, mirroring what the reconciler
-// itself matches on: a Pod that only matches once those labels are dropped
-// still owns an inbound for this Service, an Ignored one, and has to be
-// reconciled to gain or lose it. Listing on the full selector would skip the
-// Pods a selector change moves traffic away from or towards.
+// ServiceToPodsMapper strips ignored selector labels like the reconciler does.
+// Listing on the full selector would skip Pods a selector change moves traffic
+// away from or towards, even though those Pods still contribute inbounds.
 func ServiceToPodsMapper(l logr.Logger, client kube_client.Client, ignoredSelectorLabels []string) kube_handler.MapFunc {
 	l = l.WithName("service-to-pods-mapper")
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
