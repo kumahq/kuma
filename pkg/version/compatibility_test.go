@@ -116,6 +116,17 @@ var _ = Describe("Version Compatibility", func() {
 		Expect(result).To(BeFalse())
 	})
 
+	It("should require a final release on the previous major side", func() {
+		result := DeploymentVersionCompatible("3.0.0", "2.14.5-rc1")
+		Expect(result).To(BeFalse())
+		result = DeploymentVersionCompatible("2.14.5-rc1", "3.0.0")
+		Expect(result).To(BeFalse())
+		result = DeploymentVersionCompatible("3.1.0", "2.14.0-rc.1")
+		Expect(result).To(BeFalse())
+		result = DeploymentVersionCompatible("3.0.0-rc1", "2.14.5")
+		Expect(result).To(BeTrue())
+	})
+
 	Describe("ServerVersionHigher", func() {
 		It("should detect a server from a higher major version", func() {
 			Expect(ServerVersionHigher("2.14.5", "3.0.0")).To(BeTrue())

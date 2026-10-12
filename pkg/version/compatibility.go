@@ -118,6 +118,10 @@ func DeploymentVersionCompatible(kumaVersionStr, componentVersionStr string) boo
 // minor of the previous major) and X.1 (two) both accept it. Older minors of
 // the previous major are not carried over, and the window still closes two
 // minors in, so 2.13.x <-> 3.0.x and 2.14.x <-> 3.2.x stay incompatible.
+// The previous-major side must be a final release: the constraint path drops
+// prereleases the same way, and a release candidate is not a supported
+// component to upgrade from. A prerelease control plane still accepts the
+// previous major's final release, which is what an rc needs while it is tested.
 func previousMajorCompatible(a, b *semver.Version) bool {
 	older, newer := a, b
 	if newer.Major() < older.Major() {
@@ -127,6 +131,7 @@ func previousMajorCompatible(a, b *semver.Version) bool {
 	lastMinor, ok := lastMinorOfMajor[older.Major()]
 
 	return ok &&
+		older.Prerelease() == "" &&
 		older.Major()+1 == newer.Major() &&
 		older.Minor() == lastMinor &&
 		newer.Minor() < CompatibleMinors
