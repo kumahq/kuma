@@ -314,6 +314,7 @@ jobs:
         with:
           args: --fix=false --verbose
           version: ${{ env.GOLANGCI_LINT_VERSION }}
+          install-mode: goinstall # prebuilt 2.14.0 binary (go1.27.0) cannot read go1.27.2 stdlib export data
           only-new-issues: false
       # Lint and "make check" are redundant on a tag: release_sha_gate already
       # requires a green branch push run for this exact tree/SHA. We
