@@ -33,7 +33,11 @@ clean/protos: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIRS) -name '*.pb.validate.go' -delete
 
 .PHONY: generate
-generate: generate/protos generate/resources $(if $(findstring ./api,$(PROTO_DIRS)),resources/type generate/builtin-crds) generate/policies api-lint generate/oas $(EXTRA_GENERATE_DEPS_TARGETS) ## Dev: Run all code generation
+generate: generate/protos generate/resources $(if $(findstring ./api,$(PROTO_DIRS)),resources/type generate/builtin-crds) generate/policies api-lint generate/oas generate/versions $(EXTRA_GENERATE_DEPS_TARGETS) ## Dev: Run all code generation
+
+.PHONY: generate/versions
+generate/versions:
+	$(GO) run $(TOOLS_DIR)/ci/version-compat-gen/main.go > pkg/version/zz_generated.compatibility.go
 
 $(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	cd $(KUMA_DIR) && $(GO) build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
