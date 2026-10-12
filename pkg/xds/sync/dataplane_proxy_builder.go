@@ -133,7 +133,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(
 	bindOutbounds bool,
 ) []*xds_types.Outbound {
 	if !tpEnabled && !bindOutbounds {
-		return asOutbounds(dataplane, meshContext.ResolveResourceIdentifier)
+		return asOutbounds(dataplane, meshContext.ResolveResourceIdentifier, meshContext.GetServiceByKRI)
 	}
 	reachableServices := map[string]bool{}
 	var reachableBackends map[kri.Identifier]core_resources.Port
@@ -255,7 +255,11 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 	return matchedPolicies, nil
 }
 
-func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelResourceIdentifierResolver) xds_types.Outbounds {
+func asOutbounds(
+	dataplane *core_mesh.DataplaneResource,
+	resolver resolve.LabelResourceIdentifierResolver,
+	destinationByKRI func(kri.Identifier) core_resources.Destination,
+) xds_types.Outbounds {
 	var outbounds xds_types.Outbounds
 	for _, o := range dataplane.Spec.Networking.Outbound {
 		if o.BackendRef != nil {
@@ -274,7 +278,7 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 				outbounds = append(outbounds, &xds_types.Outbound{
 					Address:  o.Address,
 					Port:     o.Port,
-					Resource: ref.Resource(),
+					Resource: portNameSection(destinationByKRI, ref.Resource()),
 				})
 			}
 		} else {
@@ -282,4 +286,16 @@ func asOutbounds(dataplane *core_mesh.DataplaneResource, resolver resolve.LabelR
 		}
 	}
 	return outbounds
+}
+
+func portNameSection(destinationByKRI func(kri.Identifier) core_resources.Destination, id kri.Identifier) kri.Identifier {
+	destination := destinationByKRI(id)
+	if destination == nil {
+		return id
+	}
+	port, ok := destination.FindPortByName(id.SectionName)
+	if !ok {
+		return id
+	}
+	return kri.WithSectionName(id, port.GetName())
 }
