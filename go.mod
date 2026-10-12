@@ -41,7 +41,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/miekg/dns v1.1.73
 	github.com/natefinch/atomic v1.0.1
-	github.com/onsi/ginkgo/v2 v2.33.0
+	github.com/onsi/ginkgo/v2 v2.33.1
 	github.com/onsi/gomega v1.44.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
