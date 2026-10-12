@@ -147,13 +147,14 @@ var _ = Describe("Dataplane_Networking", func() {
 
 		DescribeTable("should select inbounds regardless of their state",
 			func(given testCase) {
+				// given
 				networking := &Dataplane_Networking{
 					Address: "192.168.0.1",
 					Inbound: []*Dataplane_Networking_Inbound{
 						{
 							Name:  "main-port",
 							Port:  80,
-							State: Dataplane_Networking_Inbound_Ignored,
+							State: Dataplane_Networking_Inbound_NotReady,
 						},
 						{
 							Name:  "secondary-port",
@@ -163,8 +164,10 @@ var _ = Describe("Dataplane_Networking", func() {
 					},
 				}
 
+				// when
 				selectedInbounds := networking.InboundsSelectedBySectionName(given.sectionName)
 
+				// then
 				Expect(selectedInbounds).To(ConsistOf(given.expected))
 			},
 			Entry("empty sectionName selects all inbounds", testCase{
@@ -185,7 +188,7 @@ var _ = Describe("Dataplane_Networking", func() {
 					},
 				},
 			}),
-			Entry("matching sectionName selects ignored inbound", testCase{
+			Entry("matching sectionName selects not-ready inbound", testCase{
 				sectionName: "main-port",
 				expected: []InboundInterface{
 					{
@@ -206,6 +209,7 @@ var _ = Describe("Dataplane_Networking", func() {
 
 	Describe("GetHealthyInbounds()", func() {
 		It("should return only healty inbounds", func() {
+			// given
 			networking := &Dataplane_Networking{
 				Inbound: []*Dataplane_Networking_Inbound{
 					{
@@ -232,15 +236,13 @@ var _ = Describe("Dataplane_Networking", func() {
 						Port:        9092,
 						ServicePort: 92,
 					},
-					{
-						State:       Dataplane_Networking_Inbound_Ignored,
-						Port:        9093,
-						ServicePort: 93,
-					},
 				},
 			}
 
+			// when
 			actual := networking.GetHealthyInbounds()
+
+			// then
 			Expect(actual).To(HaveLen(3))
 			Expect(actual).To(ConsistOf(
 				&Dataplane_Networking_Inbound{
