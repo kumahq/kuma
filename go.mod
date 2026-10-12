@@ -14,7 +14,7 @@ require (
 	github.com/cncf/xds/go v0.0.0-20260202195803-dba9d589def2
 	github.com/containernetworking/cni v1.3.1
 	github.com/containernetworking/plugins v1.9.1
-	github.com/emicklei/go-restful/v3 v3.13.0
+	github.com/emicklei/go-restful/v3 v3.14.0
 	github.com/envoyproxy/go-control-plane v0.14.0
 	github.com/envoyproxy/go-control-plane/envoy v1.39.0
 	github.com/envoyproxy/protoc-gen-validate v1.3.3
