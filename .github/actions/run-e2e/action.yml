@@ -26,9 +26,9 @@ runs:
         remove_android: true
         remove_dotnet: true
         remove_haskell: true
-    - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+    - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
       with:
-        version: 2026.9.12
+        version: 2026.9.17
       env:
         GITHUB_TOKEN: ${{ github.token }}
         MISE_DISABLE_TOOLS: "golangci-lint,skaffold,aqua:stackrox/kube-linter"
@@ -156,7 +156,7 @@ runs:
         if [[ ${#present[@]} -gt 0 ]]; then
           docker save "${present[@]}" -o "$dir/images.tar"
         fi
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       if: always()
       with:
         name: e2e-debug-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.parallel_runner_id }}
@@ -164,7 +164,7 @@ runs:
         path: |
           build/reports/e2e-debug*
         retention-days: ${{ github.event_name == 'pull_request' && 5 || 10 }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       if: always()
       with:
         name: e2e-reports-${{ inputs.target }}-${{ inputs.arch }}-${{ inputs.k8s_version }}-${{ inputs.cni_network_plugin }}-${{ inputs.parallel_runner_id }}

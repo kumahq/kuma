@@ -90,9 +90,9 @@ jobs:
           restore-keys: |
             go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-${{ hashFiles('**/go.sum') }}-
             go-build-dist-${{ runner.os }}-${{ matrix.os }}-${{ matrix.arch }}-
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
         with:
-          version: 2026.9.12
+          version: 2026.9.17
       # Resolve through make so per-combo ENVOY_VERSION_<os>_<arch> overrides
       # in mk/build.mk produce distinct cache keys.
       - name: Envoy version
@@ -127,7 +127,7 @@ jobs:
       # only the kuma-dp/kuma-universal image jobs use it, and at
       # ~100-200MB/arch it would dominate every other job's artifact download.
       - if: ${{ matrix.os == 'linux' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: linux_binaries_${{ matrix.arch }}
           path: |
@@ -136,13 +136,13 @@ jobs:
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
           if-no-files-found: error
       - if: ${{ matrix.os == 'linux' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: envoy_linux_${{ matrix.arch }}
           path: ./build/artifacts-linux-${{ matrix.arch }}/envoy
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
           if-no-files-found: error
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist-tarballs-${{ matrix.os }}-${{ matrix.arch }}
           path: |
@@ -175,9 +175,9 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
         with:
-          version: 2026.9.12
+          version: 2026.9.17
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: dist-tarballs-*
@@ -220,7 +220,7 @@ jobs:
           echo "Artifact digest:"
           cat ./build/distributions/artifact_digest_file.text
           echo "binary_artifact_digest_base64=$(cat ./build/distributions/artifact_digest_file.text)" > "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         id: binary-artifacts
         with:
           name: ${{ inputs.BINARY_ARTIFACT_NAME }}
@@ -309,9 +309,9 @@ jobs:
       # Registry layer cache (DOCKER_BUILDX_OPTS in mk/docker.mk) needs the
       # container driver; the default docker driver cannot export cache.
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
         with:
-          version: 2026.9.12
+          version: 2026.9.17
       # Login must precede the build for the cache push; anonymous pulls of the
       # public cache tags work without it (PR runs).
       - name: Docker login for buildx cache push
@@ -398,14 +398,14 @@ jobs:
           echo "Got digest: $digest"
           echo "digest=${digest}" >> "$GITHUB_OUTPUT"
           echo "{\"${{matrix.image}}\": \"${digest}\"}" > ./build/docker/${{ matrix.image }}.digest.json
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         id: image-artifacts
         with:
           name: image_${{ matrix.image }}
           path: |
             ./build/docker/*.tar
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         id: image-digest-artifacts
         with:
           name: image_${{ matrix.image }}.digest.json
@@ -471,9 +471,9 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
         with:
-          version: 2026.9.12
+          version: 2026.9.17
       - name: package-helm-chart
         id: package-helm
         env:
@@ -493,7 +493,7 @@ jobs:
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
           echo "filename=${PKG_FILENAME}" >> "$GITHUB_OUTPUT"
       - name: Upload packaged chart
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.package-helm.outputs.filename }}
           path: .cr-release-packages/${{ steps.package-helm.outputs.filename }}
