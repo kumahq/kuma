@@ -79,13 +79,15 @@ func UpgradableVersions(versions []Version, currentVersion semver.Version) []str
 	return res
 }
 
-// upgradableTo mirrors pkg/version.DeploymentVersionCompatible: at most
-// version.CompatibleMinors behind within the same major, or the last minor of
-// the previous major when current is X.0 or X.1. That last minor is derived
-// from the versions.yml data instead of being hard-coded, so the e2e framework
-// and the control plane apply one rule and cannot drift apart at a major bump.
-// The same-major comparison adds the window to the candidate rather than
-// subtracting it from current, so an X.0 or X.1 build cannot underflow.
+// upgradableTo reports whether an upgrade from candidate to current is within
+// the supported window: at most version.CompatibleMinors minors behind within
+// the same major, or the last minor of the previous major when current is X.0
+// or X.1. That last minor comes from the versions.yml data instead of being
+// hard-coded, so this and pkg/version.DeploymentVersionCompatible agree on the
+// window without a second place to update at a major bump; live LTS rows are
+// still appended by the caller outside it. The same-major comparison adds the
+// window to the candidate rather than subtracting it from current, so an X.0
+// or X.1 build cannot underflow.
 func upgradableTo(candidate *semver.Version, current semver.Version, releases []Version) bool {
 	if candidate.Major() == current.Major() {
 		return candidate.Minor()+version.CompatibleMinors >= current.Minor()

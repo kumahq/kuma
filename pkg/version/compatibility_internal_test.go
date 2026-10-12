@@ -19,17 +19,18 @@ var _ = Describe("lastMinorOfMajor", func() {
 		}
 		Expect(yaml.Unmarshal(content, &entries)).To(Succeed())
 
-		expected := map[uint64]uint64{}
+		newestMinor := map[uint64]uint64{}
 		for _, entry := range entries {
 			release, err := semver.NewVersion(entry.Version)
 			if err != nil {
 				continue
 			}
-			if release.Minor() > expected[release.Major()] {
-				expected[release.Major()] = release.Minor()
+			if release.Minor() > newestMinor[release.Major()] {
+				newestMinor[release.Major()] = release.Minor()
 			}
 		}
 
-		Expect(lastMinorOfMajor).To(Equal(expected))
+		Expect(lastMinorOfMajor).To(Equal(newestMinor),
+			"pkg/version/zz_generated.compatibility.go is out of date; run make generate/versions")
 	})
 })
