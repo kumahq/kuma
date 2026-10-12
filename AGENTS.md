@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 Kuma - CNCF service mesh (Envoy-based) for K8s/VMs. L4-L7 connectivity, security, observability, multi-zone/multi-mesh.
 
