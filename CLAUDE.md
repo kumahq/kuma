@@ -64,10 +64,26 @@ git push --no-verify <remote> branch-name    # ALWAYS use --no-verify
 - **Active branches**: see `active-branches.json`
 - **Base branch**: `master`
 - **PR template**: `.github/PULL_REQUEST_TEMPLATE.md`
+- **Issue closure**: Explicitly link resolved issues in **Development** using `gh api graphql` and verify the link. GitHub ignores `Fixes #N` for non-default branches; linking does not guarantee automatic closure when merging into those branches.
 - **Changelog**: from PR title or `> Changelog: {<desc>,skip}`
 - **CI labels**: MUST set with `gh pr create --label "ci/..."`. Most gate on `pull_request` `opened/reopened/synchronize` events, so labels added after creation only take effect on the next new run (usually the next push) — set them at creation time. See label table below
 - **MADR**: `docs/madr/decisions/000-template.md` for features/architecture decisions
 - **Downstream refs**: say "downstream project" or "enterprise fork". Never mention Kong Mesh in PRs/commits (private repo)
+
+### Link resolved issues in Development
+
+After creating the PR, run this for each issue it fully resolves (set `PR_NUMBER` and `ISSUE_NUMBER` to the actual numbers):
+
+```bash
+pr_id=$(gh pr view "$PR_NUMBER" --repo kumahq/kuma --json id --jq .id)
+issue_id=$(gh issue view "$ISSUE_NUMBER" --repo kumahq/kuma --json id --jq .id)
+gh api graphql \
+  -f query='mutation($issue: ID!, $pr: ID!) { addCloseIssueReferences(input: {issueId: $issue, pullRequestIds: [$pr]}) { issue { id } } }' \
+  -f issue="$issue_id" -f pr="$pr_id"
+gh pr view "$PR_NUMBER" --repo kumahq/kuma --json closingIssuesReferences
+```
+
+For an issue in another repository, change `--repo` on `gh issue view`. Verify that every intended issue appears in `closingIssuesReferences`, which backs the PR's **Development** section. If linking fails or an issue is missing, resolve or report it before considering PR creation complete.
 
 ### Behavior-changing CI labels
 
