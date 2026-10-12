@@ -16177,7 +16177,45 @@ components:
       type: object
     DataplaneOverviewWithMeta:
       allOf:
-        - $ref: '#/components/schemas/Meta'
+        - type: object
+          required:
+            - type
+            - mesh
+            - name
+          properties:
+            type:
+              type: string
+              example: DataplaneOverview
+              description: the type of this resource
+            mesh:
+              type: string
+              example: default
+              description: the mesh this overview is part of
+              pattern: ^[0-9a-z-_.]*$
+              maxLength: 253
+            name:
+              type: string
+              example: dp-1
+              description: the name of the dataplane this overview describes
+            kri:
+              type: string
+              readOnly: true
+              description: Kuma Resource Identifier (KRI) of the given resource
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+              description: Labels computed by the control plane, if any.
+            creationTime:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Time at which the resource was created
+            modificationTime:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Time at which the resource was updated
         - $ref: '#/components/schemas/DataplaneOverview'
     MeshOverview:
       description: MeshOverview defines the projected state of a Mesh.
