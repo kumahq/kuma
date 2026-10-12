@@ -31,9 +31,9 @@ const (
 	Dataplane_Networking_Inbound_Ready Dataplane_Networking_Inbound_State = 0
 	// Inbound is not ready to serve the traffic.
 	Dataplane_Networking_Inbound_NotReady Dataplane_Networking_Inbound_State = 1
-	// Inbound is not created. It cannot be targeted by policies.
-	// However, a data plane proxy receives a certificate with identity of
-	// this inbound.
+	// Deprecated since Kuma 3.0: no longer generated, but retained for older zones.
+	// No inbound is created or targeted by policies, but the data plane proxy
+	// receives a certificate with this inbound's identity.
 	Dataplane_Networking_Inbound_Ignored Dataplane_Networking_Inbound_State = 2
 )
 

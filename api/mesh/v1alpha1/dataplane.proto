@@ -116,9 +116,9 @@ message Dataplane {
         Ready = 0;
         // Inbound is not ready to serve the traffic.
         NotReady = 1;
-        // Inbound is not created. It cannot be targeted by policies.
-        // However, a data plane proxy receives a certificate with identity of
-        // this inbound.
+        // Deprecated since Kuma 3.0: no longer generated, but retained for older zones.
+        // No inbound is created or targeted by policies, but the data plane proxy
+        // receives a certificate with this inbound's identity.
         Ignored = 2;
       }
 
