@@ -11,16 +11,15 @@ import (
 )
 
 func CoreNameToK8sName(coreName string) (string, string, error) {
-	idx := strings.LastIndex(coreName, ".")
-	if idx == -1 {
+	// namespace cannot contain "." therefore it's always the last part
+	name, namespace, found := strings.CutLast(coreName, ".")
+	if !found {
 		return "", "", errors.Errorf(`name %q must include namespace after the dot, ex. "name.namespace"`, coreName)
 	}
-	// namespace cannot contain "." therefore it's always the last part
-	namespace := coreName[idx+1:]
 	if namespace == "" {
 		return "", "", errors.New("namespace must be non-empty")
 	}
-	return coreName[:idx], namespace, nil
+	return name, namespace, nil
 }
 
 func K8sNamespacedNameToCoreName(name, namespace string) string {

@@ -388,6 +388,20 @@ func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string)
 	return nil
 }
 
+// symlinks are resolved first so certs linked from outside their directory (e.g. letsencrypt live/ -> archive/) still load
+func readFileInRoot(path string) ([]byte, error) {
+	path, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return nil, err
+	}
+	root, err := os.OpenRoot(filepath.Dir(path))
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+	return root.ReadFile(filepath.Base(path))
+}
+
 // caCert gets CA cert that was used to signed cert that DP server is protected with.
 // Technically result of this function does not have to be a valid CA.
 // When user provides custom cert + key and does not provide --ca-cert-file to kuma-dp run, this can return just a regular cert
@@ -402,7 +416,7 @@ func (b *bootstrapGenerator) caCert(request types.BootstrapRequest) ([]byte, err
 	case b.xdsCertFile != "":
 		var err error
 		xdsCertFile := filepath.Clean(b.xdsCertFile)
-		cert, err = os.ReadFile(xdsCertFile)
+		cert, err = readFileInRoot(xdsCertFile)
 		origin = "file " + xdsCertFile
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed getting cert from %s", origin)
