@@ -3,6 +3,7 @@ package k8s
 import (
 	"github.com/pkg/errors"
 
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/events"
@@ -27,7 +28,7 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.
 	if !ok {
 		return nil, nil, errors.Errorf("k8s resource converter hasn't been configured")
 	}
-	store, err := NewStore(mgr.GetClient(), mgr.GetScheme(), converter)
+	store, err := NewStore(mgr.GetClient(), mgr.GetScheme(), converter, pc.Config().Store.Kubernetes.SystemNamespace, pc.Config().Mode == config_core.Global)
 	return store, core_store.NoTransactions{}, err
 }
 
