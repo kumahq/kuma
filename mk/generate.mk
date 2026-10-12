@@ -37,7 +37,10 @@ generate: generate/versions generate/protos generate/resources $(if $(findstring
 
 .PHONY: generate/versions
 generate/versions:
-	$(GO) run $(TOOLS_DIR)/ci/version-compat-gen/main.go > pkg/version/zz_generated.compatibility.go
+	tmp=pkg/version/zz_generated.compatibility.go.tmp; \
+	trap 'rm -f "$$tmp"' 0; \
+	$(GO) run $(TOOLS_DIR)/ci/version-compat-gen/main.go > "$$tmp" && \
+	mv "$$tmp" pkg/version/zz_generated.compatibility.go
 
 $(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	cd $(KUMA_DIR) && $(GO) build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
