@@ -178,8 +178,8 @@ github.com/evanphx/json-patch v0.5.2 h1:xVCHIVMUu1wtM/VkR9jVZ45N3FhZfYMMYGorLCR8
 github.com/evanphx/json-patch v0.5.2/go.mod h1:ZWS5hhDbVDyob71nXKNL0+PWn6ToqBHMikGIFbs31qQ=
 github.com/evanphx/json-patch/v5 v5.9.11 h1:/8HVnzMq13/3x9TPvjG08wUGqBTmZBsCWzjTM0wiaDU=
 github.com/evanphx/json-patch/v5 v5.9.11/go.mod h1:3j+LviiESTElxA4p3EMKAB9HXj3/XEtnUf6OZxqIQTM=
-github.com/exaring/otelpgx v0.12.0 h1:K3NG2YUiYB384YWptKglk8gLDYek5YptMdm1b0G4pQM=
-github.com/exaring/otelpgx v0.12.0/go.mod h1:3OojrUKhhy3lTbYIMBijP3YjMey/jo14eHAW5cXcUdk=
+github.com/exaring/otelpgx v0.13.0 h1:Vi0I2GWRS3nnVzgr73L/XbSLqthR0h6A1rm4Wt3W4aA=
+github.com/exaring/otelpgx v0.13.0/go.mod h1:3OojrUKhhy3lTbYIMBijP3YjMey/jo14eHAW5cXcUdk=
 github.com/fatih/color v1.19.0 h1:Zp3PiM21/9Ld6FzSKyL5c/BULoe/ONr9KlbYVOfG8+w=
 github.com/fatih/color v1.19.0/go.mod h1:zNk67I0ZUT1bEGsSGyCZYZNrHuTkJJB+r6Q9VuMi0LE=
 github.com/felixge/httpsnoop v1.1.0 h1:3YtUj32ZZkqZtt3sZZsClsymw/QDuVfpNhoA31zeORc=
