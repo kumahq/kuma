@@ -81,6 +81,52 @@ var _ = Describe("Version Compatibility", func() {
 		Expect(result).To(BeTrue())
 	})
 
+	It("should accept the last minor of the previous major across a major bump", func() {
+		result := DeploymentVersionCompatible("3.0.0", "2.14.4")
+		Expect(result).To(BeTrue())
+		result = DeploymentVersionCompatible("3.0.1", "2.14.0")
+		Expect(result).To(BeTrue())
+		result = DeploymentVersionCompatible("3.1.0", "2.14.4")
+		Expect(result).To(BeTrue())
+		result = DeploymentVersionCompatible("2.14.4", "3.0.0")
+		Expect(result).To(BeTrue())
+		result = DeploymentVersionCompatible("2.14.0", "3.1.2")
+		Expect(result).To(BeTrue())
+	})
+
+	It("should reject earlier minors of the previous major", func() {
+		result := DeploymentVersionCompatible("3.0.0", "2.13.10")
+		Expect(result).To(BeFalse())
+		result = DeploymentVersionCompatible("3.0.0", "2.12.14")
+		Expect(result).To(BeFalse())
+		result = DeploymentVersionCompatible("2.13.10", "3.0.0")
+		Expect(result).To(BeFalse())
+		result = DeploymentVersionCompatible("3.0.0", "1.8.5")
+		Expect(result).To(BeFalse())
+	})
+
+	It("should keep the window closed two minors after a major bump", func() {
+		result := DeploymentVersionCompatible("3.2.0", "2.14.4")
+		Expect(result).To(BeFalse())
+		result = DeploymentVersionCompatible("2.14.4", "3.2.0")
+		Expect(result).To(BeFalse())
+		result = DeploymentVersionCompatible("4.0.0", "2.14.4")
+		Expect(result).To(BeFalse())
+		result = DeploymentVersionCompatible("4.0.0", "3.14.0")
+		Expect(result).To(BeFalse())
+	})
+
+	It("should require a final release on the previous major side", func() {
+		result := DeploymentVersionCompatible("3.0.0", "2.14.5-rc1")
+		Expect(result).To(BeFalse())
+		result = DeploymentVersionCompatible("2.14.5-rc1", "3.0.0")
+		Expect(result).To(BeFalse())
+		result = DeploymentVersionCompatible("3.1.0", "2.14.0-rc.1")
+		Expect(result).To(BeFalse())
+		result = DeploymentVersionCompatible("3.0.0-rc1", "2.14.5")
+		Expect(result).To(BeTrue())
+	})
+
 	Describe("ServerVersionHigher", func() {
 		It("should detect a server from a higher major version", func() {
 			Expect(ServerVersionHigher("2.14.5", "3.0.0")).To(BeTrue())
