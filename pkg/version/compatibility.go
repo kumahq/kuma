@@ -59,10 +59,21 @@ func majorVersion(version string) (uint64, bool) {
 	return 0, false
 }
 
+// CompatibleMinors is how many minor releases apart two components may be
+// while still being reported as compatible. The last minor of the previous
+// major counts as the minor directly before X.0 of the next one, so the
+// window spans a major bump like any other.
+const CompatibleMinors = 2
+
 // DeploymentVersionCompatible returns true if the given component version
 // is compatible with the installed version of Kuma CP.
 // For all binaries which share a common version (Kuma DP, CP, Zone CP...), we
-// support backwards compatibility of at most two prior minor versions.
+// support backwards compatibility of at most CompatibleMinors prior minor
+// versions, where the last minor of the previous major counts as the minor
+// directly before the current major's X.0. Without that the only supported
+// upgrade path onto a new major - the previous major's last release - would
+// report every one of its data planes and zone control planes as incompatible
+// for the whole rollout.
 func DeploymentVersionCompatible(kumaVersionStr, componentVersionStr string) bool {
 	if IsPreviewVersion(kumaVersionStr) || IsPreviewVersion(componentVersionStr) {
 		return true
@@ -82,9 +93,9 @@ func DeploymentVersionCompatible(kumaVersionStr, componentVersionStr string) boo
 		return true
 	}
 
-	minMinor := max(int64(kumaVersion.Minor())-2, 0)
+	minMinor := max(int64(kumaVersion.Minor())-CompatibleMinors, 0)
 
-	maxMinor := kumaVersion.Minor() + 2
+	maxMinor := kumaVersion.Minor() + CompatibleMinors
 
 	constraint, err := semver.NewConstraint(
 		fmt.Sprintf(">= %d.%d, <= %d.%d", kumaVersion.Major(), minMinor, kumaVersion.Major(), maxMinor),
@@ -94,5 +105,34 @@ func DeploymentVersionCompatible(kumaVersionStr, componentVersionStr string) boo
 		panic(err)
 	}
 
-	return constraint.Check(componentVersion)
+	if constraint.Check(componentVersion) {
+		return true
+	}
+
+	return previousMajorCompatible(kumaVersion, componentVersion)
+}
+
+// previousMajorCompatible reports whether one of the versions is the last
+// minor of the major line directly preceding the other, and the other is still
+// within CompatibleMinors of that major bump, so X.0 (one minor after the last
+// minor of the previous major) and X.1 (two) both accept it. Older minors of
+// the previous major are not carried over, and the window still closes two
+// minors in, so 2.13.x <-> 3.0.x and 2.14.x <-> 3.2.x stay incompatible.
+// The previous-major side must be a final release: the constraint path drops
+// prereleases the same way, and a release candidate is not a supported
+// component to upgrade from. A prerelease control plane still accepts the
+// previous major's final release, which is what an rc needs while it is tested.
+func previousMajorCompatible(a, b *semver.Version) bool {
+	older, newer := a, b
+	if newer.Major() < older.Major() {
+		older, newer = newer, older
+	}
+
+	lastMinor, ok := lastMinorOfMajor[older.Major()]
+
+	return ok &&
+		older.Prerelease() == "" &&
+		older.Major()+1 == newer.Major() &&
+		older.Minor() == lastMinor &&
+		newer.Minor() < CompatibleMinors
 }
