@@ -50,11 +50,11 @@ $(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(K
 $(OAPI_GEN):
 	$(GO) build -o ./build/tools-${GOOS}-${GOARCH}/oapi-gen ./tools/openapi/generator/main.go
 
-# Replace the opaque `config` of every extension registered with
-# pkg/core/resources/extensions by its real schema, in the OpenAPI document named
-# by OAS_EXTENSIONS_SPEC. What is registered depends on what $(OAPI_GEN) imports,
-# and that binary is built from this repo; a build that registers none leaves the
-# document alone.
+# Document the config schemas of every extension registered with
+# pkg/core/resources/extensions in the OpenAPI document named by
+# OAS_EXTENSIONS_SPEC, keeping extension points freeform. What is registered
+# depends on what $(OAPI_GEN) imports, and that binary is built from this repo;
+# a build that registers none leaves the document alone.
 #
 # Point it at an input of the docs bundle rather than at the bundle itself: yq
 # rewrites the whole file it edits, so patching the merged document would churn

@@ -3,9 +3,9 @@
 // The extension points on Kuma resources take a freeform `config`, so the
 // generated spec says nothing about what may go in it. This generator takes the
 // Go types registered with pkg/core/resources/extensions, runs them through
-// controller-gen the same way resource specs are generated, and patches the result
-// into an existing OpenAPI document as a oneOf keyed on the extension's
-// discriminator.
+// controller-gen the same way resource specs are generated, and adds the config
+// schemas to an existing OpenAPI document. Extension points retain their freeform
+// config shape because downstream generators do not reliably handle these unions.
 //
 // It reads the *registry*, so the binary that drives it decides which extensions
 // exist: Kuma's own generator registers none and leaves the document untouched,
@@ -216,8 +216,8 @@ func checkExtensionPoint(spec map[string]any, point core_extensions.Point) error
 	if _, ok := properties[point.Discriminator]; !ok {
 		return fmt.Errorf("%s has no %q property to discriminate on", where, point.Discriminator)
 	}
-	// The branches constrain this property, so a point naming one the schema does
-	// not have would document a payload the control plane never reads.
+	// A point naming a property the schema does not have would document a
+	// payload the control plane never reads.
 	if _, ok := properties[point.ConfigProperty]; !ok {
 		return fmt.Errorf("%s has no %q property to hold the configuration", where, point.ConfigProperty)
 	}
@@ -371,7 +371,7 @@ func configSchemas(crdDir string, wrappers []wrapper) (map[string]any, error) {
 }
 
 // patchExpression renders the yq program that adds every config schema to
-// `components.schemas` and points the extension nodes at them.
+// `components.schemas` without changing the freeform extension points.
 func patchExpression(wrappers []wrapper, schemas map[string]any) (string, error) {
 	var assignments []string
 
@@ -384,59 +384,7 @@ func patchExpression(wrappers []wrapper, schemas map[string]any) (string, error)
 		assignments = append(assignments, fmt.Sprintf("%s = %s", yqPath(schemaPath), encoded))
 	}
 
-	for _, point := range points(wrappers) {
-		oneOf, err := json.Marshal(branches(point, wrappers))
-		if err != nil {
-			return "", err
-		}
-		path := append([]string{"components", "schemas", itemSchema(point)}, propertyPath(point.SchemaPath)...)
-		assignments = append(assignments, fmt.Sprintf("%s.oneOf = %s", yqPath(path), oneOf))
-	}
-
 	return strings.Join(assignments, "\n  | ") + "\n", nil
-}
-
-// points lists the distinct extension points in registration order.
-func points(wrappers []wrapper) []core_extensions.Point {
-	var ordered []core_extensions.Point
-	seen := map[string]bool{}
-	for _, w := range wrappers {
-		key := string(w.ext.Point.ResourceType)
-		if seen[key] {
-			continue
-		}
-		seen[key] = true
-		ordered = append(ordered, w.ext.Point)
-	}
-	return ordered
-}
-
-// branches describes one extension point: a branch per known extension, plus a
-// catch-all so that an extension this build does not ship still validates. Without
-// it the spec would reject configurations that the control plane accepts.
-func branches(point core_extensions.Point, wrappers []wrapper) []any {
-	var known []any
-	var values []any
-	for _, w := range wrappers {
-		if w.ext.Point.ResourceType != point.ResourceType {
-			continue
-		}
-		values = append(values, w.ext.Value)
-		known = append(known, map[string]any{
-			"title": w.ext.Value,
-			"properties": map[string]any{
-				point.Discriminator:  map[string]any{"const": w.ext.Value},
-				point.ConfigProperty: map[string]any{"$ref": "#/components/schemas/" + w.schemaName},
-			},
-		})
-	}
-	return append(known, map[string]any{
-		"title":       "Other",
-		"description": "An extension this control plane does not ship. Its configuration is not described here.",
-		"properties": map[string]any{
-			point.Discriminator: map[string]any{"not": map[string]any{"enum": values}},
-		},
-	})
 }
 
 func runYq(ctx context.Context, opts Options, expression string) error {

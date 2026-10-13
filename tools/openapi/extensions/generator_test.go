@@ -182,38 +182,15 @@ var _ = Describe("propertyPath", func() {
 	})
 })
 
-var _ = Describe("branches", func() {
-	// The catch-all matters: without it the spec would reject extension types the
-	// control plane accepts, including any a third party adds.
-	It("should pair each value with the schema it selects and end with a catch-all", func() {
-		result, err := yaml.Marshal(branches(fakePoint, fakeWrappers("acmpca", "vault")))
-
-		Expect(err).ToNot(HaveOccurred())
-		Expect(result).To(matchers.MatchGoldenYAML(golden("branches.golden.yaml")))
-	})
-
-	It("should ignore extensions belonging to another resource", func() {
-		other := fakePoint
-		other.ResourceType = "OtherResource"
-		mixed := append(fakeWrappers("vault"), wrapper{
-			ext:        core_extensions.Extension{Point: other, Value: "elsewhere", Config: &FakeConfig{}},
-			kind:       "OtherResourceElsewhere",
-			schemaName: "OtherResourceElsewhereExtensionConfig",
-		})
-
-		result := branches(fakePoint, mixed)
-
-		Expect(result).To(HaveLen(2))
-		Expect(result[0].(map[string]any)["title"]).To(Equal("vault"))
-	})
-})
-
 var _ = Describe("patchExpression", func() {
-	It("should add the config schema and point the extension node at it", func() {
+	It("should document the config without changing the freeform extension shape", func() {
+		// given
 		schemas := map[string]any{"FakeResourceRoute53": map[string]any{"type": "object"}}
 
+		// when
 		expr, err := patchExpression(fakeWrappers("Route53"), schemas)
 
+		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(expr).To(matchers.MatchGoldenEqual(golden("patch-expression.golden.yq")))
 	})
