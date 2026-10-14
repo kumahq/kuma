@@ -16,7 +16,7 @@ env:
   CI_TOOLS_DIR: ${{ github.workspace }}/.ci_tools
   # This is automatically managed by CI
   K8S_MIN_VERSION: v1.31.12-k3s1
-  K8S_MAX_VERSION: v1.34.1-k3s1
+  K8S_MAX_VERSION: v1.37.0-k3s1
 jobs:
   test_unit:
     timeout-minutes: 25
