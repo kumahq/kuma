@@ -34,8 +34,9 @@ func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics core_me
 	}, []string{"resource_type", "tenant"})
 
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "component_store_counter",
-		Help: "Summary of Store Counter component interval",
+		Name:    "component_store_counter",
+		Help:    "Summary of Store Counter component interval",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.BulkRegister(counts, metric); err != nil {
 		return nil, err
