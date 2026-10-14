@@ -11,6 +11,17 @@ import (
 	rest_v1alpha1 "github.com/kumahq/kuma/v3/pkg/core/resources/model/rest/v1alpha1"
 )
 
+var _ = Describe("HasExtraSegments", func() {
+	It("rejects more segments than the format defines", func() {
+		Expect(kri.HasExtraSegments("kri_mal_default___ma-1_extra_more")).To(BeTrue())
+	})
+
+	It("accepts the strict format", func() {
+		Expect(kri.HasExtraSegments("kri_m____default_")).To(BeFalse())
+		Expect(kri.HasExtraSegments("kri_dp_mesh-1_us-east-2_kuma-demo_backend-app_8080")).To(BeFalse())
+	})
+})
+
 var _ = Describe("FromResourceMetaE", func() {
 	meta := rest_v1alpha1.ResourceMeta{
 		Mesh: "kuma-runner",
