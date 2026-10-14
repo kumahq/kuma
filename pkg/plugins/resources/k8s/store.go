@@ -179,7 +179,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 		return err
 	}
 	// The admission webhook enforces this only in namespaces it selects, so enforce it on read too.
-	if (s.IsGlobal || r.Descriptor().AllowedOnSystemNamespaceOnly) && namespace != "" && namespace != s.SystemNamespace {
+	if r.Descriptor().RequiresSystemNamespace(s.IsGlobal) && namespace != "" && namespace != s.SystemNamespace {
 		return store.ErrorResourceNotFound(r.Descriptor().Name, opts.Name, opts.Mesh)
 	}
 	if err := s.Client.Get(ctx, kube_client.ObjectKey{Namespace: namespace, Name: name}, obj); err != nil {
@@ -212,7 +212,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	if err := s.Client.List(ctx, obj); err != nil {
 		return errors.Wrap(err, "failed to list k8s resources")
 	}
-	systemNamespaceOnly := s.IsGlobal || rs.NewItem().Descriptor().AllowedOnSystemNamespaceOnly
+	systemNamespaceOnly := rs.NewItem().Descriptor().RequiresSystemNamespace(s.IsGlobal)
 	predicate := func(r core_model.Resource) bool {
 		// Same as in Get: objects that skipped the admission webhook must not be read.
 		if ns := r.GetMeta().GetNameExtensions()[core_model.K8sNamespaceComponent]; systemNamespaceOnly && ns != "" && ns != s.SystemNamespace {

@@ -149,8 +149,8 @@ type KubernetesRuntimeConfig struct {
 	// marshaled objects will be stored in the cache. If equal to 0s then
 	// cache is turned off
 	MarshalingCacheExpirationTime config_types.Duration `json:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
-	// List of names of Service Accounts that admission requests are allowed.
-	// This list is appended with Control Plane's Service Account, generic-garbage-collector, and storage-version-migrator-controller.
+	// Additional usernames allowed to bypass resource admission restrictions.
+	// This list is appended with generic-garbage-collector and storage-version-migrator-controller.
 	AllowedUsers []string `json:"allowedUsers,omitempty" envconfig:"kuma_runtime_kubernetes_allowed_users"`
 	// ControlPlaneServiceName defines service name of the Kuma control plane. It is used to point Kuma DP to proper URL.
 	ControlPlaneServiceName string `json:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
@@ -171,8 +171,8 @@ type KubernetesRuntimeConfig struct {
 	// Default is empty list (uses ServiceAccount as workload identifier).
 	WorkloadLabels []string `json:"workloadLabels" envconfig:"kuma_runtime_kubernetes_workload_labels"`
 	// DisallowMultipleMeshesPerNamespace prevents pods from using kuma.io/mesh label in ways that would create
-	// multiple meshes within a single namespace. When enabled, Workload generation is skipped for namespaces
-	// with multiple meshes and a warning event is emitted. Default is false.
+	// multiple meshes within a single namespace. When enabled, the Pod admission webhook rejects
+	// a Pod if the namespace already contains a Dataplane in a different mesh. Default is false.
 	DisallowMultipleMeshesPerNamespace bool `json:"disallowMultipleMeshesPerNamespace" envconfig:"kuma_runtime_kubernetes_disallow_multiple_meshes_per_namespace"`
 }
 

@@ -9,6 +9,7 @@ import (
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
 	_ "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/k8s/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/labels"
@@ -68,8 +69,10 @@ var _ = Describe("KubernetesStore namespace rule on read", func() {
 				names = append(names, item.GetMeta().GetName())
 			}
 			Expect(names).To(ConsistOf(expected))
+			Expect(list.GetPagination().Total).To(Equal(uint32(len(expected))))
 
-			// and
+			// and then
+			Expect(s.Get(context.Background(), newResource(), store.GetByKey(mesh+"."+systemNamespace, mesh))).To(Succeed())
 			err = s.Get(context.Background(), newResource(), store.GetByKey(mesh+".tenant", mesh))
 			if len(expected) == 1 {
 				Expect(store.IsNotFound(err)).To(BeTrue())
@@ -79,9 +82,32 @@ var _ = Describe("KubernetesStore namespace rule on read", func() {
 		},
 		Entry("hides a system-namespace-only type outside the system namespace on Zone",
 			false, meshTrust, "zone-trust", []string{"zone-trust." + systemNamespace}),
+		Entry("hides a system-namespace-only type outside the system namespace on Global",
+			true, meshTrust, "global-trust", []string{"global-trust." + systemNamespace}),
 		Entry("hides any namespaced type outside the system namespace on Global",
 			true, meshTimeout, "global-timeout", []string{"global-timeout." + systemNamespace}),
 		Entry("reads a regular type from any namespace on Zone",
 			false, meshTimeout, "zone-timeout", []string{"zone-timeout." + systemNamespace, "zone-timeout.tenant"}),
 	)
+
+	It("reads cluster-scoped resources on Global", func() {
+		// given
+		s, err := k8s.NewStore(k8sClient, k8sClientScheme, k8s.NewSimpleConverter(systemNamespace, labels.ControlPlane{}), systemNamespace, true)
+		Expect(err).ToNot(HaveOccurred())
+		const name = "global-cluster-scoped"
+		Expect(s.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(name, core_model.NoMesh))).To(Succeed())
+
+		// when
+		mesh := core_mesh.NewMeshResource()
+		err = s.Get(context.Background(), mesh, store.GetByKey(name, core_model.NoMesh))
+		list := &core_mesh.MeshResourceList{}
+		listErr := s.List(context.Background(), list)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(mesh.GetMeta().GetName()).To(Equal(name))
+		Expect(listErr).ToNot(HaveOccurred())
+		Expect(core_model.ResourceListToResourceKeys(list)).To(ContainElement(core_model.WithoutMesh(name)))
+		Expect(list.GetPagination().Total).To(Equal(uint32(len(list.Items))))
+	})
 })
