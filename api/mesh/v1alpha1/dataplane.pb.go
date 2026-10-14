@@ -31,10 +31,6 @@ const (
 	Dataplane_Networking_Inbound_Ready Dataplane_Networking_Inbound_State = 0
 	// Inbound is not ready to serve the traffic.
 	Dataplane_Networking_Inbound_NotReady Dataplane_Networking_Inbound_State = 1
-	// Inbound is not created. It cannot be targeted by policies.
-	// However, a data plane proxy receives a certificate with identity of
-	// this inbound.
-	Dataplane_Networking_Inbound_Ignored Dataplane_Networking_Inbound_State = 2
 )
 
 // Enum value maps for Dataplane_Networking_Inbound_State.
@@ -42,12 +38,10 @@ var (
 	Dataplane_Networking_Inbound_State_name = map[int32]string{
 		0: "Ready",
 		1: "NotReady",
-		2: "Ignored",
 	}
 	Dataplane_Networking_Inbound_State_value = map[string]int32{
 		"Ready":    0,
 		"NotReady": 1,
-		"Ignored":  2,
 	}
 )
 
@@ -1091,11 +1085,11 @@ var File_api_mesh_v1alpha1_dataplane_proto protoreflect.FileDescriptor
 
 const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\n" +
-	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xb7\x18\n" +
+	"!api/mesh/v1alpha1/dataplane.proto\x12\x12kuma.mesh.v1alpha1\x1a\x16api/mesh/options.proto\x1a#api/mesh/v1alpha1/envoy_admin.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xb9\x18\n" +
 	"\tDataplane\x12H\n" +
 	"\n" +
 	"networking\x18\x01 \x01(\v2(.kuma.mesh.v1alpha1.Dataplane.NetworkingR\n" +
-	"networking\x1a\xe1\x16\n" +
+	"networking\x1a\xe3\x16\n" +
 	"\n" +
 	"Networking\x12\x18\n" +
 	"\aaddress\x18\x05 \x01(\tR\aaddress\x12J\n" +
@@ -1103,7 +1097,7 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\boutbound\x18\x02 \x03(\v21.kuma.mesh.v1alpha1.Dataplane.Networking.OutboundR\boutbound\x12o\n" +
 	"\x14transparent_proxying\x18\x04 \x01(\v2<.kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxyingR\x13transparentProxying\x124\n" +
 	"\x05admin\x18\b \x01(\v2\x1e.kuma.mesh.v1alpha1.EnvoyAdminR\x05admin\x12O\n" +
-	"\tlisteners\x18\t \x03(\v21.kuma.mesh.v1alpha1.Dataplane.Networking.ListenerR\tlisteners\x1a\x81\a\n" +
+	"\tlisteners\x18\t \x03(\v21.kuma.mesh.v1alpha1.Dataplane.Networking.ListenerR\tlisteners\x1a\x83\a\n" +
 	"\aInbound\x12\x12\n" +
 	"\x04port\x18\x03 \x01(\rR\x04port\x12 \n" +
 	"\vservicePort\x18\x04 \x01(\rR\vservicePort\x12&\n" +
@@ -1123,11 +1117,10 @@ const file_api_mesh_v1alpha1_dataplane_proto_rawDesc = "" +
 	"\x13unhealthy_threshold\x18\x03 \x01(\v2\x1c.google.protobuf.UInt32ValueR\x12unhealthyThreshold\x12I\n" +
 	"\x11healthy_threshold\x18\x04 \x01(\v2\x1c.google.protobuf.UInt32ValueR\x10healthyThreshold\x12S\n" +
 	"\x03tcp\x18\x05 \x01(\v2A.kuma.mesh.v1alpha1.Dataplane.Networking.Inbound.ServiceProbe.TcpR\x03tcp\x1a\x05\n" +
-	"\x03Tcp\"-\n" +
+	"\x03Tcp\"/\n" +
 	"\x05State\x12\t\n" +
 	"\x05Ready\x10\x00\x12\f\n" +
-	"\bNotReady\x10\x01\x12\v\n" +
-	"\aIgnored\x10\x02J\x04\b\x02\x10\x03R\x04tags\x1a\x8a\x03\n" +
+	"\bNotReady\x10\x01\"\x04\b\x02\x10\x02*\aIgnoredJ\x04\b\x02\x10\x03R\x04tags\x1a\x8a\x03\n" +
 	"\bOutbound\x12\x18\n" +
 	"\aaddress\x18\x03 \x01(\tR\aaddress\x12\x12\n" +
 	"\x04port\x18\x04 \x01(\rR\x04port\x12\\\n" +

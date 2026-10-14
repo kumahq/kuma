@@ -331,7 +331,7 @@ var _ = Describe("Dataplane", func() {
               inbound:
                 - port: 8080
                   name: http
-                  state: Ignored
+                  state: NotReady
               listeners:
                 - type: ZoneEgress
                   address: 192.168.0.1
@@ -347,23 +347,18 @@ var _ = Describe("Dataplane", func() {
 	}
 	DescribeTable("should validate all fields and return as much individual errors as possible",
 		func(given testCase) {
-			// setup
+			// given
 			dataplane := core_mesh.NewDataplaneResource()
 			dataplane.Meta = &test_model.ResourceMeta{Name: "dp-1", Mesh: "default"}
-
-			// when
 			err := util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)
-			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
 			verr := dataplane.Validate()
-			// and
-			actual, err := yaml.Marshal(verr)
 
 			// then
+			actual, err := yaml.Marshal(verr)
 			Expect(err).ToNot(HaveOccurred())
-			// and
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("networking.address: can't use 0.0.0.0", testCase{
@@ -1011,6 +1006,22 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.listeners[0]
                   message: 'address:port 192.168.0.1:8080 collides with an inbound listener'`,
+		}),
+		Entry("reserved inbound state", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                    - port: 8080
+                      name: http
+                      state: 2`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].state
+                  message: has an unknown value 2`,
 		}),
 		Entry("inbound state out of range", testCase{
 			dataplane: `

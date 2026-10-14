@@ -305,9 +305,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Diagnostics.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Diagnostics.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
 
-			Expect(cfg.DNSServer.Domain).To(Equal("test-domain"))
-			Expect(cfg.DNSServer.ServiceVipPort).To(Equal(uint32(9090)))
-
 			Expect(cfg.XdsServer.DataplaneStatusFlushInterval.Duration).To(Equal(7 * time.Second))
 			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval.Duration).To(Equal(21 * time.Second))
 			Expect(cfg.XdsServer.DataplaneDeregistrationDelay.Duration).To(Equal(11 * time.Second))
@@ -682,9 +679,6 @@ multizone:
       auth:
         tokenInline: zone-token
         tokenPath: /zone-token
-dnsServer:
-  domain: test-domain
-  serviceVipPort: 9090
 defaults:
   skipMeshCreation: true
   skipHostnameGenerators: true
@@ -999,8 +993,6 @@ meshService:
 				"KUMA_GENERAL_CERT_GENERATION_MAX_BACKOFF":                                                 "4m",
 				"KUMA_GENERAL_CERT_GENERATION_CIRCUIT_BREAKER_MIN_PROXIES":                                 "7",
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                                                     "https://kuma,https://someapi",
-				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
-				"KUMA_DNS_SERVER_SERVICE_VIP_PORT":                                                         "9090",
 				"KUMA_MODE":                                                                                "zone",
 				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                                                      "1234",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_ENABLED":                                                    "false",
