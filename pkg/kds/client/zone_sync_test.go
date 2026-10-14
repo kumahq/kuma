@@ -401,7 +401,10 @@ var _ = Describe("KDSSyncClient type allowlist", func() {
 			TypeUrl: string(mesh.MeshType),
 			Nonce:   "nonce-1",
 		}
-		close(clientStream.RecvCh)
+		DeferCleanup(func() {
+			Expect(kdsStream.CloseSend()).To(Succeed())
+			close(clientStream.RecvCh)
+		})
 
 		received := false
 		syncClient := kds_client.NewKDSSyncClient(
