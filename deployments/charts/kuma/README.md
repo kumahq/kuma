@@ -74,9 +74,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.defaults.skipMeshCreation | bool | `false` | Whether to skip creating the default Mesh |
 | controlPlane.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
 | controlPlane.resources | object | `{"limits":{"memory":"256Mi"},"requests":{"cpu":"500m","memory":"256Mi"}}` | Optionally override the resource spec |
-| controlPlane.runtime | object | `{"goMaxProcs":{"divisor":"1"},"goMemLimit":{"divisor":"1"}}` | Go runtime settings for the control plane |
+| controlPlane.runtime | object | `{"goMaxProcs":{"divisor":"1"}}` | Go runtime settings for the control plane |
 | controlPlane.runtime.goMaxProcs | object | `{"divisor":"1"}` | Divisor for GOMAXPROCS (resourceFieldRef divisor for limits.cpu) |
-| controlPlane.runtime.goMemLimit | object | `{"divisor":"1"}` | Divisor for GOMEMLIMIT (resourceFieldRef divisor for limits.memory) |
 | controlPlane.lifecycle | object | `{}` | Pod lifecycle settings (useful for adding a preStop hook, when using AWS ALB or NLB) |
 | controlPlane.terminationGracePeriodSeconds | int | `30` | Number of seconds to wait before force killing the pod. Make sure to update this if you add a preStop hook. |
 | controlPlane.tls.general.secretName | string | `""` | Secret that contains tls.crt, tls.key [and ca.crt when no controlPlane.tls.general.caSecretName specified] for protecting Kuma in-cluster communication |
@@ -136,7 +135,7 @@ A Helm chart for the Kuma Control Plane
 | cni.podSecurityContext | object | `{}` | Security context at the pod level for cni |
 | cni.containerSecurityContext | object | `{"readOnlyRootFilesystem":true,"runAsGroup":0,"runAsNonRoot":false,"runAsUser":0}` | Security context at the container level for cni |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
-| dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
+| dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the injected kuma-dp sidecar and kuma-init containers (Always, IfNotPresent, Never). |
 | dataPlane.image.tag | string | `nil` | Kuma DP Image Tag. When not specified, the value is copied from global.tag |
 | dataPlane.initImage.repository | string | `"kuma-init"` | The Kuma DP init image repository |
 | dataPlane.initImage.tag | string | `nil` | Kuma DP init image tag When not specified, the value is copied from global.tag |
@@ -149,6 +148,7 @@ A Helm chart for the Kuma Control Plane
 | meshZoneProxyDefaults.ingress.replicas | int | `1` | Default number of replicas for zone ingress. Ignored when hpa.enabled is true. |
 | meshZoneProxyDefaults.ingress.restartPolicy | string | `"Always"` | Default pod restart policy for zone ingress. |
 | meshZoneProxyDefaults.ingress.terminationGracePeriodSeconds | int | `40` | Default number of seconds to wait before force killing the zone ingress pod. |
+| meshZoneProxyDefaults.ingress.preStopSleepSeconds | int | `20` | Seconds a terminating zone ingress keeps serving before shutdown, applied as a preStop sleep hook. Remote zones reach a zone ingress through its Service, and the load balancer and kube-proxy stop routing to a terminating pod only after they observe the endpoint change, so a pod that goes away sooner drops the cross-zone requests still landing on it. Raise this if your load balancer deregisters targets slowly. Must be lower than terminationGracePeriodSeconds, otherwise the chart fails to render. Set to 0 to drop the hook. |
 | meshZoneProxyDefaults.ingress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for zone ingress. Optionally set to false |
 | meshZoneProxyDefaults.ingress.imagePullPolicy | string | `"IfNotPresent"` | Default image pull policy for the zone ingress pause container. |
 | meshZoneProxyDefaults.ingress.service.type | string | `"LoadBalancer"` | Default Service type for zone ingress. |
@@ -168,6 +168,7 @@ A Helm chart for the Kuma Control Plane
 | meshes[0].ingress.image | object | `{}` | Per-mesh override for the pause container image. Falls back to .Values.zoneProxyImage when unset. Partial overrides inherit the remaining registry/repository/tag fields from the chart-level default. |
 | meshes[0].ingress.restartPolicy | string | `nil` | Per-mesh override for pod restart policy. Falls back to meshZoneProxyDefaults.ingress.restartPolicy when unset. |
 | meshes[0].ingress.terminationGracePeriodSeconds | int | `nil` | Per-mesh override for the pod termination grace period. Falls back to meshZoneProxyDefaults.ingress.terminationGracePeriodSeconds when unset. |
+| meshes[0].ingress.preStopSleepSeconds | int | `nil` | Per-mesh override for the preStop sleep duration. Falls back to meshZoneProxyDefaults.ingress.preStopSleepSeconds when unset. Set to 0 to drop the hook. |
 | meshes[0].ingress.automountServiceAccountToken | bool | `nil` | Per-mesh override for automountServiceAccountToken. Falls back to meshZoneProxyDefaults.ingress.automountServiceAccountToken when unset. |
 | meshes[0].ingress.imagePullPolicy | string | `nil` | Per-mesh override for the pause container image pull policy. Falls back to meshZoneProxyDefaults.ingress.imagePullPolicy when unset. |
 | meshes[0].ingress.serviceAccountAnnotations | object | `{}` | Annotations to add to the zone ingress Service Account. |

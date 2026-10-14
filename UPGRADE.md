@@ -8,6 +8,39 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### System namespace is labeled on every Helm upgrade
+
+The Helm hook that labels the system namespace with `kuma.io/sidecar-injection: "false"` now runs on `pre-upgrade` as well as `pre-install`.
+Before, a release recovered with `helm upgrade` after a failed first install could leave the namespace unlabeled, so policy admission webhooks didn't select it.
+The hook's `ServiceAccount`, `ClusterRole` and `ClusterRoleBinding` are now also created during upgrades and deleted once the hook finishes.
+Set `patchSystemNamespace: false` to keep managing the label yourself.
+
+### `MeshMetric` `ActiveMTLSBackend` requires a client certificate
+
+The `ActiveMTLSBackend` TLS mode of a `MeshMetric` Prometheus backend now secures the endpoint with the workload identity of the dataplane. A scraper from a different address, also one on the same node, must send a client certificate that the mesh trusts. The certificate must contain a SPIFFE ID and chain to the CA bundle of that trust domain. With the bundled identity, the bundles come from `MeshTrust`. With SPIRE, they are all the bundles that the SPIRE agent serves, federated bundles included. Scrapes from the dataplane address or from a loopback address stay plaintext. A dataplane without a workload identity accepts only these local scrapes.
+
+Before this change, the mode produced a plaintext endpoint.
+
+**Action required**
+
+Give each remote scraper a client certificate that the mesh trusts before the upgrade. To keep a plaintext endpoint, set the mode to `Disabled`.
+
+MADS sends `https` for this mode. The hint does not supply a client certificate. 3.0 has no direct access mTLS, so a remote scraper must use `https` and its own client certificate, also in the mesh.
+
+A scraper that connects from the dataplane address or from a loopback address must use `http` on the backend port and path, although MADS sends `https`. The endpoint accepts plaintext only from these addresses. This mode has no local TLS.
+
+### Empty MeshTrafficPermission match entries
+
+Remove or replace each empty match object in MeshTrafficPermission before you upgrade a control plane. Check `rules[].default.allow`, `rules[].default.deny`, and `rules[].default.allowWithShadowDeny`. Each entry must contain `spiffeID`, `sni`, or both. Keep an empty action list only when another action has at least one valid match.
+
+The 2.14 validator accepted empty match objects. The 3.0 validator rejects those entries on create and update. This check also applies to KDS policy writes through the Kubernetes admission webhook. Correct the stored resources on 2.14 before the upgrade. The correction does not rewrite stored policies.
+
+### Cross-mesh resource list endpoints removed
+
+The API server no longer serves the endpoints that list mesh-scoped resources across all meshes, for example `GET /meshaccesslogs`. The same applies to every other mesh-scoped resource type, including `GET /dataplanes`, `GET /meshservices`, `GET /secrets` and the `/_overview` variants, which now return `404`.
+
+List a specific mesh instead: `GET /meshes/{mesh}/meshaccesslogs`, `GET /meshes/{mesh}/dataplanes`, and so on. Global-scoped resources such as `GET /globalsecrets` are unchanged.
+
 ### Outbound mTLS negotiates TLS 1.3
 
 Outbound mesh mTLS connections now allow TLS 1.3. Previously Envoy's client default capped them at TLS 1.2, so mesh traffic negotiated TLS 1.2 even though inbound listeners accepted TLS 1.3. A `MeshTLS` or `MeshExternalService` `tlsVersion.max` that is unset or `TLSAuto` now resolves to TLS 1.3 on the client side, which also fixes `min: TLS13` without `max` failing every connection with `NO_SUPPORTED_VERSIONS_ENABLED`.
@@ -21,6 +54,14 @@ None for most meshes. TLS 1.3 cipher suites are not configurable, so `tlsCiphers
 From now on, `kuma.io/` and `k8s.kuma.io/` are reserved label prefixes.
 Every unknown label under these prefixes will be rejected on create and update.
 On Universal this includes the labels of the `Dataplane` passed to `kuma-dp run`: a proxy whose `Dataplane` carries an unknown reserved label, such as a leftover `kuma.io/gateway: "true"`, or an invalid label value fails to register until the label is fixed.
+
+### Control plane sets `GOMEMLIMIT` itself to 90% of the cgroup memory limit
+
+The Helm chart used to set `GOMEMLIMIT` to the full `controlPlane.resources.limits.memory`. `GOMEMLIMIT` only covers memory the Go runtime manages, so with no headroom left for the rest, such as the mapped `kuma-cp` binary, the container could be OOM killed before the garbage collector reacted. `kuma-cp` now reads the cgroup memory limit at startup and sets `GOMEMLIMIT` to 90% of it. This also covers limits the chart does not know about, such as a `LimitRange` default or a VPA, and Universal deployments under a cgroup. The chart no longer renders the `GOMEMLIMIT` environment variable and `controlPlane.runtime.goMemLimit.divisor` is removed.
+
+**Action required**
+
+None. Set the `AUTOMEMLIMIT` environment variable to choose another fraction, for example `AUTOMEMLIMIT=0.85`, or to `off` to disable it. Set `GOMEMLIMIT` explicitly to use an exact value, in which case `kuma-cp` leaves it as is. On Kubernetes use `controlPlane.envVars` for either. Remove `controlPlane.runtime.goMemLimit` from your values if you set it.
 
 ### Control-plane-owned labels are rejected when they differ from the computed value
 
@@ -503,6 +544,19 @@ rules:
 
 Put it on the route itself when the other policies targeting that route should also cover the unmatched traffic, or on a second `MeshHTTPRoute` when they should not.
 
+### A `MeshHTTPRoute` match without a path ranks as `PathPrefix /`
+
+A match that sets only `headers`, `method`, or `queryParams` is now ordered as if it had `path: { type: PathPrefix, value: / }`, which is what the Gateway API assumes. Before, any match with a path ranked above it. Two orderings change without any change to your resources:
+
+- A pathless match next to an explicit `PathPrefix /` match now ties on path, so the method, header count, and query param count decide. A header-only rule (for example a canary on `x-canary: true`) next to a `PathPrefix /` catch-all used to be shadowed by the catch-all and never matched; it now receives the requests that carry the header.
+- A pathless match now ranks above a `RegularExpression` match. With a rule on `/api/.*` and a rule matching only the header `x-debug`, a request to `/api/foo` with `x-debug` used to go to the regex rule and now goes to the header rule.
+
+Exact matches and `PathPrefix` matches longer than `/` still rank above a pathless match. Routes converted from Gateway API `HTTPRoute`s are unaffected, because their matches always carry a path.
+
+**Action required**
+
+Review `MeshHTTPRoute`s that combine pathless matches with a `PathPrefix /` or `RegularExpression` match. If a pathless rule should only apply under a `RegularExpression` path, add that path to the rule. The catch-all from the previous section is safe to add to a route that has header-only rules: it no longer shadows them.
+
 ### RBAC: control plane now reads Gateway API `GRPCRoute`s
 
 The Helm-installed control plane `ClusterRole` now grants `get`, `list`, and
@@ -516,6 +570,25 @@ configuration.
 If you manage the control plane RBAC outside of Helm (for example via GitOps or
 manual manifests), add the same `grpcroutes` read permissions to the control
 plane `ClusterRole`.
+
+### RBAC: control plane no longer manages Gateway API routes
+
+The Helm-installed `-control-plane-workloads` `ClusterRole` and the namespaced
+`-control-plane` `Role` no longer grant `create`, `delete`, `get`, `list`,
+`patch`, `update`, or `watch` on `gateway.networking.k8s.io` `grpcroutes` and
+`httproutes`. Those were leftovers from the removed built-in Gateway; the
+control plane now only reads routes through the `-control-plane` `ClusterRole`
+and patches their `grpcroutes/status` and `httproutes/status` subresources,
+which stay granted.
+
+**Action required**
+
+If you manage the control plane RBAC outside of Helm and relied on the
+`-control-plane-workloads` role for Gateway API route permissions, grant
+`get`, `list`, and `watch` on `grpcroutes` and `httproutes` and `patch` on
+their `status` subresources to the control plane identity. Without the read
+permissions the control plane fails to start its route caches and blocks
+before serving.
 
 ### `MeshLoadBalancingStrategy` cross-zone settings now require a `MeshMultiZoneService` `to` target
 
@@ -2817,21 +2890,18 @@ The `experimental.sidecarContainers` opt-out (Helm value and `KUMA_EXPERIMENTAL_
 
 None for Kubernetes 1.29+, which is already below Kuma's own minimum tested/supported Kubernetes version. If you were relying on `sidecarContainers: false` to opt out, that is no longer possible; remove the setting from your Helm values or environment.
 
-### DNS server domain must not start with a dot
+### Unused control plane DNS configuration removed
 
-The control plane now rejects a DNS server domain configuration that begins with a `.` (e.g., `.mesh`). Previously such a value was silently accepted and produced broken hostname generation.
+The remaining `dnsServer` control plane configuration has been removed:
 
-**Action required:**
+- `dnsServer.domain` (`KUMA_DNS_SERVER_DOMAIN`).
+- `dnsServer.serviceVipPort` (`KUMA_DNS_SERVER_SERVICE_VIP_PORT`).
 
-If you have `KUMA_DNS_SERVER_DOMAIN` or `dnsServer.domain` set to a value starting with `.`, remove the leading dot:
+These settings are unused by the 3.0 service discovery implementation. Removing them does not change DNS records or service ports. Use `HostnameGenerator` templates to customize generated service hostnames.
 
-```yaml
-# kuma-cp config
-dnsServer:
-  domain: mesh   # was: .mesh
-```
+**Action required**
 
-Or via environment variable: `KUMA_DNS_SERVER_DOMAIN=mesh`
+Remove the `dnsServer` section from your control plane configuration and the environment variables above when upgrading to 3.0.
 
 ### HostnameGenerator templates that produce invalid DNS names now fail explicitly
 

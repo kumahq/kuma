@@ -160,7 +160,7 @@ func (g ZoneProxyListenerGenerator) generateEgressListener(
 		Configure(envoy_listeners.StatPrefix(zoneEgressListenerName)).
 		Configure(envoy_listeners.TLSInspector())
 
-	downstreamTLS, err := meshIdentityDownstreamTLS(proxy)
+	downstreamTLS, err := MeshIdentityDownstreamTLS(proxy)
 	if err != nil {
 		return nil, err
 	}
@@ -278,9 +278,9 @@ func (g ZoneProxyListenerGenerator) buildEgressFilterChain(
 		}))
 }
 
-// meshIdentityDownstreamTLS builds a DownstreamTlsContext from the proxy's WorkloadIdentity.
+// MeshIdentityDownstreamTLS builds a DownstreamTlsContext from the proxy's WorkloadIdentity.
 // Returns nil when WorkloadIdentity is nil.
-func meshIdentityDownstreamTLS(proxy *core_xds.Proxy) (*envoy_tls.DownstreamTlsContext, error) {
+func MeshIdentityDownstreamTLS(proxy *core_xds.Proxy) (*envoy_tls.DownstreamTlsContext, error) {
 	if proxy.WorkloadIdentity == nil {
 		return nil, nil
 	}

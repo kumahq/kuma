@@ -128,19 +128,23 @@ var _ = Describe("Resource Endpoints", func() {
 })
 
 var _ = Describe("Read-only Resource Endpoints", func() {
-	It("should retain explicit PUT and DELETE routes", func() {
+	It("should retain explicit POST, PUT and DELETE routes", func() {
 		apiServer, _, stop := StartApiServer(NewTestApiServerConfigurer().WithGlobal())
 		defer stop()
 
 		const detail = "On global control plane you can not modify dataplane resources with 'kumactl apply' or via the HTTP API." +
 			" You can still use 'kumactl' or the HTTP API to modify them on the zone control plane.\n"
-		for _, method := range []string{http.MethodPut, http.MethodDelete} {
+		for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodDelete} {
 			func() {
 				By(method)
+				resourcePath := "/meshes/default/dataplanes"
+				if method != http.MethodPost {
+					resourcePath += "/dp-1"
+				}
 				request, err := http.NewRequestWithContext(
 					context.Background(),
 					method,
-					fmt.Sprintf("http://%s/meshes/default/dataplanes/dp-1", apiServer.Address()),
+					"http://"+apiServer.Address()+resourcePath,
 					bytes.NewBufferString("not-json"),
 				)
 				Expect(err).ToNot(HaveOccurred())

@@ -441,6 +441,82 @@ var _ = Describe("StatusUpdater", func() {
 		}))
 	})
 
+	It("should report NoBackendRefsConfigured when MeshAccessLog has no OpenTelemetry backends", func() {
+		mal := meshaccesslog_api.NewMeshAccessLogResource()
+		mal.Spec = &meshaccesslog_api.MeshAccessLog{
+			To: &[]meshaccesslog_api.To{
+				{
+					TargetRef: common_api.OutboundTargetRef{Kind: "Mesh"},
+					Default: meshaccesslog_api.Conf{
+						Backends: &[]meshaccesslog_api.Backend{
+							{
+								Type: meshaccesslog_api.FileBackendType,
+								File: &meshaccesslog_api.FileBackend{
+									Path: "/tmp/access.log",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Expect(resManager.Create(context.Background(), mal, store.CreateByKey("mal-file", core_model.DefaultMesh))).To(Succeed())
+
+		Eventually(getMeshAccessLogConditions("mal-file"), "10s", "100ms").Should(ContainElement(common_api.Condition{
+			Type:    common_api.BackendRefsResolvedCondition,
+			Status:  kube_meta.ConditionTrue,
+			Reason:  common_api.NoBackendRefsConfiguredReason,
+			Message: "No MeshOpenTelemetryBackend references configured",
+		}))
+	})
+
+	It("should report NoBackendRefsConfigured when MeshMetric has no OpenTelemetry backends", func() {
+		mm := meshmetric_api.NewMeshMetricResource()
+		mm.Spec = &meshmetric_api.MeshMetric{
+			Default: meshmetric_api.Conf{
+				Backends: &[]meshmetric_api.Backend{
+					{
+						Type: meshmetric_api.PrometheusBackendType,
+						Prometheus: &meshmetric_api.PrometheusBackend{
+							Port: 5670,
+							Path: "/metrics",
+						},
+					},
+				},
+			},
+		}
+		Expect(resManager.Create(context.Background(), mm, store.CreateByKey("mm-prometheus", core_model.DefaultMesh))).To(Succeed())
+
+		Eventually(getMeshMetricConditions("mm-prometheus"), "10s", "100ms").Should(ContainElement(common_api.Condition{
+			Type:    common_api.BackendRefsResolvedCondition,
+			Status:  kube_meta.ConditionTrue,
+			Reason:  common_api.NoBackendRefsConfiguredReason,
+			Message: "No MeshOpenTelemetryBackend references configured",
+		}))
+	})
+
+	It("should report NoBackendRefsConfigured when MeshTrace has no OpenTelemetry backends", func() {
+		mt := meshtrace_api.NewMeshTraceResource()
+		mt.Spec = &meshtrace_api.MeshTrace{
+			Default: meshtrace_api.Conf{
+				Backends: &[]meshtrace_api.Backend{
+					{
+						Type:   meshtrace_api.ZipkinBackendType,
+						Zipkin: &meshtrace_api.ZipkinBackend{Url: "http://zipkin:9411/api/v2/spans"},
+					},
+				},
+			},
+		}
+		Expect(resManager.Create(context.Background(), mt, store.CreateByKey("mt-zipkin", core_model.DefaultMesh))).To(Succeed())
+
+		Eventually(getMeshTraceConditions("mt-zipkin"), "10s", "100ms").Should(ContainElement(common_api.Condition{
+			Type:    common_api.BackendRefsResolvedCondition,
+			Status:  kube_meta.ConditionTrue,
+			Reason:  common_api.NoBackendRefsConfiguredReason,
+			Message: "No MeshOpenTelemetryBackend references configured",
+		}))
+	})
+
 	It("should flip MeshMetric backendRefs condition to resolved when backend appears", func() {
 		mm := meshmetric_api.NewMeshMetricResource()
 		mm.Spec = &meshmetric_api.MeshMetric{

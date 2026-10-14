@@ -1,0 +1,1 @@
+{"type":"MeshTrafficPermission","name":"test","mesh":"default","labels":{"kuma.io/origin":"global"},"spec":{"targetRef":{"kind":"Mesh"},"rules":[{"default":{"allow":[{"spiffeID":{"type":"Prefix","value":"spiffe://example"}}]}}]}}

@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"time"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -13,9 +15,13 @@ import (
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers/spire"
 	motb_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshopentelemetrybackend/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	bldrs_common "github.com/kumahq/kuma/v3/pkg/envoy/builders/common"
+	bldrs_core "github.com/kumahq/kuma/v3/pkg/envoy/builders/core"
+	bldrs_tls "github.com/kumahq/kuma/v3/pkg/envoy/builders/tls"
 	core_rules "github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/v3/pkg/plugins/policies/meshmetric/api/v1alpha1"
@@ -78,6 +84,45 @@ func zoneIngressOnlyDataplane(name string) *builders.DataplaneBuilder {
 				},
 			}
 		})
+}
+
+func sdsSecret(name string, source bldrs_common.Configurer[envoy_core.ConfigSource]) func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+	return func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+		return bldrs_tls.SdsSecretConfigSource(name, bldrs_core.NewConfigSource().Configure(source))
+	}
+}
+
+func activeMTLSBackendProxy(identity *core_xds.WorkloadIdentity) *core_xds.Proxy {
+	return xds_builders.Proxy().
+		WithID(*core_xds.BuildProxyId("default", "backend")).
+		WithDataplane(
+			samples.DataplaneBackendBuilder().
+				WithLabels(workloadLabels()),
+		).
+		WithMetadata(&core_xds.DataplaneMetadata{WorkDir: "/tmp"}).
+		WithWorkloadIdentity(identity).
+		WithPolicies(xds_builders.MatchedPolicies().
+			WithProxyConfPolicy(api.MeshMetricType, mergedPolicyConf(core_rules.Rules{
+				{
+					Subset: []subsetutils.Tag{},
+					Conf: api.Conf{
+						Backends: &[]api.Backend{
+							{
+								Type: api.PrometheusBackendType,
+								Prometheus: &api.PrometheusBackend{
+									Path: "/metrics",
+									Port: 5670,
+									Tls: &api.PrometheusTls{
+										Mode: api.ActiveMTLSBackend,
+									},
+								},
+							},
+						},
+					},
+				},
+			})),
+		).
+		Build()
 }
 
 func otelBackendResource(name, address string) *motb_api.MeshOpenTelemetryBackendResource {
@@ -314,6 +359,37 @@ var _ = Describe("MeshMetric", func() {
 					})),
 				).
 				Build(),
+		}),
+		Entry("active_mtls_backend", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
+			proxy: activeMTLSBackendProxy(&core_xds.WorkloadIdentity{
+				ManagementMode:           core_xds.KumaManagementMode,
+				IdentitySourceConfigurer: sdsSecret("identity-cert", bldrs_core.Sds()),
+			}),
+		}),
+		Entry("active_mtls_backend_spire", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
+			proxy: activeMTLSBackendProxy(&core_xds.WorkloadIdentity{
+				ManagementMode:                     core_xds.ExternalManagementMode,
+				IdentitySourceConfigurer:           sdsSecret("spiffe://default/backend", bldrs_core.ApiConfigSource(spire.SpireAgentClusterName)),
+				ExternalValidationSourceConfigurer: sdsSecret(spire.FederatedCASecretName, bldrs_core.ApiConfigSource(spire.SpireAgentClusterName)),
+			}),
+		}),
+		Entry("active_mtls_backend_without_identity", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
+			proxy:   activeMTLSBackendProxy(nil),
+		}),
+		Entry("active_mtls_backend_ipv6", testCase{
+			context: *xds_builders.Context().WithMeshBuilder(samples.MeshDefaultBuilder()).Build(),
+			proxy: func() *core_xds.Proxy {
+				proxy := activeMTLSBackendProxy(&core_xds.WorkloadIdentity{
+					ManagementMode:           core_xds.KumaManagementMode,
+					IdentitySourceConfigurer: sdsSecret("identity-cert", bldrs_core.Sds()),
+				})
+				proxy.Dataplane.Spec.Networking.Address = "fd00::1"
+				proxy.Metadata.IPv6Enabled = true
+				return proxy
+			}(),
 		}),
 		Entry("otel_and_prometheus", testCase{
 			context: *xds_builders.Context().WithMeshBuilder(

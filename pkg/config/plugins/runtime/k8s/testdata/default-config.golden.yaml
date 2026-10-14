@@ -24,6 +24,7 @@ injector:
   ignoredServiceSelectorLabels: []
   initContainer:
     image: kuma/kuma-init:latest
+    imagePullPolicy: IfNotPresent
     resources:
       limits:
         cpu: "0"
@@ -40,6 +41,7 @@ injector:
     envVars: {}
     gid: 5678
     image: kuma/kuma-dp:latest
+    imagePullPolicy: IfNotPresent
     ipFamilyMode: dualstack
     livenessProbe:
       failureThreshold: 12

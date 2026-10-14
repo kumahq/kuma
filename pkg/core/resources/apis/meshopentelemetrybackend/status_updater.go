@@ -287,7 +287,7 @@ func buildBackendRefsResolvedCondition(
 		return common_api.Condition{
 			Type:    conditionType,
 			Status:  kube_meta.ConditionTrue,
-			Reason:  resolvedReason,
+			Reason:  common_api.NoBackendRefsConfiguredReason,
 			Message: "No MeshOpenTelemetryBackend references configured",
 		}
 	}

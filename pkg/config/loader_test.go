@@ -79,6 +79,9 @@ var _ = Describe("Config loader", func() {
 				}
 
 				Expect(util_maps.AllKeys(testEnvs)).To(ConsistOf(util_maps.AllKeys(configEnvs)), "config values are not overridden in the test. Add overrides for them with a value that is different than default.")
+
+				Expect(cfg.Runtime.Kubernetes.Injector.InitContainer.ImagePullPolicy).To(Equal("Always"))
+				Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ImagePullPolicy).To(Equal("Never"))
 			}
 
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
@@ -301,9 +304,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Diagnostics.TlsMinVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Diagnostics.TlsMaxVersion).To(Equal("TLSv1_3"))
 			Expect(cfg.Diagnostics.TlsCipherSuites).To(Equal([]string{"TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_AES_256_GCM_SHA384"}))
-
-			Expect(cfg.DNSServer.Domain).To(Equal("test-domain"))
-			Expect(cfg.DNSServer.ServiceVipPort).To(Equal(uint32(9090)))
 
 			Expect(cfg.XdsServer.DataplaneStatusFlushInterval.Duration).To(Equal(7 * time.Second))
 			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval.Duration).To(Equal(21 * time.Second))
@@ -679,9 +679,6 @@ multizone:
       auth:
         tokenInline: zone-token
         tokenPath: /zone-token
-dnsServer:
-  domain: test-domain
-  serviceVipPort: 9090
 defaults:
   skipMeshCreation: true
   skipHostnameGenerators: true
@@ -926,6 +923,7 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE":                                            "/tmp/ca.crt",
 				"KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME":                                 "28s",
 				"KUMA_INJECTOR_INIT_CONTAINER_IMAGE":                                                       "test-image:test",
+				"KUMA_INJECTOR_INIT_CONTAINER_IMAGE_PULL_POLICY":                                           "Always",
 				"KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_CPU":                                      "30m",
 				"KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_REQUESTS_MEMORY":                                   "30Mi",
 				"KUMA_INJECTOR_INIT_CONTAINER_RESOURCES_LIMITS_CPU":                                        "200m",
@@ -948,6 +946,7 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_DRAIN_TIME":                            "33s",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_GUI":                                   "1212",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE":                                 "image:test",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE_PULL_POLICY":                     "Never",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_INITIAL_DELAY_SECONDS":  "10",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_PERIOD_SECONDS":         "8",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_FAILURE_THRESHOLD":      "31",
@@ -994,8 +993,6 @@ meshService:
 				"KUMA_GENERAL_CERT_GENERATION_MAX_BACKOFF":                                                 "4m",
 				"KUMA_GENERAL_CERT_GENERATION_CIRCUIT_BREAKER_MIN_PROXIES":                                 "7",
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                                                     "https://kuma,https://someapi",
-				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
-				"KUMA_DNS_SERVER_SERVICE_VIP_PORT":                                                         "9090",
 				"KUMA_MODE":                                                                                "zone",
 				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                                                      "1234",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_ENABLED":                                                    "false",

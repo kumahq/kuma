@@ -25,11 +25,12 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				RedirectPortInbound:  15006,
 				RedirectPortOutbound: 15001,
 				DataplaneContainer: DataplaneContainer{
-					Image:     "kuma/kuma-dp:latest",
-					UID:       5678,
-					GID:       5678,
-					DrainTime: config_types.Duration{Duration: 30 * time.Second},
-					EnvVars:   map[string]string{},
+					Image:           "kuma/kuma-dp:latest",
+					ImagePullPolicy: "IfNotPresent",
+					UID:             5678,
+					GID:             5678,
+					DrainTime:       config_types.Duration{Duration: 30 * time.Second},
+					EnvVars:         map[string]string{},
 					ReadinessProbe: SidecarReadinessProbe{
 						InitialDelaySeconds: 1,
 						TimeoutSeconds:      3,
@@ -63,7 +64,8 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			},
 			ContainerPatches: []string{},
 			InitContainer: InitContainer{
-				Image: "kuma/kuma-init:latest",
+				Image:           "kuma/kuma-init:latest",
+				ImagePullPolicy: "IfNotPresent",
 				Resources: InitContainerResources{
 					Requests: InitContainerResourceRequests{
 						CPU:    "20m",
@@ -147,8 +149,8 @@ type KubernetesRuntimeConfig struct {
 	// marshaled objects will be stored in the cache. If equal to 0s then
 	// cache is turned off
 	MarshalingCacheExpirationTime config_types.Duration `json:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
-	// List of names of Service Accounts that admission requests are allowed.
-	// This list is appended with Control Plane's Service Account, generic-garbage-collector, and storage-version-migrator-controller.
+	// Additional usernames allowed to bypass resource admission restrictions.
+	// This list is appended with generic-garbage-collector and storage-version-migrator-controller.
 	AllowedUsers []string `json:"allowedUsers,omitempty" envconfig:"kuma_runtime_kubernetes_allowed_users"`
 	// ControlPlaneServiceName defines service name of the Kuma control plane. It is used to point Kuma DP to proper URL.
 	ControlPlaneServiceName string `json:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
@@ -169,8 +171,8 @@ type KubernetesRuntimeConfig struct {
 	// Default is empty list (uses ServiceAccount as workload identifier).
 	WorkloadLabels []string `json:"workloadLabels" envconfig:"kuma_runtime_kubernetes_workload_labels"`
 	// DisallowMultipleMeshesPerNamespace prevents pods from using kuma.io/mesh label in ways that would create
-	// multiple meshes within a single namespace. When enabled, Workload generation is skipped for namespaces
-	// with multiple meshes and a warning event is emitted. Default is false.
+	// multiple meshes within a single namespace. When enabled, the Pod admission webhook rejects
+	// a Pod if the namespace already contains a Dataplane in a different mesh. Default is false.
 	DisallowMultipleMeshesPerNamespace bool `json:"disallowMultipleMeshesPerNamespace" envconfig:"kuma_runtime_kubernetes_disallow_multiple_meshes_per_namespace"`
 }
 
@@ -281,6 +283,8 @@ type SidecarTraffic struct {
 type DataplaneContainer struct {
 	// Image name.
 	Image string `json:"image,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_image"`
+	// ImagePullPolicy is the pull policy for the Kuma DP image; one of Always, IfNotPresent, Never.
+	ImagePullPolicy string `json:"imagePullPolicy,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_image_pull_policy"`
 	// User ID.
 	UID int64 `json:"uid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_uid"`
 	// Group ID.
@@ -391,6 +395,8 @@ type InitContainer struct {
 
 	// Image name.
 	Image string `json:"image,omitempty" envconfig:"kuma_injector_init_container_image"`
+	// ImagePullPolicy is the pull policy for the Kuma init image; one of Always, IfNotPresent, Never.
+	ImagePullPolicy string `json:"imagePullPolicy,omitempty" envconfig:"kuma_injector_init_container_image_pull_policy"`
 	// Compute resource requirements.
 	Resources InitContainerResources `json:"resources,omitempty"`
 }
@@ -566,6 +572,15 @@ func (c *SidecarContainer) PostProcess() error {
 	)
 }
 
+func validatePullPolicy(pullPolicy string) error {
+	switch pullPolicy {
+	case "", "Always", "IfNotPresent", "Never":
+		return nil
+	default:
+		return errors.Errorf(".ImagePullPolicy must be one of 'Always', 'IfNotPresent' or 'Never'")
+	}
+}
+
 func (c *SidecarContainer) Validate() error {
 	var errs error
 	if c.Image == "" {
@@ -573,6 +588,9 @@ func (c *SidecarContainer) Validate() error {
 	}
 	if c.IpFamilyMode != "" && c.IpFamilyMode != "ipv4" && c.IpFamilyMode != "dualstack" {
 		errs = multierr.Append(errs, errors.Errorf(".IpFamilyMode must be either 'ipv4' or 'dualstack'"))
+	}
+	if err := validatePullPolicy(c.ImagePullPolicy); err != nil {
+		errs = multierr.Append(errs, err)
 	}
 	if 65535 < c.RedirectPortInbound {
 		errs = multierr.Append(errs, errors.Errorf(".RedirectPortInbound must be in the range [0, 65535]"))
@@ -609,6 +627,9 @@ func (c *InitContainer) Validate() error {
 	var errs error
 	if c.Image == "" {
 		errs = multierr.Append(errs, errors.Errorf(".Image must be non-empty"))
+	}
+	if err := validatePullPolicy(c.ImagePullPolicy); err != nil {
+		errs = multierr.Append(errs, err)
 	}
 	if err := c.Resources.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Resources is not valid"))

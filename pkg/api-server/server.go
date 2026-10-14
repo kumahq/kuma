@@ -38,6 +38,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/registry"
+	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/insights/globalinsight"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
@@ -122,6 +123,7 @@ func NewApiServer(
 ) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
+	container.ServiceErrorHandler(rest_errors.HandleServiceError)
 
 	promMiddleware := middleware.New(middleware.Config{
 		Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
@@ -160,6 +162,7 @@ func NewApiServer(
 		Path(apiBasePath).
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
+	ws.Filter(rejectInvalidNamePathParams)
 
 	addResourcesEndpoints(
 		ws,
@@ -270,14 +273,6 @@ func NewApiServer(
 	return newApiServer, nil
 }
 
-type resourceRouteRole int
-
-const (
-	meshCRUDListRoute resourceRouteRole = iota
-	crossMeshListRoute
-	globalCRUDListRoute
-)
-
 type resourcePathRole int
 
 const (
@@ -286,7 +281,6 @@ const (
 )
 
 type resourceRoute struct {
-	role     resourceRouteRole
 	pathRole resourcePathRole
 }
 
@@ -299,13 +293,8 @@ func resourceRoutes(descriptor model.ResourceTypeDescriptor) []resourceRoute {
 	var routes []resourceRoute
 	for _, pathRole := range pathRoles {
 		switch descriptor.Scope {
-		case model.ScopeMesh:
-			routes = append(routes,
-				resourceRoute{role: meshCRUDListRoute, pathRole: pathRole},
-				resourceRoute{role: crossMeshListRoute, pathRole: pathRole},
-			)
-		case model.ScopeGlobal:
-			routes = append(routes, resourceRoute{role: globalCRUDListRoute, pathRole: pathRole})
+		case model.ScopeMesh, model.ScopeGlobal:
+			routes = append(routes, resourceRoute{pathRole: pathRole})
 		}
 	}
 	return routes
@@ -316,7 +305,7 @@ func (r resourceRoute) pathPrefix(descriptor model.ResourceTypeDescriptor) strin
 	if r.pathRole == aliasResourcePath {
 		path = descriptor.AlternativeWsPath
 	}
-	if r.role == meshCRUDListRoute {
+	if descriptor.Scope == model.ScopeMesh {
 		return "/meshes/{mesh}/" + path
 	}
 	return "/" + path
@@ -325,15 +314,11 @@ func (r resourceRoute) pathPrefix(descriptor model.ResourceTypeDescriptor) strin
 func registerResourceRoutes(ws *restful.WebService, endpoints resourceEndpoints) {
 	for _, route := range resourceRoutes(endpoints.descriptor) {
 		pathPrefix := route.pathPrefix(endpoints.descriptor)
-		switch route.role {
-		case meshCRUDListRoute, globalCRUDListRoute:
-			endpoints.addCreateOrUpdateEndpoint(ws, pathPrefix)
-			endpoints.addDeleteEndpoint(ws, pathPrefix)
-			endpoints.addFindEndpoint(ws, pathPrefix)
-			endpoints.addListEndpoint(ws, pathPrefix)
-		case crossMeshListRoute:
-			endpoints.addListEndpoint(ws, pathPrefix)
-		}
+		endpoints.addCreateEndpoint(ws, pathPrefix)
+		endpoints.addCreateOrUpdateEndpoint(ws, pathPrefix)
+		endpoints.addDeleteEndpoint(ws, pathPrefix)
+		endpoints.addFindEndpoint(ws, pathPrefix)
+		endpoints.addListEndpoint(ws, pathPrefix)
 	}
 }
 

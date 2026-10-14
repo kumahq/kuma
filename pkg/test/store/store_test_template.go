@@ -234,6 +234,7 @@ func ExecuteStoreTests(
 				// given
 				name := "to-be-updated.demo"
 				resource := createResource(name, "foo", "bar")
+				creationTime := resource.Meta.GetCreationTime()
 
 				// when
 				resource.Spec.Match.Port = 81
@@ -241,6 +242,8 @@ func ExecuteStoreTests(
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
+				Expect(resource.Meta.GetLabels()).To(HaveKeyWithValue("foo", "bar"))
+				Expect(resource.Meta.GetCreationTime()).To(Equal(creationTime))
 
 				res := meshexternalservice_api.NewMeshExternalServiceResource()
 				err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
@@ -549,7 +552,7 @@ func ExecuteStoreTests(
 				createResource("list-res-1.demo")
 				createResource("list-res-2.demo")
 				rs3 := createResource("list-mes-1.demo")
-				rs4 := createResource("list-mes-1.default")
+				rs4 := createResource("list-mes-2.demo")
 
 				list := meshexternalservice_api.MeshExternalServiceResourceList{}
 				rk := []core_model.ResourceKey{core_model.MetaToResourceKey(rs3.GetMeta()), core_model.MetaToResourceKey(rs4.GetMeta())}
@@ -568,7 +571,7 @@ func ExecuteStoreTests(
 						res = append(res, v.GetMeta().GetName())
 					}
 					return res
-				}, Equal([]string{"list-mes-1.default", "list-mes-1.demo"})))
+				}, Equal([]string{"list-mes-1.demo", "list-mes-2.demo"})))
 			})
 
 			Describe("Pagination", func() {

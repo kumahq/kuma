@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Could not process a resource",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "labels[\"kuma.io/origin\"]",
+   "reason": "label \"kuma.io/origin\" is managed by the control plane: got \"global\", expected \"zone\""
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "labels[\"kuma.io/origin\"]",
+   "message": "label \"kuma.io/origin\" is managed by the control plane: got \"global\", expected \"zone\""
+  }
+ ]
+}

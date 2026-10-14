@@ -1,0 +1,7 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Bad Request",
+ "detail": "invalid Mesh object: \"unexpected end of JSON input\"",
+ "details": "invalid Mesh object: \"unexpected end of JSON input\""
+}

@@ -34,6 +34,8 @@ var _ = Describe("KubernetesStore template", func() {
 				SystemNamespace: "kuma-system",
 			},
 			Scheme: k8sClientScheme,
+			// The shared template keeps its MeshExternalServices in "demo".
+			SystemNamespace: "demo",
 		}
 	}, "kubernetes")
 })
