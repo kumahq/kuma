@@ -191,6 +191,7 @@ to:
         kuma.io/display-name: web-backend
     default:
       interval: -10s
+      unhealthyInterval: -10s
       timeout: -2s
       initialJitter: -5s
       intervalJitter: -6s
@@ -202,6 +203,8 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].default.interval
+    message: must be greater than zero when defined
+  - field: spec.to[0].default.unhealthyInterval
     message: must be greater than zero when defined
   - field: spec.to[0].default.timeout
     message: must be greater than zero when defined
