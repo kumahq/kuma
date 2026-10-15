@@ -2890,21 +2890,18 @@ The `experimental.sidecarContainers` opt-out (Helm value and `KUMA_EXPERIMENTAL_
 
 None for Kubernetes 1.29+, which is already below Kuma's own minimum tested/supported Kubernetes version. If you were relying on `sidecarContainers: false` to opt out, that is no longer possible; remove the setting from your Helm values or environment.
 
-### DNS server domain must not start with a dot
+### Unused control plane DNS configuration removed
 
-The control plane now rejects a DNS server domain configuration that begins with a `.` (e.g., `.mesh`). Previously such a value was silently accepted and produced broken hostname generation.
+The remaining `dnsServer` control plane configuration has been removed:
 
-**Action required:**
+- `dnsServer.domain` (`KUMA_DNS_SERVER_DOMAIN`).
+- `dnsServer.serviceVipPort` (`KUMA_DNS_SERVER_SERVICE_VIP_PORT`).
 
-If you have `KUMA_DNS_SERVER_DOMAIN` or `dnsServer.domain` set to a value starting with `.`, remove the leading dot:
+These settings are unused by the 3.0 service discovery implementation. Removing them does not change DNS records or service ports. Use `HostnameGenerator` templates to customize generated service hostnames.
 
-```yaml
-# kuma-cp config
-dnsServer:
-  domain: mesh   # was: .mesh
-```
+**Action required**
 
-Or via environment variable: `KUMA_DNS_SERVER_DOMAIN=mesh`
+Remove the `dnsServer` section from your control plane configuration and the environment variables above when upgrading to 3.0.
 
 ### HostnameGenerator templates that produce invalid DNS names now fail explicitly
 

@@ -124,13 +124,43 @@ $(KUBECONFIG_DIR)/kind-kuma-current: $(KUBECONFIG_DIR)
 dev/print-latest-release-branch:
 	@echo $(LATEST_RELEASE_BRANCH)
 
-TAKE_FILES_FROM_MASTER = app/kuma-ui/pkg/resources go.mod go.sum deployments/charts/*/Chart.yaml
+TAKE_FILES_FROM_MASTER = app/kuma-ui/pkg/resources go.mod go.sum mise.toml deployments/charts/*/Chart.yaml
+
+# Succeeds when $$2 is a higher version than $$1. "-" -> "~" makes sort -V order prereleases before their release
+# (via $$t: bash tilde-expands a literal "~" in the replacement, and bash 3.2 keeps the backslash of "\~").
+# Pseudo-versions are skipped: they can pin different branches (e.g. a downstream's kuma), so timestamps don't order them.
+# Non-versions (e.g. "latest") are skipped: sort -V puts them above any version, so they would replace a real pin.
+IS_NEWER_VERSION = is_newer() { \
+	local t="~"; \
+	[[ "$$1" =~ ^v?[0-9] && "$$2" =~ ^v?[0-9] ]] && [ "$$1" != "$$2" ] && ! [[ "$$1 $$2" =~ [0-9]{14}-[0-9a-f]{12} ]] && \
+	[ "$$(printf '%s\n%s\n' "$${1/-/$$t}" "$${2/-/$$t}" | sort -V | tail -1)" = "$${2/-/$$t}" ]; \
+}
 
 .PHONY: dev/merge-release
 dev/merge-release:
 	git merge origin/$(LATEST_RELEASE_BRANCH) --no-commit || true
 	git rm -rf $(TAKE_FILES_FROM_MASTER)
 	git checkout HEAD -- $(TAKE_FILES_FROM_MASTER)
+	@# Keep master's go.mod and mise.toml but carry over newer versions bumped on the release branch (e.g. security fixes)
+	@# set -e and the reqs assignment make a failed git show or go mod edit stop the merge instead of skipping the carry-over
+	@set -e; $(IS_NEWER_VERSION); release_mod=$$(mktemp); trap 'rm -f "$$release_mod"' EXIT; \
+	git show origin/$(LATEST_RELEASE_BRANCH):go.mod > "$$release_mod"; \
+	reqs=$$(go mod edit -json "$$release_mod" | $(JQ) -r '.Require[] | "\(.Path)@\(.Version)"'); \
+	for req in $$reqs; do \
+		mod=$${req%@*}; rel=$${req##*@}; \
+		cur=$$(go mod edit -json | $(JQ) -r --arg m "$$mod" '.Require[] | select(.Path == $$m) | .Version'); \
+		if is_newer "$$cur" "$$rel"; then echo "go.mod: $$mod $$cur -> $$rel"; go mod edit -require="$$req"; fi; \
+	done
+	go mod tidy
+	@set -e; $(IS_NEWER_VERSION); git show origin/$(LATEST_RELEASE_BRANCH):mise.toml | $(YQ) -p toml -o json '.tools' | \
+	$(JQ) -r 'to_entries[] | select(.value | type == "string") | "\(.key)\t\(.value)"' | while IFS=$$'\t' read -r tool rel; do \
+		cur=$$($(YQ) -p toml -o json '.tools' mise.toml | $(JQ) -r --arg t "$$tool" '.[$$t] | strings'); \
+		if is_newer "$$cur" "$$rel"; then \
+			echo "mise.toml: $$tool $$cur -> $$rel"; \
+			TOOL="$$tool" VER="$$rel" perl -pi -e 's/^("?)\Q$$ENV{TOOL}\E\1(\s*=\s*)"[^"]*"/$$1$$ENV{TOOL}$$1$$2"$$ENV{VER}"/' mise.toml; \
+		fi; \
+	done
+	git add go.mod go.sum mise.toml
 	@# Release branches rename runner variables after the cut, keep master's names
 	@for f in $$(git grep -lE 'RUNNERS_RELEASE_[0-9]+_[0-9]+_'); do \
 		perl -pi -e 's/RUNNERS_RELEASE_\d+_\d+_/RUNNERS_MASTER_/g' "$$f"; \

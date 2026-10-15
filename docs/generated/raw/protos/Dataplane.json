@@ -91,9 +91,7 @@
                         "Ready",
                         0,
                         "NotReady",
-                        1,
-                        "Ignored",
-                        2
+                        1
                     ],
                     "oneOf": [
                         {

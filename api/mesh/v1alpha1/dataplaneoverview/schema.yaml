@@ -143,7 +143,6 @@ components:
                         enum:
                         - Ready
                         - NotReady
-                        - Ignored
                         type: string
                     type: object
                   type: array

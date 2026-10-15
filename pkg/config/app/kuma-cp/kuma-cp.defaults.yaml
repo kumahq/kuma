@@ -22,20 +22,20 @@ store:
     password: kuma # ENV: KUMA_STORE_POSTGRES_PASSWORD
     # Database name of the Postgres DB
     dbName: kuma # ENV: KUMA_STORE_POSTGRES_DB_NAME
-    # Driver to use, one of: pgx, postgres
+    # Postgres driver. Only pgx is supported.
     driverName: pgx # ENV: KUMA_STORE_POSTGRES_DRIVER_NAME
     # Connection Timeout to the DB in seconds
     connectionTimeout: 5 # ENV: KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT
-    # MaxConnectionIdleTime (applied only when driverName=pgx) is the duration after which an idle connection will be automatically closed by the health check.
+    # MaxConnectionIdleTime is the duration after which an idle connection will be automatically closed by the health check.
     maxConnectionIdleTime: "30m" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_IDLE_TIME
-    # MaxConnectionLifetime (applied only when driverName=pgx) is the duration since creation after which a connection will be automatically closed
+    # MaxConnectionLifetime is the duration since creation after which a connection will be automatically closed
     maxConnectionLifetime: "1h" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME
-    # MaxConnectionLifetimeJitter (applied only when driverName=pgx) is the duration after maxConnectionLifetime to randomly decide to close a connection.
+    # MaxConnectionLifetimeJitter is the duration after maxConnectionLifetime to randomly decide to close a connection.
     # This helps prevent all connections from being closed at the exact same time, starving the pool.
     maxConnectionLifetimeJitter: "1m" # ENV: KUMA_STORE_POSTGRES_MAX_CONNECTION_LIFETIME_JITTER
-    # HealthCheckInterval (applied only when driverName=pgx) is the duration between checks of the health of idle connections.
+    # HealthCheckInterval is the duration between checks of the health of idle connections.
     healthCheckInterval: "30s" # ENV: KUMA_STORE_POSTGRES_HEALTH_CHECK_INTERVAL
-    # MinOpenConnections (applied only when driverName=pgx) is the minimum number of open connections to the database
+    # MinOpenConnections is the minimum number of open connections to the database
     minOpenConnections: 0 # ENV: KUMA_STORE_POSTGRES_MIN_OPEN_CONNECTIONS
     # MaxOpenConnections is the maximum number of open connections to the database
     # `0` value means number of open connections is unlimited
@@ -54,7 +54,9 @@ store:
       # Path to TLS Key of the client. Required when server has METHOD=cert
       keyPath: # ENV: KUMA_STORE_POSTGRES_TLS_KEY_PATH
       # Path to the root certificate. Used in verifyCa and verifyFull modes.
-      caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
+      caPath: # ENV: KUMA_STORE_POSTGRES_TLS_CA_PATH
+      # If true, disables TLS Server Name Indication (SNI) for Postgres connections.
+      disableSSLSNI: false # ENV: KUMA_STORE_POSTGRES_TLS_DISABLE_SSLSNI
     # TolerateNewerDBVersions makes `migrate up` a no-op when the DB is at a
     # newer version than the binary, and relaxes the boot-time migration gate
     # from strict equality (dbVer == fileVer) to dbVer >= fileVer. Intended
@@ -103,18 +105,17 @@ bootstrapServer:
     xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
     # Connection timeout to the XDS Server
     xdsConnectTimeout: 1s # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_CONNECT_TIMEOUT
-    # Cap on the gRPC C-Core receive flow-control window for the kuma-dp xDS
-    # client. Set as the GoogleGrpc channel arg `grpc.max_receive_message_length`.
-    # Default 4 MiB is large enough for gateway DPs with 450+ listeners; the
-    # gRPC C-Core default of 4 MiB sizes the per-stream HTTP/2 receive window
-    # too small for the initial xDS push on those DPs and stalls the stream.
+    # Maximum size in bytes of received xDS messages when Envoy uses GoogleGrpc.
+    # Sets the channel argument `grpc.max_receive_message_length`.
+    # Increase this value when large xDS configurations exceed the limit.
+    # This setting does not apply when Envoy uses EnvoyGrpc.
     xdsGrpcMaxReceiveMessageBytes: 4194304 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_GRPC_MAX_RECEIVE_MESSAGE_BYTES
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
   # Whether the MADS server is enabled. MADS is only supported in universal
   # deployment mode; this setting is ignored on Kubernetes.
   enabled: true # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ENABLED
-  # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
+  # Port of the server that serves Monitoring Assignment Discovery Service (MADS) over gRPC and HTTP.
   port: 5676 # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_PORT
   # Which MADS API versions to serve
   apiVersions: ["v1"] # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS
@@ -122,19 +123,21 @@ monitoringAssignmentServer:
   assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL
   # The default timeout for a single fetch-based discovery request, if not specified
   defaultFetchTimeout: 30s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT
+  # If true, enables TLS for the MADS server. Certificate paths alone do not enable TLS.
+  tlsEnabled: false # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_ENABLED
   # Path to TLS certificate file
   tlsCertFile: "" # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_CERT_FILE
   # Path to TLS key file
   tlsKeyFile: "" # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_KEY_FILE
-  # TlsMinVersion the minimum version of TLS used across all the Kuma Servers.
+  # Minimum TLS version for the MADS server, overridden by general.tlsMinVersion when non-empty.
   tlsMinVersion: "TLSv1_2" # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_MIN_VERSION
-  # TlsMaxVersion the maximum version of TLS used across all the Kuma Servers.
+  # Maximum TLS version for the MADS server, overridden by general.tlsMaxVersion when non-empty.
   tlsMaxVersion: # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_MAX_VERSION
-  # TlsCipherSuites the list of cipher suites to be used across all the Kuma Servers.
+  # TLS cipher suites for the MADS server, overridden by general.tlsCipherSuites when non-empty.
   tlsCipherSuites: [] # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_TLS_CIPHER_SUITES
 # Envoy XDS server configuration
 xdsServer:
-  # Interval for re-genarting configuration for Dataplanes connected to the Control Plane
+  # Interval for re-generating configuration for Dataplanes connected to the Control Plane
   dataplaneConfigurationRefreshInterval: 10s # ENV: KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
   # Interval for flushing status of Dataplanes connected to the Control Plane
   dataplaneStatusFlushInterval: 10s # ENV: KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL
@@ -171,12 +174,12 @@ apiServer:
     # Path to TLS key file. Autoconfigured from KUMA_GENERAL_TLS_KEY_FILE if empty
     tlsKeyFile: "" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
     # Path to the CA certificate which is used to sign client certificates. It is used only for verifying client certificates.
-    tlsCaFile: "" # ENV: KUMA_API_SERVER_HTTPS_CLIENT_CERTS_CA_FILE
-    # TlsMinVersion the minimum version of TLS used across all the Kuma Servers.
+    tlsCaFile: "" # ENV: KUMA_API_SERVER_HTTPS_TLS_CA_FILE
+    # Minimum TLS version for the HTTPS API server, overridden by general.tlsMinVersion when non-empty.
     tlsMinVersion: "TLSv1_2" # ENV: KUMA_API_SERVER_HTTPS_TLS_MIN_VERSION
-    # TlsMaxVersion the maximum version of TLS used across all the Kuma Servers.
+    # Maximum TLS version for the HTTPS API server, overridden by general.tlsMaxVersion when non-empty.
     tlsMaxVersion: # ENV: KUMA_API_SERVER_HTTPS_TLS_MAX_VERSION
-    # TlsCipherSuites the list of cipher suites to be used across all the Kuma Servers.
+    # TLS cipher suites for the HTTPS API server, overridden by general.tlsCipherSuites when non-empty.
     tlsCipherSuites: [] # ENV: KUMA_API_SERVER_HTTPS_TLS_CIPHER_SUITES
     # If true, then HTTPS connection will require client cert.
     requireClientCert: false # ENV: KUMA_API_SERVER_HTTPS_REQUIRE_CLIENT_CERT
@@ -235,6 +238,10 @@ runtime:
   kubernetes:
     # Service name of the Kuma Control Plane. It is used to point Kuma DP to proper URL.
     controlPlaneServiceName: kuma-control-plane # ENV: KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME
+    # Additional usernames allowed to bypass resource admission restrictions.
+    # generic-garbage-collector and storage-version-migrator-controller are always included.
+    # For ServiceAccounts, use the full username: system:serviceaccount:<namespace>:<name>.
+    allowedUsers: null # ENV: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
     # Taint controller that prevents applications from scheduling until CNI is ready.
     nodeTaintController:
       # If true enables the taint controller.
@@ -291,7 +298,7 @@ runtime:
           initialDelaySeconds: 1 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_INITIAL_DELAY_SECONDS
           # Number of seconds after which the probe times out.
           timeoutSeconds: 3 # ENV : KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_TIMEOUT_SECONDS
-          # Number of seconds after which the probe times out.
+          # How often (in seconds) to perform the probe.
           periodSeconds: 5 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_PERIOD_SECONDS
           # Minimum consecutive successes for the probe to be considered successful after having failed.
           successThreshold: 1 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_SUCCESS_THRESHOLD
@@ -381,7 +388,7 @@ runtime:
         # This setting is applied on every pod unless traffic.kuma.io/exclude-inbound-ports annotation is specified on Pod.
         excludeInboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_PORTS
         # List of outbound ports that will be excluded from interception.
-        # This setting is applied on every pod unless traffic.kuma.io/exclude-oubound-ports annotation is specified on Pod.
+        # This setting is applied on every pod unless traffic.kuma.io/exclude-outbound-ports annotation is specified on Pod.
         excludeOutboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
         # List of inbound IP addresses that will be excluded from interception.
         # This setting is applied on every pod unless traffic.kuma.io/exclude-inbound-ips annotation is specified on the Pod.
@@ -449,8 +456,8 @@ runtime:
     # Default is empty list (uses ServiceAccount as workload identifier).
     workloadLabels: [] # ENV: KUMA_RUNTIME_KUBERNETES_WORKLOAD_LABELS
     # DisallowMultipleMeshesPerNamespace prevents pods from using kuma.io/mesh label in ways that would create
-    # multiple meshes within a single namespace. When enabled, Workload generation is skipped for namespaces
-    # with multiple meshes and a warning event is emitted.
+    # multiple meshes within a single namespace. When enabled, the Pod admission webhook rejects
+    # a Pod if the namespace already contains a Dataplane in a different mesh.
     disallowMultipleMeshesPerNamespace: false # ENV: KUMA_RUNTIME_KUBERNETES_DISALLOW_MULTIPLE_MESHES_PER_NAMESPACE
   # Universal-specific configuration
   universal:
@@ -462,6 +469,7 @@ runtime:
       socketPath: /tmp/spire-agent/public/api.sock # ENV: KUMA_RUNTIME_UNIVERSAL_SPIRE_SOCKET_PATH
     workload:
       # How often we check whether Workloads need to be generated from Dataplanes
+      # Set to 0s to disable automatic Workload generation.
       generationInterval: 2s # ENV: KUMA_RUNTIME_UNIVERSAL_WORKLOAD_GENERATION_INTERVAL
 # Default Kuma entities configuration
 defaults:
@@ -516,11 +524,14 @@ general:
   tlsCertFile: # ENV: KUMA_GENERAL_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key that will be used across all the Kuma Servers.
   tlsKeyFile: # ENV: KUMA_GENERAL_TLS_KEY_FILE
-  # TlsMinVersion the minimum version of TLS used across all the Kuma Servers.
+  # Minimum TLS version for all Kuma servers. When non-empty, overrides per-server minimum versions.
+  # Set to "" to use the individual servers' tlsMinVersion settings.
   tlsMinVersion: "TLSv1_2" # ENV: KUMA_GENERAL_TLS_MIN_VERSION
-  # TlsMaxVersion the maximum version of TLS used across all the Kuma Servers.
+  # Maximum TLS version for all Kuma servers. When non-empty, overrides per-server maximum versions.
+  # Set to "" to use the individual servers' tlsMaxVersion settings.
   tlsMaxVersion: # ENV: KUMA_GENERAL_TLS_MAX_VERSION
-  # TlsCipherSuites the list of cipher suites to be used across all the Kuma Servers.
+  # TLS cipher suites for all Kuma servers. When non-empty, overrides per-server cipher suites.
+  # Set to [] to use the individual servers' tlsCipherSuites settings.
   tlsCipherSuites: [] # ENV: KUMA_GENERAL_TLS_CIPHER_SUITES
   # WorkDir defines a path to the working directory
   # Kuma stores in this directory autogenerated entities like certificates.
@@ -546,12 +557,6 @@ general:
   # and only the per-proxy backoff applies (still bounded), so small deployments may want to lower
   # it. 0 disables the circuit breaker, leaving only per-proxy backoff.
   certGenerationCircuitBreakerMinProxies: 10 # ENV: KUMA_GENERAL_CERT_GENERATION_CIRCUIT_BREAKER_MIN_PROXIES
-# DNS Server configuration
-dnsServer:
-  # The domain that the server will resolve the services for
-  domain: "mesh" # ENV: KUMA_DNS_SERVER_DOMAIN
-  # The port to use along with the `<kuma.io/display-name>.mesh` dns entry
-  serviceVipPort: 80 # ENV: KUMA_DNS_SERVICE_SERVICE_VIP_PORT
 # Multizone mode
 multizone:
   global:
@@ -738,7 +743,7 @@ dpServer:
     enabled: true # ENV: KUMA_DP_SERVER_HDS_ENABLED
     # Interval for Envoy to send statuses for HealthChecks
     interval: 5s # ENV: KUMA_DP_SERVER_HDS_INTERVAL
-    # RefreshInterval is an interval for re-genarting configuration for Dataplanes connected to the Control Plane
+    # RefreshInterval is an interval for re-generating configuration for Dataplanes connected to the Control Plane
     refreshInterval: 10s # ENV: KUMA_DP_SERVER_HDS_REFRESH_INTERVAL
     # Check defines a HealthCheck configuration
     checkDefaults:
@@ -829,7 +834,11 @@ access:
 experimental: {}
 tracing:
   openTelemetry:
-    endpoint: "" # e.g. otel-collector:4317
+    # If true, enables control plane tracing using standard OTEL_EXPORTER_OTLP_* environment variables.
+    enabled: false # ENV: KUMA_TRACING_OPENTELEMETRY_ENABLED
+    # Deprecated: use enabled and OTEL_EXPORTER_OTLP_* environment variables instead.
+    # A non-empty endpoint also enables tracing and uses insecure gRPC, for example otel-collector:4317.
+    endpoint: "" # ENV: KUMA_TRACING_OPENTELEMETRY_ENDPOINT
 # Configuration of the event bus which is local to one instance of CP
 eventBus:
   # BufferSize controls the buffer for every single event listener.
@@ -901,6 +910,7 @@ ipam:
     - ::1/128
 meshService:
   # How often we check whether MeshServices need to be generated from Dataplanes
+  # Set to 0s to disable automatic MeshService generation. Only applies to Universal.
   generationInterval: 2s # ENV: KUMA_MESH_SERVICE_GENERATION_INTERVAL
   # How long we wait before deleting a MeshService if all Dataplanes are gone
   deletionGracePeriod: 1h # ENV: KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD
