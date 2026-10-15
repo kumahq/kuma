@@ -43,8 +43,9 @@ func NewStatusUpdater(
 	metrics core_metrics.Metrics,
 ) (component.Component, error) {
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "component_mzms_status_updater",
-		Help: "Summary of MeshMultizoneService Updater component",
+		Name:    "component_mzms_status_updater",
+		Help:    "Summary of MeshMultizoneService Updater component",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

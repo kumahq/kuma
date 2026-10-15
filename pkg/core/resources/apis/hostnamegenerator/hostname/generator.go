@@ -54,8 +54,9 @@ func NewGenerator(
 	generators []HostnameGenerator,
 ) (*Generator, error) {
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "component_hostname_generator",
-		Help: "Summary of hostname generator interval",
+		Name:    "component_hostname_generator",
+		Help:    "Summary of hostname generator interval",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

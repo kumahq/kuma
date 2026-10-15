@@ -11,6 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/v3/pkg/core"
 	kds_util "github.com/kumahq/kuma/v3/pkg/kds/util"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 )
 
 var statsLogger = core.Log.WithName("stats-callbacks")
@@ -148,8 +149,9 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string, versionExtr
 
 	stats.deliveryMetricName = dsType + "_delivery"
 	stats.deliveryMetric = prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: stats.deliveryMetricName,
-		Help: "Summary of config delivery including a response (ACK/NACK) from the client",
+		Name:    stats.deliveryMetricName,
+		Help:    "Summary of config delivery including a response (ACK/NACK) from the client",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.Register(stats.deliveryMetric); err != nil {
 		return nil, err
