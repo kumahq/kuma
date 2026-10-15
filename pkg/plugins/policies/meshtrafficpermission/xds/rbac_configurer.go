@@ -150,22 +150,37 @@ func (c *RBACConfigurer) createMatcher() (*matcher_config.Matcher, error) {
 		Build()
 }
 
+// createShadowMatcher mirrors createMatcher with allowWithShadowDeny turned
+// into deny, so callers matched only by allow stay shadow-allowed.
 func (c *RBACConfigurer) createShadowMatcher() (*matcher_config.Matcher, error) {
+	hasShadowDeny := false
+	for _, rule := range c.InboundRules {
+		if rule.Conf.(policies_api.RuleConf).AllowWithShadowDeny != nil {
+			hasShadowDeny = true
+			break
+		}
+	}
+	if !hasShadowDeny {
+		return nil, nil
+	}
+
 	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
 	for _, rule := range c.InboundRules {
 		conf := rule.Conf.(policies_api.RuleConf)
-		if conf.AllowWithShadowDeny == nil {
-			continue
-		}
-		shadowDenyMatchers, err := buildMatchers(pointer.Deref(conf.AllowWithShadowDeny), rbac_config.RBAC_DENY, rule.Origin)
+		denyMatchers, err := buildMatchers(append(pointer.Deref(conf.Deny), pointer.Deref(conf.AllowWithShadowDeny)...), rbac_config.RBAC_DENY, rule.Origin)
 		if err != nil {
 			return nil, err
 		}
-		fieldMatchers = append(fieldMatchers, shadowDenyMatchers)
+		fieldMatchers = append(fieldMatchers, denyMatchers)
 	}
 
-	if len(fieldMatchers) == 0 {
-		return nil, nil
+	for _, rule := range c.InboundRules {
+		conf := rule.Conf.(policies_api.RuleConf)
+		allowMatchers, err := buildMatchers(pointer.Deref(conf.Allow), rbac_config.RBAC_ALLOW, rule.Origin)
+		if err != nil {
+			return nil, err
+		}
+		fieldMatchers = append(fieldMatchers, allowMatchers)
 	}
 
 	return bldrs_matchers.NewMatcherBuilder().
