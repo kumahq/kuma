@@ -78,12 +78,18 @@
 - edition: kuma
   version: 2.14.6
   release: 2.14.x
-  latest: true
   releaseDate: "2026-06-12"
   endOfLifeDate: "2027-06-12"
   branch: release-2.14
 - edition: kuma
-  version: preview
+  version: 3.0.0
   release: 3.0.x
+  latest: true
+  releaseDate: "2026-10-15"
+  endOfLifeDate: "2027-10-15"
+  branch: release-3.0
+- edition: kuma
+  version: preview
+  release: 3.1.x
   branch: master
   label: dev
