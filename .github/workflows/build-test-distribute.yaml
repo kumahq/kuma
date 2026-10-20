@@ -138,7 +138,7 @@ jobs:
       #   3. vars.RUNNERS_PR_<ARCH>            -> pull_request runs, per-arch
       #   4. vars.RUNNERS_RELEASE_2_7_<ARCH>   -> per-branch + per-arch override
       #   5. vars.RUNNERS_<ARCH>               -> global per-arch override
-      #   6. default                           -> the standard self-hosted Kong pool
+      #   6. default                           -> the CNCF VM runners (cncf-ubuntu-8-32-*)
       # Each variable is a JSON object of size to label array, spliced in raw, so a caller
       # gets {"<arch>":{"<size>":[labels]}}. An unset arch resolves to {} and the consumer
       # falls back, so adding an arch is setting a variable.
