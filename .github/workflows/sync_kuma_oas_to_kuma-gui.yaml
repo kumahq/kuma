@@ -28,13 +28,21 @@ jobs:
       TARGET_REPO: kuma-gui
       EVENT_TYPE: SYNC_KUMA_OAS
     steps:
+      - name: "Generate GitHub app token"
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          repositories: ${{ env.TARGET_REPO }}
+          permission-contents: write
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
-          github-token: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
           script: |
             const branch = process.env.GITHUB_REF_NAME;
             github.rest.repos.createDispatchEvent({
-              owner: '${{ secrets.NOTIFY_OWNER }}',
+              owner: context.repo.owner,
               repo: '${{ env.TARGET_REPO }}',
               event_type: '${{ env.EVENT_TYPE }}',
               client_payload: {
