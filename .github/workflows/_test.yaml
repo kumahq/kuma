@@ -175,7 +175,7 @@ jobs:
     timeout-minutes: 60
     runs-on: >-
       ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch].lg
-      || (matrix.arch == 'arm64' && 'ubuntu-latest-arm64-kong' || 'ubuntu-latest-kong') }}
+      || (matrix.arch == 'arm64' && 'cncf-ubuntu-8-32-arm' || 'cncf-ubuntu-8-32-x86') }}
     strategy:
       max-parallel: ${{ github.event_name == 'pull_request' && 12 || 5 }}
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e }}
@@ -203,7 +203,7 @@ jobs:
     timeout-minutes: 60
     runs-on: >-
       ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch].lg
-      || (matrix.arch == 'arm64' && 'ubuntu-latest-arm64-kong' || 'ubuntu-latest-kong') }}
+      || (matrix.arch == 'arm64' && 'cncf-ubuntu-8-32-arm' || 'cncf-ubuntu-8-32-x86') }}
     strategy:
       max-parallel: ${{ github.event_name == 'pull_request' && 12 || 5 }}
       matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env }}

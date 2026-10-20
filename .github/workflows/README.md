@@ -1,6 +1,6 @@
 # Choosing runners
 
-Almost every job picks its runner through repository variables, so a fork or a downstream repository can move CI onto its own runners without editing any workflow. Three of them apply to one architecture: a pull-request tier, a per-branch one and a global one, each set independently. Nothing here is required: with all three unset, every job keeps the runner it had, which is a GitHub-hosted label for most of them and the shared `ubuntu-latest-kong` pool for the e2e legs.
+Almost every job picks its runner through repository variables, so a fork or a downstream repository can move CI onto its own runners without editing any workflow. Three of them apply to one architecture: a pull-request tier, a per-branch one and a global one, each set independently. Nothing here is required: with all three unset, every job keeps the runner it had, which is a GitHub-hosted label for most of them and the CNCF `cncf-ubuntu-8-32-*` VM runners for the e2e legs.
 
 ## The variables
 
