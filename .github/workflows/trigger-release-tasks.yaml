@@ -135,6 +135,15 @@ jobs:
       || 'ubuntu-24.04' }}
     permissions: {}
     steps:
+      - name: "Generate GitHub app token"
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.NOTIFY_APP_ID }}
+          private-key: ${{ secrets.NOTIFY_APP_PRIVATE_KEY }}
+          owner: ${{ secrets.NOTIFY_OWNER }}
+          repositories: kong-mesh-smoke
+          permission-contents: write
       - name: "Trigger downstream smoke test"
         env:
           # smoke.yaml only triggers on pull_request/push/schedule/workflow_dispatch
@@ -142,7 +151,7 @@ jobs:
           # a repository_dispatch event. Needs a Kong org admin to provision a
           # cross-org (kumahq -> Kong) token with `actions:write` on the target
           # repo; no existing kumahq secret has that scope.
-          GH_TOKEN: ${{ secrets.KONG_MESH_SMOKE_DISPATCH_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           SMOKE_OWNER: ${{ secrets.NOTIFY_OWNER }}
           SMOKE_REPO: ${{ secrets.KONG_MESH_SMOKE_REPO }}
           # branch smoke.yaml lives on downstream; overridable via repo var if
