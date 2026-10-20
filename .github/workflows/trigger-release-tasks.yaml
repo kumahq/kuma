@@ -148,16 +148,23 @@ jobs:
       || 'ubuntu-24.04' }}
     permissions: {}
     steps:
+      - name: "Generate GitHub app token"
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.NOTIFY_APP_ID }}
+          private-key: ${{ secrets.NOTIFY_APP_PRIVATE_KEY }}
+          owner: ${{ secrets.NOTIFY_OWNER }}
+          repositories: kong-mesh-smoke
+          permission-contents: write
       - name: "Trigger downstream smoke test"
         env:
           # smoke.yaml has no repository_dispatch trigger, so this dispatches
           # via repository_dispatch to kong-mesh-smoke instead, which listens
           # for KUMA_SMOKE_TEST via dispatch-kuma-smoke.yaml and forwards to
           # smoke.yaml with the default GITHUB_TOKEN (same-repo, no cross-org
-          # auth needed on that side). Needs a classic PAT with `repo` scope,
-          # SSO-authorized for the Kong org - fine-grained PATs aren't enabled
-          # there for cross-org repo selection.
-          GH_TOKEN: ${{ secrets.KONG_MESH_SMOKE_DISPATCH_TOKEN }}
+          # auth needed on that side).
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           NOTIFY_OWNER: ${{ secrets.NOTIFY_OWNER }}
           SMOKE_REPO: kong-mesh-smoke
           PRODUCT_VERSION: ${{ needs.guard.outputs.product_version }}
