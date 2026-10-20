@@ -166,7 +166,7 @@ jobs:
       matrix: ${{ toJSON(matrix) }}
       runner: >-
         ${{ toJSON(fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch].lg
-        || (matrix.arch == 'arm64' && 'ubuntu-latest-arm64-kong' || 'ubuntu-latest-kong')) }}
+        || (matrix.arch == 'arm64' && 'cncf-ubuntu-8-32-arm' || 'cncf-ubuntu-8-32-x86')) }}
     secrets: inherit
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
@@ -180,5 +180,5 @@ jobs:
       matrix: ${{ toJSON(matrix) }}
       runner: >-
         ${{ toJSON(fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch].lg
-        || (matrix.arch == 'arm64' && 'ubuntu-latest-arm64-kong' || 'ubuntu-latest-kong')) }}
+        || (matrix.arch == 'arm64' && 'cncf-ubuntu-8-32-arm' || 'cncf-ubuntu-8-32-x86')) }}
     secrets: inherit
