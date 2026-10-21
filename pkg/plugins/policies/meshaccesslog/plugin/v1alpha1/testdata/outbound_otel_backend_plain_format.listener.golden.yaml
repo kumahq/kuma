@@ -18,10 +18,12 @@ filterChains:
               - key: mesh
                 value:
                   stringValue: default
-          grpcService:
-            envoyGrpc:
-              clusterName: system_meshaccesslog_otel_other-otel-collector
-          logName: MeshAccessLog
+          commonConfig:
+            grpcService:
+              envoyGrpc:
+                clusterName: system_meshaccesslog_otel_other-otel-collector
+            logName: MeshAccessLog
+            transportApiVersion: V3
           resourceAttributes:
             values:
             - key: kuma.mesh
