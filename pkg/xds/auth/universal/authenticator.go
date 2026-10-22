@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
@@ -20,12 +19,10 @@ import (
 func NewAuthenticator(
 	dataplaneValidator builtin_issuer.Validator,
 	resManager manager.ReadOnlyResourceManager,
-	env config_core.EnvironmentType,
 ) auth.Authenticator {
 	return &universalAuthenticator{
 		dataplaneValidator: dataplaneValidator,
 		resManager:         resManager,
-		env:                env,
 	}
 }
 
@@ -41,7 +38,6 @@ func NewAuthenticator(
 type universalAuthenticator struct {
 	dataplaneValidator builtin_issuer.Validator
 	resManager         manager.ReadOnlyResourceManager
-	env                config_core.EnvironmentType
 }
 
 var _ auth.Authenticator = &universalAuthenticator{}
@@ -76,22 +72,15 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 	return nil
 }
 
-// identityDerivesFromWorkloadLabel reports whether the dataplane's SPIFFE
-// identity is derived from its kuma.io/workload label. This is the case when a
-// MeshIdentity selects the dataplane and its SPIFFE ID path template references
-// the workload (the default in universal mode). When true, the workload label
-// becomes the proxy's mTLS identity, so the presented token must be bound to
-// that workload (see validateWorkload).
-func (u *universalAuthenticator) identityDerivesFromWorkloadLabel(ctx context.Context, dataplane *core_mesh.DataplaneResource) (bool, error) {
+// Whether a SPIFFE ID template reads kuma.io/workload is not decidable by inspecting
+// it, so the label counts as identity whenever any MeshIdentity selects the dataplane.
+func (u *universalAuthenticator) selectedByMeshIdentity(ctx context.Context, dataplane *core_mesh.DataplaneResource) (bool, error) {
 	meshIdentities := &meshidentity_api.MeshIdentityResourceList{}
 	if err := u.resManager.List(ctx, meshIdentities, store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
 		return false, errors.Wrap(err, "failed to list MeshIdentities")
 	}
-	matched, found := meshidentity_api.BestMatched(dataplane.Meta.GetLabels(), meshIdentities.Items)
-	if !found {
-		return false, nil
-	}
-	return matched.Spec.UsesWorkloadLabel(u.env), nil
+	_, found := meshidentity_api.BestMatched(dataplane.Meta.GetLabels(), meshIdentities.Items)
+	return found, nil
 }
 
 // validateTags checks a tag-bound token against the dataplane's labels.
@@ -124,15 +113,13 @@ func (u *universalAuthenticator) validateWorkload(ctx context.Context, tokenWork
 		if !exists {
 			return nil
 		}
-		// If the identity is derived from that label, the label is the proxy's
-		// identity and an unbound token can't constrain it, so require a
-		// workload-bound token.
-		identityFromWorkloadLabel, err := u.identityDerivesFromWorkloadLabel(ctx, dataplane)
+		// An unbound token can't constrain a label that may be the proxy's identity.
+		selected, err := u.selectedByMeshIdentity(ctx, dataplane)
 		if err != nil {
 			return err
 		}
-		if identityFromWorkloadLabel {
-			return errors.Errorf("dataplane with %q label %q derives its identity from the workload, so it requires a workload-bound token", metadata.KumaWorkload, dpWorkload)
+		if selected {
+			return errors.Errorf("dataplane with %q label %q is selected by a MeshIdentity, so it requires a workload-bound token", metadata.KumaWorkload, dpWorkload)
 		}
 		return nil
 	}
