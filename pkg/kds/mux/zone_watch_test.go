@@ -2,6 +2,7 @@ package mux_test
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -121,8 +122,8 @@ var _ = Describe("ZoneWatch", func() {
 
 	AfterEach(func() {
 		select {
-		case <-errCh:
-			Fail("zone watch should not have stopped")
+		case err := <-errCh:
+			Fail(fmt.Sprintf("zone watch should not have stopped: %v", err))
 		default:
 		}
 		close(stop)
