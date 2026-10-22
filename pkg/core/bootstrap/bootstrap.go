@@ -538,6 +538,12 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 	if builder.Config().Experimental.AutoReachableServices {
 		rsGraphBuilder = graph.Builder
 	}
+	mcbOpts := []xds_context.MeshContextBuilderOption{
+		xds_context.WithRestrictOutbound(pointer.Deref(builder.Config().Defaults.RestrictOutbound)),
+	}
+	if builder.Config().Mode == config_core.Global {
+		mcbOpts = append(mcbOpts, xds_context.WithoutAddressResolution())
+	}
 	meshContextBuilder := xds_context.NewMeshContextBuilder(
 		builder.ReadOnlyResourceManager(),
 		xds_server.MeshResourceTypes(),
@@ -548,7 +554,7 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		builder.Config().DNSServer.ServiceVipPort,
 		rsGraphBuilder,
 		builder.CAProvider(),
-		xds_context.WithRestrictOutbound(pointer.Deref(builder.Config().Defaults.RestrictOutbound)),
+		mcbOpts...,
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(
