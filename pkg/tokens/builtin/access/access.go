@@ -7,5 +7,5 @@ import (
 )
 
 type DataplaneTokenAccess interface {
-	ValidateGenerateDataplaneToken(ctx context.Context, name string, mesh string, tags map[string][]string, user user.User) error
+	ValidateGenerateDataplaneToken(ctx context.Context, name string, mesh string, tags map[string][]string, workload string, user user.User) error
 }

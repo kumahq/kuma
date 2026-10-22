@@ -16,6 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/v3/pkg/core/tokens"
+	"github.com/kumahq/kuma/v3/pkg/core/user"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/access"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/server"
@@ -40,6 +41,21 @@ var _ zone.TokenIssuer = &zoneStaticTokenIssuer{}
 
 func (z *zoneStaticTokenIssuer) Generate(ctx context.Context, identity zone.Identity, validFor time.Duration) (zone.Token, error) {
 	return fmt.Sprintf("token-for-%s", identity.Zone), nil
+}
+
+type capturingDpTokenAccess struct {
+	gotWorkload string
+	reject      bool
+}
+
+var _ access.DataplaneTokenAccess = &capturingDpTokenAccess{}
+
+func (c *capturingDpTokenAccess) ValidateGenerateDataplaneToken(_ context.Context, _ string, _ string, _ map[string][]string, workload string, _ user.User) error {
+	c.gotWorkload = workload
+	if c.reject {
+		return fmt.Errorf("workload %q not allowed by this token", workload)
+	}
+	return nil
 }
 
 var _ = Describe("Dataplane Token Webservice", func() {
@@ -129,4 +145,54 @@ var _ = Describe("Dataplane Token Webservice", func() {
 		Entry("scope is a string", `{"zone": "zone-1", "scope": "egress"}`),
 		Entry("scope is an object", `{"zone": "zone-1", "scope": {"name": "egress"}}`),
 	)
+
+	Context("workload authorization", func() {
+		var dpAccess *capturingDpTokenAccess
+		var wsURL string
+
+		postWorkload := func(workload string) *http.Response {
+			reqBytes, err := json.Marshal(types.DataplaneTokenRequest{Mesh: "default", Workload: workload})
+			Expect(err).ToNot(HaveOccurred())
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, fmt.Sprintf("%s/tokens/dataplane", wsURL), bytes.NewReader(reqBytes))
+			Expect(err).ToNot(HaveOccurred())
+			req.Header.Add("content-type", "application/json")
+			resp, err := http.DefaultClient.Do(req)
+			Expect(err).ToNot(HaveOccurred())
+			return resp
+		}
+
+		BeforeEach(func() {
+			dpAccess = &capturingDpTokenAccess{}
+			ws := server.NewWebservice(
+				"/tokens",
+				&staticTokenIssuer{credentials},
+				&zoneStaticTokenIssuer{},
+				dpAccess,
+				&zone_access.NoopZoneTokenAccess{},
+			)
+			container := restful.NewContainer()
+			container.Add(ws)
+			srv := httptest.NewServer(container)
+			wsURL = srv.URL
+			Eventually(func() error {
+				_, err := http.DefaultClient.Get(fmt.Sprintf("%s/tokens/dataplane", srv.URL))
+				return err
+			}).ShouldNot(HaveOccurred())
+		})
+
+		It("passes the requested workload to the authorization hook", func() {
+			resp := postWorkload("backend")
+			Expect(resp.StatusCode).To(Equal(200))
+			Expect(dpAccess.gotWorkload).To(Equal("backend"))
+		})
+
+		It("does not issue a token when authorization rejects the workload", func() {
+			dpAccess.reject = true
+			resp := postWorkload("backend")
+			Expect(resp.StatusCode).ToNot(Equal(200))
+			body, err := io.ReadAll(resp.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(body)).ToNot(Equal(credentials))
+		})
+	})
 })
