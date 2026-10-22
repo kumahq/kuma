@@ -35,14 +35,14 @@ type plugin struct{}
 var _ core_plugins.RuntimePlugin = &plugin{}
 
 type tracer struct {
-	config     tracing.OpenTelemetry
-	extensions context.Context
+	config    tracing.OpenTelemetry
+	factories []otel_extensions.SpanProcessorFactory
 }
 
 var _ component.Component = &tracer{}
 
 func (t *tracer) Start(stop <-chan struct{}) error {
-	shutdown, err := initOtel(context.Background(), log, t.config, otel_extensions.SpanProcessorFactoriesFromContext(t.extensions))
+	shutdown, err := initOtel(context.Background(), log, t.config, t.factories)
 	if err != nil {
 		return err
 	}
@@ -64,8 +64,8 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	otelTracing := rt.Config().Tracing.OpenTelemetry
 	if otelTracing.Enabled || otelTracing.Endpoint != "" {
 		t := tracer{
-			config:     otelTracing,
-			extensions: rt.Extensions(),
+			config:    otelTracing,
+			factories: otel_extensions.SpanProcessorFactoriesFromContext(rt.Extensions()),
 		}
 		if err := rt.Add(component.NewResilientComponent(core.Log.WithName("otel-tracer"), &t, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
 			return err

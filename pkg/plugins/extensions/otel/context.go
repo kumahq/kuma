@@ -9,7 +9,9 @@ import (
 type spanProcessorFactoriesKey struct{}
 
 // A factory, not a processor: the provider is rebuilt on component restart
-// and its shutdown takes the processors with it.
+// and its shutdown takes the processors with it. The context is cancelled once
+// the provider is built, and OnEnd runs on every span end, so return a
+// batching processor that outlives it.
 type SpanProcessorFactory func(context.Context) (trace.SpanProcessor, error)
 
 func WithSpanProcessorFactories(ctx context.Context, factories ...SpanProcessorFactory) context.Context {

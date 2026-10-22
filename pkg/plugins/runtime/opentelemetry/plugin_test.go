@@ -27,21 +27,31 @@ var _ = Describe("OpenTelemetry tracing", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
+		DeferCleanup(func() {
+			for _, processor := range processors {
+				Expect(processor.Shutdown(context.Background())).To(Succeed())
+			}
+		})
 		Expect(processors).To(HaveLen(3))
 	})
 
-	It("should fail when a factory fails", func() {
+	It("should fail and shut down created processors when a factory fails", func() {
 		// given
+		created := &shutdownRecorder{SpanProcessor: trace.NewSimpleSpanProcessor(tracetest.NewInMemoryExporter())}
+		recorded := func(context.Context) (trace.SpanProcessor, error) {
+			return created, nil
+		}
 		failing := func(context.Context) (trace.SpanProcessor, error) {
 			return nil, errors.New("boom")
 		}
 
 		// when
 		_, err := newSpanProcessors(context.Background(), logr.Discard(), tracing.OpenTelemetry{Enabled: true},
-			[]otel_extensions.SpanProcessorFactory{failing})
+			[]otel_extensions.SpanProcessorFactory{recorded, failing})
 
 		// then
-		Expect(err).To(MatchError(ContainSubstring("additional span processor 0: boom")))
+		Expect(err).To(MatchError(ContainSubstring("additional span processor 1: boom")))
+		Expect(created.shutdown).To(BeTrue())
 	})
 
 	It("should deliver every span to every processor", func() {
@@ -67,3 +77,13 @@ var _ = Describe("OpenTelemetry tracing", func() {
 		Expect(first.GetSpans()[0].SpanContext.TraceID()).To(Equal(second.GetSpans()[0].SpanContext.TraceID()))
 	})
 })
+
+type shutdownRecorder struct {
+	trace.SpanProcessor
+	shutdown bool
+}
+
+func (r *shutdownRecorder) Shutdown(ctx context.Context) error {
+	r.shutdown = true
+	return r.SpanProcessor.Shutdown(ctx)
+}
