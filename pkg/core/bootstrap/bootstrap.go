@@ -481,6 +481,9 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 	if builder.Config().XdsServer.PolicyMatchingCacheSize > 0 {
 		mcbOpts = append(mcbOpts, xds_context.WithPolicyMatchingHash())
 	}
+	if builder.Config().Mode == config_core.Global {
+		mcbOpts = append(mcbOpts, xds_context.WithoutAddressResolution())
+	}
 	meshContextBuilder := xds_context.NewMeshContextBuilder(
 		builder.ReadOnlyResourceManager(),
 		xds_server.MeshResourceTypes(),
