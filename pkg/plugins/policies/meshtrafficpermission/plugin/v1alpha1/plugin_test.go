@@ -309,6 +309,17 @@ var _ = Describe("RBAC", func() {
 				}},
 				golden: "apply-merge-from-shadow-deny.golden.yaml",
 			}),
+			Entry("catch-all 'from' AllowWithShadowDeny keeps 'from' allow shadow-allowed", mergeTestCase{
+				legacyRules: slices.Concat(
+					legacyRule(policies_api.Allow, "mtp-from-allow", subsetutils.Tag{Key: mesh_proto.ServiceTag, Value: "frontend"}),
+					legacyRule(policies_api.AllowWithShadowDeny, "mtp-from-shadow", subsetutils.Tag{Key: mesh_proto.ServiceTag, Value: "frontend", Not: true}),
+				),
+				inboundRules: []*inbound.Rule{{
+					Conf:   policies_api.RuleConf{Allow: &[]common_api.Match{spiffePrefix("spiffe://trust-domain.mesh/ns/other/")}},
+					Origin: common.Origin{Resource: mtpMeta("mtp-rules")},
+				}},
+				golden: "apply-merge-catch-all-from-shadow-deny.golden.yaml",
+			}),
 		)
 
 		It("should enrich matching listener with RBAC filter using matching api", func() {
