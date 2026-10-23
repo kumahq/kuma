@@ -46,7 +46,8 @@ type meshContextBuilder struct {
 	caProvider      secrets.CaProvider
 
 	// zero value keeps the legacy behavior: no reachableBackends means every destination
-	restrictOutbound bool
+	restrictOutbound      bool
+	skipAddressResolution bool
 }
 
 // MeshContextBuilderOption configures optional behavior of the MeshContextBuilder.
@@ -56,6 +57,15 @@ type MeshContextBuilderOption func(*meshContextBuilder)
 func WithRestrictOutbound(restrict bool) MeshContextBuilderOption {
 	return func(m *meshContextBuilder) {
 		m.restrictOutbound = restrict
+	}
+}
+
+// WithoutAddressResolution keeps ZoneIngress, Dataplane and MeshZoneAddress addresses as stored instead of
+// resolving DNS names to IPs. A global control plane serves no proxies and the names belong to zones, so
+// looking them up only logs errors for zone-owned hostnames it cannot or should not resolve.
+func WithoutAddressResolution() MeshContextBuilderOption {
+	return func(m *meshContextBuilder) {
+		m.skipAddressResolution = true
 	}
 }
 
@@ -421,7 +431,8 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 	if err := m.rm.List(ctx, list, listOptsFunc...); err != nil {
 		return nil, err
 	}
-	if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType && resType != meshzoneaddress_api.MeshZoneAddressType && filterFn == nil {
+	resolvesAddress := !m.skipAddressResolution && (resType == core_mesh.ZoneIngressType || resType == core_mesh.DataplaneType || resType == meshzoneaddress_api.MeshZoneAddressType)
+	if !resolvesAddress && filterFn == nil {
 		// No post processing stuff so return the list as is
 		return list, nil
 	}
@@ -430,6 +441,9 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 		// I believe this is to maximize cachability of the store
 		if filterFn != nil && !filterFn(resource) {
 			return nil, nil
+		}
+		if !resolvesAddress {
+			return resource, nil
 		}
 		switch resType {
 		case meshzoneaddress_api.MeshZoneAddressType:

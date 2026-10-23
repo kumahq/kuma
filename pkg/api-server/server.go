@@ -517,6 +517,12 @@ func configureTLS(cfg api_server.ApiServerConfig) (*tls.Config, error) {
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
+	mcbOpts := []xds_context.MeshContextBuilderOption{
+		xds_context.WithRestrictOutbound(pointer.Deref(cfg.Defaults.RestrictOutbound)),
+	}
+	if cfg.Mode == config_core.Global {
+		mcbOpts = append(mcbOpts, xds_context.WithoutAddressResolution())
+	}
 	apiServer, err := NewApiServer(
 		rt,
 		xds_context.NewMeshContextBuilder(
@@ -532,7 +538,7 @@ func SetupServer(rt runtime.Runtime) error {
 			cfg.DNSServer.ServiceVipPort,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
 			rt.CAProvider(),
-			xds_context.WithRestrictOutbound(pointer.Deref(cfg.Defaults.RestrictOutbound)),
+			mcbOpts...,
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,
