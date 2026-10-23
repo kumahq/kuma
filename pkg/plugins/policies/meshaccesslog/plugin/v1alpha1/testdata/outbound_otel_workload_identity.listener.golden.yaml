@@ -39,10 +39,12 @@ filterChains:
                 stringValue: legacy-zone-key
           body:
             stringValue: default zone-1 kri_wl_default_zone-1_kuma-demo_backend_
-          grpcService:
-            envoyGrpc:
-              clusterName: system_meshaccesslog_otel-collector-4317
-          logName: MeshAccessLog
+          commonConfig:
+            grpcService:
+              envoyGrpc:
+                clusterName: system_meshaccesslog_otel-collector-4317
+            logName: MeshAccessLog
+            transportApiVersion: V3
           resourceAttributes:
             values:
             - key: kuma.mesh
