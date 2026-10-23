@@ -39,6 +39,7 @@ type meshContextBuilder struct {
 	zone                   string
 	withPolicyMatchingHash bool
 	restrictOutbound       bool
+	skipAddressResolution  bool
 }
 
 // MeshContextBuilderOption configures optional behavior of the MeshContextBuilder.
@@ -56,6 +57,15 @@ func WithPolicyMatchingHash() MeshContextBuilderOption {
 func WithRestrictOutbound(restrict bool) MeshContextBuilderOption {
 	return func(m *meshContextBuilder) {
 		m.restrictOutbound = restrict
+	}
+}
+
+// WithoutAddressResolution keeps Dataplane and MeshZoneAddress addresses as stored instead of resolving
+// DNS names to IPs. A global control plane serves no proxies and the names belong to zones, so looking
+// them up only logs errors for zone-owned hostnames it cannot or should not resolve.
+func WithoutAddressResolution() MeshContextBuilderOption {
+	return func(m *meshContextBuilder) {
+		m.skipAddressResolution = true
 	}
 }
 
@@ -369,7 +379,7 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 	if err := m.rm.List(ctx, list, listOptsFunc...); err != nil {
 		return nil, err
 	}
-	if resType != core_mesh.DataplaneType && resType != meshzoneaddress_api.MeshZoneAddressType {
+	if m.skipAddressResolution || (resType != core_mesh.DataplaneType && resType != meshzoneaddress_api.MeshZoneAddressType) {
 		// No post processing stuff so return the list as is
 		return list, nil
 	}
