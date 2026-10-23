@@ -44,7 +44,7 @@ const vipOutboundNack = "2.14 zones send VIP outbounds without backendRef, fixed
 
 func UpgradingZoneWithHelmChart() {
 	namespace := "helm-upgrade-ns"
-	testServerURL := "test-server_helm-upgrade-ns_svc_80.mesh"
+	testServerURL := fmt.Sprintf("test-server.%s.svc.cluster.local", namespace)
 	var global, zoneK8s, zoneUniversal Cluster
 	var globalCP ControlPlane
 
@@ -148,8 +148,8 @@ spec:
 			err = NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(namespace)).
 				Install(testserver.Install(testserver.WithNamespace(namespace))).
-				// 2.14 still generates legacy outbounds alongside reachableBackends, so
-				// traffic works before the upgrade and the ref keeps it working after.
+				// The MeshService ref yields an outbound on the Service ClusterIP on
+				// both 2.14 and 3.0, so traffic works before and after the upgrade.
 				Install(democlient.Install(
 					democlient.WithNamespace(namespace),
 					democlient.WithPodAnnotations(map[string]string{

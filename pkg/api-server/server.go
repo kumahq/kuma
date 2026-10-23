@@ -552,6 +552,12 @@ func configureTLS(cfg api_server.ApiServerConfig, certWatchers *util_tls.Watcher
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
+	mcbOpts := []xds_context.MeshContextBuilderOption{
+		xds_context.WithRestrictOutbound(cfg.Defaults.IsOutboundRestricted()),
+	}
+	if cfg.Mode == config_core.Global {
+		mcbOpts = append(mcbOpts, xds_context.WithoutAddressResolution())
+	}
 	apiServer, err := NewApiServer(
 		rt,
 		xds_context.NewMeshContextBuilder(
@@ -562,7 +568,7 @@ func SetupServer(rt runtime.Runtime) error {
 			server.MeshResourceTypes(),
 			net.LookupIP,
 			cfg.Multizone.Zone.Name,
-			xds_context.WithRestrictOutbound(cfg.Defaults.IsOutboundRestricted()),
+			mcbOpts...,
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

@@ -33,8 +33,9 @@ func NewWriter(
 	metrics core_metrics.Metrics,
 ) (component.Component, error) {
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "component_catalog_writer",
-		Help: "Summary of Inter CP Catalog Writer component interval",
+		Name:    "component_catalog_writer",
+		Help:    "Summary of Inter CP Catalog Writer component interval",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err
