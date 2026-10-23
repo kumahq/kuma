@@ -100,7 +100,14 @@ func initOtel(ctx context.Context, log logr.Logger, otelConfig tracing.OpenTelem
 		return nil, err
 	}
 
-	tracerProvider := newTracerProvider(res, processors)
+	opts := []trace.TracerProviderOption{
+		trace.WithSampler(trace.AlwaysSample()),
+		trace.WithResource(res),
+	}
+	for _, processor := range processors {
+		opts = append(opts, trace.WithSpanProcessor(processor))
+	}
+	tracerProvider := trace.NewTracerProvider(opts...)
 	otel.SetTracerProvider(tracerProvider)
 
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, datadog.Propagator{}))
@@ -124,28 +131,16 @@ func newSpanProcessors(ctx context.Context, log logr.Logger, otelConfig tracing.
 	for i, factory := range factories {
 		processor, err := factory(ctx)
 		if err != nil {
-			for _, created := range processors {
-				_ = created.Shutdown(ctx)
-			}
-			return nil, fmt.Errorf("failed to create additional span processor %d: %w", i, err)
+			// Construction does no I/O, so a retry fails the same way; failing
+			// the component instead would take the primary exporter down.
+			log.Error(err, "skipping additional span processor", "index", i)
+			continue
 		}
 		processors = append(processors, processor)
 	}
-	if len(factories) > 0 {
-		log.Info("registered additional span processors", "count", len(factories))
+	if len(processors) > 1 {
+		log.Info("registered additional span processors", "count", len(processors)-1)
 	}
 
 	return processors, nil
-}
-
-func newTracerProvider(res *resource.Resource, processors []trace.SpanProcessor) *trace.TracerProvider {
-	opts := []trace.TracerProviderOption{
-		trace.WithSampler(trace.AlwaysSample()),
-		trace.WithResource(res),
-	}
-	for _, processor := range processors {
-		opts = append(opts, trace.WithSpanProcessor(processor))
-	}
-
-	return trace.NewTracerProvider(opts...)
 }
