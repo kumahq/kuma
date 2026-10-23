@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	"slices"
 
 	matcher_config "github.com/cncf/xds/go/xds/type/matcher/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -118,46 +119,51 @@ func rbacUpdater(
 }
 
 func (c *RBACConfigurer) createMatcher() (*matcher_config.Matcher, error) {
+	return c.buildMatcher(
+		func(conf policies_api.RuleConf) []common_api.Match {
+			return pointer.Deref(conf.Deny)
+		},
+		func(conf policies_api.RuleConf) []common_api.Match {
+			return slices.Concat(pointer.Deref(conf.Allow), pointer.Deref(conf.AllowWithShadowDeny))
+		},
+	)
+}
+
+// createShadowMatcher mirrors createMatcher with allowWithShadowDeny turned
+// into deny, so callers matched only by allow stay shadow-allowed.
+func (c *RBACConfigurer) createShadowMatcher() (*matcher_config.Matcher, error) {
+	hasShadowDeny := slices.ContainsFunc(c.InboundRules, func(rule *inbound.Rule) bool {
+		return rule.Conf.GetDefault().(policies_api.RuleConf).AllowWithShadowDeny != nil
+	})
+	if !hasShadowDeny {
+		return nil, nil
+	}
+
+	return c.buildMatcher(
+		func(conf policies_api.RuleConf) []common_api.Match {
+			return slices.Concat(pointer.Deref(conf.Deny), pointer.Deref(conf.AllowWithShadowDeny))
+		},
+		func(conf policies_api.RuleConf) []common_api.Match {
+			return pointer.Deref(conf.Allow)
+		},
+	)
+}
+
+func (c *RBACConfigurer) buildMatcher(deny, allow func(policies_api.RuleConf) []common_api.Match) (*matcher_config.Matcher, error) {
 	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
 	for _, rule := range c.InboundRules {
 		conf := rule.Conf.GetDefault().(policies_api.RuleConf)
-		denyMatchers, err := buildMatchers(pointer.Deref(conf.Deny), rbac_config.RBAC_DENY, rule.Origin)
+		denyMatchers, err := buildMatchers(deny(conf), rbac_config.RBAC_DENY, rule.Origin)
 		if err != nil {
 			return nil, err
 		}
 		fieldMatchers = append(fieldMatchers, denyMatchers)
 
-		allowMatchers, err := buildMatchers(append(pointer.Deref(conf.Allow), pointer.Deref(conf.AllowWithShadowDeny)...), rbac_config.RBAC_ALLOW, rule.Origin)
+		allowMatchers, err := buildMatchers(allow(conf), rbac_config.RBAC_ALLOW, rule.Origin)
 		if err != nil {
 			return nil, err
 		}
 		fieldMatchers = append(fieldMatchers, allowMatchers)
-	}
-
-	return bldrs_matchers.NewMatcherBuilder().
-		Configure(bldrs_matchers.MatchersList(fieldMatchers)).
-		Configure(bldrs_matchers.OnNoMatch(
-			bldrs_matchers.NewOnMatch().Configure(bldrs_matchers.RbacAction(rbac_config.RBAC_DENY, "default")),
-		)).
-		Build()
-}
-
-func (c *RBACConfigurer) createShadowMatcher() (*matcher_config.Matcher, error) {
-	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
-	for _, rule := range c.InboundRules {
-		conf := rule.Conf.GetDefault().(policies_api.RuleConf)
-		if conf.AllowWithShadowDeny == nil {
-			continue
-		}
-		shadowDenyMatchers, err := buildMatchers(pointer.Deref(conf.AllowWithShadowDeny), rbac_config.RBAC_DENY, rule.Origin)
-		if err != nil {
-			return nil, err
-		}
-		fieldMatchers = append(fieldMatchers, shadowDenyMatchers)
-	}
-
-	if len(fieldMatchers) == 0 {
-		return nil, nil
 	}
 
 	return bldrs_matchers.NewMatcherBuilder().
