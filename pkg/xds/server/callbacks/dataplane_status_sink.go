@@ -185,6 +185,9 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 			case store.IsAlreadyExists(err) || store.IsConflict(err):
 				sinkLog.V(1).Info("failed to flush DataplaneInsight because it was updated in other place. Will retry in the next tick",
 					"dataplaneID", dataplaneID)
+			case store.IsNamespaceTerminating(err):
+				sinkLog.V(1).Info("failed to flush DataplaneInsight because its namespace is terminating",
+					"dataplaneID", dataplaneID)
 			default:
 				sinkLog.Error(err, "failed to flush DataplaneInsight", "dataplaneID", dataplaneID)
 			}
