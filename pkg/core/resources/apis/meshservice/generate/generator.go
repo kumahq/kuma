@@ -62,8 +62,9 @@ func New(
 	labelPropagation kuma_cp.MeshServiceLabelPropagation,
 ) (*Generator, error) {
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "component_meshservice_generator",
-		Help: "Summary of MeshService generation duration",
+		Name:    "component_meshservice_generator",
+		Help:    "Summary of MeshService generation duration",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err
