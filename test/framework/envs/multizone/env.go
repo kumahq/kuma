@@ -108,7 +108,7 @@ func SetupRemoteUniZone(wg *sync.WaitGroup, clusterName string, remoteHost *kssh
 		defer wg.Done()
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone, options...)).
-			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressToken)).
+			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressToken, WithConcurrency(1))).
 			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken, WithConcurrency(1))).
 			Setup(zone)
 		Expect(err).ToNot(HaveOccurred())
