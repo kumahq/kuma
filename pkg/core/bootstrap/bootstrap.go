@@ -512,9 +512,12 @@ func initializeTokenIssuers(builder *core_runtime.Builder) {
 	} else {
 		issuers.DataplaneToken = issuer.DisabledIssuer{}
 	}
-	if builder.Config().Multizone.Global.KDS.Auth.ZoneToken.EnableIssuer {
+	switch {
+	case builder.Config().IsFederatedZoneCP():
+		issuers.ZoneToken = zone2.GlobalOnlyIssuer{}
+	case builder.Config().Multizone.Global.KDS.Auth.ZoneToken.EnableIssuer:
 		issuers.ZoneToken = builtin.NewZoneTokenIssuer(builder.ResourceManager())
-	} else {
+	default:
 		issuers.ZoneToken = zone2.DisabledIssuer{}
 	}
 	builder.WithTokenIssuers(issuers)

@@ -111,3 +111,40 @@ var _ = Describe("Dataplane Token Webservice", func() {
 		Entry("not valid json", `not-valid-json`),
 	)
 })
+
+var _ = Describe("Zone Token Webservice", func() {
+	It("should explain that a federated Zone CP cannot issue Zone Tokens", func() {
+		// given
+		ws := server.NewWebservice(
+			"/tokens",
+			&staticTokenIssuer{},
+			zone.GlobalOnlyIssuer{},
+			&access.NoopDpTokenAccess{},
+			&zone_access.NoopZoneTokenAccess{},
+		)
+		container := restful.NewContainer()
+		container.Add(ws)
+		srv := httptest.NewServer(container)
+		defer srv.Close()
+
+		reqBytes, err := json.Marshal(types.ZoneTokenRequest{
+			Zone:  "zone-1",
+			Scope: []string{zone.CPScope},
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, fmt.Sprintf("%s/tokens/zone", srv.URL), bytes.NewReader(reqBytes))
+		Expect(err).ToNot(HaveOccurred())
+		req.Header.Add("content-type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		Expect(err).ToNot(HaveOccurred())
+		defer resp.Body.Close()
+
+		// then
+		Expect(resp.StatusCode).To(Equal(400))
+		respBody, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(respBody)).To(ContainSubstring("Zone Tokens can only be issued on the Global control plane"))
+	})
+})
