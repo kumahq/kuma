@@ -53,6 +53,7 @@ type KDSSyncClient interface {
 type kdsSyncClient struct {
 	log             logr.Logger
 	resourceTypes   []core_model.ResourceType
+	subscribedTypes map[core_model.ResourceType]struct{}
 	callbacks       *Callbacks
 	kdsStream       DeltaKDSStream
 	responseBackoff time.Duration
@@ -65,9 +66,14 @@ func NewKDSSyncClient(
 	cb *Callbacks,
 	responseBackoff time.Duration,
 ) KDSSyncClient {
+	subscribedTypes := make(map[core_model.ResourceType]struct{}, len(rt))
+	for _, typ := range rt {
+		subscribedTypes[typ] = struct{}{}
+	}
 	return &kdsSyncClient{
 		log:             log,
 		resourceTypes:   rt,
+		subscribedTypes: subscribedTypes,
 		kdsStream:       kdsStream,
 		callbacks:       cb,
 		responseBackoff: responseBackoff,
@@ -86,6 +92,9 @@ func (s *kdsSyncClient) Receive() error {
 		received, err := s.kdsStream.Receive()
 		if err != nil {
 			return errors.Wrap(err, "failed to receive a discovery response")
+		}
+		if _, ok := s.subscribedTypes[received.Type]; !ok {
+			return errors.Errorf("peer sent resource type %q which was not subscribed to", received.Type)
 		}
 		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
 		validationErrors := received.Validate()
