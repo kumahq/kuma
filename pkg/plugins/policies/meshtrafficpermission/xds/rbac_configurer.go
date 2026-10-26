@@ -124,6 +124,49 @@ func rbacUpdater(
 }
 
 func (c *RBACConfigurer) createMatcher() (*matcher_config.Matcher, error) {
+	return c.buildMatcher(
+		func(conf policies_api.RuleConf) []common_api.Match {
+			return pointer.Deref(conf.Deny)
+		},
+		func(conf policies_api.RuleConf) []common_api.Match {
+			return slices.Concat(pointer.Deref(conf.Allow), pointer.Deref(conf.AllowWithShadowDeny))
+		},
+		[]policies_api.Action{policies_api.Deny},
+		[]policies_api.Action{policies_api.Allow, policies_api.AllowWithShadowDeny},
+	)
+}
+
+// createShadowMatcher mirrors createMatcher with allowWithShadowDeny turned
+// into deny, so callers matched only by allow stay shadow-allowed.
+func (c *RBACConfigurer) createShadowMatcher() (*matcher_config.Matcher, error) {
+	hasShadowDeny := slices.ContainsFunc(c.InboundRules, func(rule *inbound.Rule) bool {
+		return rule.Conf.(policies_api.RuleConf).AllowWithShadowDeny != nil
+	})
+	for _, rule := range c.LegacyRules {
+		if pointer.Deref(rule.Conf.(policies_api.Conf).Action) == policies_api.AllowWithShadowDeny {
+			hasShadowDeny = true
+		}
+	}
+	if !hasShadowDeny {
+		return nil, nil
+	}
+
+	return c.buildMatcher(
+		func(conf policies_api.RuleConf) []common_api.Match {
+			return slices.Concat(pointer.Deref(conf.Deny), pointer.Deref(conf.AllowWithShadowDeny))
+		},
+		func(conf policies_api.RuleConf) []common_api.Match {
+			return pointer.Deref(conf.Allow)
+		},
+		[]policies_api.Action{policies_api.Deny, policies_api.AllowWithShadowDeny},
+		[]policies_api.Action{policies_api.Allow},
+	)
+}
+
+func (c *RBACConfigurer) buildMatcher(
+	deny, allow func(policies_api.RuleConf) []common_api.Match,
+	legacyDeny, legacyAllow []policies_api.Action,
+) (*matcher_config.Matcher, error) {
 	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
 
 	// Merged policies can arrive in a broad-to-specific order (for example a
@@ -131,63 +174,30 @@ func (c *RBACConfigurer) createMatcher() (*matcher_config.Matcher, error) {
 	// matching action, so all deny matchers need to be emitted before allow
 	// matchers across the merged rule set.
 	for _, rule := range c.InboundRules {
-		conf := rule.Conf.(policies_api.RuleConf)
-		denyMatchers, err := buildMatchers(pointer.Deref(conf.Deny), rbac_config.RBAC_DENY, rule.Origin)
+		denyMatchers, err := buildMatchers(deny(rule.Conf.(policies_api.RuleConf)), rbac_config.RBAC_DENY, rule.Origin)
 		if err != nil {
 			return nil, err
 		}
 		fieldMatchers = append(fieldMatchers, denyMatchers)
 	}
-	legacyDenyMatchers, err := c.legacyMatchers(rbac_config.RBAC_DENY, policies_api.Deny)
+	legacyDenyMatchers, err := c.legacyMatchers(rbac_config.RBAC_DENY, legacyDeny...)
 	if err != nil {
 		return nil, err
 	}
 	fieldMatchers = append(fieldMatchers, legacyDenyMatchers...)
 
 	for _, rule := range c.InboundRules {
-		conf := rule.Conf.(policies_api.RuleConf)
-		allowMatchers, err := buildMatchers(append(pointer.Deref(conf.Allow), pointer.Deref(conf.AllowWithShadowDeny)...), rbac_config.RBAC_ALLOW, rule.Origin)
+		allowMatchers, err := buildMatchers(allow(rule.Conf.(policies_api.RuleConf)), rbac_config.RBAC_ALLOW, rule.Origin)
 		if err != nil {
 			return nil, err
 		}
 		fieldMatchers = append(fieldMatchers, allowMatchers)
 	}
-	legacyAllowMatchers, err := c.legacyMatchers(rbac_config.RBAC_ALLOW, policies_api.Allow, policies_api.AllowWithShadowDeny)
+	legacyAllowMatchers, err := c.legacyMatchers(rbac_config.RBAC_ALLOW, legacyAllow...)
 	if err != nil {
 		return nil, err
 	}
 	fieldMatchers = append(fieldMatchers, legacyAllowMatchers...)
-
-	return bldrs_matchers.NewMatcherBuilder().
-		Configure(bldrs_matchers.MatchersList(fieldMatchers)).
-		Configure(bldrs_matchers.OnNoMatch(
-			bldrs_matchers.NewOnMatch().Configure(bldrs_matchers.RbacAction(rbac_config.RBAC_DENY, "default")),
-		)).
-		Build()
-}
-
-func (c *RBACConfigurer) createShadowMatcher() (*matcher_config.Matcher, error) {
-	var fieldMatchers []*matcher_config.Matcher_MatcherList_FieldMatcher
-	for _, rule := range c.InboundRules {
-		conf := rule.Conf.(policies_api.RuleConf)
-		if conf.AllowWithShadowDeny == nil {
-			continue
-		}
-		shadowDenyMatchers, err := buildMatchers(pointer.Deref(conf.AllowWithShadowDeny), rbac_config.RBAC_DENY, rule.Origin)
-		if err != nil {
-			return nil, err
-		}
-		fieldMatchers = append(fieldMatchers, shadowDenyMatchers)
-	}
-	legacyShadowDenyMatchers, err := c.legacyMatchers(rbac_config.RBAC_DENY, policies_api.AllowWithShadowDeny)
-	if err != nil {
-		return nil, err
-	}
-	fieldMatchers = append(fieldMatchers, legacyShadowDenyMatchers...)
-
-	if len(fieldMatchers) == 0 {
-		return nil, nil
-	}
 
 	return bldrs_matchers.NewMatcherBuilder().
 		Configure(bldrs_matchers.MatchersList(fieldMatchers)).
@@ -208,7 +218,7 @@ func (c *RBACConfigurer) legacyMatchers(rbacAction rbac_config.RBAC_Action, acti
 		// A catch-all deny ('kind: Mesh' or negations only) is what OnNoMatch already does,
 		// emitted before allows it would shadow every 'rules' allow.
 		catchAll := !slices.ContainsFunc(rule.Subset, func(t subsetutils.Tag) bool { return !t.Not })
-		if action == policies_api.Deny && catchAll {
+		if rbacAction == rbac_config.RBAC_DENY && catchAll {
 			continue
 		}
 		predicate, err := predicateFromSubset(c.Mesh, rule.Subset)
