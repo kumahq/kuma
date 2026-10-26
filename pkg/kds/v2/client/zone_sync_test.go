@@ -437,3 +437,42 @@ var _ = Describe("KDSSyncClient logging", func() {
 		),
 	)
 })
+
+var _ = Describe("KDSSyncClient type allowlist", func() {
+	It("should reject and not process a resource type that was not subscribed to", func() {
+		clientStream := grpc.NewMockDeltaClientStream()
+		kdsStream := client_v2.NewDeltaKDSStream(clientStream, "zone-1", "zone-inst", "", 1)
+		DeferCleanup(func() {
+			Expect(kdsStream.CloseSend()).To(Succeed())
+		})
+
+		clientStream.RecvCh <- &envoy_sd.DeltaDiscoveryResponse{
+			TypeUrl: string(mesh.MeshType),
+			Nonce:   "nonce-1",
+		}
+		DeferCleanup(func() {
+			Expect(kdsStream.CloseSend()).To(Succeed())
+			close(clientStream.RecvCh)
+		})
+
+		received := false
+		syncClient := client_v2.NewKDSSyncClient(
+			core.Log,
+			[]model.ResourceType{mesh.DataplaneType},
+			kdsStream,
+			&client_v2.Callbacks{
+				OnResourcesReceived: func(client_v2.UpstreamResponse) (error, error) {
+					received = true
+					return nil, nil
+				},
+			},
+			client_v2.SyncClientConfig{},
+		)
+
+		err := syncClient.Receive()
+
+		Expect(err).To(MatchError(ContainSubstring(string(mesh.MeshType))))
+		Expect(err).To(MatchError(ContainSubstring("not subscribed")))
+		Expect(received).To(BeFalse(), "the store callback must not run for an unsubscribed type")
+	})
+})
