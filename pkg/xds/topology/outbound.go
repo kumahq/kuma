@@ -836,6 +836,25 @@ func createExternalServiceEndpoint(
 	outbound[service] = append(outbound[service], *externalServiceEndpoint)
 }
 
+// WithExternalServicesThroughEgress returns a copy of endpointMap whose external services are
+// routed through egressAddresses instead.
+func WithExternalServicesThroughEgress(
+	ctx context.Context,
+	endpointMap core_xds.EndpointMap,
+	mesh *core_mesh.MeshResource,
+	localZone string,
+	externalServices []*core_mesh.ExternalServiceResource,
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
+	egressAddresses []core_xds.ZoneEgressInstance,
+	loader datasource.Loader,
+) core_xds.EndpointMap {
+	external := core_xds.EndpointMap{}
+	fillExternalServicesOutboundsThroughEgress(ctx, external, externalServices, meshExternalServices, egressAddresses, mesh, localZone, loader)
+	outbound := maps.Clone(endpointMap)
+	maps.Copy(outbound, external)
+	return outbound
+}
+
 func fillExternalServicesOutboundsThroughEgress(
 	ctx context.Context,
 	outbound core_xds.EndpointMap,

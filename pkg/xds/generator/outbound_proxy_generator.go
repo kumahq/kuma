@@ -287,14 +287,12 @@ func (OutboundProxyGenerator) generateEDS(
 		if !services[serviceName].HasExternalService() || xdsCtx.Mesh.Resource.ZoneEgressEnabled() {
 			for _, c := range services[serviceName].Clusters() {
 				cluster := c.(*envoy_common.ClusterImpl)
-				var endpoints model.EndpointMap
+				endpoints, hash := xdsCtx.Mesh.EndpointMapFor(proxy)
 				if cluster.Mesh() != "" {
-					endpoints = xdsCtx.Mesh.CrossMeshEndpoints[cluster.Mesh()]
-				} else {
-					endpoints = xdsCtx.Mesh.EndpointMap
+					endpoints, hash = xdsCtx.Mesh.CrossMeshEndpoints[cluster.Mesh()], xdsCtx.Mesh.Hash
 				}
 
-				loadAssignment, err := xdsCtx.ControlPlane.CLACache.GetCLA(user.Ctx(ctx, user.ControlPlane), xdsCtx.Mesh.Resource.Meta.GetName(), xdsCtx.Mesh.Hash, cluster, apiVersion, endpoints)
+				loadAssignment, err := xdsCtx.ControlPlane.CLACache.GetCLA(user.Ctx(ctx, user.ControlPlane), xdsCtx.Mesh.Resource.Meta.GetName(), hash, cluster, apiVersion, endpoints)
 				if err != nil {
 					return nil, errors.Wrapf(err, "could not get ClusterLoadAssignment for %s", serviceName)
 				}

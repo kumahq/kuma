@@ -744,6 +744,7 @@ networking:
 			targets = append(targets, endpoint.Target)
 		}
 		Expect(targets).To(ConsistOf("192.168.0.1"))
+		Expect(meshContext.LegacyEgressEndpointMap).To(BeNil())
 	})
 
 	// A MeshIdentity that only propagates SPIFFE IDs never issues a certificate, so the egress it
@@ -774,6 +775,109 @@ spec:
 		Expect(meshContext.ZoneEgresses).To(ConsistOf(
 			core_xds.ZoneEgressInstance{Address: "192.168.0.1", Port: 10002},
 		))
+	})
+
+	initializedEgressIdentity := `
+---
+type: MeshIdentity
+name: identity
+mesh: default
+spec:
+  selector:
+    dataplane:
+      matchLabels:
+        app: kuma-default-egress
+  spiffeID:
+    trustDomain: "{{ .Mesh }}.{{ .Zone }}.mesh.local"
+    path: "/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"
+  provider:
+    type: Bundled
+    bundled:
+      insecureAllowSelfSigned: true
+      autogenerate:
+        enabled: true
+status:
+  conditions:
+    - type: Ready
+      status: "True"
+      reason: Ready
+      message: Successfully initialized
+---
+type: MeshExternalService
+name: mes-httpbin
+mesh: default
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: httpbin.org
+      port: 80
+`
+
+	externalTargets := func(endpoints core_xds.EndpointMap) map[string][]string {
+		targets := map[string][]string{}
+		for service, eps := range endpoints {
+			for _, ep := range eps {
+				if ep.ExternalService != nil {
+					targets[service] = append(targets[service], ep.Target)
+				}
+			}
+		}
+		return targets
+	}
+
+	// The mesh-scoped egress only accepts MeshIdentity clients, and a MeshIdentity client gets no
+	// legacy mTLS certificate for the legacy egress, so while both run every client needs its own pool.
+	It("routes external services by client identity while legacy and mesh-scoped egresses both run", func() {
+		// given
+		resourceStore := memory.NewStore()
+		meshContextBuilder := newMeshContextBuilder(resourceStore, lookupIPFunc)
+		Expect(test_store.LoadResources(context.Background(), resourceStore, meshWithLegacyAndMeshScopedEgress+initializedEgressIdentity)).To(Succeed())
+
+		// when
+		meshContext, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+		Expect(err).ToNot(HaveOccurred())
+		identityEndpoints, identityHash := meshContext.EndpointMapFor(&core_xds.Proxy{WorkloadIdentity: &core_xds.WorkloadIdentity{}})
+		legacyEndpoints, legacyHash := meshContext.EndpointMapFor(&core_xds.Proxy{})
+
+		// then
+		Expect(externalTargets(identityEndpoints)).To(HaveLen(2))
+		for service, targets := range externalTargets(identityEndpoints) {
+			Expect(targets).To(ConsistOf("192.168.0.2"), service)
+		}
+		Expect(externalTargets(legacyEndpoints)).To(HaveLen(2))
+		for service, targets := range externalTargets(legacyEndpoints) {
+			Expect(targets).To(ConsistOf("192.168.0.1"), service)
+		}
+		// cached ClusterLoadAssignments are keyed by this hash, so the pools must not share it
+		Expect(identityHash).To(Equal(meshContext.Hash))
+		Expect(legacyHash).ToNot(Equal(identityHash))
+	})
+
+	It("routes every client to the mesh-scoped zone egress when no legacy one is ready", func() {
+		// given
+		resourceStore := memory.NewStore()
+		meshContextBuilder := newMeshContextBuilder(resourceStore, lookupIPFunc)
+		Expect(test_store.LoadResources(context.Background(), resourceStore, strings.Replace(
+			meshWithLegacyAndMeshScopedEgress,
+			"name: legacy-egress\n",
+			"name: legacy-egress\nlabels:\n  kuma.io/proxy-ready: \"false\"\n",
+			1,
+		)+initializedEgressIdentity)).To(Succeed())
+
+		// when
+		meshContext, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(meshContext.LegacyEgressEndpointMap).To(BeNil())
+		legacyEndpoints, legacyHash := meshContext.EndpointMapFor(&core_xds.Proxy{})
+		for service, targets := range externalTargets(legacyEndpoints) {
+			Expect(targets).To(ConsistOf("192.168.0.2"), service)
+		}
+		Expect(legacyHash).To(Equal(meshContext.Hash))
 	})
 
 	It("switches to the mesh-scoped zone egress once an initialized MeshIdentity selects it", func() {

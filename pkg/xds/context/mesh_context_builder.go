@@ -220,11 +220,13 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	zoneEgresses := readyZoneEgresses(resources.ZoneEgresses().Items)
 	externalServices := resources.ExternalServices().Items
 	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
-	if len(zoneEgressList) == 0 {
+	legacyZoneEgressList := resolveLegacyZoneEgresses(zoneEgresses)
+	meshScopedEgressAdvertised := len(zoneEgressList) > 0
+	if !meshScopedEgressAdvertised {
 		// Do not mix legacy zone egresses with dataplane listeners in one pool because
 		// they may carry different TLS identities and break SAN validation.
 		// Fallback to legacy only when no dataplane-based instances were resolved.
-		zoneEgressList = resolveLegacyZoneEgresses(zoneEgresses)
+		zoneEgressList = legacyZoneEgressList
 	}
 	endpointMap := xds_topology.BuildEdsEndpointMap(
 		ctx,
@@ -242,6 +244,19 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		mtlsEnabled(mesh, resources.MeshIdentities()),
 		zoneEgressList,
 	)
+	var legacyEgressEndpointMap xds.EndpointMap
+	if meshScopedEgressAdvertised && len(legacyZoneEgressList) > 0 {
+		legacyEgressEndpointMap = xds_topology.WithExternalServicesThroughEgress(
+			ctx,
+			endpointMap,
+			mesh,
+			m.zone,
+			externalServices,
+			meshExternalServices,
+			legacyZoneEgressList,
+			loader,
+		)
+	}
 	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
 	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(
 		ctx,
@@ -300,6 +315,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		BaseMeshContext:                 baseMeshContext,
 		DataplanesByName:                dataplanesByName,
 		EndpointMap:                     endpointMap,
+		LegacyEgressEndpointMap:         legacyEgressEndpointMap,
 		ExternalServicesEndpointMap:     esEndpointMap,
 		IngressEndpointMap:              ingressEndpointMap,
 		CrossMeshEndpoints:              crossMeshEndpointMap,

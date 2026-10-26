@@ -120,6 +120,10 @@ type MeshContext struct {
 	// port and, when WorkloadIdentity is enabled, the SPIFFE ID (SAN) that clients must
 	// verify when opening an mTLS connection to that egress.
 	ZoneEgresses []xds.ZoneEgressInstance
+	// LegacyEgressEndpointMap is EndpointMap with external services routed through the legacy
+	// ZoneEgresses. Set only while they run next to an advertised mesh-scoped egress, which accepts
+	// only MeshIdentity clients. Use EndpointMapFor to pick the map for a proxy.
+	LegacyEgressEndpointMap xds.EndpointMap
 	// DataplaneZoneIngressEndpointMap is the shared endpoint map for embedded zone ingress
 	// listeners; built once per MeshContext and reused across all Dataplanes.
 	DataplaneZoneIngressEndpointMap xds.EndpointMap
@@ -209,6 +213,16 @@ func (mc *MeshContext) GetTLSReadiness() map[string]bool {
 
 func (mc *MeshContext) IsXKumaTagsUsed() bool {
 	return len(mc.Resources.RateLimits().Items) > 0 || len(mc.Resources.FaultInjections().Items) > 0 || len(mc.Resources.MeshFaultInjections().Items) > 0
+}
+
+// EndpointMapFor returns the endpoint map for the proxy and the hash to key its cached
+// ClusterLoadAssignments with. A proxy without a workload identity can't authenticate to the
+// mesh-scoped egress, and a proxy with one gets no legacy mTLS certificate for the legacy egress.
+func (mc *MeshContext) EndpointMapFor(proxy *xds.Proxy) (xds.EndpointMap, string) {
+	if proxy.WorkloadIdentity == nil && mc.LegacyEgressEndpointMap != nil {
+		return mc.LegacyEgressEndpointMap, mc.Hash + ":legacy-egress"
+	}
+	return mc.EndpointMap, mc.Hash
 }
 
 // ZoneEgressSANs returns the SPIFFE IDs of all zone egress instances that have a SAN set.

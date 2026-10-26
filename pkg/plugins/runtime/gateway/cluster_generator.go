@@ -133,13 +133,14 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 			envoy.WithTags(dest.Destination),
 		)
 
+		endpoints, hash := xdsCtx.Mesh.EndpointMapFor(info.Proxy)
 		loadAssignment, err := xdsCtx.ControlPlane.CLACache.GetCLA(
 			ctx,
 			xdsCtx.Mesh.Resource.GetMeta().GetName(),
-			xdsCtx.Mesh.Hash,
+			hash,
 			cluster,
 			info.Proxy.APIVersion,
-			xdsCtx.Mesh.EndpointMap,
+			endpoints,
 		)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to build LoadAssignment for cluster %q", dest.Name)

@@ -83,7 +83,8 @@ func CollectListenerInfos(
 		)
 
 		outboundEndpoints := core_xds.EndpointMap{}
-		maps.Copy(outboundEndpoints, meshCtx.EndpointMap)
+		endpoints, _ := meshCtx.EndpointMapFor(proxy)
+		maps.Copy(outboundEndpoints, endpoints)
 
 		esEndpoints := xds_topology.BuildExternalServicesEndpointMap(
 			ctx,

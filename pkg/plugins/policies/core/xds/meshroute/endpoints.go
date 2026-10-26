@@ -31,17 +31,15 @@ func GenerateEndpoints(
 		externalServiceThroughEgress := ctx.Mesh.IsExternalService(serviceName) && !meshExternalService && meshCtx.Resource.ZoneEgressEnabled()
 		if internalService || meshExternalService || externalServiceThroughEgress {
 			for _, cluster := range service.Clusters() {
-				var endpoints core_xds.EndpointMap
+				endpoints, hash := meshCtx.EndpointMapFor(proxy)
 				if cluster.Mesh() != "" {
-					endpoints = meshCtx.CrossMeshEndpoints[cluster.Mesh()]
-				} else {
-					endpoints = meshCtx.EndpointMap
+					endpoints, hash = meshCtx.CrossMeshEndpoints[cluster.Mesh()], meshCtx.Hash
 				}
 
 				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(
 					user.Ctx(context.TODO(), user.ControlPlane),
 					proxy.Dataplane.GetMeta().GetMesh(),
-					meshCtx.Hash,
+					hash,
 					cluster,
 					proxy.APIVersion,
 					endpoints,
