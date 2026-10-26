@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	builtin_issuer "github.com/kumahq/kuma/v3/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/v3/pkg/xds/auth"
@@ -19,10 +20,12 @@ import (
 func NewAuthenticator(
 	dataplaneValidator builtin_issuer.Validator,
 	resManager manager.ReadOnlyResourceManager,
+	connectionInfoTracker core_xds.ConnectionInfoTracker,
 ) auth.Authenticator {
 	return &universalAuthenticator{
-		dataplaneValidator: dataplaneValidator,
-		resManager:         resManager,
+		dataplaneValidator:    dataplaneValidator,
+		resManager:            resManager,
+		connectionInfoTracker: connectionInfoTracker,
 	}
 }
 
@@ -36,8 +39,9 @@ func NewAuthenticator(
 // If you generate token bound to tags, the Dataplane needs to have all the tags defined in
 // the token, and every value it declares for a tag has to be allowed by the token.
 type universalAuthenticator struct {
-	dataplaneValidator builtin_issuer.Validator
-	resManager         manager.ReadOnlyResourceManager
+	dataplaneValidator    builtin_issuer.Validator
+	resManager            manager.ReadOnlyResourceManager
+	connectionInfoTracker core_xds.ConnectionInfoTracker
 }
 
 var _ auth.Authenticator = &universalAuthenticator{}
@@ -68,6 +72,10 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 	}
 	if err := u.validateWorkload(ctx, dpIdentity.Workload, dataplane); err != nil {
 		return err
+	}
+	// Persist the binding so issuance can re-check a MeshIdentity added post-connect.
+	if u.connectionInfoTracker != nil {
+		u.connectionInfoTracker.Store(model.MetaToResourceKey(dataplane.GetMeta()), core_xds.ConnectionInfo{TokenWorkload: dpIdentity.Workload})
 	}
 	return nil
 }

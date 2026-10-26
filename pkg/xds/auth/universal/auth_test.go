@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/core/tokens"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -30,6 +31,7 @@ import (
 var _ = Describe("Authentication flow", func() {
 	var dpTokenIssuer builtin_issuer.DataplaneTokenIssuer
 	var authenticator auth.Authenticator
+	var connInfoTracker core_xds.ConnectionInfoTracker
 	var resStore core_store.ResourceStore
 	var resManager manager.ResourceManager
 	var ctx context.Context
@@ -53,7 +55,8 @@ var _ = Describe("Authentication flow", func() {
 			UseSecrets: true,
 		})
 		Expect(err).ToNot(HaveOccurred())
-		authenticator = universal.NewAuthenticator(dataplaneValidator, resManager)
+		connInfoTracker = core_xds.NewConnectionInfoTracker()
+		authenticator = universal.NewAuthenticator(dataplaneValidator, resManager, connInfoTracker)
 
 		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("default"), "default")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
@@ -316,6 +319,33 @@ var _ = Describe("Authentication flow", func() {
 			// given no MeshIdentity in the mesh, the identity does not derive from
 			// the workload label, so a tags-only token stays valid
 			Expect(authenticator.Authenticate(ctx, &dpResWithWorkload, tagsOnlyToken())).To(Succeed())
+		})
+
+		It("records the token's workload binding so identity issuance can re-check it", func() {
+			// given a token bound to the backend workload
+			token, err := dpTokenIssuer.Generate(ctx, builtin_issuer.DataplaneIdentity{
+				Mesh:     "default",
+				Workload: "backend",
+			}, 24*time.Hour)
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			Expect(authenticator.Authenticate(ctx, &dpResWithWorkload, token)).To(Succeed())
+
+			// then
+			info, ok := connInfoTracker.Get(model.MetaToResourceKey(dpResWithWorkload.GetMeta()))
+			Expect(ok).To(BeTrue())
+			Expect(info.TokenWorkload).To(Equal("backend"))
+		})
+
+		It("records an empty binding for an unbound token", func() {
+			// when a tags-only token authenticates (no MeshIdentity matches)
+			Expect(authenticator.Authenticate(ctx, &dpResWithWorkload, tagsOnlyToken())).To(Succeed())
+
+			// then issuance will refuse a workload identity for this connection
+			info, ok := connInfoTracker.Get(model.MetaToResourceKey(dpResWithWorkload.GetMeta()))
+			Expect(ok).To(BeTrue())
+			Expect(info.TokenWorkload).To(BeEmpty())
 		})
 	})
 

@@ -48,7 +48,7 @@ func RegisterXDS(
 		return err
 	}
 
-	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(rt.AppContext(), watchdogFactory))
+	syncTracker := xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(rt.AppContext(), watchdogFactory, rt.XDS().ConnectionInfoTracker))
 	dpStatusTracker := DefaultDataplaneStatusTracker(rt, otelStatusCache)
 
 	deltaCallbacks := util_xds_v3.CallbacksChain{

@@ -8,6 +8,7 @@ import (
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	k8s_extensions "github.com/kumahq/kuma/v3/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/v3/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/v3/pkg/xds/auth"
@@ -21,6 +22,7 @@ type Deps struct {
 	Extensions              context.Context
 	ReadOnlyResourceManager core_manager.ReadOnlyResourceManager
 	XdsMetrics              *xds_metrics.Metrics
+	ConnectionInfoTracker   core_xds.ConnectionInfoTracker
 }
 
 func NewKubeAuthenticator(deps Deps) (auth.Authenticator, error) {
@@ -39,7 +41,7 @@ func NewUniversalAuthenticator(deps Deps) (auth.Authenticator, error) {
 		return nil, err
 	}
 
-	return universal_auth.NewAuthenticator(dataplaneValidator, deps.ReadOnlyResourceManager), nil
+	return universal_auth.NewAuthenticator(dataplaneValidator, deps.ReadOnlyResourceManager, deps.ConnectionInfoTracker), nil
 }
 
 func DefaultAuthenticator(deps Deps, typ string) (auth.Authenticator, error) {

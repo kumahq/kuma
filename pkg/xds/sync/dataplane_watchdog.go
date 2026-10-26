@@ -17,6 +17,7 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	envoy_admin_tls "github.com/kumahq/kuma/v3/pkg/envoy/admin/tls"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
@@ -32,6 +33,7 @@ type DataplaneWatchdogDependencies struct {
 	ResManager            core_manager.ReadOnlyResourceManager
 	OtelStatusCache       *otelstatus.Cache
 	XdsMetrics            *xds_metrics.Metrics
+	ConnectionInfoTracker core_xds.ConnectionInfoTracker
 }
 
 type Status string
@@ -108,6 +110,16 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 
 	syncForConfig := meshCtx.Hash != d.lastHash // check if we need to regenerate config because Kuma policies has changed.
 	identity := d.EnvoyCpCtx.IdentityManager.SelectedIdentity(dpp, meshCtx.Resources.MeshIdentities().Items)
+	// Re-check the binding at issuance: a MeshIdentity added after connect must
+	// not derive a workload identity from the dataplane's own label alone.
+	if identity != nil && d.ConnectionInfoTracker != nil {
+		if info, ok := d.ConnectionInfoTracker.Get(d.key); ok {
+			if err := validateTokenWorkloadBinding(info.TokenWorkload, dpp); err != nil {
+				d.log.Info("not issuing a workload identity", "reason", err.Error())
+				identity = nil
+			}
+		}
+	}
 	identityHash := base64.StdEncoding.EncodeToString(hashMeshIdentity(identity))
 	syncIdentity := identityHash != d.lastIdentityHash ||
 		// check if is expired
@@ -201,6 +213,22 @@ func (d *DataplaneWatchdog) syncOtelStatus(backends *core_xds.OtelPipeBackends) 
 	d.OtelStatusCache.Set(d.key, status)
 
 	return true
+}
+
+// validateTokenWorkloadBinding fails unless a dataplane that declares a
+// kuma.io/workload label presents a token bound to that same workload.
+func validateTokenWorkloadBinding(tokenWorkload string, dpp *core_mesh.DataplaneResource) error {
+	dpWorkload, exists := dpp.Meta.GetLabels()[metadata.KumaWorkload]
+	if !exists {
+		return nil
+	}
+	if tokenWorkload == "" {
+		return errors.Errorf("dataplane with %q label %q is selected by a MeshIdentity, so it requires a workload-bound token", metadata.KumaWorkload, dpWorkload)
+	}
+	if tokenWorkload != dpWorkload {
+		return errors.Errorf("dataplane workload %q is not allowed with this token, the token is bound to workload %q", dpWorkload, tokenWorkload)
+	}
+	return nil
 }
 
 func hashMeshIdentity(identity *meshidentity_api.MeshIdentityResource) []byte {

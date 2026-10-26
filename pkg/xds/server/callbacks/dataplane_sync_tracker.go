@@ -12,11 +12,12 @@ import (
 
 var dataplaneSyncTrackerLog = core.Log.WithName("xds").WithName("dataplane-sync-tracker")
 
-func NewDataplaneSyncTracker(appCtx context.Context, factoryFunc sync.DataplaneWatchdogFactory) DataplaneCallbacks {
+func NewDataplaneSyncTracker(appCtx context.Context, factoryFunc sync.DataplaneWatchdogFactory, connectionInfoTracker core_xds.ConnectionInfoTracker) DataplaneCallbacks {
 	return &dataplaneSyncTracker{
-		appCtx:               appCtx,
-		newDataplaneWatchdog: factoryFunc,
-		watchdogs:            map[core_model.ResourceKey]*watchdogState{},
+		appCtx:                appCtx,
+		newDataplaneWatchdog:  factoryFunc,
+		connectionInfoTracker: connectionInfoTracker,
+		watchdogs:             map[core_model.ResourceKey]*watchdogState{},
 	}
 }
 
@@ -30,8 +31,9 @@ var _ DataplaneCallbacks = &dataplaneSyncTracker{}
 // that indicates that the stream was already associated
 
 type dataplaneSyncTracker struct {
-	appCtx               context.Context
-	newDataplaneWatchdog sync.DataplaneWatchdogFactory
+	appCtx                context.Context
+	newDataplaneWatchdog  sync.DataplaneWatchdogFactory
+	connectionInfoTracker core_xds.ConnectionInfoTracker
 
 	stdsync.RWMutex // protects access to the fields below
 	watchdogs       map[core_model.ResourceKey]*watchdogState
@@ -76,6 +78,9 @@ func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, streamID c
 		dpData.cancelFunc()
 		<-dpData.stopped
 		dataplaneSyncTrackerLog.V(1).Info("watchdog for a Dataplane stopped", "dpKey", dpKey, "streamID", streamID)
+		if t.connectionInfoTracker != nil {
+			t.connectionInfoTracker.Delete(dpKey)
+		}
 		t.Lock()
 		defer t.Unlock()
 		delete(t.watchdogs, dpKey)
