@@ -25,6 +25,7 @@ import (
 	util_proto "github.com/kumahq/kuma/v2/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/v2/pkg/xds/envoy"
+	"github.com/kumahq/kuma/v2/pkg/xds/generator/system_names"
 )
 
 var _ = Describe("SniForBackendRef", func() {
@@ -162,6 +163,26 @@ var _ = Describe("GenerateClusters for MeshExternalService", func() {
 		tlsCtx := &envoy_tls.UpstreamTlsContext{}
 		Expect(util_proto.UnmarshalAnyTo(cluster.TransportSocket.GetTypedConfig(), tlsCtx)).To(Succeed())
 		Expect(tlsCtx.GetSni()).To(ContainSubstring("httpbin"))
+	})
+
+	// Once a MeshTrust exists the mesh CA is delivered only inside the trust bundle, so a cluster
+	// that keeps asking for the per-mesh CA secret never warms and every request gets a 503.
+	It("validates the legacy pool against the trust bundle when a MeshTrust exists", func() {
+		// given a proxy without identity that stays on the legacy egress next to a MeshTrust
+		proxy, meshCtx, services := buildInput(samples.MeshMTLS(), nil, legacyPool)
+		meshCtx.CAsByTrustDomain = map[string][]xds_context.PEMBytes{"default": {xds_context.PEMBytes("ca")}}
+
+		// when
+		rs, err := meshroute.GenerateClusters(proxy, meshCtx, services, "kuma-system")
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		cluster := transportSocketOf(rs)
+		Expect(cluster.TransportSocket).ToNot(BeNil())
+		tlsCtx := &envoy_tls.UpstreamTlsContext{}
+		Expect(util_proto.UnmarshalAnyTo(cluster.TransportSocket.GetTypedConfig(), tlsCtx)).To(Succeed())
+		validation := tlsCtx.GetCommonTlsContext().GetCombinedValidationContext()
+		Expect(validation.GetValidationContextSdsSecretConfig().GetName()).To(Equal(system_names.SystemResourceNameCABundle))
 	})
 
 	It("verifies the egress SPIFFE ID when the pool is mesh-scoped", func() {
