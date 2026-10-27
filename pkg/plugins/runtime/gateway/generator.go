@@ -183,8 +183,9 @@ func gatewayListenerInfoFromProxy(
 	)
 
 	outboundEndpoints := core_xds.EndpointMap{}
-	endpoints, _ := meshCtx.EndpointMapFor(proxy)
-	maps.Copy(outboundEndpoints, endpoints)
+	// Runs from the proxy builder before the workload identity is resolved, so the egress pool
+	// can't be picked here: this map only classifies external services, ClusterGenerator picks the pool.
+	maps.Copy(outboundEndpoints, meshCtx.EndpointMap)
 	esEndpoints := xds_topology.BuildExternalServicesEndpointMap(
 		ctx,
 		meshCtx.Resource,

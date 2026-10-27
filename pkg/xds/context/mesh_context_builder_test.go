@@ -12,9 +12,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	common_api "github.com/kumahq/kuma/v2/api/common/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/config/manager"
 	"github.com/kumahq/kuma/v2/pkg/core/dns/lookup"
+	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -777,7 +780,7 @@ spec:
 		))
 	})
 
-	initializedEgressIdentity := `
+	egressIdentity := `
 ---
 type: MeshIdentity
 name: identity
@@ -796,12 +799,22 @@ spec:
       insecureAllowSelfSigned: true
       autogenerate:
         enabled: true
+`
+	initializedCondition := common_api.Condition{
+		Type:    meshidentity_api.ReadyConditionType,
+		Status:  kube_meta.ConditionTrue,
+		Reason:  "Ready",
+		Message: "Successfully initialized",
+	}
+	initializedEgressIdentity := egressIdentity + `
 status:
   conditions:
     - type: Ready
       status: "True"
       reason: Ready
       message: Successfully initialized
+`
+	mesHttpbin := `
 ---
 type: MeshExternalService
 name: mes-httpbin
@@ -834,7 +847,7 @@ spec:
 		// given
 		resourceStore := memory.NewStore()
 		meshContextBuilder := newMeshContextBuilder(resourceStore, lookupIPFunc)
-		Expect(test_store.LoadResources(context.Background(), resourceStore, meshWithLegacyAndMeshScopedEgress+initializedEgressIdentity)).To(Succeed())
+		Expect(test_store.LoadResources(context.Background(), resourceStore, meshWithLegacyAndMeshScopedEgress+initializedEgressIdentity+mesHttpbin)).To(Succeed())
 
 		// when
 		meshContext, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
@@ -854,6 +867,42 @@ spec:
 		// cached ClusterLoadAssignments are keyed by this hash, so the pools must not share it
 		Expect(identityHash).To(Equal(meshContext.Hash))
 		Expect(legacyHash).ToNot(Equal(identityHash))
+		// only a legacy egress in another zone forwards external traffic through this zone's
+		// ingress, with the legacy SNI the mesh-scoped egress has no filter chain for
+		Expect(externalTargets(meshContext.IngressEndpointMap)).To(HaveLen(2))
+		for service, targets := range externalTargets(meshContext.IngressEndpointMap) {
+			Expect(targets).To(ConsistOf("192.168.0.1"), service)
+		}
+	})
+
+	// The egress is advertised only once its MeshIdentity is initialized, and the status updater
+	// may write that condition after everything else, so the readiness flip alone must rebuild.
+	It("advertises the mesh-scoped zone egress once its MeshIdentity initializes with no other change", func() {
+		// given both egresses and an identity that is not initialized yet
+		resourceStore := memory.NewStore()
+		meshContextBuilder := newMeshContextBuilder(resourceStore, lookupIPFunc)
+		Expect(test_store.LoadResources(context.Background(), resourceStore, meshWithLegacyAndMeshScopedEgress+egressIdentity+mesHttpbin)).To(Succeed())
+		before, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(before.ZoneEgresses).To(ConsistOf(core_xds.ZoneEgressInstance{Address: "192.168.0.1", Port: 10002}))
+		Expect(before.LegacyEgressEndpointMap).To(BeNil())
+
+		// when only the Ready condition is written
+		identity := meshidentity_api.NewMeshIdentityResource()
+		Expect(resourceStore.Get(context.Background(), identity, store.GetByKey("identity", "default"))).To(Succeed())
+		identity.Status = &meshidentity_api.MeshIdentityStatus{Conditions: []common_api.Condition{initializedCondition}}
+		Expect(resourceStore.Update(context.Background(), identity)).To(Succeed())
+		after, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", before)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(after.Hash).ToNot(Equal(before.Hash))
+		Expect(after.ZoneEgresses).To(ConsistOf(core_xds.ZoneEgressInstance{
+			Address: "192.168.0.2",
+			Port:    10002,
+			SAN:     "spiffe://default.zone-1.mesh.local/ns/kuma-system/sa/kuma-default-egress",
+		}))
+		Expect(after.LegacyEgressEndpointMap).ToNot(BeNil())
 	})
 
 	It("routes every client to the mesh-scoped zone egress when no legacy one is ready", func() {
@@ -865,7 +914,7 @@ spec:
 			"name: legacy-egress\n",
 			"name: legacy-egress\nlabels:\n  kuma.io/proxy-ready: \"false\"\n",
 			1,
-		)+initializedEgressIdentity)).To(Succeed())
+		)+initializedEgressIdentity+mesHttpbin)).To(Succeed())
 
 		// when
 		meshContext, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)

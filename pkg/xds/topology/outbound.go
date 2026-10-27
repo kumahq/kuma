@@ -837,7 +837,8 @@ func createExternalServiceEndpoint(
 }
 
 // WithExternalServicesThroughEgress returns a copy of endpointMap whose external services are
-// routed through egressAddresses instead.
+// routed through egressAddresses instead. Their entries are replaced rather than appended to:
+// BuildEdsEndpointMap only ever puts egress targets under an external service.
 func WithExternalServicesThroughEgress(
 	ctx context.Context,
 	endpointMap core_xds.EndpointMap,

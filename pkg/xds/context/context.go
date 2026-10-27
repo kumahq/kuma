@@ -215,12 +215,16 @@ func (mc *MeshContext) IsXKumaTagsUsed() bool {
 	return len(mc.Resources.RateLimits().Items) > 0 || len(mc.Resources.FaultInjections().Items) > 0 || len(mc.Resources.MeshFaultInjections().Items) > 0
 }
 
-// EndpointMapFor returns the endpoint map for the proxy and the hash to key its cached
-// ClusterLoadAssignments with. A proxy without a workload identity can't authenticate to the
+// legacyEgressCLAKeySuffix keeps the ClusterLoadAssignments of the two egress pools apart in the
+// CLA cache, which is keyed by mesh hash and cluster only. Hash is base64, so it can't collide.
+const legacyEgressCLAKeySuffix = ":legacy-egress"
+
+// EndpointMapFor returns the endpoint map for the proxy and the key to cache its
+// ClusterLoadAssignments under. A proxy without a workload identity can't authenticate to the
 // mesh-scoped egress, and a proxy with one gets no legacy mTLS certificate for the legacy egress.
 func (mc *MeshContext) EndpointMapFor(proxy *xds.Proxy) (xds.EndpointMap, string) {
 	if proxy.WorkloadIdentity == nil && mc.LegacyEgressEndpointMap != nil {
-		return mc.LegacyEgressEndpointMap, mc.Hash + ":legacy-egress"
+		return mc.LegacyEgressEndpointMap, mc.Hash + legacyEgressCLAKeySuffix
 	}
 	return mc.EndpointMap, mc.Hash
 }
