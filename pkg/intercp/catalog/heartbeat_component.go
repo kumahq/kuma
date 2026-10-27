@@ -52,8 +52,9 @@ func NewHeartbeatComponent(
 ) (component.Component, error) {
 	m := &heartbeatMetrics{
 		interval: prometheus.NewHistogram(prometheus.HistogramOpts{
-			Name: "component_heartbeat",
-			Help: "Summary of Inter CP Heartbeat component interval",
+			Name:    "component_heartbeat",
+			Help:    "Summary of Inter CP Heartbeat component interval",
+			Buckets: core_metrics.MillisecondBuckets,
 		}),
 		failures: prometheus.NewCounter(prometheus.CounterOpts{
 			Name: "component_heartbeat_failures",
