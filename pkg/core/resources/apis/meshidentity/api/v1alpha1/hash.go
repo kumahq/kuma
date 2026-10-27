@@ -13,10 +13,9 @@ func (m *MeshIdentityResource) Hash() []byte {
 }
 
 // XDSHash returns the MeshIdentity hash used by xDS invalidation. MeshIdentity
-// status conditions are controller bookkeeping and do not affect config
-// generation or selected workload identity contents. Per-dataplane identity
-// delivery still tracks the readiness flip separately in
-// pkg/xds/sync/dataplane_watchdog.go:hashMeshIdentity.
+// status conditions are controller bookkeeping, except for initialization: a
+// zone egress is advertised to the whole mesh only once its MeshIdentity is
+// initialized, and workload identity delivery is gated on it too.
 func (m *MeshIdentityResource) XDSHash() []byte {
 	return m.hash(false)
 }
@@ -34,6 +33,12 @@ func (m *MeshIdentityResource) hash(includeVersion bool) []byte {
 		spec = &MeshIdentity{}
 	}
 	core_model.WriteDeterministicJSON(hasher, spec)
+
+	if m.Status.IsInitialized() {
+		_, _ = hasher.Write([]byte{1})
+	} else {
+		_, _ = hasher.Write([]byte{0})
+	}
 
 	if includeVersion {
 		status := m.Status
