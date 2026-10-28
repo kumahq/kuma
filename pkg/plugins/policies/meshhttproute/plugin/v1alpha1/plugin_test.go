@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -4688,6 +4689,117 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 		}()),
 	)
+
+	// The MeshExternalService cluster is the same for both proxies, so a shared CLA cache entry
+	// would hand the second proxy the first one's egress pool.
+	It("routes external services by client identity while both egress pools run", func() {
+		// given
+		meshExtSvc := &meshexternalservice_api.MeshExternalServiceResource{
+			Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
+			Spec: &meshexternalservice_api.MeshExternalService{
+				Match: meshexternalservice_api.Match{
+					Type:     meshexternalservice_api.HostnameGeneratorType,
+					Port:     9090,
+					Protocol: core_meta.ProtocolHTTP,
+				},
+			},
+			Status: &meshexternalservice_api.MeshExternalServiceStatus{
+				VIP: meshexternalservice_api.VIP{IP: "10.20.20.1"},
+			},
+		}
+		extSvcKRI := kri.From(meshExtSvc)
+		const mesServiceName = "default_example___extsvc_9090"
+		egressEndpoint := func(target string) *xds_builders.EndpointBuilder {
+			return xds_builders.Endpoint().
+				WithTarget(target).
+				WithPort(10002).
+				WithWeight(1).
+				WithExternalService(&core_xds.ExternalService{OwnerResource: extSvcKRI})
+		}
+		backendEndpoint := xds_builders.Endpoint().
+			WithTarget("192.168.0.4").
+			WithPort(8084).
+			WithWeight(1).
+			WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, string(core_meta.ProtocolHTTP))
+		meshScopedPool := xds_builders.EndpointMap().
+			AddEndpoint("backend", backendEndpoint).
+			AddEndpoint(mesServiceName, egressEndpoint("10.0.0.2"))
+		legacyPool := xds_builders.EndpointMap().
+			AddEndpoint("backend", backendEndpoint).
+			AddEndpoint(mesServiceName, egressEndpoint("10.0.0.1"))
+
+		resources := xds_context.NewResources()
+		resources.MeshLocalResources[meshexternalservice_api.MeshExternalServiceType] = &meshexternalservice_api.MeshExternalServiceResourceList{
+			Items: []*meshexternalservice_api.MeshExternalServiceResource{meshExtSvc},
+		}
+		metrics, err := metrics.NewMetrics("")
+		Expect(err).ToNot(HaveOccurred())
+		claCache, err := cla.NewCache(1*time.Second, metrics)
+		Expect(err).ToNot(HaveOccurred())
+		xdsContext := xds_builders.Context().
+			WithMeshBuilder(builders.Mesh().WithBuiltinMTLSBackend("builtin").WithEnabledMTLSBackend("builtin").WithEgressRoutingEnabled()).
+			WithEndpointMap(meshScopedPool).
+			WithResources(resources).
+			AddExternalService(mesServiceName).
+			AddServiceProtocol(mesServiceName, core_meta.ProtocolHTTP).
+			AddServiceProtocol("backend", core_meta.ProtocolHTTP).
+			With(func(ctx *xds_context.Context) {
+				ctx.Mesh.Hash = "mesh-hash"
+				ctx.Mesh.LegacyEgressEndpointMap = legacyPool.Build()
+				ctx.Mesh.ZoneEgresses = []core_xds.ZoneEgressInstance{{
+					Address: "10.0.0.2",
+					Port:    10002,
+					SAN:     "spiffe://default.zone-1.mesh.local/ns/kuma-system/sa/kuma-default-egress",
+				}}
+				ctx.ControlPlane.CLACache = claCache
+			}).
+			Build()
+		proxyFor := func(name string, identity *core_xds.WorkloadIdentity) *core_xds.Proxy {
+			return xds_builders.Proxy().
+				WithSecretsTracker(envoy.NewSecretsTracker(core_model.DefaultMesh, nil)).
+				WithDataplane(builders.Dataplane().
+					WithName(name).
+					WithAddress("192.168.0.2").
+					WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+				WithOutbounds(xds_types.Outbounds{
+					{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+						Port: builders.FirstOutboundPort,
+						Tags: map[string]string{mesh_proto.ServiceTag: "backend"},
+					}},
+					{Resource: kri.WithSectionName(extSvcKRI, "9090"), Address: "10.20.20.1", Port: 9090},
+				}).
+				WithRouting(xds_builders.Routing().WithOutboundTargets(meshScopedPool)).
+				WithWorkloadIdentity(identity).
+				Build()
+		}
+		claTargets := func(proxy *core_xds.Proxy) map[string]string {
+			resourceSet := core_xds.NewResourceSet()
+			Expect(plugin.NewPlugin().(core_plugins.PolicyPlugin).Apply(resourceSet, *xdsContext, proxy)).To(Succeed())
+			targets := map[string]string{}
+			for _, r := range resourceSet.ListOf(envoy_resource.EndpointType) {
+				cla := r.Resource.(*envoy_endpoint.ClusterLoadAssignment)
+				targets[r.Name] = cla.GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetSocketAddress().GetAddress()
+			}
+			return targets
+		}
+
+		// when the identity client warms the CLA cache first
+		identityTargets := claTargets(proxyFor("web-identity", &core_xds.WorkloadIdentity{
+			IdentitySourceConfigurer: func() bldrs_common.Configurer[envoy_tls.SdsSecretConfig] {
+				return bldrs_tls.SdsSecretConfigSource(
+					"identity_cert:secret:default",
+					bldrs_core.NewConfigSource().Configure(bldrs_core.Sds()),
+				)
+			},
+		}))
+		legacyTargets := claTargets(proxyFor("web-legacy", nil))
+
+		// then
+		Expect(identityTargets).To(HaveKeyWithValue(mesServiceName, "10.0.0.2"))
+		Expect(legacyTargets).To(HaveKeyWithValue(mesServiceName, "10.0.0.1"))
+		Expect(identityTargets).To(HaveKeyWithValue("backend", "192.168.0.4"))
+		Expect(legacyTargets).To(HaveKeyWithValue("backend", "192.168.0.4"))
+	})
 })
 
 const secureSecret = `
