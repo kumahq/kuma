@@ -12,8 +12,8 @@ jobs:
   pr_comments:
     timeout-minutes: 120
     if: github.event.issue.pull_request != '' && (contains(github.event.comment.body, '/format') || contains(github.event.comment.body, '/golden_files') || contains(github.event.comment.body, '/golden_files_e2e') || contains(github.event.comment.body, '/tproxy_golden_files'))
-    # Checks out the PR head, a fork on most PRs, and runs make against it. runs-on cannot
-    # read the step that resolves isCrossRepository, so this stays GitHub-hosted.
+    # Runs make against the PR head while a write-capable App token is in the job, so fork
+    # PRs are rejected before checkout.
     runs-on: ubuntu-24.04
     steps:
       # Commands are additive: one comment can request multiple actions, and all
@@ -67,16 +67,21 @@ jobs:
       - name: check-maintainer
         if: steps.parse-commands.outputs.has_command == 'true'
         run: |
-          # Ensure the commenter is a maintainer
-          if gh api '/repos/${{ github.repository }}/collaborators?permission=maintain' --paginate --jq '.[].login' | grep -q ${{ github.event.comment.user.login }}; then
-            gh api --method POST -f content='+1' ${{ github.event.comment.url }}/reactions
-          else
-            gh api --method POST -f content='-1' ${{ github.event.comment.url }}/reactions
-            echo "${{ github.event.comment.user.login }} is not a maintainer of the repo, can't run this action"
-            exit 1
-          fi
+          role=$(gh api "/repos/${GITHUB_REPOSITORY}/collaborators/${LOGIN}/permission" --jq '.role_name' 2>/dev/null || echo none)
+          case "$role" in
+            admin|maintain)
+              gh api --method POST -f content='+1' "${COMMENT_URL}/reactions"
+              ;;
+            *)
+              gh api --method POST -f content='-1' "${COMMENT_URL}/reactions"
+              echo "${LOGIN} is not a maintainer of the repo, can't run this action"
+              exit 1
+              ;;
+          esac
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
+          LOGIN: ${{ github.event.comment.user.login }}
+          COMMENT_URL: ${{ github.event.comment.url }}
       - id: get-branch
         if: steps.parse-commands.outputs.has_command == 'true'
         run: |
@@ -84,12 +89,16 @@ jobs:
           REPO=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json headRepository,headRepositoryOwner --jq '[.headRepositoryOwner.login,.headRepository.name] | join("/")')
           IS_CROSS_REPOSITORY=$(gh pr view ${{ github.event.issue.number }} --repo ${{ github.repository }} --json isCrossRepository --jq '.isCrossRepository')
 
+          if [[ "$IS_CROSS_REPOSITORY" != "false" ]]; then
+            echo "PR comment commands are not allowed on fork PRs because they would run PR-controlled code next to repository secrets."
+            exit 1
+          fi
+
           echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
           echo "REPO=$REPO" >> "$GITHUB_ENV"
           {
             echo "branch_name=$BRANCH_NAME"
             echo "repo=$REPO"
-            echo "is_cross_repository=$IS_CROSS_REPOSITORY"
           } >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
@@ -99,18 +108,13 @@ jobs:
           fetch-depth: 0
           repository: ${{ env.REPO }}
           ref: ${{ env.BRANCH_NAME }}
-          token: ${{ steps.github-app-token.outputs.token }}
+          persist-credentials: false
       - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
         with:
           version: 2026.10.10
         if: steps.parse-commands.outputs.has_command == 'true'
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - name: "Reject e2e golden refresh on fork PRs"
-        if: steps.parse-commands.outputs.golden_files_e2e == 'true' && steps.get-branch.outputs.is_cross_repository == 'true'
-        run: |
-          echo "/golden_files_e2e is not allowed on fork PRs because it would expose repository secrets to PR-controlled code."
-          exit 1
       # Automatically update code formatting if /format is in the comment
       - name: "Auto-format code"
         if: steps.parse-commands.outputs.format == 'true'
@@ -123,7 +127,7 @@ jobs:
         run: make test UPDATE_GOLDEN_FILES=true
 
       - name: "Free up disk space for E2E golden files"
-        if: steps.parse-commands.outputs.golden_files_e2e == 'true' && steps.get-branch.outputs.is_cross_repository != 'true'
+        if: steps.parse-commands.outputs.golden_files_e2e == 'true'
         uses: endersonmenezes/free-disk-space@8b8cd4e2277836962939a8f3b4ea0ee4bc006156 # v4.0.1
         with:
           remove_android: true
@@ -132,7 +136,7 @@ jobs:
 
       # Update the labeled e2e golden-file suites if /golden_files_e2e is in the comment
       - name: "Update e2e golden files"
-        if: steps.parse-commands.outputs.golden_files_e2e == 'true' && steps.get-branch.outputs.is_cross_repository != 'true'
+        if: steps.parse-commands.outputs.golden_files_e2e == 'true'
         env:
           DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
         run: |
@@ -180,6 +184,7 @@ jobs:
             git config user.name "${GH_USER}"
             git config user.email "${GH_EMAIL}"
             git commit -s -m "fix(ci): format files" .
+            gh auth setup-git
             git push
           fi
       - if: steps.parse-commands.outputs.has_command == 'true'
