@@ -133,7 +133,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 			envoy.WithTags(dest.Destination),
 		)
 
-		endpoints, hash := xdsCtx.Mesh.EndpointMapFor(info.Proxy)
+		endpoints, hash := xdsCtx.Mesh.EndpointMapFor(info.Proxy, service)
 		loadAssignment, err := xdsCtx.ControlPlane.CLACache.GetCLA(
 			ctx,
 			xdsCtx.Mesh.Resource.GetMeta().GetName(),

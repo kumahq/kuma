@@ -83,8 +83,8 @@ func CollectListenerInfos(
 		)
 
 		outboundEndpoints := core_xds.EndpointMap{}
-		endpoints, _ := meshCtx.EndpointMapFor(proxy)
-		maps.Copy(outboundEndpoints, endpoints)
+		// Only classifies external services, which both egress pools flag alike.
+		maps.Copy(outboundEndpoints, meshCtx.EndpointMap)
 
 		esEndpoints := xds_topology.BuildExternalServicesEndpointMap(
 			ctx,

@@ -852,8 +852,9 @@ spec:
 		// when
 		meshContext, err := meshContextBuilder.BuildIfChanged(context.Background(), "default", nil)
 		Expect(err).ToNot(HaveOccurred())
-		identityEndpoints, identityHash := meshContext.EndpointMapFor(&core_xds.Proxy{WorkloadIdentity: &core_xds.WorkloadIdentity{}})
-		legacyEndpoints, legacyHash := meshContext.EndpointMapFor(&core_xds.Proxy{})
+		identityEndpoints, identityHash := meshContext.EndpointMapFor(&core_xds.Proxy{WorkloadIdentity: &core_xds.WorkloadIdentity{}}, "httpbin")
+		legacyEndpoints, legacyHash := meshContext.EndpointMapFor(&core_xds.Proxy{}, "httpbin")
+		_, sharedHash := meshContext.EndpointMapFor(&core_xds.Proxy{}, "backend")
 
 		// then
 		Expect(externalTargets(identityEndpoints)).To(HaveLen(2))
@@ -864,9 +865,11 @@ spec:
 		for service, targets := range externalTargets(legacyEndpoints) {
 			Expect(targets).To(ConsistOf("192.168.0.1"), service)
 		}
-		// cached ClusterLoadAssignments are keyed by this hash, so the pools must not share it
+		// cached ClusterLoadAssignments are keyed by this hash, so the pools must not share it for
+		// external services, and only for those: every other CLA is identical in both pools
 		Expect(identityHash).To(Equal(meshContext.Hash))
 		Expect(legacyHash).ToNot(Equal(identityHash))
+		Expect(sharedHash).To(Equal(meshContext.Hash))
 		// only a legacy egress in another zone forwards external traffic through this zone's
 		// ingress, with the legacy SNI the mesh-scoped egress has no filter chain for
 		Expect(externalTargets(meshContext.IngressEndpointMap)).To(HaveLen(2))
@@ -922,7 +925,7 @@ spec:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(meshContext.LegacyEgressEndpointMap).To(BeNil())
-		legacyEndpoints, legacyHash := meshContext.EndpointMapFor(&core_xds.Proxy{})
+		legacyEndpoints, legacyHash := meshContext.EndpointMapFor(&core_xds.Proxy{}, "httpbin")
 		for service, targets := range externalTargets(legacyEndpoints) {
 			Expect(targets).To(ConsistOf("192.168.0.2"), service)
 		}

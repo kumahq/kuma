@@ -219,14 +219,19 @@ func (mc *MeshContext) IsXKumaTagsUsed() bool {
 // CLA cache, which is keyed by mesh hash and cluster only. Hash is base64, so it can't collide.
 const legacyEgressCLAKeySuffix = ":legacy-egress"
 
-// EndpointMapFor returns the endpoint map for the proxy and the key to cache its
-// ClusterLoadAssignments under. A proxy without a workload identity can't authenticate to the
-// mesh-scoped egress, and a proxy with one gets no legacy mTLS certificate for the legacy egress.
-func (mc *MeshContext) EndpointMapFor(proxy *xds.Proxy) (xds.EndpointMap, string) {
-	if proxy.WorkloadIdentity == nil && mc.LegacyEgressEndpointMap != nil {
+// EndpointMapFor returns the endpoint map for the proxy and the key to cache the
+// ClusterLoadAssignments of serviceName under. A proxy without a workload identity can't
+// authenticate to the mesh-scoped egress, and a proxy with one gets no legacy mTLS certificate for
+// the legacy egress. Only external services differ between the pools, so only their key is set
+// apart: every other service keeps one cache entry for both.
+func (mc *MeshContext) EndpointMapFor(proxy *xds.Proxy, serviceName string) (xds.EndpointMap, string) {
+	if proxy.WorkloadIdentity != nil || mc.LegacyEgressEndpointMap == nil {
+		return mc.EndpointMap, mc.Hash
+	}
+	if mc.IsExternalService(serviceName) {
 		return mc.LegacyEgressEndpointMap, mc.Hash + legacyEgressCLAKeySuffix
 	}
-	return mc.EndpointMap, mc.Hash
+	return mc.LegacyEgressEndpointMap, mc.Hash
 }
 
 // ZoneEgressSANs returns the SPIFFE IDs of all zone egress instances that have a SAN set.

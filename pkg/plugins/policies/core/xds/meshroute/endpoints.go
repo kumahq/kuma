@@ -31,7 +31,7 @@ func GenerateEndpoints(
 		externalServiceThroughEgress := ctx.Mesh.IsExternalService(serviceName) && !meshExternalService && meshCtx.Resource.ZoneEgressEnabled()
 		if internalService || meshExternalService || externalServiceThroughEgress {
 			for _, cluster := range service.Clusters() {
-				endpoints, hash := meshCtx.EndpointMapFor(proxy)
+				endpoints, hash := meshCtx.EndpointMapFor(proxy, serviceName)
 				if cluster.Mesh() != "" {
 					endpoints, hash = meshCtx.CrossMeshEndpoints[cluster.Mesh()], meshCtx.Hash
 				}

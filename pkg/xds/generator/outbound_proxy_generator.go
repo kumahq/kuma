@@ -287,7 +287,7 @@ func (OutboundProxyGenerator) generateEDS(
 		if !services[serviceName].HasExternalService() || xdsCtx.Mesh.Resource.ZoneEgressEnabled() {
 			for _, c := range services[serviceName].Clusters() {
 				cluster := c.(*envoy_common.ClusterImpl)
-				endpoints, hash := xdsCtx.Mesh.EndpointMapFor(proxy)
+				endpoints, hash := xdsCtx.Mesh.EndpointMapFor(proxy, serviceName)
 				if cluster.Mesh() != "" {
 					endpoints, hash = xdsCtx.Mesh.CrossMeshEndpoints[cluster.Mesh()], xdsCtx.Mesh.Hash
 				}
