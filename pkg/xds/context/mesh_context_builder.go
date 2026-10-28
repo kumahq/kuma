@@ -264,7 +264,8 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 			loader,
 		)
 	}
-	if (legacyEgressEndpointMap != nil) != (latestMeshCtx != nil && latestMeshCtx.LegacyEgressEndpointMap != nil) {
+	// Build passes no previous context, so the api-server would otherwise log on every inspect call.
+	if latestMeshCtx != nil && (legacyEgressEndpointMap != nil) != (latestMeshCtx.LegacyEgressEndpointMap != nil) {
 		logger.Info("zone egress pool selection changed", "mesh", meshName,
 			"routeByClientIdentity", legacyEgressEndpointMap != nil,
 			"legacyZoneEgresses", len(legacyZoneEgressList),
