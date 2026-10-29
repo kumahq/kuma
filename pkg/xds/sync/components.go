@@ -54,6 +54,7 @@ func DefaultDataplaneWatchdogFactory(
 		ResManager:            rt.ReadOnlyResourceManager(),
 		OtelStatusCache:       otelStatusCache,
 		XdsMetrics:            xdsMetrics,
+		ConnectionInfoTracker: rt.XDS().ConnectionInfoTracker,
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,

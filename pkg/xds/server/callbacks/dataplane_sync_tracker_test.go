@@ -22,7 +22,7 @@ var _ = Describe("Sync", func() {
 	Describe("dataplaneSyncTracker", func() {
 		It("should not fail when ADS stream is closed before Watchdog is even created", func() {
 			// setup
-			tracker := DataplaneCallbacksToXdsCallbacks(NewDataplaneSyncTracker(context.Background(), nil))
+			tracker := DataplaneCallbacksToXdsCallbacks(NewDataplaneSyncTracker(context.Background(), nil, nil))
 
 			// given
 			ctx := context.Background()
@@ -45,7 +45,7 @@ var _ = Describe("Sync", func() {
 
 		It("should not fail when Envoy presents invalid Node ID", func() {
 			// setup
-			tracker := NewDataplaneSyncTracker(context.Background(), nil)
+			tracker := NewDataplaneSyncTracker(context.Background(), nil, nil)
 			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
@@ -84,7 +84,7 @@ var _ = Describe("Sync", func() {
 					<-ctx.Done()
 					close(watchdogCh)
 				})
-			}))
+			}), nil)
 			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
@@ -140,7 +140,7 @@ var _ = Describe("Sync", func() {
 					activeWatchdogs.Add(-1)
 					cleanupDone.Store(true)
 				})
-			}))
+			}), nil)
 			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// when one stream for backend-01 is connected and request is sent
@@ -203,7 +203,7 @@ var _ = Describe("Sync", func() {
 					<-ctx.Done()
 					close(watchdogReturned)
 				})
-			}))
+			}), nil)
 			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			Expect(callbacks.OnDeltaStreamOpen(context.Background(), 1, "")).ToNot(HaveOccurred())
@@ -223,7 +223,7 @@ var _ = Describe("Sync", func() {
 				streamCtxCh:  streamCtxCh,
 				watchdogDone: watchdogDone,
 			}
-			tracker := NewDataplaneSyncTracker(context.Background(), factory)
+			tracker := NewDataplaneSyncTracker(context.Background(), factory, nil)
 			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given

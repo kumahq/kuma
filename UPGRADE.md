@@ -147,6 +147,14 @@ migration: the `MeshTrust` and the CA are keyed by the identity name, so for as
 long as convergence takes there is a single trust domain in flight and leaves
 issued under the old one no longer verify. Two identities never have that gap.
 
+### Universal proxies selected by a `MeshIdentity` require a workload-bound token when they declare `kuma.io/workload`
+
+On Universal, a dataplane that is selected by a `MeshIdentity` and declares a `kuma.io/workload` label now requires a workload-bound dataplane token whose workload equals that label; a token bound only to the mesh, to tags, or to the dataplane name is rejected with `requires a workload-bound token`. The control plane decides this from whether a `MeshIdentity` matches and the label is present, no longer from whether the SPIFFE ID template appears to reference the workload. This covers all template spellings that resolve to the workload, and extends the requirement to proxies whose selected `MeshIdentity` does not reference the workload at all, which previously connected with an unbound token. The same requirement is re-checked when the workload identity is issued, not only at connect, so a `MeshIdentity` applied to an already-connected proxy is evaluated the same way. Kubernetes (ServiceAccount-token authentication), deployments without a `MeshIdentity`, and proxies already using a workload-bound token are unaffected.
+
+**Action required**
+
+Issue a workload-bound token (`kumactl generate dataplane-token --workload <name>`, with `<name>` equal to the proxy's `kuma.io/workload` label) for every Universal proxy that is selected by a `MeshIdentity`, declares that label, and currently connects with a tags-only or name-only token. A `MeshIdentity` SPIFFE path on Universal only constrains the parts of the identity a token can bind: `{{ .Workload }}` via `--workload`, and `{{ label "<tag>" }}` via a `--tag` the token carries. A path that reads any other label the token does not bind leaves that part of the identity unconstrained by the token, so prefer the workload or a token-bound tag for the identifying segment.
+
 ### Zones no longer require the `kuma.io/origin` label
 
 A zone control plane used to reject a policy applied without

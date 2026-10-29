@@ -5,6 +5,7 @@ import (
 
 	kuma_cp "github.com/kumahq/kuma/v3/pkg/config/app/kuma-cp"
 	core_manager "github.com/kumahq/kuma/v3/pkg/core/resources/manager"
+	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	util_xds "github.com/kumahq/kuma/v3/pkg/util/xds"
 	xds_auth "github.com/kumahq/kuma/v3/pkg/xds/auth"
@@ -14,10 +15,11 @@ import (
 )
 
 type XDSRuntimeContext struct {
-	Authenticator   xds_auth.Authenticator
-	Hooks           *xds_hooks.Hooks
-	ServerCallbacks util_xds.MultiXDSCallbacks
-	Metrics         *xds_metrics.Metrics
+	Authenticator         xds_auth.Authenticator
+	Hooks                 *xds_hooks.Hooks
+	ServerCallbacks       util_xds.MultiXDSCallbacks
+	Metrics               *xds_metrics.Metrics
+	ConnectionInfoTracker core_xds.ConnectionInfoTracker
 }
 
 type ContextWithXDS interface {
@@ -37,11 +39,17 @@ func WithDefaults(ctx ContextWithXDS) (XDSRuntimeContext, error) {
 		}
 		currentXDS.Metrics = xdsMetrics
 	}
+
+	if currentXDS.ConnectionInfoTracker == nil {
+		currentXDS.ConnectionInfoTracker = core_xds.NewConnectionInfoTracker()
+	}
+
 	authDeps := components.Deps{
 		Config:                  ctx.Config(),
 		Extensions:              ctx.Extensions(),
 		ReadOnlyResourceManager: ctx.ReadOnlyResourceManager(),
 		XdsMetrics:              currentXDS.Metrics,
+		ConnectionInfoTracker:   currentXDS.ConnectionInfoTracker,
 	}
 
 	if currentXDS.Authenticator == nil {
