@@ -219,12 +219,21 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	zoneIngresses := resources.ZoneIngresses().Items
 	zoneEgresses := readyZoneEgresses(resources.ZoneEgresses().Items)
 	externalServices := resources.ExternalServices().Items
-	zoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
-	if len(zoneEgressList) == 0 {
+	meshScopedZoneEgressList := resolveZoneEgresses(dataplanes, resources.MeshIdentities().Items, m.zone)
+	legacyZoneEgressList := resolveLegacyZoneEgresses(zoneEgresses)
+	meshScopedEgressAdvertised := len(meshScopedZoneEgressList) > 0
+	zoneEgressList := meshScopedZoneEgressList
+	if !meshScopedEgressAdvertised {
 		// Do not mix legacy zone egresses with dataplane listeners in one pool because
 		// they may carry different TLS identities and break SAN validation.
 		// Fallback to legacy only when no dataplane-based instances were resolved.
-		zoneEgressList = resolveLegacyZoneEgresses(zoneEgresses)
+		zoneEgressList = legacyZoneEgressList
+	}
+	// Only a legacy egress in another zone forwards external traffic through this zone's ingress,
+	// with the legacy SNI a mesh-scoped egress has no filter chain for.
+	ingressZoneEgressList := zoneEgressList
+	if len(legacyZoneEgressList) > 0 {
+		ingressZoneEgressList = legacyZoneEgressList
 	}
 	endpointMap := xds_topology.BuildEdsEndpointMap(
 		ctx,
@@ -242,6 +251,26 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		mtlsEnabled(mesh, resources.MeshIdentities()),
 		zoneEgressList,
 	)
+	var legacyEgressEndpointMap xds.EndpointMap
+	if meshScopedEgressAdvertised && len(legacyZoneEgressList) > 0 {
+		legacyEgressEndpointMap = xds_topology.WithExternalServicesThroughEgress(
+			ctx,
+			endpointMap,
+			mesh,
+			m.zone,
+			externalServices,
+			meshExternalServices,
+			legacyZoneEgressList,
+			loader,
+		)
+	}
+	// Build passes no previous context, so the api-server would otherwise log on every inspect call.
+	if latestMeshCtx != nil && (legacyEgressEndpointMap != nil) != (latestMeshCtx.LegacyEgressEndpointMap != nil) {
+		logger.Info("zone egress pool selection changed", "mesh", meshName,
+			"routeByClientIdentity", legacyEgressEndpointMap != nil,
+			"legacyZoneEgresses", len(legacyZoneEgressList),
+			"meshScopedZoneEgresses", len(meshScopedZoneEgressList))
+	}
 	esEndpointMap := xds_topology.BuildExternalServicesEndpointMap(ctx, mesh, externalServices, loader, m.zone)
 	ingressEndpointMap := xds_topology.BuildIngressEndpointMap(
 		ctx,
@@ -254,7 +283,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		externalServices,
 		resources.Gateways().Items,
 		zoneEgresses,
-		zoneEgressList,
+		ingressZoneEgressList,
 		loader,
 		mtlsEnabled(mesh, resources.MeshIdentities()),
 	)
@@ -300,6 +329,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		BaseMeshContext:                 baseMeshContext,
 		DataplanesByName:                dataplanesByName,
 		EndpointMap:                     endpointMap,
+		LegacyEgressEndpointMap:         legacyEgressEndpointMap,
 		ExternalServicesEndpointMap:     esEndpointMap,
 		IngressEndpointMap:              ingressEndpointMap,
 		CrossMeshEndpoints:              crossMeshEndpointMap,

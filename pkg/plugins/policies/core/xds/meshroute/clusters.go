@@ -78,7 +78,7 @@ func GenerateClusters(
 							mesh_proto.ZoneEgressServiceName,
 							true,
 							SniForBackendRef(realResourceRef, dest, port, systemNamespace),
-							false,
+							len(meshCtx.CAsByTrustDomain) > 0,
 						))
 					}
 				case meshCtx.Resource.ZoneEgressEnabled():
@@ -92,7 +92,7 @@ func GenerateClusters(
 							mesh_proto.ZoneEgressServiceName,
 							tlsReady,
 							clusterTags,
-							false,
+							len(meshCtx.CAsByTrustDomain) > 0,
 						))
 				default:
 					// path for old ExternalService
