@@ -28,7 +28,7 @@ Backport PRs are created by workflow_dispatch (there is **no** label-driven back
   gh workflow run backport.yaml --repo kumahq/kuma --ref master -f PR=<num> [-f branches="release-2.x,release-2.y"]
   ```
 
-  Empty `branches` targets all active branches. Then poll `gh run list --workflow=backport.yaml --repo kumahq/kuma --limit 1` until complete and re-run the PR search. Poll in background; the run takes a few minutes.
+  Leave `branches` empty: the workflow then reads `active-branches.json` from master and targets every active branch. If you must narrow it, take the list from `git show $UPSTREAM/master:active-branches.json`, never from the working tree, which may be a stale branch missing newer release branches. Then poll `gh run list --workflow=backport.yaml --repo kumahq/kuma --limit 1` until complete and re-run the PR search. Poll in background; the run takes a few minutes.
 
 Facts about what the action produces (this shapes all later steps):
 
