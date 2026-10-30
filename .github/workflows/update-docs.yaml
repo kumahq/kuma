@@ -19,6 +19,7 @@ permissions:
   contents: read
 jobs:
   generate-docs:
+    if: github.event_name != 'push' || vars.KUMA_CI_SKIP_PUSH != 'true'
     timeout-minutes: 10
     runs-on: >-
       ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
