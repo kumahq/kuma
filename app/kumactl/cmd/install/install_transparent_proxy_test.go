@@ -82,6 +82,13 @@ var _ = Context("kumactl install transparent proxy", func() {
 			},
 			goldenFile: "install-transparent-proxy.defaults.golden.txt",
 		}),
+		Entry("should generate defaults with sleep between retries as a duration", testCase{
+			extraArgs: []string{
+				"--kuma-dp-user", "0",
+				"--sleep-between-retries", "5s",
+			},
+			goldenFile: "install-transparent-proxy.defaults.golden.txt",
+		}),
 		Entry("should generate defaults with user id and DNS redirected when no conntrack module present", testCase{
 			extraArgs: []string{
 				"--kuma-dp-user", "0",
@@ -204,6 +211,13 @@ var _ = Context("kumactl install transparent proxy", func() {
 			},
 			goldenFile:   "install-transparent-proxy.defaults.golden.txt",
 			errorMatcher: Equal("Error: only one of '--redirect-dns' or '--redirect-all-dns-traffic' should be specified\n"),
+		}),
+		Entry("should error out on sleep between retries without a unit", testCase{
+			extraArgs: []string{
+				"--kuma-dp-user", "root",
+				"--sleep-between-retries", "5",
+			},
+			errorMatcher: ContainSubstring(`invalid argument "5" for "--sleep-between-retries" flag: time: missing unit in duration "5"`),
 		}),
 		Entry("should error out on invalid port value", testCase{
 			extraArgs: []string{
