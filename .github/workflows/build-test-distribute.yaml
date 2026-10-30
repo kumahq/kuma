@@ -4,7 +4,7 @@ on:
     branches: ["master", "release-*", "!*-merge-master"]
     tags: ["*"]
   pull_request:
-    branches: ["master", "release-*"]
+    branches: ["master", "release-*", "security/**"]
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI or via REST call
 permissions:
   contents: read
