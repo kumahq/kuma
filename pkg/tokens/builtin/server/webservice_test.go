@@ -110,4 +110,23 @@ var _ = Describe("Dataplane Token Webservice", func() {
 		},
 		Entry("not valid json", `not-valid-json`),
 	)
+
+	DescribeTable("should return bad request on invalid zone token request",
+		func(json string) {
+			// given
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, fmt.Sprintf("%s/tokens/zone", url), strings.NewReader(json))
+			Expect(err).ToNot(HaveOccurred())
+			req.Header.Add("content-type", "application/json")
+
+			// when
+			resp, err := http.DefaultClient.Do(req)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(resp.StatusCode).To(Equal(400))
+		},
+		Entry("not valid json", `not-valid-json`),
+		Entry("scope is a string", `{"zone": "zone-1", "scope": "egress"}`),
+		Entry("scope is an object", `{"zone": "zone-1", "scope": {"name": "egress"}}`),
+	)
 })
