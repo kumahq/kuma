@@ -17,6 +17,7 @@ permissions: {}
 
 jobs:
   dispatch-event:
+    if: github.event_name != 'push' || vars.KUMA_CI_SKIP_PUSH != 'true'
     runs-on: >-
       ${{ fromJSON((github.event_name == 'pull_request' && vars.RUNNERS_PR_AMD64)
       || vars.RUNNERS_RELEASE_2_14_AMD64

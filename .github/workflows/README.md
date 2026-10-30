@@ -88,3 +88,9 @@ Today that means the arm64 e2e legs in `_test.yaml` and the `linux/arm64` leg of
 ## Cutting a release branch
 
 Variable names cannot contain `-` or `.`, and an inline expression cannot sanitize `github.ref_name`, so the branch slug is written into the workflows by hand. After cutting `release-X.Y`, replace `RUNNERS_RELEASE_2_14_` with `RUNNERS_RELEASE_X_Y_` across `.github/workflows/` on the new branch, comments included, and set the matching variables. A missed rename would silently fall back to the global variable, so `validate-workflows-and-scripts.yaml` fails when a slug in the workflows does not match the branch. `PR` is exempt, since it names a tier rather than a branch.
+
+# Skipping push runs
+
+A repository that mirrors this one gets a `push` event for every branch and tag it syncs, and each one starts the full pipeline. Set the repository variable `KUMA_CI_SKIP_PUSH` to `true` to skip every job that a `push` event would run there. Pull requests, schedules and manual runs are unaffected. Unset, nothing changes.
+
+The guard sits on the first job of each `push`-triggered workflow, so the jobs that need it are skipped with it. In `build-test-distribute.yaml` that job is `release_sha_gate`, and `distributions`, which runs `always()`, checks for it explicitly. A new `push`-triggered workflow needs the same `if:`.
