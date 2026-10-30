@@ -10,6 +10,7 @@ permissions:
   contents: read
 jobs:
   notify-about-merged-pr:
+    if: github.event_name != 'push' || vars.KUMA_CI_SKIP_PUSH != 'true'
     timeout-minutes: 10
     name: "Notify about merged PR"
     runs-on: >-
