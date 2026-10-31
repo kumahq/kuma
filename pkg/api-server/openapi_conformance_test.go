@@ -75,17 +75,102 @@ func specFiles() []string {
 // the schema of a resource response has to document them.
 var resourceMetaTimestamps = []string{"creationTime", "modificationTime"}
 
-// isResourceResponseSchema reports whether a schema name describes a resource
-// response. The generators name those <Type>Item for the CRUD endpoints, and
-// the overview specs name them <Type>WithMeta.
-func isResourceResponseSchema(name string) bool {
-	return strings.HasSuffix(name, "Item") || strings.HasSuffix(name, "WithMeta")
+// bundledSpecFile is the merged OpenAPI document of Kuma's REST API. Unlike in
+// the spec fragments, every $ref in it points into its own components, so a
+// response can be followed to its schema whichever fragment defines it.
+// `make check` fails when it is out of date with the fragments.
+var bundledSpecFile = filepath.Join("..", "..", "docs", "generated", "openapi.yaml")
+
+// resourceRoutes returns the GET routes the API server answers with resources,
+// with blanked path parameters, mapped to whether the route returns a list
+// of resources instead of a single one.
+func resourceRoutes() map[string]bool {
+	routes := map[string]bool{
+		"/_kri/{}":           false,
+		"/_kri/{}/_overview": false,
+	}
+	for _, desc := range registry.Global().ObjectDescriptors(model.HasWsEnabled()) {
+		for _, wsPath := range []string{desc.WsPath, desc.AlternativeWsPath} {
+			if wsPath == "" {
+				continue
+			}
+			collection := "/" + wsPath
+			if desc.Scope == model.ScopeMesh {
+				collection = "/meshes/{}" + collection
+			}
+			routes[collection] = true
+			routes[collection+"/{}"] = false
+			if desc.HasInsights() {
+				routes[collection+"/_overview"] = true
+				routes[collection+"/{}/_overview"] = false
+			}
+		}
+	}
+	return routes
+}
+
+// localRef resolves a local $ref of the form "#/components/<kind>/<name>"
+// against components, returning the name and the target, or the input
+// unchanged when it is not a $ref.
+func localRef(components map[string]map[string]any, object map[string]any) (string, map[string]any) {
+	ref, ok := object["$ref"].(string)
+	if !ok {
+		return "", object
+	}
+	parts := strings.Split(strings.TrimPrefix(ref, "#/components/"), "/")
+	Expect(parts).To(HaveLen(2), "unsupported $ref %q", ref)
+	target, ok := components[parts[0]][parts[1]].(map[string]any)
+	Expect(ok).To(BeTrue(), "unresolved $ref %q", ref)
+	return parts[1], target
+}
+
+// namedSchema is a schema with the name it is reported under: its component
+// name, or the route that responds with it when it is defined inline.
+type namedSchema struct {
+	name   string
+	schema map[string]any
+}
+
+// resourceSchemas returns the schemas of the resources a GET operation responds
+// with. A list response contributes its items, and a oneOf each alternative.
+func resourceSchemas(components map[string]map[string]any, route string, operation map[string]any, isList bool) []namedSchema {
+	responses, _ := operation["responses"].(map[string]any)
+	response, ok := responses["200"].(map[string]any)
+	Expect(ok).To(BeTrue(), "%s has no 200 response", route)
+	_, response = localRef(components, response)
+	content, _ := response["content"].(map[string]any)
+	mediaType, _ := content["application/json"].(map[string]any)
+	schema, ok := mediaType["schema"].(map[string]any)
+	Expect(ok).To(BeTrue(), "%s has no application/json response schema", route)
+
+	if isList {
+		_, list := localRef(components, schema)
+		properties, _ := list["properties"].(map[string]any)
+		items, _ := properties["items"].(map[string]any)
+		schema, ok = items["items"].(map[string]any)
+		Expect(ok).To(BeTrue(), "%s does not respond with a list of items", route)
+	}
+
+	alternatives := []any{schema}
+	if _, resolved := localRef(components, schema); resolved["oneOf"] != nil {
+		alternatives, ok = resolved["oneOf"].([]any)
+		Expect(ok).To(BeTrue(), "%s has an invalid oneOf response schema", route)
+	}
+	var resources []namedSchema
+	for _, alternative := range alternatives {
+		alternativeSchema, ok := alternative.(map[string]any)
+		Expect(ok).To(BeTrue(), "%s has an invalid response schema", route)
+		name, resolved := localRef(components, alternativeSchema)
+		if name == "" {
+			name = route
+		}
+		resources = append(resources, namedSchema{name: name, schema: resolved})
+	}
+	return resources
 }
 
 // schemaProperties collects the property names a schema declares, following
 // local $ref and allOf so a composed schema is treated as a single object.
-// Cross-file references cannot be resolved here, and a resource response takes
-// its meta from the document it is defined in anyway.
 func schemaProperties(schemas map[string]any, schema map[string]any, seen map[string]bool, out map[string]bool) {
 	if ref, ok := schema["$ref"].(string); ok {
 		name := ref[strings.LastIndex(ref, "/")+1:]
@@ -193,35 +278,53 @@ var _ = Describe("OpenAPI conformance", func() {
 	})
 
 	It("resource responses should document the resource meta timestamps", func() {
+		content, err := os.ReadFile(bundledSpecFile)
+		Expect(err).ToNot(HaveOccurred())
+		var spec struct {
+			Paths      map[string]map[string]any `json:"paths"`
+			Components map[string]map[string]any `json:"components"`
+		}
+		Expect(yaml.Unmarshal(content, &spec)).To(Succeed(), bundledSpecFile)
+
+		routes := resourceRoutes()
+		documented := map[string]bool{}
+		checked := map[string]bool{}
 		var missing []string
-		for _, file := range specFiles() {
-			content, err := os.ReadFile(file)
-			Expect(err).ToNot(HaveOccurred())
-
-			var spec struct {
-				Components struct {
-					Schemas map[string]any `json:"schemas"`
-				} `json:"components"`
+		for path, methods := range spec.Paths {
+			route := pathParam.ReplaceAllString(path, "{}")
+			isList, ok := routes[route]
+			if !ok {
+				continue
 			}
-			Expect(yaml.Unmarshal(content, &spec)).To(Succeed(), file)
-
-			for name, raw := range spec.Components.Schemas {
-				if !isResourceResponseSchema(name) {
+			operation, ok := methods["get"].(map[string]any)
+			if !ok {
+				continue
+			}
+			documented[route] = true
+			for _, resource := range resourceSchemas(spec.Components, path, operation, isList) {
+				if checked[resource.name] {
 					continue
 				}
-				schema, ok := raw.(map[string]any)
-				if !ok {
-					continue
-				}
+				checked[resource.name] = true
 				properties := map[string]bool{}
-				schemaProperties(spec.Components.Schemas, schema, map[string]bool{name: true}, properties)
+				schemaProperties(spec.Components["schemas"], resource.schema, map[string]bool{resource.name: true}, properties)
 				for _, field := range resourceMetaTimestamps {
 					if !properties[field] {
-						missing = append(missing, filepath.Base(filepath.Dir(file))+"/"+name+"."+field)
+						missing = append(missing, resource.name+"."+field)
 					}
 				}
 			}
 		}
+
+		var undocumented []string
+		for route := range routes {
+			if !documented[route] {
+				undocumented = append(undocumented, "GET "+route)
+			}
+		}
+		sort.Strings(undocumented)
+		Expect(undocumented).To(BeEmpty(), "resource routes with no GET operation in %s", bundledSpecFile)
+
 		sort.Strings(missing)
 		Expect(missing).To(BeEmpty(), "resource response schemas that do not document every resource meta timestamp")
 	})
