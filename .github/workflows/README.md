@@ -94,3 +94,5 @@ Variable names cannot contain `-` or `.`, and an inline expression cannot saniti
 A repository that mirrors this one gets a `push` event for every branch and tag it syncs, and each one starts the full pipeline. Set the repository variable `KUMA_CI_SKIP_PUSH` to `true` to skip every job that a `push` event would run there. Pull requests, schedules and manual runs are unaffected. Unset, nothing changes.
 
 The guard sits on the first job of each `push`-triggered workflow, so the jobs that need it are skipped with it. In `build-test-distribute.yaml` that job is `release_sha_gate`, and `distributions`, which runs `always()`, checks for it explicitly. A new `push`-triggered workflow needs the same `if:`.
+
+`build-test-distribute.yaml` also runs on pull requests into `security/**` branches. Such a mirror stages unreleased fixes on `security/<branch>` and needs CI on the pull requests that land there. Nothing here creates those branches, so this changes nothing in this repository.
