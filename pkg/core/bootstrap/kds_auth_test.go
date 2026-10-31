@@ -102,14 +102,26 @@ var _ = Describe("KDS authentication", func() {
 })
 
 var _ = Describe("Zone Token issuer", func() {
-	issuerFor := func(enabled bool) builtin.TokenIssuers {
-		cfg := kuma_cp.DefaultConfig()
-		cfg.Multizone.Global.KDS.Auth.ZoneToken.EnableIssuer = enabled
+	issuersWithConfig := func(cfg kuma_cp.Config) builtin.TokenIssuers {
 		builder, err := core_runtime.BuilderFor(context.Background(), cfg)
 		Expect(err).ToNot(HaveOccurred())
 		builder.WithResourceManager(core_manager.NewCustomizableResourceManager(core_manager.NewResourceManager(memory.NewStore()), nil))
 		initializeTokenIssuers(builder)
 		return builder.TokenIssuers()
+	}
+
+	issuerFor := func(enabled bool) builtin.TokenIssuers {
+		cfg := kuma_cp.DefaultConfig()
+		cfg.Multizone.Global.KDS.Auth.ZoneToken.EnableIssuer = enabled
+		return issuersWithConfig(cfg)
+	}
+
+	federatedZoneConfig := func() kuma_cp.Config {
+		cfg := kuma_cp.DefaultConfig()
+		cfg.Mode = config_core.Zone
+		cfg.Multizone.Zone.Name = "zone-1"
+		cfg.Multizone.Zone.GlobalAddress = "grpcs://global:5685"
+		return cfg
 	}
 
 	It("should be enabled by default", func() {
@@ -126,5 +138,22 @@ var _ = Describe("Zone Token issuer", func() {
 		issuers := issuerFor(true)
 
 		Expect(issuers.ZoneToken).ToNot(BeAssignableToTypeOf(zone.DisabledIssuer{}))
+	})
+
+	It("should refuse to issue on a federated Zone CP and point to Global CP", func() {
+		_, err := issuersWithConfig(federatedZoneConfig()).ZoneToken.Generate(context.Background(), zone.Identity{Zone: "zone-1", Scope: []string{zone.CPScope}}, time.Hour)
+
+		Expect(err).To(MatchError(tokens.IssuerDisabled))
+		Expect(err).To(MatchError(ContainSubstring("Zone Tokens can only be issued on the Global control plane")))
+	})
+
+	It("should issue on a non federated Zone CP", func() {
+		cfg := federatedZoneConfig()
+		cfg.Multizone.Zone.GlobalAddress = ""
+
+		issuers := issuersWithConfig(cfg)
+
+		Expect(issuers.ZoneToken).ToNot(BeAssignableToTypeOf(zone.DisabledIssuer{}))
+		Expect(issuers.ZoneToken).ToNot(BeAssignableToTypeOf(zone.GlobalOnlyIssuer{}))
 	})
 })
