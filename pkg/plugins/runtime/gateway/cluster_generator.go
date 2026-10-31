@@ -146,7 +146,10 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 			return nil, errors.Wrapf(err, "failed to build LoadAssignment for cluster %q", dest.Name)
 		}
 
-		resources.Add(NewResource(dest.Name, loadAssignment))
+		cla := NewResource(dest.Name, loadAssignment)
+		// Policies index real backendRefs by origin, so the CLA must carry it like the cluster does.
+		cla.ResourceOrigin = r.ResourceOrigin
+		resources.Add(cla)
 	}
 
 	return resources, nil
