@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/v2/pkg/core/xds/types"
+	k8s_metadata "github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v2/pkg/xds/bootstrap/types"
 )
 
@@ -190,6 +191,14 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			kumaDpBootstrap.NetworkingConfig.CorefileTemplate = corefileTemplate
 		}
 		params.Service = dataplane.IdentifyingName(b.inboundTagsDisabled)
+		// Envoy's Zipkin tracer reports node.cluster as the span service name, so match the MeshTrace fallback for zone proxies.
+		if params.Service == mesh_proto.ServiceUnknown && dataplane.Spec.GetNetworking().IsZoneProxyOnly() {
+			if workloadName := dataplane.GetMeta().GetLabels()[k8s_metadata.KumaWorkload]; workloadName != "" {
+				params.Service = workloadName
+			} else {
+				params.Service = dataplane.GetMeta().GetName()
+			}
+		}
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
 
 		err = b.resManager.Get(ctx, meshResource, core_store.GetByKey(dataplane.Meta.GetMesh(), core_model.NoMesh))
