@@ -13,6 +13,9 @@ import (
 	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
 )
 
+// maxErrorBackoff caps how long a failing dataplane waits between sync retries.
+const maxErrorBackoff = 30 * time.Second
+
 type dataplaneWatchdogFactory struct {
 	xdsMetrics      *xds_metrics.Metrics
 	refreshInterval time.Duration
@@ -39,17 +42,27 @@ func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey, meta *core_xds.D
 func (d *dataplaneWatchdogFactory) NewWithStreamCtx(dpKey model.ResourceKey, meta *core_xds.DataplaneMetadata, streamCtx context.Context) util_xds_v3.Watchdog {
 	log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", dpKey)
 	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, meta, dpKey)
+	// After a failed sync, skip ticks so retries are 1, 2, 4... intervals apart, up to maxErrorBackoff.
+	maxSkipTicks := int(maxErrorBackoff / d.refreshInterval)
+	skipTicks, nextSkipTicks := 0, 0
 	return &util_watchdog.SimpleWatchdog{
 		NewTicker: func() *time.Ticker {
 			return time.NewTicker(d.refreshInterval)
 		},
 		OnTick: func(ctx context.Context) error {
+			if skipTicks > 0 {
+				skipTicks--
+				return nil
+			}
 			ctx = user.Ctx(ctx, user.ControlPlane)
 			start := core.Now()
 			result, err := dataplaneWatchdog.Sync(ctx)
 			if err != nil {
+				skipTicks = nextSkipTicks
+				nextSkipTicks = min(2*nextSkipTicks+1, maxSkipTicks)
 				return err
 			}
+			nextSkipTicks = 0
 			d.xdsMetrics.XdsGenerations.
 				WithLabelValues(string(result.ProxyType), string(result.Status)).
 				Observe(float64(core.Now().Sub(start).Milliseconds()))
