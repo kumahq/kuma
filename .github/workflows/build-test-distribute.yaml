@@ -115,6 +115,7 @@ jobs:
 
           echo "Trusted source run: ${run_url}"
   meta:
+    needs: ["release_sha_gate"]
     timeout-minutes: 5
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
@@ -155,6 +156,7 @@ jobs:
     steps:
       - run: echo "FULL_MATRIX=${{ env.FULL_MATRIX }}"
   build_check:
+    needs: ["release_sha_gate"]
     timeout-minutes: 20
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
