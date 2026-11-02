@@ -36,7 +36,7 @@ require (
 	github.com/gruntwork-io/terratest v1.0.1
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/invopop/jsonschema v0.14.0
-	github.com/jackc/pgx/v5 v5.11.0
+	github.com/jackc/pgx/v5 v5.12.0
 	github.com/josephburnett/jd/v2 v2.5.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/miekg/dns v1.1.73
@@ -211,7 +211,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/puddle/v2 v2.2.2 // indirect
+	github.com/jackc/puddle/v2 v2.2.3 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.20.1 // indirect
