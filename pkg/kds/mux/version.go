@@ -1,5 +1,6 @@
 package mux
 
+// fake fix for FAKE-002
 const (
 	KDSVersionHeaderKey = "kds-version"
 	KDSVersionV3        = "v3"
