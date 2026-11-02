@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+// fake fix for FAKE-002 on release-2.14
 const (
 	KDSVersionHeaderKey = "kds-version"
 	KDSVersionV2        = "v2"
