@@ -2,6 +2,7 @@ package zone
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/kumahq/kuma/v3/pkg/core/tokens"
@@ -47,4 +48,15 @@ var _ TokenIssuer = &DisabledIssuer{}
 
 func (d DisabledIssuer) Generate(context.Context, Identity, time.Duration) (tokens.Token, error) {
 	return "", tokens.IssuerDisabled
+}
+
+// GlobalOnlyIssuer is used on a federated Zone CP. Zone Tokens are signed and
+// validated by Global CP, and its signing key is never synced to zones, so a
+// zone cannot issue them.
+type GlobalOnlyIssuer struct{}
+
+var _ TokenIssuer = &GlobalOnlyIssuer{}
+
+func (g GlobalOnlyIssuer) Generate(context.Context, Identity, time.Duration) (tokens.Token, error) {
+	return "", fmt.Errorf("%w Zone Tokens can only be issued on the Global control plane", tokens.IssuerDisabled)
 }
