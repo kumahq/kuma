@@ -36,10 +36,11 @@ var _ = Describe("Noop Authenticator", func() {
 		}
 
 		// when
-		err := authenticator.Authenticate(context.Background(), &dpRes, "some-random-token")
+		binding, err := authenticator.Authenticate(context.Background(), &dpRes, "some-random-token")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
+		Expect(binding.AllLabels).To(BeTrue())
 	})
 
 	It("should reject a resource that is not a Dataplane", func() {
@@ -47,7 +48,7 @@ var _ = Describe("Noop Authenticator", func() {
 		mesh := core_mesh.MeshResource{Spec: &mesh_proto.Mesh{}}
 
 		// when
-		err := authenticator.Authenticate(context.Background(), &mesh, "some-random-token")
+		_, err := authenticator.Authenticate(context.Background(), &mesh, "some-random-token")
 
 		// then
 		Expect(err).To(MatchError("no matching authenticator for Mesh resource"))

@@ -69,11 +69,12 @@ var _ = Describe("Authenticate", func() {
 			})
 
 			// when
-			err := auth_k8s.New(client, nil).Authenticate(context.Background(), dataplane, "token")
+			binding, err := auth_k8s.New(client, nil).Authenticate(context.Background(), dataplane, "token")
 
 			// then
 			if given.expectedErr == "" {
 				Expect(err).ToNot(HaveOccurred())
+				Expect(binding.AllLabels).To(BeTrue())
 			} else {
 				Expect(err).To(MatchError(given.expectedErr))
 			}

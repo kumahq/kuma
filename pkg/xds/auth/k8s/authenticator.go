@@ -33,19 +33,17 @@ type kubeAuthenticator struct {
 
 var _ auth.Authenticator = &kubeAuthenticator{}
 
-func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) error {
-	var err error
+func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) (auth.Binding, error) {
 	switch resource := resource.(type) {
 	case *core_mesh.DataplaneResource:
-		err = k.authResource(ctx, resource, credential)
+		if err := k.authResource(ctx, resource, credential); err != nil {
+			return auth.Binding{}, err
+		}
+		// Labels come from the Pod via the control plane, not from the proxy.
+		return auth.Binding{AllLabels: true}, nil
 	default:
-		err = errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		return auth.Binding{}, errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
-
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Resource, credential auth.Credential) error {

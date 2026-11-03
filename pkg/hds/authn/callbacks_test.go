@@ -27,18 +27,18 @@ type testAuthenticator struct {
 
 var _ auth.Authenticator = &testAuthenticator{}
 
-func (t *testAuthenticator) Authenticate(_ context.Context, resource model.Resource, credential auth.Credential) error {
+func (t *testAuthenticator) Authenticate(_ context.Context, resource model.Resource, credential auth.Credential) (auth.Binding, error) {
 	switch resource := resource.(type) {
 	case *core_mesh.DataplaneResource:
 		t.callCounter++
 		if credential == "pass" {
-			return nil
+			return auth.Binding{AllLabels: true}, nil
 		}
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		return auth.Binding{}, errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 
-	return errors.New("invalid credential")
+	return auth.Binding{}, errors.New("invalid credential")
 }
 
 var _ = Describe("Authn Callbacks", func() {

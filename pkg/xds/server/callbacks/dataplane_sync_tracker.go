@@ -7,17 +7,20 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
+	xds_auth "github.com/kumahq/kuma/v3/pkg/xds/auth"
 	"github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
 
 var dataplaneSyncTrackerLog = core.Log.WithName("xds").WithName("dataplane-sync-tracker")
 
-func NewDataplaneSyncTracker(appCtx context.Context, factoryFunc sync.DataplaneWatchdogFactory, connectionInfoTracker core_xds.ConnectionInfoTracker) DataplaneCallbacks {
+// NewDataplaneSyncTracker hands each watchdog the auth binding of its stream
+// from bindings, which may be nil when no stream is authenticated.
+func NewDataplaneSyncTracker(appCtx context.Context, factoryFunc sync.DataplaneWatchdogFactory, bindings xds_auth.BindingLookup) DataplaneCallbacks {
 	return &dataplaneSyncTracker{
-		appCtx:                appCtx,
-		newDataplaneWatchdog:  factoryFunc,
-		connectionInfoTracker: connectionInfoTracker,
-		watchdogs:             map[core_model.ResourceKey]*watchdogState{},
+		appCtx:               appCtx,
+		newDataplaneWatchdog: factoryFunc,
+		bindings:             bindings,
+		watchdogs:            map[core_model.ResourceKey]*watchdogState{},
 	}
 }
 
@@ -31,9 +34,9 @@ var _ DataplaneCallbacks = &dataplaneSyncTracker{}
 // that indicates that the stream was already associated
 
 type dataplaneSyncTracker struct {
-	appCtx                context.Context
-	newDataplaneWatchdog  sync.DataplaneWatchdogFactory
-	connectionInfoTracker core_xds.ConnectionInfoTracker
+	appCtx               context.Context
+	newDataplaneWatchdog sync.DataplaneWatchdogFactory
+	bindings             xds_auth.BindingLookup
 
 	stdsync.RWMutex // protects access to the fields below
 	watchdogs       map[core_model.ResourceKey]*watchdogState
@@ -47,6 +50,12 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	// We use OnProxyConnected because there should be only one watchdog for given dataplane.
 	t.Lock()
 	defer t.Unlock()
+
+	if t.bindings != nil && streamCtx != nil {
+		if binding, ok := t.bindings.Binding(streamID); ok {
+			streamCtx = xds_auth.ContextWithBinding(streamCtx, binding)
+		}
+	}
 
 	ctx, cancel := context.WithCancel(t.appCtx)
 	state := &watchdogState{
@@ -78,9 +87,6 @@ func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, streamID c
 		dpData.cancelFunc()
 		<-dpData.stopped
 		dataplaneSyncTrackerLog.V(1).Info("watchdog for a Dataplane stopped", "dpKey", dpKey, "streamID", streamID)
-		if t.connectionInfoTracker != nil {
-			t.connectionInfoTracker.Delete(dpKey)
-		}
 		t.Lock()
 		defer t.Unlock()
 		delete(t.watchdogs, dpKey)

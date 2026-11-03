@@ -18,11 +18,11 @@ type noopAuthenticator struct{}
 
 var _ auth.Authenticator = &noopAuthenticator{}
 
-func (u *noopAuthenticator) Authenticate(ctx context.Context, resource model.Resource, _ auth.Credential) error {
+func (u *noopAuthenticator) Authenticate(ctx context.Context, resource model.Resource, _ auth.Credential) (auth.Binding, error) {
 	switch resource := resource.(type) {
 	case *core_mesh.DataplaneResource:
-		return nil
+		return auth.Binding{AllLabels: true}, nil
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		return auth.Binding{}, errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 }

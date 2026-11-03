@@ -258,8 +258,8 @@ var _ = Describe("MeshIdentity Helper", func() {
 		})
 	})
 
-	DescribeTable("UsesWorkloadLabel",
-		func(env config_core.EnvironmentType, pathTemplate *string, expected bool) {
+	DescribeTable("SpiffeIDPathLabels",
+		func(env config_core.EnvironmentType, pathTemplate *string, expected []string) {
 			// given
 			mi := &meshidentity_api.MeshIdentity{}
 			if pathTemplate != nil {
@@ -267,22 +267,48 @@ var _ = Describe("MeshIdentity Helper", func() {
 					Path: pathTemplate,
 				}
 			}
+			meta := &test_model.ResourceMeta{
+				Mesh: "default",
+				Name: "dp-1",
+				Labels: map[string]string{
+					metadata.KumaWorkload: "backend",
+					"app":                 "backend",
+				},
+			}
 
 			// when
-			result := mi.UsesWorkloadLabel(env)
+			read := mi.SpiffeIDPathLabels(meta, env)
 
 			// then
-			Expect(result).To(Equal(expected))
+			if expected == nil {
+				Expect(read).To(BeEmpty())
+			} else {
+				Expect(read).To(Equal(expected))
+			}
 		},
-		Entry("nil SpiffeID on Kubernetes uses default SA template", config_core.KubernetesEnvironment, nil, false),
-		Entry("nil SpiffeID on Universal falls back to default workload template", config_core.UniversalEnvironment, nil, true),
-		Entry("uses workload label", config_core.KubernetesEnvironment, pointer.To("/ns/{{ .Namespace }}/workload/{{ label \"kuma.io/workload\" }}"), true),
-		Entry("uses workload label with extra spaces", config_core.KubernetesEnvironment, pointer.To("/workload/{{  label  \"kuma.io/workload\"  }}"), true),
-		Entry("uses .Workload placeholder", config_core.KubernetesEnvironment, pointer.To("/ns/{{ .Namespace }}/workload/{{ .Workload }}"), true),
-		Entry("uses .Workload placeholder with extra spaces", config_core.KubernetesEnvironment, pointer.To("/workload/{{  .Workload  }}"), true),
-		Entry("does not use workload label", config_core.KubernetesEnvironment, pointer.To("/ns/{{ .Namespace }}/sa/{{ .ServiceAccount }}"), false),
-		Entry("uses different label", config_core.KubernetesEnvironment, pointer.To("/ns/{{ .Namespace }}/label/{{ label \"app\" }}"), false),
-		Entry("empty path on Kubernetes", config_core.KubernetesEnvironment, pointer.To(""), false),
-		Entry("empty path on Universal", config_core.UniversalEnvironment, pointer.To(""), false),
+		Entry("nil SpiffeID on Kubernetes uses default ns/sa template", config_core.KubernetesEnvironment, nil,
+			[]string{mesh_proto.KubeNamespaceTag, metadata.KumaServiceAccount}),
+		Entry("nil SpiffeID on Universal falls back to default workload template", config_core.UniversalEnvironment, nil,
+			[]string{metadata.KumaWorkload}),
+		Entry("label function", config_core.UniversalEnvironment, pointer.To(`/workload/{{ label "kuma.io/workload" }}`),
+			[]string{metadata.KumaWorkload}),
+		Entry("root-scoped .Workload", config_core.UniversalEnvironment, pointer.To("/workload/{{ $.Workload }}"),
+			[]string{metadata.KumaWorkload}),
+		Entry(".Workload with trim markers", config_core.UniversalEnvironment, pointer.To("/workload/{{- .Workload -}}"),
+			[]string{metadata.KumaWorkload}),
+		Entry(".Workload through a pipeline", config_core.UniversalEnvironment, pointer.To(`/workload/{{ .Workload | printf "%s" }}`),
+			[]string{metadata.KumaWorkload}),
+		Entry("label read via a variable", config_core.UniversalEnvironment, pointer.To(`/workload/{{ $w := label "kuma.io/workload" }}{{ $w }}`),
+			[]string{metadata.KumaWorkload}),
+		Entry("label with a computed key", config_core.UniversalEnvironment, pointer.To(`/workload/{{ label (printf "kuma.io/%s" "workload") }}`),
+			[]string{metadata.KumaWorkload}),
+		Entry("other label", config_core.UniversalEnvironment, pointer.To(`/app/{{ label "app" }}`),
+			[]string{"app"}),
+		Entry("label missing on the dataplane is still reported, and so are reads after it", config_core.UniversalEnvironment, pointer.To(`/{{ label "missing" }}/{{ .Workload }}`),
+			[]string{metadata.KumaWorkload, "missing"}),
+		Entry("only the branch taken for the dataplane", config_core.UniversalEnvironment, pointer.To(`/{{ if eq .Workload "backend" }}{{ label "app" }}{{ else }}{{ label "other" }}{{ end }}`),
+			[]string{"app", metadata.KumaWorkload}),
+		Entry("static path", config_core.UniversalEnvironment, pointer.To("/static"), nil),
+		Entry("empty path on Universal", config_core.UniversalEnvironment, pointer.To(""), nil),
 	)
 })

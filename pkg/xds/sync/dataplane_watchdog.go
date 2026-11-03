@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	"github.com/kumahq/kuma/v3/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
@@ -17,8 +18,8 @@ import (
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	envoy_admin_tls "github.com/kumahq/kuma/v3/pkg/envoy/admin/tls"
-	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	util_tls "github.com/kumahq/kuma/v3/pkg/tls"
+	xds_auth "github.com/kumahq/kuma/v3/pkg/xds/auth"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
@@ -33,7 +34,7 @@ type DataplaneWatchdogDependencies struct {
 	ResManager            core_manager.ReadOnlyResourceManager
 	OtelStatusCache       *otelstatus.Cache
 	XdsMetrics            *xds_metrics.Metrics
-	ConnectionInfoTracker core_xds.ConnectionInfoTracker
+	Environment           config_core.EnvironmentType
 }
 
 type Status string
@@ -60,10 +61,11 @@ type DataplaneWatchdog struct {
 	dpAddress      string
 	xdsMeta        *core_xds.DataplaneMetadata
 	// used by MeshIdentity
-	workloadIdentity *core_xds.WorkloadIdentity
-	lastIdentityHash string // last Hash of MeshIdentities
-	lastOtelStatus   *mesh_proto.DataplaneInsight_OpenTelemetry
-	otelStatusSynced bool
+	workloadIdentity    *core_xds.WorkloadIdentity
+	lastIdentityHash    string // last Hash of MeshIdentities
+	lastIdentityRefusal string // last reason a selected identity was not issued, to log it once
+	lastOtelStatus      *mesh_proto.DataplaneInsight_OpenTelemetry
+	otelStatusSynced    bool
 }
 
 func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, meta *core_xds.DataplaneMetadata, dpKey core_model.ResourceKey) *DataplaneWatchdog {
@@ -109,17 +111,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 	}
 
 	syncForConfig := meshCtx.Hash != d.lastHash // check if we need to regenerate config because Kuma policies has changed.
-	identity := d.EnvoyCpCtx.IdentityManager.SelectedIdentity(dpp, meshCtx.Resources.MeshIdentities().Items)
-	// Re-check the binding at issuance: a MeshIdentity added after connect must
-	// not derive a workload identity from the dataplane's own label alone.
-	if identity != nil && d.ConnectionInfoTracker != nil {
-		if info, ok := d.ConnectionInfoTracker.Get(d.key); ok {
-			if err := validateTokenWorkloadBinding(info.TokenWorkload, dpp); err != nil {
-				d.log.Info("not issuing a workload identity", "reason", err.Error())
-				identity = nil
-			}
-		}
-	}
+	identity := d.authorizeIdentity(ctx, d.EnvoyCpCtx.IdentityManager.SelectedIdentity(dpp, meshCtx.Resources.MeshIdentities().Items), dpp)
 	identityHash := base64.StdEncoding.EncodeToString(hashMeshIdentity(identity))
 	syncIdentity := identityHash != d.lastIdentityHash ||
 		// check if is expired
@@ -215,20 +207,38 @@ func (d *DataplaneWatchdog) syncOtelStatus(backends *core_xds.OtelPipeBackends) 
 	return true
 }
 
-// validateTokenWorkloadBinding fails unless a dataplane that declares a
-// kuma.io/workload label presents a token bound to that same workload.
-func validateTokenWorkloadBinding(tokenWorkload string, dpp *core_mesh.DataplaneResource) error {
-	dpWorkload, exists := dpp.Meta.GetLabels()[metadata.KumaWorkload]
-	if !exists {
+// authorizeIdentity drops an identity the stream's credential doesn't vouch for.
+// A stream authenticates once, but identities are issued whenever a MeshIdentity
+// or the Dataplane changes, so the binding is re-checked on every sync.
+func (d *DataplaneWatchdog) authorizeIdentity(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, dpp *core_mesh.DataplaneResource) *meshidentity_api.MeshIdentityResource {
+	if identity == nil {
 		return nil
 	}
-	if tokenWorkload == "" {
-		return errors.Errorf("dataplane with %q label %q is selected by a MeshIdentity, so it requires a workload-bound token", metadata.KumaWorkload, dpWorkload)
+	err := d.validateIdentityBinding(ctx, identity, dpp)
+	refusal := ""
+	if err != nil {
+		refusal = err.Error()
 	}
-	if tokenWorkload != dpWorkload {
-		return errors.Errorf("dataplane workload %q is not allowed with this token, the token is bound to workload %q", dpWorkload, tokenWorkload)
+	if refusal != "" && refusal != d.lastIdentityRefusal {
+		d.log.Info("not issuing a workload identity", "identity", identity.GetMeta().GetName(), "reason", refusal)
 	}
-	return nil
+	d.lastIdentityRefusal = refusal
+	if err != nil {
+		return nil
+	}
+	return identity
+}
+
+func (d *DataplaneWatchdog) validateIdentityBinding(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, dpp *core_mesh.DataplaneResource) error {
+	binding, ok := xds_auth.BindingFromContext(ctx)
+	if !ok {
+		return errors.New("the xDS stream has no authentication binding")
+	}
+	if binding.AllLabels {
+		return nil
+	}
+	read := identity.Spec.SpiffeIDPathLabels(dpp.GetMeta(), d.Environment)
+	return xds_auth.ValidateIdentityLabels(binding, dpp.Meta.GetLabels(), read)
 }
 
 func hashMeshIdentity(identity *meshidentity_api.MeshIdentityResource) []byte {

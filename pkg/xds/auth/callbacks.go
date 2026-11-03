@@ -33,7 +33,18 @@ type DPNotFoundRetry struct {
 	MaxTimes uint
 }
 
-func NewCallbacks(resManager core_manager.ReadOnlyResourceManager, authenticator Authenticator, dpNotFoundRetry DPNotFoundRetry) util_xds.MultiXDSCallbacks {
+type BindingLookup interface {
+	// Binding returns the binding of an authenticated stream; false if it is not.
+	Binding(streamID core_xds.StreamID) (Binding, bool)
+}
+
+// Callbacks authenticate xDS streams and keep what each stream's credential is bound to.
+type Callbacks interface {
+	util_xds.MultiXDSCallbacks
+	BindingLookup
+}
+
+func NewCallbacks(resManager core_manager.ReadOnlyResourceManager, authenticator Authenticator, dpNotFoundRetry DPNotFoundRetry) Callbacks {
 	if dpNotFoundRetry.Backoff == 0 { // backoff cannot be 0
 		dpNotFoundRetry.Backoff = 1 * time.Millisecond
 	}
@@ -68,9 +79,20 @@ type stream struct {
 	// nodeID of the stream. Has to be the same for the whole life of a stream.
 	nodeID        string
 	authenticated bool
+	binding       Binding
 }
 
-var _ util_xds.MultiXDSCallbacks = &authCallbacks{}
+var _ Callbacks = &authCallbacks{}
+
+func (a *authCallbacks) Binding(streamID core_xds.StreamID) (Binding, bool) {
+	a.RLock()
+	defer a.RUnlock()
+	s, ok := a.deltaStreams[streamID]
+	if !ok || !s.authenticated {
+		return Binding{}, false
+	}
+	return s.binding, true
+}
 
 func (a *authCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
 	a.Lock()
@@ -107,10 +129,12 @@ func (a *authCallbacks) onStreamRequest(streamID core_xds.StreamID, req util_xds
 		if err != nil {
 			return errors.Wrap(err, "could not extract credential from DiscoveryRequest")
 		}
-		if err := a.authenticator.Authenticate(user.Ctx(s.ctx, user.ControlPlane), s.resource, credential); err != nil {
+		binding, err := a.authenticator.Authenticate(user.Ctx(s.ctx, user.ControlPlane), s.resource, credential)
+		if err != nil {
 			return errors.Wrap(err, "authentication failed")
 		}
 		s.authenticated = true
+		s.binding = binding
 	}
 	a.Lock()
 	getStreamsState()[streamID] = s

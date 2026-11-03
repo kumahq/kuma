@@ -14,6 +14,7 @@ import (
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/test"
 	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	xds_auth "github.com/kumahq/kuma/v3/pkg/xds/auth"
 	. "github.com/kumahq/kuma/v3/pkg/xds/server/callbacks"
 	"github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
@@ -223,7 +224,8 @@ var _ = Describe("Sync", func() {
 				streamCtxCh:  streamCtxCh,
 				watchdogDone: watchdogDone,
 			}
-			tracker := NewDataplaneSyncTracker(context.Background(), factory, nil)
+			bindings := staticBindingLookup{1: {Workload: "example"}}
+			tracker := NewDataplaneSyncTracker(context.Background(), factory, bindings)
 			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
@@ -245,6 +247,11 @@ var _ = Describe("Sync", func() {
 			Eventually(streamCtxCh).Should(Receive(&capturedStreamCtx))
 			Expect(capturedStreamCtx).ToNot(BeNil())
 
+			By("verifying the stream's auth binding travels with its context")
+			binding, ok := xds_auth.BindingFromContext(capturedStreamCtx)
+			Expect(ok).To(BeTrue())
+			Expect(binding).To(Equal(xds_auth.Binding{Workload: "example"}))
+
 			By("simulating Envoy disconnecting from the Control Plane")
 			callbacks.OnDeltaStreamClosed(streamID, node)
 
@@ -253,6 +260,13 @@ var _ = Describe("Sync", func() {
 		}))
 	})
 })
+
+type staticBindingLookup map[core_xds.StreamID]xds_auth.Binding
+
+func (l staticBindingLookup) Binding(streamID core_xds.StreamID) (xds_auth.Binding, bool) {
+	b, ok := l[streamID]
+	return b, ok
+}
 
 // streamCtxCapturingFactory implements DataplaneWatchdogFactoryWithStreamCtx
 type streamCtxCapturingFactory struct {

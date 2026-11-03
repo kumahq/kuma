@@ -31,16 +31,16 @@ type testAuthenticator struct {
 
 var _ auth.Authenticator = &testAuthenticator{}
 
-func (t *testAuthenticator) Authenticate(_ context.Context, resource core_model.Resource, credential auth.Credential) error {
+func (t *testAuthenticator) Authenticate(_ context.Context, resource core_model.Resource, credential auth.Credential) (auth.Binding, error) {
 	if _, ok := resource.(*core_mesh.DataplaneResource); !ok {
-		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		return auth.Binding{}, errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 
 	t.callCounter++
 	if credential == "pass" {
-		return nil
+		return auth.Binding{Workload: "web"}, nil
 	}
-	return errors.New("invalid credential")
+	return auth.Binding{}, errors.New("invalid credential")
 }
 
 var _ = Describe("Auth Callbacks", func() {
@@ -100,6 +100,32 @@ var _ = Describe("Auth Callbacks", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(testAuth.callCounter).To(Equal(1))
+	})
+
+	It("should keep the binding with the stream it authenticated", func() {
+		// given
+		authCallbacks := auth.NewCallbacks(resManager, testAuth, auth.DPNotFoundRetry{})
+		deltaCallbacks := v3.AdaptDeltaCallbacks(authCallbacks)
+		ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "pass"}))
+		Expect(deltaCallbacks.OnDeltaStreamOpen(ctx, 1, "")).To(Succeed())
+		Expect(deltaCallbacks.OnDeltaStreamOpen(ctx, 2, "")).To(Succeed())
+
+		// when only stream 1 authenticates
+		Expect(deltaCallbacks.OnStreamDeltaRequest(1, &envoy_sd.DeltaDiscoveryRequest{
+			Node: &envoy_core.Node{Id: "default.web-01"},
+		})).To(Succeed())
+
+		// then
+		binding, ok := authCallbacks.Binding(1)
+		Expect(ok).To(BeTrue())
+		Expect(binding).To(Equal(auth.Binding{Workload: "web"}))
+		_, ok = authCallbacks.Binding(2)
+		Expect(ok).To(BeFalse())
+
+		// when the stream closes, its binding goes with it
+		deltaCallbacks.OnDeltaStreamClosed(1, &envoy_core.Node{})
+		_, ok = authCallbacks.Binding(1)
+		Expect(ok).To(BeFalse())
 	})
 
 	It("should authenticate when DP is passed through Envoy metadata", func() {

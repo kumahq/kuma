@@ -207,7 +207,7 @@ var _ = Describe("Workload Label Validator", func() {
 		// The default Universal path template is "/workload/{{ .Workload }}", so a
 		// MeshIdentity that does not set a custom path still requires the workload
 		// label on the dataplane. Regression for https://github.com/kumahq/kuma bug
-		// where UsesWorkloadLabel ignored the default template and admitted DPs
+		// where the workload-label check ignored the default template and admitted DPs
 		// without the label, producing an unparsable SPIFFE ID downstream.
 		It("should deny connection when MeshIdentity has no path and dataplane has no workload label", func() {
 			universalValidator := NewWorkloadLabelValidator(resManager, config_core.UniversalEnvironment)
