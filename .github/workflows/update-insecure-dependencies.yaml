@@ -37,6 +37,10 @@ jobs:
       - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
         with:
           version: 2026.10.17
+          # Runs on master but checks out each release branch, so every entry lands in
+          # master scope under a mise version no release job uses: ~450MB per branch per
+          # day that nothing reads, evicting the Go build caches the test jobs depend on.
+          cache_save: false
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: "Install tools"
