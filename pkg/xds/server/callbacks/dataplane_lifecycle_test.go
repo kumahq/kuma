@@ -34,8 +34,8 @@ type staticAuthenticator struct {
 	err error
 }
 
-func (s *staticAuthenticator) Authenticate(ctx context.Context, resource core_model.Resource, credential xds_auth.Credential) error {
-	return s.err
+func (s *staticAuthenticator) Authenticate(ctx context.Context, resource core_model.Resource, credential xds_auth.Credential) (xds_auth.Binding, error) {
+	return xds_auth.Binding{}, s.err
 }
 
 var _ xds_auth.Authenticator = &staticAuthenticator{}

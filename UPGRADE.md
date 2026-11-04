@@ -147,6 +147,16 @@ migration: the `MeshTrust` and the CA are keyed by the identity name, so for as
 long as convergence takes there is a single trust domain in flight and leaves
 issued under the old one no longer verify. Two identities never have that gap.
 
+### Universal proxies need a token that binds every label their SPIFFE ID is built from
+
+On Universal, a dataplane declares its own labels, so a `MeshIdentity` whose SPIFFE ID path reads a label lets a proxy pick its identity unless the dataplane token binds that label. A dataplane selected by a `MeshIdentity` is now rejected at connect when its SPIFFE ID path reads one of its labels that the token does not bind. `kuma.io/workload` (including `{{ .Workload }}`, the default Universal path) is bound by `--workload` or by a `--tag kuma.io/workload=...`; any other label read through `{{ label "<key>" }}` is bound by a `--tag` for that key. Labels the control plane sets itself, such as `kuma.io/zone`, need no binding. The control plane finds the labels by rendering the path for the dataplane, so every template spelling is covered, and a path that reads no dataplane label (for example a static one) needs no binding. The check is repeated whenever the workload identity is issued: a `MeshIdentity` created or changed after the proxy connected, or a label changed since, withholds the identity instead of issuing one the token does not cover. Kubernetes (ServiceAccount-token authentication), deployments with dataplane authentication disabled, and dataplanes not selected by a `MeshIdentity` are unaffected.
+
+The control plane rejects such proxies with `which the token does not bind, so it requires a workload-bound token` (for `kuma.io/workload`) or `so it requires a token with that tag` (for other labels).
+
+**Action required**
+
+For every Universal proxy selected by a `MeshIdentity`, issue a token that binds each label its SPIFFE ID path reads: `kumactl generate dataplane-token --workload <name>` for `kuma.io/workload`, and `--tag <key>=<value>` for any other label.
+
 ### Zones no longer require the `kuma.io/origin` label
 
 A zone control plane used to reject a policy applied without
