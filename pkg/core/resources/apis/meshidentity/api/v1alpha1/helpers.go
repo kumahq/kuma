@@ -154,6 +154,13 @@ type spiffeIDInputs struct {
 	read        map[string]struct{}
 }
 
+// Format keeps print, printf, js and the like from dumping the fields, which
+// would expose labels without recording the read. Templates print a pointer's
+// struct value, so this needs a value receiver.
+func (spiffeIDInputs) Format(f fmt.State, _ rune) {
+	_, _ = fmt.Fprint(f, "spiffeIDInputs")
+}
+
 func newSpiffeIDInputs(trustDomain string, meta model.ResourceMeta) *spiffeIDInputs {
 	return &spiffeIDInputs{
 		trustDomain: trustDomain,
@@ -182,28 +189,35 @@ func (in *spiffeIDInputs) label(key string) (string, error) {
 	return lookupLabel(in.labels, key)
 }
 
-// SpiffeIDPathLabels returns, sorted, the labels the SPIFFE ID path reads when
-// rendered for meta. A label is reported even when meta lacks it.
-func (i *MeshIdentity) SpiffeIDPathLabels(meta model.ResourceMeta, environment config_core.EnvironmentType) []string {
-	in := newSpiffeIDInputs("", meta)
-	lenientLabel := func(key string) (string, error) { return in.labelOrEmpty(key), nil }
-	// Missing labels render empty so reads past them are still recorded; any
-	// failure that remains blocks issuance in GetSpiffeID too.
-	_, _ = renderTemplate(i.SpiffeIDPathTemplate(environment), lenientLabel, in)
-	return slices.Sorted(maps.Keys(in.read))
+// RenderSpiffeID renders the SPIFFE ID this identity issues to the resource
+// described by meta, in the trust domain it issues in. It also returns, sorted,
+// the labels the render read, even ones meta lacks and even when it fails.
+// Checks of those labels must use this so they see what issuance sees.
+func (r *MeshIdentityResource) RenderSpiffeID(meta model.ResourceMeta, localZone string, environment config_core.EnvironmentType) (string, []string, error) {
+	trustDomain, err := r.GetTrustDomain(localZone)
+	if err != nil {
+		return "", nil, err
+	}
+	return r.Spec.renderSpiffeID(trustDomain, meta, environment)
 }
 
 func (i *MeshIdentity) GetSpiffeID(trustDomain string, meta model.ResourceMeta, environment config_core.EnvironmentType) (string, error) {
+	spiffeID, _, err := i.renderSpiffeID(trustDomain, meta, environment)
+	return spiffeID, err
+}
+
+func (i *MeshIdentity) renderSpiffeID(trustDomain string, meta model.ResourceMeta, environment config_core.EnvironmentType) (string, []string, error) {
 	in := newSpiffeIDInputs(trustDomain, meta)
 	path, err := renderTemplate(i.getSpiffeIDTemplate(environment), in.label, in)
+	read := slices.Sorted(maps.Keys(in.read))
 	if err != nil {
-		return "", fmt.Errorf("failed to render SPIFFE ID template: %w", err)
+		return "", read, fmt.Errorf("failed to render SPIFFE ID template: %w", err)
 	}
 	spiffeID, err := spiffeid.FromString(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse SPIFFE ID %q: %w", path, err)
+		return "", read, fmt.Errorf("failed to parse SPIFFE ID %q: %w", path, err)
 	}
-	return spiffeID.String(), nil
+	return spiffeID.String(), read, nil
 }
 
 func lookupLabel(labels map[string]string, key string) (string, error) {

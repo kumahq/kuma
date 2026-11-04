@@ -246,22 +246,20 @@ var _ = Describe("Dataplane Watchdog", func() {
 			Entry("denies a binding that leaves the workload unbound",
 				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{}), false),
 			Entry("denies a binding to a different workload",
-				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Workload: "attacker"}), false),
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Labels: mesh_proto.MultiValueTagSet{metadata.KumaWorkload: {"attacker": true}}}), false),
 			Entry("denies a stream without a binding",
 				context.Background(), false),
 			Entry("allows a binding to the dataplane workload",
-				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Workload: "backend"}), true),
-			Entry("allows a tag binding of the workload label",
-				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{
-					Tags: mesh_proto.MultiValueTagSet{metadata.KumaWorkload: {"backend": true}},
-				}), true),
-			Entry("allows a binding that vouches for all labels",
-				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{AllLabels: true}), true),
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Labels: mesh_proto.MultiValueTagSet{metadata.KumaWorkload: {"backend": true}}}), true),
+			Entry("allows a namespace-scoped binding",
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Scope: xds_auth.ScopeNamespace}), true),
+			Entry("allows an unauthenticated binding",
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Unauthenticated: true}), true),
 		)
 
 		It("should withdraw an issued identity once the dataplane's labels outgrow the binding", func() {
 			// given an identity issued for the backend workload
-			ctx := xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Workload: "backend"})
+			ctx := xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Labels: mesh_proto.MultiValueTagSet{metadata.KumaWorkload: {"backend": true}}})
 			watchdog := sync.NewDataplaneWatchdog(deps, meta, resKey)
 			_, err := watchdog.Sync(ctx)
 			Expect(err).ToNot(HaveOccurred())

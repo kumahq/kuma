@@ -59,7 +59,7 @@ var _ = Describe("Authentication flow", func() {
 			UseSecrets: true,
 		})
 		Expect(err).ToNot(HaveOccurred())
-		authenticator = universal.NewAuthenticator(dataplaneValidator, resManager, config_core.UniversalEnvironment)
+		authenticator = universal.NewAuthenticator(dataplaneValidator, resManager, "zone-1", config_core.UniversalEnvironment)
 
 		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("default"), "default")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
@@ -283,9 +283,9 @@ var _ = Describe("Authentication flow", func() {
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
-				Expect(binding.Workload).To(Equal("backend"))
-				Expect(binding.Tags).To(BeEmpty())
-				Expect(binding.AllLabels).To(BeFalse())
+				Expect(binding).To(Equal(auth.Binding{
+					Labels: mesh_proto.MultiValueTagSet{metadata.KumaWorkload: {"backend": true}},
+				}))
 			})
 
 			It("should accept a token that binds the workload label through a tag", func() {
@@ -300,7 +300,20 @@ var _ = Describe("Authentication flow", func() {
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
-				Expect(binding.Tags).To(Equal(mesh_proto.MultiValueTagSet(tags)))
+				Expect(binding).To(Equal(auth.Binding{Labels: tags}))
+			})
+
+			It("should prove only the workload both the claim and its tag allow", func() {
+				// when
+				binding, err := authenticator.Authenticate(ctx, &dpResWithWorkload, generate(builtin_issuer.DataplaneIdentity{
+					Mesh:     "default",
+					Workload: "backend",
+					Tags:     map[string]map[string]bool{metadata.KumaWorkload: {"backend": true, "frontend": true}},
+				}))
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(binding.Labels).To(Equal(mesh_proto.MultiValueTagSet{metadata.KumaWorkload: {"backend": true}}))
 			})
 
 			It("should accept a tags-only token when the dataplane has no workload label", func() {
@@ -327,6 +340,7 @@ var _ = Describe("Authentication flow", func() {
 			Entry(".Workload through a pipeline", "/workload/{{ .Workload | printf \"%s\" }}"),
 			Entry("workload read via a variable", "/workload/{{ $w := label \"kuma.io/workload\" }}{{ $w }}"),
 			Entry("workload label via computed key", "/workload/{{ label (printf \"kuma.io/%s\" \"workload\") }}"),
+			Entry("workload read on a branch of the trust domain", "{{ if eq .TrustDomain \"default.zone-1.mesh.local\" }}/workload/{{ .Workload }}{{ else }}/static{{ end }}"),
 		)
 
 		DescribeTable("should accept a tags-only token when the path reads no unbound label",

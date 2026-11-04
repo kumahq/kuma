@@ -258,57 +258,74 @@ var _ = Describe("MeshIdentity Helper", func() {
 		})
 	})
 
-	DescribeTable("SpiffeIDPathLabels",
-		func(env config_core.EnvironmentType, pathTemplate *string, expected []string) {
+	DescribeTable("RenderSpiffeID",
+		func(env config_core.EnvironmentType, pathTemplate *string, expectedID string, expectedRead []string) {
 			// given
-			mi := &meshidentity_api.MeshIdentity{}
+			mi := meshidentity_api.NewMeshIdentityResource()
+			mi.SetMeta(&test_model.ResourceMeta{Mesh: "default", Name: "identity"})
 			if pathTemplate != nil {
-				mi.SpiffeID = &meshidentity_api.SpiffeID{
-					Path: pathTemplate,
-				}
+				mi.Spec.SpiffeID = &meshidentity_api.SpiffeID{Path: pathTemplate}
 			}
 			meta := &test_model.ResourceMeta{
 				Mesh: "default",
 				Name: "dp-1",
 				Labels: map[string]string{
-					metadata.KumaWorkload: "backend",
-					"app":                 "backend",
+					metadata.KumaWorkload:       "backend",
+					"app":                       "backend",
+					mesh_proto.KubeNamespaceTag: "demo",
+					metadata.KumaServiceAccount: "backend-sa",
 				},
 			}
 
 			// when
-			read := mi.SpiffeIDPathLabels(meta, env)
+			spiffeID, read, err := mi.RenderSpiffeID(meta, "zone-1", env)
 
 			// then
-			if expected == nil {
+			if expectedID == "" {
+				Expect(err).To(HaveOccurred())
+			} else {
+				Expect(err).ToNot(HaveOccurred())
+				Expect(spiffeID).To(Equal(expectedID))
+			}
+			if expectedRead == nil {
 				Expect(read).To(BeEmpty())
 			} else {
-				Expect(read).To(Equal(expected))
+				Expect(read).To(Equal(expectedRead))
 			}
 		},
 		Entry("nil SpiffeID on Kubernetes uses default ns/sa template", config_core.KubernetesEnvironment, nil,
-			[]string{mesh_proto.KubeNamespaceTag, metadata.KumaServiceAccount}),
+			"spiffe://default.zone-1.mesh.local/ns/demo/sa/backend-sa", []string{mesh_proto.KubeNamespaceTag, metadata.KumaServiceAccount}),
 		Entry("nil SpiffeID on Universal falls back to default workload template", config_core.UniversalEnvironment, nil,
-			[]string{metadata.KumaWorkload}),
+			"spiffe://default.zone-1.mesh.local/workload/backend", []string{metadata.KumaWorkload}),
 		Entry("label function", config_core.UniversalEnvironment, pointer.To(`/workload/{{ label "kuma.io/workload" }}`),
-			[]string{metadata.KumaWorkload}),
+			"spiffe://default.zone-1.mesh.local/workload/backend", []string{metadata.KumaWorkload}),
 		Entry("root-scoped .Workload", config_core.UniversalEnvironment, pointer.To("/workload/{{ $.Workload }}"),
-			[]string{metadata.KumaWorkload}),
+			"spiffe://default.zone-1.mesh.local/workload/backend", []string{metadata.KumaWorkload}),
 		Entry(".Workload with trim markers", config_core.UniversalEnvironment, pointer.To("/workload/{{- .Workload -}}"),
-			[]string{metadata.KumaWorkload}),
+			"spiffe://default.zone-1.mesh.local/workload/backend", []string{metadata.KumaWorkload}),
 		Entry(".Workload through a pipeline", config_core.UniversalEnvironment, pointer.To(`/workload/{{ .Workload | printf "%s" }}`),
-			[]string{metadata.KumaWorkload}),
+			"spiffe://default.zone-1.mesh.local/workload/backend", []string{metadata.KumaWorkload}),
 		Entry("label read via a variable", config_core.UniversalEnvironment, pointer.To(`/workload/{{ $w := label "kuma.io/workload" }}{{ $w }}`),
-			[]string{metadata.KumaWorkload}),
+			"spiffe://default.zone-1.mesh.local/workload/backend", []string{metadata.KumaWorkload}),
 		Entry("label with a computed key", config_core.UniversalEnvironment, pointer.To(`/workload/{{ label (printf "kuma.io/%s" "workload") }}`),
-			[]string{metadata.KumaWorkload}),
+			"spiffe://default.zone-1.mesh.local/workload/backend", []string{metadata.KumaWorkload}),
 		Entry("other label", config_core.UniversalEnvironment, pointer.To(`/app/{{ label "app" }}`),
-			[]string{"app"}),
-		Entry("label missing on the dataplane is still reported, and so are reads after it", config_core.UniversalEnvironment, pointer.To(`/{{ label "missing" }}/{{ .Workload }}`),
-			[]string{metadata.KumaWorkload, "missing"}),
+			"spiffe://default.zone-1.mesh.local/app/backend", []string{"app"}),
+		Entry("label missing on the dataplane fails the render and is still reported", config_core.UniversalEnvironment, pointer.To(`/{{ label "missing" }}/{{ .Workload }}`),
+			"", []string{"missing"}),
 		Entry("only the branch taken for the dataplane", config_core.UniversalEnvironment, pointer.To(`/{{ if eq .Workload "backend" }}{{ label "app" }}{{ else }}{{ label "other" }}{{ end }}`),
-			[]string{"app", metadata.KumaWorkload}),
-		Entry("static path", config_core.UniversalEnvironment, pointer.To("/static"), nil),
-		Entry("empty path on Universal", config_core.UniversalEnvironment, pointer.To(""), nil),
+			"spiffe://default.zone-1.mesh.local/backend", []string{"app", metadata.KumaWorkload}),
+		Entry("branch on the real trust domain", config_core.UniversalEnvironment, pointer.To(`{{ if eq .TrustDomain "default.zone-1.mesh.local" }}/{{ label "app" }}{{ else }}/static{{ end }}`),
+			"spiffe://default.zone-1.mesh.local/backend", []string{"app"}),
+		Entry("printing the inputs exposes no label", config_core.UniversalEnvironment, pointer.To(`/{{ . }}`),
+			"spiffe://default.zone-1.mesh.local/spiffeIDInputs", nil),
+		Entry("print exposes no label", config_core.UniversalEnvironment, pointer.To(`/{{ print . }}`),
+			"spiffe://default.zone-1.mesh.local/spiffeIDInputs", nil),
+		Entry("printf %#v exposes no label", config_core.UniversalEnvironment, pointer.To(`/{{ printf "%#v" . }}`),
+			"spiffe://default.zone-1.mesh.local/spiffeIDInputs", nil),
+		Entry("js exposes no label", config_core.UniversalEnvironment, pointer.To(`/{{ js . }}`),
+			"spiffe://default.zone-1.mesh.local/spiffeIDInputs", nil),
+		Entry("static path", config_core.UniversalEnvironment, pointer.To("/static"),
+			"spiffe://default.zone-1.mesh.local/static", nil),
 	)
 })

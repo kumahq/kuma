@@ -32,7 +32,7 @@ func (t *testAuthenticator) Authenticate(_ context.Context, resource model.Resou
 	case *core_mesh.DataplaneResource:
 		t.callCounter++
 		if credential == "pass" {
-			return auth.Binding{AllLabels: true}, nil
+			return auth.Binding{Unauthenticated: true}, nil
 		}
 	default:
 		return auth.Binding{}, errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)

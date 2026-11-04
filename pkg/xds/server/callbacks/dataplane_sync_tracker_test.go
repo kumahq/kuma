@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/test"
@@ -224,7 +225,7 @@ var _ = Describe("Sync", func() {
 				streamCtxCh:  streamCtxCh,
 				watchdogDone: watchdogDone,
 			}
-			bindings := staticBindingLookup{1: {Workload: "example"}}
+			bindings := staticBindingLookup{1: {Labels: mesh_proto.MultiValueTagSet{"kuma.io/workload": {"example": true}}}}
 			tracker := NewDataplaneSyncTracker(context.Background(), factory, bindings)
 			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
@@ -250,7 +251,7 @@ var _ = Describe("Sync", func() {
 			By("verifying the stream's auth binding travels with its context")
 			binding, ok := xds_auth.BindingFromContext(capturedStreamCtx)
 			Expect(ok).To(BeTrue())
-			Expect(binding).To(Equal(xds_auth.Binding{Workload: "example"}))
+			Expect(binding).To(Equal(xds_auth.Binding{Labels: mesh_proto.MultiValueTagSet{"kuma.io/workload": {"example": true}}}))
 
 			By("simulating Envoy disconnecting from the Control Plane")
 			callbacks.OnDeltaStreamClosed(streamID, node)

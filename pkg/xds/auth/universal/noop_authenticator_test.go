@@ -40,7 +40,7 @@ var _ = Describe("Noop Authenticator", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(binding.AllLabels).To(BeTrue())
+		Expect(binding.Unauthenticated).To(BeTrue())
 	})
 
 	It("should reject a resource that is not a Dataplane", func() {

@@ -31,7 +31,7 @@ var _ = Describe("Workload Label Validator", func() {
 	BeforeEach(func() {
 		memStore := memory.NewStore()
 		resManager = core_manager.NewResourceManager(memStore)
-		validator = NewWorkloadLabelValidator(resManager, config_core.KubernetesEnvironment)
+		validator = NewWorkloadLabelValidator(resManager, "zone-1", config_core.KubernetesEnvironment)
 		streamIDCounter = 1
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
@@ -210,7 +210,7 @@ var _ = Describe("Workload Label Validator", func() {
 		// where the workload-label check ignored the default template and admitted DPs
 		// without the label, producing an unparsable SPIFFE ID downstream.
 		It("should deny connection when MeshIdentity has no path and dataplane has no workload label", func() {
-			universalValidator := NewWorkloadLabelValidator(resManager, config_core.UniversalEnvironment)
+			universalValidator := NewWorkloadLabelValidator(resManager, "zone-1", config_core.UniversalEnvironment)
 
 			createMeshIdentity("mi-default", "default",
 				map[string]string{"kuma.io/display-name": "universal-svc"}, nil)

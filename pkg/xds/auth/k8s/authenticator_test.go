@@ -11,9 +11,11 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	test_model "github.com/kumahq/kuma/v3/pkg/test/resources/model"
+	"github.com/kumahq/kuma/v3/pkg/xds/auth"
 	auth_k8s "github.com/kumahq/kuma/v3/pkg/xds/auth/k8s"
 )
 
@@ -74,7 +76,13 @@ var _ = Describe("Authenticate", func() {
 			// then
 			if given.expectedErr == "" {
 				Expect(err).ToNot(HaveOccurred())
-				Expect(binding.AllLabels).To(BeTrue())
+				Expect(binding).To(Equal(auth.Binding{
+					Labels: mesh_proto.MultiValueTagSet{
+						mesh_proto.KubeNamespaceTag: {"example": true},
+						metadata.KumaServiceAccount: {given.podSA: true},
+					},
+					Scope: auth.ScopeNamespace,
+				}))
 			} else {
 				Expect(err).To(MatchError(given.expectedErr))
 			}

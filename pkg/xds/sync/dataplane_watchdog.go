@@ -234,10 +234,8 @@ func (d *DataplaneWatchdog) validateIdentityBinding(ctx context.Context, identit
 	if !ok {
 		return errors.New("the xDS stream has no authentication binding")
 	}
-	if binding.AllLabels {
-		return nil
-	}
-	read := identity.Spec.SpiffeIDPathLabels(dpp.GetMeta(), d.Environment)
+	// A render error is left to issuance, which renders the same inputs and fails too.
+	_, read, _ := identity.RenderSpiffeID(dpp.GetMeta(), d.EnvoyCpCtx.Zone, d.Environment)
 	return xds_auth.ValidateIdentityLabels(binding, dpp.Meta.GetLabels(), read)
 }
 

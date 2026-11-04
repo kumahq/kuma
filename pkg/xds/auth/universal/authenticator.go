@@ -2,6 +2,7 @@ package universal
 
 import (
 	"context"
+	"maps"
 
 	"github.com/pkg/errors"
 
@@ -20,11 +21,13 @@ import (
 func NewAuthenticator(
 	dataplaneValidator builtin_issuer.Validator,
 	resManager manager.ReadOnlyResourceManager,
+	zone string,
 	env config_core.EnvironmentType,
 ) auth.Authenticator {
 	return &universalAuthenticator{
 		dataplaneValidator: dataplaneValidator,
 		resManager:         resManager,
+		zone:               zone,
 		env:                env,
 	}
 }
@@ -44,6 +47,7 @@ func NewAuthenticator(
 type universalAuthenticator struct {
 	dataplaneValidator builtin_issuer.Validator
 	resManager         manager.ReadOnlyResourceManager
+	zone               string
 	env                config_core.EnvironmentType
 }
 
@@ -76,14 +80,23 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 	if err := validateWorkload(dpIdentity.Workload, dataplane); err != nil {
 		return auth.Binding{}, err
 	}
-	binding := auth.Binding{
-		Workload: dpIdentity.Workload,
-		Tags:     dpIdentity.Tags,
-	}
+	binding := auth.Binding{Labels: provenLabels(dpIdentity.Tags, dpIdentity.Workload)}
 	if err := u.validateIdentityLabels(ctx, binding, dataplane); err != nil {
 		return auth.Binding{}, err
 	}
 	return binding, nil
+}
+
+// provenLabels merges the token's workload claim into its tags. When both
+// constrain kuma.io/workload, only values both allow are proven.
+func provenLabels(tags mesh_proto.MultiValueTagSet, workload string) mesh_proto.MultiValueTagSet {
+	proven := mesh_proto.MultiValueTagSet{}
+	maps.Copy(proven, tags)
+	if workload != "" {
+		tagged, ok := proven[metadata.KumaWorkload]
+		proven[metadata.KumaWorkload] = map[string]bool{workload: !ok || tagged[workload]}
+	}
+	return proven
 }
 
 // validateIdentityLabels rejects at connect what identity issuance refuses
@@ -97,7 +110,8 @@ func (u *universalAuthenticator) validateIdentityLabels(ctx context.Context, bin
 	if !found {
 		return nil
 	}
-	read := matched.Spec.SpiffeIDPathLabels(dataplane.GetMeta(), u.env)
+	// A render error is left to issuance, which renders the same inputs and fails too.
+	_, read, _ := matched.RenderSpiffeID(dataplane.GetMeta(), u.zone, u.env)
 	return auth.ValidateIdentityLabels(binding, dataplane.Meta.GetLabels(), read)
 }
 

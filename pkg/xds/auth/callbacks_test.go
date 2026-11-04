@@ -38,7 +38,7 @@ func (t *testAuthenticator) Authenticate(_ context.Context, resource core_model.
 
 	t.callCounter++
 	if credential == "pass" {
-		return auth.Binding{Workload: "web"}, nil
+		return auth.Binding{Labels: mesh_proto.MultiValueTagSet{"kuma.io/workload": {"web": true}}}, nil
 	}
 	return auth.Binding{}, errors.New("invalid credential")
 }
@@ -118,7 +118,7 @@ var _ = Describe("Auth Callbacks", func() {
 		// then
 		binding, ok := authCallbacks.Binding(1)
 		Expect(ok).To(BeTrue())
-		Expect(binding).To(Equal(auth.Binding{Workload: "web"}))
+		Expect(binding).To(Equal(auth.Binding{Labels: mesh_proto.MultiValueTagSet{"kuma.io/workload": {"web": true}}}))
 		_, ok = authCallbacks.Binding(2)
 		Expect(ok).To(BeFalse())
 
