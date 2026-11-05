@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -863,4 +864,47 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 			},
 		}))
 	})
+
+	DescribeTable("should name the Envoy cluster of a zone-proxy-only Dataplane after the proxy, not unknown",
+		func(labels map[string]string, expectedCluster string) {
+			// given
+			dataplane := &core_mesh.DataplaneResource{
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "8.8.8.8",
+						Listeners: []*mesh_proto.Dataplane_Networking_Listener{
+							{
+								Address: "8.8.8.8",
+								Port:    10002,
+								Type:    mesh_proto.Dataplane_Networking_Listener_ZoneEgress,
+								State:   mesh_proto.Dataplane_Networking_Listener_Ready,
+							},
+						},
+						Admin: &mesh_proto.EnvoyAdmin{},
+					},
+				},
+			}
+			Expect(resManager.Create(context.Background(), dataplane, store.CreateByKey("name.namespace", "mesh"), store.CreateWithLabels(labels))).To(Succeed())
+
+			cfg := bootstrap_config.DefaultBootstrapServerConfig()
+			cfg.Params.XdsHost = "localhost"
+			cfg.Params.XdsPort = 5678
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, xds_config.DefaultProxyConfig(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), authEnabled, false, false, 0, false, false, false)
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			bootstrapConfig, _, err := generator.Generate(context.Background(), types.BootstrapRequest{
+				Mesh:           "mesh",
+				Name:           "name.namespace",
+				DataplaneToken: "token",
+				Version:        defaultVersion,
+			})
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bootstrapConfig.(*envoy_bootstrap_v3.Bootstrap).GetNode().GetCluster()).To(Equal(expectedCluster))
+		},
+		Entry("with a workload label", map[string]string{"kuma.io/workload": "kuma-default-egress"}, "kuma-default-egress"),
+		Entry("without a workload label", nil, "name.namespace"),
+	)
 })
