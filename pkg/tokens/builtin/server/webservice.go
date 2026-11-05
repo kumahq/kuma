@@ -88,6 +88,7 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 		idReq.Name,
 		idReq.Mesh,
 		idReq.Tags,
+		idReq.Workload,
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
 		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
