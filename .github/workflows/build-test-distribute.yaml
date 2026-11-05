@@ -245,6 +245,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
+      # A cold lint can peak just above RAM on small runners. Swap absorbs that
+      # overshoot instead of the kernel OOM-killing golangci-lint.
+      - name: Set Swap Space
+        if: ${{ steps.changes.outputs.code == 'true' && github.ref_type != 'tag' }}
+        uses: pierotofy/set-swap-space@fc79b3f67fa8a838184ce84a674ca12238d2c761 # master
+        with:
+          swap-size-gb: 10
       - uses: golangci/golangci-lint-action@1e7e51e771db61008b38414a730f564565cf7c20 # v9.2.0
         if: ${{ steps.changes.outputs.code == 'true' && github.ref_type != 'tag' }}
         env:
