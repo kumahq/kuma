@@ -22,8 +22,9 @@ type Metrics struct {
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 	kdsGenerations := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name: "kds_delta_generation",
-		Help: "Summary of KDS Snapshot generation",
+		Name:    "kds_delta_generation",
+		Help:    "Summary of KDS Snapshot generation",
+		Buckets: core_metrics.MillisecondBuckets,
 	}, []string{"reason", "result", "zone_name"})
 
 	kdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{

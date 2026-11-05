@@ -48,8 +48,9 @@ func New(
 	zone string,
 ) (*Generator, error) {
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "component_workload_generator",
-		Help: "Summary of Workload generation duration",
+		Name:    "component_workload_generator",
+		Help:    "Summary of Workload generation duration",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

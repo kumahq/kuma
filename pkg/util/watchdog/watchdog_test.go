@@ -268,8 +268,8 @@ var _ = Describe("SimpleWatchdog", func() {
 
 		// then no error is produced
 		select {
-		case <-onErrorCalls:
-			Fail("error should not be produced")
+		case err := <-onErrorCalls:
+			Fail(fmt.Sprintf("error should not be produced: %v", err))
 		default:
 		}
 	})

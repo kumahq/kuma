@@ -134,9 +134,9 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 
 	go c.startHealthCheck(withKDSCtx, log, conn, errorCh)
 
-	go c.startXDSConfigs(withKDSCtx, log, conn, errorCh)
-	go c.startStats(withKDSCtx, log, conn, errorCh)
-	go c.startClusters(withKDSCtx, log, conn, errorCh)
+	go c.startXDSConfigs(withKDSCtx, log, conn)
+	go c.startStats(withKDSCtx, log, conn)
+	go c.startClusters(withKDSCtx, log, conn)
 	go c.startGlobalToZoneSync(withKDSCtx, log, conn, errorCh)
 	go c.startZoneToGlobalSync(withKDSCtx, log, conn, errorCh)
 
@@ -242,60 +242,51 @@ func (c *client) startXDSConfigs(
 	ctx context.Context,
 	log logr.Logger,
 	conn *grpc.ClientConn,
-	errorCh chan error,
 ) {
 	client := mesh_proto.NewGlobalKDSServiceClient(conn)
 	log = log.WithValues("rpc", "XDS Configs")
 	log.Info("initializing rpc stream for executing config dump on data plane proxies")
-	stream, err := client.StreamXDSConfigs(ctx)
-	if err != nil {
-		trySend(ctx, errorCh, err)
-		return
-	}
-
-	processingErrorsCh := make(chan error)
-	go c.envoyAdminProcessor.StartProcessingXDSConfigs(stream, processingErrorsCh)
-	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
+	c.runDiagnosticRPC[mesh_proto.GlobalKDSService_StreamXDSConfigsClient](ctx, log, func(ctx context.Context) (mesh_proto.GlobalKDSService_StreamXDSConfigsClient, error) {
+		return client.StreamXDSConfigs(ctx)
+	}, func(stream mesh_proto.GlobalKDSService_StreamXDSConfigsClient) chan error {
+		processingErrorsCh := make(chan error)
+		go c.envoyAdminProcessor.StartProcessingXDSConfigs(stream, processingErrorsCh)
+		return processingErrorsCh
+	})
 }
 
 func (c *client) startStats(
 	ctx context.Context,
 	log logr.Logger,
 	conn *grpc.ClientConn,
-	errorCh chan error,
 ) {
 	client := mesh_proto.NewGlobalKDSServiceClient(conn)
 	log = log.WithValues("rpc", "stats")
 	log.Info("initializing rpc stream for executing stats on data plane proxies")
-	stream, err := client.StreamStats(ctx)
-	if err != nil {
-		trySend(ctx, errorCh, err)
-		return
-	}
-
-	processingErrorsCh := make(chan error)
-	go c.envoyAdminProcessor.StartProcessingStats(stream, processingErrorsCh)
-	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
+	c.runDiagnosticRPC[mesh_proto.GlobalKDSService_StreamStatsClient](ctx, log, func(ctx context.Context) (mesh_proto.GlobalKDSService_StreamStatsClient, error) {
+		return client.StreamStats(ctx)
+	}, func(stream mesh_proto.GlobalKDSService_StreamStatsClient) chan error {
+		processingErrorsCh := make(chan error)
+		go c.envoyAdminProcessor.StartProcessingStats(stream, processingErrorsCh)
+		return processingErrorsCh
+	})
 }
 
 func (c *client) startClusters(
 	ctx context.Context,
 	log logr.Logger,
 	conn *grpc.ClientConn,
-	errorCh chan error,
 ) {
 	client := mesh_proto.NewGlobalKDSServiceClient(conn)
 	log = log.WithValues("rpc", "clusters")
 	log.Info("initializing rpc stream for executing clusters on data plane proxies")
-	stream, err := client.StreamClusters(ctx)
-	if err != nil {
-		trySend(ctx, errorCh, err)
-		return
-	}
-
-	processingErrorsCh := make(chan error)
-	go c.envoyAdminProcessor.StartProcessingClusters(stream, processingErrorsCh)
-	c.handleProcessingErrors(ctx, stream, log, processingErrorsCh, errorCh)
+	c.runDiagnosticRPC[mesh_proto.GlobalKDSService_StreamClustersClient](ctx, log, func(ctx context.Context) (mesh_proto.GlobalKDSService_StreamClustersClient, error) {
+		return client.StreamClusters(ctx)
+	}, func(stream mesh_proto.GlobalKDSService_StreamClustersClient) chan error {
+		processingErrorsCh := make(chan error)
+		go c.envoyAdminProcessor.StartProcessingClusters(stream, processingErrorsCh)
+		return processingErrorsCh
+	})
 }
 
 func (c *client) startHealthCheck(
@@ -339,38 +330,79 @@ func (c *client) startHealthCheck(
 	}
 }
 
-func (c *client) handleProcessingErrors(
-	ctx context.Context,
-	stream grpc.ClientStream,
-	log logr.Logger,
-	processingErrorsCh chan error,
-	errorCh chan error,
-) {
-	err := <-processingErrorsCh
-	if status.Code(err) == codes.Unimplemented {
-		log.Error(err, "rpc stream failed, because global CP does not implement this rpc. Upgrade remote CP.")
-		// backwards compatibility. Do not rethrow error, so KDS multiplex can still operate.
-		return
-	}
+const (
+	diagnosticRPCInitialBackoff = 1 * time.Second
+	diagnosticRPCMaxBackoff     = 1 * time.Minute
+)
+
+type diagnosticStreamOutcome int
+
+const (
+	reopenDiagnosticStream diagnosticStreamOutcome = iota
+	diagnosticStreamGiveUp
+	diagnosticStreamShutDown
+)
+
+// classifyDiagnosticStreamError decides how runDiagnosticRPC reacts to an
+// error that ended a diagnostic stream attempt. err may be nil, which means
+// the attempt ended without an error and the stream is simply reopened.
+func classifyDiagnosticStreamError(log logr.Logger, err error) diagnosticStreamOutcome {
 	switch {
+	case err == nil:
+		return reopenDiagnosticStream
+	case status.Code(err) == codes.Unimplemented:
+		log.Error(err, "rpc stream failed, because global CP does not implement this rpc. Upgrade remote CP.")
+		// Do not reopen the stream, so the KDS multiplex can still operate; retrying is pointless because the global CP keeps answering Unimplemented. EXC:FILE011:documents-a-non-obvious-invariant
+		return diagnosticStreamGiveUp
 	case status.Code(err) == codes.ResourceExhausted:
-		log.Error(err, "rpc stream failed, because a message exceeded the maximum KDS message size. This rpc is unavailable until the KDS connection is re-established. Align maxMsgSize between the zone CP and the global CP, or trim the proxy config with reachableBackends.")
-		// Do not rethrow the error. Retrying resends the same oversized message,
-		// so restarting the KDS multiplex would only take resource sync down
-		// with it in a loop.
-		err = nil
+		log.Error(err, "rpc stream failed, because a message exceeded the maximum KDS message size. Align maxMsgSize between the zone CP and the global CP, or trim the proxy config with reachableBackends.")
+		// Retrying resends the same oversized message in a loop, and restarting the KDS multiplex would take resource sync down with it. EXC:FILE011:documents-a-non-obvious-invariant
+		return diagnosticStreamGiveUp
 	case errors.Is(err, context.Canceled) || status.Code(err) == codes.Canceled:
 		log.Info("rpc stream shutting down")
-		// Let's not propagate this error further as we've already cancelled the context
-		err = nil
+		return diagnosticStreamShutDown
 	default:
-		log.Error(err, "rpc stream failed prematurely, will restart in background")
+		log.Error(err, "rpc stream failed prematurely, restarting only this rpc")
+		return reopenDiagnosticStream
 	}
-	if err := stream.CloseSend(); err != nil {
-		log.Error(err, "CloseSend returned an error")
-	}
-	if err != nil {
-		trySend(ctx, errorCh, err)
+}
+
+// runDiagnosticRPC keeps one diagnostic rpc (clusters, stats, XDS configs)
+// alive across failures: it reopens only this rpc with exponential backoff
+// instead of tearing down the whole KDS multiplex, so resource sync and the
+// health check keep running.
+func (c *client) runDiagnosticRPC[
+	S grpc.ClientStream,
+](
+	ctx context.Context,
+	log logr.Logger,
+	open func(ctx context.Context) (S, error),
+	startProcessing func(stream S) chan error,
+) {
+	backoff := diagnosticRPCInitialBackoff
+	for ctx.Err() == nil {
+		attemptStart := time.Now()
+		stream, err := open(ctx)
+		if err == nil {
+			processingErrorsCh := startProcessing(stream)
+			err = <-processingErrorsCh
+			if closeErr := stream.CloseSend(); closeErr != nil {
+				log.Error(closeErr, "CloseSend returned an error")
+			}
+		}
+		if classifyDiagnosticStreamError(log, err) != reopenDiagnosticStream {
+			return
+		}
+		// A stream that outlived the initial backoff was working, not failing fast: reset the backoff so any reset cadence recovers from the cap, not only one above it. EXC:FILE011:documents-a-non-obvious-invariant
+		if attempt := time.Since(attemptStart); attempt > diagnosticRPCInitialBackoff {
+			backoff = diagnosticRPCInitialBackoff
+		}
+		select {
+		case <-time.After(backoff):
+		case <-ctx.Done():
+			return
+		}
+		backoff = min(backoff*2, diagnosticRPCMaxBackoff)
 	}
 }
 

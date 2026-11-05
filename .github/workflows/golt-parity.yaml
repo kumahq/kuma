@@ -1,0 +1,50 @@
+name: Golt diagnostic parity
+
+on:
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      MISE_DISABLE_TOOLS: skaffold
+      GOGC: '80'
+      GOMEMLIMIT: 7GiB
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
+        with:
+          version: 2026.10.17
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Set Swap Space
+        uses: pierotofy/set-swap-space@fc79b3f67fa8a838184ce84a674ca12238d2c761 # master
+        with:
+          swap-size-gb: 10
+      - name: Install matching upstream golangci-lint
+        run: |
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("mise.toml", "rb"))["tools"]["golangci-lint"].split("-golt.")[0])')
+          mise install "github:golangci/golangci-lint@${version}"
+          echo "UPSTREAM_LINT=$(mise where "github:golangci/golangci-lint@${version}")/golangci-lint" >> "$GITHUB_ENV"
+      - name: Compare diagnostics
+        run: |
+          set +e
+          GOLANGCI_LINT_CACHE="$RUNNER_TEMP/golt-cache" golangci-lint run --fix=false --timeout=10m --output.json.path="$RUNNER_TEMP/golt.json"
+          golt_status=$?
+          GOLANGCI_LINT_CACHE="$RUNNER_TEMP/upstream-cache" "$UPSTREAM_LINT" run --fix=false --timeout=10m --output.json.path="$RUNNER_TEMP/upstream.json"
+          upstream_status=$?
+          set -e
+          if [ "$golt_status" -gt 1 ] || [ "$upstream_status" -gt 1 ]; then
+            echo "Linter failed: golt=$golt_status upstream=$upstream_status"
+            exit 1
+          fi
+          jq -S 'if type == "object" and has("Issues") then (.Issues // [] | sort_by(tojson)) else error("invalid linter output") end' "$RUNNER_TEMP/golt.json" > "$RUNNER_TEMP/golt-issues.json"
+          jq -S 'if type == "object" and has("Issues") then (.Issues // [] | sort_by(tojson)) else error("invalid linter output") end' "$RUNNER_TEMP/upstream.json" > "$RUNNER_TEMP/upstream-issues.json"
+          diff -u "$RUNNER_TEMP/upstream-issues.json" "$RUNNER_TEMP/golt-issues.json"
+          test "$golt_status" -eq "$upstream_status"

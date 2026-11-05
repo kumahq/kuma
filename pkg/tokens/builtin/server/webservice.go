@@ -60,7 +60,7 @@ func (d *tokenWebService) createWs() *restful.WebService {
 func (d *tokenWebService) handleIdentityRequest(request *restful.Request, response *restful.Response) {
 	idReq := types.DataplaneTokenRequest{}
 	if err := request.ReadEntity(&idReq); err != nil {
-		log.Error(err, "Could not read a request")
+		log.Info("Could not read a request", "reason", err.Error())
 		response.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -131,7 +131,7 @@ func validateValidFor(validForRequest string) (validators.ValidationError, time.
 func (d *tokenWebService) handleZoneIdentityRequest(request *restful.Request, response *restful.Response) {
 	var idReq types.ZoneTokenRequest
 	if err := request.ReadEntity(&idReq); err != nil {
-		log.Error(err, "Could not read a request")
+		log.Info("Could not read a request", "reason", err.Error())
 		response.WriteHeader(http.StatusBadRequest)
 		return
 	}

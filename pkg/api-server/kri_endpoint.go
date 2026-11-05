@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	"github.com/kumahq/kuma/v3/pkg/kds/hash"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/v3/pkg/plugins/resources/k8s/native/pkg/model"
@@ -50,7 +51,10 @@ func (k *kriEndpoint) findByKriRoute(withInsight bool) handlerFunc {
 		kriParam := request.PathParameter("kri")
 		identifier, err := kri.FromString(kriParam)
 		if err != nil {
-			return nil, withTitle(rest_errors.NewBadRequestError(err.Error()), "Could not parse KRI")
+			return nil, rest_errors.NewBadRequestError(err.Error())
+		}
+		if kri.HasExtraSegments(kriParam) {
+			return nil, withTitle(rest_errors.NewNotFoundError(""), "Could not retrieve a resource")
 		}
 
 		descriptor, err := getDescriptor(identifier.ResourceType)
@@ -59,10 +63,17 @@ func (k *kriEndpoint) findByKriRoute(withInsight bool) handlerFunc {
 		}
 
 		if withInsight && !descriptor.HasInsights() {
-			return nil, withTitle(rest_errors.NewBadRequestError(fmt.Sprintf("resource type %s does not have an overview", identifier.ResourceType)), "Could not retrieve an overview")
+			return nil, rest_errors.NewBadRequestError(fmt.Sprintf("resource type %s does not have an overview", identifier.ResourceType))
 		}
 
 		name := k.getCoreName(identifier, *descriptor)
+		var verr validators.ValidationError
+		addNameCharsetViolation(&verr, "mesh", identifier.Mesh)
+		addNameCharsetViolation(&verr, "name", name)
+		if verr.HasViolations() {
+			return nil, withTitle(rest_errors.NewBadRequestError(verr.Error()), "Could not parse KRI")
+		}
+
 		if err := k.resourceAccess.ValidateGet(
 			request.Request.Context(),
 			core_model.ResourceKey{Mesh: identifier.Mesh, Name: name},

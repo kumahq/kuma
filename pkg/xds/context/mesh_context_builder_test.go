@@ -663,6 +663,48 @@ spec:
 		Expect(endpoints[0].Target).To(Equal("192.168.0.10"))
 	})
 
+	It("keeps DNS names as stored when address resolution is disabled", func() {
+		// given a builder for a global control plane whose lookup always fails
+		lookups := 0
+		globalBuilder := xds_context.NewMeshContextBuilder(
+			resourceStore,
+			xds_server.MeshResourceTypes(),
+			func(host string) ([]net.IP, error) {
+				lookups++
+				return nil, errors.New("no such host")
+			},
+			"",
+			xds_context.WithoutAddressResolution(),
+		)
+
+		Expect(test_store.LoadResources(context.Background(), resourceStore, `
+type: Mesh
+name: default
+---
+type: Dataplane
+name: dp-1
+mesh: default
+networking:
+  address: backend.dns.name
+  inbound:
+    - port: 8080
+`)).To(Succeed())
+		Expect(test_store.LoadResources(context.Background(), resourceStore, remoteMeshZoneAddressWithHostname)).To(Succeed())
+
+		// when
+		meshCtx, err := globalBuilder.BuildIfChanged(context.Background(), "default", nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then nothing is looked up and the resources keep their names
+		Expect(lookups).To(BeZero())
+		dataplanes := meshCtx.Resources.Dataplanes().Items
+		Expect(dataplanes).To(HaveLen(1))
+		Expect(dataplanes[0].Spec.GetNetworking().GetAddress()).To(Equal("backend.dns.name"))
+		meshZoneAddresses := meshCtx.Resources.MeshZoneAddresses().Items
+		Expect(meshZoneAddresses).To(HaveLen(1))
+		Expect(meshZoneAddresses[0].Spec.Address).To(Equal("lb.example.com"))
+	})
+
 	It("returns an error instead of panicking when listing resources fails", func() {
 		// given a mesh exists but listing any other resource fails (e.g. DB connection lost)
 		Expect(samples.MeshDefaultBuilder().Create(resourceStore)).To(Succeed())

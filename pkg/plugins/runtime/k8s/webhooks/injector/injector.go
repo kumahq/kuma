@@ -606,7 +606,7 @@ func (i *KumaInjector) NewInitContainer(annotations map[string]string) kube_core
 	container := kube_core.Container{
 		Name:            k8s_util.KumaInitContainerName,
 		Image:           i.cfg.InitContainer.Image,
-		ImagePullPolicy: kube_core.PullIfNotPresent,
+		ImagePullPolicy: k8s_util.PullPolicy(i.cfg.InitContainer.ImagePullPolicy),
 		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy"},
 		Args:            args,
 		Env: []kube_core.EnvVar{
@@ -653,7 +653,7 @@ func (i *KumaInjector) NewValidationContainer(pod *kube_core.Pod) kube_core.Cont
 	return kube_core.Container{
 		Name:            k8s_util.KumaCniValidationContainerName,
 		Image:           i.cfg.InitContainer.Image,
-		ImagePullPolicy: kube_core.PullIfNotPresent,
+		ImagePullPolicy: k8s_util.PullPolicy(i.cfg.InitContainer.ImagePullPolicy),
 		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy-validator"},
 		Args:            args,
 		SecurityContext: &kube_core.SecurityContext{

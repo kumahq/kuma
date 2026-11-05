@@ -65,8 +65,9 @@ func NewSubscriptionFinalizer(rm manager.ResourceManager, tenants multitenant.Te
 	}
 
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "component_sub_finalizer",
-		Help: "Summary of Subscription finalizer component interval",
+		Name:    "component_sub_finalizer",
+		Help:    "Summary of Subscription finalizer component interval",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

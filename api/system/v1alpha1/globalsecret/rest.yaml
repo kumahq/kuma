@@ -63,6 +63,33 @@ paths:
           $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   /globalsecrets:
+    post:
+      operationId: postGlobalSecret
+      summary: Creates GlobalSecret entity
+      description: Creates a resource using the name in the body. An existing resource is never modified. Requires Kuma 3.0 or later.
+      tags: [ "GlobalSecret" ]
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalSecretItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '../../base/specs/common/error_schema.yaml#/components/schemas/Error'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../../base/specs/common/error_schema.yaml#/components/schemas/Error'
     get:
       operationId: getGlobalSecretList
       summary: Returns a list of GlobalSecret entities.
@@ -146,6 +173,33 @@ paths:
           $ref: "../../base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   /global-secrets:
+    post:
+      operationId: postGlobalSecretAlias
+      summary: Creates GlobalSecret entity
+      description: Creates a resource using the name in the body. An existing resource is never modified. Requires Kuma 3.0 or later.
+      tags: [ "GlobalSecret" ]
+      requestBody:
+        description: Resource to create
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalSecretItem'
+      responses:
+        '201':
+          $ref: '#/components/responses/GlobalSecretCreateOrUpdateSuccessResponse'
+        '400':
+          description: Invalid resource
+          content:
+            application/json:
+              schema:
+                $ref: '../../base/specs/common/error_schema.yaml#/components/schemas/Error'
+        '409':
+          description: A resource with this identity already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../../base/specs/common/error_schema.yaml#/components/schemas/Error'
     get:
       operationId: getGlobalSecretListAlias
       summary: Returns a list of GlobalSecret entities.

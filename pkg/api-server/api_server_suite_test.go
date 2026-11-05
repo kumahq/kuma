@@ -163,7 +163,7 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			return nil, cfg, stop, err
 		case <-tick.C:
 			leftTicks--
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+apiServer.Address()+"/config", http.NoBody)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+apiServer.Address()+strings.TrimRight(t.config.BasePath, "/")+"/config", http.NoBody)
 			if err != nil {
 				return nil, cfg, stop, err
 			}

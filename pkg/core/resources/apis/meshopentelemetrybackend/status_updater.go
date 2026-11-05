@@ -46,8 +46,9 @@ func NewStatusUpdater(
 	metrics core_metrics.Metrics,
 ) (component.Component, error) {
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "component_motb_status_updater",
-		Help: "Summary of MeshOpenTelemetryBackend Updater component",
+		Name:    "component_motb_status_updater",
+		Help:    "Summary of MeshOpenTelemetryBackend Updater component",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err
@@ -287,7 +288,7 @@ func buildBackendRefsResolvedCondition(
 		return common_api.Condition{
 			Type:    conditionType,
 			Status:  kube_meta.ConditionTrue,
-			Reason:  resolvedReason,
+			Reason:  common_api.NoBackendRefsConfiguredReason,
 			Message: "No MeshOpenTelemetryBackend references configured",
 		}
 	}

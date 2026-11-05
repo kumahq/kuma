@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"maps"
 	"reflect"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
 	meshtrust_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshtrust/api/v1alpha1"
+	resource_labels "github.com/kumahq/kuma/v3/pkg/core/resources/labels"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
@@ -32,7 +34,8 @@ type IdentityProviderReconciler struct {
 	logger            logr.Logger
 	reconcileInterval time.Duration
 	providers         providers.IdentityProviders
-	zone              string
+	cp                resource_labels.ControlPlane
+	systemNamespace   string
 }
 
 var _ component.Component = &IdentityProviderReconciler{}
@@ -43,7 +46,8 @@ func New(
 	resManager manager.ResourceManager,
 	roResManager manager.ReadOnlyResourceManager,
 	providers providers.IdentityProviders,
-	zone string,
+	cp resource_labels.ControlPlane,
+	systemNamespace string,
 ) (*IdentityProviderReconciler, error) {
 	return &IdentityProviderReconciler{
 		logger:            logger,
@@ -51,7 +55,8 @@ func New(
 		resManager:        resManager,
 		roResManager:      roResManager,
 		providers:         providers,
-		zone:              zone,
+		cp:                cp,
+		systemNamespace:   systemNamespace,
 	}, nil
 }
 
@@ -217,7 +222,7 @@ func (i *IdentityProviderReconciler) pinTrustDomain(mid *meshidentity_api.MeshId
 	if pinned := pointer.Deref(pointer.Deref(mid.Status).TrustDomain); pinned != "" {
 		return pinned, nil
 	}
-	return mid.Spec.RenderTrustDomain(mid.GetMeta(), i.zone)
+	return mid.Spec.RenderTrustDomain(mid.GetMeta(), i.cp.Zone)
 }
 
 func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, ca []byte) error {
@@ -225,7 +230,7 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 	meshName := identity.Meta.GetMesh()
 	resourceName := identity.Meta.GetName()
 
-	trustDomain, err := identity.GetTrustDomain(i.zone)
+	trustDomain, err := identity.GetTrustDomain(i.cp.Zone)
 	if err != nil {
 		return err
 	}
@@ -239,11 +244,35 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 		}
 	}
 
+	// The trust is local even when its identity was synced from global. Its
+	// display name must describe its own storage key, not the identity's pre-sync
+	// display name, so its local KRI resolves back to the same resource.
+	displayName := resourceName
+	if name := identity.GetMeta().GetNameExtensions()[core_model.K8sNameComponent]; i.cp.IsK8s && name != "" {
+		displayName = name
+	}
+	var existingLabels map[string]string
+	if update {
+		existingLabels = meshTrust.GetMeta().GetLabels()
+	}
+	labels, err := resource_labels.Compute(resource_labels.Write{
+		Descriptor:    meshTrust.Descriptor(),
+		Spec:          meshTrust.GetSpec(),
+		Namespace:     resource_labels.GetNamespace(identity.GetMeta(), i.systemNamespace),
+		Mesh:          meshName,
+		DisplayName:   displayName,
+		Labels:        existingLabels,
+		TrustedWriter: true,
+	}, i.cp)
+	if err != nil {
+		return err
+	}
+
 	origin := kri.From(identity).String()
 	caPEM := string(ca)
 
 	if update {
-		needsUpdate := false
+		needsUpdate := !maps.Equal(existingLabels, labels)
 
 		// An identity that already had a MeshTrust when it was first pinned can be
 		// pinned to a domain the MeshTrust never advertised: the zone was renamed
@@ -287,7 +316,7 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 		}
 
 		if needsUpdate {
-			return i.resManager.Update(ctx, meshTrust)
+			return i.resManager.Update(ctx, meshTrust, store.UpdateWithLabels(labels))
 		}
 		return nil
 	}
@@ -309,7 +338,7 @@ func (i *IdentityProviderReconciler) createOrUpdateMeshTrust(ctx context.Context
 			KRI: pointer.To(origin),
 		},
 	}
-	return i.resManager.Create(ctx, meshTrust, store.CreateByKey(resourceName, meshName))
+	return i.resManager.Create(ctx, meshTrust, store.CreateByKey(resourceName, meshName), store.CreateWithLabels(labels))
 }
 
 func (i *IdentityProviderReconciler) NeedLeaderElection() bool {

@@ -116,6 +116,14 @@ func FromString(s string) (Identifier, error) {
 	}, nil
 }
 
+// HasExtraSegments reports whether s has more underscore-separated segments
+// than the KRI format defines (prefix + 6 fields). FromString folds extra
+// segments into SectionName to tolerate suffixed Envoy resource names;
+// lookups by KRI must reject them.
+func HasExtraSegments(s string) bool {
+	return len(strings.Split(s, "_")) > 7
+}
+
 func MustFromString(s string) Identifier {
 	id, err := FromString(s)
 	if err != nil {

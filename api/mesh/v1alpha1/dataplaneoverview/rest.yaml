@@ -51,7 +51,47 @@ components:
   schemas:
     DataplaneOverviewWithMeta:
       allOf:
-        - $ref: '/specs/base/specs/common/resource.yaml#/components/schemas/Meta'
+        # A DataplaneOverview carries the meta of its base Dataplane, so it has a
+        # mesh and a kri (Dataplane has a short name). The shared Meta does not
+        # fit: it requires labels, which are only present when the store computes
+        # them (e.g. kuma.io/display-name on Kubernetes).
+        - type: object
+          required: [type, mesh, name]
+          properties:
+            type:
+              type: string
+              example: DataplaneOverview
+              description: the type of this resource
+            mesh:
+              type: string
+              example: default
+              description: the mesh this overview is part of
+              # keep in sync with core_mesh.MeshNamePattern / MaxNameLength
+              pattern: '^[0-9a-z-_.]*$'
+              maxLength: 253
+            name:
+              type: string
+              example: dp-1
+              description: the name of the dataplane this overview describes
+            kri:
+              type: string
+              readOnly: true
+              description: Kuma Resource Identifier (KRI) of the given resource
+            labels:
+              type: object
+              additionalProperties:
+                type: string
+              description: Labels computed by the control plane, if any.
+            creationTime:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Time at which the resource was created
+            modificationTime:
+              type: string
+              format: date-time
+              readOnly: true
+              description: Time at which the resource was updated
         - $ref: '/specs/protoresources/dataplaneoverview/schema.yaml#/components/schemas/DataplaneOverview'
 
   responses:

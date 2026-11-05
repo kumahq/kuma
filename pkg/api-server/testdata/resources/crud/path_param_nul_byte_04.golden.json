@@ -1,0 +1,19 @@
+{
+ "type": "/std-errors",
+ "status": 400,
+ "title": "Bad Request",
+ "detail": "Resource is not valid",
+ "invalid_parameters": [
+  {
+   "field": "mesh",
+   "reason": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_', '.' symbols."
+  }
+ ],
+ "details": "Resource is not valid",
+ "causes": [
+  {
+   "field": "mesh",
+   "message": "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_', '.' symbols."
+  }
+ ]
+}

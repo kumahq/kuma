@@ -29,7 +29,7 @@ func Generate(meshMetricToDataplane map[*v1alpha1.Conf]*core_mesh.DataplaneResou
 			}
 
 			schema := "http"
-			if prometheusEndpoint.Tls != nil && prometheusEndpoint.Tls.Mode == v1alpha1.ProvidedTLS {
+			if prometheusEndpoint.Tls != nil && (prometheusEndpoint.Tls.Mode == v1alpha1.ProvidedTLS || prometheusEndpoint.Tls.Mode == v1alpha1.ActiveMTLSBackend) {
 				schema = "https"
 			}
 

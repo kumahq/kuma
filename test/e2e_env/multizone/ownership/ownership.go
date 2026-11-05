@@ -78,12 +78,12 @@ func MultizoneUniversal() {
 	It("should delete DataplaneInsight when Dataplane is deleted", func() {
 		installDataplane()
 
-		Eventually(has("dataplanes"), "30s", "1s").Should(BeTrue())
-		Eventually(has("dataplane-insights"), "30s", "1s").Should(BeTrue())
+		Eventually(has("meshes/default/dataplanes"), "30s", "1s").Should(BeTrue())
+		Eventually(has("meshes/default/dataplane-insights"), "30s", "1s").Should(BeTrue())
 
 		killKumaDP(AppModeDemoClient)
 
-		Eventually(has("dataplanes"), "30s", "1s").Should(BeFalse())
-		Eventually(has("dataplane-insights"), "30s", "1s").Should(BeFalse())
+		Eventually(has("meshes/default/dataplanes"), "30s", "1s").Should(BeFalse())
+		Eventually(has("meshes/default/dataplane-insights"), "30s", "1s").Should(BeFalse())
 	})
 }

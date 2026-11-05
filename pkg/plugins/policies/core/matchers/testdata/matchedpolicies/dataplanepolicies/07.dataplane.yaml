@@ -8,4 +8,4 @@ networking:
   address: 1.1.1.1
   inbound:
     - port: 8080
-      state: Ignored
+      state: NotReady

@@ -81,10 +81,10 @@ jobs:
           BASE_REF=$(echo -n "$PR_INFO_JSON" | jq -r '.baseRefName //empty')
           COMMIT=$(echo -n "$PR_INFO_JSON" | jq -r '.mergeCommit.oid //empty')
           # Carry the original PR's labels over to the backport PR. Drop labels
-          # that would auto-act on the backport (auto-merge, publish) and
-          # 'backport', which only marks the original PR as needing this run.
+          # that would auto-act on the backport (publish) and 'backport',
+          # which only marks the original PR as needing this run.
           LABELS=$(echo -n "$PR_INFO_JSON" | jq -r '
-            [(.labels // [])[].name | select(. != "ci/auto-merge" and . != "ci/force-publish" and . != "backport")]
+            [(.labels // [])[].name | select(. != "ci/force-publish" and . != "backport")]
             | join(",")')
 
           {
@@ -138,7 +138,7 @@ jobs:
           message: backporting to ${{ matrix.branch }} with [action](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         if: ${{ env.USE_APP_TOKEN == 'true' }}
         with:
           app-id: ${{ secrets.APP_ID }}

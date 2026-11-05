@@ -19,6 +19,7 @@ permissions:
   contents: read
 jobs:
   active-branches:
+    if: github.event_name != 'push' || vars.KUMA_CI_SKIP_PUSH != 'true'
     uses: ./.github/workflows/_get-active-branches.yaml
   generate-docs:
     needs: active-branches
@@ -36,9 +37,9 @@ jobs:
           fetch-depth: 0
           ref: master
           path: repo
-      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
         with:
-          version: 2026.9.9
+          version: 2026.10.17
           # The repo is checked out under repo/, so mise finds no config at the workspace
           # root and installs nothing, while the cache key still hashes **/mise.toml. On a
           # miss this job would save a mise-binary-only entry under the key every other
@@ -90,7 +91,7 @@ jobs:
           rm ${{ env.OUTPUT_PATH }}/raw/versions.yml
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}

@@ -19,5 +19,3 @@ func init() {
 func main() {
 	cmd.Execute()
 }
-
-// TEMP(golt-dogfood): triggers both lint jobs on this draft; revert before merge.

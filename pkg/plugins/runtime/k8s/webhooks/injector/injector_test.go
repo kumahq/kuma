@@ -857,6 +857,22 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.no-cpu-limit.config.yaml",
 		}),
+		Entry("45. sidecar and init container image pull policy from config", testCase{
+			num: "45",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.image-pull-policy.yaml",
+		}),
 	)
 
 	It("falls back to init-container sidecar injection when native sidecars are unavailable", func() {

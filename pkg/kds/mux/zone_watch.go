@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/events"
 	"github.com/kumahq/kuma/v3/pkg/kds/service"
 	kuma_log "github.com/kumahq/kuma/v3/pkg/log"
+	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/util/proto"
 )
@@ -48,8 +49,9 @@ func NewZoneWatch(
 	extensions context.Context,
 ) (*ZoneWatch, error) {
 	summary := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "component_zone_watch",
-		Help: "Summary of ZoneWatch component interval",
+		Name:    "component_zone_watch",
+		Help:    "Summary of ZoneWatch component interval",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.Register(summary); err != nil {
 		return nil, err

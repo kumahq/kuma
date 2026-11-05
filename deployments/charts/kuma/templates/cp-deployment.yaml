@@ -186,12 +186,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.podIP
-            - name: GOMEMLIMIT
-              valueFrom:
-                resourceFieldRef:
-                  containerName: control-plane
-                  resource: limits.memory
-                  divisor: {{ .Values.controlPlane.runtime.goMemLimit.divisor | quote }}
             - name: GOMAXPROCS
               valueFrom:
                 resourceFieldRef:

@@ -27,8 +27,7 @@ var pathParam = regexp.MustCompile(`\{[^}]+\}`)
 // family of routes with a generic parameter (e.g.
 // "/meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes") while the
 // server registers one concrete route per resource type. The last segment is
-// kept literal so that cross-mesh list routes ("/meshmetrics") stay
-// distinguishable from each other.
+// kept literal so that routes of different resource types stay distinguishable.
 func normalizePath(path string, wsPaths []string) string {
 	p := pathParam.ReplaceAllString(path, "{}")
 	segments := strings.Split(p, "/")
@@ -53,6 +52,65 @@ var undocumentedRoutes = map[string]string{
 	"GET /{}/{}/{}/{}/{}": "generic dataplane envoy admin route, spec documents the concrete xds/clusters/stats subpaths",
 }
 
+// specFiles returns every OpenAPI document of Kuma's own REST API: the base
+// specs plus the fragments the generators write next to their resources.
+func specFiles() []string {
+	files := []string{filepath.Join("..", "..", "api", "openapi", "specs", "api.yaml")}
+	for _, pattern := range []string{
+		filepath.Join("..", "..", "api", "mesh", "v1alpha1", "*", "rest.yaml"),
+		filepath.Join("..", "..", "api", "system", "v1alpha1", "*", "rest.yaml"),
+		filepath.Join("..", "..", "api", "openapi", "specs", "kri", "kri.yaml"),
+		filepath.Join("..", "..", "pkg", "plugins", "policies", "*", "api", "v1alpha1", "rest.yaml"),
+		filepath.Join("..", "..", "pkg", "core", "resources", "apis", "*", "api", "v1alpha1", "rest.yaml"),
+	} {
+		matches, err := filepath.Glob(pattern)
+		Expect(err).ToNot(HaveOccurred())
+		files = append(files, matches...)
+	}
+	return files
+}
+
+// resourceMetaTimestamps are the meta fields every resource response carries:
+// the REST layer always serializes them (see rest/v1alpha1.ResourceMeta), so
+// the schema of a resource response has to document them.
+var resourceMetaTimestamps = []string{"creationTime", "modificationTime"}
+
+// isResourceResponseSchema reports whether a schema name describes a resource
+// response. The generators name those <Type>Item for the CRUD endpoints, and
+// the overview specs name them <Type>WithMeta.
+func isResourceResponseSchema(name string) bool {
+	return strings.HasSuffix(name, "Item") || strings.HasSuffix(name, "WithMeta")
+}
+
+// schemaProperties collects the property names a schema declares, following
+// local $ref and allOf so a composed schema is treated as a single object.
+// Cross-file references cannot be resolved here, and a resource response takes
+// its meta from the document it is defined in anyway.
+func schemaProperties(schemas map[string]any, schema map[string]any, seen map[string]bool, out map[string]bool) {
+	if ref, ok := schema["$ref"].(string); ok {
+		name := ref[strings.LastIndex(ref, "/")+1:]
+		if !seen[name] {
+			seen[name] = true
+			if target, ok := schemas[name].(map[string]any); ok {
+				schemaProperties(schemas, target, seen, out)
+			}
+		}
+		return
+	}
+	if properties, ok := schema["properties"].(map[string]any); ok {
+		for name := range properties {
+			out[name] = true
+		}
+	}
+	if allOf, ok := schema["allOf"].([]any); ok {
+		for _, part := range allOf {
+			if partSchema, ok := part.(map[string]any); ok {
+				schemaProperties(schemas, partSchema, seen, out)
+			}
+		}
+	}
+}
+
 var _ = Describe("OpenAPI conformance", func() {
 	wsPaths := func() []string {
 		var paths []string
@@ -66,18 +124,7 @@ var _ = Describe("OpenAPI conformance", func() {
 	}()
 
 	specPaths := func() map[string]bool {
-		files := []string{filepath.Join("..", "..", "api", "openapi", "specs", "api.yaml")}
-		for _, pattern := range []string{
-			filepath.Join("..", "..", "api", "mesh", "v1alpha1", "*", "rest.yaml"),
-			filepath.Join("..", "..", "api", "system", "v1alpha1", "*", "rest.yaml"),
-			filepath.Join("..", "..", "api", "openapi", "specs", "kri", "kri.yaml"),
-			filepath.Join("..", "..", "pkg", "plugins", "policies", "*", "api", "v1alpha1", "rest.yaml"),
-			filepath.Join("..", "..", "pkg", "core", "resources", "apis", "*", "api", "v1alpha1", "rest.yaml"),
-		} {
-			matches, err := filepath.Glob(pattern)
-			Expect(err).ToNot(HaveOccurred())
-			files = append(files, matches...)
-		}
+		files := specFiles()
 
 		paths := map[string]bool{}
 		for _, file := range files {
@@ -101,12 +148,29 @@ var _ = Describe("OpenAPI conformance", func() {
 		defer stop()
 
 		spec := specPaths()
+		readOnlyPosts := map[string]bool{}
+		for _, desc := range registry.Global().ObjectDescriptors(model.HasWsEnabled()) {
+			if !desc.ReadOnly {
+				continue
+			}
+			for _, path := range []string{desc.WsPath, desc.AlternativeWsPath} {
+				if path == "" {
+					continue
+				}
+				path = "/" + path
+				if desc.Scope == model.ScopeMesh {
+					path = "/meshes/{mesh}" + path
+				}
+				readOnlyPosts["POST "+normalizePath(path, wsPaths)] = true
+			}
+		}
+
 		usedAllowlist := map[string]bool{}
 		var missingInSpec []string
 		for _, route := range apiServer.Routes() {
 			method, path, _ := strings.Cut(route, " ")
 			normalized := method + " " + normalizePath(path, wsPaths)
-			if spec[normalized] {
+			if spec[normalized] || readOnlyPosts[normalized] {
 				continue
 			}
 			if _, allowed := undocumentedRoutes[normalized]; allowed {
@@ -126,5 +190,39 @@ var _ = Describe("OpenAPI conformance", func() {
 		}
 		sort.Strings(staleAllowlist)
 		Expect(staleAllowlist).To(BeEmpty(), "allowlist entries no longer served or now documented; remove them from undocumentedRoutes")
+	})
+
+	It("resource responses should document the resource meta timestamps", func() {
+		var missing []string
+		for _, file := range specFiles() {
+			content, err := os.ReadFile(file)
+			Expect(err).ToNot(HaveOccurred())
+
+			var spec struct {
+				Components struct {
+					Schemas map[string]any `json:"schemas"`
+				} `json:"components"`
+			}
+			Expect(yaml.Unmarshal(content, &spec)).To(Succeed(), file)
+
+			for name, raw := range spec.Components.Schemas {
+				if !isResourceResponseSchema(name) {
+					continue
+				}
+				schema, ok := raw.(map[string]any)
+				if !ok {
+					continue
+				}
+				properties := map[string]bool{}
+				schemaProperties(spec.Components.Schemas, schema, map[string]bool{name: true}, properties)
+				for _, field := range resourceMetaTimestamps {
+					if !properties[field] {
+						missing = append(missing, filepath.Base(filepath.Dir(file))+"/"+name+"."+field)
+					}
+				}
+			}
+		}
+		sort.Strings(missing)
+		Expect(missing).To(BeEmpty(), "resource response schemas that do not document every resource meta timestamp")
 	})
 })

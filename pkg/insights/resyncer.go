@@ -91,16 +91,19 @@ type resyncer struct {
 // resync every t = FullResyncInterval - MinResyncInterval.
 func NewResyncer(config *Config) component.Component {
 	idleTime := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "insights_resyncer_processor_idle_time",
-		Help: "Summary of the time that the processor loop sits idle, the closer this gets to 0 the more the processing loop is at capacity",
+		Name:    "insights_resyncer_processor_idle_time",
+		Help:    "Summary of the time that the processor loop sits idle, the closer this gets to 0 the more the processing loop is at capacity",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	timeToProcessItem := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "insights_resyncer_event_time_to_process",
-		Help: "Summary of the time between an event being added to a batch and it being processed, in a well behaving system this should be less of equal to the MinResyncInterval",
+		Name:    "insights_resyncer_event_time_to_process",
+		Help:    "Summary of the time between an event being added to a batch and it being processed, in a well behaving system this should be less of equal to the MinResyncInterval",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	itemProcessingTime := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name: "insights_resyncer_event_time_processing",
-		Help: "Summary of the time spent to process an event",
+		Name:    "insights_resyncer_event_time_processing",
+		Help:    "Summary of the time spent to process an event",
+		Buckets: core_metrics.MillisecondBuckets,
 	}, []string{"reason", "result"})
 	config.Metrics.MustRegister(idleTime, timeToProcessItem, itemProcessingTime)
 

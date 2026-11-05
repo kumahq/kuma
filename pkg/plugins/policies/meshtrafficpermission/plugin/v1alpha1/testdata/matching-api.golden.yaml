@@ -75,13 +75,36 @@ resources:
                           action: DENY
                           name: kri_mtp_default_zone-1_ns-1_mtp-1_
                     predicate:
+                      orMatcher:
+                        predicate:
+                        - singlePredicate:
+                            input:
+                              name: envoy.matching.inputs.uri_san
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                            valueMatch:
+                              exact: spiffe://trust-domain.mesh/ns/backend/v1
+                        - singlePredicate:
+                            input:
+                              name: envoy.matching.inputs.uri_san
+                              typedConfig:
+                                '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
+                            valueMatch:
+                              exact: spiffe://trust-domain.mesh/ns/backend/v2
+                  - onMatch:
+                      action:
+                        name: envoy.filters.rbac.action
+                        typedConfig:
+                          '@type': type.googleapis.com/envoy.config.rbac.v3.Action
+                          name: kri_mtp_default_zone-1_ns-1_mtp-1_
+                    predicate:
                       singlePredicate:
                         input:
                           name: envoy.matching.inputs.uri_san
                           typedConfig:
                             '@type': type.googleapis.com/envoy.extensions.matching.common_inputs.ssl.v3.UriSanInput
                         valueMatch:
-                          exact: spiffe://trust-domain.mesh/ns/backend/v2
+                          prefix: spiffe://trust-domain.mesh/ns/backend/
                 onNoMatch:
                   action:
                     name: envoy.filters.rbac.action

@@ -22,8 +22,9 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 	m := &Metrics{}
 
 	m.HdsGenerations = prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "hds_generation",
-		Help: "Summary of HDS Snapshot generation",
+		Name:    "hds_generation",
+		Help:    "Summary of HDS Snapshot generation",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.Register(m.HdsGenerations); err != nil {
 		return nil, err

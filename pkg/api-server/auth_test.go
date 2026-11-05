@@ -49,10 +49,10 @@ var _ = Describe("Auth test", func() {
 
 		// wait for both http and https server
 		Eventually(func(g Gomega) {
-			resp, err := httpsClient.Get(fmt.Sprintf("https://localhost:%d/secrets", httpsPort))
+			resp, err := httpsClient.Get(fmt.Sprintf("https://localhost:%d/global-secrets", httpsPort))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp).To(HaveHTTPStatus(200))
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("http://localhost:%d/secrets", httpPort), http.NoBody)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("http://localhost:%d/global-secrets", httpPort), http.NoBody)
 			g.Expect(err).ToNot(HaveOccurred())
 			resp, err = http.DefaultClient.Do(req)
 			g.Expect(err).ToNot(HaveOccurred())
@@ -64,9 +64,9 @@ var _ = Describe("Auth test", func() {
 		stop()
 	})
 
-	It("should be able to access secrets on localhost using HTTP", func() {
+	It("should be able to access global secrets on localhost using HTTP", func() {
 		// when
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/secrets", httpPort))
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d/global-secrets", httpPort))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -75,7 +75,7 @@ var _ = Describe("Auth test", func() {
 
 	It("should be able to access admin endpoints on localhost using HTTPS", func() {
 		// when
-		resp, err := httpsClient.Get(fmt.Sprintf("https://localhost:%d/secrets", httpsPort))
+		resp, err := httpsClient.Get(fmt.Sprintf("https://localhost:%d/global-secrets", httpsPort))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -84,7 +84,7 @@ var _ = Describe("Auth test", func() {
 
 	It("should be block an access to admin endpoints from other machine using HTTP", func() {
 		// when - simulate request from external IP by setting RemoteAddr
-		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/global-secrets", http.NoBody)
 		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
 		rr := httptest.NewRecorder()
 		apiServer.Handler().ServeHTTP(rr, req)
@@ -96,7 +96,7 @@ var _ = Describe("Auth test", func() {
 
 	It("should be block an access to admin endpoints from other machine using HTTPS without proper client certs", func() {
 		// when - simulate request from external IP without client certs by setting RemoteAddr
-		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/global-secrets", http.NoBody)
 		req.RemoteAddr = fmt.Sprintf("%s:12345", externalIP)
 		rr := httptest.NewRecorder()
 		apiServer.Handler().ServeHTTP(rr, req)
@@ -110,7 +110,7 @@ var _ = Describe("Auth test", func() {
 		// This simulates a browser fetch() from evil.com to localhost:5681.
 		// The browser connects over loopback, but the Origin header reveals a
 		// non-localhost origin.  LocalhostAuthenticator must NOT grant admin.
-		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/global-secrets", http.NoBody)
 		req.RemoteAddr = "127.0.0.1:54321"
 		req.Host = fmt.Sprintf("localhost:%d", httpPort)
 		req.Header.Set("Origin", "https://evil.com")
@@ -124,7 +124,7 @@ var _ = Describe("Auth test", func() {
 	It("should grant admin when Origin is same-origin localhost (GUI use case)", func() {
 		// Simulates the Kuma GUI: browser on localhost fetching from the same
 		// localhost:port.  Origin matches Host, so admin should be granted.
-		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/global-secrets", http.NoBody)
 		req.RemoteAddr = "127.0.0.1:54321"
 		req.Host = fmt.Sprintf("localhost:%d", httpPort)
 		req.Header.Set("Origin", fmt.Sprintf("http://localhost:%d", httpPort))
@@ -138,7 +138,7 @@ var _ = Describe("Auth test", func() {
 	It("should block admin when a proxy header is present on a loopback request", func() {
 		// X-Forwarded-For on a loopback-sourced request signals a reverse proxy
 		// laundering remote traffic.  Admin must be denied.
-		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/secrets", http.NoBody)
+		req := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/global-secrets", http.NoBody)
 		req.RemoteAddr = "127.0.0.1:54321"
 		req.Host = fmt.Sprintf("localhost:%d", httpPort)
 		req.Header.Set("X-Forwarded-For", "203.0.113.1")

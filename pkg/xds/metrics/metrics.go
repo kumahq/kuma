@@ -19,8 +19,9 @@ type Metrics struct {
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 	xdsGenerations := prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Name: "xds_generation",
-		Help: "Summary of XDS Snapshot generation",
+		Name:    "xds_generation",
+		Help:    "Summary of XDS Snapshot generation",
+		Buckets: core_metrics.MillisecondBuckets,
 	}, []string{"proxy_type", "result"})
 	xdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "xds_generation_errors",

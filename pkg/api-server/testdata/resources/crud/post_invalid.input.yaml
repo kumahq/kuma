@@ -1,0 +1,7 @@
+#/meshes 400 method=POST
+#/meshes 400 method=POST
+#/meshes 400 method=POST
+#/meshes/default/secrets 400 method=POST
+#/meshes/missing/secrets 404 method=POST
+type: Mesh
+name: default

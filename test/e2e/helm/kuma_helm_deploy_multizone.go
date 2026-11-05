@@ -95,7 +95,7 @@ func ZoneWithHelmChartAndUniversalGlobal() {
 
 		// and dataplanes are synced to global
 		Eventually(func(g Gomega) {
-			out, _, err := globalCluster.GetKuma().Exec("curl", "--fail", "--show-error", "http://localhost:5681/dataplanes")
+			out, _, err := globalCluster.GetKuma().Exec("curl", "--fail", "--show-error", "http://localhost:5681/meshes/default/dataplanes")
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).Should(ContainSubstring("demo-client"))
 		}, "30s", "1s").Should(Succeed())

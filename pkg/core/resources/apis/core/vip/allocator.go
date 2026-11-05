@@ -54,8 +54,9 @@ func NewAllocator(
 	resManager manager.ResourceManager,
 ) (*Allocator, error) {
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "component_vip_allocator",
-		Help: "Summary of VIP allocation duration",
+		Name:    "component_vip_allocator",
+		Help:    "Summary of VIP allocation duration",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

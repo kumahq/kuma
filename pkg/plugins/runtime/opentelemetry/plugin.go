@@ -19,6 +19,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/v3/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/v3/pkg/core/runtime"
 	"github.com/kumahq/kuma/v3/pkg/core/runtime/component"
+	otel_extensions "github.com/kumahq/kuma/v3/pkg/plugins/extensions/otel"
 )
 
 func init() {
@@ -34,13 +35,14 @@ type plugin struct{}
 var _ core_plugins.RuntimePlugin = &plugin{}
 
 type tracer struct {
-	config tracing.OpenTelemetry
+	config    tracing.OpenTelemetry
+	factories []otel_extensions.SpanProcessorFactory
 }
 
 var _ component.Component = &tracer{}
 
 func (t *tracer) Start(stop <-chan struct{}) error {
-	shutdown, err := initOtel(context.Background(), log, t.config)
+	shutdown, err := initOtel(context.Background(), log, t.config, t.factories)
 	if err != nil {
 		return err
 	}
@@ -62,7 +64,8 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	otelTracing := rt.Config().Tracing.OpenTelemetry
 	if otelTracing.Enabled || otelTracing.Endpoint != "" {
 		t := tracer{
-			config: otelTracing,
+			config:    otelTracing,
+			factories: otel_extensions.SpanProcessorFactoriesFromContext(rt.Extensions()),
 		}
 		if err := rt.Add(component.NewResilientComponent(core.Log.WithName("otel-tracer"), &t, rt.Config().General.ResilientComponentBaseBackoff.Duration, rt.Config().General.ResilientComponentMaxBackoff.Duration)); err != nil {
 			return err
@@ -83,7 +86,7 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	return nil
 }
 
-func initOtel(ctx context.Context, log logr.Logger, otelConfig tracing.OpenTelemetry) (func(context.Context) error, error) {
+func initOtel(ctx context.Context, log logr.Logger, otelConfig tracing.OpenTelemetry, factories []otel_extensions.SpanProcessorFactory) (func(context.Context) error, error) {
 	res, err := resource.New(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource: %w", err)
@@ -92,27 +95,52 @@ func initOtel(ctx context.Context, log logr.Logger, otelConfig tracing.OpenTelem
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
+	processors, err := newSpanProcessors(ctx, log, otelConfig, factories)
+	if err != nil {
+		return nil, err
+	}
+
+	opts := []trace.TracerProviderOption{
+		trace.WithSampler(trace.AlwaysSample()),
+		trace.WithResource(res),
+	}
+	for _, processor := range processors {
+		opts = append(opts, trace.WithSpanProcessor(processor))
+	}
+	tracerProvider := trace.NewTracerProvider(opts...)
+	otel.SetTracerProvider(tracerProvider)
+
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, datadog.Propagator{}))
+
+	return tracerProvider.Shutdown, nil
+}
+
+func newSpanProcessors(ctx context.Context, log logr.Logger, otelConfig tracing.OpenTelemetry, factories []otel_extensions.SpanProcessorFactory) ([]trace.SpanProcessor, error) {
 	var opts []otlptracegrpc.Option
 	if otelConfig.Endpoint != "" {
 		log.Info("DEPRECATED: KUMA_TRACING_OPENTELEMETRY_ENDPOINT is deprecated, use OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_EXPORTER_OTLP_INSECURE instead")
 		opts = append(opts, otlptracegrpc.WithEndpoint(otelConfig.Endpoint), otlptracegrpc.WithInsecure())
 	}
 
-	traceExporter, err := otlptracegrpc.New(ctx, opts...)
+	primary, err := otlptracegrpc.New(ctx, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create trace exporter: %w", err)
 	}
 
-	bsp := trace.NewBatchSpanProcessor(traceExporter)
+	processors := []trace.SpanProcessor{trace.NewBatchSpanProcessor(primary)}
+	for i, factory := range factories {
+		processor, err := factory(ctx)
+		if err != nil {
+			// Construction does no I/O, so a retry fails the same way; failing
+			// the component instead would take the primary exporter down.
+			log.Error(err, "skipping additional span processor", "index", i)
+			continue
+		}
+		processors = append(processors, processor)
+	}
+	if len(processors) > 1 {
+		log.Info("registered additional span processors", "count", len(processors)-1)
+	}
 
-	tracerProvider := trace.NewTracerProvider(
-		trace.WithSampler(trace.AlwaysSample()),
-		trace.WithResource(res),
-		trace.WithSpanProcessor(bsp),
-	)
-	otel.SetTracerProvider(tracerProvider)
-
-	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, datadog.Propagator{}))
-
-	return tracerProvider.Shutdown, nil
+	return processors, nil
 }

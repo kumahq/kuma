@@ -166,19 +166,6 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - grpcroutes
-      - httproutes
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - gateway.networking.k8s.io
-    resources:
       - grpcroutes/status
     verbs:
       - get
@@ -264,19 +251,6 @@ rules:
       - pods
     verbs:
       - delete
-  - apiGroups:
-      - gateway.networking.k8s.io
-    resources:
-      - grpcroutes
-      - httproutes
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
   - apiGroups:
       - gateway.networking.k8s.io
     resources:

@@ -24,6 +24,7 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/v3/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/inspect"
 	"github.com/kumahq/kuma/v3/pkg/plugins/policies/core/matchers"
@@ -99,6 +100,11 @@ func matchingDataplanesForFilter(
 		return nil, withTitle(err, "Could not retrieve policy")
 	}
 	nameContains := request.QueryParameter("name")
+	var nameVerr validators.ValidationError
+	addNameCharsetViolation(&nameVerr, "name", nameContains)
+	if nameVerr.HasViolations() {
+		return nil, withTitle(nameVerr.OrNil(), "Could not retrieve policy")
+	}
 	meshName := request.PathParameter("mesh")
 
 	if err := resourceAccess.ValidateGet(

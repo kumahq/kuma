@@ -47,7 +47,7 @@ func (d *userTokenWebService) handleIdentityRequest(request *restful.Request, re
 
 	idReq := ws.UserTokenRequest{}
 	if err := request.ReadEntity(&idReq); err != nil {
-		log.Error(err, "Could not read a request")
+		log.Info("Could not read a request", "reason", err.Error())
 		response.WriteHeader(http.StatusBadRequest)
 		return
 	}

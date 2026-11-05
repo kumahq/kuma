@@ -62,9 +62,14 @@ func (a *envoyAdminClient) buildHTTPClient(ctx context.Context) (*http.Client, e
 				Certificates: []tls.Certificate{clientCert},
 			},
 		},
-		Timeout: 5 * time.Second,
+		Timeout:       5 * time.Second,
+		CheckRedirect: noRedirects,
 	}
 	return c, err
+}
+
+func noRedirects(*http.Request, []*http.Request) error {
+	return http.ErrUseLastResponse
 }
 
 func (a *envoyAdminClient) mtlsCerts(ctx context.Context) (x509.CertPool, tls.Certificate, error) {
@@ -185,7 +190,8 @@ func (a *envoyAdminClient) executeRequest(ctx context.Context, proxy core_model.
 
 	if host, _, err := net.SplitHostPort(proxy.AdminAddress(a.defaultAdminPort)); err == nil && host == "127.0.0.1" {
 		httpClient = &http.Client{
-			Timeout: 5 * time.Second,
+			Timeout:       5 * time.Second,
+			CheckRedirect: noRedirects,
 		}
 		u.Scheme = "http"
 	}

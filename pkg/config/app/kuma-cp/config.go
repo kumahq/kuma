@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/v3/pkg/config/core/resources/apis"
 	"github.com/kumahq/kuma/v3/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/config/diagnostics"
-	dns_server "github.com/kumahq/kuma/v3/pkg/config/dns-server"
 	dp_server "github.com/kumahq/kuma/v3/pkg/config/dp-server"
 	"github.com/kumahq/kuma/v3/pkg/config/eventbus"
 	"github.com/kumahq/kuma/v3/pkg/config/intercp"
@@ -166,8 +165,6 @@ type Config struct {
 	Reports *Reports `json:"reports,omitempty"`
 	// Multizone Config
 	Multizone *multizone.MultizoneConfig `json:"multizone,omitempty"`
-	// DNS Server Config
-	DNSServer *dns_server.Config `json:"dnsServer,omitempty"`
 	// Diagnostics configuration
 	Diagnostics *diagnostics.DiagnosticsConfig `json:"diagnostics,omitempty"`
 	// Dataplane Server configuration
@@ -206,7 +203,6 @@ func (c *Config) Sanitize() {
 	c.Runtime.Sanitize()
 	c.Metrics.Sanitize()
 	c.Defaults.Sanitize()
-	c.DNSServer.Sanitize()
 	c.Multizone.Sanitize()
 	c.Diagnostics.Sanitize()
 	c.Policies.Sanitize()
@@ -223,7 +219,6 @@ func (c *Config) PostProcess() error {
 		c.Runtime.PostProcess(),
 		c.Metrics.PostProcess(),
 		c.Defaults.PostProcess(),
-		c.DNSServer.PostProcess(),
 		c.Multizone.PostProcess(),
 		c.Diagnostics.PostProcess(),
 		c.Policies.PostProcess(),
@@ -274,7 +269,6 @@ var DefaultConfig = func() Config {
 			Enabled: false,
 		},
 		General:       DefaultGeneralConfig(),
-		DNSServer:     dns_server.DefaultDNSServerConfig(),
 		Multizone:     multizone.DefaultMultizoneConfig(),
 		Diagnostics:   diagnostics.DefaultDiagnosticsConfig(),
 		DpServer:      dp_server.DefaultDpServerConfig(),
@@ -365,9 +359,6 @@ func (c *Config) Validate() error {
 	}
 	if err := c.Defaults.Validate(); err != nil {
 		return errors.Wrap(err, "Defaults validation failed")
-	}
-	if err := c.DNSServer.Validate(); err != nil {
-		return errors.Wrap(err, "DNSServer validation failed")
 	}
 	if err := c.Diagnostics.Validate(); err != nil {
 		return errors.Wrap(err, "Diagnostics validation failed")

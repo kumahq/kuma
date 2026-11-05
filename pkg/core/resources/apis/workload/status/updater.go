@@ -41,8 +41,9 @@ func NewStatusUpdater(
 	metrics core_metrics.Metrics,
 ) (component.Component, error) {
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: "component_workload_status_updater",
-		Help: "Summary of Workload status updater component interval",
+		Name:    "component_workload_status_updater",
+		Help:    "Summary of Workload status updater component interval",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

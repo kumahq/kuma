@@ -28,13 +28,13 @@ Backport PRs are created by workflow_dispatch (there is **no** label-driven back
   gh workflow run backport.yaml --repo kumahq/kuma --ref master -f PR=<num> [-f branches="release-2.x,release-2.y"]
   ```
 
-  Empty `branches` targets all active branches. Then poll `gh run list --workflow=backport.yaml --repo kumahq/kuma --limit 1` until complete and re-run the PR search. Poll in background; the run takes a few minutes.
+  Leave `branches` empty: the workflow then reads `active-branches.json` from master and targets every active branch. If you must narrow it, take the list from `git show $UPSTREAM/master:active-branches.json`, never from the working tree, which may be a stale branch missing newer release branches. Then poll `gh run list --workflow=backport.yaml --repo kumahq/kuma --limit 1` until complete and re-run the PR search. Poll in background; the run takes a few minutes.
 
 Facts about what the action produces (this shapes all later steps):
 
 - Head branches: `chore/backport-<release-branch>-<PR>`, pushed to kumahq/kuma directly.
 - Committer and author are both `kumahq[bot]`. That bot-authored cherry-pick commonly trips **DCO** because the bot's `Signed-off-by` is not a human attestation, and it happens even on conflict-free backports, so check DCO on every PR, not just conflicted ones.
-- Labels: the target branch, plus the original PR's labels except `backport`, `ci/auto-merge` and `ci/force-publish`.
+- Labels: the target branch, plus the original PR's labels except `backport` and `ci/force-publish`.
 - On conflict the action runs `git add . && git cherry-pick --continue` **blindly**: conflict markers get committed into files, and files new on master land with master's import paths. The PR is opened as draft with a `conflict` label and the `git status` dump in the body.
 
 ## 3. Resolve conflicts per branch

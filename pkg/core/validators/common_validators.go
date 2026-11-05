@@ -267,6 +267,18 @@ func ValidateNil[T any](path PathBuilder, t *T, msg string) ValidationError {
 	return err
 }
 
+// ValidateEnumDefined reports a violation when value is not a member of the
+// enum described by nameMap, the generated <Enum>_name map. Protobuf encodes
+// enum fields as int32, so jsonpb accepts out-of-range ordinals that the
+// generated Go type cannot express; this is their only membership gate.
+func ValidateEnumDefined[T ~int32](path PathBuilder, value T, nameMap map[int32]string) ValidationError {
+	var err ValidationError
+	if _, defined := nameMap[int32(value)]; !defined {
+		err.AddViolationAt(path, fmt.Sprintf("has an unknown value %d", int32(value)))
+	}
+	return err
+}
+
 func ValidatePort(path PathBuilder, value uint32) ValidationError {
 	var err ValidationError
 	if value == 0 || value > math.MaxUint16 {

@@ -15,6 +15,7 @@ import (
 	runtime_k8s "github.com/kumahq/kuma/v3/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/probes"
+	k8s_util "github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/v3/pkg/util/pointer"
 )
 
@@ -139,7 +140,7 @@ func (i *DataplaneProxyFactory) NewContainer(
 
 	container := kube_core.Container{
 		Image:           i.ContainerConfig.Image,
-		ImagePullPolicy: kube_core.PullIfNotPresent,
+		ImagePullPolicy: k8s_util.PullPolicy(i.ContainerConfig.ImagePullPolicy),
 		Args:            args,
 		Env:             env,
 		SecurityContext: &kube_core.SecurityContext{

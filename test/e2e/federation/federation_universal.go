@@ -118,7 +118,7 @@ spec:
 		It("should sync data plane proxies to global cp", func() {
 			Eventually(func(g Gomega) {
 				// we use API on localhost, because the auth data has changed on the global, so we would need to reconfigure kumactl
-				out, _, err := global.GetKuma().Exec("curl", "--fail", "--show-error", "http://localhost:5681/dataplanes")
+				out, _, err := global.GetKuma().Exec("curl", "--fail", "--show-error", "http://localhost:5681/meshes/default/dataplanes")
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(out).Should(ContainSubstring("demo-client"))
 			}, "30s", "1s").Should(Succeed())
@@ -126,7 +126,7 @@ spec:
 
 		It("should sync policies to global cp", func() {
 			Eventually(func(g Gomega) {
-				out, _, err := global.GetKuma().Exec("curl", "--fail", "--show-error", "http://localhost:5681/meshcircuitbreakers")
+				out, _, err := global.GetKuma().Exec("curl", "--fail", "--show-error", "http://localhost:5681/meshes/default/meshcircuitbreakers")
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(out).Should(ContainSubstring("mcb-federation"))
 			}, "30s", "1s").Should(Succeed())

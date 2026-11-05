@@ -1,7 +1,6 @@
 package samples
 
 import (
-	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
@@ -32,10 +31,4 @@ func DataplaneWebBuilder() *builders.DataplaneBuilder {
 
 func DataplaneWeb() *mesh.DataplaneResource {
 	return DataplaneWebBuilder().Build()
-}
-
-func IgnoredDataplaneBackendBuilder() *builders.DataplaneBuilder {
-	return DataplaneBackendBuilder().With(func(resource *mesh.DataplaneResource) {
-		resource.Spec.Networking.Inbound[0].State = mesh_proto.Dataplane_Networking_Inbound_Ignored
-	})
 }

@@ -44,8 +44,9 @@ func NewCollector(
 	resourcesToCleanup map[InsightType]ResourceType,
 ) (component.Component, error) {
 	metric := prometheus.NewHistogram(prometheus.HistogramOpts{
-		Name: fmt.Sprintf("component_%s_gc", metricsName),
-		Help: "Summary of Dataplane GC component interval",
+		Name:    fmt.Sprintf("component_%s_gc", metricsName),
+		Help:    "Summary of Dataplane GC component interval",
+		Buckets: core_metrics.MillisecondBuckets,
 	})
 	if err := metrics.Register(metric); err != nil {
 		return nil, err

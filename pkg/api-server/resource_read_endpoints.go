@@ -122,6 +122,11 @@ func (r *resourceCrudHandler) listResources(withInsight bool) handlerFunc {
 			return nil, withTitle(err, "Could not retrieve resources")
 		}
 		nameContains := request.QueryParameter("name")
+		var nameVerr validators.ValidationError
+		addNameCharsetViolation(&nameVerr, "name", nameContains)
+		if nameVerr.HasViolations() {
+			return nil, withTitle(nameVerr.OrNil(), "Could not retrieve resources")
+		}
 		status, err := filters.Status(request)
 		if err != nil {
 			return nil, withTitle(err, "Could not retrieve resources")

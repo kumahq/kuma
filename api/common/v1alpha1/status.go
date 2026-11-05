@@ -11,11 +11,12 @@ const (
 )
 
 const (
-	GeneratedReason              string = "Generated"
-	TemplateErrorReason          string = "TemplateError"
-	CollisionReason              string = "Collision"
-	AllBackendRefsResolvedReason string = "AllBackendRefsResolved"
-	UnresolvedBackendRefsReason  string = "UnresolvedBackendRefs"
+	GeneratedReason               string = "Generated"
+	TemplateErrorReason           string = "TemplateError"
+	CollisionReason               string = "Collision"
+	AllBackendRefsResolvedReason  string = "AllBackendRefsResolved"
+	UnresolvedBackendRefsReason   string = "UnresolvedBackendRefs"
+	NoBackendRefsConfiguredReason string = "NoBackendRefsConfigured"
 )
 
 type Condition struct {

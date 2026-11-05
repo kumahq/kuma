@@ -72,15 +72,15 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(req admission.Request, r c
 }
 
 func (c *ResourceAdmissionChecker) isNamespaceAllowed(r core_model.Resource, ns string) admission.Response {
+	if ns == c.SystemNamespace || !r.Descriptor().RequiresSystemNamespace(c.ControlPlane.Mode == core.Global) {
+		return admission.Allowed("")
+	}
+
 	switch c.ControlPlane.Mode {
 	case core.Global:
-		if ns != c.SystemNamespace {
-			return admission.Denied(fmt.Sprintf("on Global CP the resource must be in the system namespace:%s", c.SystemNamespace))
-		}
+		return admission.Denied(fmt.Sprintf("on Global CP the resource must be in the system namespace:%s", c.SystemNamespace))
 	case core.Zone:
-		if r.Descriptor().AllowedOnSystemNamespaceOnly && ns != c.SystemNamespace {
-			return admission.Denied(fmt.Sprintf("resource type %v must be in the system namespace:%s", r.Descriptor().Name, c.SystemNamespace))
-		}
+		return admission.Denied(fmt.Sprintf("resource type %v must be in the system namespace:%s", r.Descriptor().Name, c.SystemNamespace))
 	}
 	return admission.Allowed("")
 }
