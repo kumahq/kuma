@@ -33,7 +33,7 @@ node = "26"
 "go:sigs.k8s.io/controller-tools/cmd/controller-gen" = "v0.23.0"
 "aqua:kubernetes-sigs/controller-runtime/setup-envtest" = "0.25.2"
 "ubi:grafana/dashboard-linter" = "v0.4.0"
-# === tools excluded from GitHub Actions installs ===
+# === tools excluded from most GitHub Actions installs ===
 # ⚠️ If you change any tool name below, update `MISE_DISABLE_TOOLS` in:
 #     .github/actions/run-e2e/action.yml
 #     .github/workflows/_build_publish.yaml

@@ -96,3 +96,7 @@ A repository that mirrors this one gets a `push` event for every branch and tag 
 The guard sits on the first job of each `push`-triggered workflow, so the jobs that need it are skipped with it. In `build-test-distribute.yaml` that job is `release_sha_gate`, and `distributions`, which runs `always()`, checks for it explicitly. A new `push`-triggered workflow needs the same `if:`.
 
 `build-test-distribute.yaml` also runs on pull requests into `security/**` branches. Such a mirror stages unreleased fixes on `security/<branch>` and needs CI on the pull requests that land there. Nothing here creates those branches, so this changes nothing in this repository.
+
+# Reverting golt
+
+To restore upstream golangci-lint, remove the `golangci-lint` tool alias in `mise.toml` and pin an upstream release there. In `build-test-distribute.yaml`, restore the action's `version` input, remove `install-mode: none` and the golt cache steps, and let the action manage its cache. Remove the golt Renovate rule and the parity workflow.
