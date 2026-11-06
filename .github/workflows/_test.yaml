@@ -19,7 +19,7 @@ env:
   K8S_MAX_VERSION: v1.37.0-k3s1
 jobs:
   test_unit:
-    timeout-minutes: 30
+    timeout-minutes: ${{ fromJSON(vars.KUMA_CI_UNIT_TEST_TIMEOUT || '30') }}
     if: ${{ !(contains(github.event.pull_request.labels.*.name, 'ci/skip-test') || inputs.IS_RELEASE_TAG) }}
     runs-on: >-
       ${{ (github.event_name == 'pull_request'
