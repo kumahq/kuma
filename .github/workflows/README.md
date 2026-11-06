@@ -96,3 +96,7 @@ A repository that mirrors this one gets a `push` event for every branch and tag 
 The guard sits on the first job of each `push`-triggered workflow, so the jobs that need it are skipped with it. In `build-test-distribute.yaml` that job is `release_sha_gate`, and `distributions`, which runs `always()`, checks for it explicitly. A new `push`-triggered workflow needs the same `if:`.
 
 `build-test-distribute.yaml` also runs on pull requests into `security/**` branches. Such a mirror stages unreleased fixes on `security/<branch>` and needs CI on the pull requests that land there. Nothing here creates those branches, so this changes nothing in this repository.
+
+# Unit test timeout
+
+Set the repository variable `KUMA_CI_UNIT_TEST_TIMEOUT` to change the `test_unit` job's timeout in minutes, for a repository whose runners are slower or start from a cold build cache. Unset, it stays at 30.
