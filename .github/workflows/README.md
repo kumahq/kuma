@@ -99,4 +99,4 @@ The guard sits on the first job of each `push`-triggered workflow, so the jobs t
 
 # Reverting golt
 
-To restore upstream golangci-lint, remove the `golangci-lint` tool alias in `mise.toml` and pin an upstream release there. In `build-test-distribute.yaml`, restore the action's `version` input, remove `install-mode: none` and the golt cache steps, and let the action manage its cache. Remove the golt Renovate rule and the parity workflow.
+To restore upstream golangci-lint, remove the `golangci-lint` tool alias in `mise.toml` and pin an upstream release there. In `build-test-distribute.yaml`, restore the action's `version` input and remove `install-mode: none`, `skip-cache: true`, the golt cache steps, and the mise step's `MISE_DISABLE_TOOLS` override. Remove the golt Renovate rule and the parity workflow.
