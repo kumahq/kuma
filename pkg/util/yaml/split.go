@@ -12,22 +12,21 @@ import (
 
 var (
 	sep     = regexp.MustCompile("(?:^|\\s*\n)---\\s*")
-	comment = regexp.MustCompile("^#.*$")
+	comment = regexp.MustCompile(`(?m)^\s*#.*$`)
 )
 
-// SplitYAML takes YAMLs separated by `---` line and splits it into multiple YAMLs. Empty entries are ignored
+// SplitYAML takes YAMLs separated by `---` line and splits it into multiple YAMLs. Empty entries and entries
+// that contain only comments are ignored
 func SplitYAML(yamls string) []string {
 	var result []string
 	// Making sure that any extra whitespace in YAML stream doesn't interfere in splitting documents correctly.
 	trimYAMLs := strings.TrimSpace(yamls)
 	docs := sep.Split(trimYAMLs, -1)
 	for _, doc := range docs {
-		doc = comment.ReplaceAllString(doc, "")
-		if doc == "" {
+		if strings.TrimSpace(comment.ReplaceAllString(doc, "")) == "" {
 			continue
 		}
-		doc = strings.TrimSpace(doc)
-		result = append(result, doc)
+		result = append(result, strings.TrimSpace(doc))
 	}
 	return result
 }
