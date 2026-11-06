@@ -188,6 +188,22 @@
   "packageRules": [
     {
       "description": [
+        "Track golt releases instead of upstream golangci-lint and require review."
+      ],
+      "matchManagers": [
+        "mise"
+      ],
+      "matchDepNames": [
+        "golangci-lint"
+      ],
+      "overrideDatasource": "github-tags",
+      "overridePackageName": "smykla-skalski/golt",
+      "extractVersion": "^v(?<version>\\d+\\.\\d+\\.\\d+-golt\\.\\d+)$",
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-golt\\.(?<build>\\d+)$",
+      "automerge": false
+    },
+    {
+      "description": [
         " For PRs targeting branches other than 'main' or 'master', add a label with",
         " the base branch name (e.g. 'release-2.8') so reviewers can quickly identify",
         " which release branch the PR targets"

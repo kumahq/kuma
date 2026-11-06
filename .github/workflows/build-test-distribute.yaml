@@ -12,8 +12,6 @@ env:
   KUMA_DIR: "."
   # Parent of the checkout, to keep CI tools out of the SBOM.
   CI_TOOLS_DIR: ${{ github.workspace }}/../.ci_tools
-  # renovate: datasource=github-tags depName=golangci-lint packageName=golangci/golangci-lint versioning=semver
-  GOLANGCI_LINT_VERSION: "v2.15.0"
   MISE_DISABLE_TOOLS: "golangci-lint,skaffold"
 concurrency:
   group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.event_name == 'push' && github.sha || github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.ref_name) }}
@@ -257,6 +255,9 @@ jobs:
               - '**/*.proto'
               - 'go.mod'
               - 'go.sum'
+              - '.golangci.yml'
+              - 'mise.toml'
+              - '.github/workflows/build-test-distribute.yaml'
               - 'pkg/**'
               - 'api/**'
               - 'tools/**'
@@ -310,6 +311,7 @@ jobs:
           version: 2026.10.17
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          MISE_DISABLE_TOOLS: "skaffold"
       # A cold lint can peak just above RAM on small runners. Swap absorbs that
       # overshoot instead of the kernel OOM-killing golangci-lint.
       - name: Set Swap Space
@@ -317,14 +319,33 @@ jobs:
         uses: pierotofy/set-swap-space@fc79b3f67fa8a838184ce84a674ca12238d2c761 # master
         with:
           swap-size-gb: 10
+      - name: Resolve golt version
+        if: ${{ steps.changes.outputs.code == 'true' && github.ref_type != 'tag' }}
+        id: golt-version
+        run: python3 -c 'import os, tomllib; f = open(os.environ["GITHUB_OUTPUT"], "a"); print("version=" + tomllib.load(open("mise.toml", "rb"))["tools"]["golangci-lint"], file=f)'
+      - name: Restore golt lint cache
+        if: ${{ steps.changes.outputs.code == 'true' && github.ref_type != 'tag' }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/golangci-lint
+          key: golt-lint-${{ runner.os }}-${{ steps.golt-version.outputs.version }}-${{ github.sha }}
+          restore-keys: |
+            golt-lint-${{ runner.os }}-${{ steps.golt-version.outputs.version }}-
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         if: ${{ steps.changes.outputs.code == 'true' && github.ref_type != 'tag' }}
         env:
           GOGC: "80" # run GC more aggressively
         with:
           args: --fix=false --verbose
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          install-mode: none
+          skip-cache: true
           only-new-issues: false
+      - name: Save golt lint cache
+        if: ${{ steps.changes.outputs.code == 'true' && github.ref_type != 'tag' && github.event_name == 'push' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/golangci-lint
+          key: golt-lint-${{ runner.os }}-${{ steps.golt-version.outputs.version }}-${{ github.sha }}
 
       # Lint and "make check" are redundant on a tag: release_sha_gate already
       # requires a green branch push run for this exact tree/SHA. We
