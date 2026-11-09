@@ -36,7 +36,7 @@ jobs:
           ref: ${{ matrix.branch }}
       - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
         with:
-          version: 2026.10.17
+          version: 2026.10.21
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: "Install tools"
