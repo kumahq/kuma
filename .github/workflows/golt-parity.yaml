@@ -1,0 +1,93 @@
+name: Golt diagnostic parity
+
+on:
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      MISE_DISABLE_TOOLS: skaffold
+      GOGC: '80'
+      GOMEMLIMIT: 7GiB
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
+        with:
+          version: 2026.10.17
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Restore Go build cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/go-build
+          key: go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}-
+            go-build-${{ runner.os }}-
+      - name: Set Swap Space
+        uses: pierotofy/set-swap-space@fc79b3f67fa8a838184ce84a674ca12238d2c761 # master
+        with:
+          swap-size-gb: 10
+      - name: Install matching upstream golangci-lint
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("mise.toml", "rb"))["tools"]["golangci-lint"].split("-golt.")[0])')
+          mise install "github:golangci/golangci-lint@${version}"
+          echo "UPSTREAM_LINT=$(mise where "github:golangci/golangci-lint@${version}")/golangci-lint" >> "$GITHUB_ENV"
+      - name: Compare diagnostics
+        run: |
+          compare() {
+            local name=$1 golt_cache=$2 upstream_cache=$3 report=$4
+            local golt_status=0 upstream_status=0
+            GOLANGCI_LINT_CACHE="$golt_cache" golangci-lint run --fix=false --timeout=10m --max-issues-per-linter=0 --max-same-issues=0 --uniq-by-line=false --output.json.path="$RUNNER_TEMP/${name}-golt.json" || golt_status=$?
+            GOLANGCI_LINT_CACHE="$upstream_cache" "$UPSTREAM_LINT" run --fix=false --timeout=10m --max-issues-per-linter=0 --max-same-issues=0 --uniq-by-line=false --output.json.path="$RUNNER_TEMP/${name}-upstream.json" || upstream_status=$?
+            if [ "$golt_status" -gt 1 ] || [ "$upstream_status" -gt 1 ]; then
+              echo "Linter failed: golt=$golt_status upstream=$upstream_status"
+              return 1
+            fi
+            for binary in golt upstream; do
+              jq -S --argjson report "$report" 'if type != "object" or (has("Issues") | not) or (has("Report") | not) then error("invalid linter output") else {Issues: (.Issues // [] | sort_by(tojson))} + (if $report then {Warnings: (.Report.Warnings // [] | sort_by(tojson)), Error: (.Report.Error // "")} else {} end) end' "$RUNNER_TEMP/${name}-${binary}.json" > "$RUNNER_TEMP/${name}-${binary}-normalized.json"
+            done
+            diff -u "$RUNNER_TEMP/${name}-upstream-normalized.json" "$RUNNER_TEMP/${name}-golt-normalized.json"
+            test "$golt_status" -eq "$upstream_status"
+          }
+          compare configured "$RUNNER_TEMP/golt-cache" "$RUNNER_TEMP/upstream-cache" true
+          yq -i 'del(.linters.exclusions)' .golangci.yml
+          compare unfiltered "$RUNNER_TEMP/golt-cache" "$RUNNER_TEMP/upstream-cache" false
+          printf '\n// parity cache edit\n' >> app/kumactl/main.go
+          compare edited "$RUNNER_TEMP/golt-cache" "$RUNNER_TEMP/upstream-cold-cache" false
+      - name: Upload comparison output
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: golt-parity-output
+          path: ${{ runner.temp }}/*.json
+          if-no-files-found: ignore
+  alert:
+    needs: compare
+    if: ${{ failure() && github.event_name == 'schedule' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      issues: write
+    steps:
+      - name: Open issue for parity failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title='Golt diagnostic parity check failed'
+          existing=$(gh issue list --state open --search "in:title \"$title\"" --json title --jq '[.[] | select(.title == "Golt diagnostic parity check failed")] | length')
+          if [ "$existing" -eq 0 ]; then
+            gh issue create --title "$title" --body "The daily golt parity check failed: $RUN_URL"
+          fi
