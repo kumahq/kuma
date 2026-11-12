@@ -20,7 +20,7 @@ const (
 	DefaultPostgresDBName   = "kuma"
 	DefaultPreloadImages    = true
 
-	PostgresImage = "postgres:latest@sha256:3a4264520e121176619f54ff867d12774bc81e95e7b84db58d63bccdb6144b81"
+	PostgresImage = "postgres:latest@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42"
 
 	PostgresEnvVarUser     = "POSTGRES_USER"
 	PostgresEnvVarPassword = "POSTGRES_PASSWORD" // #nosec G101 -- Env var not actual password

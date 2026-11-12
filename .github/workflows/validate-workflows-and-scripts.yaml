@@ -101,7 +101,7 @@ jobs:
           fi
           echo "Runner variables use RUNNERS_${expected}_<ARCH>"
 
-      - uses: reviewdog/action-actionlint@619a81ec64ff8c0211cd6146eb2b21e8f1d7f440 # v1.81.1
+      - uses: reviewdog/action-actionlint@a7d35aaf8c309203a4ae861d32b7bd490baa7bf3 # v1.83.0
         if: >-
           github.event_name == 'workflow_dispatch' ||
           steps.changes.outputs.workflows == 'true'
@@ -142,7 +142,7 @@ jobs:
             scripts:
               - '**/*.sh'
 
-      - uses: reviewdog/action-shellcheck@d0b8d5fd7fad6afdb6e1b6ce1778892be4d1f427 # v1.34.1
+      - uses: reviewdog/action-shellcheck@b4ffc0b2a69f857f82b74d1310cd3e62e932f9f7 # v1.35.0
         if: >-
           github.event_name == 'workflow_dispatch' ||
           steps.changes.outputs.scripts == 'true'
