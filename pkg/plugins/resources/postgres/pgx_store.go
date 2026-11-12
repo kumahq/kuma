@@ -421,6 +421,9 @@ func (r *pgxResourceStore) List(ctx context.Context, resources core_model.Resour
 		}
 		total++
 	}
+	if err := rows.Err(); err != nil {
+		return errors.Wrapf(err, "failed to read rows of query: %s", statement.String())
+	}
 
 	resources.GetPagination().SetTotal(uint32(total))
 	return nil
