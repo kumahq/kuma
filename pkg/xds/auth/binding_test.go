@@ -11,9 +11,12 @@ import (
 
 var _ = Describe("Binding", func() {
 	labels := map[string]string{
-		metadata.KumaWorkload: "backend",
-		"app":                 "backend",
-		mesh_proto.ZoneTag:    "zone-1",
+		metadata.KumaWorkload:               "backend",
+		"app":                               "backend",
+		mesh_proto.ZoneTag:                  "zone-1",
+		metadata.KumaMeshLabel:              "default",
+		mesh_proto.DisplayName:              "backend-1",
+		mesh_proto.ListenerZoneIngressLabel: "enabled",
 	}
 
 	DescribeTable("ValidateIdentityLabels",
@@ -38,8 +41,14 @@ var _ = Describe("Binding", func() {
 			auth.Binding{Labels: mesh_proto.MultiValueTagSet{"app": {"backend": true}}}, []string{"app"}, ""),
 		Entry("other label not proven",
 			auth.Binding{Labels: mesh_proto.MultiValueTagSet{metadata.KumaWorkload: {"backend": true}}}, []string{"app", metadata.KumaWorkload}, `"app" label "backend", which the token does not bind, so it requires a token with that tag`),
-		Entry("label the control plane sets",
-			auth.Binding{}, []string{mesh_proto.ZoneTag}, ""),
+		Entry("label the control plane chooses",
+			auth.Binding{}, []string{mesh_proto.ZoneTag, metadata.KumaMeshLabel}, ""),
+		Entry("control-plane-owned label computed from the proxy's name",
+			auth.Binding{}, []string{mesh_proto.DisplayName}, "requires a name-bound token"),
+		Entry("control-plane-owned label computed from the proxy's listeners",
+			auth.Binding{}, []string{mesh_proto.ListenerZoneIngressLabel}, "requires a token with that tag"),
+		Entry("display name proven",
+			auth.Binding{Labels: mesh_proto.MultiValueTagSet{mesh_proto.DisplayName: {"backend-1": true}}}, []string{mesh_proto.DisplayName}, ""),
 		Entry("label the dataplane doesn't declare",
 			auth.Binding{}, []string{"missing"}, ""),
 		Entry("namespace scope trusts labels it doesn't prove",

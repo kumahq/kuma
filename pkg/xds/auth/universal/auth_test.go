@@ -374,6 +374,31 @@ var _ = Describe("Authentication flow", func() {
 			}))).To(Succeed())
 		})
 
+		It("should require a name-bound token when the path reads the display name", func() {
+			// given a path built from the display name, which on Universal is the dataplane name
+			createIdentity("/dp/{{ label \"kuma.io/display-name\" }}")
+			dp := *samples.DataplaneWebBuilder().Build()
+			dpLabels := map[string]string{"team": "web", mesh_proto.DisplayName: "dp-named"}
+			Expect(resStore.Create(ctx, &dp, core_store.CreateByKey("dp-named", "default"), core_store.CreateWithLabels(dpLabels))).To(Succeed())
+
+			// when the token doesn't bind the name
+			err := authenticate(&dp, tagsOnlyToken())
+
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("requires a name-bound token"))
+
+			// when the token binds the name
+			binding, err := authenticator.Authenticate(ctx, &dp, generate(builtin_issuer.DataplaneIdentity{
+				Mesh: "default",
+				Name: "dp-named",
+			}))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(binding.Labels).To(Equal(mesh_proto.MultiValueTagSet{mesh_proto.DisplayName: {"dp-named": true}}))
+		})
+
 		It("should accept a tags-only token with a workload label when no MeshIdentity matches", func() {
 			Expect(authenticate(&dpResWithWorkload, tagsOnlyToken())).To(Succeed())
 		})

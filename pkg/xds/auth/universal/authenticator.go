@@ -80,21 +80,25 @@ func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *c
 	if err := validateWorkload(dpIdentity.Workload, dataplane); err != nil {
 		return auth.Binding{}, err
 	}
-	binding := auth.Binding{Labels: provenLabels(dpIdentity.Tags, dpIdentity.Workload)}
+	binding := auth.Binding{Labels: provenLabels(dpIdentity.Tags, dpIdentity.Workload, dpIdentity.Name)}
 	if err := u.validateIdentityLabels(ctx, binding, dataplane); err != nil {
 		return auth.Binding{}, err
 	}
 	return binding, nil
 }
 
-// provenLabels merges the token's workload claim into its tags. When both
-// constrain kuma.io/workload, only values both allow are proven.
-func provenLabels(tags mesh_proto.MultiValueTagSet, workload string) mesh_proto.MultiValueTagSet {
+// provenLabels merges the token's workload and name claims into its tags. When
+// a claim and a tag constrain the same label, only values both allow are proven.
+// On Universal kuma.io/display-name is the dataplane name, so the name claim proves it.
+func provenLabels(tags mesh_proto.MultiValueTagSet, workload, name string) mesh_proto.MultiValueTagSet {
 	proven := mesh_proto.MultiValueTagSet{}
 	maps.Copy(proven, tags)
-	if workload != "" {
-		tagged, ok := proven[metadata.KumaWorkload]
-		proven[metadata.KumaWorkload] = map[string]bool{workload: !ok || tagged[workload]}
+	for key, claim := range map[string]string{metadata.KumaWorkload: workload, mesh_proto.DisplayName: name} {
+		if claim == "" {
+			continue
+		}
+		tagged, ok := proven[key]
+		proven[key] = map[string]bool{claim: !ok || tagged[claim]}
 	}
 	return proven
 }

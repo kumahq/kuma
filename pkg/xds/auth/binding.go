@@ -23,7 +23,7 @@ const (
 // Binding is what an authenticated credential vouches for about a proxy's
 // labels. A workload identity may only be built from vouched-for labels,
 // otherwise a proxy could claim another workload's identity by declaring its label.
-// Labels the control plane computes itself are always trusted.
+// Labels whose value the control plane chooses are always trusted.
 type Binding struct {
 	// Unauthenticated means authentication is disabled and nothing was verified.
 	Unauthenticated bool
@@ -32,9 +32,11 @@ type Binding struct {
 	Scope  Scope
 }
 
-var controlPlaneOwned = func() map[string]struct{} {
+// Other control-plane-owned labels, like kuma.io/display-name or the zone proxy
+// listener labels, are computed from what the proxy sends, so they need a binding.
+var setByControlPlaneState = func() map[string]struct{} {
 	keys := map[string]struct{}{}
-	for _, key := range labels.ControlPlaneOwned() {
+	for _, key := range labels.SetByControlPlaneState() {
 		keys[key] = struct{}{}
 	}
 	return keys
@@ -45,7 +47,7 @@ func (b Binding) trusts(key, value string) bool {
 	if b.Unauthenticated {
 		return true
 	}
-	if _, ok := controlPlaneOwned[key]; ok {
+	if _, ok := setByControlPlaneState[key]; ok {
 		return true
 	}
 	if allowed, ok := b.Labels[key]; ok {
@@ -64,8 +66,11 @@ func ValidateIdentityLabels(b Binding, dpLabels map[string]string, read []string
 		if !ok || b.trusts(key, value) {
 			continue
 		}
-		if key == metadata.KumaWorkload {
+		switch key {
+		case metadata.KumaWorkload:
 			return errors.Errorf("SPIFFE ID of the dataplane is built from its %q label %q, which the token does not bind, so it requires a workload-bound token", key, value)
+		case mesh_proto.DisplayName:
+			return errors.Errorf("SPIFFE ID of the dataplane is built from its %q label %q, which the token does not bind, so it requires a name-bound token", key, value)
 		}
 		return errors.Errorf("SPIFFE ID of the dataplane is built from its %q label %q, which the token does not bind, so it requires a token with that tag", key, value)
 	}
