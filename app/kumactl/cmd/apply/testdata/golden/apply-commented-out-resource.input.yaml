@@ -1,0 +1,12 @@
+# Meshes managed by the platform team.
+# Each document is applied in order.
+---
+type: Mesh
+name: mesh-1
+---
+# Disabled until the migration is done.
+# type: Mesh
+# name: mesh-2
+---
+type: Mesh
+name: mesh-3
