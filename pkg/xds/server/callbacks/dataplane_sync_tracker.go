@@ -7,15 +7,19 @@ import (
 	"github.com/kumahq/kuma/v2/pkg/core"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
+	xds_auth "github.com/kumahq/kuma/v2/pkg/xds/auth"
 	"github.com/kumahq/kuma/v2/pkg/xds/sync"
 )
 
 var dataplaneSyncTrackerLog = core.Log.WithName("xds").WithName("dataplane-sync-tracker")
 
-func NewDataplaneSyncTracker(appCtx context.Context, factoryFunc sync.DataplaneWatchdogFactory) DataplaneCallbacks {
+// NewDataplaneSyncTracker hands each watchdog the auth binding of its stream
+// from bindings, which may be nil when no stream is authenticated.
+func NewDataplaneSyncTracker(appCtx context.Context, factoryFunc sync.DataplaneWatchdogFactory, bindings xds_auth.BindingLookup) DataplaneCallbacks {
 	return &dataplaneSyncTracker{
 		appCtx:               appCtx,
 		newDataplaneWatchdog: factoryFunc,
+		bindings:             bindings,
 		watchdogs:            map[core_model.ResourceKey]*watchdogState{},
 	}
 }
@@ -32,6 +36,7 @@ var _ DataplaneCallbacks = &dataplaneSyncTracker{}
 type dataplaneSyncTracker struct {
 	appCtx               context.Context
 	newDataplaneWatchdog sync.DataplaneWatchdogFactory
+	bindings             xds_auth.BindingLookup
 
 	stdsync.RWMutex // protects access to the fields below
 	watchdogs       map[core_model.ResourceKey]*watchdogState
@@ -45,6 +50,12 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	// We use OnProxyConnected because there should be only one watchdog for given dataplane.
 	t.Lock()
 	defer t.Unlock()
+
+	if t.bindings != nil && streamCtx != nil {
+		if binding, ok := t.bindings.Binding(streamID, streamCtx); ok {
+			streamCtx = xds_auth.ContextWithBinding(streamCtx, binding)
+		}
+	}
 
 	ctx, cancel := context.WithCancel(t.appCtx)
 	state := &watchdogState{

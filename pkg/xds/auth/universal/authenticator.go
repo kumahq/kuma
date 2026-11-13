@@ -2,6 +2,7 @@ package universal
 
 import (
 	"context"
+	"maps"
 
 	"github.com/pkg/errors"
 
@@ -43,6 +44,9 @@ func NewAuthenticator(
 // If you generate token bound to tags all tags values have to match the dataplane, so for example if you have a Dataplane
 // with inbounds: 1) kuma.io/service:web 2) kuma.io/service:web-api, you need token for both values kuma.io/service=web,web-api
 // Dataplane also needs to have all tags defined in the token
+//
+// A Dataplane selected by a MeshIdentity additionally needs every label its SPIFFE ID
+// is rendered from to be bound by the token, via the workload or a tag.
 type universalAuthenticator struct {
 	dataplaneValidator builtin_issuer.Validator
 	zoneValidator      zone.Validator
@@ -53,7 +57,7 @@ type universalAuthenticator struct {
 
 var _ auth.Authenticator = &universalAuthenticator{}
 
-func (u *universalAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) error {
+func (u *universalAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) (auth.Binding, error) {
 	switch resource := resource.(type) {
 	case *core_mesh.DataplaneResource:
 		return u.authDataplane(ctx, resource, credential)
@@ -62,61 +66,80 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, resource mode
 	case *core_mesh.ZoneEgressResource:
 		return u.authZoneEntity(ctx, credential, zone.EgressScope)
 	default:
-		return errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		return auth.Binding{}, errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
 }
 
-func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
+func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) (auth.Binding, error) {
 	dpIdentity, err := u.dataplaneValidator.Validate(ctx, credential, dataplane.Meta.GetMesh())
 	if err != nil {
-		return err
+		return auth.Binding{}, err
 	}
 
 	if dpIdentity.Name != "" && dataplane.Meta.GetName() != dpIdentity.Name {
-		return errors.Errorf("proxy name from requestor: %s is different than in token: %s", dataplane.Meta.GetName(), dpIdentity.Name)
+		return auth.Binding{}, errors.Errorf("proxy name from requestor: %s is different than in token: %s", dataplane.Meta.GetName(), dpIdentity.Name)
 	}
 	if dpIdentity.Mesh != "" && dataplane.Meta.GetMesh() != dpIdentity.Mesh {
-		return errors.Errorf("proxy mesh from requestor: %s is different than in token: %s", dataplane.Meta.GetMesh(), dpIdentity.Mesh)
+		return auth.Binding{}, errors.Errorf("proxy mesh from requestor: %s is different than in token: %s", dataplane.Meta.GetMesh(), dpIdentity.Mesh)
 	}
 	if err := validateTags(dpIdentity.Tags, dataplane.Spec.TagSet()); err != nil {
-		return err
+		return auth.Binding{}, err
 	}
-	if err := u.validateWorkload(ctx, dpIdentity.Workload, dataplane); err != nil {
-		return err
+	if err := validateWorkload(dpIdentity.Workload, dataplane); err != nil {
+		return auth.Binding{}, err
 	}
-	return nil
+	binding := auth.Binding{Labels: provenLabels(dpIdentity.Tags, dpIdentity.Workload, dpIdentity.Name, dataplane.Meta.GetMesh())}
+	if err := u.validateIdentityLabels(ctx, binding, dataplane); err != nil {
+		return auth.Binding{}, err
+	}
+	return binding, nil
 }
 
-// identityDerivesFromWorkloadLabel reports whether the dataplane's SPIFFE
-// identity is derived from its kuma.io/workload label. This is the case when a
-// MeshIdentity selects the dataplane and its SPIFFE ID path template references
-// the workload (the default in universal mode). When true, the workload label
-// becomes the proxy's mTLS identity, so the presented token must be bound to
-// that workload (see validateWorkload).
-func (u *universalAuthenticator) identityDerivesFromWorkloadLabel(ctx context.Context, dataplane *core_mesh.DataplaneResource) (bool, error) {
+// provenLabels merges the token's workload and name claims into its tags. When
+// a claim and a tag constrain the same label, only values both allow are proven.
+// On Universal kuma.io/display-name is the dataplane name, so the name claim proves it.
+// The token is validated with the key of mesh, so it proves kuma.io/mesh too.
+func provenLabels(tags mesh_proto.MultiValueTagSet, workload, name, mesh string) mesh_proto.MultiValueTagSet {
+	proven := mesh_proto.MultiValueTagSet{}
+	maps.Copy(proven, tags)
+	for key, claim := range map[string]string{metadata.KumaWorkload: workload, mesh_proto.DisplayName: name, metadata.KumaMeshLabel: mesh} {
+		if claim == "" {
+			continue
+		}
+		tagged, ok := proven[key]
+		proven[key] = map[string]bool{claim: !ok || tagged[claim]}
+	}
+	return proven
+}
+
+// validateIdentityLabels rejects at connect what identity issuance refuses
+// anyway, so the proxy fails loudly instead of running without an identity.
+func (u *universalAuthenticator) validateIdentityLabels(ctx context.Context, binding auth.Binding, dataplane *core_mesh.DataplaneResource) error {
 	meshIdentities := &meshidentity_api.MeshIdentityResourceList{}
 	if err := u.resManager.List(ctx, meshIdentities, store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
-		return false, errors.Wrap(err, "failed to list MeshIdentities")
+		return errors.Wrap(err, "failed to list MeshIdentities")
 	}
 	matched, found := meshidentity_api.BestMatched(dataplane.Meta.GetLabels(), meshIdentities.Items)
 	if !found {
-		return false, nil
+		return nil
 	}
-	return matched.Spec.UsesWorkloadLabel(u.env), nil
+	// A render error is left to issuance, which renders the same inputs and fails too.
+	_, read, _ := matched.RenderSpiffeID(dataplane.GetMeta(), u.zone, u.env)
+	return auth.ValidateIdentityLabels(binding, dataplane.Meta.GetLabels(), read)
 }
 
 func (u *universalAuthenticator) authZoneEntity(
 	ctx context.Context,
 	credential auth.Credential,
 	scope string,
-) error {
+) (auth.Binding, error) {
 	identity, err := u.zoneValidator.Validate(ctx, credential)
 	if err != nil {
-		return err
+		return auth.Binding{}, err
 	}
 
 	if !zone.InScope(identity.Scope, scope) {
-		return errors.Errorf(
+		return auth.Binding{}, errors.Errorf(
 			"token cannot be used to authenticate zone entity (%s is out of token's scope: %+v)",
 			scope,
 			identity.Scope,
@@ -124,10 +147,10 @@ func (u *universalAuthenticator) authZoneEntity(
 	}
 
 	if identity.Zone != "" && u.zone != identity.Zone {
-		return errors.Errorf("zone from requestor: %s is different than in token: %s", u.zone, identity.Zone)
+		return auth.Binding{}, errors.Errorf("zone from requestor: %s is different than in token: %s", u.zone, identity.Zone)
 	}
 
-	return nil
+	return auth.Binding{}, nil
 }
 
 func validateTags(tokenTags mesh_proto.MultiValueTagSet, dpTags mesh_proto.MultiValueTagSet) error {
@@ -145,27 +168,13 @@ func validateTags(tokenTags mesh_proto.MultiValueTagSet, dpTags mesh_proto.Multi
 	return nil
 }
 
-// validateWorkload checks the token's workload binding against the dataplane's
-// kuma.io/workload label. The MeshIdentity lookup runs lazily, only when it can
-// change the result: an unbound token on a dataplane that declares that label.
-func (u *universalAuthenticator) validateWorkload(ctx context.Context, tokenWorkload string, dataplane *core_mesh.DataplaneResource) error {
-	dpWorkload, exists := dataplane.Meta.GetLabels()[metadata.KumaWorkload]
+// validateWorkload checks a workload-bound token against the dataplane's
+// kuma.io/workload label.
+func validateWorkload(tokenWorkload string, dataplane *core_mesh.DataplaneResource) error {
 	if tokenWorkload == "" {
-		if !exists {
-			return nil
-		}
-		// If the identity is derived from that label, the label is the proxy's
-		// identity and an unbound token can't constrain it, so require a
-		// workload-bound token.
-		identityFromWorkloadLabel, err := u.identityDerivesFromWorkloadLabel(ctx, dataplane)
-		if err != nil {
-			return err
-		}
-		if identityFromWorkloadLabel {
-			return errors.Errorf("dataplane with %q label %q derives its identity from the workload, so it requires a workload-bound token", metadata.KumaWorkload, dpWorkload)
-		}
 		return nil
 	}
+	dpWorkload, exists := dataplane.Meta.GetLabels()[metadata.KumaWorkload]
 	if !exists {
 		return errors.Errorf("dataplane has no workload label required by the token")
 	}
