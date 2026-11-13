@@ -23,13 +23,13 @@ func NewPerProxyTypeAuthenticator(dpProxyAuthenticator Authenticator, zoneProxyA
 	}
 }
 
-func (p perProxyTypeAuthenticator) Authenticate(ctx context.Context, resource core_model.Resource, credential Credential) error {
+func (p perProxyTypeAuthenticator) Authenticate(ctx context.Context, resource core_model.Resource, credential Credential) (Binding, error) {
 	switch resource.Descriptor().Name {
 	case mesh.ZoneIngressType, mesh.ZoneEgressType:
 		return p.zoneProxyAuthenticator.Authenticate(ctx, resource, credential)
 	case mesh.DataplaneType:
 		return p.dpProxyAuthenticator.Authenticate(ctx, resource, credential)
 	default:
-		return errors.New("unknown proxy type")
+		return Binding{}, errors.New("unknown proxy type")
 	}
 }

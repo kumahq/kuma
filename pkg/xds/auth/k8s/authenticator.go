@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
+	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/model"
@@ -34,31 +35,25 @@ type kubeAuthenticator struct {
 
 var _ auth.Authenticator = &kubeAuthenticator{}
 
-func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) error {
-	var err error
+func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) (auth.Binding, error) {
 	switch resource := resource.(type) {
 	case *core_mesh.DataplaneResource, *core_mesh.ZoneIngressResource, *core_mesh.ZoneEgressResource:
-		err = k.authResource(ctx, resource, credential)
+		return k.authResource(ctx, resource, credential)
 	default:
-		err = errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
+		return auth.Binding{}, errors.Errorf("no matching authenticator for %s resource", resource.Descriptor().Name)
 	}
-
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
-func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Resource, credential auth.Credential) error {
+func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Resource, credential auth.Credential) (auth.Binding, error) {
 	resourceName := resource.GetMeta().GetName()
 	podName, podNamespace, err := util_k8s.CoreNameToK8sName(resourceName)
 	if err != nil {
-		return err
+		return auth.Binding{}, err
 	}
 
 	serviceAccountName, err := k.podServiceAccountName(ctx, podName, podNamespace)
 	if err != nil {
-		return err
+		return auth.Binding{}, err
 	}
 
 	serviceAccountAuthErr := errors.Errorf("invalid service account token")
@@ -67,7 +62,7 @@ func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Res
 	if sa, ok := resource.GetMeta().GetLabels()[metadata.KumaServiceAccount]; ok && sa != serviceAccountName {
 		log.Info("[WARNING] invalid service account token: service account label on the dataplane does not match pod service account",
 			"dataplaneServiceAccount", sa, "proxy", resourceName, "serviceAccountName", serviceAccountName)
-		return serviceAccountAuthErr
+		return auth.Binding{}, serviceAccountAuthErr
 	}
 
 	tokenReview := &kube_auth.TokenReview{
@@ -79,41 +74,48 @@ func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Res
 	if err := k.client.Create(ctx, tokenReview); err != nil {
 		log.Error(err, "could not call Kubernetes API Server to verify dataplane token",
 			"proxy", resourceName, "serviceAccountName", serviceAccountName)
-		return errors.New("could not call Kubernetes API Server to verify dataplane token")
+		return auth.Binding{}, errors.New("could not call Kubernetes API Server to verify dataplane token")
 	}
 	if !tokenReview.Status.Authenticated {
 		log.Info("[WARNING] fail to verify dataplane token", "error", tokenReview.Status.Error)
-		return errors.Errorf("dataplane token verification failed with an error")
+		return auth.Binding{}, errors.Errorf("dataplane token verification failed with an error")
 	}
 
 	userInfo := strings.Split(tokenReview.Status.User.Username, ":")
 	if len(userInfo) != 4 {
 		log.Info(fmt.Sprintf("[WARNING] invalid service account token: username inside TokenReview response has unexpected format: %q",
 			tokenReview.Status.User.Username), "proxy", resourceName, "serviceAccountName", serviceAccountName)
-		return serviceAccountAuthErr
+		return auth.Binding{}, serviceAccountAuthErr
 	}
 
 	if userInfo[0] != "system" || userInfo[1] != "serviceaccount" {
 		log.Info(fmt.Sprintf("[WARNING] invalid service account token: user %q is not a service account", tokenReview.Status.User.Username),
 			"proxy", resourceName, "serviceAccountName", serviceAccountName)
-		return serviceAccountAuthErr
+		return auth.Binding{}, serviceAccountAuthErr
 	}
 
 	tokenSANamespace := userInfo[2]
 	if tokenSANamespace != podNamespace {
 		log.Info(fmt.Sprintf("[WARNING] invalid service account token: token belongs to a namespace %q different from proxyId %q", tokenSANamespace, podNamespace),
 			"proxy", resourceName, "serviceAccountName", serviceAccountName)
-		return serviceAccountAuthErr
+		return auth.Binding{}, serviceAccountAuthErr
 	}
 
 	tokenSAName := userInfo[3]
 	if tokenSAName != serviceAccountName {
 		log.Info(fmt.Sprintf("[WARNING] invalid service account token: service account name in token %q does not match pod service account", tokenSAName),
 			"proxy", resourceName, "serviceAccountName", serviceAccountName)
-		return serviceAccountAuthErr
+		return auth.Binding{}, serviceAccountAuthErr
 	}
 
-	return nil
+	// Other Pod labels are chosen by whoever can write Pods in the namespace.
+	return auth.Binding{
+		Labels: mesh_proto.MultiValueTagSet{
+			mesh_proto.KubeNamespaceTag: {podNamespace: true},
+			metadata.KumaServiceAccount: {serviceAccountName: true},
+		},
+		Scope: auth.ScopeNamespace,
+	}, nil
 }
 
 func (k *kubeAuthenticator) podServiceAccountName(ctx context.Context, podName, podNamespace string) (string, error) {

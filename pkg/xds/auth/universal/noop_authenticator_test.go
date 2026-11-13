@@ -39,10 +39,11 @@ var _ = Describe("Noop Authenticator", func() {
 		}
 
 		// when
-		err := authenticator.Authenticate(context.Background(), &dpRes, "some-random-token")
+		binding, err := authenticator.Authenticate(context.Background(), &dpRes, "some-random-token")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
+		Expect(binding.Unauthenticated).To(BeTrue())
 	})
 
 	It("should allow with any token for any zone ingress", func() {
@@ -69,7 +70,7 @@ var _ = Describe("Noop Authenticator", func() {
 		}
 
 		// when
-		err := authenticator.Authenticate(context.Background(), &zoneIngress, "some-random-token")
+		_, err := authenticator.Authenticate(context.Background(), &zoneIngress, "some-random-token")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -88,7 +89,7 @@ var _ = Describe("Noop Authenticator", func() {
 		}
 
 		// when
-		err := authenticator.Authenticate(context.Background(), &zoneEgress, "some-random-token")
+		_, err := authenticator.Authenticate(context.Background(), &zoneEgress, "some-random-token")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
