@@ -9,5 +9,7 @@ import (
 type Credential = string
 
 type Authenticator interface {
-	Authenticate(ctx context.Context, resource model.Resource, credential Credential) error
+	// Authenticate verifies the credential for the resource and returns which of
+	// the resource's labels the credential vouches for.
+	Authenticate(ctx context.Context, resource model.Resource, credential Credential) (Binding, error)
 }
