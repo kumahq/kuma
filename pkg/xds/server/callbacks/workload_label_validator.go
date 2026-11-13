@@ -3,6 +3,7 @@ package callbacks
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/pkg/errors"
 
@@ -20,18 +21,20 @@ import (
 var workloadLabelLog = core.Log.WithName("xds").WithName("workload-label-validator")
 
 // WorkloadLabelValidator validates that dataplanes have the required kuma.io/workload label
-// when they are selected by a MeshIdentity that uses the workload label in its SPIFFE ID path template.
+// when they are selected by a MeshIdentity whose SPIFFE ID path reads the workload label.
 type WorkloadLabelValidator struct {
-	rm  manager.ReadOnlyResourceManager
-	env config_core.EnvironmentType
+	rm   manager.ReadOnlyResourceManager
+	zone string
+	env  config_core.EnvironmentType
 }
 
 var _ DataplaneCallbacks = &WorkloadLabelValidator{}
 
-func NewWorkloadLabelValidator(rm manager.ReadOnlyResourceManager, env config_core.EnvironmentType) *WorkloadLabelValidator {
+func NewWorkloadLabelValidator(rm manager.ReadOnlyResourceManager, zone string, env config_core.EnvironmentType) *WorkloadLabelValidator {
 	return &WorkloadLabelValidator{
-		rm:  rm,
-		env: env,
+		rm:   rm,
+		zone: zone,
+		env:  env,
 	}
 }
 
@@ -69,7 +72,8 @@ func (v *WorkloadLabelValidator) OnProxyConnected(
 		return nil
 	}
 
-	if !matched.Spec.UsesWorkloadLabel(v.env) {
+	_, read, _ := matched.RenderSpiffeID(md.Resource.GetMeta(), v.zone, v.env)
+	if !slices.Contains(read, metadata.KumaWorkload) {
 		return nil
 	}
 

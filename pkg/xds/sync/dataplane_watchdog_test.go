@@ -2,6 +2,7 @@ package sync_test
 
 import (
 	"context"
+	"maps"
 	"net"
 	"time"
 
@@ -11,18 +12,23 @@ import (
 	"k8s.io/client-go/util/cert"
 
 	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v3/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/v3/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/apis/meshidentity/providers"
 	"github.com/kumahq/kuma/v3/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/core/xds/issuer"
 	envoy_admin_tls "github.com/kumahq/kuma/v3/pkg/envoy/admin/tls"
 	"github.com/kumahq/kuma/v3/pkg/events"
 	"github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v3/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v3/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/v3/pkg/test/resources/samples"
+	xds_auth "github.com/kumahq/kuma/v3/pkg/xds/auth"
 	"github.com/kumahq/kuma/v3/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v3/pkg/xds/context"
 	"github.com/kumahq/kuma/v3/pkg/xds/envoy"
@@ -203,6 +209,74 @@ var _ = Describe("Dataplane Watchdog", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(testutil.ToFloat64(xdsMetrics.DataplaneConfigRegenerated.WithLabelValues(resKey.Mesh))).To(Equal(1.0))
+		})
+	})
+
+	// A stream authenticates once, but the identity is issued whenever a
+	// MeshIdentity selects the dataplane, possibly long after connect, so the
+	// watchdog re-checks the stream's auth binding before issuing it.
+	Context("workload identity auth binding", func() {
+		var resKey core_model.ResourceKey
+		var meta *core_xds.DataplaneMetadata
+
+		BeforeEach(func() {
+			Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
+			// DataplaneBackendBuilder declares the kuma.io/workload: backend label.
+			Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
+			// No SpiffeID: the default Universal /workload/{{ .Workload }} path.
+			Expect(builders.MeshIdentity().Create(resManager)).To(Succeed())
+			resKey = core_model.MetaToResourceKey(samples.DataplaneBackend().GetMeta())
+			meta = &core_xds.DataplaneMetadata{ProxyType: mesh_proto.DataplaneProxyType}
+			deps.Environment = config_core.UniversalEnvironment
+		})
+
+		DescribeTable("should issue a workload identity only when the binding vouches for the labels it reads",
+			func(ctx context.Context, expectIdentity bool) {
+				// given
+				watchdog := sync.NewDataplaneWatchdog(deps, meta, resKey)
+
+				// when
+				_, err := watchdog.Sync(ctx)
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(snapshotReconciler.proxy).ToNot(BeNil())
+				Expect(snapshotReconciler.proxy.WorkloadIdentityRequired).To(Equal(expectIdentity))
+			},
+			Entry("denies a binding that leaves the workload unbound",
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{}), false),
+			Entry("denies a binding to a different workload",
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Labels: mesh_proto.MultiValueTagSet{metadata.KumaWorkload: {"attacker": true}}}), false),
+			Entry("denies a stream without a binding",
+				context.Background(), false),
+			Entry("allows a binding to the dataplane workload",
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Labels: mesh_proto.MultiValueTagSet{metadata.KumaWorkload: {"backend": true}}}), true),
+			Entry("allows a namespace-scoped binding",
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Scope: xds_auth.ScopeNamespace}), true),
+			Entry("allows an unauthenticated binding",
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Unauthenticated: true}), true),
+		)
+
+		It("should withdraw an issued identity once the dataplane's labels outgrow the binding", func() {
+			// given an identity issued for the backend workload
+			ctx := xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Labels: mesh_proto.MultiValueTagSet{metadata.KumaWorkload: {"backend": true}}})
+			watchdog := sync.NewDataplaneWatchdog(deps, meta, resKey)
+			_, err := watchdog.Sync(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(snapshotReconciler.proxy.WorkloadIdentityRequired).To(BeTrue())
+
+			// when the workload label changes after connect
+			dp := core_mesh.NewDataplaneResource()
+			Expect(resManager.Get(ctx, dp, core_store.GetBy(resKey))).To(Succeed())
+			labels := maps.Clone(dp.GetMeta().GetLabels())
+			labels[metadata.KumaWorkload] = "frontend"
+			Expect(resManager.Update(ctx, dp, core_store.UpdateWithLabels(labels))).To(Succeed())
+			time.Sleep(cacheExpirationTime)
+			_, err = watchdog.Sync(ctx)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(snapshotReconciler.proxy.WorkloadIdentityRequired).To(BeFalse())
 		})
 	})
 })
