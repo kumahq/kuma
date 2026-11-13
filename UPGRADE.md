@@ -6,6 +6,18 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `3.0.2`
+
+### Universal proxies need a token that binds every label their SPIFFE ID is built from
+
+On Universal, a dataplane declares its own labels, so a `MeshIdentity` whose SPIFFE ID path reads a label lets a proxy pick its identity unless the dataplane token binds that label. A dataplane selected by a `MeshIdentity` is now rejected at connect when its SPIFFE ID path reads one of its labels that the token does not bind. `kuma.io/workload` (including `{{ .Workload }}`, the default Universal path) is bound by `--workload` or by a `--tag kuma.io/workload=...`; `kuma.io/display-name` is bound by `--name`; any other label read through `{{ label "<key>" }}` is bound by a `--tag` for that key. Only labels whose value the control plane chooses (`kuma.io/zone`, `kuma.io/mesh`, `kuma.io/env`, `kuma.io/origin`) need no binding. Other control-plane-owned labels, such as `kuma.io/display-name` or the zone proxy listener labels, are computed from what the proxy sends and need one. The control plane finds the labels by rendering the path for the dataplane, so every template spelling is covered, and a path that reads no dataplane label (for example a static one) needs no binding. The check is repeated whenever the workload identity is issued: a `MeshIdentity` created or changed after the proxy connected, or a label changed since, withholds the identity instead of issuing one the token does not cover. Deployments with dataplane authentication disabled and dataplanes not selected by a `MeshIdentity` are unaffected. Kubernetes (ServiceAccount-token authentication) is not checked yet: the token proves only the namespace and the ServiceAccount, and every other Pod label is trusted. A custom path that reads a Pod-chosen label without the namespace (for example `/workload/{{ .Workload }}`) lets anyone who can create Pods in any namespace claim that identity. The default `ns/sa` path reads only proven labels and is safe.
+
+The control plane rejects such proxies with `which the token does not bind, so it requires a workload-bound token` (for `kuma.io/workload`), `so it requires a name-bound token` (for `kuma.io/display-name`) or `so it requires a token with that tag` (for other labels).
+
+**Action required**
+
+For every Universal proxy selected by a `MeshIdentity`, issue a token that binds each label its SPIFFE ID path reads: `kumactl generate dataplane-token --workload <name>` for `kuma.io/workload`, and `--tag <key>=<value>` for any other label.
+
 ## Upgrade to `3.0.0`
 
 ### System namespace is labeled on every Helm upgrade
@@ -146,16 +158,6 @@ the control plane does converge on the new trust domain, but it is not a
 migration: the `MeshTrust` and the CA are keyed by the identity name, so for as
 long as convergence takes there is a single trust domain in flight and leaves
 issued under the old one no longer verify. Two identities never have that gap.
-
-### Universal proxies need a token that binds every label their SPIFFE ID is built from
-
-On Universal, a dataplane declares its own labels, so a `MeshIdentity` whose SPIFFE ID path reads a label lets a proxy pick its identity unless the dataplane token binds that label. A dataplane selected by a `MeshIdentity` is now rejected at connect when its SPIFFE ID path reads one of its labels that the token does not bind. `kuma.io/workload` (including `{{ .Workload }}`, the default Universal path) is bound by `--workload` or by a `--tag kuma.io/workload=...`; `kuma.io/display-name` is bound by `--name`; any other label read through `{{ label "<key>" }}` is bound by a `--tag` for that key. Only labels whose value the control plane chooses (`kuma.io/zone`, `kuma.io/mesh`, `kuma.io/env`, `kuma.io/origin`) need no binding. Other control-plane-owned labels, such as `kuma.io/display-name` or the zone proxy listener labels, are computed from what the proxy sends and need one. The control plane finds the labels by rendering the path for the dataplane, so every template spelling is covered, and a path that reads no dataplane label (for example a static one) needs no binding. The check is repeated whenever the workload identity is issued: a `MeshIdentity` created or changed after the proxy connected, or a label changed since, withholds the identity instead of issuing one the token does not cover. Deployments with dataplane authentication disabled and dataplanes not selected by a `MeshIdentity` are unaffected. Kubernetes (ServiceAccount-token authentication) is not checked yet: the token proves only the namespace and the ServiceAccount, and every other Pod label is trusted. A custom path that reads a Pod-chosen label without the namespace (for example `/workload/{{ .Workload }}`) lets anyone who can create Pods in any namespace claim that identity. The default `ns/sa` path reads only proven labels and is safe.
-
-The control plane rejects such proxies with `which the token does not bind, so it requires a workload-bound token` (for `kuma.io/workload`), `so it requires a name-bound token` (for `kuma.io/display-name`) or `so it requires a token with that tag` (for other labels).
-
-**Action required**
-
-For every Universal proxy selected by a `MeshIdentity`, issue a token that binds each label its SPIFFE ID path reads: `kumactl generate dataplane-token --workload <name>` for `kuma.io/workload`, and `--tag <key>=<value>` for any other label.
 
 ### Zones no longer require the `kuma.io/origin` label
 
@@ -2641,6 +2643,46 @@ Since 2.14.0 every generated cluster carries a `DEFAULT`-priority circuit breake
 **Action required**
 
 Review every `MeshProxyPatch` that patches `circuitBreakers`. Where the same cluster is also covered by a `MeshCircuitBreaker`, the patch now overrides that policy for each field it sets, instead of being ignored — `MeshProxyPatch` runs last, so it wins the fields it names and the policy keeps the rest. Remove patches you wrote before 2.14.0 and no longer rely on, and drop any workaround you put in place because the patch appeared to do nothing.
+
+## Upgrade to `2.14.8`
+
+### Universal proxies need a token that binds every label their SPIFFE ID is built from
+
+On Universal, a dataplane declares its own labels, so a `MeshIdentity` whose SPIFFE ID path reads a label lets a proxy pick its identity unless the dataplane token binds that label. A dataplane selected by a `MeshIdentity` is now rejected at connect when its SPIFFE ID path reads one of its labels that the token does not bind. Previously only `kuma.io/workload` was checked, and only when the path spelled it as `{{ .Workload }}` or `{{ label "kuma.io/workload" }}`. The control plane now finds the labels by rendering the path for the dataplane, so every template spelling is covered, and a path that reads no dataplane label (for example a static one) needs no binding.
+
+- `kuma.io/workload` (including `{{ .Workload }}`, the default Universal path) is bound by `--workload`.
+- `kuma.io/display-name` is bound by `--name`.
+- `kuma.io/mesh` is bound by the mesh the token is issued for.
+- `kuma.io/zone`, `kuma.io/env` and `kuma.io/origin` are set by the control plane and need no binding.
+- Any label can also be bound by `--tag <key>=<value>`. A token tag is checked against the inbound tags of the dataplane, so the dataplane has to declare that tag on an inbound too.
+
+The check is repeated whenever the workload identity is issued: a `MeshIdentity` created or changed after the proxy connected, or a label changed since, withholds the identity instead of issuing one the token does not cover. Deployments with dataplane authentication disabled and dataplanes not selected by a `MeshIdentity` are unaffected. On Kubernetes nothing changes: the ServiceAccount token proves the namespace and the ServiceAccount, and every other Pod label is trusted.
+
+The control plane rejects such proxies with `which the token does not bind, so it requires a workload-bound token` (for `kuma.io/workload`), `so it requires a name-bound token` (for `kuma.io/display-name`) or `so it requires a token with that tag` (for other labels).
+
+**Action required**
+
+For every Universal proxy selected by a `MeshIdentity`, issue a token that binds each label its SPIFFE ID path reads: `kumactl generate dataplane-token --workload <name>` for `kuma.io/workload`, `--name <name>` for `kuma.io/display-name`, and `--tag <key>=<value>` for any other label. Proxies on the default path that already use a workload-bound token need no change.
+
+## Upgrade to `2.13.13`
+
+### Universal proxies need a token that binds every label their SPIFFE ID is built from
+
+On Universal, a dataplane declares its own labels, so a `MeshIdentity` whose SPIFFE ID path reads a label lets a proxy pick its identity unless the dataplane token binds that label. A dataplane selected by a `MeshIdentity` is now rejected at connect when its SPIFFE ID path reads one of its labels that the token does not bind. Previously only `kuma.io/workload` was checked, and only when the path spelled it as `{{ .Workload }}` or `{{ label "kuma.io/workload" }}`. The control plane now finds the labels by rendering the path for the dataplane, so every template spelling is covered, and a path that reads no dataplane label (for example a static one) needs no binding.
+
+- `kuma.io/workload` (including `{{ .Workload }}`, the default Universal path) is bound by `--workload`.
+- `kuma.io/display-name` is bound by `--name`.
+- `kuma.io/mesh` is bound by the mesh the token is issued for.
+- `kuma.io/zone`, `kuma.io/env` and `kuma.io/origin` are set by the control plane and need no binding.
+- Any label can also be bound by `--tag <key>=<value>`. A token tag is checked against the inbound tags of the dataplane, so the dataplane has to declare that tag on an inbound too.
+
+The check is repeated whenever the workload identity is issued: a `MeshIdentity` created or changed after the proxy connected, or a label changed since, withholds the identity instead of issuing one the token does not cover. Deployments with dataplane authentication disabled and dataplanes not selected by a `MeshIdentity` are unaffected. On Kubernetes nothing changes: the ServiceAccount token proves the namespace and the ServiceAccount, and every other Pod label is trusted.
+
+The control plane rejects such proxies with `which the token does not bind, so it requires a workload-bound token` (for `kuma.io/workload`), `so it requires a name-bound token` (for `kuma.io/display-name`) or `so it requires a token with that tag` (for other labels).
+
+**Action required**
+
+For every Universal proxy selected by a `MeshIdentity`, issue a token that binds each label its SPIFFE ID path reads: `kumactl generate dataplane-token --workload <name>` for `kuma.io/workload`, `--name <name>` for `kuma.io/display-name`, and `--tag <key>=<value>` for any other label. Proxies on the default path that already use a workload-bound token need no change.
 
 ## Upgrade to `2.14.6`
 
