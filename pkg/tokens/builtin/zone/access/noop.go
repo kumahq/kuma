@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone"
 )
 
 type NoopZoneTokenAccess struct{}
 
 var _ ZoneTokenAccess = NoopZoneTokenAccess{}
 
-func (n NoopZoneTokenAccess) ValidateGenerateZoneToken(ctx context.Context, zone string, user user.User) error {
+func (n NoopZoneTokenAccess) ValidateGenerateZoneToken(ctx context.Context, identity zone.Identity, user user.User) error {
 	return nil
 }
