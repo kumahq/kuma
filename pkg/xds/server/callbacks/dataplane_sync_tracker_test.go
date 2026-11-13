@@ -10,10 +10,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/v3/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/v3/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	"github.com/kumahq/kuma/v3/pkg/test"
 	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	xds_auth "github.com/kumahq/kuma/v3/pkg/xds/auth"
 	. "github.com/kumahq/kuma/v3/pkg/xds/server/callbacks"
 	"github.com/kumahq/kuma/v3/pkg/xds/sync"
 )
@@ -22,7 +24,7 @@ var _ = Describe("Sync", func() {
 	Describe("dataplaneSyncTracker", func() {
 		It("should not fail when ADS stream is closed before Watchdog is even created", func() {
 			// setup
-			tracker := DataplaneCallbacksToXdsCallbacks(NewDataplaneSyncTracker(context.Background(), nil))
+			tracker := DataplaneCallbacksToXdsCallbacks(NewDataplaneSyncTracker(context.Background(), nil, nil))
 
 			// given
 			ctx := context.Background()
@@ -45,7 +47,7 @@ var _ = Describe("Sync", func() {
 
 		It("should not fail when Envoy presents invalid Node ID", func() {
 			// setup
-			tracker := NewDataplaneSyncTracker(context.Background(), nil)
+			tracker := NewDataplaneSyncTracker(context.Background(), nil, nil)
 			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
@@ -84,7 +86,7 @@ var _ = Describe("Sync", func() {
 					<-ctx.Done()
 					close(watchdogCh)
 				})
-			}))
+			}), nil)
 			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
@@ -140,7 +142,7 @@ var _ = Describe("Sync", func() {
 					activeWatchdogs.Add(-1)
 					cleanupDone.Store(true)
 				})
-			}))
+			}), nil)
 			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// when one stream for backend-01 is connected and request is sent
@@ -203,7 +205,7 @@ var _ = Describe("Sync", func() {
 					<-ctx.Done()
 					close(watchdogReturned)
 				})
-			}))
+			}), nil)
 			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			Expect(callbacks.OnDeltaStreamOpen(context.Background(), 1, "")).ToNot(HaveOccurred())
@@ -223,7 +225,8 @@ var _ = Describe("Sync", func() {
 				streamCtxCh:  streamCtxCh,
 				watchdogDone: watchdogDone,
 			}
-			tracker := NewDataplaneSyncTracker(context.Background(), factory)
+			bindings := staticBindingLookup{1: {Labels: mesh_proto.MultiValueTagSet{"kuma.io/workload": {"example": true}}}}
+			tracker := NewDataplaneSyncTracker(context.Background(), factory, bindings)
 			callbacks := util_xds_v3.AdaptDeltaCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
@@ -245,6 +248,11 @@ var _ = Describe("Sync", func() {
 			Eventually(streamCtxCh).Should(Receive(&capturedStreamCtx))
 			Expect(capturedStreamCtx).ToNot(BeNil())
 
+			By("verifying the stream's auth binding travels with its context")
+			binding, ok := xds_auth.BindingFromContext(capturedStreamCtx)
+			Expect(ok).To(BeTrue())
+			Expect(binding).To(Equal(xds_auth.Binding{Labels: mesh_proto.MultiValueTagSet{"kuma.io/workload": {"example": true}}}))
+
 			By("simulating Envoy disconnecting from the Control Plane")
 			callbacks.OnDeltaStreamClosed(streamID, node)
 
@@ -253,6 +261,13 @@ var _ = Describe("Sync", func() {
 		}))
 	})
 })
+
+type staticBindingLookup map[core_xds.StreamID]xds_auth.Binding
+
+func (l staticBindingLookup) Binding(streamID core_xds.StreamID) (xds_auth.Binding, bool) {
+	b, ok := l[streamID]
+	return b, ok
+}
 
 // streamCtxCapturingFactory implements DataplaneWatchdogFactoryWithStreamCtx
 type streamCtxCapturingFactory struct {
