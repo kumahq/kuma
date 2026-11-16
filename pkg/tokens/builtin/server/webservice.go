@@ -84,24 +84,20 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 		return
 	}
 
-	if err := d.dpAccess.ValidateGenerateDataplaneToken(
-		request.Request.Context(),
-		idReq.Name,
-		idReq.Mesh,
-		idReq.Tags,
-		user.FromCtx(request.Request.Context()),
-	); err != nil {
-		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
-		return
-	}
-
-	token, err := d.issuer.Generate(request.Request.Context(), issuer.DataplaneIdentity{
+	id := issuer.DataplaneIdentity{
 		Mesh:     idReq.Mesh,
 		Name:     idReq.Name,
 		Type:     mesh_proto.ProxyType(idReq.Type),
 		Tags:     mesh_proto.MultiValueTagSetFrom(idReq.Tags),
 		Workload: idReq.Workload,
-	}, validFor)
+	}
+
+	if err := d.dpAccess.ValidateGenerateDataplaneToken(request.Request.Context(), id, user.FromCtx(request.Request.Context())); err != nil {
+		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
+		return
+	}
+
+	token, err := d.issuer.Generate(request.Request.Context(), id, validFor)
 	if err != nil {
 		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
 		return
@@ -139,7 +135,12 @@ func (d *tokenWebService) handleZoneIdentityRequest(request *restful.Request, re
 
 	ctx := request.Request.Context()
 
-	if err := d.zoneAccess.ValidateGenerateZoneToken(request.Request.Context(), idReq.Zone, user.FromCtx(ctx)); err != nil {
+	id := zone.Identity{
+		Zone:  idReq.Zone,
+		Scope: idReq.Scope,
+	}
+
+	if err := d.zoneAccess.ValidateGenerateZoneToken(request.Request.Context(), id, user.FromCtx(ctx)); err != nil {
 		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
 		return
 	}
@@ -158,10 +159,7 @@ func (d *tokenWebService) handleZoneIdentityRequest(request *restful.Request, re
 		return
 	}
 
-	token, err := d.zoneIssuer.Generate(ctx, zone.Identity{
-		Zone:  idReq.Zone,
-		Scope: idReq.Scope,
-	}, validFor)
+	token, err := d.zoneIssuer.Generate(ctx, id, validFor)
 	if err != nil {
 		errors.HandleError(request.Request.Context(), response, err, "Could not issue a token")
 		return
