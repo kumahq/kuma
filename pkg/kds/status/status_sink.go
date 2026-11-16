@@ -161,6 +161,7 @@ func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription
 		Name: zone,
 	}
 	zoneInsight := system.NewZoneInsightResource()
+	// retry conflicts: the final flush on stream close has no next tick, losing it leaves the zone Online
 	return manager.Upsert(ctx, s.resManager, key, zoneInsight, func(resource core_model.Resource) error {
 		if err := zoneInsight.Spec.UpdateSubscription(subscription); err != nil {
 			return err
@@ -169,5 +170,8 @@ func (s *zoneInsightStore) Upsert(ctx context.Context, zone string, subscription
 			zoneInsight.Spec.CompactFinished()
 		}
 		return nil
-	}, manager.WithTransactions(s.transactions))
+	},
+		manager.WithTransactions(s.transactions),
+		manager.WithConflictRetry(s.upsertCfg.ConflictRetryBaseBackoff.Duration, s.upsertCfg.ConflictRetryMaxTimes, s.upsertCfg.ConflictRetryJitterPercent),
+	)
 }
