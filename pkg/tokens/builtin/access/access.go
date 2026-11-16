@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/issuer"
 )
 
 type DataplaneTokenAccess interface {
-	ValidateGenerateDataplaneToken(ctx context.Context, name string, mesh string, tags map[string][]string, user user.User) error
+	ValidateGenerateDataplaneToken(ctx context.Context, identity issuer.DataplaneIdentity, user user.User) error
 }

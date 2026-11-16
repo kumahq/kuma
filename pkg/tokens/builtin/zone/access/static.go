@@ -7,6 +7,7 @@ import (
 	config_access "github.com/kumahq/kuma/v3/pkg/config/access"
 	"github.com/kumahq/kuma/v3/pkg/core/access"
 	"github.com/kumahq/kuma/v3/pkg/core/user"
+	"github.com/kumahq/kuma/v3/pkg/tokens/builtin/zone"
 )
 
 type staticZoneTokenAccess struct {
@@ -30,6 +31,6 @@ func NewStaticZoneTokenAccess(cfg config_access.GenerateZoneTokenStaticAccessCon
 	return s
 }
 
-func (s *staticZoneTokenAccess) ValidateGenerateZoneToken(ctx context.Context, zone string, user user.User) error {
-	return access.Validate(s.usernames, s.groups, user, fmt.Sprintf("generate zone token for zone '%s'", zone))
+func (s *staticZoneTokenAccess) ValidateGenerateZoneToken(ctx context.Context, identity zone.Identity, user user.User) error {
+	return access.Validate(s.usernames, s.groups, user, fmt.Sprintf("generate zone token for zone '%s'", identity.Zone))
 }
