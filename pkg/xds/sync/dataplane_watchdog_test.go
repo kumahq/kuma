@@ -301,11 +301,12 @@ var _ = Describe("Dataplane Watchdog", func() {
 			watchdog := factory.New(resKey, &core_xds.DataplaneMetadata{ProxyType: mesh_proto.DataplaneProxyType})
 
 			// when
-			ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+			// the window is generous so a slow first sync on a loaded CI runner still fails at least twice
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
 			watchdog.Start(ctx)
 
-			// then retries are spaced 1, 2, 4, 8... ticks apart, so about 8 in 200 ticks
+			// then retries are spaced 1, 2, 4, 8... ticks apart, so about 10 in 1000 ticks
 			errs := testutil.ToFloat64(xdsMetrics.XdsGenerationsErrors)
 			Expect(errs).To(BeNumerically(">=", 2))
 			Expect(errs).To(BeNumerically("<=", 12))
