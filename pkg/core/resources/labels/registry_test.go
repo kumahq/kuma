@@ -46,6 +46,15 @@ var _ = Describe("Registry", func() {
 		Expect(computed).To(ConsistOf(keys))
 	})
 
+	It("should trust only labels the writer cannot influence", func() {
+		Expect(labels.SetByControlPlaneState()).To(ConsistOf(
+			mesh_proto.ResourceOriginLabel,
+			mesh_proto.ZoneTag,
+			metadata.KumaMeshLabel,
+			mesh_proto.EnvTag,
+		))
+	})
+
 	It("should store the name-carrying labels as annotations", func() {
 		Expect(labels.AnnotationBacked()).To(ConsistOf(
 			mesh_proto.DisplayName,

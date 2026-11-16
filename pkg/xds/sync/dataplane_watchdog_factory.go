@@ -10,6 +10,7 @@ import (
 	core_xds "github.com/kumahq/kuma/v3/pkg/core/xds"
 	util_watchdog "github.com/kumahq/kuma/v3/pkg/util/watchdog"
 	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
+	xds_auth "github.com/kumahq/kuma/v3/pkg/xds/auth"
 	xds_metrics "github.com/kumahq/kuma/v3/pkg/xds/metrics"
 )
 
@@ -39,12 +40,16 @@ func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey, meta *core_xds.D
 func (d *dataplaneWatchdogFactory) NewWithStreamCtx(dpKey model.ResourceKey, meta *core_xds.DataplaneMetadata, streamCtx context.Context) util_xds_v3.Watchdog {
 	log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", dpKey)
 	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, meta, dpKey)
+	binding, authenticated := xds_auth.BindingFromContext(streamCtx)
 	return &util_watchdog.SimpleWatchdog{
 		NewTicker: func() *time.Ticker {
 			return time.NewTicker(d.refreshInterval)
 		},
 		OnTick: func(ctx context.Context) error {
 			ctx = user.Ctx(ctx, user.ControlPlane)
+			if authenticated {
+				ctx = xds_auth.ContextWithBinding(ctx, binding)
+			}
 			start := core.Now()
 			result, err := dataplaneWatchdog.Sync(ctx)
 			if err != nil {

@@ -41,6 +41,11 @@ type Descriptor struct {
 	// can be up to 253 characters, which does not fit the 63-character Kubernetes label
 	// value limit. They are stored as annotations on Kubernetes and validated as names.
 	StoredAsAnnotation bool
+
+	// SetByControlPlaneState marks labels whose value comes only from control plane
+	// state, never from what the writer sends, so they prove something about a
+	// proxy without a credential binding them.
+	SetByControlPlaneState bool
 }
 
 func keep(w Write, key string) (string, bool, error) {
@@ -115,8 +120,9 @@ func zoneOfStored(r StoredResource, cp ControlPlane) string {
 // Iteration order is the order the API server reports ownership violations in.
 var registry = []Descriptor{
 	{
-		Key:   mesh_proto.ResourceOriginLabel,
-		Owner: OwnerControlPlane,
+		Key:                    mesh_proto.ResourceOriginLabel,
+		Owner:                  OwnerControlPlane,
+		SetByControlPlaneState: true,
 		Compute: func(_ string, _ Write, cp ControlPlane) (string, bool, error) {
 			switch cp.Mode {
 			case config_core.Global:
@@ -145,14 +151,17 @@ var registry = []Descriptor{
 		},
 	},
 	{
-		Key:           mesh_proto.ZoneTag,
-		Owner:         OwnerControlPlane,
-		Compute:       computeZone,
-		EnforceOnRead: enforceZone,
+		Key:                    mesh_proto.ZoneTag,
+		Owner:                  OwnerControlPlane,
+		SetByControlPlaneState: true,
+		Compute:                computeZone,
+		EnforceOnRead:          enforceZone,
 	},
 	{
-		Key:   metadata.KumaMeshLabel,
-		Owner: OwnerControlPlane,
+		// The proxy names its mesh, but its token is signed with that mesh's key.
+		Key:                    metadata.KumaMeshLabel,
+		Owner:                  OwnerControlPlane,
+		SetByControlPlaneState: true,
 		Compute: func(_ string, w Write, _ ControlPlane) (string, bool, error) {
 			if w.Descriptor.Scope != core_model.ScopeMesh {
 				return "", false, nil
@@ -204,8 +213,9 @@ var registry = []Descriptor{
 		StoredAsAnnotation: true,
 	},
 	{
-		Key:   mesh_proto.EnvTag,
-		Owner: OwnerControlPlane,
+		Key:                    mesh_proto.EnvTag,
+		Owner:                  OwnerControlPlane,
+		SetByControlPlaneState: true,
 		Compute: func(_ string, w Write, cp ControlPlane) (string, bool, error) {
 			if cp.Mode != config_core.Zone || !w.Descriptor.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
 				return "", false, nil
@@ -320,6 +330,17 @@ func ControlPlaneOwned() []string {
 	var keys []string
 	for _, d := range registry {
 		if d.Owner == OwnerControlPlane {
+			keys = append(keys, d.Key)
+		}
+	}
+	return keys
+}
+
+// SetByControlPlaneState returns the keys whose value the writer cannot influence.
+func SetByControlPlaneState() []string {
+	var keys []string
+	for _, d := range registry {
+		if d.SetByControlPlaneState {
 			keys = append(keys, d.Key)
 		}
 	}
