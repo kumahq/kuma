@@ -222,7 +222,8 @@ func (d *DataplaneLifecycle) validateUpsert(ctx context.Context, existing core_m
 	if err != nil {
 		return err
 	}
-	return d.authenticator.Authenticate(ctx, existing, credential)
+	_, err = d.authenticator.Authenticate(ctx, existing, credential)
+	return err
 }
 
 func (d *DataplaneLifecycle) validateProxyKey(proxyKey core_model.ResourceKey, proxyResource core_model.Resource) error {

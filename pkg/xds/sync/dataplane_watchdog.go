@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	"github.com/kumahq/kuma/v2/pkg/core"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
@@ -19,6 +20,7 @@ import (
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	envoy_admin_tls "github.com/kumahq/kuma/v2/pkg/envoy/admin/tls"
 	util_tls "github.com/kumahq/kuma/v2/pkg/tls"
+	xds_auth "github.com/kumahq/kuma/v2/pkg/xds/auth"
 	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	xds_metrics "github.com/kumahq/kuma/v2/pkg/xds/metrics"
@@ -37,6 +39,7 @@ type DataplaneWatchdogDependencies struct {
 	ResManager            core_manager.ReadOnlyResourceManager
 	OtelStatusCache       *otelstatus.Cache
 	XdsMetrics            *xds_metrics.Metrics
+	Environment           config_core.EnvironmentType
 }
 
 type Status string
@@ -65,10 +68,11 @@ type DataplaneWatchdog struct {
 	dpAddress        string
 	xdsMeta          *core_xds.DataplaneMetadata
 	// used by MeshIdentity
-	workloadIdentity *core_xds.WorkloadIdentity
-	lastIdentityHash string // last Hash of MeshIdentities
-	lastOtelStatus   *mesh_proto.DataplaneInsight_OpenTelemetry
-	otelStatusSynced bool
+	workloadIdentity    *core_xds.WorkloadIdentity
+	lastIdentityHash    string // last Hash of MeshIdentities
+	lastIdentityRefusal string // last reason a selected identity was not issued, to log it once
+	lastOtelStatus      *mesh_proto.DataplaneInsight_OpenTelemetry
+	otelStatusSynced    bool
 }
 
 func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, meta *core_xds.DataplaneMetadata, dpKey core_model.ResourceKey) *DataplaneWatchdog {
@@ -151,7 +155,7 @@ func (d *DataplaneWatchdog) syncDataplane(ctx context.Context) (SyncResult, erro
 	certInfo := d.EnvoyCpCtx.Secrets.Info(mesh_proto.DataplaneProxyType, d.key)
 	syncForCert := certInfo != nil && certInfo.ExpiringSoon() // check if we need to regenerate config because identity cert is expiring soon.
 	syncForConfig := meshCtx.Hash != d.lastHash               // check if we need to regenerate config because Kuma policies has changed.
-	identity := d.EnvoyCpCtx.IdentityManager.SelectedIdentity(dpp, meshCtx.Resources.MeshIdentities().Items)
+	identity := d.authorizeIdentity(ctx, d.EnvoyCpCtx.IdentityManager.SelectedIdentity(dpp, meshCtx.Resources.MeshIdentities().Items), dpp)
 	identityHash := base64.StdEncoding.EncodeToString(hashMeshIdentity(identity))
 	syncIdentity := identityHash != d.lastIdentityHash ||
 		// check if is expired
@@ -250,6 +254,38 @@ func (d *DataplaneWatchdog) syncOtelStatus(backends *core_xds.OtelPipeBackends) 
 	d.OtelStatusCache.Set(d.key, status)
 
 	return true
+}
+
+// authorizeIdentity drops an identity the stream's credential doesn't vouch for.
+// A stream authenticates once, but identities are issued whenever a MeshIdentity
+// or the Dataplane changes, so the binding is re-checked on every sync.
+func (d *DataplaneWatchdog) authorizeIdentity(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, dpp *core_mesh.DataplaneResource) *meshidentity_api.MeshIdentityResource {
+	if identity == nil {
+		return nil
+	}
+	err := d.validateIdentityBinding(ctx, identity, dpp)
+	refusal := ""
+	if err != nil {
+		refusal = err.Error()
+	}
+	if refusal != "" && refusal != d.lastIdentityRefusal {
+		d.log.Info("not issuing a workload identity", "identity", identity.GetMeta().GetName(), "reason", refusal)
+	}
+	d.lastIdentityRefusal = refusal
+	if err != nil {
+		return nil
+	}
+	return identity
+}
+
+func (d *DataplaneWatchdog) validateIdentityBinding(ctx context.Context, identity *meshidentity_api.MeshIdentityResource, dpp *core_mesh.DataplaneResource) error {
+	binding, ok := xds_auth.BindingFromContext(ctx)
+	if !ok {
+		return errors.New("the xDS stream has no authentication binding")
+	}
+	// A render error is left to issuance, which renders the same inputs and fails too.
+	_, read, _ := identity.RenderSpiffeID(dpp.GetMeta(), d.EnvoyCpCtx.Zone, d.Environment)
+	return xds_auth.ValidateIdentityLabels(binding, dpp.Meta.GetLabels(), read)
 }
 
 func hashMeshIdentity(identity *meshidentity_api.MeshIdentityResource) []byte {
