@@ -158,7 +158,7 @@ func (a *authn) authenticate(credential xds_auth.Credential, nodeID string) erro
 		return err
 	}
 
-	if err := a.authenticator.Authenticate(ctx, dataplane, credential); err != nil {
+	if _, err := a.authenticator.Authenticate(ctx, dataplane, credential); err != nil {
 		return errors.Wrap(err, "authentication failed")
 	}
 	return nil

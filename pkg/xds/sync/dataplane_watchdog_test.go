@@ -2,6 +2,7 @@ package sync_test
 
 import (
 	"context"
+	"maps"
 	"net"
 	"time"
 
@@ -11,19 +12,24 @@ import (
 	"k8s.io/client-go/util/cert"
 
 	mesh_proto "github.com/kumahq/kuma/v2/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/v2/pkg/config/core"
 	config_manager "github.com/kumahq/kuma/v2/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/v2/pkg/core/resources/apis/mesh"
 	meshidentity_api "github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/api/v1alpha1"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/apis/meshidentity/providers"
 	"github.com/kumahq/kuma/v2/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/v2/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/v2/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/v2/pkg/core/xds"
 	"github.com/kumahq/kuma/v2/pkg/dns/vips"
 	envoy_admin_tls "github.com/kumahq/kuma/v2/pkg/envoy/admin/tls"
 	"github.com/kumahq/kuma/v2/pkg/events"
 	"github.com/kumahq/kuma/v2/pkg/metrics"
 	"github.com/kumahq/kuma/v2/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/v2/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/v2/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/v2/pkg/test/resources/samples"
+	xds_auth "github.com/kumahq/kuma/v2/pkg/xds/auth"
 	"github.com/kumahq/kuma/v2/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/v2/pkg/xds/context"
 	"github.com/kumahq/kuma/v2/pkg/xds/envoy"
@@ -66,6 +72,16 @@ func (s *staticIdentityProvider) GetRootCA(_ context.Context, _ *meshidentity_ap
 	return nil, nil
 }
 
+// issuingIdentityProvider issues an identity to every proxy, so a test sees
+// whether the watchdog asked for one.
+type issuingIdentityProvider struct {
+	staticIdentityProvider
+}
+
+func (s *issuingIdentityProvider) CreateIdentity(_ context.Context, _ *meshidentity_api.MeshIdentityResource, _ *core_xds.Proxy) (*core_xds.WorkloadIdentity, error) {
+	return &core_xds.WorkloadIdentity{}, nil
+}
+
 var _ sync.SnapshotReconciler = &staticSnapshotReconciler{}
 
 var _ = Describe("Dataplane Watchdog", func() {
@@ -106,7 +122,8 @@ var _ = Describe("Dataplane Watchdog", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		plugins := map[string]providers.IdentityProvider{
-			"static": &staticIdentityProvider{},
+			"static":                             &staticIdentityProvider{},
+			string(meshidentity_api.BundledType): &issuingIdentityProvider{},
 		}
 
 		deps = sync.DataplaneWatchdogDependencies{
@@ -214,6 +231,74 @@ var _ = Describe("Dataplane Watchdog", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(testutil.ToFloat64(xdsMetrics.DataplaneConfigRegenerated.WithLabelValues(resKey.Mesh))).To(Equal(1.0))
+		})
+	})
+
+	// A stream authenticates once, but the identity is issued whenever a
+	// MeshIdentity selects the dataplane, possibly long after connect, so the
+	// watchdog re-checks the stream's auth binding before issuing it.
+	Context("workload identity auth binding", func() {
+		var resKey core_model.ResourceKey
+		var meta *core_xds.DataplaneMetadata
+
+		BeforeEach(func() {
+			Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
+			dp := samples.DataplaneBackendBuilder()
+			Expect(resManager.Create(context.Background(), dp.Build(), core_store.CreateBy(dp.Key()), core_store.CreateWithLabels(map[string]string{metadata.KumaWorkload: "backend"}))).To(Succeed())
+			// No SpiffeID: the default Universal /workload/{{ .Workload }} path.
+			Expect(builders.MeshIdentity().WithBundled().WithInitializedStatus().Create(resManager)).To(Succeed())
+			resKey = core_model.MetaToResourceKey(samples.DataplaneBackend().GetMeta())
+			meta = &core_xds.DataplaneMetadata{ProxyType: mesh_proto.DataplaneProxyType}
+			deps.Environment = config_core.UniversalEnvironment
+		})
+
+		DescribeTable("should issue a workload identity only when the binding vouches for the labels it reads",
+			func(ctx context.Context, expectIdentity bool) {
+				// given
+				watchdog := sync.NewDataplaneWatchdog(deps, meta, resKey)
+
+				// when
+				_, err := watchdog.Sync(ctx)
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(snapshotReconciler.proxy).ToNot(BeNil())
+				Expect(snapshotReconciler.proxy.WorkloadIdentity != nil).To(Equal(expectIdentity))
+			},
+			Entry("denies a binding that leaves the workload unbound",
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{}), false),
+			Entry("denies a binding to a different workload",
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Labels: mesh_proto.MultiValueTagSet{metadata.KumaWorkload: {"attacker": true}}}), false),
+			Entry("denies a stream without a binding",
+				context.Background(), false),
+			Entry("allows a binding to the dataplane workload",
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Labels: mesh_proto.MultiValueTagSet{metadata.KumaWorkload: {"backend": true}}}), true),
+			Entry("allows a namespace-scoped binding",
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Scope: xds_auth.ScopeNamespace}), true),
+			Entry("allows an unauthenticated binding",
+				xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Unauthenticated: true}), true),
+		)
+
+		It("should withdraw an issued identity once the dataplane's labels outgrow the binding", func() {
+			// given an identity issued for the backend workload
+			ctx := xds_auth.ContextWithBinding(context.Background(), xds_auth.Binding{Labels: mesh_proto.MultiValueTagSet{metadata.KumaWorkload: {"backend": true}}})
+			watchdog := sync.NewDataplaneWatchdog(deps, meta, resKey)
+			_, err := watchdog.Sync(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(snapshotReconciler.proxy.WorkloadIdentity).ToNot(BeNil())
+
+			// when the workload label changes after connect
+			dp := core_mesh.NewDataplaneResource()
+			Expect(resManager.Get(ctx, dp, core_store.GetBy(resKey))).To(Succeed())
+			labels := maps.Clone(dp.GetMeta().GetLabels())
+			labels[metadata.KumaWorkload] = "frontend"
+			Expect(resManager.Update(ctx, dp, core_store.UpdateWithLabels(labels))).To(Succeed())
+			time.Sleep(cacheExpirationTime)
+			_, err = watchdog.Sync(ctx)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(snapshotReconciler.proxy.WorkloadIdentity).To(BeNil())
 		})
 	})
 })

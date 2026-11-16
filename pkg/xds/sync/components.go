@@ -79,6 +79,7 @@ func DefaultDataplaneWatchdogFactory(
 		MeshCache:             rt.MeshCache(),
 		ResManager:            rt.ReadOnlyResourceManager(),
 		XdsMetrics:            xdsMetrics,
+		Environment:           config.Environment,
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,

@@ -2,7 +2,8 @@ package v1alpha1
 
 import (
 	"fmt"
-	"regexp"
+	"maps"
+	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -125,44 +126,95 @@ func (i *MeshIdentity) GetTrustDomain(meta model.ResourceMeta, localZone string)
 		Zone: zone,
 	}
 
-	return renderTemplate(trustDomainTmpl, meta, data)
+	return renderTemplate(trustDomainTmpl, func(key string) (string, error) {
+		return lookupLabel(meta.GetLabels(), key)
+	}, data)
+}
+
+// spiffeIDInputs feeds the SPIFFE ID template. Inputs are methods, not fields,
+// so a render records every label it reads, however the template spells it.
+type spiffeIDInputs struct {
+	trustDomain string
+	labels      map[string]string
+	read        map[string]struct{}
+}
+
+// Format keeps print, printf, js and the like from dumping the fields, which
+// would expose labels without recording the read. Templates print a pointer's
+// struct value, so this needs a value receiver.
+func (spiffeIDInputs) Format(f fmt.State, _ rune) {
+	_, _ = fmt.Fprint(f, "spiffeIDInputs")
+}
+
+func newSpiffeIDInputs(trustDomain string, meta model.ResourceMeta) *spiffeIDInputs {
+	return &spiffeIDInputs{
+		trustDomain: trustDomain,
+		labels:      meta.GetLabels(),
+		read:        map[string]struct{}{},
+	}
+}
+
+func (in *spiffeIDInputs) TrustDomain() string { return in.trustDomain }
+
+func (in *spiffeIDInputs) Namespace() string { return in.labelOrEmpty(mesh_proto.KubeNamespaceTag) }
+
+func (in *spiffeIDInputs) ServiceAccount() string {
+	return in.labelOrEmpty(metadata.KumaServiceAccount)
+}
+
+func (in *spiffeIDInputs) Workload() string { return in.labelOrEmpty(metadata.KumaWorkload) }
+
+func (in *spiffeIDInputs) labelOrEmpty(key string) string {
+	in.read[key] = struct{}{}
+	return in.labels[key]
+}
+
+func (in *spiffeIDInputs) label(key string) (string, error) {
+	in.read[key] = struct{}{}
+	return lookupLabel(in.labels, key)
+}
+
+// RenderSpiffeID renders the SPIFFE ID this identity issues to the resource
+// described by meta, in the trust domain it issues in. It also returns, sorted,
+// the labels the render read, even ones meta lacks and even when it fails.
+// Checks of those labels must use this so they see what issuance sees.
+func (r *MeshIdentityResource) RenderSpiffeID(meta model.ResourceMeta, localZone string, environment config_core.EnvironmentType) (string, []string, error) {
+	trustDomain, err := r.Spec.GetTrustDomain(r.GetMeta(), localZone)
+	if err != nil {
+		return "", nil, err
+	}
+	return r.Spec.renderSpiffeID(trustDomain, meta, environment)
 }
 
 func (i *MeshIdentity) GetSpiffeID(trustDomain string, meta model.ResourceMeta, environment config_core.EnvironmentType) (string, error) {
-	spiffeIDTemplate := i.getSpiffeIDTemplate(environment)
+	spiffeID, _, err := i.renderSpiffeID(trustDomain, meta, environment)
+	return spiffeID, err
+}
 
-	data := struct {
-		TrustDomain    string
-		Namespace      string
-		ServiceAccount string
-		Workload       string
-	}{
-		TrustDomain:    trustDomain,
-		Namespace:      meta.GetLabels()[mesh_proto.KubeNamespaceTag],
-		ServiceAccount: meta.GetLabels()[metadata.KumaServiceAccount],
-		Workload:       meta.GetLabels()[metadata.KumaWorkload],
-	}
-	path, err := renderTemplate(spiffeIDTemplate, meta, data)
+func (i *MeshIdentity) renderSpiffeID(trustDomain string, meta model.ResourceMeta, environment config_core.EnvironmentType) (string, []string, error) {
+	in := newSpiffeIDInputs(trustDomain, meta)
+	path, err := renderTemplate(i.getSpiffeIDTemplate(environment), in.label, in)
+	read := slices.Sorted(maps.Keys(in.read))
 	if err != nil {
-		return "", fmt.Errorf("failed to render SPIFFE ID template: %w", err)
+		return "", read, fmt.Errorf("failed to render SPIFFE ID template: %w", err)
 	}
 	spiffeID, err := spiffeid.FromString(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse SPIFFE ID %q: %w", path, err)
+		return "", read, fmt.Errorf("failed to parse SPIFFE ID %q: %w", path, err)
 	}
-	return spiffeID.String(), nil
+	return spiffeID.String(), read, nil
 }
 
-func renderTemplate(tmplStr string, meta model.ResourceMeta, data any) (string, error) {
-	tmpl, err := template.New("").Funcs(map[string]any{
-		"label": func(key string) (string, error) {
-			val, ok := meta.GetLabels()[key]
-			if !ok {
-				return "", errors.Errorf("label %s not found", key)
-			}
-			return val, nil
-		},
-	}).Parse(tmplStr)
+func lookupLabel(labels map[string]string, key string) (string, error) {
+	val, ok := labels[key]
+	if !ok {
+		return "", errors.Errorf("label %s not found", key)
+	}
+	return val, nil
+}
+
+func renderTemplate(tmplStr string, label func(key string) (string, error), data any) (string, error) {
+	tmpl, err := template.New("").Funcs(map[string]any{"label": label}).Parse(tmplStr)
 	if err != nil {
 		return "", fmt.Errorf("failed compiling Go template: %w", err)
 	}
@@ -190,18 +242,4 @@ func (s *MeshIdentityStatus) IsPartiallyReady() bool {
 		}
 	}
 	return false
-}
-
-var (
-	workloadLabelRegex       = regexp.MustCompile(`\{\{\s*label\s+"kuma\.io/workload"\s*\}\}`)
-	workloadPlaceholderRegex = regexp.MustCompile(`\{\{\s*\.Workload\s*\}\}`)
-)
-
-// UsesWorkloadLabel checks if this MeshIdentity's SPIFFE ID path template contains
-// the workload reference in the form of {{ label "kuma.io/workload" }} or {{ .Workload }}.
-// The environment is taken into account because the default Universal path template
-// references .Workload even when no custom path is configured.
-func (i *MeshIdentity) UsesWorkloadLabel(env config_core.EnvironmentType) bool {
-	path := i.SpiffeIDPathTemplate(env)
-	return workloadLabelRegex.MatchString(path) || workloadPlaceholderRegex.MatchString(path)
 }
