@@ -365,7 +365,7 @@ Pseudo algorithm:
 3. Check if inbound has the tag defined in the policy config. 
 4. If yes, iterate over all endpoints of the service and group them in to priority groups, by matching with the specific rule(first localZone, then crossZone). If no, get all the endpoints in the zone. 
    1. Move matching endpoints by first tag to priority 0
-   2. Move matching endpoints by n tag to priority 0 but lower wieght
+   2. Move matching endpoints by n tag to priority 0 but lower weight
    3. All not matching endpoint in the local zone move to priority 0 with weight 1
    4. Iterate over zone endpoints and based on matching put them in priority N+ iteration
 5. Create `LocalityLbEndpoints` with selected endpoints. 
@@ -411,9 +411,9 @@ Egress is not as simple as ingress. Currently, we support Locality Aware when at
 Load balancing based on the metadata seems to be able to solve an issue but it has limitations. Because, egress knows all endpoints and does routing based on matching metadata the request might not obey the priority of zones. In this case we cannot configure different priorities for different clients.
 
 Separate cluster seems to be the only option that could solve this problem. When there is a different configuration of Load Balancing for the one of dataplane, control-plane sends to egress new a cluster `mesh-name:service-name:hash(tag + value)` with the routing based on the SNI: `service-name{mesh=mesh-name,hash=hash}`
-This cluster has a different configuration of priorities and only subset of zones. Dataplanes interested in this Load Balancing are going to have the same configuration of the cluster which sets SNI: `service-name{mesh=mesh-name,hash=hash}` and based in this SNI egress can make a routing decision to route to the specific cluster. That also requries each ingress to create a filter chain match for SNIs, to match an incoming request with the cluster.
+This cluster has a different configuration of priorities and only subset of zones. Dataplanes interested in this Load Balancing are going to have the same configuration of the cluster which sets SNI: `service-name{mesh=mesh-name,hash=hash}` and based in this SNI egress can make a routing decision to route to the specific cluster. That also requires each ingress to create a filter chain match for SNIs, to match an incoming request with the cluster.
 
-Another option doesn't create separate configuration for each client, but uses just Mesh scoped `MeshLoadBalancingStrategy` to configure egress. That reduces possibilites of configuring Egress but can be changed in the future.
+Another option doesn't create separate configuration for each client, but uses just Mesh scoped `MeshLoadBalancingStrategy` to configure egress. That reduces possibilities of configuring Egress but can be changed in the future.
 
 The most favorable approach appears to be defining routing on the client side. Instead of creating separate cluster sets for each client on the Egress, we create an 'aggregate_cluster' for the client:
 
@@ -483,7 +483,7 @@ Without CLA cache:
 We can observe that p90 and p99 are much higher without using the cache. We should keep records in the cache but we have to ensure that generated key is reusable so we don't create to many same CLA entries. Also, we could move CLA cache into MeshContext to keep related things together.
 
 #### MeshHTTPRoute and MeshTCPRoute
-`MeshHTTPRoute` and `MeshTCPRoute` enable the creation of splits for the cluster, and load balancing should be applied to them. It appears that the easiest approach would be to retrieve CLAs for the splits from the `ResourceSet` and then make necessary modifications within the `MeshLoadBalancingStrategy` after their creation. It's important to note that these splits are currently being aggregated during the `GatherEndpoints` function call, but they should not be aggregated in this specific case. Additionally, when working with objects in the `EndpointMap` it's important to avoid manipulating pointers directly and instead make use of copies, or create CLAs cache logic that would support Priorites.
+`MeshHTTPRoute` and `MeshTCPRoute` enable the creation of splits for the cluster, and load balancing should be applied to them. It appears that the easiest approach would be to retrieve CLAs for the splits from the `ResourceSet` and then make necessary modifications within the `MeshLoadBalancingStrategy` after their creation. It's important to note that these splits are currently being aggregated during the `GatherEndpoints` function call, but they should not be aggregated in this specific case. Additionally, when working with objects in the `EndpointMap` it's important to avoid manipulating pointers directly and instead make use of copies, or create CLAs cache logic that would support Priorities.
 
 Example:
 

@@ -111,10 +111,10 @@ status:
   * **endpoints**: defines a list of endpoints.
     * **address**: defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets
     * **port**: defines a port of a destination.
-  * **tls**: provides a TLS configuration when proxy is resposible for a TLS origination
+  * **tls**: provides a TLS configuration when proxy is responsible for a TLS origination
     * **enabled**: defines if proxy should originate TLS.
     * **version**: section for providing version specification.
-      * **min**: defines minmum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`
+      * **min**: defines minimum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`
       * **max**: defines maximum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`
     * **allowRenegotiation**: defines if TLS sessions will allow renegotiation.
     * **verification**: section for providing TLS verification details.
@@ -182,7 +182,7 @@ Cluster name: `meshexternalservice_{resourceName}`, so for the resource name abo
 Currently the name is `outbound:{vip_ip}:{vip_port}` - we think that VIP IP does not tell the user too much information so we suggest changing it.
 We suggest naming them `meshexternalservice_{resourceName}` because each listener points to the cluster.
 
-#### Extensability
+#### Extensibility
 
 Provided model allows creating separate plugins which can integrate with different cloud providers or components. The user can create it's own custom configuration and later in the code create XDS configuration based on it. 
 
@@ -270,7 +270,7 @@ For the purpose of `MeshExternalServices` we are going to take a completely new 
 
 #### Wildcard domain
 
-Wildcard domains are not going to be supported as a part of `MeshExternalService`. We want to introduce a new policy `MeshPassthrough` which is going to be resposible for exposing wildcard and domains.
+Wildcard domains are not going to be supported as a part of `MeshExternalService`. We want to introduce a new policy `MeshPassthrough` which is going to be responsible for exposing wildcard and domains.
 
 ### Other options
 
@@ -356,7 +356,7 @@ status:
     * **port**: defines a port to which a user does requests
     * **protocol**: defines a protocol of the communication. Possible values:
       * `tls`: should be used when TLS traffic is originated by the client application in the case the `kuma.io/protocol` would be tcp
-      * `tcp`: WARNING: shouldn't be used when match has only domains. On the TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port. We are going to validate configuration and do not apply config when protocol is tcp and `type: Domain`.
+      * `tcp`: WARNING: shouldn't be used when match has only domains. On the TCP level we are not able to distinguish domain, in this case it is going to hijack whole traffic on this port. We are going to validate configuration and do not apply config when protocol is tcp and `type: Domain`.
       * `grpc`
       * `http`
       * `http2`
@@ -371,10 +371,10 @@ status:
     * **endpoints**: defines a list of endpoints
       * **address**: defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets
       * **port**: defines a port of a destination.
-    * **tls**: provides a TLS configuration when proxy is resposible for a TLS origination
+    * **tls**: provides a TLS configuration when proxy is responsible for a TLS origination
       * **enabled**: defines if proxy should originate TLS.
       * **version**: section for providing version specification.
-        * **min**: defines minmum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`. Default: `TLSAuto`
+        * **min**: defines minimum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`. Default: `TLSAuto`
         * **max**: defines maximum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`. Default: `TLSAuto`
       * **allowRenegotiation**: defines if TLS sessions will allow renegotiation.
       * **verification**: section for providing TLS verification details.
@@ -519,7 +519,7 @@ status: # managed by CP. Not shared cross zone, but synced to global
     * **port**: defines a port to which a user does requests
     * **protocol**: defines a protocol of the communication. Possible values:
       * `tls`: should be used when TLS traffic is originated by the client application
-      * `tcp`: WARNING: shouldn't be used when match has only domains. On the TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port.
+      * `tcp`: WARNING: shouldn't be used when match has only domains. On the TCP level we are not able to distinguish domain, in this case it is going to hijack whole traffic on this port.
       * `grpc`
       * `http`
       * `http2`
@@ -534,10 +534,10 @@ status: # managed by CP. Not shared cross zone, but synced to global
   * **destinations**: defines a list of domains, unix sockets or ips:
     * **address**: defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets
     * **port**: defines a port of a destination.
-  * **tls**: provides a TLS configuration when proxy is resposible for a TLS origination
+  * **tls**: provides a TLS configuration when proxy is responsible for a TLS origination
     * **enabled**: defines if proxy should originate TLS. If no certs provided uses default system bundled.
     * **version**: section for providing version specification.
-      * **min**: defines minmum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`
+      * **min**: defines minimum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`
       * **max**: defines maximum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`
     * **allowRenegotiation**: defines if TLS sessions will allow renegotiation.
     * **verification**: section for providing TLS verification details.
@@ -560,7 +560,7 @@ status: # managed by CP. Not shared cross zone, but synced to global
   * **vips**: list of allocated VIPs
     * **ip**: allocated IP for a provided domain with `InternalVIP` type in a match section
     * **type**: provides information about the way IP was provided
-    * **hostname**: provides a domain with `InternalVIP` type in a match section for which IP was allocated. In case of many entries it helps corelating entries.
+    * **hostname**: provides a domain with `InternalVIP` type in a match section for which IP was allocated. In case of many entries it helps correlating entries.
 
 ##### Hostname and VIP generation
 

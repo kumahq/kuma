@@ -81,7 +81,7 @@ conf:
       total: 20 # errors with status code 5xx and locally originated errors, in Split Mode - just errors with status code 5xx
       gateway: 10 # subset of 'total' related to gateway errors (502, 503 or 504 status code)
       local: 7 # takes into account only in Split Mode, number of locally originated errors
-    standardDeviation: # detection based on success rate, aggregated from every host in the cluser
+    standardDeviation: # detection based on success rate, aggregated from every host in the cluster
       requestVolume: 10 # ignore hosts with less number of requests than 'requestVolume'
       minimumHosts: 5 # won't count success rate for cluster if number of hosts with required 'requestVolume' is less than 'minimumHosts'
       factor: 1.9 # resulting threshold = mean - (stdev * success_rate_stdev_factor)

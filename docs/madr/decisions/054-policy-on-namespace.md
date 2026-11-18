@@ -453,7 +453,7 @@ As a **Backend Service Owner** I want all requests routed to `version: v2` insta
 so that consumers didn't wait longer than max possible processing time.
 
 As a **Frontend Service Owner** I want all requests routed to `version: v2` instances of `backend` to have 3s timeout
-so that my service meets SLO and responds withing 3s.
+so that my service meets SLO and responds within 3s.
 
 ```yaml
 # zone-1, producer route 
