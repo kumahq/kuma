@@ -4,7 +4,9 @@ import (
 	"context"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	envoy_stream "github.com/envoyproxy/go-control-plane/pkg/server/stream/v3"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -72,5 +74,34 @@ var _ = Describe("Reconciler", func() {
 		newSnapshot, err := snapshotCache.GetSnapshot(node.Id)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(snapshot).To(BeIdenticalTo(newSnapshot))
+	})
+
+	It("should clear the cache entry of a stream that closed before its first snapshot", func() {
+		// given a watch opened before any snapshot exists
+		sub := envoy_stream.NewDeltaSubscription([]string{"*"}, nil, nil, true)
+		_, err := snapshotCache.CreateDeltaWatch(&envoy_sd.DeltaDiscoveryRequest{Node: node, TypeUrl: string(core_mesh.MeshType)}, sub, make(chan envoy_cache.DeltaResponse, 1))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(snapshotCache.GetStatusKeys()).To(ConsistOf(node.Id))
+
+		// when
+		Expect(reconciler.Clear(node)).To(Succeed())
+
+		// then
+		Expect(snapshotCache.GetStatusKeys()).To(BeEmpty())
+	})
+
+	It("should build all types when there is no previous snapshot", func() {
+		// given
+		Expect(store.Create(context.Background(), samples.MeshDefault(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))).To(Succeed())
+
+		// when only an unrelated type is reported as changed
+		err, changed := reconciler.Reconcile(context.Background(), node, map[core_model.ResourceType]struct{}{core_mesh.DataplaneType: {}}, logr.Discard())
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(changed).To(BeTrue())
+		snapshot, err := snapshotCache.GetSnapshot(node.Id)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(snapshot.GetResources(string(core_mesh.MeshType))).To(HaveLen(1))
 	})
 })
