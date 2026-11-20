@@ -2,6 +2,7 @@ package sync_test
 
 import (
 	"context"
+	"errors"
 	"maps"
 	"net"
 	"time"
@@ -71,6 +72,14 @@ func (s *staticIdentityProvider) GetMeshTrustCA(_ context.Context, _ *meshidenti
 }
 
 var _ sync.SnapshotReconciler = &staticSnapshotReconciler{}
+
+type failingSnapshotReconciler struct {
+	staticSnapshotReconciler
+}
+
+func (f *failingSnapshotReconciler) Reconcile(context.Context, xds_context.Context, *core_xds.Proxy) (bool, error) {
+	return false, errors.New("reconcile failed")
+}
 
 var _ = Describe("Dataplane Watchdog", func() {
 	const zone = ""
@@ -277,6 +286,30 @@ var _ = Describe("Dataplane Watchdog", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshotReconciler.proxy.WorkloadIdentityRequired).To(BeFalse())
+		})
+	})
+
+	Context("Watchdog", func() {
+		It("should back off when sync keeps failing", func() {
+			// given
+			Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
+			Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
+			resKey := core_model.MetaToResourceKey(samples.DataplaneBackend().GetMeta())
+			deps.DataplaneReconciler = &failingSnapshotReconciler{}
+			factory, err := sync.NewDataplaneWatchdogFactory(xdsMetrics, time.Millisecond, deps)
+			Expect(err).ToNot(HaveOccurred())
+			watchdog := factory.New(resKey, &core_xds.DataplaneMetadata{ProxyType: mesh_proto.DataplaneProxyType})
+
+			// when
+			// the window is generous so a slow first sync on a loaded CI runner still fails at least twice
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			watchdog.Start(ctx)
+
+			// then retries are spaced 1, 2, 4, 8... ticks apart, so about 10 in 1000 ticks
+			errs := testutil.ToFloat64(xdsMetrics.XdsGenerationsErrors)
+			Expect(errs).To(BeNumerically(">=", 2))
+			Expect(errs).To(BeNumerically("<=", 12))
 		})
 	})
 })
