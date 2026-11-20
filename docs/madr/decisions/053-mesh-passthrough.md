@@ -62,20 +62,20 @@ spec:
 `MeshPassthrough` should allow targeting specific subset of proxies and apply configuration only on them. We should support following kinds: `Mesh` and`MeshSubset`.
 
 * **enabled**: defines if sidecar should be in a passthrough mode and allow all outside traffic. If `true`, `matchAppend` is not used. Default: `false`.
-* **matchAppend**: list of all domains/ips/cidrs supported through the selected sidecars. In case there is many polcies matching the same sidecar, lists are merged.
+* **matchAppend**: list of all domains/ips/cidrs supported through the selected sidecars. In case there is many policies matching the same sidecar, lists are merged.
 * **type**: type of the entry, one of `Domain`, `IP` or `CIDR`
 * **value**: value for the entry
 * **port**: port on which service can communicate
 * **protocol**: defines a protocol of the communication. Possible values:
   * `tls`: should be used when TLS traffic is originated by the client application in the case the `kuma.io/protocol` would be tcp
-  * `tcp`: WARNING: can't be used when `match.type == Domain` (at TCP level we are not able to disinguish domain, in this case it is going to hijack whole traffic on this port). This will be validated in the config.
+  * `tcp`: WARNING: can't be used when `match.type == Domain` (at TCP level we are not able to distinguish domain, in this case it is going to hijack whole traffic on this port). This will be validated in the config.
   * `grpc`
   * `http`
   * `http2`
 
 #### Mesh with a passthrough
 
-If there is no `MeshPassthrough` policy targetting specific dataplane we are taking the default value from the `Mesh` object. If there is neither `Mesh` setting nor `MeshPassthrough` policy we are using the default for the control-plane which is `enabled` by default.
+If there is no `MeshPassthrough` policy targeting specific dataplane we are taking the default value from the `Mesh` object. If there is neither `Mesh` setting nor `MeshPassthrough` policy we are using the default for the control-plane which is `enabled` by default.
 
 #### Security
 

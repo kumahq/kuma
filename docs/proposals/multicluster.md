@@ -121,7 +121,7 @@ request URLs to use the `.kuma` DNS zone, and ensure smooth cross-cluster experi
 The model decouples managing dataplanes in a clusters and managing policies for the whole mesh, with a top-level Kuma Global Control Plane that will handle
 the user-facing API and GUI requests. Each Cluster (Kubernetes or Universal) runs Kuma Remote. The described solution
 leverages the Universal configuration model to the whole multi-cluster deployment, regardless of the actual type of
-the clusters managed with the Global Contol Plane.
+the clusters managed with the Global Control Plane.
 
 The high-level architecture is depicted at the picture below.
 

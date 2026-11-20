@@ -84,7 +84,7 @@ If you know you are running only universal tests you can skip creating Kubernete
 make test/e2e/debug K8SCLUSTERS= E2E_PKG_LIST=./test/e2e/trafficpermission/universal/...
 ```
 
-or if the test need only 1 Kuberenetes cluster do this
+or if the test need only 1 Kubernetes cluster do this
 
 ```bash
 make test/e2e/debug K8SCLUSTERS=kuma-1 E2E_PKG_LIST=./test/e2e/trafficpermission/universal/...

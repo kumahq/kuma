@@ -207,7 +207,7 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
        region: eu-west-3 # <<< subset 2
    ```
 
-   **Answer:** yes, a more specifc selector (i.e., by 2 tags instead of just 1) is considered a better match
+   **Answer:** yes, a more specific selector (i.e., by 2 tags instead of just 1) is considered a better match
    
    C. Does match by exact value have higher priority than match by '*' ? E.g.,
  

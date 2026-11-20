@@ -67,12 +67,12 @@ service GlobalKDSService {
 
 New RPCs are going to come with the new xDS implementation called [`Incremental xDS`](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol). We don't want to create a breaking changes in the new api that's why we are going to use delta xDS since the beginning.
 
-### Prioritize operational informations
+### Prioritize operational information
 
 Certain resources require more frequent synchronization than others. For example, Policies, ZoneIngress, and ZoneEgress must be updated immediately, whereas Insights and Dataplanes objects may be delayed.
 
 #### **Current state**
-Control-plane has a configuration option that allows to specify how often it should refresh the cache state. If newly calculated snapshot hasn't change then informations are not propagated to the clien't.
+Control-plane has a configuration option that allows to specify how often it should refresh the cache state. If newly calculated snapshot hasn't change then information are not propagated to the clien't.
 
 #### **New state**
 We are going to keep that behaviour.
@@ -151,7 +151,7 @@ Cons
 ### Introduce delta xDS
 
 Pros
-* more performent way of synchronization of the resources
+* more performant way of synchronization of the resources
 * together with new model we can synchronize with go-control-plane implementation
 
 Cons

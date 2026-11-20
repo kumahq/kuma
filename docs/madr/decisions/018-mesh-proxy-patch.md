@@ -34,7 +34,7 @@ Additionally, the requirement of profile for a default config is a blocker when 
 
 When we created we were predicting that we may have user-created profiles.
 This never happened in the end. We only used profiles internally.
-If someone would like to build their own config I presume they would rather implement this as a plugin. Maintaing whole Envoy config in ProxyTemplate is not really maintainable solution.
+If someone would like to build their own config I presume they would rather implement this as a plugin. Maintaining whole Envoy config in ProxyTemplate is not really maintainable solution.
 If we ever see a need to skip the default config, we can do this by introducing a new flag like `skipDefaultConfigGeneration` in `defaults` section.
 
 ### No modifications on zone proxies
