@@ -1827,6 +1827,12 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					createEndpointBuilderWith("zone-3", "192.168.1.6", map[string]string{}),
 					createEndpointBuilderWith("zone-4", "192.168.1.7", map[string]string{}),
 					createEndpointBuilderWith("zone-5", "192.168.1.8", map[string]string{}),
+				).
+				AddEndpoints("default_backend___msvc_80",
+					createEndpointBuilderWith("test-zone", "192.168.1.1", map[string]string{"k8s.io/node": "node1"}),
+					createEndpointBuilderWith("test-zone", "192.168.1.2", map[string]string{"k8s.io/node": "node2"}),
+					createEndpointBuilderWith("zone-2", "192.168.1.5", map[string]string{}),
+					createEndpointBuilderWith("zone-3", "192.168.1.6", map[string]string{}),
 				),
 			meshservices: []*meshservice_api.MeshServiceResource{
 				{
