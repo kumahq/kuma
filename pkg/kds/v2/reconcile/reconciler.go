@@ -50,10 +50,9 @@ func (r *reconciler) Clear(node *envoy_core.Node) error {
 	id := r.hasher.ID(node)
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	snapshot, err := r.cache.GetSnapshot(id)
-	if err != nil {
-		return nil // GetSnapshot returns an error if there is no snapshot. We don't need to error here
-	}
+	snapshot, _ := r.cache.GetSnapshot(id)
+	// Clear even without a snapshot: the cache keeps a status entry per stream as
+	// soon as the first watch opens, and nothing else removes it.
 	r.cache.ClearSnapshot(id)
 	if snapshot == nil {
 		return nil
@@ -67,6 +66,13 @@ func (r *reconciler) Clear(node *envoy_core.Node) error {
 func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, changedTypes map[core_model.ResourceType]struct{}, logger logr.Logger) (error, bool) {
 	id := r.hasher.ID(node)
 	old, _ := r.cache.GetSnapshot(id)
+	if old == nil {
+		// no base to copy unchanged types from: never publish a partial snapshot
+		changedTypes = make(map[core_model.ResourceType]struct{}, len(r.providedTypes))
+		for _, typ := range r.providedTypes {
+			changedTypes[typ] = struct{}{}
+		}
+	}
 
 	// construct builder with unchanged types from the old snapshot
 	builder := cache_v2.NewSnapshotBuilder(r.providedTypes)
