@@ -120,7 +120,7 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 		ctx, cancel := context.WithCancel(context.Background())
 		streams.watchdogCancel = cancel
 		// kick off watchdog for that Dataplane
-		watchdog := t.newWatchdog(req.Node)
+		watchdog := t.newWatchdog(dataplaneKey, req.Node)
 		go func() {
 			defer cancel()
 			watchdog.Start(ctx)
@@ -132,7 +132,7 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 	return nil
 }
 
-func (t *tracker) newWatchdog(node *envoy_core.Node) util_xds_v3.Watchdog {
+func (t *tracker) newWatchdog(dataplaneKey core_model.ResourceKey, node *envoy_core.Node) util_xds_v3.Watchdog {
 	return &watchdog.SimpleWatchdog{
 		NewTicker: func() *time.Ticker {
 			return time.NewTicker(t.config.RefreshInterval.Duration)
@@ -149,9 +149,14 @@ func (t *tracker) newWatchdog(node *envoy_core.Node) util_xds_v3.Watchdog {
 			t.log.Error(err, "OnTick() failed")
 		},
 		OnStop: func() {
-			if err := t.reconciler.Clear(context.Background(), node); err != nil {
-				t.log.Error(err, "OnTick() failed")
-			}
+			t.Lock()
+            defer t.Unlock()
+            // The Dataplane may have reconnected before this watchdog stopped. The new stream
+            // started its own watchdog, so its snapshot and status must stay in the cache.
+            if _, reconnected := t.dpStreams[dataplaneKey]; reconnected {
+            	return
+            }
+            t.reconciler.Clear(node)
 		},
 	}
 }
