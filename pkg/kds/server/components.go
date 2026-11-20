@@ -56,6 +56,7 @@ func New(
 	}
 	callbacks := util_xds_v3.CallbacksChain{
 		NewTenancyCallbacks(rt.Tenants()),
+		&streamScopeCallbacks{},
 		&typeAdjustCallbacks{},
 		util_xds_v3.NewControlPlaneIdCallbacks(serverID),
 		util_xds_v3.AdaptDeltaCallbacks(util_xds.LoggingCallbacks{Log: log}),
@@ -182,9 +183,14 @@ func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotC
 type Hasher struct{}
 
 func (Hasher) ID(node *envoy_core.Node) string {
-	tenantID, found := util.TenantFromMetadata(node)
-	if !found {
-		return node.Id
+	id := node.Id
+	if tenantID, found := util.TenantFromMetadata(node); found {
+		id += ":" + tenantID
 	}
-	return node.Id + ":" + tenantID
+	// Scope the snapshot to the stream: a zone can briefly have two streams (leader
+	// handover) and the one that closes clears its cache entry.
+	if streamID, found := util.StreamFromMetadata(node); found {
+		id += "/" + streamID
+	}
+	return id
 }
