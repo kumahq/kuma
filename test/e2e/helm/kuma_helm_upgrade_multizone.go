@@ -31,17 +31,6 @@ import (
 // or upgraded here: Global-on-Kubernetes was removed (#17270), Global is always
 // Universal now, and the test framework has no mechanism to run an old Universal
 // kuma-cp binary, only old Helm charts/images for Kubernetes clusters.
-// vipOutboundNack is why this spec relaxes two things a 2.14 pre-upgrade zone
-// cannot satisfy: it sends Dataplanes whose VIP outbounds carry no backendRef,
-// which this Global rejects on every resync until the upgrade lands. Both ends
-// count the NACK - Global as the sync client that sends it, the zone as the
-// delta server that receives it - and the rejection also makes the test
-// server's Dataplane reach Global only if it wins a race with VIP computation.
-// Fixed in 2.14.x. Grep this identifier to revert every accommodation once a
-// release carrying the fix is out and SupportedVersionEntriesAtLeast picks it
-// up.
-const vipOutboundNack = "2.14 zones send VIP outbounds without backendRef, fixed but not yet released"
-
 func UpgradingZoneWithHelmChart() {
 	namespace := "helm-upgrade-ns"
 	testServerURL := fmt.Sprintf("test-server.%s.svc.cluster.local", namespace)
@@ -69,8 +58,8 @@ func UpgradingZoneWithHelmChart() {
 	})
 
 	E2EAfterEach(func() {
-		ControlPlaneAssertions(global, KnownNack("kds_nack_total", vipOutboundNack))
-		ControlPlaneAssertions(zoneK8s, KnownNack("kds_delta_requests_received", vipOutboundNack))
+		ControlPlaneAssertions(global)
+		ControlPlaneAssertions(zoneK8s)
 		ControlPlaneAssertions(zoneUniversal)
 		grp := sync.WaitGroup{}
 		grp.Add(3)
@@ -167,16 +156,11 @@ spec:
 				)).To(HaveField("Instance", ContainSubstring("test-server")))
 			}, "60s", "1s").Should(Succeed())
 
-			// Only the zone's own mesh zone ingress is asserted here. Whether
-			// the test server's Dataplane also makes it across is a race while
-			// the pre-upgrade zone is on 2.14: if KDS syncs it before the zone
-			// computes its VIP outbounds it lands, otherwise it is already
-			// invalid and Global rejects it (see vipOutboundNack). The count
-			// after the upgrade is asserted strictly below, which is what this
-			// spec is actually about.
+			// The zone's own mesh zone ingress is a Dataplane too, so it counts
+			// alongside the test server and the demo client.
 			Eventually(func(g Gomega) (int, error) {
 				return NumberOfResources(global, mesh.DataplaneResourceTypeDescriptor)
-			}, "60s", "1s").Should(BeNumerically(">=", 1), "dpps should be synced to global")
+			}, "60s", "1s").Should(Equal(3), "dpps should be synced to global")
 
 			By("deploy a new universal zone with latest version")
 			err = NewClusterSetup().
