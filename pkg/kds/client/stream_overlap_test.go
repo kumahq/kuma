@@ -6,8 +6,11 @@ import (
 	"time"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_stream "github.com/envoyproxy/go-control-plane/pkg/server/stream/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus"
+	prometheus_dto "github.com/prometheus/client_model/go"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	common_api "github.com/kumahq/kuma/v3/api/common/v1alpha1"
@@ -47,6 +50,30 @@ func (s *gatedStore) List(ctx context.Context, rl model.ResourceList, fs ...stor
 	return s.ResourceStore.List(ctx, rl, fs...)
 }
 
+// observedStream is global's side of a zone stream. It closes meshSent once
+// global sent the Meshes and meshACKed once the zone ACKed them.
+type observedStream struct {
+	envoy_stream.DeltaStream
+	meshSent, meshACKed chan struct{}
+	sentOnce, ackedOnce sync.Once
+}
+
+func (s *observedStream) Send(resp *envoy_sd.DeltaDiscoveryResponse) error {
+	err := s.DeltaStream.Send(resp)
+	if resp.GetTypeUrl() == string(mesh.MeshType) {
+		s.sentOnce.Do(func() { close(s.meshSent) })
+	}
+	return err
+}
+
+func (s *observedStream) Recv() (*envoy_sd.DeltaDiscoveryRequest, error) {
+	req, err := s.DeltaStream.Recv()
+	if req.GetTypeUrl() == string(mesh.MeshType) && req.GetResponseNonce() != "" {
+		s.ackedOnce.Do(func() { close(s.meshACKed) })
+	}
+	return req, err
+}
+
 // withoutFeature drops one KDS feature from the node metadata the zone sends,
 // like an older zone CP replica that does not support it.
 type withoutFeature struct {
@@ -67,6 +94,8 @@ func (s *withoutFeature) Send(req *envoy_sd.DeltaDiscoveryRequest) error {
 	return s.KDSSyncServiceStream.Send(req)
 }
 
+type streamWrapper func(kds_client.KDSSyncServiceStream) kds_client.KDSSyncServiceStream
+
 // During a zone leader handover two streams of the same zone can be connected to
 // the same global for a while. Global must keep their snapshots apart.
 var _ = Describe("Zone streams overlapping during leader handover", func() {
@@ -74,7 +103,8 @@ var _ = Describe("Zone streams overlapping during leader handover", func() {
 
 	var globalStore store.ResourceStore
 	var rt interface{ EventBus() events.EventBus }
-	var connect func(name string, zoneStore store.ResourceStore, gate <-chan struct{}, missingFeature string) func()
+	var connect func(name string, zoneStore store.ResourceStore, wrap streamWrapper) (func(), *observedStream)
+	var fullReconciles func() uint64
 
 	BeforeEach(func() {
 		globalStore = memory.NewStore()
@@ -88,29 +118,36 @@ var _ = Describe("Zone streams overlapping during leader handover", func() {
 		testRt := setup.NewTestRuntime(context.Background(), cfg, globalStore)
 		rt = testRt
 		kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), cfg)
-		deltaServer, _, err := kds_server.New(core.Log.WithName("global-kds"), testRt, kdsCtx.TypesSentByGlobal, "global", kdsCtx.GlobalProvidedFilter, kdsCtx.GlobalResourceMapper, time.Second, watchdogCfg)
+		deltaServer, kdsMetrics, err := kds_server.New(core.Log.WithName("global-kds"), testRt, kdsCtx.TypesSentByGlobal, "global", kdsCtx.GlobalProvidedFilter, kdsCtx.GlobalResourceMapper, time.Second, watchdogCfg)
 		Expect(err).ToNot(HaveOccurred())
+		// each stream's watchdog does one full reconcile when it starts
+		fullReconciles = func() uint64 {
+			var count uint64
+			for _, result := range []string{kds_server.ResultChanged, kds_server.ResultNoChanges} {
+				m := &prometheus_dto.Metric{}
+				Expect(kdsMetrics.KdsGenerations.WithLabelValues(kds_server.ReasonResync, result, zoneName).(prometheus.Metric).Write(m)).To(Succeed())
+				count += m.GetHistogram().GetSampleCount()
+			}
+			return count
+		}
 
-		connect = func(name string, zoneStore store.ResourceStore, gate <-chan struct{}, missingFeature string) func() {
+		connect = func(name string, zoneStore store.ResourceStore, wrap streamWrapper) (func(), *observedStream) {
 			metrics, err := core_metrics.NewMetrics("")
 			Expect(err).ToNot(HaveOccurred())
-			rs := zoneStore
-			if gate != nil {
-				rs = &gatedStore{ResourceStore: zoneStore, gate: gate}
-			}
-			syncer, err := kds_sync_store.NewResourceSyncer(core.Log.WithName("zone-syncer").WithName(name), rs, store.NoTransactions{}, metrics, context.Background())
+			syncer, err := kds_sync_store.NewResourceSyncer(core.Log.WithName("zone-syncer").WithName(name), zoneStore, store.NoTransactions{}, metrics, context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			stop := make(chan struct{})
 			wg := &sync.WaitGroup{}
 			serverStream := grpc.NewMockDeltaServerStream()
+			observed := &observedStream{DeltaStream: serverStream, meshSent: make(chan struct{}), meshACKed: make(chan struct{})}
 			wg.Go(func() {
-				_ = deltaServer.DeltaStreamHandler(mux.NewErrorRecorderStream(serverStream), "")
+				_ = deltaServer.DeltaStreamHandler(mux.NewErrorRecorderStream(observed), "")
 			})
 			cs := serverStream.ClientStream(stop)
 			var clientStream kds_client.KDSSyncServiceStream = cs
-			if missingFeature != "" {
-				clientStream = &withoutFeature{KDSSyncServiceStream: cs, feature: missingFeature}
+			if wrap != nil {
+				clientStream = wrap(cs)
 			}
 			wg.Go(func() {
 				kdsStream := kds_client.NewDeltaKDSStream(clientStream, zoneName, name, "", len(kdsCtx.TypesSentByGlobal))
@@ -131,7 +168,7 @@ var _ = Describe("Zone streams overlapping during leader handover", func() {
 				})
 			}
 			DeferCleanup(closeFn)
-			return closeFn
+			return closeFn, observed
 		}
 	})
 
@@ -153,17 +190,27 @@ var _ = Describe("Zone streams overlapping during leader handover", func() {
 		// handover connects replica-B, then replica-A, then closes replica-B's stream.
 		// With newLeaderThrottled, replica-A has ACKed nothing when that happens.
 		handover := func(newLeaderThrottled bool) {
-			closeB := connect("replica-B", zoneStore, nil, "")
+			closeB, _ := connect("replica-B", zoneStore, nil)
 			Eventually(meshNames(zoneStore), "5s", "50ms").Should(ConsistOf("default", "service-mesh-dev"))
 
 			throttled := make(chan struct{})
-			var gate <-chan struct{}
+			replicaAStore := zoneStore
 			if newLeaderThrottled {
-				gate = throttled
+				replicaAStore = &gatedStore{ResourceStore: zoneStore, gate: throttled}
 			}
-			connect("replica-A", zoneStore, gate, "")
-			time.Sleep(500 * time.Millisecond)
+			reconciles := fullReconciles()
+			_, replicaA := connect("replica-A", replicaAStore, nil)
+			// When replica-B's stream closes, replica-A must be past its full reconcile
+			// and hold the Meshes (throttled) or a Mesh watch (not throttled), or the
+			// specs pass without hitting the bug.
+			Eventually(fullReconciles, "5s", "10ms").Should(BeNumerically(">", reconciles))
+			if newLeaderThrottled {
+				Eventually(replicaA.meshSent, "5s", "10ms").Should(BeClosed())
+			} else {
+				Eventually(replicaA.meshACKed, "5s", "10ms").Should(BeClosed())
+			}
 			closeB()
+			// replica-B's watchdog clears its cache entry after the stream ends
 			time.Sleep(200 * time.Millisecond)
 			close(throttled)
 			time.Sleep(time.Second)
@@ -227,9 +274,11 @@ var _ = Describe("Zone streams overlapping during leader handover", func() {
 
 		// and an old replica without the feature, followed by an upgraded one
 		oldStore, newStore := memory.NewStore(), memory.NewStore()
-		connect("replica-old", oldStore, nil, kds.FeatureHostnameGeneratorMzSelector)
+		connect("replica-old", oldStore, func(s kds_client.KDSSyncServiceStream) kds_client.KDSSyncServiceStream {
+			return &withoutFeature{KDSSyncServiceStream: s, feature: kds.FeatureHostnameGeneratorMzSelector}
+		})
 		Consistently(generators(oldStore), "500ms", "50ms").Should(Equal(0))
-		connect("replica-new", newStore, nil, "")
+		connect("replica-new", newStore, nil)
 		Eventually(generators(newStore), "5s", "20ms").Should(Equal(1))
 
 		// when the generator keeps changing on global

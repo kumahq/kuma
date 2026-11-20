@@ -18,6 +18,7 @@ import (
 	core_store "github.com/kumahq/kuma/v3/pkg/core/resources/store"
 	"github.com/kumahq/kuma/v3/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/v3/pkg/kds/server"
+	"github.com/kumahq/kuma/v3/pkg/kds/util"
 	core_metrics "github.com/kumahq/kuma/v3/pkg/metrics"
 	"github.com/kumahq/kuma/v3/pkg/multitenant"
 	"github.com/kumahq/kuma/v3/pkg/plugins/resources/memory"
@@ -29,6 +30,7 @@ var _ = Describe("Reconciler", func() {
 	var reconciler reconcile.Reconciler
 	var store core_store.ResourceStore
 	var snapshotCache envoy_cache.SnapshotCache
+	hasher := &server.Hasher{}
 
 	node := &envoy_core.Node{
 		Id: "a",
@@ -40,7 +42,6 @@ var _ = Describe("Reconciler", func() {
 	BeforeEach(func() {
 		store = memory.NewStore()
 		generator := reconcile.NewSnapshotGenerator(core_manager.NewResourceManager(store), reconcile.Any, reconcile.NoopResourceMapper)
-		hasher := &server.Hasher{}
 		snapshotCache = envoy_cache.NewSnapshotCache(false, hasher, util_xds.NewLogger(logr.Discard()))
 		metrics, err := core_metrics.NewMetrics("zone-1")
 		Expect(err).ToNot(HaveOccurred())
@@ -88,6 +89,35 @@ var _ = Describe("Reconciler", func() {
 
 		// then
 		Expect(snapshotCache.GetStatusKeys()).To(BeEmpty())
+	})
+
+	It("should clear only the cache entry of the stream that closed", func() {
+		// given two streams of the same zone, each with a snapshot and a watch
+		Expect(store.Create(context.Background(), samples.MeshDefault(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))).To(Succeed())
+		streamNode := func(streamID int64) *envoy_core.Node {
+			n := &envoy_core.Node{Id: node.Id}
+			util.FillStreamMetadata(streamID, n)
+			return n
+		}
+		oldStream, newStream := streamNode(1), streamNode(2)
+		for _, n := range []*envoy_core.Node{oldStream, newStream} {
+			err, changed := reconciler.Reconcile(context.Background(), n, changedTypes, logr.Discard())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(changed).To(BeTrue())
+			sub := envoy_stream.NewDeltaSubscription([]string{"*"}, nil, nil, true)
+			_, err = snapshotCache.CreateDeltaWatch(&envoy_sd.DeltaDiscoveryRequest{Node: n, TypeUrl: string(core_mesh.MeshType)}, sub, make(chan envoy_cache.DeltaResponse, 1))
+			Expect(err).ToNot(HaveOccurred())
+		}
+
+		// when
+		Expect(reconciler.Clear(oldStream)).To(Succeed())
+
+		// then
+		Expect(snapshotCache.GetStatusKeys()).To(ConsistOf(hasher.ID(newStream)))
+		_, err := snapshotCache.GetSnapshot(hasher.ID(oldStream))
+		Expect(err).To(HaveOccurred())
+		_, err = snapshotCache.GetSnapshot(hasher.ID(newStream))
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should build all types when there is no previous snapshot", func() {

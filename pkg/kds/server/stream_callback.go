@@ -15,6 +15,8 @@ type streamScopeCallbacks struct {
 }
 
 func (*streamScopeCallbacks) OnStreamDeltaRequest(streamID int64, request *envoy_sd.DeltaDiscoveryRequest) error {
+	// A request without a node gets the first request's node from the delta
+	// server after the callbacks run, and that one is already stamped.
 	if request.Node != nil {
 		util.FillStreamMetadata(streamID, request.Node)
 	}
