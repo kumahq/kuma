@@ -1,4 +1,4 @@
-FROM registry.k8s.io/build-image/distroless-iptables:v0.11.2@sha256:5517fe2d12edec9f133a1ba58e5dd700f9adf5d0ccd7d50e67c7609509e4e53f
+FROM registry.k8s.io/build-image/distroless-iptables:v0.11.3@sha256:59e36fe0907c035386bde9c9030ba5eeacb3c3eb7c1a8aade9ccaa9e3856b146
 ARG ARCH
 
 COPY /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
