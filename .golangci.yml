@@ -163,7 +163,7 @@ linters:
     usestdlibvars:
       http-status-code: false
   exclusions:
-    generated: lax
+    generated: strict
     presets:
       - comments
       - common-false-positives
