@@ -199,7 +199,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 
 			if cfg.DataplaneRuntime.SystemCaPath == "" {
-				cfg.DataplaneRuntime.SystemCaPath = certificate.GetOsCaFilePath()
+				cfg.DataplaneRuntime.SystemCaPath = certificate.GetOsCaFilePath(cfg.DataplaneRuntime.WorkDir)
 			}
 
 			if cfg.ControlPlane.CaCert == "" && cfg.ControlPlane.CaCertFile != "" {
