@@ -152,7 +152,6 @@ func applyToInbounds(
 		protocol := core_meta.ParseProtocol(m.Inbound.GetProtocol())
 		kumaValues := listeners_v3.KumaValues{
 			SourceService:      mesh_proto.ServiceUnknown,
-			SourceIP:           dataplane.GetAddress(), // todo(lobkovilya): why do we set SourceIP always to DPP's address? see https://github.com/kumahq/kuma/issues/13635
 			DestinationService: dataplane.InboundIdentifyingName(m.Inbound),
 			Mesh:               dataplane.GetMeta().GetMesh(),
 			Zone:               zone,
