@@ -267,8 +267,9 @@ var _ = Describe("resilientComponent", func() {
 		log, root := newRecordingLogger()
 		stop := make(chan struct{})
 
-		const stableRun = 30 * time.Millisecond
-		const tinyMax = 1 * time.Millisecond
+		const stableRun = 100 * time.Millisecond
+		// Wide enough that a "quick" failure on a loaded runner isn't mistaken for a stable run.
+		const tinyMax = 20 * time.Millisecond
 
 		// Pre-burst pushes the sampler past the always-log threshold and
 		// accumulates suppressed entries inside the same 10s window.
@@ -300,7 +301,8 @@ var _ = Describe("resilientComponent", func() {
 			defer close(done)
 			Expect(r.Start(stop)).To(Succeed())
 		}()
-		Eventually(c.calls.Load, "5s", "5ms").Should(BeNumerically(">=", int64(len(script))))
+		// The extra call blocks on the empty script, so the last scripted failure is already logged.
+		Eventually(c.calls.Load, "5s", "5ms").Should(BeNumerically(">", int64(len(script))))
 		close(stop)
 		Eventually(done).Should(BeClosed())
 
