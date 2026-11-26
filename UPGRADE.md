@@ -6,7 +6,7 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
-## Upgrade to `3.0.0`
+## Upgrade to `3.1.x`
 
 ### Images no longer contain a shell
 
@@ -16,6 +16,8 @@ Use an ephemeral container instead, for example `kubectl debug -it <pod> --image
 The Helm chart no longer needs a shell: the CRD install hook runs `kumactl install crds --output-file` directly and the `<release>-install-crds-scripts` `ConfigMap` is gone.
 The CNI container reads its startup delay from `DELAY_STARTUP_SECONDS` and uses `/install-cni ready` as its readiness probe.
 If you render your own manifests for these components, drop any `sh -c` wrappers.
+
+## Upgrade to `3.0.0`
 
 ### System namespace is labeled on every Helm upgrade
 
