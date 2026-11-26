@@ -31,6 +31,7 @@ type InstallerConfig struct {
 	CniConfName                       string `envconfig:"cni_conf_name" default:""`
 	CniLogLevel                       string `envconfig:"cni_log_level" default:"info"`
 	CniNetworkConfig                  string `envconfig:"cni_network_config" default:""`
+	DelayStartupSeconds               int    `envconfig:"delay_startup_seconds" default:"0"`
 	HostCniNetDir                     string `envconfig:"cni_net_dir" default:"/etc/cni/net.d"`
 	KubeconfigName                    string `envconfig:"kubecfg_file_name" default:"ZZZ-kuma-cni-kubeconfig"`
 	KubernetesCaFile                  string `envconfig:"kube_ca_file" default:"/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"`

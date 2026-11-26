@@ -1,6 +1,7 @@
 package install_test
 
 import (
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -37,4 +38,23 @@ var _ = Context("kumactl install crds", func() {
 			goldenFile: "install-crds.all.golden.yaml",
 		}),
 	)
+
+	It("should write CRD resources to the output file", func() {
+		// given
+		outputFile := filepath.Join(GinkgoT().TempDir(), "crds.yaml")
+		stdout, stderr, rootCmd := test.DefaultTestingRootCmd("install", "crds", "--output-file", outputFile)
+
+		// when
+		err := rootCmd.Execute()
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout.String()).To(BeEmpty())
+		Expect(stderr.String()).To(BeEmpty())
+
+		// and
+		actual, err := os.ReadFile(outputFile)
+		Expect(err).ToNot(HaveOccurred())
+		ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "install-crds.all.golden.yaml"))
+	})
 })

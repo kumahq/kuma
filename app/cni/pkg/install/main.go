@@ -236,6 +236,11 @@ func Run(ctx context.Context) {
 		os.Exit(2)
 	}
 
+	if installerConfig.DelayStartupSeconds > 0 {
+		log.Info("delaying startup", "seconds", installerConfig.DelayStartupSeconds)
+		time.Sleep(time.Duration(installerConfig.DelayStartupSeconds) * time.Second)
+	}
+
 	if err := install(ctx, installerConfig); err != nil {
 		log.Error(err, "error occurred during cni installation")
 		os.Exit(3)
@@ -249,6 +254,14 @@ func Run(ctx context.Context) {
 	if err := runLoop(installerConfig); err != nil {
 		log.Error(err, "checking installation failed - exiting")
 		os.Exit(5)
+	}
+}
+
+// CheckReady exits with a non-zero code when the ready file is missing.
+// It is used as the readiness probe, so the image doesn't need a shell or `cat`
+func CheckReady() {
+	if !files.FileExists(readyFilePath) {
+		os.Exit(1)
 	}
 }
 

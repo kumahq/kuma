@@ -8,6 +8,15 @@ does not have any particular instructions.
 
 ## Upgrade to `3.0.0`
 
+### Images no longer contain a shell
+
+The `kuma-cp`, `kuma-dp`, `kumactl` and `kuma-cni` images now use shell-free distroless bases instead of the `:debug` variants with busybox.
+`kubectl exec <pod> -- sh` no longer works in these containers.
+Use an ephemeral container instead, for example `kubectl debug -it <pod> --image=busybox --target=<container>`.
+The Helm chart no longer needs a shell: the CRD install hook runs `kumactl install crds --output-file` directly and the `<release>-install-crds-scripts` `ConfigMap` is gone.
+The CNI container reads its startup delay from `DELAY_STARTUP_SECONDS` and uses `/install-cni ready` as its readiness probe.
+If you render your own manifests for these components, drop any `sh -c` wrappers.
+
 ### System namespace is labeled on every Helm upgrade
 
 The Helm hook that labels the system namespace with `kuma.io/sidecar-injection: "false"` now runs on `pre-upgrade` as well as `pre-install`.

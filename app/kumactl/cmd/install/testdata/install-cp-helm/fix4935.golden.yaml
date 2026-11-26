@@ -611,10 +611,8 @@ spec:
             initialDelaySeconds: 0
             exec:
               command:
-                - cat
-                - /tmp/ready
-          command: [ "sh", "-c", "--" ]
-          args: [ "sleep 0 && exec /install-cni" ]
+                - /install-cni
+                - ready
           securityContext:
             readOnlyRootFilesystem: true
             runAsGroup: 0
@@ -637,6 +635,8 @@ spec:
               value: "false"
             - name: CNI_LOG_LEVEL
               value: "info"
+            - name: DELAY_STARTUP_SECONDS
+              value: "0"
           resources:
             limits:
               memory: 100Mi

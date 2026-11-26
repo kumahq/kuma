@@ -2,6 +2,7 @@ package install
 
 import (
 	"context"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -22,6 +23,16 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 		Use:   "crds",
 		Short: "Install Kuma Custom Resource Definitions on Kubernetes",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			out := cmd.OutOrStdout()
+			if args.OutputFile != "" {
+				f, err := os.Create(args.OutputFile)
+				if err != nil {
+					return errors.Wrap(err, "Failed to create output file")
+				}
+				defer f.Close()
+				out = f
+			}
+
 			wantCrdFiles, err := ctx.InstallCrdTemplateFiles(args)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read CRD files")
@@ -30,7 +41,7 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 			if !args.OnlyMissing {
 				singleFile := data.JoinYAML(wantCrdFiles)
 
-				if _, err := cmd.OutOrStdout().Write(singleFile.Data); err != nil {
+				if _, err := out.Write(singleFile.Data); err != nil {
 					return errors.Wrap(err, "Failed to output rendered resources")
 				}
 
@@ -69,7 +80,7 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 			if len(crdsToInstallMap) > 0 {
 				singleFile := data.JoinYAML(crdsToInstall)
 
-				if _, err := cmd.OutOrStdout().Write(singleFile.Data); err != nil {
+				if _, err := out.Write(singleFile.Data); err != nil {
 					return errors.Wrap(err, "Failed to output rendered resources")
 				}
 			}
@@ -79,6 +90,7 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&args.OnlyMissing, "only-missing", false, "install only resources which are not already present in a cluster")
+	cmd.Flags().StringVar(&args.OutputFile, "output-file", "", "write resources to the given file instead of stdout")
 
 	return cmd
 }

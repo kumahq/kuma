@@ -5,5 +5,13 @@ commandTests:
   command: kuma-dp
   args: ["version"]
 
+fileExistenceTests:
+- name: "no busybox shell"
+  path: /busybox/sh
+  shouldExist: false
+- name: "no /bin/sh"
+  path: /bin/sh
+  shouldExist: false
+
 metadataTest:
   entrypoint: ["/usr/bin/kuma-dp"]
