@@ -28,9 +28,22 @@ type KumaValues struct {
 	TrafficDirection   envoy.TrafficDirection
 }
 
+const (
+	cmdDownstreamRemoteAddress            = "%DOWNSTREAM_REMOTE_ADDRESS%"
+	cmdDownstreamRemoteAddressWithoutPort = "%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"
+)
+
 func InterpolateKumaValues(format string, values KumaValues) string {
-	format = strings.ReplaceAll(format, CMD_KUMA_SOURCE_ADDRESS, net.JoinHostPort(values.SourceIP, "0"))
-	format = strings.ReplaceAll(format, CMD_KUMA_SOURCE_ADDRESS_WITHOUT_PORT, values.SourceIP)
+	sourceAddress := net.JoinHostPort(values.SourceIP, "0")
+	sourceAddressWithoutPort := values.SourceIP
+	if values.TrafficDirection == envoy.TrafficDirectionInbound {
+		// On inbound the source is the caller, which is only known per connection,
+		// so leave it to Envoy instead of rendering the proxy's own address.
+		sourceAddress = cmdDownstreamRemoteAddress
+		sourceAddressWithoutPort = cmdDownstreamRemoteAddressWithoutPort
+	}
+	format = strings.ReplaceAll(format, CMD_KUMA_SOURCE_ADDRESS, sourceAddress)
+	format = strings.ReplaceAll(format, CMD_KUMA_SOURCE_ADDRESS_WITHOUT_PORT, sourceAddressWithoutPort)
 	format = strings.ReplaceAll(format, CMD_KUMA_SOURCE_SERVICE, values.SourceService)
 	format = strings.ReplaceAll(format, CMD_KUMA_DESTINATION_SERVICE, values.DestinationService)
 	format = strings.ReplaceAll(format, CMD_KUMA_MESH, values.Mesh)
