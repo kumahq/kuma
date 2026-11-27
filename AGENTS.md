@@ -147,9 +147,12 @@ Uses `mise` (config: `mise.toml`). Install via `make install`. Includes: buf, gi
 ## Gotchas
 
 - **RBAC gate**: if `deployments/` RBAC manifests change, `UPGRADE.md` must also be updated or `make check` fails
+- **`UPGRADE.md` sections**: never add notes to a released version's section (check `git tag -l 'v*'`). On `master`, use the next minor as `## Upgrade to \`X.Y.x\`` (e.g. `3.1.x` after `3.0.0` ships), creating it above the newest section if missing
 - **Import aliases required**: `.golangci.yml` enforces `core_mesh`, `mesh_proto`, `core_model`, `common_api`, etc. See `.claude/rules/linting.md`
 - **Cached resources are read-only**: `pkg/core/resources/manager/cache.go` returns shared instances. Never modify them
 - **`pkg/` cannot import `app/`**: architectural boundary enforced by depguard linter
+- **Git worktrees**: run `mise trust && make install` in a fresh worktree before any `make` target. Make reads `KUMA_DIR` from the environment (`KUMA_DIR ?= .` in `mk/dev.mk`), so if it's exported to another checkout, prefix targets with `KUMA_DIR=.`
+- **kumactl flags**: adding or renaming a kumactl flag changes `app/kumactl/cmd/completion/testdata/bash.golden`. Run `make test TEST_PKG_LIST=./app/...`, not only the command's package
 
 ## Common issues
 
