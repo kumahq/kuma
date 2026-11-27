@@ -5,8 +5,7 @@ import (
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-
-	v3 "github.com/kumahq/kuma/v3/pkg/hds/v3"
+	
 	util_xds_v3 "github.com/kumahq/kuma/v3/pkg/util/xds/v3"
 )
 
@@ -35,9 +34,10 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_config_core_v3.N
 	return r.cache.SetSnapshot(ctx, id, snap)
 }
 
-func (r *reconciler) Clear(ctx context.Context, node *envoy_config_core_v3.Node) error {
-	// cache.Clear() operation does not push a new (empty) configuration to Envoy.
-	// That is why instead of calling cache.Clear() we set configuration to an empty Snapshot.
-	// This fake value will be removed from cache on Envoy disconnect.
-	return r.cache.SetSnapshot(ctx, r.hasher.ID(node), util_xds_v3.NewSingleTypeSnapshot("", v3.HealthCheckSpecifierType, nil))
+// Clear removes the snapshot and the status entry (which holds the full Envoy Node) of a Dataplane.
+// It must only be called once the Dataplane has no active HDS streams, so there is no Envoy
+// to push an empty configuration to. Nothing else removes the status entry: cancelling a watch
+// only drops the watch, so without this every Dataplane ever connected stays in the cache.
+func (r *reconciler) Clear(node *envoy_config_core_v3.Node) {
+       r.cache.ClearSnapshot(r.hasher.ID(node))
 }
