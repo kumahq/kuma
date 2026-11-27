@@ -137,7 +137,7 @@ message TransparentProxying {
 ```
 
 Most of the fields are optional and may not be used simultaneously. We need to support the following cases:
-* When `name`, `namespace`, and `port` are defined(combination of them, all are not requried), you cannot use `labels`.
+* When `name`, `namespace`, and `port` are defined(combination of them, all are not required), you cannot use `labels`.
 * When `labels` are defined, you cannot use `name`, `namespace`, and `port`.
 
 ### Dataplane backendRef
@@ -161,7 +161,7 @@ Another thing is adding another fields to the `BackendRef` in Dataplane object: 
 
 This enhancement should make it easier to match the reachable services provided by the user with the generated or provided outbounds. There is a disadventage that makes it maybe not the best option. If we expose it to the user, it might configure one `BackendRef` that reference many MeshServices. 
 
-Because of that we will retrive `MeshService` and match based on its dpTags.
+Because of that we will retrieve `MeshService` and match based on its dpTags.
 
 ### Autoreachable services
 
@@ -175,7 +175,7 @@ Algorithm:
 4. Store rules for each `MeshService`.
 5. When we build XDS config for client DPP and check if we should add a cluster/listener for given `MeshService`, execute rules for `MeshService` using client DPP.
 
-Targetting:
+Targeting:
 
 When a user wants to create a `MeshTrafficPermission` that targets a `MeshService`, they cannot do it directly in the top-level TargetRef. Instead, they can use `MeshSubset` to select a specific `MeshService`
 

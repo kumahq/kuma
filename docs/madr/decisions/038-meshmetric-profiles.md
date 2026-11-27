@@ -128,7 +128,7 @@ sidecar:
 ```
 
 The question here is: do we want our builtin profiles to be defined like that (this possibly means a user can edit them a bit like default policies)
-or should they be hidden from the user (and only referencable)?
+or should they be hidden from the user (and only referenceable)?
 Since we're starting without this it can be skipped for now but in the future this needs reconsideration.
 We probably don't want to have "default policies" situation because that causes problems
 (e.g. someone manually editing a default profile, and then we need to modify it / synchronize somewhere etc.).
@@ -328,7 +328,7 @@ OTEL docs for filter processor: https://github.com/open-telemetry/opentelemetry-
 ##### In Envoy
 
 We could implement this directly in Envoy using [stats_matcher](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/metrics/v3/stats.proto#envoy-v3-api-msg-config-metrics-v3-statssink).
-This would probably be faster, more memory efficient, but it's in boostrap config, so we couldn't change it without restarting Envoy.
+This would probably be faster, more memory efficient, but it's in bootstrap config, so we couldn't change it without restarting Envoy.
 
 #### Validation
 

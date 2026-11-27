@@ -55,7 +55,7 @@ to
       securityContext:
         runAsGroup: 5678
         runAsUser: 5678
-        priviledged: true
+        privileged: true
 ```
 
 and similarly change the `securityContext` section of the `init` container from

@@ -121,7 +121,7 @@ Maintainers and reviewers can leave by just submitting a PR to the repository's 
 
 ### Changes in CNCF foundation
 
-Kuma is a CNCF Sandbox project. As such, it is subject to the CNCF governance model. A new maintainer should update the corresponding CNCF informations:
+Kuma is a CNCF Sandbox project. As such, it is subject to the CNCF governance model. A new maintainer should update the corresponding CNCF information:
 
 - Update [CNCF project maintainers list](https://github.com/cncf/foundation/blob/main/project-maintainers.csv) like the [PR](https://github.com/cncf/foundation/pull/906)
 - Follow the [CNCF ServiceDesk README](https://github.com/cncf/servicedesk) to send an email to apply for **Service Desk** and **Maintainer's email list group**

@@ -8,7 +8,7 @@ Technical Story: #9707
 
 Now that MeshService exists, we need to enable users to apply policies in a way that works
 with the new `MeshService` resource. This includes using `StatefulSet`.
-Additionally, policy should be appliable to `MeshMultiZoneService`.
+Additionally, policy should be applicable to `MeshMultiZoneService`.
 The inspect API should also reflect policies that use `MeshService`
 which will be covered in a separate MADR.
 

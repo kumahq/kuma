@@ -94,7 +94,7 @@ This could help expedite your development process if you only made changes to th
 
 ## Code live reload on k8s
 
-With Skaffold we can utilize code live reload on k8s cluster. Everytime you make a change in code Kuma will be rebuild and reinstalled on cluster.
+With Skaffold we can utilize code live reload on k8s cluster. Every time you make a change in code Kuma will be rebuild and reinstalled on cluster.
 
 1. Run `make k3d/cluster/start`
 2. Run `make dev/fetch-demo` to get the Kuma counter demo app

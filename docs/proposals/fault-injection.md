@@ -78,7 +78,7 @@ Also on destination side we will configure HTTP filter that removes specified he
 So application will see the request as it was sent by source. 
 
 _Note: envoy will replace header if some malicious application tries to specify it by itself pretending to be identified like
-another service. So that feature requres to have mTLS enabled._ 
+another service. So that feature requires to have mTLS enabled._ 
 
 ## Summary
 At that point we decided to move forward with implementation of the second option - Fault Injection on the destination inbound. 

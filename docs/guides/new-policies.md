@@ -51,7 +51,7 @@ to check if the fields are correctly defined.
 Field is _mergeable_ if it is directly in `default` struct or any sub-struct.
 
 The exception is where the struct has only required properties (like [Rate](https://github.com/kumahq/kuma/blob/9f07f444e076433bfdff4ce5d26958006234dd3b/pkg/plugins/policies/meshratelimit/api/v1alpha1/meshratelimit.go#L107-L113)).
-In that case the struct is mergable as a whole (needs to be annotated with `+kuma:non-mergeable-struct`) and properties are _not mergeable_.
+In that case the struct is mergeable as a whole (needs to be annotated with `+kuma:non-mergeable-struct`) and properties are _not mergeable_.
 
 To allow kubernetes "union types" we created a `+kuma:discriminator` annotation to mark a [discriminator field](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/1027-api-unions/README.md?utm_source=chatgpt.com#discriminator-field) to allow "required" fields on mergeable structs.
 
@@ -107,7 +107,7 @@ type Discriminator struct {
 
 #### Mergeable struct with required fields (+kuma:non-mergeable-struct)
 
-This can be thought of as "mergable as a whole".
+This can be thought of as "mergeable as a whole".
 
 ```go
 type Conf struct {
