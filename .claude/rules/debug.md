@@ -57,17 +57,22 @@ skaffold dev
 
 ## Envoy admin API
 
-Access via the sidecar container on port 9901:
+Images have no shell or `wget`, so `kubectl exec ... -- wget` doesn't work.
+Port-forward the sidecar's admin port (9901) and query it locally:
 
 ```bash
+kubectl port-forward deploy/<name> 9901:9901 &
+
 # Full config dump
-kubectl exec deploy/<name> -c kuma-sidecar -- wget -qO- localhost:9901/config_dump
+curl -X GET -s localhost:9901/config_dump
 
 # Filter by section (replace <Section> with Listeners, ClustersConfigDump, Routes, etc.)
-kubectl exec deploy/<name> -c kuma-sidecar -- \
-  wget -qO- localhost:9901/config_dump | \
+curl -X GET -s localhost:9901/config_dump | \
   jq '.configs[] | select(."@type" | contains("<Section>"))'
 ```
+
+Without port-forwarding, `kumactl inspect dataplane <name> --mesh <mesh> --type config-dump` (also `stats`, `clusters`) goes through the CP.
+For an interactive shell, attach an ephemeral container: `kubectl debug -it deploy/<name> --image=busybox --target=kuma-sidecar`.
 
 Other endpoints: `/stats` (Envoy metrics), `/clusters` (upstream info), `/server_info` (version).
 
@@ -75,8 +80,8 @@ Other endpoints: `/stats` (Envoy metrics), `/clusters` (upstream info), `/server
 
 ```bash
 kubectl logs -n kuma-system deploy/kuma-control-plane -f
-kubectl exec -n kuma-system deploy/kuma-control-plane -- \
-  wget -qO- localhost:5681/meshes/default/dataplanes
+kubectl port-forward -n kuma-system deploy/kuma-control-plane 5681:5681 &
+curl -X GET -s localhost:5681/meshes/default/dataplanes
 ```
 
 The CP REST API runs on port 5681. See `pkg/api-server/` for available endpoints.
