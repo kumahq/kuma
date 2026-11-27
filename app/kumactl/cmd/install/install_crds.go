@@ -2,6 +2,7 @@ package install
 
 import (
 	"context"
+	"io"
 	"os"
 
 	"github.com/pkg/errors"
@@ -23,29 +24,13 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 		Use:   "crds",
 		Short: "Install Kuma Custom Resource Definitions on Kubernetes",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			out := cmd.OutOrStdout()
-			if args.OutputFile != "" {
-				f, err := os.Create(args.OutputFile)
-				if err != nil {
-					return errors.Wrap(err, "Failed to create output file")
-				}
-				defer f.Close()
-				out = f
-			}
-
 			wantCrdFiles, err := ctx.InstallCrdTemplateFiles(args)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read CRD files")
 			}
 
 			if !args.OnlyMissing {
-				singleFile := data.JoinYAML(wantCrdFiles)
-
-				if _, err := out.Write(singleFile.Data); err != nil {
-					return errors.Wrap(err, "Failed to output rendered resources")
-				}
-
-				return nil
+				return writeOutput(cmd.OutOrStdout(), args.OutputFile, data.JoinYAML(wantCrdFiles).Data)
 			}
 
 			crdsToInstallMap, err := mapCrdNamesToFiles(wantCrdFiles)
@@ -77,15 +62,12 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 				crdsToInstall = append(crdsToInstall, crd)
 			}
 
-			if len(crdsToInstallMap) > 0 {
-				singleFile := data.JoinYAML(crdsToInstall)
-
-				if _, err := out.Write(singleFile.Data); err != nil {
-					return errors.Wrap(err, "Failed to output rendered resources")
-				}
+			// don't create an empty output file, `kubectl apply` fails on it with "no objects passed to apply"
+			if len(crdsToInstallMap) == 0 {
+				return nil
 			}
 
-			return nil
+			return writeOutput(cmd.OutOrStdout(), args.OutputFile, data.JoinYAML(crdsToInstall).Data)
 		},
 	}
 
@@ -93,6 +75,30 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.OutputFile, "output-file", "", "write resources to the given file instead of stdout")
 
 	return cmd
+}
+
+// writeOutput writes to stdout, or to outputFile when it's set.
+// The file is created only here, so it isn't left behind when there is nothing to write.
+func writeOutput(stdout io.Writer, outputFile string, content []byte) (err error) {
+	out := stdout
+	if outputFile != "" {
+		f, createErr := os.Create(outputFile)
+		if createErr != nil {
+			return errors.Wrap(createErr, "Failed to create output file")
+		}
+		defer func() {
+			if cerr := f.Close(); cerr != nil && err == nil {
+				err = errors.Wrap(cerr, "Failed to close output file")
+			}
+		}()
+		out = f
+	}
+
+	if _, err = out.Write(content); err != nil {
+		return errors.Wrap(err, "Failed to output rendered resources")
+	}
+
+	return nil
 }
 
 func getCrdNamesFromList(crds *apiextensionsv1.CustomResourceDefinitionList) []string {
