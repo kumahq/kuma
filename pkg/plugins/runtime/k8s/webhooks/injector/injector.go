@@ -315,7 +315,7 @@ func (i *KumaInjector) injectKuma(ctx context.Context, pod *kube_core.Pod, meshN
 		patchedContainer.Lifecycle = &kube_core.Lifecycle{
 			PreStop: &kube_core.LifecycleHandler{
 				Exec: &kube_core.ExecAction{
-					Command: []string{"killall", "-USR2", "kuma-dp"},
+					Command: []string{"/usr/bin/kuma-dp", "drain"},
 				},
 			},
 		}

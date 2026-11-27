@@ -145,9 +145,8 @@ spec:
       preStop:
         exec:
           command:
-          - killall
-          - -USR2
-          - kuma-dp
+          - /usr/bin/kuma-dp
+          - drain
     livenessProbe:
       failureThreshold: 212
       httpGet:
