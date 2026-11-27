@@ -6,6 +6,22 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `3.1.x`
+
+### Images no longer contain a shell
+
+The `kuma-cp`, `kuma-dp`, `kumactl` and `kuma-cni` images now use shell-free distroless bases instead of the `:debug` variants with busybox.
+`kubectl exec <pod> -- sh` no longer works in these containers.
+Use an ephemeral container instead, for example `kubectl debug -it <pod> --image=busybox --target=<container>`.
+The Helm chart no longer needs a shell: the CRD install hook runs `kumactl install crds --output-file` directly and the `<release>-install-crds-scripts` `ConfigMap` is gone.
+The CNI container reads its startup delay from `DELAY_STARTUP_SECONDS` and uses `/install-cni ready` as its readiness probe.
+If you render your own manifests for these components, drop any `sh -c` wrappers.
+Commands that run inside these containers without anyone watching are affected too: exec probes and lifecycle hooks added through `ContainerPatch`, custom probes, and tooling that runs `sh`, `sleep`, `wget`, `cat` or `killall` in `kuma-sidecar`, the control plane or the CNI container.
+They now fail with `executable file not found`, and a failed `preStop` hook only shows up as a `FailedPreStopHook` event.
+Check your `ContainerPatch` resources and custom probes or hooks, and switch them to `httpGet`/`tcpSocket` probes or the native `sleep` lifecycle action.
+With native sidecars, the injected `preStop` hook now runs `/usr/bin/kuma-dp drain` instead of `killall -USR2 kuma-dp`, so a custom sidecar image must be at least this version.
+`cni.delayStartupSeconds` must be a whole number of seconds, values like `10s` or `1.5` are rejected when rendering the chart.
+
 ## Upgrade to `3.0.0`
 
 ### System namespace is labeled on every Helm upgrade

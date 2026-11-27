@@ -1,4 +1,7 @@
 {{- if .Values.cni.enabled }}
+{{- if not (regexMatch "^[0-9]+$" (toString .Values.cni.delayStartupSeconds)) }}
+{{- fail (printf "cni.delayStartupSeconds must be a whole number of seconds, got %q" (toString .Values.cni.delayStartupSeconds)) }}
+{{- end }}
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
@@ -64,10 +67,8 @@ spec:
             initialDelaySeconds: {{ .Values.cni.delayStartupSeconds }}
             exec:
               command:
-                - cat
-                - /tmp/ready
-          command: [ "sh", "-c", "--" ]
-          args: [ "sleep {{.Values.cni.delayStartupSeconds}} && exec /install-cni" ]
+                - /install-cni
+                - ready
           securityContext:
           {{- toYaml .Values.cni.containerSecurityContext | trim | nindent 12 }}
           env:
@@ -87,6 +88,8 @@ spec:
               value: "{{ .Values.cni.chained }}"
             - name: CNI_LOG_LEVEL
               value: "{{ .Values.cni.logLevel }}"
+            - name: DELAY_STARTUP_SECONDS
+              value: "{{ .Values.cni.delayStartupSeconds }}"
           resources:
           {{- toYaml .Values.cni.resources | trim | nindent 12 }}
           volumeMounts:

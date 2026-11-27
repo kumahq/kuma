@@ -4,6 +4,18 @@ commandTests:
 - name: "kuma-dp binary should return version"
   command: kuma-dp
   args: ["version"]
+- name: "kuma-dp should provide the drain command used by the sidecar preStop hook"
+  command: kuma-dp
+  args: ["drain", "--help"]
+  expectedOutput: ["Sends SIGUSR2"]
+
+fileExistenceTests:
+- name: "no busybox shell"
+  path: /busybox/sh
+  shouldExist: false
+- name: "no /bin/sh"
+  path: /bin/sh
+  shouldExist: false
 
 metadataTest:
   entrypoint: ["/usr/bin/kuma-dp"]

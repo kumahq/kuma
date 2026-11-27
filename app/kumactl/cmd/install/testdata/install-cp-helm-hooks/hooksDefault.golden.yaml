@@ -275,29 +275,6 @@ subjects:
     name: kuma-install-crds
     namespace: kuma-system
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: kuma-install-crds-scripts
-  namespace: kuma-system
-  annotations:
-    "helm.sh/hook": "pre-upgrade,pre-install"
-    "helm.sh/hook-weight": "-1"
-    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded"
-  labels:
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-data:
-  save_crds.sh: |
-    set -e
-
-    crds="$(kumactl install crds --no-config)"
-
-    if [ -n "${crds}" ]; then
-      echo "found crds - saving to /kuma/crds/crds.yaml"
-      echo "${crds}" > /kuma/crds/crds.yaml
-    fi
----
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -368,15 +345,7 @@ spec:
           volumeMounts:
           - mountPath: /kuma/crds
             name: crds
-          - mountPath: /kuma/scripts
-            name: scripts
-            readOnly: true
-          command: ["sh", "-c"]
-          args: ["/kuma/scripts/save_crds.sh"]
+          args: ["install", "crds", "--no-config", "--output-file", "/kuma/crds/crds.yaml"]
       volumes:
-        - name: scripts
-          configMap:
-            name: kuma-install-crds-scripts
-            defaultMode: 0755
         - name: crds
           emptyDir: {}

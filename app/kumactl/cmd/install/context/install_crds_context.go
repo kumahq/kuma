@@ -9,6 +9,7 @@ import (
 
 type InstallCrdsArgs struct {
 	OnlyMissing bool
+	OutputFile  string
 }
 
 type InstallCrdsContext struct {

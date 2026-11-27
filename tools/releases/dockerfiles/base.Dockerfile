@@ -1,8 +1,6 @@
-FROM gcr.io/distroless/base-nossl-debian13:debug-nonroot@sha256:4d040a10bd12b8a0a44346381a1cbbedf3965dcda822b0ae4314ce1bf53a2111
+FROM gcr.io/distroless/base-nossl-debian13:nonroot@sha256:4006ac92504be607b70de01d1f64f38288c69fcd8faa820f6d3aed266ea32ac5
 
 COPY /tools/releases/templates/LICENSE \
     /tools/releases/templates/README \
     /tools/releases/templates/NOTICE \
     /kuma/
-
-SHELL ["/busybox/busybox", "sh", "-c"]
