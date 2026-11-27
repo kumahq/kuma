@@ -1,4 +1,7 @@
 {{- if .Values.cni.enabled }}
+{{- if not (regexMatch "^[0-9]+$" (toString .Values.cni.delayStartupSeconds)) }}
+{{- fail (printf "cni.delayStartupSeconds must be a whole number of seconds, got %q" (toString .Values.cni.delayStartupSeconds)) }}
+{{- end }}
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
